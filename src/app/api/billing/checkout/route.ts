@@ -1,7 +1,10 @@
 import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { user } from "@/lib/schema";
 
 const checkoutSchema = z.object({
   plan: z.enum(["pro_monthly", "pro_annual", "agency_monthly", "agency_annual"]),
@@ -23,9 +26,32 @@ export async function POST(req: Request) {
 
     const { plan } = result.data;
 
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { stripeCustomerId: true, plan: true },
+    });
+
+    if (dbUser?.stripeCustomerId && dbUser.plan && dbUser.plan !== "free") {
+      return new Response(
+        JSON.stringify({
+          error: "Subscription already exists. Use billing portal to manage your plan.",
+          code: "existing_subscription",
+        }),
+        { status: 409 }
+      );
+    }
+
     if (!process.env.STRIPE_SECRET_KEY) {
        console.error("Stripe Secret Key missing");
        return new Response(JSON.stringify({ error: "Billing service unavailable" }), { status: 503 });
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      return new Response(
+        JSON.stringify({ error: "Billing return URL is not configured", code: "billing_return_url_missing" }),
+        { status: 503 }
+      );
     }
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -57,8 +83,8 @@ export async function POST(req: Request) {
         userId: session.user.id,
         plan,
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?billing=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings?billing=cancelled`,
+      success_url: `${appUrl}/dashboard/settings?billing=success`,
+      cancel_url: `${appUrl}/dashboard/settings?billing=cancelled`,
     });
 
     return Response.json({ url: checkoutSession.url });

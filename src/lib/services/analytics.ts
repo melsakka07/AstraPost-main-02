@@ -9,6 +9,7 @@ import {
   xAccounts,
 } from "@/lib/schema";
 import { XApiService } from "@/lib/services/x-api";
+import { checkMilestone } from "@/lib/gamification";
 
 export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
@@ -67,6 +68,7 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
         replies: number;
         linkClicks: number;
         engagementRate: string;
+        performanceScore: number;
       }
     > = {};
 
@@ -84,6 +86,17 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
           (engagement / Math.max(1, impressions)) * 100
         ).toFixed(2);
 
+        // Calculate Performance Score (0-100)
+        // Heuristic: 
+        // 1. Engagement Rate (up to 60 points): 3% ER gets full 60 points.
+        // 2. Absolute Volume (up to 40 points): 1000 impressions gets full 40 points.
+        const erVal = parseFloat(engagementRate);
+        const erScore = Math.min(60, (erVal / 3) * 60);
+        
+        const volScore = Math.min(40, (impressions / 1000) * 40);
+        
+        const performanceScore = Math.round(erScore + volScore);
+
         metricsById[String(t.id)] = {
           impressions,
           likes,
@@ -91,6 +104,7 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
           replies,
           linkClicks,
           engagementRate,
+          performanceScore,
         };
       }
     }
@@ -118,6 +132,7 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
             replies: m.replies,
             linkClicks: m.linkClicks,
             engagementRate: m.engagementRate,
+            performanceScore: m.performanceScore,
             fetchedAt: now,
           })
           .onConflictDoUpdate({
@@ -130,6 +145,7 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
               replies: m.replies,
               linkClicks: m.linkClicks,
               engagementRate: m.engagementRate,
+              performanceScore: m.performanceScore,
               fetchedAt: now,
             },
           });
@@ -144,6 +160,7 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
           replies: m.replies,
           linkClicks: m.linkClicks,
           engagementRate: m.engagementRate,
+          performanceScore: m.performanceScore,
           fetchedAt: now,
         });
       }
@@ -195,6 +212,9 @@ export async function refreshFollowersAndMetricsForRuns(runIds: string[]) {
             .where(eq(analyticsRefreshRuns.id, runId));
         }
       });
+
+      // Check Milestones
+      await checkMilestone(xAcc.userId, "analytics_refresh");
 
       await updateTweetMetrics({ accountIds: [accountId] });
     } catch (e) {

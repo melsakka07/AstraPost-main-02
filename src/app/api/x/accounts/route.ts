@@ -1,17 +1,19 @@
+
 import { headers } from "next/headers";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { checkAccountLimit } from "@/lib/middleware/require-plan";
+import { checkAccountLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { xAccounts } from "@/lib/schema";
+import { getTeamContext } from "@/lib/team-context";
 
 export async function POST() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
 
-  const canAdd = await checkAccountLimit(session.user.id);
-  if (!canAdd) {
-    return new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 });
+  const accountLimit = await checkAccountLimitDetailed(session.user.id);
+  if (!accountLimit.allowed) {
+    return createPlanLimitResponse(accountLimit);
   }
 
   // This route is actually for LISTING accounts. 
@@ -25,11 +27,11 @@ export async function POST() {
 }
 
 export async function GET() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  const ctx = await getTeamContext();
+  if (!ctx) return new Response("Unauthorized", { status: 401 });
 
   const accounts = await db.query.xAccounts.findMany({
-    where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)),
+    where: and(eq(xAccounts.userId, ctx.currentTeamId), eq(xAccounts.isActive, true)),
     orderBy: [desc(xAccounts.isDefault), asc(xAccounts.createdAt)],
   });
 
@@ -43,4 +45,3 @@ export async function GET() {
     })),
   });
 }
-

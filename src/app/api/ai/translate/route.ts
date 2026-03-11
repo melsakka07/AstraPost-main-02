@@ -4,15 +4,17 @@ import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { LANGUAGES } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { checkAiLimit } from "@/lib/middleware/require-plan";
+import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
-import { checkAiQuota, recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage } from "@/lib/services/ai-quota";
+
 
 const requestSchema = z.object({
   tweets: z.array(z.string().min(1).max(280)).min(1).max(15),
-  targetLanguage: z.enum(["ar", "en"]),
+  targetLanguage: z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]),
 });
 
 const responseSchema = z.object({
@@ -42,14 +44,14 @@ export async function POST(req: Request) {
         });
     }
 
-    const canUseAi = await checkAiLimit(session.user.id);
-    if (!canUseAi) {
-      return new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 });
+    const aiAccess = await checkAiLimitDetailed(session.user.id);
+    if (!aiAccess.allowed) {
+      return createPlanLimitResponse(aiAccess);
     }
 
-    const hasQuota = await checkAiQuota(session.user.id);
-    if (!hasQuota) {
-       return new Response(JSON.stringify({ error: "quota_exceeded" }), { status: 402 });
+    const aiQuota = await checkAiQuotaDetailed(session.user.id);
+    if (!aiQuota.allowed) {
+      return createPlanLimitResponse(aiQuota);
     }
 
     const json = await req.json();
@@ -73,9 +75,7 @@ export async function POST(req: Request) {
 
     const { tweets, targetLanguage } = parsed.data;
 
-    const prompt = `Translate this X thread into ${
-      targetLanguage === "ar" ? "Arabic" : "English"
-    }.
+    const prompt = `Translate this X thread into ${LANGUAGES.find(l => l.code === targetLanguage)?.label || 'English'}.
 
 Constraints:
 - Keep numbering prefixes like "1/5" if present.
@@ -97,7 +97,8 @@ ${tweets.map((t, i) => `[${i + 1}] ${t}`).join("\n")}`;
         "translate", 
         0, 
         prompt, 
-        object
+        object,
+        targetLanguage
     );
 
     return Response.json(object);
@@ -107,4 +108,3 @@ ${tweets.map((t, i) => `[${i + 1}] ${t}`).join("\n")}`;
     });
   }
 }
-

@@ -9,7 +9,7 @@ import { user } from "@/lib/schema";
 export async function POST() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized", code: "unauthorized" }, { status: 401 });
   }
 
   const dbUser = await db.query.user.findFirst({
@@ -17,12 +17,12 @@ export async function POST() {
   });
 
   if (!dbUser?.stripeCustomerId) {
-    return NextResponse.json({ error: "No subscription found" }, { status: 400 });
+    return NextResponse.json({ error: "No subscription found", code: "no_subscription" }, { status: 400 });
   }
 
   if (!process.env.STRIPE_SECRET_KEY) {
     console.error("Stripe Secret Key missing");
-    return NextResponse.json({ error: "Billing service unavailable" }, { status: 503 });
+    return NextResponse.json({ error: "Billing service unavailable", code: "billing_unavailable" }, { status: 503 });
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
@@ -30,14 +30,26 @@ export async function POST() {
   });
 
   try {
+    const appOrigin = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appOrigin) {
+      return NextResponse.json(
+        { error: "Billing return URL is not configured", code: "billing_return_url_missing" },
+        { status: 503 }
+      );
+    }
+    const returnUrl = new URL("/dashboard/settings?billing=portal_return", appOrigin).toString();
+
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: dbUser.stripeCustomerId,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings`,
+      return_url: returnUrl,
     });
 
     return NextResponse.json({ url: portalSession.url });
   } catch (error) {
     console.error("Stripe Portal Error:", error);
-    return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create portal session", code: "portal_session_failed" },
+      { status: 500 }
+    );
   }
 }

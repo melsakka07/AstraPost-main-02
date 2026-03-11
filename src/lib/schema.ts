@@ -1,3 +1,4 @@
+
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, integer, jsonb, decimal, index, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -20,6 +21,8 @@ export const user = pgTable(
       .notNull(),
     
     // AstroPost specific fields
+    isAdmin: boolean("is_admin").default(false),
+    isSuspended: boolean("is_suspended").default(false),
     timezone: text("timezone").default("Asia/Riyadh"),
     language: text("language").default("ar"), // 'ar' or 'en'
     plan: text("plan").default("free"), // 'free', 'pro_monthly', 'pro_annual', 'agency'
@@ -27,8 +30,23 @@ export const user = pgTable(
     stripeCustomerId: text("stripe_customer_id"),
     trialEndsAt: timestamp("trial_ends_at"),
     onboardingCompleted: boolean("onboarding_completed").default(false),
+    voiceProfile: jsonb("voice_profile"),
+    requiresApproval: boolean("requires_approval").default(false), // For Agency plan team workflows
+    
+    // Referral System
+    referralCode: text("referral_code").unique(),
+    referredBy: text("referred_by"), // ID of the user who referred this user
+    referralCredits: integer("referral_credits").default(0),
+
+    // 2FA
+    twoFactorEnabled: boolean("two_factor_enabled").default(false),
+    twoFactorSecret: text("two_factor_secret"),
+    twoFactorBackupCodes: text("two_factor_backup_codes"),
   },
-  (table) => [index("user_email_idx").on(table.email)]
+  (table) => [
+    index("user_email_idx").on(table.email),
+    index("user_referral_code_idx").on(table.referralCode)
+  ]
 );
 
 export const session = pgTable(
@@ -128,6 +146,13 @@ export const posts = pgTable("posts", {
   lastErrorAt: timestamp("last_error_at"),
   retryCount: integer("retry_count").default(0),
   aiGenerated: boolean("ai_generated").default(false),
+  requiresApproval: boolean("requires_approval").default(false),
+  approvedBy: text("approved_by").references(() => user.id, { onDelete: "set null" }),
+  approvedAt: timestamp("approved_at"),
+  reviewerNotes: text("reviewer_notes"),
+  recurrencePattern: text("recurrence_pattern"), // 'daily', 'weekly', 'monthly', 'yearly'
+  recurrenceEndDate: timestamp("recurrence_end_date"),
+  idempotencyKey: text("idempotency_key").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => [
@@ -160,6 +185,55 @@ export const analyticsRefreshRuns = pgTable("analytics_refresh_runs", {
   index("analytics_refresh_runs_user_id_idx").on(table.userId),
   index("analytics_refresh_runs_account_time_idx").on(table.xAccountId, table.startedAt),
 ]);
+
+export const teamMembers = pgTable("team_members", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  teamId: text("team_id").notNull().references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
+  role: text("role").notNull().default("viewer"), // 'admin', 'editor', 'viewer'
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("team_members_user_id_idx").on(table.userId),
+  index("team_members_team_id_idx").on(table.teamId),
+  uniqueIndex("team_members_user_team_unique").on(table.userId, table.teamId),
+]);
+
+export const teamInvitations = pgTable("team_invitations", {
+  id: text("id").primaryKey(),
+  teamId: text("team_id").notNull().references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
+  email: text("email").notNull(),
+  role: text("role").notNull().default("viewer"),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: text("status").default("pending"), // 'pending', 'accepted', 'expired'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("team_invitations_team_id_idx").on(table.teamId),
+  index("team_invitations_email_idx").on(table.email),
+  index("team_invitations_token_idx").on(table.token),
+]);
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  user: one(user, {
+    fields: [teamMembers.userId],
+    references: [user.id],
+    relationName: "membership",
+  }),
+  team: one(user, {
+    fields: [teamMembers.teamId],
+    references: [user.id],
+    relationName: "ownedTeam",
+  }),
+}));
+
+export const teamInvitationsRelations = relations(teamInvitations, ({ one }) => ({
+  team: one(user, {
+    fields: [teamInvitations.teamId],
+    references: [user.id],
+  }),
+}));
 
 export const tweets = pgTable("tweets", {
   id: text("id").primaryKey(),
@@ -195,6 +269,7 @@ export const tweetAnalytics = pgTable("tweet_analytics", {
   replies: integer("replies").default(0),
   linkClicks: integer("link_clicks").default(0),
   engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
+  performanceScore: integer("performance_score").default(0),
   fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("analytics_tweet_id_unique").on(table.tweetId),
@@ -212,6 +287,7 @@ export const tweetAnalyticsSnapshots = pgTable("tweet_analytics_snapshots", {
   replies: integer("replies").default(0),
   linkClicks: integer("link_clicks").default(0),
   engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
+  performanceScore: integer("performance_score").default(0),
   fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
 }, (table) => [
   index("analytics_snapshots_tweet_id_idx").on(table.tweetId),
@@ -270,7 +346,10 @@ export const jobRuns = pgTable("job_runs", {
 export const affiliateLinks = pgTable("affiliate_links", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  amazonProductUrl: text("amazon_product_url").notNull(),
+  destinationUrl: text("destination_url").notNull(),
+  shortCode: text("short_code").unique(),
+  platform: text("platform").default("amazon"),
+  clicks: integer("clicks").default(0),
   amazonAsin: text("amazon_asin"),
   productTitle: text("product_title"),
   productImageUrl: text("product_image_url"),
@@ -280,7 +359,23 @@ export const affiliateLinks = pgTable("affiliate_links", {
   generatedTweet: text("generated_tweet"),
   wasScheduled: boolean("was_scheduled").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("affiliate_links_user_id_idx").on(table.userId),
+  uniqueIndex("affiliate_links_short_code_idx").on(table.shortCode),
+]);
+
+export const affiliateClicks = pgTable("affiliate_clicks", {
+  id: text("id").primaryKey(),
+  affiliateLinkId: text("affiliate_link_id").notNull().references(() => affiliateLinks.id, { onDelete: "cascade" }),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  country: text("country"),
+  referer: text("referer"),
+  clickedAt: timestamp("clicked_at").defaultNow().notNull(),
+}, (table) => [
+  index("affiliate_clicks_link_id_idx").on(table.affiliateLinkId),
+  index("affiliate_clicks_clicked_at_idx").on(table.clickedAt),
+]);
 
 export const notifications = pgTable("notifications", {
   id: text("id").primaryKey(),
@@ -296,13 +391,63 @@ export const notifications = pgTable("notifications", {
   index("notifications_is_read_idx").on(table.isRead)
 ]);
 
-// RELATIONS
+export const templates = pgTable("templates", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  content: jsonb("content").notNull().$type<string[]>(),
+  category: text("category").default("Personal"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("templates_user_id_idx").on(table.userId),
+]);
 
-export const userRelations = relations(user, ({ many }) => ({
+// Milestones
+export const milestones = pgTable("milestones", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  milestoneId: text("milestone_id").notNull(), // e.g. 'first_post', '100_followers'
+  unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
+  metadata: jsonb("metadata"), // e.g. { count: 105 }
+}, (table) => [
+  index("milestones_user_id_idx").on(table.userId),
+  uniqueIndex("milestones_user_milestone_unique").on(table.userId, table.milestoneId),
+]);
+
+export const affiliateLinksRelations = relations(affiliateLinks, ({ one, many }) => ({
+  user: one(user, {
+    fields: [affiliateLinks.userId],
+    references: [user.id],
+  }),
+  clicks: many(affiliateClicks),
+}));
+
+export const affiliateClicksRelations = relations(affiliateClicks, ({ one }) => ({
+  link: one(affiliateLinks, {
+    fields: [affiliateClicks.affiliateLinkId],
+    references: [affiliateLinks.id],
+  }),
+}));
+
+export const userRelations = relations(user, ({ one, many }) => ({
   xAccounts: many(xAccounts),
   posts: many(posts),
   subscriptions: many(subscriptions),
   notifications: many(notifications),
+  templates: many(templates),
+  affiliateLinks: many(affiliateLinks),
+  teamMemberships: many(teamMembers, { relationName: "membership" }),
+  ownedTeamMembers: many(teamMembers, { relationName: "ownedTeam" }),
+  teamInvitations: many(teamInvitations),
+  unlockedMilestones: many(milestones),
+  referrer: one(user, {
+    fields: [user.referredBy],
+    references: [user.id],
+    relationName: "referrals",
+  }),
+  referrals: many(user, { relationName: "referrals" }),
 }));
 
 export const xAccountRelations = relations(xAccounts, ({ one, many }) => ({
@@ -323,6 +468,10 @@ export const postRelations = relations(posts, ({ one, many }) => ({
   xAccount: one(xAccounts, {
     fields: [posts.xAccountId],
     references: [xAccounts.id],
+  }),
+  approvedByUser: one(user, {
+    fields: [posts.approvedBy],
+    references: [user.id],
   }),
   tweets: many(tweets),
   media: many(media),
@@ -395,6 +544,13 @@ export const analyticsRefreshRunsRelations = relations(analyticsRefreshRuns, ({ 
   }),
   user: one(user, {
     fields: [analyticsRefreshRuns.userId],
+    references: [user.id],
+  }),
+}));
+
+export const milestonesRelations = relations(milestones, ({ one }) => ({
+  user: one(user, {
+    fields: [milestones.userId],
     references: [user.id],
   }),
 }));

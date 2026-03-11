@@ -4,15 +4,16 @@ import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { LANGUAGES } from "@/lib/constants";
 import { db } from "@/lib/db";
-import { checkAiLimit } from "@/lib/middleware/require-plan";
+import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
-import { checkAiQuota, recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
   tool: z.enum(["hook", "cta", "rewrite"]),
-  language: z.enum(["ar", "en"]).default("ar"),
+  language: z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]).default("ar"),
   tone: z
     .enum(["professional", "casual", "educational", "inspirational", "funny", "viral"])
     .default("professional"),
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
 
     const dbUser = await db.query.user.findFirst({
         where: eq(user.id, session.user.id),
-        columns: { plan: true }
+        columns: { plan: true, voiceProfile: true }
     });
     
     const { success, reset } = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
@@ -47,14 +48,14 @@ export async function POST(req: Request) {
         });
     }
 
-    const canUseAi = await checkAiLimit(session.user.id);
-    if (!canUseAi) {
-      return new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 });
+    const aiAccess = await checkAiLimitDetailed(session.user.id);
+    if (!aiAccess.allowed) {
+      return createPlanLimitResponse(aiAccess);
     }
 
-    const hasQuota = await checkAiQuota(session.user.id);
-    if (!hasQuota) {
-       return new Response(JSON.stringify({ error: "quota_exceeded" }), { status: 402 });
+    const aiQuota = await checkAiQuotaDetailed(session.user.id);
+    if (!aiQuota.allowed) {
+      return createPlanLimitResponse(aiQuota);
     }
 
     const json = await req.json();
@@ -77,7 +78,28 @@ export async function POST(req: Request) {
     const openrouter = createOpenRouter({ apiKey });
     const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
 
-    const langLabel = language === "ar" ? "Arabic" : "English";
+    const langLabel = LANGUAGES.find(l => l.code === language)?.label || 'English';
+
+    let voiceInstructions = "";
+    if (dbUser?.voiceProfile) {
+        const vp = dbUser.voiceProfile as any;
+        if (vp.tone && vp.styleKeywords) {
+             voiceInstructions = `
+            Voice Profile Instructions:
+            - Tone: ${vp.tone}
+            - Style: ${Array.isArray(vp.styleKeywords) ? vp.styleKeywords.join(", ") : vp.styleKeywords}
+            - Structure: ${vp.sentenceStructure}
+            - Vocabulary: ${vp.vocabularyLevel}
+            - Emoji Usage: ${vp.emojiUsage}
+            - Formatting: ${vp.formattingHabits}
+            - Rules: ${Array.isArray(vp.doAndDonts) ? vp.doAndDonts.join("; ") : vp.doAndDonts}
+            
+            ADHERE STRICTLY TO THIS WRITING STYLE.
+            `;
+        } else if (typeof vp === 'string') {
+             voiceInstructions = `Voice Profile Instructions:\n${vp}\nAdhere strictly to this writing style.`;
+        }
+    }
 
     const prompt = (() => {
       if (tool === "hook") {
@@ -86,6 +108,8 @@ export async function POST(req: Request) {
         }".
 Tone: ${tone}.
 Language: ${langLabel}.
+${voiceInstructions}
+
 Constraints:
 - Max 200 characters.
 - No hashtags.
@@ -97,6 +121,8 @@ Constraints:
         return `Write a short call-to-action for the END of an X thread.
 Tone: ${tone}.
 Language: ${langLabel}.
+${voiceInstructions}
+
 Constraints:
 - Max 120 characters.
 - No hashtags.
@@ -106,6 +132,8 @@ Constraints:
       return `Rewrite the following X tweet.
 Tone: ${tone}.
 Language: ${langLabel}.
+${voiceInstructions}
+
 Constraints:
 - Max 280 characters.
 - Preserve the meaning.
@@ -126,7 +154,8 @@ ${input || ""}`;
         tool, 
         0, 
         prompt, 
-        object
+        object,
+        language
     );
 
     return Response.json(object);
@@ -134,4 +163,3 @@ ${input || ""}`;
     return new Response(JSON.stringify({ error: "AI tool failed" }), { status: 500 });
   }
 }
-

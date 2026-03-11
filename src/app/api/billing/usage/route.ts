@@ -1,9 +1,9 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, ne, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getPlanLimits } from "@/lib/plan-limits";
+import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { user, posts, xAccounts, aiGenerations } from "@/lib/schema";
 
 export async function GET() {
@@ -20,7 +20,8 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const limits = getPlanLimits(dbUser.plan);
+  const plan = normalizePlan(dbUser.plan);
+  const limits = getPlanLimits(plan);
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
@@ -31,6 +32,7 @@ export async function GET() {
       .from(posts)
       .where(and(
         eq(posts.userId, session.user.id),
+        ne(posts.status, "draft"),
         gte(posts.createdAt, startOfMonth)
       )),
     
@@ -54,9 +56,15 @@ export async function GET() {
     ai: Number(aiCount[0]?.count ?? 0),
   };
 
+  const serializableLimits = {
+    postsPerMonth: Number.isFinite(limits.postsPerMonth) ? limits.postsPerMonth : null,
+    maxXAccounts: Number.isFinite(limits.maxXAccounts) ? limits.maxXAccounts : null,
+    aiGenerationsPerMonth: Number.isFinite(limits.aiGenerationsPerMonth) ? limits.aiGenerationsPerMonth : null,
+  };
+
   return NextResponse.json({
-    plan: dbUser.plan,
-    limits,
+    plan,
+    limits: serializableLimits,
     usage,
   });
 }

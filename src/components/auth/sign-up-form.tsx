@@ -14,6 +14,7 @@ export function SignUpForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [referralCode, setReferralCode] = useState("")
   const [error, setError] = useState("")
   const [isPending, setIsPending] = useState(false)
 
@@ -33,6 +34,29 @@ export function SignUpForm() {
 
     setIsPending(true)
 
+    // Validate referral code first if present
+    let referrerId: string | null = null;
+    if (referralCode.trim()) {
+      try {
+        const res = await fetch("/api/referral/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: referralCode.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Invalid referral code");
+          setIsPending(false);
+          return;
+        }
+        referrerId = data.referrerId;
+      } catch (err) {
+        setError("Error validating referral code");
+        setIsPending(false);
+        return;
+      }
+    }
+
     try {
       const result = await signUp.email({
         name,
@@ -44,6 +68,18 @@ export function SignUpForm() {
       if (result.error) {
         setError(result.error.message || "Failed to create account")
       } else {
+        if (referrerId) {
+          try {
+            await fetch("/api/user/set-referrer", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ referrerId })
+            });
+          } catch (err) {
+            // Ignore error, non-blocking
+            console.error("Failed to set referrer", err);
+          }
+        }
         router.push("/dashboard")
         router.refresh()
       }
@@ -101,6 +137,17 @@ export function SignUpForm() {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
+          disabled={isPending}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+        <Input
+          id="referralCode"
+          type="text"
+          placeholder="Enter referral code"
+          value={referralCode}
+          onChange={(e) => setReferralCode(e.target.value)}
           disabled={isPending}
         />
       </div>

@@ -1,13 +1,23 @@
+
 import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { checkAccountLimit } from "@/lib/middleware/require-plan";
+import { checkAccountLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { account, xAccounts } from "@/lib/schema";
 import { encryptToken } from "@/lib/security/token-encryption";
 import { XApiService } from "@/lib/services/x-api";
+import { getTeamContext } from "@/lib/team-context";
 
 export async function POST() {
+  const ctx = await getTeamContext();
+  if (!ctx) return new Response("Unauthorized", { status: 401 });
+
+  // Only the team owner can sync accounts
+  if (!ctx.isOwner) {
+    return new Response("Forbidden: Only team owner can sync accounts", { status: 403 });
+  }
+
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
 
@@ -35,13 +45,9 @@ export async function POST() {
     });
 
     if (!existing) {
-      const canAdd = await checkAccountLimit(session.user.id);
-      if (!canAdd) {
-        // Skip adding if limit reached, but continue loop or return error
-        // Since this is a sync, returning error might break UI. 
-        // We'll skip and maybe log a warning, or return a partial success.
-        // For strict enforcement, we should stop and return 402.
-        return new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 });
+      const accountLimit = await checkAccountLimitDetailed(session.user.id);
+      if (!accountLimit.allowed) {
+        return createPlanLimitResponse(accountLimit);
       }
 
       await db.insert(xAccounts).values({

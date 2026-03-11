@@ -1,15 +1,20 @@
 import { readFile } from "fs/promises";
 import path from "path";
 import { Job } from "bullmq";
-import { and, eq } from "drizzle-orm";
+import { addDays, addWeeks, addMonths, addYears } from "date-fns";
+import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { jobRuns, media, posts, tweets } from "@/lib/schema";
+import { scheduleQueue } from "@/lib/queue/client";
+import { posts, jobRuns, user, tweets, media, notifications } from "@/lib/schema";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
+import { sendPostFailureEmail } from "@/lib/services/email";
 import { XApiService } from "@/lib/services/x-api";
 
+import { checkMilestone } from "@/lib/gamification";
+
 export const scheduleProcessor = async (job: Job) => {
-  const { postId } = job.data;
+  const { postId, userId } = job.data;
   const correlationId = (job.data as any)?.correlationId as string | undefined;
   logger.info("schedule_job_started", {
     queue: job.queueName,
@@ -178,6 +183,75 @@ export const scheduleProcessor = async (job: Job) => {
       })
       .where(eq(posts.id, postId));
 
+    // Check milestones
+    await checkMilestone(post.userId, "post_published");
+
+    // 6. Handle Recurrence
+    if (post.recurrencePattern && post.scheduledAt) {
+      let nextDate = new Date(post.scheduledAt);
+      if (post.recurrencePattern === "daily") nextDate = addDays(nextDate, 1);
+      else if (post.recurrencePattern === "weekly") nextDate = addWeeks(nextDate, 1);
+      else if (post.recurrencePattern === "monthly") nextDate = addMonths(nextDate, 1);
+      else if (post.recurrencePattern === "yearly") nextDate = addYears(nextDate, 1);
+
+      const endDate = post.recurrenceEndDate ? new Date(post.recurrenceEndDate) : null;
+
+      if (!endDate || nextDate <= endDate) {
+        const newPostId = crypto.randomUUID();
+        await db.insert(posts).values({
+          id: newPostId,
+          userId: post.userId,
+          xAccountId: post.xAccountId,
+          groupId: post.groupId,
+          type: post.type,
+          status: "scheduled",
+          scheduledAt: nextDate,
+          recurrencePattern: post.recurrencePattern,
+          recurrenceEndDate: post.recurrenceEndDate,
+          aiGenerated: post.aiGenerated,
+        });
+
+        for (const t of post.tweets) {
+          const newTweetId = crypto.randomUUID();
+          await db.insert(tweets).values({
+            id: newTweetId,
+            postId: newPostId,
+            content: t.content,
+            position: t.position,
+            mediaIds: t.mediaIds,
+          });
+
+          for (const m of t.media) {
+            await db.insert(media).values({
+              id: crypto.randomUUID(),
+              postId: newPostId,
+              tweetId: newTweetId,
+              fileUrl: m.fileUrl,
+              fileType: m.fileType,
+              fileSize: m.fileSize,
+              xMediaId: m.xMediaId,
+            });
+          }
+        }
+
+        const delay = Math.max(0, nextDate.getTime() - Date.now());
+        await scheduleQueue.add(
+          "publish-post",
+          { postId: newPostId, userId: post.userId, correlationId: `recurrence:${correlationId}` },
+          {
+            delay,
+            jobId: newPostId,
+            attempts: 5,
+            backoff: { type: "exponential", delay: 60_000 },
+            removeOnComplete: true,
+            removeOnFail: false,
+          }
+        );
+
+        logger.info("recurrence_scheduled", { oldPostId: postId, newPostId, nextDate });
+      }
+    }
+
     await db
       .update(jobRuns)
       .set({
@@ -265,6 +339,36 @@ export const scheduleProcessor = async (job: Job) => {
         });
     }
     
+    if (isFinalAttempt && (userId || post?.userId)) {
+      const targetUserId = userId || post?.userId;
+      await db.insert(notifications).values({
+        id: crypto.randomUUID(),
+        userId: targetUserId,
+        type: "post_failed",
+        title: "Post Publishing Failed",
+        message: `Your post failed to publish. ${userHint || (error instanceof Error ? error.message : "Unknown error")}`,
+        metadata: { postId, error: error instanceof Error ? error.message : "Unknown error" },
+        isRead: false,
+      });
+
+      // Send Email
+      try {
+        const userRecord = await db.query.user.findFirst({
+            where: eq(user.id, targetUserId),
+            columns: { email: true }
+        });
+        if (userRecord?.email) {
+            await sendPostFailureEmail(
+                userRecord.email, 
+                postId, 
+                userHint || (error instanceof Error ? error.message : "Unknown error")
+            );
+        }
+      } catch (emailError) {
+        logger.error("failed_to_send_email", { error: emailError });
+      }
+    }
+
     throw error; // Let BullMQ handle retries if configured
   }
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,6 +19,7 @@ import {
   Menu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,43 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
+  const [aiUsage, setAiUsage] = useState<{
+    used: number;
+    limit: number | null;
+    resetDate: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const loadUsage = async () => {
+      try {
+        const res = await fetch("/api/user/ai-usage", { cache: "no-store" });
+        if (!res.ok) {
+          return;
+        }
+        const data = await res.json();
+        setAiUsage(data);
+      } catch {
+      }
+    };
+
+    void loadUsage();
+  }, []);
+
+  const aiProgress =
+    aiUsage && typeof aiUsage.limit === "number" && aiUsage.limit > 0
+      ? Math.min(100, Math.round((aiUsage.used / aiUsage.limit) * 100))
+      : 0;
+
+  const aiUsageLabel =
+    aiUsage && typeof aiUsage.limit === "number"
+      ? `${aiUsage.used}/${aiUsage.limit} used this month`
+      : aiUsage
+      ? `${aiUsage.used} used this month`
+      : "Loading...";
+
+  const aiProgressLabel =
+    aiUsage && aiUsage.limit === null ? "Unlimited" : `${aiProgress}%`;
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 flex items-center gap-2 border-b border-border h-16">
@@ -73,7 +111,15 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
         </nav>
       </div>
 
-      <div className="p-4 border-t border-border">
+      <div className="space-y-4 p-4 border-t border-border">
+        <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-foreground">AI Credits</span>
+            <span className="text-xs text-muted-foreground">{aiProgressLabel}</span>
+          </div>
+          <Progress value={aiProgress} className="h-1.5" />
+          <p className="text-xs text-muted-foreground">{aiUsageLabel}</p>
+        </div>
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground hover:text-destructive"
@@ -100,7 +146,7 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:sticky md:top-0 md:h-screen md:w-64 md:shrink-0 flex-col bg-card border-r border-border">
+      <div className="hidden md:flex md:sticky md:top-16 md:h-[calc(100dvh-4rem)] md:w-64 md:shrink-0 flex-col bg-card border-r border-border">
         <SidebarContent pathname={pathname} />
       </div>
 

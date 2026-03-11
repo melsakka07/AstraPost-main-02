@@ -1,12 +1,15 @@
+
 import { headers } from "next/headers";
 import Link from "next/link";
 import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { PlusCircle, Calendar, CheckCircle2, BarChart } from "lucide-react";
+import { QuickCompose } from "@/components/dashboard/quick-compose";
+import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { posts, tweetAnalytics, tweets } from "@/lib/schema";
+import { posts, tweetAnalytics, tweets, user, xAccounts, aiGenerations } from "@/lib/schema";
 
 async function getDashboardData(userId: string) {
   const today = new Date();
@@ -18,7 +21,12 @@ async function getDashboardData(userId: string) {
     scheduledPosts,
     publishedPosts,
     analytics,
-    upcomingPosts
+    upcomingPosts,
+    // Checklist Data
+    hasXAccount,
+    hasScheduledPost,
+    hasUsedAI,
+    userInfo
   ] = await Promise.all([
     // Today's posts (published or scheduled for today)
     db.query.posts.findMany({
@@ -47,6 +55,24 @@ async function getDashboardData(userId: string) {
       with: {
         tweets: true
       }
+    }),
+
+    // Checklist Checks
+    db.query.xAccounts.findFirst({
+      where: eq(xAccounts.userId, userId),
+      columns: { id: true }
+    }),
+    db.query.posts.findFirst({
+      where: eq(posts.userId, userId),
+      columns: { id: true }
+    }),
+    db.query.aiGenerations.findFirst({
+      where: eq(aiGenerations.userId, userId),
+      columns: { id: true }
+    }),
+    db.query.user.findFirst({
+      where: eq(user.id, userId),
+      columns: { plan: true }
     })
   ]);
 
@@ -55,14 +81,21 @@ async function getDashboardData(userId: string) {
     scheduledCount: Number(scheduledPosts[0]?.count || 0),
     publishedCount: Number(publishedPosts[0]?.count || 0),
     avgEngagement: Number(analytics[0]?.avg || 0).toFixed(2),
-    upcomingPosts
+    upcomingPosts,
+    checklist: {
+      hasXAccount: !!hasXAccount,
+      hasScheduledPost: !!hasScheduledPost,
+      hasUsedAI: !!hasUsedAI,
+      hasProPlan: userInfo?.plan !== "free"
+    }
   };
 }
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   const data = session ? await getDashboardData(session.user.id) : {
-    todayCount: 0, scheduledCount: 0, publishedCount: 0, avgEngagement: "0.00", upcomingPosts: []
+    todayCount: 0, scheduledCount: 0, publishedCount: 0, avgEngagement: "0.00", upcomingPosts: [],
+    checklist: { hasXAccount: false, hasScheduledPost: false, hasUsedAI: false, hasProPlan: false }
   };
 
   return (
@@ -83,6 +116,8 @@ export default async function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      <SetupChecklist {...data.checklist} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -166,20 +201,7 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Compose</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <div className="space-y-4">
-                <textarea
-                  className="min-h-[120px] w-full resize-y rounded-md border border-input bg-transparent p-3 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder="What's on your mind?"
-                />
-                <Button className="w-full">Schedule</Button>
-             </div>
-          </CardContent>
-        </Card>
+        <QuickCompose />
       </div>
     </div>
   );

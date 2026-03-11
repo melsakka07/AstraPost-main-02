@@ -41,7 +41,7 @@ export default function ProfilePage() {
 
   if (isPending || !session) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <div>Loading...</div>
       </div>
     );

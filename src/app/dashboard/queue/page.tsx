@@ -1,9 +1,12 @@
+
 import { headers } from "next/headers";
 import Link from "next/link";
-import { eq, and, asc, gte, sql } from "drizzle-orm";
-import { Calendar, Clock, AlertTriangle } from "lucide-react";
+import { eq, and, asc, gte, sql, inArray } from "drizzle-orm";
+import { Calendar, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
 import { PageToolbar } from "@/components/dashboard/page-toolbar";
 import { CancelPostButton } from "@/components/queue/cancel-post-button";
+import { PostApprovalActions } from "@/components/queue/post-approval-actions";
+import { QueueRealtimeListener } from "@/components/queue/queue-realtime-listener";
 import { RetryPostButton } from "@/components/queue/retry-post-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,15 +16,19 @@ import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlanLimits } from "@/lib/plan-limits";
-import { posts, user } from "@/lib/schema";
+import { posts, user, xAccounts } from "@/lib/schema";
+import { getTeamContext } from "@/lib/team-context";
 
 export default async function QueuePage({
   searchParams,
 }: {
   searchParams?: Promise<{ density?: string | string[] }>;
 }) {
+  const ctx = await getTeamContext();
+  if (!ctx) return null;
+
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const densityParam = resolvedSearchParams?.density;
   const densityValue = Array.isArray(densityParam) ? densityParam[0] : densityParam;
@@ -29,8 +36,8 @@ export default async function QueuePage({
   const isCompact = density === "compact";
 
   const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { plan: true, trialEndsAt: true }
+    where: eq(user.id, ctx.currentTeamId),
+    columns: { plan: true, trialEndsAt: true, name: true }
   });
 
   const isTrialActive = dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
@@ -40,38 +47,73 @@ export default async function QueuePage({
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const postCountRes = await db.select({ count: sql<number>`count(*)` })
-    .from(posts)
-    .where(and(
-      eq(posts.userId, session.user.id),
-      gte(posts.createdAt, startOfMonth)
-    ));
+  // Get accounts belonging to the current team context
+  const teamAccounts = await db.query.xAccounts.findMany({
+      where: eq(xAccounts.userId, ctx.currentTeamId),
+      columns: { id: true }
+  });
+  const accountIds = teamAccounts.map(a => a.id);
+
+  let postCount = 0;
+  let scheduledPosts: any[] = [];
+  let failedPosts: any[] = [];
+  let awaitingApprovalPosts: any[] = [];
+
+  if (accountIds.length > 0) {
+      const postCountRes = await db.select({ count: sql<number>`count(*)` })
+        .from(posts)
+        .where(and(
+          inArray(posts.xAccountId, accountIds),
+          gte(posts.createdAt, startOfMonth)
+        ));
+      
+      postCount = Number(postCountRes[0]?.count ?? 0);
+
+      scheduledPosts = await db.query.posts.findMany({
+        where: and(
+            inArray(posts.xAccountId, accountIds),
+            eq(posts.status, "scheduled")
+        ),
+        orderBy: [asc(posts.scheduledAt)],
+        with: {
+            tweets: {
+                orderBy: (tweets, { asc }) => [asc(tweets.position)],
+            },
+            user: {
+                columns: { name: true, image: true }
+            }
+        }
+      });
+
+      failedPosts = await db.query.posts.findMany({
+        where: and(inArray(posts.xAccountId, accountIds), eq(posts.status, "failed")),
+        orderBy: [asc(posts.updatedAt)],
+        with: {
+          tweets: {
+            orderBy: (tweets, { asc }) => [asc(tweets.position)],
+          },
+          user: {
+            columns: { name: true, image: true }
+          }
+        },
+      });
+
+      awaitingApprovalPosts = await db.query.posts.findMany({
+        where: and(inArray(posts.xAccountId, accountIds), eq(posts.status, "awaiting_approval")),
+        orderBy: [asc(posts.createdAt)],
+        with: {
+            tweets: {
+                orderBy: (tweets, { asc }) => [asc(tweets.position)],
+            },
+            user: {
+                columns: { name: true, image: true }
+            }
+        }
+      });
+  }
   
-  const postCount = Number(postCountRes[0]?.count ?? 0);
   const isNearLimit = limits.postsPerMonth !== Infinity && postCount >= limits.postsPerMonth - 2;
 
-  const scheduledPosts = await db.query.posts.findMany({
-    where: and(
-        eq(posts.userId, session.user.id),
-        eq(posts.status, "scheduled")
-    ),
-    orderBy: [asc(posts.scheduledAt)],
-    with: {
-        tweets: {
-            orderBy: (tweets, { asc }) => [asc(tweets.position)],
-        }
-    }
-  });
-
-  const failedPosts = await db.query.posts.findMany({
-    where: and(eq(posts.userId, session.user.id), eq(posts.status, "failed")),
-    orderBy: [asc(posts.updatedAt)],
-    with: {
-      tweets: {
-        orderBy: (tweets, { asc }) => [asc(tweets.position)],
-      },
-    },
-  });
   const queueDensityHref = (nextDensity: "comfortable" | "compact") => {
     const params = new URLSearchParams();
     if (nextDensity === "compact") {
@@ -83,8 +125,9 @@ export default async function QueuePage({
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
+      <QueueRealtimeListener />
       <PageToolbar
-        title="Scheduled Queue"
+        title={ctx.isOwner ? "Scheduled Queue" : `${dbUser?.name || 'Team'}'s Queue`}
         description="Manage scheduled and failed posts with faster scan and control."
         actions={
           <>
@@ -123,6 +166,48 @@ export default async function QueuePage({
         />
       )}
       
+      {awaitingApprovalPosts.length > 0 && (
+          <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold tracking-tight text-amber-600 flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5" />
+                    Awaiting Approval
+                </h2>
+              </div>
+              {awaitingApprovalPosts.map((post) => (
+                <Card key={post.id} className="border-amber-200 bg-amber-50/30">
+                    <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
+                        <div className="flex flex-col items-center justify-center rounded-lg bg-amber-100 p-4 text-center sm:min-w-[100px]">
+                            <ShieldCheck className="h-6 w-6 mb-2 text-amber-600" />
+                            <div className="text-xs text-muted-foreground">Needs Review</div>
+                        </div>
+                        <div className="min-w-0 flex-1 space-y-2">
+                            <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex gap-2 items-center">
+                                    <Badge variant="outline" className="border-amber-200 text-amber-700 bg-amber-50">
+                                        {post.type === "thread" ? "Thread" : "Tweet"}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground">
+                                        by {post.user.name}
+                                    </span>
+                                </div>
+                                {(ctx.isOwner || ctx.role === "admin") && (
+                                    <PostApprovalActions postId={post.id} />
+                                )}
+                            </div>
+                            <p className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} whitespace-pre-wrap break-words`}>{post.tweets[0]?.content}</p>
+                            {post.tweets.length > 1 && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                    + {post.tweets.length - 1} more tweets
+                                </p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+              ))}
+          </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight">Scheduled Posts</h2>
         <Button variant="outline" size="sm" asChild>
@@ -162,9 +247,12 @@ export default async function QueuePage({
                         </div>
                         <div className="min-w-0 flex-1 space-y-2">
                             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-center">
                                     <Badge variant="outline">{post.type === "thread" ? "Thread" : "Tweet"}</Badge>
                                     <Badge variant="secondary">Scheduled</Badge>
+                                    {!ctx.isOwner && post.user.id !== session?.user.id && (
+                                        <span className="text-xs text-muted-foreground">by {post.user.name}</span>
+                                    )}
                                 </div>
                                 <CancelPostButton postId={post.id} />
                             </div>

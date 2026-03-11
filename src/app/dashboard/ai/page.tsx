@@ -9,8 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 
+interface PlanLimitPayload {
+  error?: string;
+  code?: string;
+  message?: string;
+  feature?: string;
+  plan?: string;
+  limit?: number | null;
+  used?: number;
+  remaining?: number | null;
+  upgrade_url?: string;
+  suggested_plan?: string;
+  trial_active?: boolean;
+  reset_at?: string | null;
+}
+
 export default function AIWriterPage() {
-  const { open } = useUpgradeModal();
+  const { openWithContext } = useUpgradeModal();
   const [topic, setTopic] = useState("");
   const [tone, setTone] = useState("professional");
   const [generatedContent, setGeneratedContent] = useState<string>("");
@@ -31,7 +46,25 @@ export default function AIWriterPage() {
 
       if (!res.ok) {
         if (res.status === 402) {
-          open();
+          let payload: PlanLimitPayload | null = null;
+          try {
+            payload = (await res.json()) as PlanLimitPayload;
+          } catch {
+          }
+          openWithContext({
+            error: payload?.error,
+            code: payload?.code,
+            message: payload?.message,
+            feature: payload?.feature,
+            plan: payload?.plan,
+            limit: payload?.limit,
+            used: payload?.used,
+            remaining: payload?.remaining,
+            upgradeUrl: payload?.upgrade_url,
+            suggestedPlan: payload?.suggested_plan,
+            trialActive: payload?.trial_active,
+            resetAt: payload?.reset_at,
+          });
           return;
         }
         throw new Error("Failed to generate");

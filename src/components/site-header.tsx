@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { Rocket } from "lucide-react";
 import { UserProfile } from "@/components/auth/user-profile";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { auth } from "@/lib/auth";
 import { Button } from "./ui/button";
 import { ModeToggle } from "./ui/mode-toggle";
@@ -36,6 +37,7 @@ export async function SiteHeader() {
           <ModeToggle />
           {session ? (
               <div className="flex items-center gap-4">
+                  <NotificationBell />
                   <Button variant="ghost" asChild>
                       <Link href="/dashboard">Dashboard</Link>
                   </Button>

@@ -1,15 +1,17 @@
+
 import { headers } from "next/headers";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { checkPostLimit } from "@/lib/middleware/require-plan";
+import { checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { scheduleQueue } from "@/lib/queue/client";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { tweets, media, xAccounts, account, user, posts } from "@/lib/schema";
 import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
+import { getTeamContext } from "@/lib/team-context";
 
 const createPostSchema = z.object({
   tweets: z
@@ -31,22 +33,30 @@ const createPostSchema = z.object({
     .min(1),
   targetXAccountIds: z.array(z.string()).optional(),
   scheduledAt: z.string().optional(), // ISO string
+  recurrencePattern: z.enum(["none", "daily", "weekly", "monthly", "yearly"]).optional(),
+  recurrenceEndDate: z.string().optional(),
   action: z.enum(["draft", "schedule", "publish_now"]).default("draft"),
 });
 
 export async function POST(req: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
+    const ctx = await getTeamContext();
+    if (!ctx) {
       return new Response("Unauthorized", { status: 401 });
     }
 
+    // Role check: Viewers cannot create posts
+    if (ctx.role === "viewer") {
+      return new Response("Forbidden: Viewers cannot create posts", { status: 403 });
+    }
+
     const dbUser = await db.query.user.findFirst({
-        where: eq(user.id, session.user.id),
-        columns: { plan: true }
+        where: eq(user.id, ctx.currentTeamId),
+        columns: { plan: true, requiresApproval: true }
     });
     
-    const { success, reset } = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+    // Rate limit check against the Team Owner's plan
+    const { success, reset } = await checkRateLimit(ctx.currentTeamId, dbUser?.plan || "free", "posts");
     if (!success) {
         return new Response(JSON.stringify({ 
             error: "Too many requests", 
@@ -62,7 +72,8 @@ export async function POST(req: Request) {
       route: "/api/posts",
       method: "POST",
       correlationId,
-      userId: session.user.id,
+      userId: ctx.currentTeamId, // Log against team owner
+      actorId: ctx.isOwner ? undefined : (await auth.api.getSession({ headers: await headers() }))?.user.id
     });
 
     const json = await req.json();
@@ -72,58 +83,66 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
     }
 
-    const { tweets: tweetsData, scheduledAt, action, targetXAccountIds } = result.data;
+    const { tweets: tweetsData, scheduledAt, action, targetXAccountIds, recurrencePattern, recurrenceEndDate } = result.data;
 
-    const linkedAccounts = await db.query.account.findMany({
-      where: and(eq(account.userId, session.user.id), eq(account.providerId, "twitter")),
-    });
-
-    for (const la of linkedAccounts) {
-      if (!la.accessToken) continue;
-      const existing = await db.query.xAccounts.findFirst({
-        where: eq(xAccounts.xUserId, la.accountId),
-      });
-
-      if (!existing) {
-        await db.insert(xAccounts).values({
-          id: crypto.randomUUID(),
-          userId: session.user.id,
-          xUserId: la.accountId,
-          xUsername: session.user.name || "twitter_user",
-          xDisplayName: session.user.name || session.user.name || "Twitter User",
-          xAvatarUrl: session.user.image,
-          accessToken: encryptToken(la.accessToken),
-          refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : null,
-          refreshToken: null,
-          tokenExpiresAt: la.accessTokenExpiresAt,
-          isActive: true,
+    // Only sync accounts if we are the owner operating on our own workspace
+    if (ctx.isOwner) {
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (session) {
+        const linkedAccounts = await db.query.account.findMany({
+          where: and(eq(account.userId, session.user.id), eq(account.providerId, "twitter")),
         });
-      } else {
-        const accessTokenChanged = decryptToken(existing.accessToken) !== la.accessToken;
-        const refreshTokenChanged =
-          (existing.refreshToken || null) !== (la.refreshToken || null) ||
-          (Boolean(la.refreshToken) && !existing.refreshTokenEnc);
-        const expiresChanged =
-          (existing.tokenExpiresAt?.getTime() || null) !==
-          (la.accessTokenExpiresAt?.getTime() || null);
 
-        if (accessTokenChanged || refreshTokenChanged || expiresChanged) {
-          await db
-            .update(xAccounts)
-            .set({
+        for (const la of linkedAccounts) {
+          if (!la.accessToken) continue;
+          const existing = await db.query.xAccounts.findFirst({
+            where: eq(xAccounts.xUserId, la.accountId),
+          });
+
+          if (!existing) {
+            await db.insert(xAccounts).values({
+              id: crypto.randomUUID(),
+              userId: session.user.id,
+              xUserId: la.accountId,
+              xUsername: session.user.name || "twitter_user",
+              xDisplayName: session.user.name || session.user.name || "Twitter User",
+              xAvatarUrl: session.user.image,
               accessToken: encryptToken(la.accessToken),
-              refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : existing.refreshTokenEnc,
+              refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : null,
               refreshToken: null,
               tokenExpiresAt: la.accessTokenExpiresAt,
               isActive: true,
-            })
-            .where(eq(xAccounts.id, existing.id));
+            });
+          } else {
+            // Update logic...
+             const accessTokenChanged = decryptToken(existing.accessToken) !== la.accessToken;
+             const refreshTokenChanged =
+               (existing.refreshToken || null) !== (la.refreshToken || null) ||
+               (Boolean(la.refreshToken) && !existing.refreshTokenEnc);
+             const expiresChanged =
+               (existing.tokenExpiresAt?.getTime() || null) !==
+               (la.accessTokenExpiresAt?.getTime() || null);
+     
+             if (accessTokenChanged || refreshTokenChanged || expiresChanged) {
+               await db
+                 .update(xAccounts)
+                 .set({
+                   accessToken: encryptToken(la.accessToken),
+                   refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : existing.refreshTokenEnc,
+                   refreshToken: null,
+                   tokenExpiresAt: la.accessTokenExpiresAt,
+                   isActive: true,
+                   updatedAt: new Date(),
+                 })
+                 .where(eq(xAccounts.id, existing.id));
+             }
+          }
         }
       }
     }
 
     const availableAccounts = await db.query.xAccounts.findMany({
-      where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)),
+      where: and(eq(xAccounts.userId, ctx.currentTeamId), eq(xAccounts.isActive, true)),
     });
 
     if (availableAccounts.length === 0) {
@@ -143,30 +162,63 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Invalid target X accounts" }), { status: 400 });
     }
 
-    const canPost = await checkPostLimit(session.user.id, selectedAccounts.length);
-    if (!canPost) {
-        return new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 });
+    const idempotencyKey = req.headers.get("idempotency-key");
+    if (idempotencyKey) {
+      const keysToCheck = selectedAccounts.map((a) => `${idempotencyKey}:${a.id}`);
+      const existingPosts = await db.query.posts.findMany({
+        where: inArray(posts.idempotencyKey, keysToCheck),
+      });
+
+      if (existingPosts.length > 0) {
+        return Response.json({
+          success: true,
+          groupId: existingPosts[0].groupId,
+          postIds: existingPosts.map((p) => p.id),
+          idempotentReplay: true,
+        });
+      }
+    }
+
+    if (action !== "draft") {
+      const postLimit = await checkPostLimitDetailed(ctx.currentTeamId, selectedAccounts.length);
+      if (!postLimit.allowed) {
+        return createPlanLimitResponse(postLimit);
+      }
     }
 
     // Determine Status
     let status = "draft";
     let finalScheduledAt: Date | null = null;
+    let requiresApproval = false;
 
-    if (action === "schedule") {
-        if (!scheduledAt) {
+    if (action === "schedule" || action === "publish_now") {
+        if (action === "schedule" && !scheduledAt) {
             return new Response(JSON.stringify({ error: "Scheduled date is required for scheduling" }), { status: 400 });
         }
-        status = "scheduled";
-        finalScheduledAt = new Date(scheduledAt);
-    } else if (action === "publish_now") {
-        status = "scheduled"; // Use scheduled status for worker to pick it up immediately
-        finalScheduledAt = new Date(); // Schedule for now
+        
+        // Approval Workflow Logic
+        if (dbUser?.requiresApproval && !ctx.isOwner && ctx.role !== "admin") {
+             // Editors require approval if enabled
+             status = "awaiting_approval";
+             requiresApproval = true;
+        } else {
+             status = "scheduled";
+        }
+
+        finalScheduledAt = action === "schedule" ? new Date(scheduledAt!) : new Date();
     } else {
         status = "draft";
     }
 
     const groupId = selectedAccounts.length > 1 ? crypto.randomUUID() : null;
     const createdPostIds: string[] = [];
+    
+    // Get actual user ID for authorship
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+        return new Response("Unauthorized", { status: 401 });
+    }
+    const authorId = session.user.id;
 
     for (const acc of selectedAccounts) {
       const postId = crypto.randomUUID();
@@ -174,12 +226,16 @@ export async function POST(req: Request) {
 
       await db.insert(posts).values({
         id: postId,
-        userId: session.user.id,
-        xAccountId: acc.id,
+        userId: authorId, // Author is the logged in user
+        xAccountId: acc.id, // Account belongs to team owner
         groupId,
         type: tweetsData.length > 1 ? "thread" : "tweet",
         status: status,
         scheduledAt: finalScheduledAt,
+        requiresApproval: requiresApproval,
+        recurrencePattern: recurrencePattern && recurrencePattern !== "none" ? recurrencePattern : null,
+        recurrenceEndDate: recurrenceEndDate ? new Date(recurrenceEndDate) : null,
+        idempotencyKey: idempotencyKey ? `${idempotencyKey}:${acc.id}` : null,
       });
 
       for (let i = 0; i < tweetsData.length; i++) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,9 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [isAnnual, setIsAnnual] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = authClient.useSession();
+  const billingState = searchParams.get("billing");
 
   const handleSubscribe = async (plan: string) => {
     if (!session) {
@@ -29,7 +31,17 @@ export default function PricingPage() {
         body: JSON.stringify({ plan }),
       });
 
-      if (!res.ok) throw new Error("Failed to start checkout");
+      if (!res.ok) {
+        const payload = (await res.json().catch(() => null)) as
+          | { error?: string; code?: string }
+          | null;
+        if (res.status === 409 && payload?.code === "existing_subscription") {
+          toast.info("You already have an active subscription. Opening billing settings.");
+          router.push("/dashboard/settings?billing=portal_return");
+          return;
+        }
+        throw new Error(payload?.error || "Failed to start checkout");
+      }
 
       const { url } = await res.json();
       window.location.href = url;
@@ -66,9 +78,10 @@ export default function PricingPage() {
     {
       id: isAnnual ? "pro_annual" : "pro_monthly",
       name: "Pro",
-      price: isAnnual ? "$23" : "$29",
+      price: isAnnual ? "$19" : "$29",
       period: "/month",
-      billingText: isAnnual ? "billed annually ($276)" : "billed monthly",
+      billingText: isAnnual ? "billed annually ($228)" : "billed monthly",
+      savingsBadge: isAnnual ? "Save $120/year" : null,
       description: "For creators and small businesses serious about growth.",
       features: [
         "3 X (Twitter) Accounts",
@@ -92,6 +105,7 @@ export default function PricingPage() {
       price: isAnnual ? "$79" : "$99",
       period: "/month",
       billingText: isAnnual ? "billed annually ($948)" : "billed monthly",
+      savingsBadge: isAnnual ? "Save $240/year" : null,
       description: "For agencies managing multiple client accounts.",
       features: [
         "10 X (Twitter) Accounts",
@@ -121,9 +135,14 @@ export default function PricingPage() {
           <Label htmlFor="annual-billing" className={!isAnnual ? "font-bold" : "text-muted-foreground"}>Monthly</Label>
           <Switch id="annual-billing" checked={isAnnual} onCheckedChange={setIsAnnual} />
           <Label htmlFor="annual-billing" className={isAnnual ? "font-bold" : "text-muted-foreground"}>
-            Annual <span className="text-primary text-xs ml-1 font-normal">(Save 20%)</span>
+            Annual <span className="text-primary text-xs ml-1 font-normal">(Best value)</span>
           </Label>
         </div>
+        {billingState === "restore" && (
+          <div className="mx-auto max-w-xl rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+            Your billing profile needs to be restored. Pick a plan below to re-enable subscription management.
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -149,6 +168,11 @@ export default function PricingPage() {
                   {plan.period && <span className="text-muted-foreground ml-1">{plan.period}</span>}
                 </div>
                 {plan.billingText && <span className="text-xs text-muted-foreground mt-1">{plan.billingText}</span>}
+                {"savingsBadge" in plan && plan.savingsBadge && (
+                  <span className="mt-2 inline-flex w-fit rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                    {plan.savingsBadge}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -181,7 +205,7 @@ export default function PricingPage() {
       </div>
       
       <div className="text-center text-sm text-muted-foreground mt-8">
-        <p>Need annual billing? <a href="#" className="underline hover:text-foreground">Contact sales</a> for 20% off.</p>
+        <p>Annual billing is self-serve. Toggle plans above to unlock yearly savings.</p>
       </div>
     </div>
   );

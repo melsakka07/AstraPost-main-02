@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "requires_approval" boolean DEFAULT false;

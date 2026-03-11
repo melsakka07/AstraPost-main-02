@@ -3,18 +3,20 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import * as cheerio from "cheerio";
 import { eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { checkAiLimit } from "@/lib/middleware/require-plan";
+import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { checkRateLimit } from "@/lib/rate-limiter";
-import { user } from "@/lib/schema";
-import { checkAiQuota, recordAiUsage } from "@/lib/services/ai-quota";
+import { user, affiliateLinks } from "@/lib/schema";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const affiliateRequestSchema = z.object({
   url: z.string().url(),
   affiliateTag: z.string().optional(),
   language: z.enum(["ar", "en"]).default("ar"),
+  platform: z.enum(["amazon", "noon", "aliexpress", "other"]).default("amazon"),
 });
 
 const tweetSchema = z.object({
@@ -45,14 +47,14 @@ export async function POST(req: Request) {
         });
     }
 
-    const canUseAi = await checkAiLimit(session.user.id);
-    if (!canUseAi) {
-      return new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 });
+    const aiAccess = await checkAiLimitDetailed(session.user.id);
+    if (!aiAccess.allowed) {
+      return createPlanLimitResponse(aiAccess);
     }
 
-    const hasQuota = await checkAiQuota(session.user.id);
-    if (!hasQuota) {
-       return new Response(JSON.stringify({ error: "quota_exceeded" }), { status: 402 });
+    const aiQuota = await checkAiQuotaDetailed(session.user.id);
+    if (!aiQuota.allowed) {
+      return createPlanLimitResponse(aiQuota);
     }
 
     const json = await req.json();
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
     }
 
-    const { url, affiliateTag, language } = result.data;
+    const { url, affiliateTag, language, platform } = result.data;
 
     // 1. Fetch Product Metadata
     let productTitle = "";
@@ -99,6 +101,8 @@ export async function POST(req: Request) {
       
       Product Title: ${productTitle}
       URL: ${url}
+      Platform: ${platform}
+      Affiliate Tag/Coupon: ${affiliateTag || "None"}
       
       Language: ${language === 'ar' ? 'Arabic' : 'English'}.
       
@@ -107,6 +111,7 @@ export async function POST(req: Request) {
       - Include engaging hook.
       - Do NOT include the URL in the output text (it will be attached as a card).
       - Include 2-3 relevant hashtags.
+      - If a coupon code (Affiliate Tag) is provided, explicitly mention it in the tweet (e.g., "Use code XYZ for discount").
     `;
 
     const { object } = await generateObject({
@@ -115,28 +120,59 @@ export async function POST(req: Request) {
       prompt,
     });
 
-    // 3. Construct Affiliate URL (Basic implementation)
+    // 3. Construct Affiliate URL
     let affiliateUrl = url;
     if (affiliateTag) {
-        const urlObj = new URL(url);
-        urlObj.searchParams.set("tag", affiliateTag);
-        affiliateUrl = urlObj.toString();
+        try {
+            const urlObj = new URL(url);
+            if (platform === 'amazon') {
+                urlObj.searchParams.set("tag", affiliateTag);
+            } else if (platform === 'noon') {
+                // For Noon, often the tag is a coupon code, but we can append it as a ref if applicable.
+                // We'll assume generic ref for now or just rely on the tweet text for the code.
+                // urlObj.searchParams.set("ref", affiliateTag); 
+            }
+            affiliateUrl = urlObj.toString();
+        } catch (e) {
+            console.error("Invalid URL construction", e);
+        }
     }
+    
+    const shortCode = nanoid(10);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const shortLink = `${appUrl}/go/${shortCode}`;
 
     const output = {
       tweet: object.tweet,
       hashtags: object.hashtags,
       productTitle,
       productImage,
-      affiliateUrl
+      affiliateUrl: shortLink,
+      originalAffiliateUrl: affiliateUrl
     };
+
+    // Save to affiliateLinks table
+    await db.insert(affiliateLinks).values({
+      id: nanoid(),
+      userId: session.user.id,
+      destinationUrl: affiliateUrl,
+      shortCode,
+      platform,
+      clicks: 0,
+      productTitle: productTitle || "Unknown Product",
+      productImageUrl: productImage || null,
+      affiliateTag: affiliateTag || null,
+      generatedTweet: `${object.tweet}\n\n${object.hashtags.join(" ")}`,
+      wasScheduled: false,
+    });
 
     await recordAiUsage(
         session.user.id, 
         "affiliate", 
         0, 
         prompt, 
-        output
+        output,
+        language
     );
 
     return Response.json(output);

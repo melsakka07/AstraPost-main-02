@@ -1,26 +1,31 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { scheduleQueue } from "@/lib/queue/client";
 import { posts, tweets, media } from "@/lib/schema";
+import { getTeamContext } from "@/lib/team-context";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ postId: string }> }
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const ctx = await getTeamContext();
   
-  if (!session) {
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { postId } = await params;
 
+  // Fetch post with xAccount relation to verify ownership
   const post = await db.query.posts.findFirst({
-    where: and(eq(posts.id, postId), eq(posts.userId, session.user.id)),
+    where: eq(posts.id, postId),
     with: {
+      xAccount: {
+        columns: { userId: true }
+      },
       tweets: {
         orderBy: (tweets, { asc }) => [asc(tweets.position)],
         with: {
@@ -34,6 +39,12 @@ export async function GET(
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
+  // Verify access:
+  // 1. Post must belong to an X Account owned by the current team context
+  if (post.xAccount.userId !== ctx.currentTeamId) {
+     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   return NextResponse.json(post);
 }
 
@@ -41,30 +52,58 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ postId: string }> }
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const ctx = await getTeamContext();
   
-  if (!session) {
+  if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { postId } = await params;
   const body = await request.json();
 
-  // 1. Verify ownership
+  // 1. Fetch post to verify ownership and current status
   const existingPost = await db.query.posts.findFirst({
-    where: and(eq(posts.id, postId), eq(posts.userId, session.user.id))
+    where: eq(posts.id, postId),
+    with: {
+        xAccount: { columns: { userId: true } }
+    }
   });
 
   if (!existingPost) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
   }
 
+  // Verify workspace access
+  if (existingPost.xAccount.userId !== ctx.currentTeamId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   // Determine new status and scheduledAt
   let newStatus = existingPost.status;
   let newScheduledAt = existingPost.scheduledAt;
+  let approvedBy = existingPost.approvedBy;
+  let approvedAt = existingPost.approvedAt;
+  let reviewerNotes = existingPost.reviewerNotes;
 
   if (body.action) {
-      if (body.action === "schedule") {
+      if (body.action === "approve") {
+          // Role check
+          if (!ctx.isOwner && ctx.role !== "admin") {
+              return NextResponse.json({ error: "Only admins can approve posts" }, { status: 403 });
+          }
+          newStatus = "scheduled";
+          const session = await auth.api.getSession({ headers: await headers() });
+          approvedBy = session!.user.id;
+          approvedAt = new Date();
+          reviewerNotes = null; // Clear rejection notes if any
+      } else if (body.action === "reject") {
+          // Role check
+          if (!ctx.isOwner && ctx.role !== "admin") {
+              return NextResponse.json({ error: "Only admins can reject posts" }, { status: 403 });
+          }
+          newStatus = "draft";
+          reviewerNotes = body.reviewerNotes || "Rejected without reason";
+      } else if (body.action === "schedule") {
           newStatus = "scheduled";
           if (body.scheduledAt) newScheduledAt = new Date(body.scheduledAt);
           else if (!newScheduledAt) return NextResponse.json({ error: "Scheduled date required" }, { status: 400 });
@@ -76,11 +115,6 @@ export async function PATCH(
           newScheduledAt = null;
       } else if (body.action === "cancel") {
           newStatus = "cancelled";
-          // Keep scheduledAt for record or clear it? Let's clear it to be safe against accidental rescheduling
-          // actually, if we want to "reschedule" a cancelled post, we might want the old date. 
-          // But "cancelled" implies it won't go out. 
-          // Let's leave scheduledAt as is, or set to null. 
-          // If I set to null, I need to make sure I don't break anything.
       }
   } else if (body.status) {
       newStatus = body.status;
@@ -99,20 +133,16 @@ export async function PATCH(
       scheduledAt: newScheduledAt,
       status: newStatus,
       updatedAt: new Date(),
+      approvedBy,
+      approvedAt,
+      reviewerNotes,
     })
     .where(eq(posts.id, postId));
 
-  // 3. Update Tweets
+  // 3. Update Tweets (only if provided)
   if (body.tweets && Array.isArray(body.tweets)) {
-      // Delete existing tweets (cascade deletes media and analytics usually, but let's check schema)
-      // tweets -> posts cascade delete. But here we are deleting tweets.
-      // tweets table: postId references posts.id with cascade.
-      // But we are keeping post, deleting tweets.
-      // media -> tweetId references tweets.id with cascade.
-      // So deleting tweets should delete media.
       await db.delete(tweets).where(eq(tweets.postId, postId));
 
-      // Create new tweets
       for (let i = 0; i < body.tweets.length; i++) {
         const t = body.tweets[i];
         const tweetId = crypto.randomUUID();
@@ -130,7 +160,7 @@ export async function PATCH(
                      id: crypto.randomUUID(),
                      postId: postId,
                      tweetId: tweetId,
-                     fileUrl: m.url, // Assuming composer sends 'url' not 'fileUrl'
+                     fileUrl: m.url, 
                      fileType: m.fileType,
                      fileSize: m.size,
                  });
@@ -143,7 +173,8 @@ export async function PATCH(
   const needsReschedule = newStatus === "scheduled" && (
       existingPost.status !== "scheduled" || 
       (existingPost.scheduledAt?.getTime() !== newScheduledAt?.getTime()) ||
-      body.action === "publish_now" // Always reschedule if publish_now to be safe
+      body.action === "publish_now" ||
+      body.action === "approve" // Approval triggers scheduling
   );
   
   const needsUnschedule = existingPost.status === "scheduled" && newStatus !== "scheduled";
@@ -162,7 +193,7 @@ export async function PATCH(
         const delay = Math.max(0, newScheduledAt.getTime() - Date.now());
         await scheduleQueue.add(
             "publish-post",
-            { postId, userId: session.user.id },
+            { postId, userId: ctx.currentTeamId }, // Use team owner ID for the job
             {
                 delay,
                 jobId: postId,
@@ -175,7 +206,6 @@ export async function PATCH(
     }
   } catch (e) {
       console.error("Queue operation failed", e);
-      // Don't fail the request, but log it.
   }
 
   return NextResponse.json({ success: true });

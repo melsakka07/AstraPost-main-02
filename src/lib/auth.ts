@@ -1,8 +1,12 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { eq } from "drizzle-orm"
+import { twoFactor } from "better-auth/plugins"
+import { and, eq, isNull } from "drizzle-orm"
 import { db } from "./db"
 import { user as userTable } from "./schema"
+import { sendResetPasswordEmail, sendVerificationEmail } from "./services/email"
+
+import { generateReferralCode } from "./referral/utils";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -12,13 +16,17 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          // Set trial period (14 days)
           const trialEndsAt = new Date();
           trialEndsAt.setDate(trialEndsAt.getDate() + 14);
           
+          const referralCode = await generateReferralCode(user.name);
+
           await db.update(userTable)
-            .set({ trialEndsAt })
-            .where(eq(userTable.id, user.id));
+            .set({ 
+              trialEndsAt,
+              referralCode 
+            })
+            .where(and(eq(userTable.id, user.id), isNull(userTable.trialEndsAt)));
         },
       },
     },
@@ -26,19 +34,20 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
-      // Log password reset URL to terminal (no email integration yet)
-      // eslint-disable-next-line no-console
-      console.log(`\n${"=".repeat(60)}\nPASSWORD RESET REQUEST\nUser: ${user.email}\nReset URL: ${url}\n${"=".repeat(60)}\n`)
+      await sendResetPasswordEmail(user.email, url, user.name);
     },
   },
   emailVerification: {
     sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
-      // Log verification URL to terminal (no email integration yet)
-      // eslint-disable-next-line no-console
-    console.log(`\n${"=".repeat(60)}\nEMAIL VERIFICATION\nUser: ${user.email}\nVerification URL: ${url}\n${"=".repeat(60)}\n`)
+      await sendVerificationEmail(user.email, url, user.name);
     },
   },
+  plugins: [
+    twoFactor({
+      issuer: "AstraPost",
+    }),
+  ],
   socialProviders: {
     twitter: {
       clientId: process.env.TWITTER_CLIENT_ID!,

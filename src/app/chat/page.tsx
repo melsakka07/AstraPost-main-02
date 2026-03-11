@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { UserProfile } from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
+import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useSession } from "@/lib/auth-client";
 import type { Components } from "react-markdown";
 
@@ -112,6 +113,47 @@ type MaybePartsMessage = {
   content?: TextPart[];
 };
 
+interface PlanLimitPayload {
+  error?: string;
+  code?: string;
+  message?: string;
+  feature?: string;
+  plan?: string;
+  limit?: number | null;
+  used?: number;
+  remaining?: number | null;
+  upgrade_url?: string;
+  suggested_plan?: string;
+  trial_active?: boolean;
+  reset_at?: string | null;
+}
+
+function extractPlanLimitPayloadFromErrorMessage(errorMessage: string): PlanLimitPayload | null {
+  const start = errorMessage.indexOf("{");
+  const end = errorMessage.lastIndexOf("}");
+  if (start === -1 || end <= start) return null;
+
+  try {
+    return JSON.parse(errorMessage.slice(start, end + 1)) as PlanLimitPayload;
+  } catch {
+    return null;
+  }
+}
+
+function extractPlanLimitPayload(error: Error): PlanLimitPayload | null {
+  const withCause = error as Error & { cause?: unknown };
+  const cause = withCause.cause as { data?: unknown; body?: unknown } | undefined;
+  const fromCause = cause?.data || cause?.body;
+  if (fromCause && typeof fromCause === "object") {
+    const payload = fromCause as PlanLimitPayload;
+    if (payload.code === "upgrade_required" || payload.code === "quota_exceeded") {
+      return payload;
+    }
+  }
+
+  return extractPlanLimitPayloadFromErrorMessage(error.message || "");
+}
+
 function getMessageText(message: MaybePartsMessage): string {
   const parts = Array.isArray(message.parts)
     ? message.parts
@@ -190,8 +232,26 @@ const STORAGE_KEY = "chat-messages";
 
 export default function ChatPage() {
   const { data: session, isPending } = useSession();
+  const { openWithContext } = useUpgradeModal();
   const { messages, sendMessage, status, error, setMessages } = useChat({
     onError: (err) => {
+      const payload = extractPlanLimitPayload(err);
+      if (payload?.code === "upgrade_required" || payload?.code === "quota_exceeded") {
+        openWithContext({
+          error: payload.error,
+          code: payload.code,
+          message: payload.message,
+          feature: payload.feature,
+          plan: payload.plan,
+          limit: payload.limit,
+          used: payload.used,
+          remaining: payload.remaining,
+          upgradeUrl: payload.upgrade_url,
+          suggestedPlan: payload.suggested_plan,
+          trialActive: payload.trial_active,
+          resetAt: payload.reset_at,
+        });
+      }
       toast.error(err.message || "Failed to send message");
     },
   });
@@ -268,7 +328,7 @@ export default function ChatPage() {
           </div>
         )}
 
-        <div className="min-h-[50vh] overflow-y-auto space-y-4 mb-4">
+        <div className="min-h-[50vh] space-y-4 mb-4">
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
               Start a conversation with AI

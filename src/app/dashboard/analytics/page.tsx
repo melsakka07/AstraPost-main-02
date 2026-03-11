@@ -2,7 +2,12 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
 import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick } from "lucide-react";
+import { DateRangeSelector } from "@/components/analytics/date-range-selector";
+import { ExportButton } from "@/components/analytics/export-button";
+import { FollowerChart } from "@/components/analytics/follower-chart";
+import { ImpressionsChart } from "@/components/analytics/impressions-chart";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
+import { TopTweetsList } from "@/components/analytics/top-tweets-list";
 import { PageToolbar } from "@/components/dashboard/page-toolbar";
 import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
@@ -13,52 +18,24 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyticsRefreshRuns, followerSnapshots, posts, tweetAnalytics, tweetAnalyticsSnapshots, tweets, xAccounts, user } from "@/lib/schema";
 
-const BAR_HEIGHT_CLASSES = [
-  "h-[2%]",
-  "h-[7%]",
-  "h-[12%]",
-  "h-[17%]",
-  "h-[22%]",
-  "h-[27%]",
-  "h-[32%]",
-  "h-[37%]",
-  "h-[42%]",
-  "h-[47%]",
-  "h-[52%]",
-  "h-[57%]",
-  "h-[62%]",
-  "h-[67%]",
-  "h-[72%]",
-  "h-[77%]",
-  "h-[82%]",
-  "h-[87%]",
-  "h-[92%]",
-  "h-[97%]",
-  "h-full",
-] as const;
-
-function getBarHeightClass(percent: number) {
-  const safe = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
-  const index = Math.round((safe / 100) * (BAR_HEIGHT_CLASSES.length - 1));
-  return BAR_HEIGHT_CLASSES[index];
-}
-
-function formatShortDay(day: string) {
-  return new Date(day).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 export default async function AnalyticsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ accountId?: string | string[]; density?: string | string[] }>;
+  searchParams?: Promise<{ accountId?: string | string[]; density?: string | string[]; range?: string | string[] }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  
+  // Params
   const densityParam = resolvedSearchParams?.density;
   const densityValue = Array.isArray(densityParam) ? densityParam[0] : densityParam;
   const density = densityValue === "compact" ? "compact" : "comfortable";
   const isCompact = density === "compact";
+
+  const rangeParam = resolvedSearchParams?.range;
+  const rangeValue = Array.isArray(rangeParam) ? rangeParam[0] : rangeParam;
+  const range = rangeValue || "30d";
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
@@ -68,6 +45,10 @@ export default async function AnalyticsPage({
   const isTrialActive = dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
   const isFree = !isTrialActive && dbUser?.plan === "free";
   
+  // Enforce limits if free
+  const effectiveRange = isFree ? "7d" : range;
+  const rangeDays = parseInt(effectiveRange.replace("d", "")) || 30;
+
   const accounts = await db.query.xAccounts.findMany({
     where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)),
     orderBy: [desc(xAccounts.isDefault), asc(xAccounts.createdAt)],
@@ -77,30 +58,30 @@ export default async function AnalyticsPage({
   const selectedAccountId =
     (Array.isArray(selectedAccountIdParam) ? selectedAccountIdParam[0] : selectedAccountIdParam) ||
     accounts[0]?.id;
+
   const analyticsHref = (nextDensity: "comfortable" | "compact") => {
     const params = new URLSearchParams();
-    if (selectedAccountId) {
-      params.set("accountId", selectedAccountId);
-    }
-    if (nextDensity === "compact") {
-      params.set("density", "compact");
-    }
+    if (selectedAccountId) params.set("accountId", selectedAccountId);
+    if (nextDensity === "compact") params.set("density", "compact");
+    if (range) params.set("range", range);
     const query = params.toString();
     return query ? `/dashboard/analytics?${query}` : "/dashboard/analytics";
   };
+
   const now = new Date();
   const nowTimestamp = now.getTime();
-  const followerSince = new Date(nowTimestamp - 30 * 24 * 60 * 60 * 1000);
+  const startDate = new Date(nowTimestamp - rangeDays * 24 * 60 * 60 * 1000);
 
+  // 1. Follower Data
   const followerPoints = selectedAccountId
     ? await db.query.followerSnapshots.findMany({
         where: and(
           eq(followerSnapshots.userId, session.user.id),
           eq(followerSnapshots.xAccountId, selectedAccountId),
-          gte(followerSnapshots.capturedAt, followerSince)
+          gte(followerSnapshots.capturedAt, startDate)
         ),
         orderBy: [asc(followerSnapshots.capturedAt)],
-        limit: 400,
+        limit: 1000,
       })
     : [];
 
@@ -110,19 +91,21 @@ export default async function AnalyticsPage({
     followerByDay.set(key, p.followersCount);
   }
 
-  const followerDays: Array<{ day: string; followers: number }> = [];
-  for (let i = 29; i >= 0; i--) {
+  const followerChartData: Array<{ date: string; value: number }> = [];
+  let lastValue = followerPoints[0]?.followersCount || 0;
+
+  for (let i = rangeDays - 1; i >= 0; i--) {
     const d = new Date(nowTimestamp - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const v = followerByDay.get(d);
-    followerDays.push({ day: d, followers: typeof v === "number" ? v : 0 });
+    const val = followerByDay.get(d);
+    if (val !== undefined) lastValue = val;
+    followerChartData.push({ date: d, value: lastValue });
   }
 
-  const latestFollowers = followerPoints.length > 0 ? followerPoints[followerPoints.length - 1]!.followersCount : null;
-  const followers7dAgo = followerDays.length >= 8 ? followerDays[followerDays.length - 8]!.followers : null;
-  const followers30dAgo = followerDays.length >= 30 ? followerDays[0]!.followers : null;
+  const latestFollowers = lastValue;
+  const followersStart = followerChartData[0]?.value || 0;
+  const followerGrowth = latestFollowers - followersStart;
 
-  const followerMax = Math.max(1, ...followerDays.map((d) => d.followers || 0));
-
+  // 2. Refresh Runs
   const refreshRuns = selectedAccountId
     ? await db.query.analyticsRefreshRuns.findMany({
         where: and(
@@ -130,12 +113,11 @@ export default async function AnalyticsPage({
           eq(analyticsRefreshRuns.xAccountId, selectedAccountId)
         ),
         orderBy: [desc(analyticsRefreshRuns.startedAt)],
-        limit: 10,
+        limit: 5,
       })
     : [];
 
-  const since = new Date(nowTimestamp - 14 * 24 * 60 * 60 * 1000);
-
+  // 3. Tweet Metrics
   const snapshots = await db
     .select({
       fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
@@ -149,7 +131,7 @@ export default async function AnalyticsPage({
     .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
     .innerJoin(posts, eq(tweets.postId, posts.id))
     .where(
-      and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, since))
+      and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))
     );
 
   const totals = snapshots.reduce(
@@ -164,40 +146,25 @@ export default async function AnalyticsPage({
     { impressions: 0, likes: 0, retweets: 0, replies: 0, clicks: 0 }
   );
 
-  const byDay = new Map<
-    string,
-    { impressions: number; likes: number; retweets: number; replies: number }
-  >();
-
+  const byDay = new Map<string, number>();
   for (const s of snapshots) {
     const key = new Date(s.fetchedAt).toISOString().slice(0, 10);
-    const cur = byDay.get(key) || {
-      impressions: 0,
-      likes: 0,
-      retweets: 0,
-      replies: 0,
-    };
-    cur.impressions += s.impressions || 0;
-    cur.likes += s.likes || 0;
-    cur.retweets += s.retweets || 0;
-    cur.replies += s.replies || 0;
-    byDay.set(key, cur);
+    const cur = byDay.get(key) || 0;
+    byDay.set(key, cur + (s.impressions || 0));
   }
 
-  const days: Array<{ day: string; impressions: number }> = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(nowTimestamp - i * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
-    days.push({ day: d, impressions: byDay.get(d)?.impressions || 0 });
+  const impressionsChartData: Array<{ date: string; value: number }> = [];
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const d = new Date(nowTimestamp - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    impressionsChartData.push({ date: d, value: byDay.get(d) || 0 });
   }
 
-  const maxImpressions = Math.max(1, ...days.map((d) => d.impressions));
-
+  // 4. Top Tweets
   const topTweets = await db
     .select({
       content: tweets.content,
       xTweetId: tweets.xTweetId,
+      tweetId: tweets.id,
       impressions: tweetAnalytics.impressions,
       likes: tweetAnalytics.likes,
       retweets: tweetAnalytics.retweets,
@@ -217,6 +184,8 @@ export default async function AnalyticsPage({
         description="Track growth trends, post performance, and job refresh health."
         actions={
           <>
+            <DateRangeSelector />
+            <ExportButton range={effectiveRange} />
             <div className="hidden items-center rounded-md border p-0.5 lg:flex">
               <Button
                 variant={isCompact ? "ghost" : "secondary"}
@@ -266,9 +235,8 @@ export default async function AnalyticsPage({
               accounts.map((a) => {
                 const active = a.id === selectedAccountId;
                 const params = new URLSearchParams({ accountId: a.id });
-                if (isCompact) {
-                  params.set("density", "compact");
-                }
+                if (isCompact) params.set("density", "compact");
+                if (range) params.set("range", range);
                 return (
                   <Link
                     key={a.id}
@@ -299,33 +267,28 @@ export default async function AnalyticsPage({
             </Card>
             <Card>
               <CardHeader className="space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Change 7d</CardTitle>
+                <CardTitle className="text-sm font-medium">Growth ({effectiveRange})</CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>
-                  {latestFollowers != null && followers7dAgo != null && followers7dAgo > 0
-                    ? `${(latestFollowers - followers7dAgo).toLocaleString()}`
-                    : "—"}
+                  {followerGrowth > 0 ? "+" : ""}{followerGrowth.toLocaleString()}
                 </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Change 30d</CardTitle>
+                <CardTitle className="text-sm font-medium">Start of Period</CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>
-                  {latestFollowers != null && followers30dAgo != null && followers30dAgo > 0
-                    ? `${(latestFollowers - followers30dAgo).toLocaleString()}`
-                    : "—"}
+                  {followersStart.toLocaleString()}
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-base font-semibold">Last 30 Days Followers</h2>
-            <BlurredOverlay isLocked={isFree} title="Follower History" description="Upgrade to Pro to see your follower growth over time.">
+            <BlurredOverlay isLocked={isFree && rangeDays > 7} title="Follower History" description="Upgrade to Pro to see detailed follower growth over time.">
               {accounts.length === 0 ? (
                 <EmptyState
                   icon={<BarChart3 className="h-6 w-6" />}
@@ -338,24 +301,7 @@ export default async function AnalyticsPage({
                   }
                 />
               ) : (
-                <div>
-                  <div className="flex h-24 min-w-0 items-end gap-1 rounded-lg border bg-muted/20 p-3">
-                    {followerDays.map((d) => (
-                      <div
-                        key={d.day}
-                        className={`flex-1 rounded-sm bg-primary/40 ${getBarHeightClass(Math.round((d.followers / followerMax) * 100))}`}
-                        title={`${d.day}: ${d.followers.toLocaleString()}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-2 flex items-center gap-1 px-1 text-[10px] text-muted-foreground">
-                    {followerDays.map((d, index) => (
-                      <div key={d.day} className="flex-1 text-center">
-                        {index % 5 === 0 ? formatShortDay(d.day) : ""}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <FollowerChart data={followerChartData} />
               )}
             </BlurredOverlay>
           </div>
@@ -447,23 +393,10 @@ export default async function AnalyticsPage({
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-xl font-semibold">Last 14 Days Impressions</h2>
-        <div className="flex h-24 min-w-0 items-end gap-1 rounded-lg border bg-muted/20 p-3">
-          {days.map((d) => (
-            <div
-              key={d.day}
-              className={`flex-1 rounded-sm bg-primary/70 ${getBarHeightClass(Math.round((d.impressions / maxImpressions) * 100))}`}
-              title={`${d.day}: ${d.impressions.toLocaleString()}`}
-            />
-          ))}
-        </div>
-        <div className="flex items-center gap-1 px-1 text-[10px] text-muted-foreground">
-          {days.map((d, index) => (
-            <div key={d.day} className="flex-1 text-center">
-              {index % 3 === 0 ? formatShortDay(d.day) : ""}
-            </div>
-          ))}
-        </div>
+        <h2 className="text-xl font-semibold">Impressions ({effectiveRange})</h2>
+        <BlurredOverlay isLocked={isFree && rangeDays > 7} title="Impressions History" description="Upgrade to Pro to see detailed impressions history over time.">
+            <ImpressionsChart data={impressionsChartData} />
+        </BlurredOverlay>
       </div>
 
       <div className="space-y-4">
@@ -481,31 +414,8 @@ export default async function AnalyticsPage({
                 }
               />
             ) : (
-              <div className={isCompact ? "space-y-2" : "space-y-3"}>
-                {topTweets.map((t, i) => (
-                  <Card key={`${t.xTweetId}-${i}`}>
-                    <CardContent className={isCompact ? "space-y-2 px-4 pb-4 pt-4" : "space-y-3 pt-6"}>
-                      <p className={`${isCompact ? "line-clamp-4 text-sm" : ""} whitespace-pre-wrap break-words`}>{t.content}</p>
-                      <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                        <span>Impressions: {(t.impressions || 0).toLocaleString()}</span>
-                        <span>Likes: {(t.likes || 0).toLocaleString()}</span>
-                        <span>Retweets: {(t.retweets || 0).toLocaleString()}</span>
-                        <span>Replies: {(t.replies || 0).toLocaleString()}</span>
-                        {t.xTweetId && (
-                          <a
-                            className="underline"
-                            href={`https://x.com/i/web/status/${t.xTweetId}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Open on X
-                          </a>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              // @ts-ignore - xTweetId is filtered to be not null in the query
+              <TopTweetsList tweets={topTweets} isCompact={isCompact} />
             )}
           </BlurredOverlay>
       </div>

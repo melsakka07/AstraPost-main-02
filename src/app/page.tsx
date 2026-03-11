@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Rocket, Calendar, Sparkles, BarChart2 } from "lucide-react";
+import { SocialProof } from "@/components/marketing/social-proof";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col">
       {/* Hero Section */}
       <section className="py-20 md:py-32 px-4 text-center">
         <div className="container mx-auto max-w-5xl space-y-8">
@@ -28,6 +29,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Social Proof */}
+      <SocialProof />
 
       {/* Features Grid */}
       <section id="features" className="py-20 bg-muted/30">

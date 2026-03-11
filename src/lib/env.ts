@@ -39,6 +39,10 @@ const serverEnvSchema = z.object({
   // Storage
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
 
+  // Email (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().email().optional(),
+
   // App
   NODE_ENV: z
     .enum(["development", "production", "test"])
@@ -121,6 +125,10 @@ export function checkEnv(): void {
 
   if (!process.env.BLOB_READ_WRITE_TOKEN && process.env.NODE_ENV === "production") {
     warnings.push("BLOB_READ_WRITE_TOKEN is not set. Using local storage for file uploads.");
+  }
+
+  if (!process.env.RESEND_API_KEY) {
+    warnings.push("RESEND_API_KEY is not set. Emails will be logged to console only.");
   }
 
   // Log warnings in development

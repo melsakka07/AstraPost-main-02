@@ -1,8 +1,13 @@
 import { headers } from "next/headers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { streamText, UIMessage, convertToModelMessages } from "ai";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import { checkRateLimit } from "@/lib/rate-limiter";
+import { user } from "@/lib/schema";
 
 // Zod schema for message validation
 const messagePartSchema = z.object({
@@ -22,7 +27,6 @@ const chatRequestSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  // Verify user is authenticated
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -31,7 +35,42 @@ export async function POST(req: Request) {
     });
   }
 
-  // Parse and validate request body
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+
+  const { success, reset } = await checkRateLimit(
+    session.user.id,
+    dbUser?.plan || "free",
+    "ai"
+  );
+  if (!success) {
+    return new Response(
+      JSON.stringify({
+        error: "Too many requests",
+        retryAfter: Math.ceil((reset - Date.now()) / 1000),
+      }),
+      {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString(),
+        },
+      }
+    );
+  }
+
+  const aiAccess = await checkAiLimitDetailed(session.user.id);
+  if (!aiAccess.allowed) {
+    return createPlanLimitResponse(aiAccess);
+  }
+
+  const aiQuota = await checkAiQuotaDetailed(session.user.id);
+  if (!aiQuota.allowed) {
+    return createPlanLimitResponse(aiQuota);
+  }
+
   let body: unknown;
   try {
     body = await req.json();
