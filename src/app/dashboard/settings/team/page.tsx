@@ -1,284 +1,164 @@
-
-"use client";
-
-import { useState, useEffect } from "react";
-import { Trash2, UserPlus, X } from "lucide-react";
-import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { Shield } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { getTeamContext } from "@/lib/team-context";
+import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { InviteMemberDialog } from "@/components/settings/team/invite-member-dialog";
+import { TeamMembersList } from "@/components/settings/team/team-members-list";
 
-type Member = {
-  id: string;
-  role: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image: string | null;
-  };
-};
+export default async function TeamSettingsPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-type Invitation = {
-  id: string;
-  email: string;
-  role: string;
-  status: string;
-  token: string;
-};
+  if (!session) {
+    redirect("/login");
+  }
 
-export default function TeamSettingsPage() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [, setLoading] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("editor");
-  const [requiresApproval, setRequiresApproval] = useState(false); // TODO: Fetch from user settings
+  const ctx = await getTeamContext();
+  if (!ctx) {
+    redirect("/dashboard");
+  }
 
-  useEffect(() => {
-    fetchTeamData();
-  }, []);
+  // Get current plan limits
+  // We need to check the TEAM owner's plan, not necessarily the current user's plan
+  const ownerData = await db.query.user.findFirst({
+    where: (users, { eq }) => eq(users.id, ctx.currentTeamId),
+    columns: { plan: true },
+  });
 
-  const fetchTeamData = async () => {
-    try {
-      const res = await fetch("/api/team/members");
-      if (!res.ok) throw new Error("Failed to fetch team data");
-      const data = await res.json();
-      setMembers(data.members);
-      setInvitations(data.invitations);
-    } catch (error) {
-      toast.error("Failed to load team settings");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const plan = normalizePlan(ownerData?.plan);
+  const limits = getPlanLimits(plan);
+  const maxMembers = limits.maxTeamMembers;
 
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("/api/team/members", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
-      });
+  const canInvite = maxMembers !== null;
+  const isOwner = ctx.isOwner;
+  const isAdmin = ctx.role === "admin";
+  const canManage = isOwner || isAdmin;
 
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err);
-      }
+  // Fetch members
+  const members = await db.query.teamMembers.findMany({
+    where: (tm, { eq }) => eq(tm.teamId, ctx.currentTeamId),
+    with: {
+      user: {
+        columns: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+        },
+      },
+    },
+    orderBy: (tm, { desc }) => [desc(tm.joinedAt)],
+  });
 
-      toast.success("Invitation sent");
-      setInviteEmail("");
-      fetchTeamData();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
-  };
+  // Transform members for UI
+  // Also include the owner as a "member" if not present in teamMembers table (which they aren't usually, as they own it)
+  // Wait, teamMembers table links users to teams. The owner is the teamId.
+  // Usually owner is not in teamMembers table in some schemas, but for consistent listing it's better if they are, OR we manually add them.
+  // In `getTeamContext`, we fallback to owner role if ID matches.
+  // Let's manually add owner to the list for display purposes.
 
-  const handleRemoveMember = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this member?")) return;
-    try {
-      const res = await fetch(`/api/team/members/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to remove member");
-      toast.success("Member removed");
-      fetchTeamData();
-    } catch (error) {
-      toast.error("Failed to remove member");
-    }
-  };
+  const ownerUser = await db.query.user.findFirst({
+    where: (u, { eq }) => eq(u.id, ctx.currentTeamId),
+  });
 
-  const handleCancelInvite = async (id: string) => {
-    try {
-      const res = await fetch(`/api/team/invitations/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to cancel invitation");
-      toast.success("Invitation cancelled");
-      fetchTeamData();
-    } catch (error) {
-      toast.error("Failed to cancel invitation");
-    }
-  };
+  const formattedMembers = [
+    {
+      id: "owner",
+      userId: ownerUser!.id,
+      name: ownerUser!.name,
+      email: ownerUser!.email,
+      image: ownerUser!.image,
+      role: "owner",
+      joinedAt: ownerUser!.createdAt,
+    },
+    ...members.map((m) => ({
+      id: m.id,
+      userId: m.userId,
+      name: m.user.name,
+      email: m.user.email,
+      image: m.user.image,
+      role: m.role,
+      joinedAt: m.joinedAt,
+    })),
+  ];
 
-  const handleRoleChange = async (id: string, newRole: string) => {
-    try {
-      const res = await fetch(`/api/team/members/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
-      });
-      if (!res.ok) throw new Error("Failed to update role");
-      toast.success("Role updated");
-      fetchTeamData();
-    } catch (error) {
-      toast.error("Failed to update role");
-    }
-  };
+  // Fetch invitations
+  const invitations = await db.query.teamInvitations.findMany({
+    where: (ti, { eq, and }) => and(
+      eq(ti.teamId, ctx.currentTeamId),
+      eq(ti.status, "pending")
+    ),
+    orderBy: (ti, { desc }) => [desc(ti.createdAt)],
+  });
+
+  const formattedInvitations = invitations.map((i) => ({
+    id: i.id,
+    email: i.email,
+    role: i.role,
+    status: (i.status || "pending") as string,
+    createdAt: i.createdAt,
+  }));
+
+  const currentCount = members.length + invitations.length; // Owner doesn't count towards limit usually, or does?
+  // PLAN_LIMITS say "maxTeamMembers: 5". Usually excludes owner.
+  // Let's assume excludes owner.
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium">Team Members</h3>
-        <p className="text-sm text-muted-foreground">
-          Manage your team members and their roles.
-        </p>
+    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
+            <p className="text-muted-foreground mt-2">
+                Manage your team members and their access levels.
+            </p>
+        </div>
+        {canManage && canInvite && (
+            <InviteMemberDialog />
+        )}
       </div>
 
-      <div className="flex items-center space-x-2">
-         <Switch 
-            checked={requiresApproval} 
-            onCheckedChange={(checked) => {
-                setRequiresApproval(checked);
-                // TODO: Save to backend
-            }}
-            disabled
-            // Disabled until I implement the toggle API
-         />
-         <Label>Require approval for Editor posts (Coming Soon)</Label>
-      </div>
+      {!canInvite && (
+        <Alert variant="destructive">
+            <Shield className="h-4 w-4" />
+            <AlertTitle>Upgrade Required</AlertTitle>
+            <AlertDescription>
+                Team management is only available on the Agency plan. 
+                <Button variant="link" className="p-0 h-auto font-semibold ml-1" asChild>
+                    <a href="/pricing">Upgrade now</a>
+                </Button>
+            </AlertDescription>
+        </Alert>
+      )}
 
-      <div className="rounded-md border p-4">
-        <h4 className="mb-4 text-sm font-medium">Invite New Member</h4>
-        <form onSubmit={handleInvite} className="flex gap-4 items-end">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              type="email"
-              id="email"
-              placeholder="colleague@example.com"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="grid w-full max-w-[180px] items-center gap-1.5">
-            <Label htmlFor="role">Role</Label>
-            <Select value={inviteRole} onValueChange={setInviteRole}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="editor">Editor</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Button type="submit">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Invite
-          </Button>
-        </form>
-      </div>
-
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((member) => (
-              <TableRow key={member.id}>
-                <TableCell className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={member.user.image || ""} />
-                    <AvatarFallback>{member.user.name?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-medium">{member.user.name}</div>
-                    <div className="text-xs text-muted-foreground">{member.user.email}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Select
-                    defaultValue={member.role}
-                    onValueChange={(val) => handleRoleChange(member.id, val)}
-                  >
-                    <SelectTrigger className="w-[110px] h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="editor">Editor</SelectItem>
-                      <SelectItem value="viewer">Viewer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">Active</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveMember(member.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {invitations.map((invite) => (
-              <TableRow key={invite.id}>
-                <TableCell className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                    <UserPlus className="h-4 w-4 opacity-50" />
-                  </div>
-                  <div>
-                    <div className="font-medium">{invite.email}</div>
-                    <div className="text-xs text-muted-foreground">Invitation sent</div>
-                  </div>
-                </TableCell>
-                <TableCell className="capitalize">{invite.role}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">Pending</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCancelInvite(invite.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {members.length === 0 && invitations.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
-                  No team members found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {canInvite && (
+        <Card>
+            <CardHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Members ({currentCount} / {maxMembers})</CardTitle>
+                        <CardDescription>
+                            People with access to this workspace.
+                        </CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <TeamMembersList 
+                    members={formattedMembers} 
+                    invitations={formattedInvitations}
+                    currentUserId={session.user.id}
+                    isOwner={isOwner}
+                />
+            </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

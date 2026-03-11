@@ -1,7 +1,7 @@
+import { Lock, Trophy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MILESTONES } from "@/lib/gamification";
 import { cn } from "@/lib/utils";
-import { Lock, Trophy } from "lucide-react";
 
 interface MilestoneListProps {
   unlockedMilestoneIds: string[];

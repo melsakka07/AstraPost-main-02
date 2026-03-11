@@ -101,3 +101,23 @@ export async function sendResetPasswordEmail(to: string, url: string, name?: str
     metadata: { type: 'reset_password' },
   });
 }
+
+export async function sendTeamInvitationEmail(to: string, token: string, teamName: string) {
+  const url = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/join-team?token=${token}`;
+  
+  await sendEmail({
+    to,
+    subject: `You've been invited to join ${teamName} on AstroPost`,
+    text: `You have been invited to join the team "${teamName}".\n\nClick here to join: ${url}\n\nThis link expires in 7 days.`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Team Invitation</h2>
+        <p>You have been invited to join the team <strong>${teamName}</strong> on AstroPost.</p>
+        <p>Click the button below to accept the invitation:</p>
+        <a href="${url}" style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Join Team</a>
+        <p style="margin-top: 24px; font-size: 14px; color: #666;">This link expires in 7 days.</p>
+      </div>
+    `,
+    metadata: { type: 'team_invitation', token },
+  });
+}

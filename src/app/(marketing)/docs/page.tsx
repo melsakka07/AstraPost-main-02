@@ -1,68 +1,110 @@
+import Link from "next/link";
+import { FileText, Rocket, Shield, CreditCard, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 export default function DocsPage() {
   const categories = [
     {
       title: "Getting Started",
+      icon: <Rocket className="h-5 w-5" />,
+      description: "Learn the basics of setting up your AstroPost account.",
       articles: [
-        { title: "Introduction to AstroPost", link: "#" },
-        { title: "Setting up your account", link: "#" },
-        { title: "Connecting X (Twitter) Account", link: "#" },
+        { title: "Introduction to AstroPost", href: "/docs/intro" },
+        { title: "Connecting Your Social Accounts", href: "/docs/connecting-accounts" },
+        { title: "Your First Post", href: "/docs/first-post" },
       ]
     },
     {
-      title: "Features",
+      title: "Core Features",
+      icon: <LayoutGrid className="h-5 w-5" />,
+      description: "Master the tools to create and schedule content.",
       articles: [
-        { title: "Scheduling Tweets & Threads", link: "#" },
-        { title: "Using the AI Writer", link: "#" },
-        { title: "Understanding Analytics", link: "#" },
-        { title: "Affiliate Link Generator", link: "#" },
+        { title: "Using the Smart Scheduler", href: "/docs/scheduler" },
+        { title: "Generating Content with AI", href: "/docs/ai-writer" },
+        { title: "Creating Threads (Sard)", href: "/docs/threads" },
+        { title: "Affiliate Link Generator", href: "/docs/affiliate" },
       ]
     },
     {
-      title: "Billing & Account",
+      title: "Account & Billing",
+      icon: <CreditCard className="h-5 w-5" />,
+      description: "Manage your subscription and team settings.",
       articles: [
-        { title: "Managing your subscription", link: "#" },
-        { title: "Team Management", link: "#" },
-        { title: "Account Security", link: "#" },
+        { title: "Plans and Pricing", href: "/docs/pricing" },
+        { title: "Managing Your Subscription", href: "/docs/subscription" },
+        { title: "Team Management", href: "/docs/teams" },
+      ]
+    },
+    {
+      title: "Security & Privacy",
+      icon: <Shield className="h-5 w-5" />,
+      description: "How we protect your data and account.",
+      articles: [
+        { title: "Two-Factor Authentication", href: "/docs/2fa" },
+        { title: "GDPR & Data Export", href: "/docs/gdpr" },
+        { title: "Privacy Policy", href: "/privacy" },
       ]
     }
   ];
 
   return (
     <div className="container mx-auto px-4 py-16 max-w-5xl space-y-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b pb-6">
-        <div>
-          <Badge variant="outline" className="mb-2">Documentation</Badge>
-          <h1 className="text-4xl font-bold tracking-tight">How can we help?</h1>
-        </div>
-        <div className="relative w-full md:w-auto mt-4 md:mt-0">
-          <input 
+      <div className="text-center space-y-6 max-w-2xl mx-auto">
+        <Badge variant="outline">Documentation</Badge>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">How can we help?</h1>
+        <p className="text-xl text-muted-foreground">
+          Everything you need to know about using AstroPost effectively.
+        </p>
+        
+        <div className="relative max-w-md mx-auto">
+          <Input 
             type="search" 
-            placeholder="Search docs..." 
-            className="w-full md:w-64 pl-10 pr-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            placeholder="Search documentation..." 
+            className="pl-10 h-12 bg-background shadow-sm"
           />
-          <svg className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <div className="absolute left-3 top-3.5 text-muted-foreground">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8">
+      <div className="grid md:grid-cols-2 gap-8 pt-8">
         {categories.map((category, index) => (
-          <div key={index} className="space-y-4">
-            <h2 className="text-xl font-bold">{category.title}</h2>
-            <ul className="space-y-2">
+          <div key={index} className="bg-card border rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                {category.icon}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{category.title}</h2>
+                <p className="text-sm text-muted-foreground">{category.description}</p>
+              </div>
+            </div>
+            
+            <ul className="space-y-3 pl-13 ml-12 border-l border-muted pl-4">
               {category.articles.map((article, i) => (
                 <li key={i}>
-                  <a href={article.link} className="text-muted-foreground hover:text-primary transition-colors text-sm block py-1">
+                  <Link 
+                    href={article.href} 
+                    className="group flex items-center text-sm font-medium hover:text-primary transition-colors"
+                  >
+                    <FileText className="h-3.5 w-3.5 mr-2 text-muted-foreground group-hover:text-primary" />
                     {article.title}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
         ))}
+      </div>
+      
+      <div className="bg-muted/30 rounded-xl p-8 text-center mt-12 border border-dashed">
+        <h3 className="text-lg font-semibold mb-2">Can't find what you're looking for?</h3>
+        <p className="text-muted-foreground mb-4">Our support team is here to help you get back on track.</p>
+        <Link href="mailto:support@astropost.com" className="text-primary font-medium hover:underline">
+          Contact Support &rarr;
+        </Link>
       </div>
     </div>
   );

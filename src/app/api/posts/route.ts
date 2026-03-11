@@ -1,4 +1,3 @@
-
 import { headers } from "next/headers";
 import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -6,10 +5,10 @@ import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import { checkAccountLimitDetailed, checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { scheduleQueue } from "@/lib/queue/client";
 import { checkRateLimit } from "@/lib/rate-limiter";
-import { tweets, media, xAccounts, account, user, posts } from "@/lib/schema";
+import { tweets, media, xAccounts, linkedinAccounts, instagramAccounts, account, user, posts } from "@/lib/schema";
 import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -17,7 +16,7 @@ const createPostSchema = z.object({
   tweets: z
     .array(
       z.object({
-        content: z.string().max(280),
+        content: z.string().max(3000), // Increased max length for LinkedIn/Threads
         media: z
           .array(
             z.object({
@@ -31,7 +30,7 @@ const createPostSchema = z.object({
       })
     )
     .min(1),
-  targetXAccountIds: z.array(z.string()).optional(),
+  targetAccountIds: z.array(z.string()).optional(),
   scheduledAt: z.string().optional(), // ISO string
   recurrencePattern: z.enum(["none", "daily", "weekly", "monthly", "yearly"]).optional(),
   recurrenceEndDate: z.string().optional(),
@@ -83,7 +82,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
     }
 
-    const { tweets: tweetsData, scheduledAt, action, targetXAccountIds, recurrencePattern, recurrenceEndDate } = result.data;
+    const { tweets: tweetsData, scheduledAt, action, targetAccountIds, recurrencePattern, recurrenceEndDate } = result.data;
 
     // Only sync accounts if we are the owner operating on our own workspace
     if (ctx.isOwner) {
@@ -100,6 +99,9 @@ export async function POST(req: Request) {
           });
 
           if (!existing) {
+            const limitCheck = await checkAccountLimitDetailed(session.user.id);
+            if (!limitCheck.allowed) continue;
+
             await db.insert(xAccounts).values({
               id: crypto.randomUUID(),
               userId: session.user.id,
@@ -141,35 +143,60 @@ export async function POST(req: Request) {
       }
     }
 
-    const availableAccounts = await db.query.xAccounts.findMany({
+    const availableX = await db.query.xAccounts.findMany({
       where: and(eq(xAccounts.userId, ctx.currentTeamId), eq(xAccounts.isActive, true)),
     });
+    const availableLi = await db.query.linkedinAccounts.findMany({
+      where: and(eq(linkedinAccounts.userId, ctx.currentTeamId), eq(linkedinAccounts.isActive, true)),
+    });
+    const availableInsta = await db.query.instagramAccounts.findMany({
+      where: and(eq(instagramAccounts.userId, ctx.currentTeamId), eq(instagramAccounts.isActive, true)),
+    });
 
-    if (availableAccounts.length === 0) {
-      return new Response(JSON.stringify({ error: "No connected X account" }), { status: 400 });
+    const selectedAccounts: { id: string; platform: 'twitter' | 'linkedin' | 'instagram'; obj: any }[] = [];
+    const rawIds = targetAccountIds || [];
+
+    for (const idStr of rawIds) {
+        if (idStr.startsWith("twitter:")) {
+            const id = idStr.split(":")[1] || "";
+            const acc = availableX.find(a => a.id === id);
+            if (acc) selectedAccounts.push({ id, platform: 'twitter', obj: acc });
+        } else if (idStr.startsWith("linkedin:")) {
+            const id = idStr.split(":")[1] || "";
+            const acc = availableLi.find(a => a.id === id);
+            if (acc) selectedAccounts.push({ id, platform: 'linkedin', obj: acc });
+        } else if (idStr.startsWith("instagram:")) {
+            const id = idStr.split(":")[1] || "";
+            const acc = availableInsta.find(a => a.id === id);
+            if (acc) selectedAccounts.push({ id, platform: 'instagram', obj: acc });
+        } else {
+            // Fallback for legacy clients sending plain IDs (assumed Twitter)
+            const acc = availableX.find(a => a.id === idStr);
+            if (acc) selectedAccounts.push({ id: idStr, platform: 'twitter', obj: acc });
+        }
     }
 
-    const selectedIds =
-      targetXAccountIds && targetXAccountIds.length > 0
-        ? targetXAccountIds
-        : (() => {
-            const defaults = availableAccounts.filter((a) => a.isDefault).map((a) => a.id);
-            return defaults.length > 0 ? defaults : [availableAccounts[0]!.id];
-          })();
-
-    const selectedAccounts = availableAccounts.filter((a) => selectedIds.includes(a.id));
+    // Default fallback if nothing valid selected
     if (selectedAccounts.length === 0) {
-      return new Response(JSON.stringify({ error: "Invalid target X accounts" }), { status: 400 });
+        if (availableX.length > 0) {
+             const def = availableX.find(a => a.isDefault) || availableX[0];
+             if (def) selectedAccounts.push({ id: def.id, platform: 'twitter', obj: def });
+        } else if (availableLi.length > 0) {
+             const def = availableLi[0];
+             if (def) selectedAccounts.push({ id: def.id, platform: 'linkedin', obj: def });
+        } else {
+             return new Response(JSON.stringify({ error: "No connected accounts" }), { status: 400 });
+        }
     }
 
     const idempotencyKey = req.headers.get("idempotency-key");
     if (idempotencyKey) {
-      const keysToCheck = selectedAccounts.map((a) => `${idempotencyKey}:${a.id}`);
+      const keysToCheck = selectedAccounts.map((a) => `${idempotencyKey}:${a.platform}:${a.id}`);
       const existingPosts = await db.query.posts.findMany({
         where: inArray(posts.idempotencyKey, keysToCheck),
       });
 
-      if (existingPosts.length > 0) {
+      if (existingPosts.length > 0 && existingPosts[0]) {
         return Response.json({
           success: true,
           groupId: existingPosts[0].groupId,
@@ -227,15 +254,17 @@ export async function POST(req: Request) {
       await db.insert(posts).values({
         id: postId,
         userId: authorId, // Author is the logged in user
-        xAccountId: acc.id, // Account belongs to team owner
+        xAccountId: acc.platform === 'twitter' ? acc.id : null,
+        linkedinAccountId: acc.platform === 'linkedin' ? acc.id : null,
+        platform: acc.platform,
         groupId,
-        type: tweetsData.length > 1 ? "thread" : "tweet",
+        type: tweetsData.length > 1 ? "thread" : (acc.platform === 'linkedin' ? 'linkedin_post' : 'tweet'),
         status: status,
         scheduledAt: finalScheduledAt,
         requiresApproval: requiresApproval,
         recurrencePattern: recurrencePattern && recurrencePattern !== "none" ? recurrencePattern : null,
         recurrenceEndDate: recurrenceEndDate ? new Date(recurrenceEndDate) : null,
-        idempotencyKey: idempotencyKey ? `${idempotencyKey}:${acc.id}` : null,
+        idempotencyKey: idempotencyKey ? `${idempotencyKey}:${acc.platform}:${acc.id}` : null,
       });
 
       for (let i = 0; i < tweetsData.length; i++) {

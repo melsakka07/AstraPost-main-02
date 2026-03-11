@@ -4,6 +4,7 @@ import { Job } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
 import { scheduleQueue } from "@/lib/queue/client";
 import { posts, jobRuns, user, tweets, media, notifications } from "@/lib/schema";
@@ -11,7 +12,6 @@ import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/ser
 import { sendPostFailureEmail } from "@/lib/services/email";
 import { XApiService } from "@/lib/services/x-api";
 
-import { checkMilestone } from "@/lib/gamification";
 
 export const scheduleProcessor = async (job: Job) => {
   const { postId, userId } = job.data;

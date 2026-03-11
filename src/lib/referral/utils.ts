@@ -1,7 +1,7 @@
+import { eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
-import { eq } from "drizzle-orm";
 
 const nanoid = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
 

@@ -132,12 +132,48 @@ export const xAccounts = pgTable("x_accounts", {
   index("x_accounts_user_id_idx").on(table.userId)
 ]);
 
+export const linkedinAccounts = pgTable("linkedin_accounts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  linkedinUserId: text("linkedin_user_id").notNull().unique(),
+  linkedinName: text("linkedin_name").notNull(),
+  linkedinAvatarUrl: text("linkedin_avatar_url"),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  refreshTokenEnc: text("refresh_token_enc"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("linkedin_accounts_user_id_idx").on(table.userId)
+]);
+
+export const instagramAccounts = pgTable("instagram_accounts", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  instagramUserId: text("instagram_user_id").notNull().unique(),
+  instagramUsername: text("instagram_username").notNull(),
+  instagramAvatarUrl: text("instagram_avatar_url"),
+  accessToken: text("access_token").notNull(),
+  // Instagram Graph API tokens are long-lived (60 days)
+  tokenExpiresAt: timestamp("token_expires_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("instagram_accounts_user_id_idx").on(table.userId)
+]);
+
 export const posts = pgTable("posts", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xAccountId: text("x_account_id").notNull().references(() => xAccounts.id, { onDelete: "cascade" }),
+  xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
+  linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, { onDelete: "cascade" }),
+  instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, { onDelete: "cascade" }),
+  platform: text("platform").default("twitter"), // 'twitter', 'linkedin', 'instagram'
   groupId: text("group_id"),
-  type: text("type").default("tweet"), // 'tweet', 'thread'
+  type: text("type").default("tweet"), // 'tweet', 'thread', 'linkedin_post'
   status: text("status").default("draft"), // 'draft', 'scheduled', 'published', 'failed', 'cancelled'
   scheduledAt: timestamp("scheduled_at"),
   publishedAt: timestamp("published_at"),
@@ -176,7 +212,10 @@ export const followerSnapshots = pgTable("follower_snapshots", {
 export const analyticsRefreshRuns = pgTable("analytics_refresh_runs", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xAccountId: text("x_account_id").notNull().references(() => xAccounts.id, { onDelete: "cascade" }),
+  xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
+  linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, { onDelete: "cascade" }),
+  instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, { onDelete: "cascade" }),
+  platform: text("platform").default("twitter"), // 'twitter', 'linkedin', 'instagram'
   status: text("status").default("running"),
   error: text("error"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
@@ -292,6 +331,21 @@ export const tweetAnalyticsSnapshots = pgTable("tweet_analytics_snapshots", {
 }, (table) => [
   index("analytics_snapshots_tweet_id_idx").on(table.tweetId),
   index("analytics_snapshots_fetched_at_idx").on(table.fetchedAt),
+]);
+
+export const socialAnalytics = pgTable("social_analytics", {
+  id: text("id").primaryKey(),
+  postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  impressions: integer("impressions").default(0),
+  likes: integer("likes").default(0),
+  comments: integer("comments").default(0),
+  shares: integer("shares").default(0),
+  clicks: integer("clicks").default(0),
+  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
+  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("social_analytics_post_id_unique").on(table.postId),
+  index("social_analytics_fetched_at_idx").on(table.fetchedAt)
 ]);
 
 export const aiGenerations = pgTable("ai_generations", {
@@ -416,6 +470,32 @@ export const milestones = pgTable("milestones", {
   uniqueIndex("milestones_user_milestone_unique").on(table.userId, table.milestoneId),
 ]);
 
+export const feedback = pgTable("feedback", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").default("feature"), // 'feature', 'bug', 'other'
+  status: text("status").default("pending"), // 'pending', 'planned', 'in_progress', 'completed', 'declined'
+  upvotes: integer("upvotes").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+}, (table) => [
+  index("feedback_user_id_idx").on(table.userId),
+  index("feedback_status_idx").on(table.status),
+  index("feedback_upvotes_idx").on(table.upvotes),
+]);
+
+export const feedbackVotes = pgTable("feedback_votes", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  feedbackId: text("feedback_id").notNull().references(() => feedback.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("feedback_votes_user_feedback_unique").on(table.userId, table.feedbackId),
+  index("feedback_votes_feedback_id_idx").on(table.feedbackId),
+]);
+
 export const affiliateLinksRelations = relations(affiliateLinks, ({ one, many }) => ({
   user: one(user, {
     fields: [affiliateLinks.userId],
@@ -433,6 +513,8 @@ export const affiliateClicksRelations = relations(affiliateClicks, ({ one }) => 
 
 export const userRelations = relations(user, ({ one, many }) => ({
   xAccounts: many(xAccounts),
+  linkedinAccounts: many(linkedinAccounts),
+  instagramAccounts: many(instagramAccounts),
   posts: many(posts),
   subscriptions: many(subscriptions),
   notifications: many(notifications),
@@ -448,6 +530,46 @@ export const userRelations = relations(user, ({ one, many }) => ({
     relationName: "referrals",
   }),
   referrals: many(user, { relationName: "referrals" }),
+  aiGenerations: many(aiGenerations),
+  jobRuns: many(jobRuns),
+  followerSnapshots: many(followerSnapshots),
+  analyticsRefreshRuns: many(analyticsRefreshRuns),
+  feedback: many(feedback),
+  feedbackVotes: many(feedbackVotes),
+  socialAnalytics: many(socialAnalytics),
+}));
+
+export const socialAnalyticsRelations = relations(socialAnalytics, ({ one }) => ({
+  post: one(posts, {
+    fields: [socialAnalytics.postId],
+    references: [posts.id],
+  }),
+}));
+
+export const feedbackRelations = relations(feedback, ({ one, many }) => ({
+  user: one(user, {
+    fields: [feedback.userId],
+    references: [user.id],
+  }),
+  votes: many(feedbackVotes),
+}));
+
+export const feedbackVotesRelations = relations(feedbackVotes, ({ one }) => ({
+  user: one(user, {
+    fields: [feedbackVotes.userId],
+    references: [user.id],
+  }),
+  feedback: one(feedback, {
+    fields: [feedbackVotes.feedbackId],
+    references: [feedback.id],
+  }),
+}));
+
+export const aiGenerationsRelations = relations(aiGenerations, ({ one }) => ({
+  user: one(user, {
+    fields: [aiGenerations.userId],
+    references: [user.id],
+  }),
 }));
 
 export const xAccountRelations = relations(xAccounts, ({ one, many }) => ({
@@ -460,6 +582,22 @@ export const xAccountRelations = relations(xAccounts, ({ one, many }) => ({
   analyticsRefreshRuns: many(analyticsRefreshRuns),
 }));
 
+export const linkedinAccountRelations = relations(linkedinAccounts, ({ one, many }) => ({
+  user: one(user, {
+    fields: [linkedinAccounts.userId],
+    references: [user.id],
+  }),
+  posts: many(posts),
+}));
+
+export const instagramAccountRelations = relations(instagramAccounts, ({ one, many }) => ({
+  user: one(user, {
+    fields: [instagramAccounts.userId],
+    references: [user.id],
+  }),
+  posts: many(posts),
+}));
+
 export const postRelations = relations(posts, ({ one, many }) => ({
   user: one(user, {
     fields: [posts.userId],
@@ -468,6 +606,14 @@ export const postRelations = relations(posts, ({ one, many }) => ({
   xAccount: one(xAccounts, {
     fields: [posts.xAccountId],
     references: [xAccounts.id],
+  }),
+  linkedinAccount: one(linkedinAccounts, {
+    fields: [posts.linkedinAccountId],
+    references: [linkedinAccounts.id],
+  }),
+  instagramAccount: one(instagramAccounts, {
+    fields: [posts.instagramAccountId],
+    references: [instagramAccounts.id],
   }),
   approvedByUser: one(user, {
     fields: [posts.approvedBy],
@@ -541,6 +687,14 @@ export const analyticsRefreshRunsRelations = relations(analyticsRefreshRuns, ({ 
   xAccount: one(xAccounts, {
     fields: [analyticsRefreshRuns.xAccountId],
     references: [xAccounts.id],
+  }),
+  linkedinAccount: one(linkedinAccounts, {
+    fields: [analyticsRefreshRuns.linkedinAccountId],
+    references: [linkedinAccounts.id],
+  }),
+  instagramAccount: one(instagramAccounts, {
+    fields: [analyticsRefreshRuns.instagramAccountId],
+    references: [instagramAccounts.id],
   }),
   user: one(user, {
     fields: [analyticsRefreshRuns.userId],

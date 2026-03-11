@@ -1,11 +1,11 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { Metadata } from "next";
+import { MilestoneList } from "@/components/gamification/milestone-list";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { milestones } from "@/lib/schema";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { MilestoneList } from "@/components/gamification/milestone-list";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Achievements - AstraPost",

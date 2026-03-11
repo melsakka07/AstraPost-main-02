@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
 import { InspirationPanel } from "@/components/composer/inspiration-panel";
 import { SortableTweet } from "@/components/composer/sortable-tweet";
-import { TargetAccountsSelect, XAccountLite } from "@/components/composer/target-accounts-select";
+import { TargetAccountsSelect, SocialAccountLite } from "@/components/composer/target-accounts-select";
 import { TemplatesDialog } from "@/components/composer/templates-dialog";
 import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
 import { Button } from "@/components/ui/button";
@@ -72,11 +72,11 @@ export function Composer() {
   const [recurrencePattern, setRecurrencePattern] = useState<string>("none");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [targetXAccountIds, setTargetXAccountIds] = useState<string[]>([]);
+  const [targetAccountIds, setTargetAccountIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTweetId, setActiveTweetId] = useState<string | null>(null);
 
-  const [accounts, setAccounts] = useState<XAccountLite[]>([]);
+  const [accounts, setAccounts] = useState<SocialAccountLite[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const { data: session } = useSession();
 
@@ -113,16 +113,16 @@ export function Composer() {
     (async () => {
       try {
         setAccountsLoading(true);
-        const res = await fetch("/api/x/accounts", { method: "GET" });
+        const res = await fetch("/api/accounts", { method: "GET" });
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
-        const list = (data.accounts || []) as XAccountLite[];
+        const list = (data.accounts || []) as SocialAccountLite[];
         setAccounts(list);
         
-        if (targetXAccountIds.length === 0) {
+        if (targetAccountIds.length === 0) {
             const defaults = list.filter((a) => a.isDefault).map((a) => a.id);
-            setTargetXAccountIds(defaults.length > 0 ? defaults : list.slice(0, 1).map((a) => a.id));
+            setTargetAccountIds(defaults.length > 0 ? defaults : list.slice(0, 1).map((a) => a.id));
         }
       } finally {
         if (!cancelled) setAccountsLoading(false);
@@ -587,7 +587,7 @@ export function Composer() {
             content: t.content,
             media: t.media
           })),
-          targetXAccountIds,
+          targetAccountIds,
           scheduledAt: scheduledDate || undefined,
           recurrencePattern: recurrencePattern === "none" ? undefined : recurrencePattern,
           recurrenceEndDate: recurrenceEndDate || undefined,
@@ -621,10 +621,10 @@ export function Composer() {
     }
   };
 
-  const selectedAccount = accounts.find(a => targetXAccountIds.includes(a.id)) || accounts[0];
-  const userImage = selectedAccount?.xAvatarUrl || session?.user?.image;
-  const userName = selectedAccount?.xDisplayName || session?.user?.name || "User Name";
-  const userHandle = selectedAccount?.xUsername ? `@${selectedAccount.xUsername}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle";
+  const selectedAccount = accounts.find(a => targetAccountIds.includes(a.id)) || accounts[0];
+  const userImage = selectedAccount?.avatarUrl || session?.user?.image;
+  const userName = selectedAccount?.displayName || session?.user?.name || "User Name";
+  const userHandle = selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -714,8 +714,8 @@ export function Composer() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Post to accounts</label>
               <TargetAccountsSelect 
-                  value={targetXAccountIds} 
-                  onChange={setTargetXAccountIds} 
+                  value={targetAccountIds} 
+                  onChange={setTargetAccountIds}  
                   accounts={accounts}
                   loading={accountsLoading}
               />

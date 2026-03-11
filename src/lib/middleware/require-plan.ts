@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan, type PlanType } from "@/lib/plan-limits";
 import { aiGenerations, posts, user, xAccounts } from "@/lib/schema";
 
-export type GatedFeature = "ai_writer" | "ai_quota" | "scheduled_posts" | "x_accounts" | "analytics_export" | "viral_score" | "best_times" | "voice_profile";
+export type GatedFeature = "ai_writer" | "ai_quota" | "scheduled_posts" | "x_accounts" | "analytics_export" | "viral_score" | "best_times" | "voice_profile" | "linkedin_access";
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
 interface PlanContext {
@@ -64,6 +64,10 @@ function getSuggestedPlan(currentPlan: PlanType, feature: GatedFeature): PlanTyp
 
   if (feature === "voice_profile" && currentPlan === "free") {
     return "pro_monthly";
+  }
+
+  if (feature === "linkedin_access" && currentPlan !== "agency") {
+    return "agency";
   }
 
   return "pro_monthly";
@@ -361,6 +365,30 @@ export async function checkVoiceProfileAccessDetailed(userId: string): Promise<P
     limit: 0,
     used: 1,
     suggestedPlan: getSuggestedPlan(context.plan, "voice_profile"),
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkLinkedinAccessDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  if (context.isTrialActive) {
+    return { allowed: true };
+  }
+
+  const limits = getPlanLimits(context.plan);
+  if (limits.canUseLinkedin) {
+    return { allowed: true };
+  }
+
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "linkedin_access",
+    message: "LinkedIn integration is an Agency plan feature.",
+    plan: context.plan,
+    limit: 0,
+    used: 1,
+    suggestedPlan: getSuggestedPlan(context.plan, "linkedin_access"),
     trialActive: context.isTrialActive,
     resetAt: null,
   });

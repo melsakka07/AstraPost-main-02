@@ -1,13 +1,13 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { Metadata } from "next";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CopyButton } from "@/components/ui/copy-button";
+import { Input } from "@/components/ui/input";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { CopyButton } from "@/components/ui/copy-button";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Referrals - AstraPost",

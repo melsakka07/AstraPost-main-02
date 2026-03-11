@@ -1,20 +1,20 @@
+import { desc } from "drizzle-orm";
+import { UsersTable } from "@/components/admin/users-table";
+import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
-import { UsersTable } from "./users-table";
-import { desc } from "drizzle-orm";
 
-export const dynamic = "force-dynamic";
+export default async function AdminUsersPage() {
+  await requireAdmin();
 
-export default async function UsersPage() {
-  const users = await db.select().from(user).orderBy(desc(user.createdAt));
+  const users = await db.query.user.findMany({
+    orderBy: [desc(user.createdAt)],
+  });
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Users</h1>
-      </div>
-      {/* @ts-ignore - Types might mismatch slightly due to date parsing/serialization */}
-      <UsersTable users={users} />
+      <h1 className="text-3xl font-bold">Users Management</h1>
+      <UsersTable initialUsers={users} />
     </div>
   );
 }

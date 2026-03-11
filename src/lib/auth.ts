@@ -3,15 +3,29 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { twoFactor } from "better-auth/plugins"
 import { and, eq, isNull } from "drizzle-orm"
 import { db } from "./db"
+import { generateReferralCode } from "./referral/utils";
 import { user as userTable } from "./schema"
 import { sendResetPasswordEmail, sendVerificationEmail } from "./services/email"
 
-import { generateReferralCode } from "./referral/utils";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
+  user: {
+    additionalFields: {
+      isAdmin: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+      },
+      plan: {
+        type: "string",
+        required: false,
+        defaultValue: "free",
+      },
+    },
+  },
   databaseHooks: {
     user: {
       create: {

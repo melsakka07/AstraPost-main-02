@@ -16,7 +16,8 @@ import {
   Settings,
   LogOut,
   Rocket,
-  Menu
+  Menu,
+  Map
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -34,6 +35,7 @@ const sidebarItems = [
   { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs" },
   { icon: Bot, label: "AI Writer", href: "/dashboard/ai" },
   { icon: ShoppingCart, label: "Affiliate", href: "/dashboard/affiliate" },
+  { icon: Map, label: "Roadmap", href: "/roadmap" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
 

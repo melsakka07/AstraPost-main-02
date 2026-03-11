@@ -1,9 +1,21 @@
+import withPWAInit from "@ducanh2912/next-pwa";
 import { withSentryConfig } from "@sentry/nextjs";
 import { checkEnv } from "./src/lib/env";
 import type { NextConfig } from "next";
 
 // Validate environment on startup
 checkEnv();
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+});
 
 const nextConfig: NextConfig = {
   transpilePackages: ["bullmq"],
@@ -69,7 +81,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withPWA(nextConfig), {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 

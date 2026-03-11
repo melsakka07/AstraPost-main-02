@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useMemo } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Linkedin, Twitter, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,11 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export type XAccountLite = {
+export type SocialAccountLite = {
   id: string;
-  xUsername: string;
-  xDisplayName?: string | null;
-  xAvatarUrl?: string | null;
+  platform: 'twitter' | 'linkedin' | 'instagram';
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
   isDefault?: boolean | null;
 };
 
@@ -29,13 +29,22 @@ export function TargetAccountsSelect({
 }: {
   value: string[];
   onChange: (next: string[]) => void;
-  accounts: XAccountLite[];
+  accounts: SocialAccountLite[];
   loading?: boolean;
 }) {
   const selectedLabels = useMemo(() => {
     const selected = accounts.filter((a) => value.includes(a.id));
     if (selected.length === 0) return "Select accounts";
-    if (selected.length === 1) return `@${selected[0]!.xUsername}`;
+    if (selected.length === 1 && selected[0]) {
+        return (
+            <span className="flex items-center gap-2 truncate">
+                {selected[0].platform === 'twitter' ? <Twitter className="h-3 w-3" /> : 
+                 selected[0].platform === 'linkedin' ? <Linkedin className="h-3 w-3" /> :
+                 <Instagram className="h-3 w-3" />}
+                {selected[0].username}
+            </span>
+        );
+    }
     return `${selected.length} accounts`;
   }, [accounts, value]);
 
@@ -43,7 +52,7 @@ export function TargetAccountsSelect({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="w-full justify-between" disabled={loading}>
-          <span className="truncate">{loading ? "Loading accounts..." : selectedLabels}</span>
+          <span className="truncate flex items-center gap-2">{loading ? "Loading accounts..." : selectedLabels}</span>
           <ChevronDown className="h-4 w-4 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
@@ -51,7 +60,7 @@ export function TargetAccountsSelect({
         <DropdownMenuLabel>Post to</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {accounts.length === 0 ? (
-          <div className="px-2 py-2 text-sm text-muted-foreground">No X accounts connected</div>
+          <div className="px-2 py-2 text-sm text-muted-foreground">No accounts connected</div>
         ) : (
           accounts.map((a) => (
             <DropdownMenuCheckboxItem
@@ -64,7 +73,12 @@ export function TargetAccountsSelect({
                 onChange(next);
               }}
             >
-              @{a.xUsername}
+              <div className="flex items-center gap-2">
+                {a.platform === 'twitter' ? <Twitter className="h-3 w-3 text-sky-500" /> : 
+                 a.platform === 'linkedin' ? <Linkedin className="h-3 w-3 text-[#0077b5]" /> :
+                 <Instagram className="h-3 w-3 text-pink-600" />}
+                <span className="truncate">{a.displayName || a.username}</span>
+              </div>
             </DropdownMenuCheckboxItem>
           ))
         )}

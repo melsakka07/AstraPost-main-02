@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
-import { eq } from "drizzle-orm";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const session = await auth.api.getSession({
@@ -20,7 +20,7 @@ export async function POST(
     }
 
     const { suspend } = await req.json();
-    const userId = params.userId;
+    const { userId } = await params;
 
     if (!userId) {
       return new NextResponse("User ID required", { status: 400 });

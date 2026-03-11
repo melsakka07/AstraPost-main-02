@@ -1,7 +1,7 @@
-import { db } from "@/lib/db";
-import { milestones, posts, xAccounts } from "@/lib/schema";
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { db } from "@/lib/db";
+import { milestones, posts, xAccounts } from "@/lib/schema";
 
 export const MILESTONES = {
   FIRST_POST: { id: "first_post", title: "First Post", description: "Published your first post", icon: "🚀" },

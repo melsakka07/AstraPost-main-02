@@ -141,6 +141,34 @@
       "when": 1773258513441,
       "tag": "0019_huge_lily_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1773268768106,
+      "tag": "0020_pale_squirrel_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1773270481618,
+      "tag": "0021_regular_microbe",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1773271463492,
+      "tag": "0022_yummy_darkhawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1773271737934,
+      "tag": "0023_flashy_puma",
+      "breakpoints": true
     }
   ]
 }

@@ -1,13 +1,13 @@
+import { cookies, headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { headers, cookies } from "next/headers";
+import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
-import { eq } from "drizzle-orm";
 
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { userId: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const session = await auth.api.getSession({
@@ -19,16 +19,16 @@ export async function POST(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const targetUserId = params.userId;
+    const { userId } = await params;
 
-    if (!targetUserId) {
+    if (!userId) {
       return new NextResponse("User ID required", { status: 400 });
     }
 
     const [targetUser] = await db
       .select()
       .from(user)
-      .where(eq(user.id, targetUserId));
+      .where(eq(user.id, userId));
 
     if (!targetUser) {
       return new NextResponse("User not found", { status: 404 });
@@ -37,18 +37,13 @@ export async function POST(
     // Use internal API to create session
     // @ts-ignore
     const newSession = await auth.api.createSession({
-        userId: targetUserId,
+        userId: userId,
         headers: await headers(),
     });
 
     if (!newSession) {
          return new NextResponse("Failed to create session", { status: 500 });
     }
-    
-    // Manually set the cookie
-    // Assuming token is in newSession.token or similar structure returned by createSession
-    // Better Auth usually returns { session, user }
-    // session object has 'token' property
     
     // @ts-ignore
     const token = newSession.token || newSession.session?.token;

@@ -1345,13 +1345,13 @@ These features leverage AstroPost's OpenRouter integration to create competitive
 
 ### 13.2 Multi-Platform Support (LinkedIn, Instagram)
 
-**Current State**: X (Twitter) only.
+**Current State**: X (Twitter) and LinkedIn supported.
 
 **Proposed Implementation**:
-- Abstract the social platform layer: `src/lib/services/social-api.ts` interface with `XApiService` as the first implementation.
-- Add LinkedIn OAuth + publishing via LinkedIn API.
+- Abstract the social platform layer: `src/lib/services/social-api.ts` interface. (Done)
+- Add LinkedIn OAuth + publishing via LinkedIn API. (Done)
 - Add Instagram publishing via Meta Graph API.
-- Composer: platform selector (post to X + LinkedIn simultaneously).
+- Composer: platform selector (post to X + LinkedIn simultaneously). (Done)
 - Agency plan only.
 
 **Revenue Impact**: Very High -- multi-platform is the #1 requested feature in competitor reviews.
@@ -1360,17 +1360,17 @@ These features leverage AstroPost's OpenRouter integration to create competitive
 
 ---
 
-### 13.3 Admin Dashboard
+### 13.3 Admin Dashboard (Implemented)
 
-**Current State**: The BRD specifies an admin dashboard for user management, MRR tracking, and content moderation, but nothing is implemented.
+**Current State**: Implemented (v1). Includes User management, Metrics, and Job Queue monitoring.
 
 **Proposed Implementation**:
-- Gated by `isAdmin boolean` on `user` table.
+- Gated by `isAdmin boolean` on `user` table. (Done)
 - Pages:
-  - `/admin/users`: user table with plan, signup date, activity status, suspend/impersonate actions.
-  - `/admin/metrics`: MRR chart, signups/day, churn rate, API usage.
-  - `/admin/jobs`: global BullMQ queue monitor (integrate `@bull-board/nextjs`).
-- Protected by admin-only middleware.
+  - `/admin/users`: user table with plan, signup date, activity status, suspend/impersonate actions. (Done)
+  - `/admin/metrics`: MRR chart, signups/day, churn rate, API usage. (Done)
+  - `/admin/jobs`: global BullMQ queue monitor. (Done)
+- Protected by admin-only middleware. (Done)
 
 **Schema Changes**: Add `isAdmin boolean` to `user` table.
 

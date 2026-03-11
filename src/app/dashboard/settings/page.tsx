@@ -1,20 +1,22 @@
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
-import { CreditCard, Twitter } from "lucide-react";
+import { CreditCard, Twitter, Users } from "lucide-react";
+import { ConnectedLinkedInAccounts } from "@/components/settings/connected-linkedin-accounts";
 import { ConnectedXAccounts } from "@/components/settings/connected-x-accounts";
+import { ConnectedInstagramAccounts } from "@/components/settings/connected-instagram-accounts";
 import { ManageSubscriptionButton } from "@/components/settings/manage-subscription-button";
 import { PlanUsage } from "@/components/settings/plan-usage";
-import { ProfileForm } from "@/components/settings/profile-form";
-import { VoiceProfileForm } from "@/components/settings/voice-profile-form";
-import { SecuritySettings } from "@/components/settings/security-settings";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
+import { ProfileForm } from "@/components/settings/profile-form";
+import { SecuritySettings } from "@/components/settings/security-settings";
+import { VoiceProfileForm } from "@/components/settings/voice-profile-form";
 import { XHealthCheckButton } from "@/components/settings/x-health-check-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { user, xAccounts } from "@/lib/schema";
+import { user, xAccounts, linkedinAccounts, instagramAccounts } from "@/lib/schema";
 
 export default async function SettingsPage({
   searchParams,
@@ -29,6 +31,14 @@ export default async function SettingsPage({
 
   const connectedAccounts = await db.query.xAccounts.findMany({
       where: eq(xAccounts.userId, session.user.id)
+  });
+
+  const connectedLinkedInAccounts = await db.query.linkedinAccounts.findMany({
+      where: eq(linkedinAccounts.userId, session.user.id)
+  });
+
+  const connectedInstagramAccounts = await db.query.instagramAccounts.findMany({
+      where: eq(instagramAccounts.userId, session.user.id)
   });
 
   const userRow = await db.query.user.findFirst({
@@ -121,20 +131,63 @@ export default async function SettingsPage({
             </CardContent>
           </Card>
 
-        {/* Connected Accounts */}
+        {/* Team Management */}
         <Card>
             <CardHeader>
                 <div className="flex items-center gap-2">
-                    <Twitter className="h-5 w-5 text-primary" />
-                    <CardTitle>Connected Accounts</CardTitle>
+                    <Users className="h-5 w-5 text-primary" />
+                    <CardTitle>Team Management</CardTitle>
                 </div>
-                <CardDescription>Manage your X (Twitter) accounts</CardDescription>
+                <CardDescription>Invite team members and manage access roles.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <ConnectedXAccounts initialAccounts={connectedAccounts} />
-                <XHealthCheckButton />
+            <CardContent>
+                <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                        Collaborate with your team by inviting members to your workspace.
+                    </div>
+                    <Button variant="outline" asChild>
+                        <a href="/dashboard/settings/team">Manage Team</a>
+                    </Button>
+                </div>
             </CardContent>
         </Card>
+
+        {/* Connected Accounts */}
+        <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="h-full">
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <Twitter className="h-5 w-5 text-primary" />
+                        <CardTitle>X (Twitter)</CardTitle>
+                    </div>
+                    <CardDescription>Manage your X (Twitter) accounts</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <ConnectedXAccounts initialAccounts={connectedAccounts} />
+                    <XHealthCheckButton />
+                </CardContent>
+            </Card>
+
+            <div className="h-full space-y-6">
+                <ConnectedLinkedInAccounts 
+                    initialAccounts={connectedLinkedInAccounts.map(a => ({
+                        id: a.id,
+                        linkedinName: a.linkedinName,
+                        linkedinAvatarUrl: a.linkedinAvatarUrl,
+                        isActive: a.isActive
+                    }))} 
+                />
+                
+                <ConnectedInstagramAccounts
+                    initialAccounts={connectedInstagramAccounts.map(a => ({
+                        id: a.id,
+                        instagramUsername: a.instagramUsername,
+                        instagramAvatarUrl: a.instagramAvatarUrl,
+                        isActive: a.isActive
+                    }))}
+                />
+            </div>
+        </div>
 
         <VoiceProfileForm />
         

@@ -1,14 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { authClient } from "@/lib/auth-client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
+import { Loader2, ShieldCheck, ShieldAlert, Copy } from "lucide-react"
 import { toast } from "sonner"
-import { Loader2, ShieldCheck, ShieldAlert, Copy, Check } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { authClient } from "@/lib/auth-client"
 // Better Auth returns a URI (otpauth://). I can use a QR code library.
 // Or maybe I can just display the secret key.
 // I'll check if I can use an image or if I need a library. 

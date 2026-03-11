@@ -1,9 +1,9 @@
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
-import { eq } from "drizzle-orm";
-import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {

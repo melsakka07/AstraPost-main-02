@@ -8,6 +8,7 @@ import { FollowerChart } from "@/components/analytics/follower-chart";
 import { ImpressionsChart } from "@/components/analytics/impressions-chart";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
 import { TopTweetsList } from "@/components/analytics/top-tweets-list";
+import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
 import { PageToolbar } from "@/components/dashboard/page-toolbar";
 import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { analyticsRefreshRuns, followerSnapshots, posts, tweetAnalytics, tweetAnalyticsSnapshots, tweets, xAccounts, user } from "@/lib/schema";
+import { analyticsRefreshRuns, followerSnapshots, posts, tweetAnalytics, tweetAnalyticsSnapshots, tweets, user, xAccounts } from "@/lib/schema";
+import { AnalyticsEngine } from "@/lib/services/analytics-engine";
 
 export default async function AnalyticsPage({
   searchParams,
@@ -176,6 +178,9 @@ export default async function AnalyticsPage({
     .where(and(eq(posts.userId, session.user.id), sql`${tweets.xTweetId} IS NOT NULL`))
     .orderBy(desc(tweetAnalytics.impressions))
     .limit(5);
+
+  // 5. Best Time Data
+  const bestTimeData = await AnalyticsEngine.getBestTimesToPost(session.user.id);
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
@@ -399,25 +404,34 @@ export default async function AnalyticsPage({
         </BlurredOverlay>
       </div>
 
-      <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Top Performing Tweets</h2>
-          <BlurredOverlay isLocked={isFree} title="Top Tweets" description="See your best performing content with Pro analytics.">
-            {topTweets.length === 0 ? (
-              <EmptyState
-                icon={<BarChart3 className="h-6 w-6" />}
-                title="No tweet analytics yet"
-                description="Once published posts are tracked by the analytics worker, your top tweets appear here."
-                primaryAction={
-                  <Button asChild>
-                    <Link href="/dashboard/compose">Publish a Post</Link>
-                  </Button>
-                }
-              />
-            ) : (
-              // @ts-ignore - xTweetId is filtered to be not null in the query
-              <TopTweetsList tweets={topTweets} isCompact={isCompact} />
-            )}
-          </BlurredOverlay>
+      <div className="grid lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Best Time to Post</h2>
+              <BlurredOverlay isLocked={isFree} title="Optimization Insights" description="Upgrade to Pro to see when your audience is most active.">
+                  <BestTimeHeatmap data={bestTimeData} />
+              </BlurredOverlay>
+          </div>
+
+          <div className="space-y-4">
+              <h2 className="text-xl font-semibold">Top Performing Tweets</h2>
+              <BlurredOverlay isLocked={isFree} title="Top Tweets" description="See your best performing content with Pro analytics.">
+                {topTweets.length === 0 ? (
+                  <EmptyState
+                    icon={<BarChart3 className="h-6 w-6" />}
+                    title="No tweet analytics yet"
+                    description="Once published posts are tracked by the analytics worker, your top tweets appear here."
+                    primaryAction={
+                      <Button asChild>
+                        <Link href="/dashboard/compose">Publish a Post</Link>
+                      </Button>
+                    }
+                  />
+                ) : (
+                  // @ts-ignore - xTweetId is filtered to be not null in the query
+                  <TopTweetsList tweets={topTweets} isCompact={isCompact} />
+                )}
+              </BlurredOverlay>
+          </div>
       </div>
     </div>
   );

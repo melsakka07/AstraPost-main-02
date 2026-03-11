@@ -13,6 +13,7 @@ export interface PlanLimits {
   canUseViralScore: boolean;
   canViewBestTimes: boolean;
   canUseVoiceProfile: boolean;
+  canUseLinkedin: boolean;
   maxTeamMembers: number | null;
 }
 
@@ -32,6 +33,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseViralScore: false,
     canViewBestTimes: false,
     canUseVoiceProfile: false,
+    canUseLinkedin: false,
     maxTeamMembers: null,
   },
   pro_monthly: {
@@ -47,6 +49,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseViralScore: true,
     canViewBestTimes: true,
     canUseVoiceProfile: true,
+    canUseLinkedin: false,
     maxTeamMembers: null,
   },
   pro_annual: {
@@ -62,6 +65,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseViralScore: true,
     canViewBestTimes: true,
     canUseVoiceProfile: true,
+    canUseLinkedin: false,
     maxTeamMembers: null,
   },
   agency: {
@@ -77,6 +81,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseViralScore: true,
     canViewBestTimes: true,
     canUseVoiceProfile: true,
+    canUseLinkedin: true,
     maxTeamMembers: 5,
   },
 };

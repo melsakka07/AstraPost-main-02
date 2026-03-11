@@ -3,10 +3,24 @@ import { Badge } from "@/components/ui/badge";
 export default function ChangelogPage() {
   const releases = [
     {
-      version: "v0.1.0",
-      date: "March 9, 2026",
-      title: "Initial Release",
-      description: "Welcome to AstroPost! We've launched with core features to help you schedule and create content for X.",
+      version: "v1.1.0",
+      date: "March 12, 2026",
+      title: "Multi-Platform & Security",
+      description: "Major update adding LinkedIn support, Admin dashboard, and critical security features.",
+      changes: [
+        { type: "new", content: "LinkedIn Support: Connect and post to LinkedIn profiles." },
+        { type: "new", content: "Admin Dashboard: User management, metrics, and job monitoring." },
+        { type: "new", content: "2FA Security: Secure your account with Two-Factor Authentication." },
+        { type: "new", content: "GDPR Compliance: Export your data or delete your account." },
+        { type: "imp", content: "Composer: Now supports multi-platform selection." },
+        { type: "fix", content: "Improved scheduling reliability with BullMQ." },
+      ]
+    },
+    {
+      version: "v1.0.0",
+      date: "March 10, 2026",
+      title: "Official Launch",
+      description: "We are out of beta! AstroPost is now available for everyone.",
       changes: [
         { type: "new", content: "Smart Scheduler: Drag & drop calendar interface." },
         { type: "new", content: "AI Writer: Generate threads and hooks using GPT-4o." },
@@ -16,7 +30,7 @@ export default function ChangelogPage() {
       ]
     },
     {
-      version: "v0.0.5",
+      version: "v0.9.0",
       date: "February 20, 2026",
       title: "Beta Preview",
       description: "Private beta release for early adopters.",
@@ -31,37 +45,40 @@ export default function ChangelogPage() {
   return (
     <div className="container mx-auto px-4 py-16 max-w-4xl space-y-12">
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">Changelog</h1>
-        <p className="text-muted-foreground">Stay up to date with the latest features and improvements.</p>
+        <Badge variant="outline">Changelog</Badge>
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Product Updates</h1>
+        <p className="text-xl text-muted-foreground">Stay up to date with the latest features and improvements.</p>
       </div>
 
-      <div className="relative border-l border-muted ml-4 md:ml-0 space-y-12 pl-8 md:pl-0">
+      <div className="relative border-l border-muted ml-4 md:ml-8 space-y-12 pl-8 md:pl-12">
         {releases.map((release, index) => (
-          <div key={index} className="relative md:grid md:grid-cols-4 gap-8">
-            <div className="md:text-right md:pr-8 mb-4 md:mb-0">
-              <div className="absolute -left-[3.25rem] md:left-auto md:right-[-2.3rem] top-1.5 h-3 w-3 rounded-full border bg-background ring-4 ring-muted" />
-              <h3 className="font-bold text-lg">{release.version}</h3>
-              <time className="text-sm text-muted-foreground">{release.date}</time>
+          <div key={index} className="relative">
+            <div className="absolute -left-[2.35rem] md:-left-[3.35rem] top-1.5 h-3 w-3 rounded-full border bg-background ring-4 ring-muted" />
+            
+            <div className="flex flex-col md:flex-row gap-2 md:items-baseline mb-2">
+              <h2 className="text-2xl font-bold">{release.title}</h2>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded">{release.version}</span>
+                <span>•</span>
+                <time className="text-sm">{release.date}</time>
+              </div>
             </div>
             
-            <div className="md:col-span-3 bg-card border rounded-xl p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-2">{release.title}</h2>
-              <p className="text-muted-foreground mb-6">{release.description}</p>
-              
-              <ul className="space-y-3">
-                {release.changes.map((change, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm">
-                    <Badge variant={
-                      change.type === "new" ? "default" : 
-                      change.type === "fix" ? "destructive" : "secondary"
-                    } className="uppercase text-[10px] px-1.5 py-0.5 h-5 mt-0.5 shrink-0">
-                      {change.type}
-                    </Badge>
-                    <span>{change.content}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <p className="text-muted-foreground mb-6 max-w-2xl">{release.description}</p>
+            
+            <ul className="space-y-3">
+              {release.changes.map((change, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm">
+                  <Badge variant={
+                    change.type === "new" ? "default" : 
+                    change.type === "fix" ? "destructive" : "secondary"
+                  } className="uppercase text-[10px] px-1.5 py-0.5 h-5 mt-0.5 shrink-0 w-12 justify-center">
+                    {change.type}
+                  </Badge>
+                  <span className="text-foreground/90 leading-relaxed">{change.content}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         ))}
       </div>

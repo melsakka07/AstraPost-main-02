@@ -19,11 +19,14 @@ export async function GET(
 
   const { postId } = await params;
 
-  // Fetch post with xAccount relation to verify ownership
+  // Fetch post with account relations to verify ownership
   const post = await db.query.posts.findFirst({
     where: eq(posts.id, postId),
     with: {
       xAccount: {
+        columns: { userId: true }
+      },
+      linkedinAccount: {
         columns: { userId: true }
       },
       tweets: {
@@ -40,9 +43,21 @@ export async function GET(
   }
 
   // Verify access:
-  // 1. Post must belong to an X Account owned by the current team context
-  if (post.xAccount.userId !== ctx.currentTeamId) {
-     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const accountOwnerId = post.xAccount?.userId || post.linkedinAccount?.userId;
+
+  if (accountOwnerId) {
+    // If attached to an account, that account must belong to the current team
+    if (accountOwnerId !== ctx.currentTeamId) {
+         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else {
+    // Orphan post (draft without account)
+    // Allow if current user is the creator OR current user is the team owner
+    // Note: post.userId is the creator.
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (post.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
+         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   return NextResponse.json(post);
@@ -58,6 +73,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Viewers cannot edit posts
+  if (ctx.role === "viewer") {
+    return NextResponse.json({ error: "Viewers cannot edit posts" }, { status: 403 });
+  }
+
   const { postId } = await params;
   const body = await request.json();
 
@@ -65,7 +85,8 @@ export async function PATCH(
   const existingPost = await db.query.posts.findFirst({
     where: eq(posts.id, postId),
     with: {
-        xAccount: { columns: { userId: true } }
+        xAccount: { columns: { userId: true } },
+        linkedinAccount: { columns: { userId: true } }
     }
   });
 
@@ -74,8 +95,16 @@ export async function PATCH(
   }
 
   // Verify workspace access
-  if (existingPost.xAccount.userId !== ctx.currentTeamId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const accountOwnerId = existingPost.xAccount?.userId || existingPost.linkedinAccount?.userId;
+  if (accountOwnerId) {
+      if (accountOwnerId !== ctx.currentTeamId) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+  } else {
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (existingPost.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
+           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
   }
 
   // Determine new status and scheduledAt
@@ -129,7 +158,8 @@ export async function PATCH(
   // 2. Update Post
   await db.update(posts)
     .set({
-      xAccountId: body.targetXAccountIds ? body.targetXAccountIds[0] : existingPost.xAccountId,
+      // We don't support changing account type easily yet, so assuming updates stay within platform or just update scheduling
+      // If we support changing accounts in PATCH, we need more logic. For now ignoring targetAccountIds in PATCH or handling simple cases
       scheduledAt: newScheduledAt,
       status: newStatus,
       updatedAt: new Date(),
@@ -207,6 +237,65 @@ export async function PATCH(
   } catch (e) {
       console.error("Queue operation failed", e);
   }
+
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ postId: string }> }
+) {
+  const ctx = await getTeamContext();
+  
+  if (!ctx) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Viewers cannot delete posts
+  if (ctx.role === "viewer") {
+    return NextResponse.json({ error: "Viewers cannot delete posts" }, { status: 403 });
+  }
+
+  const { postId } = await params;
+
+  // 1. Fetch post to verify ownership
+  const existingPost = await db.query.posts.findFirst({
+    where: eq(posts.id, postId),
+    with: {
+        xAccount: { columns: { userId: true } },
+        linkedinAccount: { columns: { userId: true } }
+    }
+  });
+
+  if (!existingPost) {
+    return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  }
+
+  // Verify workspace access
+  const accountOwnerId = existingPost.xAccount?.userId || existingPost.linkedinAccount?.userId;
+  if (accountOwnerId) {
+      if (accountOwnerId !== ctx.currentTeamId) {
+          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+  } else {
+      const session = await auth.api.getSession({ headers: await headers() });
+      if (existingPost.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
+           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+  }
+
+  // 2. Remove from Queue if scheduled
+  try {
+      if (existingPost.status === "scheduled") {
+          const job = await scheduleQueue.getJob(postId);
+          if (job) await job.remove();
+      }
+  } catch (e) {
+      console.error("Queue removal failed", e);
+  }
+
+  // 3. Delete from DB
+  await db.delete(posts).where(eq(posts.id, postId));
 
   return NextResponse.json({ success: true });
 }

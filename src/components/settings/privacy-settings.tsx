@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Download, Trash2, Loader2, AlertTriangle } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -12,9 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
-import { Download, Trash2, Loader2, AlertTriangle } from "lucide-react"
 import { authClient } from "@/lib/auth-client"
 
 export function PrivacySettings() {

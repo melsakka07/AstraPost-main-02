@@ -1,7 +1,7 @@
-import { db } from "@/lib/db";
-import { user, subscriptions, jobRuns } from "@/lib/schema";
 import { sql, gte, eq, count } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { db } from "@/lib/db";
+import { user, subscriptions, jobRuns } from "@/lib/schema";
 import { MetricsCharts } from "./metrics-charts";
 
 export const dynamic = "force-dynamic";

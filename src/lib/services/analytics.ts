@@ -1,5 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { checkMilestone } from "@/lib/gamification";
 import {
   analyticsRefreshRuns,
   followerSnapshots,
@@ -9,7 +10,6 @@ import {
   xAccounts,
 } from "@/lib/schema";
 import { XApiService } from "@/lib/services/x-api";
-import { checkMilestone } from "@/lib/gamification";
 
 export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
   const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
@@ -34,13 +34,14 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
       t.xTweetId &&
       t.post.status === "published" &&
       t.post.xAccount &&
+      t.post.xAccountId &&
       (!options?.accountIds || options.accountIds.includes(t.post.xAccountId))
   );
 
   if (tweetsToUpdate.length === 0) return;
 
   const tweetsByAccount = tweetsToUpdate.reduce((acc, t) => {
-    const accountId = t.post.xAccountId;
+    const accountId = t.post.xAccountId!;
     if (!acc[accountId]) acc[accountId] = [];
     acc[accountId].push(t);
     return acc;
@@ -178,6 +179,7 @@ export async function refreshFollowersAndMetricsForRuns(runIds: string[]) {
 
   const byAccount = new Map<string, string[]>();
   for (const r of runs) {
+    if (!r.xAccountId) continue;
     const arr = byAccount.get(r.xAccountId) || [];
     arr.push(r.id);
     byAccount.set(r.xAccountId, arr);
