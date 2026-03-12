@@ -374,7 +374,7 @@ export function Composer() {
   };
 
   const handleAiImageAttach = (image: {
-    url: string;
+    imageUrl: string;
     width: number;
     height: number;
     model: string;
@@ -391,7 +391,7 @@ export function Composer() {
             media: [
               ...tweet.media,
               {
-                url: image.url,
+                url: image.imageUrl,
                 mimeType: "image/png",
                 fileType: "image" as const,
                 size: 0, // Will be determined on upload

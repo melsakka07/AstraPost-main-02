@@ -8,21 +8,21 @@ const testimonials = [
     handle: "@sarahj_tech",
     content: "AstroPost completely changed how I manage my X account. The AI thread writer is a game changer for my productivity.",
     role: "Tech Content Creator",
-    avatar: "/avatars/sarah.jpg"
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
   },
   {
     name: "David Chen",
     handle: "@dchen_dev",
     content: "I used to spend hours scheduling tweets. Now I do it in 15 minutes a week. The analytics help me know exactly what works.",
     role: "Indie Developer",
-    avatar: "/avatars/david.jpg"
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop"
   },
   {
     name: "Amira Khalid",
     handle: "@amira_marketing",
     content: "The best tool for Arabic content creation. The multi-language support is actually usable unlike other tools.",
     role: "Marketing Specialist",
-    avatar: "/avatars/amira.jpg"
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop"
   }
 ];
 

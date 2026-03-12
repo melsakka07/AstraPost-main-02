@@ -27,9 +27,9 @@ export type PlanType = "free" | "pro_monthly" | "pro_annual" | "agency";
 
 export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   free: {
-    postsPerMonth: 10,
-    aiGenerationsPerMonth: 5,
-    aiImagesPerMonth: 3,
+    postsPerMonth: 20,
+    aiGenerationsPerMonth: 20,
+    aiImagesPerMonth: 10,
     availableImageModels: ["nano-banana-2"],
     maxXAccounts: 1,
     canUseAi: true,

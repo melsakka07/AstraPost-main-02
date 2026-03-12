@@ -198,19 +198,30 @@ export class XApiService {
   }
 
   async uploadMedia(fileBuffer: Buffer, mimeType: string, options?: { mediaCategory?: string }) {
+    const payload: any = { mimeType };
+    if (options?.mediaCategory) {
+      payload.target = options.mediaCategory;
+    }
+    
     try {
       // Twitter API v1.1 is required for media upload
-      const payload: any = { mimeType };
-      if (options?.mediaCategory) {
-        payload.target = options.mediaCategory;
-      }
       const result = await (this.client.v1 as any).uploadMedia(fileBuffer, payload);
       if (typeof result === "string") return result;
       return String(result?.media_id_string || result?.media_id || result);
-    } catch (error) {
+    } catch (error: any) {
+      const errorDetails = {
+        message: error instanceof Error ? error.message : "Unknown error",
+        code: error?.code,
+        data: error?.data,
+        response: error?.response?.data,
+        headers: error?.response?.headers,
+        statusCode: error?.response?.status,
+        requestBody: payload
+      };
+      
       logger.error("x_media_upload_failed", {
         mimeType,
-        error: error instanceof Error ? error.message : "Unknown error",
+        ...errorDetails
       });
       throw error;
     }

@@ -46,7 +46,7 @@ type ImageStyle =
   | "meme";
 
 interface GeneratedImage {
-  url: string;
+  imageUrl: string;
   width: number;
   height: number;
   model: string;
@@ -216,6 +216,7 @@ export function AiImageDialog({
 
   const handleSelectHistoryImage = (image: GeneratedImage) => {
     setGeneratedImage(image);
+    setPrompt(image.prompt);
   };
 
   return (
@@ -353,7 +354,7 @@ export function AiImageDialog({
               <div className="relative rounded-lg overflow-hidden border bg-muted">
                 <div className="relative aspect-square w-full">
                   <Image
-                    src={generatedImage.url}
+                    src={generatedImage.imageUrl}
                     alt="Generated image"
                     fill
                     className="object-contain"
@@ -375,17 +376,18 @@ export function AiImageDialog({
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {imageHistory.map((img, idx) => (
                       <button
-                        key={`${img.url}-${idx}`}
+                        key={`${img.imageUrl}-${idx}`}
                         onClick={() => handleSelectHistoryImage(img)}
+                        aria-label={`Select generated image ${idx + 1}`}
                         className={cn(
                           "relative flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden",
-                          generatedImage.url === img.url
+                          generatedImage.imageUrl === img.imageUrl
                             ? "border-primary"
                             : "border-muted"
                         )}
                       >
                         <Image
-                          src={img.url}
+                          src={img.imageUrl}
                           alt={`Generated ${idx + 1}`}
                           fill
                           className="object-cover"
