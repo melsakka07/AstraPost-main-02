@@ -1,9 +1,9 @@
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { CreditCard, Twitter, Users } from "lucide-react";
+import { ConnectedInstagramAccounts } from "@/components/settings/connected-instagram-accounts";
 import { ConnectedLinkedInAccounts } from "@/components/settings/connected-linkedin-accounts";
 import { ConnectedXAccounts } from "@/components/settings/connected-x-accounts";
-import { ConnectedInstagramAccounts } from "@/components/settings/connected-instagram-accounts";
 import { ManageSubscriptionButton } from "@/components/settings/manage-subscription-button";
 import { PlanUsage } from "@/components/settings/plan-usage";
 import { PrivacySettings } from "@/components/settings/privacy-settings";

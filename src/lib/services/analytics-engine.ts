@@ -1,6 +1,6 @@
+import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { posts, tweetAnalytics, tweets } from "@/lib/schema";
-import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
 
 export type BestTimeBucket = {
   day: number; // 0-6 (Sun-Sat)

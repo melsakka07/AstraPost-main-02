@@ -1,15 +1,15 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Shield } from "lucide-react";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { getTeamContext } from "@/lib/team-context";
-import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { InviteMemberDialog } from "@/components/settings/team/invite-member-dialog";
 import { TeamMembersList } from "@/components/settings/team/team-members-list";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { getTeamContext } from "@/lib/team-context";
 
 export default async function TeamSettingsPage() {
   const session = await auth.api.getSession({

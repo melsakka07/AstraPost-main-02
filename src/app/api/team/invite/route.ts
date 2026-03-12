@@ -2,10 +2,10 @@ import { NextRequest } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { teamInvitations, teamMembers, user } from "@/lib/schema";
-import { getTeamContext } from "@/lib/team-context";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { teamInvitations, teamMembers, user } from "@/lib/schema";
 import { sendTeamInvitationEmail } from "@/lib/services/email";
+import { getTeamContext } from "@/lib/team-context";
 
 const inviteSchema = z.object({
   email: z.string().email(),

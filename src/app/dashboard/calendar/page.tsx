@@ -47,7 +47,7 @@ export default async function CalendarPage({
   });
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
+    <div className="flex flex-col h-[calc(100vh-4rem)]">
       <PageToolbar
         title="Content Calendar"
         description="Review scheduled content and drag to reschedule."
@@ -64,7 +64,7 @@ export default async function CalendarPage({
         }
       />
 
-      <div className="h-[calc(100vh-220px)] min-h-[600px] rounded-lg border bg-background p-4 shadow-sm">
+      <div className="flex-1 rounded-lg border bg-background p-4 shadow-sm overflow-hidden mx-4 md:mx-auto max-w-7xl w-full my-4">
         <CalendarView posts={scheduledPosts} currentDate={currentDate} />
       </div>
     </div>

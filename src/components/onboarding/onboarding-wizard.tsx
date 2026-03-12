@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Twitter, PenTool, Calendar, Rocket, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ const steps = [
 ];
 
 export function OnboardingWizard() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -112,9 +111,9 @@ export function OnboardingWizard() {
          setCurrentStep(4);
 
       } else if (currentStep === 4) {
-        // Finish
+        // Finish - use hard navigation to refresh server-side data
         await fetch("/api/user/onboarding-complete", { method: "POST" });
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
       }
     } catch (error) {
       console.error("Step error:", error);

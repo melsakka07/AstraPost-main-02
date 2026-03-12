@@ -2,10 +2,10 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { Check } from "lucide-react";
+import { PricingTable } from "@/components/billing/pricing-table";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
-import { PricingTable } from "@/components/billing/pricing-table";
 
 export const metadata = {
   title: "Pricing | AstroPost",

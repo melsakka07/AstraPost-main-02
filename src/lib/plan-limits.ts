@@ -1,8 +1,12 @@
 export type AnalyticsExportCapability = "none" | "csv_pdf" | "white_label_pdf";
 
+export type ImageModel = "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+
 export interface PlanLimits {
   postsPerMonth: number;
   aiGenerationsPerMonth: number;
+  aiImagesPerMonth: number;
+  availableImageModels: ImageModel[];
   maxXAccounts: number;
   canUseAi: boolean;
   canScheduleThreads: boolean;
@@ -15,6 +19,8 @@ export interface PlanLimits {
   canUseVoiceProfile: boolean;
   canUseLinkedin: boolean;
   maxTeamMembers: number | null;
+  maxInspirationBookmarks: number;
+  canUseInspiration: boolean;
 }
 
 export type PlanType = "free" | "pro_monthly" | "pro_annual" | "agency";
@@ -23,6 +29,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   free: {
     postsPerMonth: 10,
     aiGenerationsPerMonth: 5,
+    aiImagesPerMonth: 3,
+    availableImageModels: ["nano-banana-2"],
     maxXAccounts: 1,
     canUseAi: true,
     canScheduleThreads: false,
@@ -35,10 +43,14 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseVoiceProfile: false,
     canUseLinkedin: false,
     maxTeamMembers: null,
+    maxInspirationBookmarks: 5,
+    canUseInspiration: true,
   },
   pro_monthly: {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: 100,
+    aiImagesPerMonth: 50,
+    availableImageModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
     maxXAccounts: 3,
     canUseAi: true,
     canScheduleThreads: true,
@@ -51,10 +63,14 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseVoiceProfile: true,
     canUseLinkedin: false,
     maxTeamMembers: null,
+    maxInspirationBookmarks: -1, // -1 = unlimited
+    canUseInspiration: true,
   },
   pro_annual: {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: 100,
+    aiImagesPerMonth: 50,
+    availableImageModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
     maxXAccounts: 3,
     canUseAi: true,
     canScheduleThreads: true,
@@ -67,10 +83,14 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseVoiceProfile: true,
     canUseLinkedin: false,
     maxTeamMembers: null,
+    maxInspirationBookmarks: -1, // -1 = unlimited
+    canUseInspiration: true,
   },
   agency: {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: Infinity,
+    aiImagesPerMonth: -1, // -1 = unlimited
+    availableImageModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
     maxXAccounts: 10,
     canUseAi: true,
     canScheduleThreads: true,
@@ -83,6 +103,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseVoiceProfile: true,
     canUseLinkedin: true,
     maxTeamMembers: 5,
+    maxInspirationBookmarks: -1, // -1 = unlimited
+    canUseInspiration: true,
   },
 };
 

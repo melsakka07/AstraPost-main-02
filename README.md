@@ -495,6 +495,46 @@ docker compose up -d postgres redis
 pnpm run db:migrate
 ```
 
+### Next.js dev server fails: "You cannot use different slug names for the same dynamic path"
+
+This error occurs when there are conflicting dynamic routes. Ensure all routes in the same directory use the same parameter name.
+
+**Example conflict:**
+```
+app/api/team/invitations/[id]/route.ts
+app/api/team/invitations/[invitationId]/route.ts  // CONFLICT!
+```
+
+**Solution:** Use consistent parameter names across all routes in the same directory.
+
+### TypeScript errors in `.next/dev/types/validator.ts`
+
+These are Next.js 16 + Turbopack generated type errors. They typically resolve once the dev server boots properly.
+
+```bash
+pnpm dev  # Start the dev server - errors should clear
+```
+
+If errors persist, try:
+```bash
+rm -rf .next
+pnpm dev
+```
+
+### Worker analytics job fails with SQL query error
+
+If the worker shows errors like "Failed query" when processing analytics jobs:
+
+1. Check that the database schema is up to date:
+   ```bash
+   pnpm run db:migrate
+   ```
+
+2. Restart the worker after migration:
+   ```bash
+   pnpm run worker
+   ```
+
 ### X OAuth callback not working
 
 Ensure your Twitter Developer App's callback URL is set to:

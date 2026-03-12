@@ -171,8 +171,8 @@ export function CalendarView({ posts, currentDate }: CalendarViewProps) {
   const activePost = activeId ? posts.find((p) => p.id === activeId) : null;
 
   return (
-    <div className="flex h-full flex-col space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="icon" onClick={handlePrev}>
             <ChevronLeft className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function CalendarView({ posts, currentDate }: CalendarViewProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="rounded-md border">
+        <div className="rounded-md border flex-1 overflow-hidden flex flex-col">
             {view !== "day" && (
                 <div className="grid grid-cols-7 border-b bg-muted/50">
                     {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
@@ -225,9 +225,9 @@ export function CalendarView({ posts, currentDate }: CalendarViewProps) {
             
             <div className={cn(
                 "grid bg-background",
-                view === "month" ? "grid-cols-7 auto-rows-[minmax(120px,1fr)]" : 
-                view === "week" ? "grid-cols-7 min-h-[500px]" : 
-                "grid-cols-1 min-h-[500px]"
+                view === "month" ? "grid-cols-7 grid-rows-6" :
+                view === "week" ? "grid-cols-7 grid-rows-1" :
+                "grid-cols-1 grid-rows-1"
             )}>
                 {days.map((day) => {
                     const dayKey = format(day, "yyyy-MM-dd");

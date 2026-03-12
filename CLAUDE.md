@@ -8,6 +8,8 @@ AstroPost is a production-ready AI-powered social media management platform for 
 
 - **Framework**: Next.js 16 with App Router, React 19, TypeScript
 - **AI Integration**: Vercel AI SDK 5 + OpenRouter (access to 100+ AI models)
+- **AI Image Generation**: Replicate API (Flux models)
+- **AI Chat**: Google Gemini API for chat features
 - **Authentication**: Better Auth with Email/Password + X (Twitter) OAuth 2.0
 - **Database**: PostgreSQL 18 (pgvector) with Drizzle ORM
 - **Queue**: BullMQ + Redis for background job processing
@@ -27,13 +29,26 @@ AstroPost is a production-ready AI-powered social media management platform for 
 
 ### AI Implementation Files
 
+**OpenRouter AI Integration** (via `@openrouter/ai-sdk-provider`)
 - `src/app/api/ai/thread/route.ts` — AI thread writer endpoint
 - `src/app/api/ai/translate/route.ts` — Translation endpoint
 - `src/app/api/ai/affiliate/route.ts` — Amazon affiliate tweet generator
 - `src/app/api/ai/tools/route.ts` — General AI writing tools
 - `src/app/api/chat/route.ts` — General AI chat endpoint
-- Package: `@openrouter/ai-sdk-provider` (not `@ai-sdk/openai`)
 - Import: `import { openrouter } from "@openrouter/ai-sdk-provider"`
+
+**Google Gemini AI Integration**
+- `src/app/api/ai/inspire/route.ts` — AI content inspiration endpoint
+- `src/app/api/ai/image/route.ts` — AI image generation endpoint (via Replicate)
+- `src/lib/services/ai-image.ts` — Image generation service using Replicate API
+
+**Twitter/X API Integration**
+- `src/app/api/x/tweet-lookup/route.ts` — Public tweet import endpoint
+- `src/lib/services/tweet-importer.ts` — Tweet import service with context retrieval
+- Requires: `TWITTER_BEARER_TOKEN` environment variable
+
+**Analytics & Insights**
+- `src/app/api/analytics/viral/route.ts` — Viral content pattern analysis endpoint
 
 ## Project Structure
 
@@ -56,22 +71,30 @@ src/
 │   │   └── legal/                # Privacy & Terms pages
 │   ├── api/
 │   │   ├── ai/                   # AI endpoints: thread, translate, affiliate, tools
+│   │   │   ├── image/            # AI image generation via Replicate
+│   │   │   └── inspire/          # AI content inspiration via Gemini
 │   │   ├── analytics/            # Follower & tweet analytics endpoints
+│   │   │   └── viral/            # Viral content pattern analysis
 │   │   ├── auth/[...all]/        # Better Auth catch-all route
 │   │   ├── billing/              # Stripe checkout & webhook handlers
 │   │   ├── chat/route.ts         # General AI chat endpoint (OpenRouter)
 │   │   ├── diagnostics/          # System diagnostics endpoint
+│   │   ├── inspiration/          # Tweet import & bookmark endpoints
+│   │   │   └── bookmark/         # CRUD for inspiration bookmarks
 │   │   ├── media/upload/         # File/media upload handler
 │   │   ├── posts/                # Post CRUD, reschedule, retry
 │   │   └── x/                   # X account management & health check
+│   │       └── tweet-lookup/     # Public tweet import endpoint
 │   ├── chat/                     # AI chat interface (protected)
 │   ├── dashboard/                # Core app area (protected)
 │   │   ├── affiliate/            # Affiliate tweet generator page
-│   │   ├── ai/                   # AI writing tools page
+│   │   ├── ai/                   # AI writing tools page (Thread Writer, Hashtag Generator)
 │   │   ├── analytics/            # Analytics dashboard page
+│   │   │   └── viral/            # Viral Content Analyzer page
 │   │   ├── calendar/             # Scheduling calendar page
 │   │   ├── compose/              # Tweet/thread composer page
 │   │   ├── drafts/               # Draft management page
+│   │   ├── inspiration/          # Tweet import & inspiration page
 │   │   ├── jobs/                 # Job run history & monitoring page
 │   │   ├── onboarding/           # Onboarding wizard page
 │   │   ├── queue/                # Post queue management page
@@ -79,6 +102,8 @@ src/
 │   ├── profile/                  # User profile page (protected)
 │   └── layout.tsx                # Root layout
 ├── components/
+│   ├── ai/                       # AI-powered components
+│   │   └── hashtag-generator.tsx # AI hashtag generator component
 │   ├── auth/                     # Authentication components
 │   │   ├── sign-in-button.tsx    # Sign-in form
 │   │   ├── sign-up-form.tsx      # Registration form
@@ -91,10 +116,17 @@ src/
 │   ├── calendar/                 # Calendar components
 │   │   └── reschedule-post-form.tsx
 │   ├── composer/                 # Tweet/thread composer components
+│   │   ├── ai-image-dialog.tsx   # AI image generation dialog
 │   │   ├── composer.tsx
+│   │   ├── sortable-tweet.tsx    # Draggable tweet card
+│   │   ├── tweet-card.tsx        # Tweet card component
 │   │   └── target-accounts-select.tsx
 │   ├── dashboard/                # Dashboard layout components
 │   │   └── sidebar.tsx
+│   ├── inspiration/              # Inspiration feature components
+│   │   ├── adaptation-panel.tsx  # Manual/AI adaptation panel
+│   │   ├── imported-tweet-card.tsx # X-style tweet card
+│   │   └── manual-editor.tsx     # Manual editor with similarity check
 │   ├── onboarding/               # Onboarding wizard component
 │   │   └── onboarding-wizard.tsx
 │   ├── queue/                    # Queue management components
@@ -103,6 +135,7 @@ src/
 │   │   ├── connected-x-accounts.tsx
 │   │   └── x-health-check-button.tsx
 │   ├── ui/                       # shadcn/ui primitives
+│   │   ├── alert.tsx
 │   │   ├── button.tsx
 │   │   ├── card.tsx
 │   │   ├── dialog.tsx
@@ -119,6 +152,7 @@ src/
 │   │   ├── spinner.tsx
 │   │   ├── textarea.tsx
 │   │   ├── mode-toggle.tsx       # Dark/light mode toggle
+│   │   ├── progress.tsx
 │   │   └── github-stars.tsx
 │   ├── site-header.tsx           # Main navigation header
 │   ├── site-footer.tsx           # Footer component
@@ -128,6 +162,9 @@ src/
     │   ├── client.ts
     │   └── processors.ts
     ├── services/                 # External service integrations
+    │   ├── ai-image.ts           # AI image generation via Replicate
+    │   ├── analytics-engine.ts   # Analytics computation service
+    │   ├── tweet-importer.ts     # Tweet import service with context
     │   ├── x-api.ts              # X (Twitter) API service
     │   └── analytics.ts          # Analytics service
     ├── security/                 # Security utilities
@@ -138,6 +175,8 @@ src/
     ├── db.ts                     # Drizzle database connection
     ├── env.ts                    # Environment variable validation
     ├── logger.ts                 # Structured logger
+    ├── plan-limits.ts            # Plan-based usage limits
+    ├── rate-limiter.ts           # Redis-based rate limiting
     ├── schema.ts                 # Full Drizzle schema (all 15 tables)
     ├── session.ts                # Session helpers
     ├── storage.ts                # File storage abstraction (local / Vercel Blob)
@@ -160,12 +199,29 @@ BETTER_AUTH_URL=http://localhost:3000
 TWITTER_CLIENT_ID=your-client-id
 TWITTER_CLIENT_SECRET=your-client-secret
 
+# X (Twitter) API Bearer Token — Required for Inspiration feature
+# Get it from: https://developer.twitter.com/en/portal/dashboard -> Your App -> Keys and Tokens -> Bearer Token
+TWITTER_BEARER_TOKEN=your-bearer-token-here
+
 # Security — token encryption (comma-separated 32-byte keys, first is primary)
 TOKEN_ENCRYPTION_KEYS=base64key1=,base64key2=
 
-# AI via OpenRouter
+# AI via OpenRouter (primary AI provider)
 OPENROUTER_API_KEY=sk-or-v1-your-key
 OPENROUTER_MODEL=openai/gpt-4o  # any model from openrouter.ai/models
+
+# Google Gemini AI (for chat & inspiration features)
+GEMINI_API_KEY=your-gemini-api-key
+GOOGLE_AI_API_KEY=your-google-ai-api-key  # Alias for GEMINI_API_KEY
+
+# Replicate API (for AI image generation)
+REPLICATE_API_TOKEN=your-replicate-api-token
+
+# Optional - for vector search only
+OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
+
+# Queue (Redis)
+REDIS_URL="redis://127.0.0.1:6379"
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -178,6 +234,17 @@ STRIPE_PRICE_ID_ANNUAL=
 
 # File Storage (optional — leave empty for local dev, set for Vercel Blob in production)
 BLOB_READ_WRITE_TOKEN=
+
+# Email (Resend) - Optional
+# Get your API key from: https://resend.com/api-keys
+# If not set, emails will be logged to console only
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+
+# Polar payment processing (optional)
+POLAR_WEBHOOK_SECRET=
+POLAR_ACCESS_TOKEN=
+POLAR_SERVER=sandbox  # or "production"
 ```
 
 ## Available Scripts
@@ -201,6 +268,162 @@ pnpm run smoke:full           # Full smoke test suite (boot → migrate → work
 pnpm run tokens:rotate        # Rotate X API token encryption keys
 pnpm run tokens:encrypt-access # One-time: encrypt existing plaintext X tokens
 ```
+
+## AI Features Overview
+
+AstroPost includes several AI-powered features to help users create, analyze, and optimize content:
+
+### 1. AI Thread Writer
+- **Endpoint**: `POST /api/ai/thread`
+- **Purpose**: Generate Twitter threads from a topic
+- **Tones**: Professional, casual, educational, inspirational, humorous, viral, controversial
+- **Languages**: Arabic, English, French, German, Spanish, Italian, Portuguese, Turkish, Russian, Hindi
+- **Thread Length**: 3-15 tweets (configurable)
+
+### 2. AI Image Generation
+- **Endpoint**: `POST /api/ai/image`
+- **Service**: Replicate API (Flux models)
+- **Purpose**: Generate AI images for tweets
+- **Features**:
+  - Style selection (Photorealistic, Anime, Digital Art, etc.)
+  - Aspect ratio options (1:1, 16:9, 9:16)
+  - Regional preferences (MENA optimized for Arabic users)
+  - Direct integration with Composer
+
+### 3. AI Hashtag Generator
+- **Component**: `src/components/ai/hashtag-generator.tsx`
+- **Purpose**: Generate relevant hashtags for tweet content
+- **Features**:
+  - Language-aware generation
+  - Regional hashtag prioritization (MENA for Arabic)
+  - Copy individual or all hashtags
+  - Remove unwanted tags
+
+### 4. AI Inspiration
+- **Endpoint**: `POST /api/ai/inspire`
+- **Service**: Google Gemini API
+- **Purpose**: Generate content ideas based on topic and tone
+- **Actions**: Rephrase, change tone, expand to thread, add takeaway, translate, counter-point
+
+### 5. Inspiration Feature (Tweet Import)
+- **Endpoint**: `POST /api/x/tweet-lookup`
+- **Purpose**: Import public tweets from X/Twitter URLs
+- **Features**:
+  - Full tweet context (parent tweets, top replies)
+  - Manual editor with similarity checking (Levenshtein distance)
+  - AI-powered adaptation options
+  - Bookmark system for saved inspirations
+  - Direct send to Composer
+
+### 6. Viral Content Analyzer
+- **Endpoint**: `GET /api/analytics/viral?days=90`
+- **Purpose**: Analyze top-performing tweets to identify viral patterns
+- **Analysis Dimensions**:
+  - Top hashtags with engagement rates
+  - High-performing keywords (2-word phrases)
+  - Tweet length performance (short/medium/long)
+  - Best posting days and hours
+  - Content type performance (questions, links, quotes, statistics, threads)
+  - AI-generated actionable insights
+
+## AI Tone & Style Options
+
+The AI writer supports multiple tones for different content strategies:
+- **Professional**: Business-focused, formal language
+- **Casual**: Conversational, friendly tone
+- **Educational**: Informative, teaching-oriented
+- **Inspirational**: Motivational, uplifting content
+- **Humorous**: Funny, entertaining posts
+- **Viral**: Optimized for shareability and engagement
+- **Controversial**: Thought-provoking, discussion-starting
+
+## AI Language Support
+
+AstroPost supports content generation in multiple languages:
+- **Arabic (ar)**: Primary target language with RTL support
+- **English (en)**: Default language
+- **French (fr)**
+- **German (de)**
+- **Spanish (es)**
+- **Italian (it)**
+- **Portuguese (pt)**
+- **Turkish (tr)**
+- **Russian (ru)**
+- **Hindi (hi)**
+
+## Recent Fixes & Known Issues
+
+### Fixed Issues (2026-03-12)
+
+### New Feature Implementations (March 2026)
+
+1. **AI Image Generation** (Phase 2-3)
+   - Created Replicate API integration (`src/lib/services/ai-image.ts`)
+   - Added AI image dialog component (`src/components/composer/ai-image-dialog.tsx`)
+   - Added image generation API endpoint (`src/app/api/ai/image/route.ts`)
+   - Integrated with Composer for seamless workflow
+
+2. **Inspiration Feature** (Phase 4-5)
+   - Created tweet importer service (`src/lib/services/tweet-importer.ts`)
+   - Added Inspiration page (`src/app/dashboard/inspiration/page.tsx`)
+   - Created X-style tweet card component (`src/components/inspiration/imported-tweet-card.tsx`)
+   - Created adaptation panel with Manual/AI tabs (`src/components/inspiration/adaptation-panel.tsx`)
+   - Created manual editor with similarity checking (`src/components/inspiration/manual-editor.tsx`)
+   - Added bookmark API endpoints (`src/app/api/inspiration/bookmark/`)
+   - Added tweet lookup API endpoint (`src/app/api/x/tweet-lookup/route.ts`)
+
+3. **AI Hashtag Generator** (Bonus Feature)
+   - Created hashtag generator component (`src/components/ai/hashtag-generator.tsx`)
+   - Updated AI Writer page with tabbed interface
+   - Language-aware generation with regional prioritization
+
+4. **Viral Content Analyzer** (Feature 3.10)
+   - Created viral analysis API endpoint (`src/app/api/analytics/viral/route.ts`)
+   - Created Viral Analyzer dashboard page (`src/app/dashboard/analytics/viral/page.tsx`)
+   - Added to sidebar navigation
+   - Multi-dimensional analysis: hashtags, keywords, length, timing, content types
+
+### Bug Fixes
+
+1. **Duplicate Pricing Pages**
+   - Removed `src/app/(marketing)/pricing/page.tsx` (duplicate)
+   - Kept `src/app/pricing/page.tsx` (Server Component with full layout)
+   - Next.js error: "You cannot have two parallel pages that resolve to the same path"
+
+2. **Next.js 16 Middleware Migration**
+   - Migrated from deprecated `src/middleware.ts` to `src/proxy.ts`
+   - Updated auth protection to use Next.js 16 proxy API
+   - Added admin route protection (`/admin/*`) and improved redirect logic with callbackUrl
+
+2. **Dynamic Route Conflicts**
+   - Fixed conflicting dynamic routes in team API:
+     - `src/app/api/team/invitations/[id]/` → removed (kept `[invitationId]/`)
+     - `src/app/api/team/members/[id]/` → removed (kept `[memberId]/`)
+   - These conflicts caused Next.js error: "You cannot use different slug names for the same dynamic path"
+   - Newer implementations use `getTeamContext()` for better team authorization
+
+3. **Analytics Query Error**
+   - Fixed incorrectly defined `analytics` relation in `tweetRelations` (schema.ts)
+   - Removed broken relation that caused SQL query failures in analytics worker
+
+4. **TypeScript & ESLint**
+   - Fixed unused imports in pricing components
+   - Fixed `currentPlan` prop passing with conditional spread
+   - All import order warnings auto-fixed with `pnpm lint --fix`
+
+### TypeScript Errors in `.next/dev/types/validator.ts`
+
+TypeScript may show errors in `.next/dev/types/validator.ts` when running `pnpm typecheck`. These are:
+- **Generated files** from Next.js 16 + Turbopack
+- **Known issues** with the current Next.js version
+- **Not actual code errors** - they resolve once the dev server boots properly
+
+If you see these errors, start the dev server:
+```bash
+pnpm dev
+```
+
+The errors should clear after Next.js generates fresh types.
 
 ## Documentation Files
 
@@ -279,6 +502,32 @@ The project includes technical documentation in `docs/`:
     - Use Route Handlers (`route.ts` files)
     - Return `Response` objects
     - Attach correlation IDs on scheduling-related endpoints via `src/lib/correlation.ts`
+
+11. **AI Service Integration**
+    - **OpenRouter**: Use for most AI features (thread writer, translation, etc.)
+      - Import from `@openrouter/ai-sdk-provider`
+      - Model format: `provider/model-name` (e.g., `openai/gpt-4o`)
+    - **Google Gemini**: Use for chat and inspiration features
+      - Requires `GEMINI_API_KEY` environment variable
+      - Import from `@ai-sdk/google`
+    - **Replicate**: Use for AI image generation
+      - Requires `REPLICATE_API_TOKEN` environment variable
+      - Supports Flux models for high-quality images
+
+12. **Twitter/X API Integration**
+    - For OAuth: Use existing `x-api.ts` service with encrypted tokens
+    - For public data: Use `TWITTER_BEARER_TOKEN` environment variable
+    - Tweet importer service (`tweet-importer.ts`) handles:
+      - URL parsing for various X URL formats
+      - Full conversation context retrieval
+      - Redis caching (1-hour TTL)
+      - Rate limit handling
+
+13. **Plan-Based Limits**
+    - Use `src/lib/plan-limits.ts` for feature restrictions
+    - Free plan: Limited AI credits, 5 inspiration bookmarks
+    - Pro/Agency: Unlimited features
+    - Always check limits before resource-intensive operations
 
 ### Best Practices
 

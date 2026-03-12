@@ -7,28 +7,34 @@ export const redis = new IORedis(process.env.REDIS_URL || "redis://localhost:637
 export const RATE_LIMITS = {
   free: {
     ai: { limit: 20, window: 3600 }, // 20 per hour
+    ai_image: { limit: 10, window: 60 }, // 10 per minute
     posts: { limit: 100, window: 3600 },
     media: { limit: 20, window: 3600 },
     auth: { limit: 5, window: 900 }, // 5 per 15 mins
+    tweet_lookup: { limit: 20, window: 3600 }, // 20 per hour
   },
   pro: {
     ai: { limit: 200, window: 3600 },
+    ai_image: { limit: 30, window: 60 }, // 30 per minute
     posts: { limit: 500, window: 3600 },
     media: { limit: 100, window: 3600 },
     auth: { limit: 20, window: 900 },
+    tweet_lookup: { limit: 100, window: 3600 }, // 100 per hour
   },
   agency: {
     ai: { limit: 1000, window: 3600 },
+    ai_image: { limit: 60, window: 60 }, // 60 per minute
     posts: { limit: 2000, window: 3600 },
     media: { limit: 500, window: 3600 },
     auth: { limit: 50, window: 900 },
+    tweet_lookup: { limit: 200, window: 3600 }, // 200 per hour
   }
 };
 
 export async function checkRateLimit(
-  userId: string, 
+  userId: string,
   plan: string, // Relaxed type
-  type: "ai" | "posts" | "media" | "auth"
+  type: "ai" | "ai_image" | "posts" | "media" | "auth" | "tweet_lookup"
 ): Promise<{ success: boolean; reset: number; remaining: number }> {
   
   // Normalize plan

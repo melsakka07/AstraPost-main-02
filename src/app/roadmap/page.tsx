@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
 import { FeedbackList } from "@/components/roadmap/feedback-list";
+import { auth } from "@/lib/auth";
 
 export const metadata = {
   title: "Public Roadmap | AstroPost",

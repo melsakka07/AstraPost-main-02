@@ -19,6 +19,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   transpilePackages: ["bullmq"],
+  serverExternalPackages: ["ioredis"],
 
   // Image optimization configuration
   images: {

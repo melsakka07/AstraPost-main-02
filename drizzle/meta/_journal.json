@@ -169,6 +169,13 @@
       "when": 1773271737934,
       "tag": "0023_flashy_puma",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1773323559680,
+      "tag": "0024_smiling_agent_brand",
+      "breakpoints": true
     }
   ]
 }

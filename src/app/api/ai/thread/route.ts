@@ -14,9 +14,9 @@ import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const threadRequestSchema = z.object({
   topic: z.string(),
-  tone: z.enum(["professional", "casual", "educational", "inspirational", "funny", "viral"]),
-  tweetCount: z.number().min(3).max(15),
-  language: z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]),
+  tone: z.enum(["professional", "casual", "educational", "inspirational", "humorous", "viral", "controversial"]).default("professional"),
+  tweetCount: z.number().min(3).max(15).optional().default(5),
+  language: z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]).optional().default("en"),
 });
 
 const tweetSchema = z.object({

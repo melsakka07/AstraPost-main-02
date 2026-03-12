@@ -14,9 +14,10 @@ interface SortableTweetProps {
   removeTweetMedia: (id: string, url: string) => void;
   triggerFileUpload: (id: string) => void;
   openAiTool: (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => void;
+  openAiImage?: (tweetId: string) => void;
 }
 
-export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool }: SortableTweetProps) {
+export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage }: SortableTweetProps) {
   const {
     attributes,
     listeners,
@@ -46,6 +47,7 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
             removeTweetMedia={removeTweetMedia}
             triggerFileUpload={triggerFileUpload}
             openAiTool={openAiTool}
+            {...(openAiImage !== undefined && { openAiImage })}
             dragHandleProps={{...attributes, ...listeners}}
         />
     </div>

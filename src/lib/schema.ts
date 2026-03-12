@@ -42,6 +42,9 @@ export const user = pgTable(
     twoFactorEnabled: boolean("two_factor_enabled").default(false),
     twoFactorSecret: text("two_factor_secret"),
     twoFactorBackupCodes: text("two_factor_backup_codes"),
+
+    // AI Features
+    preferredImageModel: text("preferred_image_model").default("nano-banana-2"), // 'nano-banana-2', 'banana-pro', 'gemini-imagen4'
   },
   (table) => [
     index("user_email_idx").on(table.email),
@@ -186,6 +189,7 @@ export const posts = pgTable("posts", {
   approvedBy: text("approved_by").references(() => user.id, { onDelete: "set null" }),
   approvedAt: timestamp("approved_at"),
   reviewerNotes: text("reviewer_notes"),
+  inspiredByTweetId: text("inspired_by_tweet_id"), // ID of the source tweet from Inspiration feature
   recurrencePattern: text("recurrence_pattern"), // 'daily', 'weekly', 'monthly', 'yearly'
   recurrenceEndDate: timestamp("recurrence_end_date"),
   idempotencyKey: text("idempotency_key").unique(),
@@ -351,7 +355,7 @@ export const socialAnalytics = pgTable("social_analytics", {
 export const aiGenerations = pgTable("ai_generations", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  type: text("type"), // 'thread', 'tweet_improve', 'affiliate'
+  type: text("type"), // 'thread', 'tweet_improve', 'affiliate', 'image', 'inspiration', 'inspire'
   inputPrompt: text("input_prompt"),
   outputContent: jsonb("output_content"),
   tone: text("tone"),
@@ -360,6 +364,23 @@ export const aiGenerations = pgTable("ai_generations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("ai_gen_user_id_idx").on(table.userId)
+]);
+
+export const inspirationBookmarks = pgTable("inspiration_bookmarks", {
+  id: text("id").primaryKey(), // Will use UUID like other tables
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  sourceTweetId: text("source_tweet_id").notNull(),
+  sourceTweetUrl: text("source_tweet_url").notNull(),
+  sourceAuthorHandle: text("source_author_handle").notNull(),
+  sourceText: text("source_text").notNull(),
+  adaptedText: text("adapted_text"),
+  action: text("action"), // 'rephrase', 'change_tone', 'expand_thread', 'add_take', 'translate', 'counter_point'
+  tone: text("tone"),
+  language: text("language"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("inspiration_bookmarks_user_id_idx").on(table.userId),
+  index("inspiration_bookmarks_source_tweet_id_idx").on(table.sourceTweetId),
 ]);
 
 export const subscriptions = pgTable("subscriptions", {
@@ -531,6 +552,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   }),
   referrals: many(user, { relationName: "referrals" }),
   aiGenerations: many(aiGenerations),
+  inspirationBookmarks: many(inspirationBookmarks),
   jobRuns: many(jobRuns),
   followerSnapshots: many(followerSnapshots),
   analyticsRefreshRuns: many(analyticsRefreshRuns),
@@ -568,6 +590,13 @@ export const feedbackVotesRelations = relations(feedbackVotes, ({ one }) => ({
 export const aiGenerationsRelations = relations(aiGenerations, ({ one }) => ({
   user: one(user, {
     fields: [aiGenerations.userId],
+    references: [user.id],
+  }),
+}));
+
+export const inspirationBookmarksRelations = relations(inspirationBookmarks, ({ one }) => ({
+  user: one(user, {
+    fields: [inspirationBookmarks.userId],
     references: [user.id],
   }),
 }));
@@ -629,10 +658,6 @@ export const tweetRelations = relations(tweets, ({ one, many }) => ({
     references: [posts.id],
   }),
   media: many(media),
-  analytics: one(tweetAnalytics, {
-    fields: [tweets.id],
-    references: [tweetAnalytics.tweetId],
-  }),
   analyticsSnapshots: many(tweetAnalyticsSnapshots),
 }));
 

@@ -8,6 +8,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Plus, Sparkles, Loader2, Hash } from "lucide-react";
 import { toast } from "sonner";
+import { AiImageDialog } from "@/components/composer/ai-image-dialog";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
 import { InspirationPanel } from "@/components/composer/inspiration-panel";
 import { SortableTweet } from "@/components/composer/sortable-tweet";
@@ -99,6 +100,19 @@ export function Composer() {
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateCategory, setTemplateCategory] = useState("Personal");
 
+  // AI Image Dialog State
+  const [isAiImageOpen, setIsAiImageOpen] = useState(false);
+  const [aiImageTargetTweetId, setAiImageTargetTweetId] = useState<string | null>(null);
+  const [userPlanLimits, setUserPlanLimits] = useState<{
+    availableModels: ("nano-banana-2" | "banana-pro" | "gemini-imagen4")[];
+    preferredModel: "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+    remainingQuota: number;
+  }>({
+    availableModels: ["nano-banana-2"],
+    preferredModel: "nano-banana-2",
+    remainingQuota: 3,
+  });
+
   const { openWithContext: openUpgradeModal } = useUpgradeModal();
 
   const sensors = useSensors(
@@ -132,6 +146,65 @@ export function Composer() {
       cancelled = true;
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch user's AI image plan limits
+  useEffect(() => {
+    if (!session?.user) return;
+
+    (async () => {
+      try {
+        // Get user's plan info from session or fetch from API
+        const userPlan = (session.user as any).plan || "free";
+        const preferredModel = (session.user as any).preferredImageModel || "nano-banana-2";
+
+        // Map plan to available models and quota
+        const getLimitsForPlan = (plan: string): {
+          availableModels: ("nano-banana-2" | "banana-pro" | "gemini-imagen4")[];
+          preferredModel: "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+          remainingQuota: number;
+        } => {
+          switch (plan) {
+            case "pro_monthly":
+            case "pro_annual":
+              return {
+                availableModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
+                preferredModel: preferredModel as "nano-banana-2" | "banana-pro" | "gemini-imagen4",
+                remainingQuota: 50,
+              };
+            case "agency":
+              return {
+                availableModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
+                preferredModel: preferredModel as "nano-banana-2" | "banana-pro" | "gemini-imagen4",
+                remainingQuota: -1, // Unlimited
+              };
+            default:
+              return {
+                availableModels: ["nano-banana-2"],
+                preferredModel: "nano-banana-2",
+                remainingQuota: 3,
+              };
+          }
+        };
+
+        const limits = getLimitsForPlan(userPlan);
+
+        // Fetch actual remaining quota from API
+        try {
+          const res = await fetch("/api/ai/quota");
+          if (res.ok) {
+            const data = await res.json();
+            limits.remainingQuota = data.remainingImages ?? limits.remainingQuota;
+          }
+        } catch {
+          // Quota endpoint not available, use default
+        }
+
+        setUserPlanLimits(limits);
+      } catch (e) {
+        console.error("Failed to fetch AI image plan limits:", e);
+      }
+    })();
+  }, [session]);
 
   // Auto-save
   useEffect(() => {
@@ -292,6 +365,43 @@ export function Composer() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  // AI Image Dialog handlers
+  const openAiImageDialog = (tweetId: string) => {
+    setAiImageTargetTweetId(tweetId);
+    setIsAiImageOpen(true);
+  };
+
+  const handleAiImageAttach = (image: {
+    url: string;
+    width: number;
+    height: number;
+    model: string;
+    prompt: string;
+  }) => {
+    if (!aiImageTargetTweetId) return;
+
+    // Add image to the tweet's media array
+    setTweets((prev) =>
+      prev.map((tweet) => {
+        if (tweet.id === aiImageTargetTweetId) {
+          return {
+            ...tweet,
+            media: [
+              ...tweet.media,
+              {
+                url: image.url,
+                mimeType: "image/png",
+                fileType: "image" as const,
+                size: 0, // Will be determined on upload
+              },
+            ],
+          };
+        }
+        return tweet;
+      })
+    );
   };
 
   const restoreHistory = (item: any) => {
@@ -649,7 +759,7 @@ export function Composer() {
                 strategy={verticalListSortingStrategy}
             >
                 {tweets.map((tweet, index) => (
-                    <SortableTweet 
+                    <SortableTweet
                         key={tweet.id}
                         id={tweet.id}
                         tweet={tweet}
@@ -661,6 +771,7 @@ export function Composer() {
                         removeTweetMedia={removeTweetMedia}
                         triggerFileUpload={triggerFileUpload}
                         openAiTool={openAiTool}
+                        openAiImage={openAiImageDialog}
                     />
                 ))}
             </SortableContext>
@@ -1108,6 +1219,21 @@ export function Composer() {
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      {/* AI Image Dialog */}
+      <AiImageDialog
+        open={isAiImageOpen}
+        onOpenChange={setIsAiImageOpen}
+        tweetContent={
+          aiImageTargetTweetId
+            ? tweets.find((t) => t.id === aiImageTargetTweetId)?.content || ""
+            : ""
+        }
+        onImageAttach={handleAiImageAttach}
+        availableModels={userPlanLimits.availableModels}
+        userPreferredModel={userPlanLimits.preferredModel}
+        remainingQuota={userPlanLimits.remainingQuota}
+      />
     </div>
   );
 }

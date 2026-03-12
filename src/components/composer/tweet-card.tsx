@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
-import { X, Image as ImageIcon, Sparkles, Hash, Smile } from "lucide-react";
+import { X, Image as ImageIcon, Sparkles, Hash, Smile, Wand2 } from "lucide-react";
 import twitter from 'twitter-text';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -37,6 +37,7 @@ interface TweetCardProps {
   removeTweetMedia: (id: string, url: string) => void;
   triggerFileUpload: (id: string) => void;
   openAiTool: (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => void;
+  openAiImage?: (tweetId: string) => void;
   dragHandleProps?: any;
 }
 
@@ -50,6 +51,7 @@ export function TweetCard({
   removeTweetMedia,
   triggerFileUpload,
   openAiTool,
+  openAiImage,
   dragHandleProps
 }: TweetCardProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -161,15 +163,28 @@ export function TweetCard({
         
         <CardFooter className="flex justify-between items-center border-t pt-3">
           <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="text-primary"
               onClick={() => triggerFileUpload(tweet.id)}
+              aria-label="Upload media"
             >
               <ImageIcon className="h-5 w-5" />
             </Button>
-            
+
+            {openAiImage && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary"
+                onClick={() => openAiImage(tweet.id)}
+                aria-label="Generate AI image"
+              >
+                <Wand2 className="h-5 w-5" />
+              </Button>
+            )}
+
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
                 <Button 

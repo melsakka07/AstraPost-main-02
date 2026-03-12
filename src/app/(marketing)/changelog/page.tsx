@@ -3,6 +3,24 @@ import { Badge } from "@/components/ui/badge";
 export default function ChangelogPage() {
   const releases = [
     {
+      version: "v1.2.0",
+      date: "March 12, 2026",
+      title: "AI-Powered Content Suite",
+      description: "Massive AI expansion with image generation, viral analysis, and content inspiration features.",
+      changes: [
+        { type: "new", content: "AI Image Generation: Create stunning images directly in Composer using Flux AI models." },
+        { type: "new", content: "Inspiration Feature: Import public tweets from X/Twitter and adapt them for your content." },
+        { type: "new", content: "AI Hashtag Generator: Generate relevant hashtags for your tweets in multiple languages." },
+        { type: "new", content: "Viral Content Analyzer: Discover what makes your content go viral with pattern analysis." },
+        { type: "new", content: "AI Content Inspiration: Get creative ideas with Gemini-powered suggestions." },
+        { type: "new", content: "Tweet Bookmark System: Save and organize inspiring tweets for later reference." },
+        { type: "new", content: "Manual Editor with Similarity Check: Ensure your content is unique before posting." },
+        { type: "new", content: "Multi-Language Support: Generate content in 10 languages including Arabic (MENA optimized)." },
+        { type: "imp", content: "Thread Writer: Added 7 tone options including humorous and viral styles." },
+        { type: "imp", content: "Expanded AI provider support: OpenRouter, Google Gemini, and Replicate integration." },
+      ]
+    },
+    {
       version: "v1.1.0",
       date: "March 12, 2026",
       title: "Multi-Platform & Security",

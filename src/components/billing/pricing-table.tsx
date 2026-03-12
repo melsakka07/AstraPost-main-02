@@ -3,12 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
 import { PricingCard, PricingPlan } from "@/components/billing/pricing-card";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 const MONTHLY_PLANS: PricingPlan[] = [
   {
@@ -154,10 +151,10 @@ export function PricingTable({ currentPlan, hasBillingProfile, isLoggedIn = fals
 
       <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl px-4">
         {plans.map((plan) => (
-            <PricingCard 
-                key={plan.priceId} 
-                plan={plan} 
-                currentPlan={currentPlan}
+            <PricingCard
+                key={plan.priceId}
+                plan={plan}
+                {...(currentPlan != null && { currentPlan })}
                 isLoading={isLoading === plan.priceId}
                 onSelect={handleSelect}
                 isAnnual={isAnnual}
