@@ -1,7 +1,5 @@
-
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { POST } from "../route";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mocks
 vi.mock("@/lib/auth", () => ({
@@ -73,6 +71,7 @@ import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limiter";
 import { generateImage, downloadImage, validateModelForPlan } from "@/lib/services/ai-image";
 import { upload } from "@/lib/storage";
+import { POST } from "../route";
 
 describe("AI Image API", () => {
   beforeEach(() => {

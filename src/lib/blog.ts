@@ -1,6 +1,9 @@
 import fs from "fs";
 import path from "path";
-import { compileMDX } from "next-mdx-remote/rsc";
+import { serialize } from "next-mdx-remote/serialize";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypeSlug from "rehype-slug";
+import remarkGfm from "remark-gfm";
 
 const BLOG_CONTENT_PATH = path.join(process.cwd(), "content/blog");
 
@@ -23,25 +26,76 @@ export interface BlogPostMeta {
   image?: string | undefined;
 }
 
+// Helper function to extract frontmatter without full MDX compilation
+function extractFrontmatter(content: string) {
+  const frontmatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n/;
+  const match = content.match(frontmatterRegex);
+
+  if (!match || !match[1]) return null;
+
+  const frontmatterText = match[1];
+  const frontmatter: Record<string, string> = {};
+
+  // Simple YAML parser for frontmatter
+  const lines = frontmatterText.split('\n');
+  for (const line of lines) {
+    const colonIndex = line.indexOf(':');
+    if (colonIndex > 0) {
+      const key = line.slice(0, colonIndex).trim();
+      let value = line.slice(colonIndex + 1).trim();
+
+      // Remove quotes if present
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+
+      frontmatter[key] = value;
+    }
+  }
+
+  return frontmatter;
+}
+
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   try {
     const filePath = path.join(BLOG_CONTENT_PATH, `${slug}.mdx`);
     const fileContent = fs.readFileSync(filePath, "utf8");
 
-    const { content, frontmatter } = await compileMDX<{
+    const mdxSource = await serialize(fileContent, {
+      parseFrontmatter: true,
+      mdxOptions: {
+        development: process.env.NODE_ENV === "development",
+        jsx: false,
+        format: 'mdx',
+        remarkPlugins: [remarkGfm],
+        rehypePlugins: [
+          rehypeSlug,
+          [
+            rehypeAutolinkHeadings,
+            {
+              behavior: 'wrap',
+              properties: {
+                className: ['anchor-link'],
+              },
+            },
+          ],
+        ],
+      },
+    });
+
+    // Get frontmatter from compiled source
+    const frontmatter = mdxSource.frontmatter as {
       title: string;
       excerpt: string;
       date: string;
       readTime: string;
       image?: string;
-    }>({
-      source: fileContent,
-      options: { parseFrontmatter: true },
-    });
+    };
 
     return {
       slug,
-      content,
+      content: mdxSource,
       title: frontmatter.title,
       excerpt: frontmatter.excerpt,
       date: frontmatter.date,
@@ -49,6 +103,7 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
       image: frontmatter.image,
     };
   } catch (error) {
+    console.error(`Error compiling blog post "${slug}":`, error);
     return null;
   }
 }
@@ -65,17 +120,24 @@ export async function getAllBlogPosts(): Promise<BlogPostMeta[]> {
     if (!file.endsWith(".mdx")) continue;
 
     const slug = file.replace(".mdx", "");
-    const post = await getBlogPost(slug);
-    
-    if (post) {
-      posts.push({
-        slug: post.slug,
-        title: post.title,
-        excerpt: post.excerpt,
-        date: post.date,
-        readTime: post.readTime,
-        image: post.image,
-      });
+    const filePath = path.join(BLOG_CONTENT_PATH, file);
+
+    try {
+      const fileContent = fs.readFileSync(filePath, "utf8");
+      const frontmatter = extractFrontmatter(fileContent);
+
+      if (frontmatter && frontmatter.title && frontmatter.excerpt) {
+        posts.push({
+          slug,
+          title: frontmatter.title,
+          excerpt: frontmatter.excerpt,
+          date: frontmatter.date || "",
+          readTime: frontmatter.readTime || "",
+          image: frontmatter.image,
+        });
+      }
+    } catch (error) {
+      console.error(`Error reading blog post "${slug}":`, error);
     }
   }
 

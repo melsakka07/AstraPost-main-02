@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 import { FeedbackList } from "@/components/roadmap/feedback-list";
+import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/auth";
 
 export const metadata = {
@@ -14,38 +14,40 @@ export default async function RoadmapPage() {
   });
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="px-4 lg:px-6 h-14 flex items-center border-b">
-        <Link className="flex items-center justify-center" href="/">
-          <span className="font-bold text-xl">AstraPost</span>
-        </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          {session ? (
-             <Link className="text-sm font-medium hover:underline underline-offset-4" href="/dashboard">
-               Dashboard
-             </Link>
-          ) : (
-             <>
-               <Link className="text-sm font-medium hover:underline underline-offset-4" href="/login">
-                 Log In
-               </Link>
-               <Link className="text-sm font-medium hover:underline underline-offset-4" href="/register">
-                 Get Started
-               </Link>
-             </>
-          )}
-        </nav>
-      </header>
-      <main className="flex-1 container mx-auto py-12 px-4 md:px-6 max-w-5xl">
-        <div className="text-center mb-12 space-y-4">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">Public Roadmap</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+    <div className="relative min-h-screen">
+      {/* Background gradient */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="container mx-auto px-4 py-16 md:py-24 max-w-5xl space-y-12">
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto space-y-6">
+          <Badge variant="outline" className="px-4 py-1">Roadmap</Badge>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+            Public Roadmap
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             We're building AstroPost in public. Submit your ideas, report bugs, and vote on what we should build next.
           </p>
         </div>
-        
+
+        {/* Feedback List */}
         <FeedbackList isLoggedIn={!!session} />
-      </main>
+
+        {/* Info Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-muted/50 to-muted/20 p-8 text-center">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5" />
+          <div className="relative">
+            <h3 className="text-xl font-bold mb-2">
+              Want to influence our roadmap?
+            </h3>
+            <p className="text-muted-foreground max-w-lg mx-auto">
+              Join our community to discuss features and vote on upcoming priorities.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

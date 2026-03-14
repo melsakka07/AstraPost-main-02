@@ -61,44 +61,57 @@ export default function ChangelogPage() {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-16 max-w-4xl space-y-12">
-      <div className="text-center space-y-4">
-        <Badge variant="outline">Changelog</Badge>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Product Updates</h1>
-        <p className="text-xl text-muted-foreground">Stay up to date with the latest features and improvements.</p>
+    <div className="relative min-h-screen">
+      {/* Background gradient */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative border-l border-muted ml-4 md:ml-8 space-y-12 pl-8 md:pl-12">
-        {releases.map((release, index) => (
-          <div key={index} className="relative">
-            <div className="absolute -left-[2.35rem] md:-left-[3.35rem] top-1.5 h-3 w-3 rounded-full border bg-background ring-4 ring-muted" />
-            
-            <div className="flex flex-col md:flex-row gap-2 md:items-baseline mb-2">
-              <h2 className="text-2xl font-bold">{release.title}</h2>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded">{release.version}</span>
-                <span>•</span>
-                <time className="text-sm">{release.date}</time>
+      <div className="container mx-auto px-4 py-16 md:py-24 max-w-4xl space-y-12">
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto space-y-6">
+          <Badge variant="outline" className="px-4 py-1">Changelog</Badge>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+            Product Updates
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            Stay up to date with the latest features and improvements.
+          </p>
+        </div>
+
+        {/* Timeline */}
+        <div className="relative border-l border-muted ml-4 md:ml-8 space-y-12 pl-8 md:pl-12">
+          {releases.map((release, index) => (
+            <div key={index} className="relative">
+              <div className="absolute -left-[2.35rem] md:-left-[3.35rem] top-1.5 h-3 w-3 rounded-full border bg-background ring-4 ring-muted" />
+
+              <div className="flex flex-col md:flex-row gap-2 md:items-baseline mb-2">
+                <h2 className="text-2xl font-bold">{release.title}</h2>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="text-sm font-mono bg-muted px-2 py-0.5 rounded">{release.version}</span>
+                  <span>•</span>
+                  <time className="text-sm">{release.date}</time>
+                </div>
               </div>
+
+              <p className="text-muted-foreground mb-6 max-w-2xl leading-relaxed">{release.description}</p>
+
+              <ul className="space-y-3">
+                {release.changes.map((change, i) => (
+                  <li key={i} className="flex items-start gap-3 text-sm">
+                    <Badge variant={
+                      change.type === "new" ? "default" :
+                      change.type === "fix" ? "destructive" : "secondary"
+                    } className="uppercase text-[10px] px-1.5 py-0.5 h-5 mt-0.5 shrink-0 w-12 justify-center">
+                      {change.type}
+                    </Badge>
+                    <span className="text-foreground/90 leading-relaxed">{change.content}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            
-            <p className="text-muted-foreground mb-6 max-w-2xl">{release.description}</p>
-            
-            <ul className="space-y-3">
-              {release.changes.map((change, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm">
-                  <Badge variant={
-                    change.type === "new" ? "default" : 
-                    change.type === "fix" ? "destructive" : "secondary"
-                  } className="uppercase text-[10px] px-1.5 py-0.5 h-5 mt-0.5 shrink-0 w-12 justify-center">
-                    {change.type}
-                  </Badge>
-                  <span className="text-foreground/90 leading-relaxed">{change.content}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
