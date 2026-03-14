@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bot, Hash, PenTool, Sparkles, Loader2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { HashtagGenerator } from "@/components/ai/hashtag-generator";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -95,20 +96,13 @@ export default function AIWriterPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 rounded-lg">
-          <Bot className="h-8 w-8 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">AI Writer</h1>
-          <p className="text-muted-foreground">Generate viral content with AI assistance.</p>
-        </div>
-      </div>
-
+    <DashboardPageWrapper
+      icon={Bot}
+      title="AI Writer"
+      description="Generate viral content with AI assistance."
+    >
       {/* Tool Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="thread">
             <PenTool className="h-4 w-4 mr-2" />
@@ -125,23 +119,30 @@ export default function AIWriterPage() {
           <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
             <Card>
               <CardHeader>
-                <CardTitle>Configuration</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <PenTool className="h-5 w-5 text-primary" />
+                  Configuration
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Topic or Idea</label>
+                  <label htmlFor="topic" className="text-sm font-medium">Topic or Idea</label>
                   <Textarea
+                    id="topic"
                     placeholder="e.g. The future of remote work..."
-                    className="min-h-[120px]"
+                    className="min-h-[120px] resize-none"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Enter a topic or idea you want to create a thread about.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Tone</label>
+                  <label htmlFor="tone" className="text-sm font-medium">Tone</label>
                   <Select value={tone} onValueChange={setTone}>
-                    <SelectTrigger>
+                    <SelectTrigger id="tone">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -150,6 +151,8 @@ export default function AIWriterPage() {
                       <SelectItem value="humorous">Humorous</SelectItem>
                       <SelectItem value="controversial">Controversial</SelectItem>
                       <SelectItem value="educational">Educational</SelectItem>
+                      <SelectItem value="inspirational">Inspirational</SelectItem>
+                      <SelectItem value="viral">Viral</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -158,6 +161,7 @@ export default function AIWriterPage() {
                   className="w-full"
                   onClick={handleGenerate}
                   disabled={isGenerating || !topic}
+                  size="lg"
                 >
                   {isGenerating ? (
                     <>
@@ -176,21 +180,33 @@ export default function AIWriterPage() {
 
             <Card className="h-full flex flex-col">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Result</CardTitle>
+                <CardTitle>Generated Result</CardTitle>
                 {generatedContent && (
                   <Button variant="ghost" size="sm" onClick={copyToClipboard}>
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copied ? (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy
+                      </>
+                    )}
                   </Button>
                 )}
               </CardHeader>
               <CardContent className="flex-1">
                 {generatedContent ? (
-                  <div className="h-full whitespace-pre-wrap break-words rounded-md bg-muted p-4 text-sm">
+                  <div className="h-full whitespace-pre-wrap break-words rounded-md bg-muted p-4 text-sm leading-relaxed border">
                     {generatedContent}
                   </div>
                 ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-md p-8">
-                    Generated thread will appear here
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-md p-8">
+                    <Sparkles className="h-8 w-8 mb-3 opacity-50" />
+                    <p>Your generated thread will appear here</p>
+                    <p className="text-xs mt-2">Configure your options and click generate to start</p>
                   </div>
                 )}
               </CardContent>
@@ -203,6 +219,6 @@ export default function AIWriterPage() {
           <HashtagGenerator />
         </TabsContent>
       </Tabs>
-    </div>
+    </DashboardPageWrapper>
   );
 }

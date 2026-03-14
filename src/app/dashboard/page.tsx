@@ -1,8 +1,9 @@
 
 import { headers } from "next/headers";
 import Link from "next/link";
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
-import { PlusCircle, Calendar, CheckCircle2, BarChart } from "lucide-react";
+import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { LayoutDashboard, Calendar, CheckCircle2, BarChart, PlusCircle } from "lucide-react";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { QuickCompose } from "@/components/dashboard/quick-compose";
 import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { Button } from "@/components/ui/button";
@@ -46,11 +47,11 @@ async function getDashboardData(userId: string) {
       .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
       .innerJoin(posts, eq(tweets.postId, posts.id))
       .where(eq(posts.userId, userId)),
-      
+
     // Upcoming scheduled posts
     db.query.posts.findMany({
       where: and(eq(posts.userId, userId), eq(posts.status, "scheduled")),
-      orderBy: [desc(posts.scheduledAt)],
+      orderBy: [asc(posts.scheduledAt)],
       limit: 5,
       with: {
         tweets: true
@@ -99,99 +100,97 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {session?.user?.name || "User"}!
-          </p>
-        </div>
-        <div className="flex gap-2">
-           <Button asChild>
-            <Link href="/dashboard/compose">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Post
-            </Link>
-          </Button>
-        </div>
-      </div>
-
+    <DashboardPageWrapper
+      icon={LayoutDashboard}
+      title="Dashboard"
+      description={`Welcome back, ${session?.user?.name || "User"}! Here's your account overview.`}
+      actions={
+        <Button asChild>
+          <Link href="/dashboard/compose">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New Post
+          </Link>
+        </Button>
+      }
+    >
       <SetupChecklist {...data.checklist} />
 
+      {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Today's Posts</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.todayCount}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               Scheduled for today
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.scheduledCount}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               Total in queue
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Published</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+            <CheckCircle2 className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.publishedCount}</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               All time
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg. Engagement</CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
+            <BarChart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.avgEngagement}%</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               Average rate
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>Upcoming Queue</CardTitle>
           </CardHeader>
           <CardContent>
             {data.upcomingPosts.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No upcoming posts scheduled.
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-8 w-8 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">No upcoming posts scheduled.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {data.upcomingPosts.map((post) => (
-                  <div key={post.id} className="flex min-w-0 flex-col gap-4 rounded-md border p-3 sm:flex-row sm:items-start">
-                    <div className="bg-muted p-2 rounded">
-                      <Calendar className="h-4 w-4" />
+                  <div key={post.id} className="flex min-w-0 flex-col gap-4 rounded-md border p-4 sm:flex-row sm:items-start hover:bg-muted/50 transition-colors">
+                    <div className="bg-primary/10 p-2 rounded">
+                      <Calendar className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="break-words text-sm font-medium">
-                        {post.tweets[0]?.content.substring(0, 50)}...
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-sm font-medium leading-relaxed">
+                        {(post.tweets[0]?.content ?? "").substring(0, 60)}
+                        {(post.tweets[0]?.content?.length ?? 0) > 60 ? "..." : ""}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : "No date"}
                       </p>
                     </div>
@@ -203,6 +202,6 @@ export default async function DashboardPage() {
         </Card>
         <QuickCompose />
       </div>
-    </div>
+    </DashboardPageWrapper>
   );
 }

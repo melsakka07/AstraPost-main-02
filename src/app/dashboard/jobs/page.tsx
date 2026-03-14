@@ -1,9 +1,13 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { Settings2 as Settings2Icon } from "lucide-react";
 import { RetryPostButton } from "@/components/queue/retry-post-button";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { jobRuns } from "@/lib/schema";
@@ -30,10 +34,14 @@ export default async function JobsPage({
   const page = Math.max(0, Number(pageParam || 0) || 0);
   const limit = 50;
 
+  // Use "all" as the default/unselected value instead of empty string
+  const statusFilter = status === "all" ? undefined : status;
+  const queueFilter = queue === "all" ? undefined : queue;
+
   const where = and(
     eq(jobRuns.userId, session.user.id),
-    status ? eq(jobRuns.status, status) : sql<boolean>`true`,
-    queue ? eq(jobRuns.queueName, queue) : sql<boolean>`true`,
+    statusFilter ? eq(jobRuns.status, statusFilter) : sql<boolean>`true`,
+    queueFilter ? eq(jobRuns.queueName, queueFilter) : sql<boolean>`true`,
     q
       ? or(
           ilike(jobRuns.postId, `%${q}%`),
@@ -59,71 +67,88 @@ export default async function JobsPage({
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      <h1 className="text-3xl font-bold tracking-tight">Jobs</h1>
-
+    <DashboardPageWrapper
+      icon={Settings2Icon}
+      title="Job History"
+      description="Monitor background job runs and troubleshoot failures."
+    >
+      {/* Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <form className="flex flex-col gap-2 sm:flex-row sm:flex-wrap" method="GET">
-            <select
-              name="status"
-              defaultValue={status || ""}
-              aria-label="Filter jobs by status"
-              title="Filter jobs by status"
-              className="h-10 rounded-md border bg-background px-3 text-sm sm:min-w-[180px]"
-            >
-              <option value="">All statuses</option>
-              <option value="running">running</option>
-              <option value="retrying">retrying</option>
-              <option value="success">success</option>
-              <option value="failed">failed</option>
-            </select>
+        <CardHeader>
+          <CardTitle className="text-base">Filter Jobs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="flex flex-col gap-3 sm:flex-row sm:flex-wrap" method="GET">
+            <Select name="status" defaultValue={status || "all"}>
+              <SelectTrigger className="h-10 sm:min-w-[180px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="running">Running</SelectItem>
+                <SelectItem value="retrying">Retrying</SelectItem>
+                <SelectItem value="success">Success</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
-              name="queue"
-              defaultValue={queue || ""}
-              aria-label="Filter jobs by queue"
-              title="Filter jobs by queue"
-              className="h-10 rounded-md border bg-background px-3 text-sm sm:min-w-[180px]"
-            >
-              <option value="">All queues</option>
-              <option value="schedule-queue">schedule-queue</option>
-              <option value="analytics-queue">analytics-queue</option>
-            </select>
+            <Select name="queue" defaultValue={queue || "all"}>
+              <SelectTrigger className="h-10 sm:min-w-[180px]">
+                <SelectValue placeholder="All queues" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All queues</SelectItem>
+                <SelectItem value="schedule-queue">Schedule Queue</SelectItem>
+                <SelectItem value="analytics-queue">Analytics Queue</SelectItem>
+              </SelectContent>
+            </Select>
 
-            <input
+            <Input
               name="q"
               defaultValue={q || ""}
               placeholder="Search postId / jobId / correlationId"
-              className="h-10 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm sm:min-w-[280px]"
+              className="h-10 min-w-0 flex-1 sm:min-w-[280px]"
             />
 
             <button
               type="submit"
-              className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground sm:w-auto"
+              className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
             >
-              Filter
+              Apply Filters
             </button>
           </form>
         </CardContent>
       </Card>
 
+      {/* Job List */}
       {runs.length === 0 ? (
-        <div className="text-muted-foreground">No jobs found.</div>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Settings2Icon className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
+            <p className="text-muted-foreground max-w-md">
+              Try adjusting your filters or check back later for job history.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
           {runs.map((r) => (
-            <Card key={r.id}>
-              <CardContent className="pt-6 space-y-2">
+            <Card key={r.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={badgeVariant(String(r.status)) as any}>
                       {String(r.status)}
                     </Badge>
-                    <Badge variant="outline">{String(r.queueName)}</Badge>
+                    <Badge variant="outline" className="text-xs">{String(r.queueName)}</Badge>
                     {r.postId && (
                       <Link href={`/dashboard/jobs?q=${encodeURIComponent(String(r.postId))}`}>
-                        <Badge variant="secondary">post {r.postId}</Badge>
+                        <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
+                          post {r.postId}
+                        </Badge>
                       </Link>
                     )}
                   </div>
@@ -132,33 +157,37 @@ export default async function JobsPage({
                   </div>
                 </div>
 
-                <div className="grid gap-1 text-sm">
-                  <div className="text-muted-foreground">
-                    jobId: <span className="break-all text-foreground">{String(r.jobId)}</span>
+                <div className="grid gap-2 text-sm bg-muted/30 rounded-md p-3">
+                  <div className="text-muted-foreground text-xs">
+                    jobId: <span className="break-all text-foreground font-mono">{String(r.jobId)}</span>
                   </div>
                   {r.correlationId && (
-                    <div className="text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       correlationId:{" "}
-                      <span className="break-all text-foreground">{String(r.correlationId)}</span>
+                      <span className="break-all text-foreground font-mono">{String(r.correlationId)}</span>
                     </div>
                   )}
-                  {(r.attempts || r.attemptsMade) && (
+                  <div className="flex items-center gap-4 text-xs">
+                    {(r.attempts || r.attemptsMade) && (
+                      <div className="text-muted-foreground">
+                        attempts: <span className="text-foreground font-medium">{r.attemptsMade || 0}</span>
+                        {" / "}
+                        <span className="text-foreground font-medium">{r.attempts || "?"}</span>
+                      </div>
+                    )}
                     <div className="text-muted-foreground">
-                      attempts: <span className="text-foreground">{r.attemptsMade || 0}</span>
-                      {" / "}
-                      <span className="text-foreground">{r.attempts || "?"}</span>
+                      duration:{" "}
+                      <span className="text-foreground font-medium">
+                        {r.finishedAt
+                          ? `${Math.max(0, Math.round((new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime()) / 1000))}s`
+                          : "—"}
+                      </span>
                     </div>
-                  )}
-                  <div className="text-muted-foreground">
-                    duration:{" "}
-                    <span className="text-foreground">
-                      {r.finishedAt
-                        ? `${Math.max(0, Math.round((new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime()) / 1000))}s`
-                        : "—"}
-                    </span>
                   </div>
                   {r.error && (
-                    <div className="break-words text-destructive">{String(r.error)}</div>
+                    <div className="break-words text-destructive text-xs bg-destructive/10 rounded px-2 py-1 mt-2">
+                      {String(r.error)}
+                    </div>
                   )}
                 </div>
 
@@ -171,37 +200,38 @@ export default async function JobsPage({
             </Card>
           ))}
 
-          <div className="flex items-center justify-between pt-2">
+          {/* Pagination */}
+          <div className="flex items-center justify-between pt-4 border-t">
             <Link
               className={
                 page === 0
                   ? "pointer-events-none text-muted-foreground"
-                  : "text-sm text-primary"
+                  : "text-sm text-primary hover:underline"
               }
               href={`/dashboard/jobs?${new URLSearchParams({
-                ...(status ? { status } : {}),
-                ...(queue ? { queue } : {}),
+                ...(status && status !== "all" ? { status } : {}),
+                ...(queue && queue !== "all" ? { queue } : {}),
                 ...(q ? { q } : {}),
                 page: String(Math.max(0, page - 1)),
               }).toString()}`}
             >
-              Previous
+              ← Previous
             </Link>
             <div className="text-sm text-muted-foreground">Page {page + 1}</div>
             <Link
-              className={runs.length < limit ? "pointer-events-none text-muted-foreground" : "text-sm text-primary"}
+              className={runs.length < limit ? "pointer-events-none text-muted-foreground" : "text-sm text-primary hover:underline"}
               href={`/dashboard/jobs?${new URLSearchParams({
-                ...(status ? { status } : {}),
-                ...(queue ? { queue } : {}),
+                ...(status && status !== "all" ? { status } : {}),
+                ...(queue && queue !== "all" ? { queue } : {}),
                 ...(q ? { q } : {}),
                 page: String(page + 1),
               }).toString()}`}
             >
-              Next
+              Next →
             </Link>
           </div>
         </div>
       )}
-    </div>
+    </DashboardPageWrapper>
   );
 }

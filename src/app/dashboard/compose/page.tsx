@@ -1,16 +1,19 @@
 import { Suspense } from "react";
+import { PenSquare } from "lucide-react";
 import { Composer } from "@/components/composer/composer";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ComposePage() {
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold">Compose New Post</h1>
-      </div>
-      <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+    <DashboardPageWrapper
+      icon={PenSquare}
+      title="Compose"
+      description="Create and schedule your tweets and threads."
+    >
+      <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
         <Composer />
       </Suspense>
-    </div>
+    </DashboardPageWrapper>
   );
 }

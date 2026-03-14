@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, Sparkles, Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { ShoppingCart, Sparkles, Loader2, Copy, Check, ExternalLink, Package } from "lucide-react";
 import { toast } from "sonner";
 import { RecentAffiliateLinks } from "@/components/affiliate/recent-affiliate-links";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 
@@ -91,116 +93,135 @@ export default function AffiliatePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 rounded-lg">
-            <ShoppingCart className="h-8 w-8 text-primary" />
-        </div>
-        <div>
-            <h1 className="text-3xl font-bold tracking-tight">Affiliate Generator</h1>
-            <p className="text-muted-foreground">Turn product links into high-converting tweets.</p>
-        </div>
-      </div>
-
+    <DashboardPageWrapper
+      icon={Package}
+      title="Affiliate Generator"
+      description="Turn product links into high-converting tweets."
+    >
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <Card>
-            <CardHeader>
-                <CardTitle>Product Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Product URL</label>
-                    <Input 
-                        placeholder="https://amazon.com/..."
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                    />
-                </div>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              Product Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="product-url">Product URL</Label>
+              <Input
+                id="product-url"
+                placeholder="https://amazon.com/product..."
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Paste the product link you want to promote.
+              </p>
+            </div>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Platform</label>
-                    <Select value={platform} onValueChange={setPlatform}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="amazon">Amazon</SelectItem>
-                            <SelectItem value="noon">Noon</SelectItem>
-                            <SelectItem value="aliexpress">AliExpress</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="platform">Platform</Label>
+              <Select value={platform} onValueChange={setPlatform}>
+                <SelectTrigger id="platform">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="amazon">Amazon</SelectItem>
+                  <SelectItem value="noon">Noon</SelectItem>
+                  <SelectItem value="aliexpress">AliExpress</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-medium">Affiliate Tag (Optional)</label>
-                    <Input 
-                        placeholder={platform === "amazon" ? "tag-20" : "Coupon Code / ID"}
-                        value={tag}
-                        onChange={(e) => setTag(e.target.value)}
-                    />
-                </div>
+            <div className="space-y-2">
+              <Label htmlFor="affiliate-tag">Affiliate Tag (Optional)</Label>
+              <Input
+                id="affiliate-tag"
+                placeholder={platform === "amazon" ? "your-tag-20" : "Coupon Code / ID"}
+                value={tag}
+                onChange={(e) => setTag(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Your affiliate tag will be added to the generated tweet.
+              </p>
+            </div>
 
-                <Button 
-                    className="w-full" 
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !url}
-                >
-                    {isGenerating ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Analyzing...
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles className="mr-2 h-4 w-4" />
-                            Generate Tweet
-                        </>
-                    )}
-                </Button>
-            </CardContent>
+            <Button
+              className="w-full"
+              onClick={handleGenerate}
+              disabled={isGenerating || !url}
+              size="lg"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Tweet
+                </>
+              )}
+            </Button>
+          </CardContent>
         </Card>
 
         <Card className="h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Result</CardTitle>
-                {result && (
-                    <Button variant="ghost" size="sm" onClick={copyToClipboard}>
-                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                )}
-            </CardHeader>
-            <CardContent className="flex-1">
-                {result ? (
-                    <div className="space-y-4">
-                        {result.productTitle && (
-                            <div className="text-sm font-semibold text-muted-foreground border-b pb-2">
-                                Detected: {result.productTitle}
-                            </div>
-                        )}
-                        <div className="whitespace-pre-wrap break-words rounded-md bg-muted p-4 text-lg">
-                            {result.tweet}
-                            <div className="mt-2 text-primary">
-                                {result.hashtags.join(" ")}
-                            </div>
-                        </div>
-                        {result.affiliateUrl && (
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                                <ExternalLink className="h-3 w-3" />
-                                <span className="truncate">{result.affiliateUrl}</span>
-                            </div>
-                        )}
-                    </div>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Generated Result</CardTitle>
+            {result && (
+              <Button variant="ghost" size="sm" onClick={copyToClipboard}>
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied!
+                  </>
                 ) : (
-                    <div className="h-full flex items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-md p-8">
-                        Generated tweet will appear here
-                    </div>
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </>
                 )}
-            </CardContent>
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent className="flex-1">
+            {result ? (
+              <div className="space-y-4 h-full flex flex-col">
+                {result.productTitle && (
+                  <div className="text-sm font-medium text-muted-foreground border-b pb-2 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Detected: {result.productTitle}
+                  </div>
+                )}
+                <div className="flex-1 whitespace-pre-wrap break-words rounded-md bg-muted p-4 text-lg leading-relaxed border">
+                  {result.tweet}
+                  <div className="mt-3 text-primary">
+                    {result.hashtags.join(" ")}
+                  </div>
+                </div>
+                {result.affiliateUrl && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded-md border">
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{result.affiliateUrl}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-md p-8">
+                <ShoppingCart className="h-8 w-8 mb-3 opacity-50" />
+                <p>Your generated tweet will appear here</p>
+                <p className="text-xs mt-2">Enter a product URL and click generate to start</p>
+              </div>
+            )}
+          </CardContent>
         </Card>
       </div>
 
       <RecentAffiliateLinks />
-    </div>
+    </DashboardPageWrapper>
   );
 }

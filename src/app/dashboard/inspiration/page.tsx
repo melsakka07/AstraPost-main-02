@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight, Trash2 } from "lucide-react";
+import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight } from "lucide-react";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
 import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ImportedTweetContext } from "@/lib/services/tweet-importer";
@@ -124,7 +126,6 @@ export default function InspirationPage() {
 
   // Send to Composer
   const handleSendToComposer = useCallback((tweets: string[]) => {
-    // Store tweets in sessionStorage for the composer to pick up
     sessionStorage.setItem("inspiration_tweets", JSON.stringify(tweets));
     if (importedData) {
       sessionStorage.setItem("inspiration_source_id", importedData.originalTweet.id);
@@ -187,11 +188,9 @@ export default function InspirationPage() {
 
   // Re-adapt bookmark
   const handleReadaptBookmark = useCallback(async (bookmark: Bookmark) => {
-    // Import the tweet from the bookmark
     setTweetUrl(bookmark.sourceTweetUrl);
     setIsValidUrl(true);
 
-    // Trigger import
     try {
       setIsLoading(true);
       const response = await fetch("/api/x/tweet-lookup", {
@@ -231,40 +230,21 @@ export default function InspirationPage() {
     }
   }, []);
 
-  // Re-adapt history item
-  const handleReadaptHistory = useCallback(async (_item: HistoryItem) => {
-    // For history, we'd need to reconstruct the URL
-    // For now, just show an alert
-    alert("Re-adapt from history coming soon!");
-  }, []);
-
   return (
-    <div className="container max-w-7xl mx-auto py-8 px-4">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Lightbulb className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Inspiration</h1>
-            <p className="text-muted-foreground">
-              Import tweets from X and adapt them with AI assistance
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-        <TabsList className="mb-6">
+    <DashboardPageWrapper
+      icon={Lightbulb}
+      title="Inspiration"
+      description="Import tweets from X and adapt them with AI assistance."
+    >
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="import">Import Tweet</TabsTrigger>
           <TabsTrigger value="history">
-            <History className="h-4 w-4 mr-1" />
+            <History className="h-4 w-4 mr-2" />
             History
           </TabsTrigger>
           <TabsTrigger value="bookmarks">
-            <Bookmark className="h-4 w-4 mr-1" />
+            <Bookmark className="h-4 w-4 mr-2" />
             Bookmarks
           </TabsTrigger>
         </TabsList>
@@ -275,10 +255,8 @@ export default function InspirationPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <div>
-                  <label htmlFor="tweet-url" className="text-sm font-medium mb-2 block">
-                    Paste X/Tweet URL
-                  </label>
+                <div className="space-y-2">
+                  <Label htmlFor="tweet-url">Paste X/Tweet URL</Label>
                   <div className="flex gap-2">
                     <Input
                       id="tweet-url"
@@ -311,7 +289,7 @@ export default function InspirationPage() {
                     </Button>
                   </div>
                   {tweetUrl && !isValidUrl && (
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="text-xs text-muted-foreground">
                       Please enter a valid X/Twitter URL
                     </p>
                   )}
@@ -319,9 +297,9 @@ export default function InspirationPage() {
 
                 {/* Success Message */}
                 {successMessage && (
-                  <Alert className="bg-green-500/10 border-green-500/50">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-600">
+                  <Alert className="bg-emerald-500/10 border-emerald-500/50">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <AlertDescription className="text-emerald-600">
                       {successMessage}
                     </AlertDescription>
                   </Alert>
@@ -371,7 +349,7 @@ export default function InspirationPage() {
                     onClick={handleBookmark}
                     disabled={isBookmarking}
                   >
-                    <Bookmark className="h-4 w-4 mr-1" />
+                    <Bookmark className="h-4 w-4 mr-2" />
                     {isBookmarking ? "Saving..." : "Bookmark"}
                   </Button>
                 </div>
@@ -404,10 +382,10 @@ export default function InspirationPage() {
           {!importedData && !isLoading && !error && (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Lightbulb className="h-8 w-8 text-muted-foreground" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-6 border border-primary/10">
+                  <Lightbulb className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No tweet imported yet</h3>
+                <h3 className="text-xl font-semibold mb-3">No tweet imported yet</h3>
                 <p className="text-muted-foreground max-w-md">
                   Paste a X/Twitter URL above to import a tweet and adapt it with AI assistance.
                 </p>
@@ -421,11 +399,12 @@ export default function InspirationPage() {
           <Card>
             <CardContent className="p-6">
               {history.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No history yet. Import a tweet to get started.
+                <div className="text-center py-16">
+                  <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No history yet. Import a tweet to get started.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {history.map((item) => (
                     <div
                       key={item.id}
@@ -443,13 +422,6 @@ export default function InspirationPage() {
                             {item.sourceTweet.text}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReadaptHistory(item)}
-                        >
-                          Re-adapt
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -464,11 +436,12 @@ export default function InspirationPage() {
           <Card>
             <CardContent className="p-6">
               {bookmarks.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No bookmarks yet. Bookmark inspiring tweets to save them for later.
+                <div className="text-center py-16">
+                  <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No bookmarks yet. Bookmark inspiring tweets to save them for later.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {bookmarks.map((bookmark) => (
                     <div
                       key={bookmark.id}
@@ -504,10 +477,10 @@ export default function InspirationPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-destructive"
+                            className="text-destructive hover:text-destructive"
                             onClick={() => handleDeleteBookmark(bookmark.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            Delete
                           </Button>
                         </div>
                       </div>
@@ -519,6 +492,6 @@ export default function InspirationPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </DashboardPageWrapper>
   );
 }
