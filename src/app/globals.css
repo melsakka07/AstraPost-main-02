@@ -135,7 +135,7 @@
   }
 
   .prose h2 {
-    @apply text-2xl md:text-3xl font-bold mt-16 mb-6 scroll-mt-24;
+    @apply text-2xl md:text-3xl font-bold mt-12 mb-4 scroll-mt-24;
     color: hsl(var(--foreground));
     letter-spacing: -0.01em;
     position: relative;
@@ -154,7 +154,7 @@
   }
 
   .prose h3 {
-    @apply text-xl md:text-2xl font-bold mt-10 mb-4 scroll-mt-24;
+    @apply text-xl md:text-2xl font-bold mt-8 mb-3 scroll-mt-24;
     color: hsl(var(--foreground));
     letter-spacing: -0.005em;
   }
@@ -361,7 +361,7 @@
 
   /* Horizontal rule with gradient */
   .prose hr {
-    @apply my-12 border-0;
+    @apply my-8 border-0;
     height: 2px;
     background: linear-gradient(90deg, transparent, hsl(var(--border)), transparent);
   }
@@ -392,11 +392,11 @@
   }
 
   .prose-lg h2 {
-    @apply text-4xl;
+    @apply text-3xl;
   }
 
   .prose-lg h3 {
-    @apply text-3xl;
+    @apply text-2xl;
   }
 
   .prose-lg code {
@@ -449,6 +449,20 @@
 
   .dark .prose table tbody tr:hover td {
     background: hsl(var(--muted) / 0.2);
+  }
+}
+
+/* Hide the MDX h1 title — it duplicates the page hero heading.
+   Must be in @layer utilities to override @layer components prose styles. */
+@layer utilities {
+  .prose > h1:first-child {
+    display: none;
+  }
+
+  /* Prevent double-spacing when a horizontal rule directly precedes a heading */
+  .prose hr + h2,
+  .prose hr + h3 {
+    margin-top: 0;
   }
 }
 

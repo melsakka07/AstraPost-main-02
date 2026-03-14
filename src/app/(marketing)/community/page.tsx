@@ -2,6 +2,20 @@ import Link from "next/link";
 import { Users, MessagesSquare, Trophy, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Community",
+  description:
+    "Connect with thousands of creators, share your wins, get feedback on your content, and grow together.",
+  alternates: { canonical: "/community" },
+  openGraph: {
+    title: "Community — AstroPost",
+    description:
+      "Connect with thousands of creators, share your wins, get feedback on your content, and grow together.",
+    url: "/community",
+  },
+};
 
 export default function CommunityPage() {
   const stats = [

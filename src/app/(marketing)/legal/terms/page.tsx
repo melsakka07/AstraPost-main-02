@@ -3,6 +3,19 @@ import { Scale, FileCheck, ShieldAlert, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description:
+    "Read AstroPost's terms of service and understand your rights and obligations.",
+  alternates: { canonical: "/legal/terms" },
+  openGraph: {
+    title: "Terms of Service — AstroPost",
+    description: "Read AstroPost's terms of service and understand your rights and obligations.",
+    url: "/legal/terms",
+  },
+};
 
 export default function TermsPage() {
   const cards = [
@@ -75,7 +88,9 @@ export default function TermsPage() {
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
             Terms of Service
           </h1>
-          <p className="text-muted-foreground text-lg">Last updated: March 9, 2026</p>
+          <p className="text-muted-foreground text-lg">
+            Last updated: <time dateTime="2026-03-09">March 9, 2026</time>
+          </p>
         </div>
 
         {/* Info Cards */}

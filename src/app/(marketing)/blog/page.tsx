@@ -2,7 +2,23 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock, Sparkles, BookOpen, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getAllBlogPosts } from "@/lib/blog";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Blog",
+  description:
+    "Expert advice on social media growth, content creation, and building your audience in the MENA region.",
+  alternates: { canonical: "/blog" },
+  openGraph: {
+    title: "Blog — AstroPost",
+    description:
+      "Expert advice on social media growth, content creation, and building your audience in the MENA region.",
+    url: "/blog",
+  },
+};
 
 export default async function BlogPage() {
   const posts = await getAllBlogPosts();
@@ -150,14 +166,14 @@ export default async function BlogPage() {
               Get the latest social media tips, strategies, and insights delivered straight to your inbox.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <input
+              <Input
                 type="email"
                 placeholder="Enter your email"
-                className="w-full sm:w-auto px-6 py-3 rounded-lg border border-border/50 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 min-w-[280px]"
+                className="w-full sm:w-auto min-w-[280px] h-11 bg-background"
               />
-              <button className="w-full sm:w-auto px-8 py-3 rounded-lg bg-gradient-to-r from-primary to-purple-500 text-white font-medium hover:opacity-90 transition-opacity">
+              <Button className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-500 hover:opacity-90 transition-opacity border-0">
                 Subscribe
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-4">
               No spam, unsubscribe anytime. Join 5,000+ creators growing their audience.

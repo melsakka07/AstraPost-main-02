@@ -74,9 +74,11 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
           [
             rehypeAutolinkHeadings,
             {
-              behavior: 'wrap',
+              behavior: 'prepend',
               properties: {
                 className: ['anchor-link'],
+                ariaHidden: 'true',
+                tabIndex: -1,
               },
             },
           ],

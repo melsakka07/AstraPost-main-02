@@ -1,4 +1,16 @@
 import { Badge } from "@/components/ui/badge";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Changelog",
+  description: "Stay up to date with the latest features and improvements to AstroPost.",
+  alternates: { canonical: "/changelog" },
+  openGraph: {
+    title: "Changelog — AstroPost",
+    description: "Stay up to date with the latest features and improvements to AstroPost.",
+    url: "/changelog",
+  },
+};
 
 export default function ChangelogPage() {
   const releases = [
@@ -83,7 +95,7 @@ export default function ChangelogPage() {
         <div className="relative border-l border-muted ml-4 md:ml-8 space-y-12 pl-8 md:pl-12">
           {releases.map((release, index) => (
             <div key={index} className="relative">
-              <div className="absolute -left-[2.35rem] md:-left-[3.35rem] top-1.5 h-3 w-3 rounded-full border bg-background ring-4 ring-muted" />
+              <div className="absolute -left-[2.35rem] md:-left-[3.35rem] top-1.5 h-3 w-3 rounded-full border-2 border-primary/40 bg-background ring-4 ring-primary/10" />
 
               <div className="flex flex-col md:flex-row gap-2 md:items-baseline mb-2">
                 <h2 className="text-2xl font-bold">{release.title}</h2>

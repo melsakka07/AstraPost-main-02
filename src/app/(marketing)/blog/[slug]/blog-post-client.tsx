@@ -131,7 +131,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
 
       {/* Table of Contents */}
       {headings.length > 0 && (
-        <div className="container mx-auto px-4 max-w-4xl mt-12">
+        <div className="container mx-auto px-4 max-w-4xl mt-8">
           <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <BookOpen className="w-5 h-5" />
@@ -159,7 +159,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
       )}
 
       {/* Article Content */}
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div ref={contentRef} className="prose prose-lg dark:prose-invert max-w-none">
           <MDXRemote {...post.content} />
         </div>

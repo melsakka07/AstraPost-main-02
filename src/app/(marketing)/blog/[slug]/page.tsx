@@ -101,7 +101,7 @@ export default async function BlogPostPage({
 
       {/* Featured Image */}
       <div className="container mx-auto px-4 max-w-4xl -mt-4">
-        <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden rounded-2xl shadow-2xl border border-border/50 bg-muted group">
+        <div className="relative aspect-[16/9] overflow-hidden rounded-2xl shadow-2xl border border-border/50 bg-muted group">
           {post.image ? (
             <Image
               src={post.image}

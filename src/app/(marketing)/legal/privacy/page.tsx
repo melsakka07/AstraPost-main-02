@@ -3,6 +3,18 @@ import { Shield, Lock, Eye, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "Learn how AstroPost protects your data and respects your privacy.",
+  alternates: { canonical: "/legal/privacy" },
+  openGraph: {
+    title: "Privacy Policy — AstroPost",
+    description: "Learn how AstroPost protects your data and respects your privacy.",
+    url: "/legal/privacy",
+  },
+};
 
 export default function PrivacyPage() {
   const cards = [
@@ -77,7 +89,9 @@ export default function PrivacyPage() {
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
             Privacy Policy
           </h1>
-          <p className="text-muted-foreground text-lg">Last updated: March 9, 2026</p>
+          <p className="text-muted-foreground text-lg">
+            Last updated: <time dateTime="2026-03-09">March 9, 2026</time>
+          </p>
         </div>
 
         {/* Info Cards */}

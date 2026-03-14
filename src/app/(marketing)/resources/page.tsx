@@ -3,6 +3,18 @@ import { Book, FileText, Video, MessageSquare, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Resources",
+  description: "Guides, tutorials, and tools to help you succeed with AstroPost.",
+  alternates: { canonical: "/resources" },
+  openGraph: {
+    title: "Resources — AstroPost",
+    description: "Guides, tutorials, and tools to help you succeed with AstroPost.",
+    url: "/resources",
+  },
+};
 
 export default function ResourcesPage() {
   const resources = [
@@ -48,7 +60,7 @@ export default function ResourcesPage() {
         <div className="text-center max-w-3xl mx-auto space-y-6">
           <Badge variant="outline" className="px-4 py-1">Resources</Badge>
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-            Resources
+            Everything you need to succeed
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Everything you need to succeed with AstroPost.
@@ -58,7 +70,7 @@ export default function ResourcesPage() {
         {/* Resources Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {resources.map((resource, index) => (
-            <Card key={index} className="flex flex-col h-full hover:shadow-lg transition-shadow">
+            <Card key={index} className="flex flex-col h-full hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
               <CardHeader>
                 <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                   {resource.icon}
