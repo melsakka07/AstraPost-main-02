@@ -1,0 +1,190 @@
+Technical Issue Analysis: X (Twitter) API Media Upload 403 Forbidden Error                                                                                                             
+  Executive Summary                                                                                                                                                                      
+  AstroPost is experiencing 403 Forbidden errors when attempting to upload media via the X (Twitter) API v1.1 endpoint, despite having valid OAuth 2.0 credentials with "Read and       Write" app permissions. The issue appears to be related to OAuth 2.0 token compatibility with the v1.1 media upload endpoint.                                                       
+
+  ---
+  Technical Stack
+
+  ┌───────────────────────┬──────────────────────────────────────────────────────────────────┐
+  │       Component       │                            Technology                            │
+  ├───────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Twitter API Client    │ twitter-api-v2 (v1.x)                                            │
+  ├───────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ OAuth Version         │ OAuth 2.0 (Authorization Code Flow)                              │
+  ├───────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Scopes Requested      │ tweet.read, tweet.write, users.read, offline.access, users.email │
+  ├───────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ App Permissions       │ "Read and Write" (confirmed in Developer Portal)                 │
+  ├───────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Media Upload Endpoint │ https://upload.twitter.com/1.1/media/upload.json (v1.1)          │
+  └───────────────────────┴──────────────────────────────────────────────────────────────────┘
+
+  ---
+  Current Implementation
+
+  OAuth 2.0 Configuration (src/lib/auth.ts)
+
+  socialProviders: {
+    twitter: {
+      clientId: process.env.TWITTER_CLIENT_ID!,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+      scope: [
+        "tweet.read",
+        "tweet.write",
+        "users.read",
+        "offline.access",
+        "users.email",
+      ],
+    },
+  }
+
+  Media Upload Code (src/lib/services/x-api.ts)
+
+  async uploadMedia(fileBuffer: Buffer, mimeType: string, options?: { mediaCategory?: string }) {
+    try {
+      // Twitter API v1.1 is required for media upload
+      const result = await (this.client.v1 as any).uploadMedia(fileBuffer, {
+        mimeType,
+        target: options?.mediaCategory || 'tweet_image',
+        type: 'chunked',
+      });
+      // ... handle result
+    } catch (error) {
+      // Returns 403 Forbidden
+    }
+  }
+
+  The TwitterApi client is initialized with an OAuth 2.0 access token:
+
+  constructor(token: string) {
+    this.client = new TwitterApi(token); // OAuth 2.0 bearer token
+  }
+
+  ---
+  Error Details
+
+  API Response
+
+  HTTP 403 Forbidden
+  Request: POST https://upload.twitter.com/1.1/media/upload.json
+  Content-Type: multipart/form-data
+  Authorization: Bearer <oauth2_token>
+  Body: { mimeType: "image/png", target: "tweet_image", type: "chunked" }
+
+  Response Headers:
+  - x-transaction-id: <transaction_id>
+  - server: cloudflare envoy
+  - status: 403
+
+  Response Body: (empty)
+
+  Working vs Failing Operations
+
+  ┌───────────────┬────────────────────────┬──────────────────┬──────────────────┐
+  │   Operation   │        Endpoint        │   Auth Method    │      Status      │
+  ├───────────────┼────────────────────────┼──────────────────┼──────────────────┤
+  │ Get User Info │ GET /2/me              │ OAuth 2.0 Bearer │ ✅ Works         │
+  ├───────────────┼────────────────────────┼──────────────────┼──────────────────┤
+  │ Post Tweet    │ POST /2/tweet          │ OAuth 2.0 Bearer │ ✅ Works         │
+  ├───────────────┼────────────────────────┼──────────────────┼──────────────────┤
+  │ Refresh Token │ POST /2/oauth2/token   │ OAuth 2.0        │ ✅ Works         │
+  ├───────────────┼────────────────────────┼──────────────────┼──────────────────┤
+  │ Upload Media  │ POST /1.1/media/upload │ OAuth 2.0 Bearer │ ❌ 403 Forbidden │
+  └───────────────┴────────────────────────┴──────────────────┴──────────────────┘
+
+  ---
+  Root Cause Analysis
+
+  Hypothesis 1: OAuth 2.0 vs v1.1 Endpoint Compatibility
+
+  The Twitter/X API has two authentication methods:
+
+  1. OAuth 1.0a: Uses consumer key, consumer secret, access token, and access token secret with HMAC-SHA1 signature
+  2. OAuth 2.0: Uses Bearer token (access token from authorization code flow)
+
+  The v1.1 endpoints were originally designed for OAuth 1.0a. While Twitter claims OAuth 2.0 works with v1.1, there may be inconsistencies in permission checks.
+
+  Hypothesis 2: Media Upload Endpoint Permission Model
+
+  The media/upload.json endpoint may have a different permission model than the v2 tweet endpoint:
+
+  - v2 POST /2/tweet: Requires tweet.write scope ✅
+  - v1.1 POST /1.1/media/upload: May require OAuth 1.0a context or additional permission checks ❌
+
+  Hypothesis 3: App vs Project Permissions
+
+  Twitter Developer Portal has two permission levels:
+  1. Project permissions: Set at the project level
+  2. App permissions: Set at the app level
+
+  Even if app permissions are "Read and Write", project permissions may override.
+
+  ---
+  Debugging Steps Performed
+
+  1. Verified App Permissions
+
+  - Confirmed "Read and Write" in Developer Portal
+  - Reconnected X account to generate fresh OAuth 2.0 token
+
+  2. Verified OAuth Scopes
+
+  - Authorization request includes tweet.write
+  - Access token validated via introspection (not available in Twitter API)
+
+  3. Tested Different Upload Methods
+
+  - Standard upload: 403 Forbidden
+  - Chunked upload: 403 Forbidden
+
+  4. Verified Token Validity
+
+  - Read operations work (token is valid)
+  - Token refresh works (refresh token is valid)
+
+  ---
+  Questions for Twitter/X Platform Support
+
+  1. Does the v1.1 media/upload endpoint fully support OAuth 2.0 Bearer tokens, or does it require OAuth 1.0a signatures?
+  2. Are there additional scopes or permissions required for media upload beyond tweet.write?
+  3. Is there a known issue with OAuth 2.0 tokens and the v1.1 upload endpoint?
+  4. Should we be using the v2 media upload API instead? If so, what is the correct endpoint?
+  5. Could there be a Project-level permission override that's causing the 403 error?
+
+  ---
+  Potential Workarounds
+
+  Option 1: Use OAuth 1.0a for Media Upload Only
+
+  - Generate OAuth 1.0a credentials
+  - Use them exclusively for media upload
+  - Continue using OAuth 2.0 for other operations
+
+  Option 2: Use v2 Media Upload API
+
+  - Twitter appears to be transitioning to v2
+  - May need to use different endpoints or libraries
+
+  Option 3: Use Third-Party Media Upload Service
+
+  - Upload media to external service (e.g., AWS S3)
+  - Pass media URL to tweet creation
+
+  ---
+  Relevant Documentation Links
+
+  - https://developer.twitter.com/en/docs/twitter-api
+  - https://developer.twitter.com/en/docs/authentication/oauth-2-0/authorization-code
+  - https://developer.twitter.com/en/docs/twitter-api/v1/media/upload-media/uploading-media
+
+  ---
+  Environment Details
+
+  Node.js: v24.12.0
+  twitter-api-v2: latest
+  Environment: Development with Docker (PostgreSQL, Redis)
+  App URL: http://localhost:3000
+
+  This technical description should help when communicating with Twitter/X Platform Support or other technical teams who may have encountered similar issues with OAuth 2.0 and the   
+  v1.1 media upload endpoint.
+

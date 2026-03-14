@@ -142,7 +142,7 @@ export function TweetCard({
              <div className="mt-2 border rounded-md overflow-hidden relative group/preview">
                  {tweet.linkPreview.images?.[0] && (
                      <div className="relative h-48 w-full">
-                         <Image src={tweet.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
+                         <Image src={tweet.linkPreview.images[0]} alt="Preview" fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
                      </div>
                  )}
                  <div className="p-3 bg-muted/20">

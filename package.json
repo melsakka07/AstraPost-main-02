@@ -8,6 +8,7 @@
     "tokens:encrypt-access": "node --require dotenv/config --import tsx scripts/encrypt-x-access-tokens.ts",
     "smoke:e2e": "node --require dotenv/config --import tsx scripts/smoke-e2e.ts",
     "smoke:full": "node --require dotenv/config --import tsx scripts/smoke-full.ts",
+    "test:twitter-perms": "node --require dotenv/config --import tsx scripts/test-twitter-permissions.ts",
     "esbuild:rebuild": "pnpm rebuild esbuild",
     "build": "pnpm run db:migrate && next build",
     "build:ci": "next build",

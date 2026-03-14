@@ -5,10 +5,56 @@ import { logger } from "@/lib/logger";
 import { xAccounts } from "@/lib/schema";
 import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
 
+// ── Constants ──────────────────────────────────────────────────────────────────
+const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB per chunk
+const MAX_POLL_ATTEMPTS = 30;
+
+type MediaCategory =
+  | "tweet_image"
+  | "tweet_gif"
+  | "tweet_video"
+  | "amplify_video";
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Builds a raw multipart/form-data Buffer for the APPEND step.
+// segment_index must be a text field; media must be raw binary.
+function buildMultipartBody(
+  boundary: string,
+  chunk: Buffer,
+  segmentIndex: number
+): Buffer {
+  const CRLF = "\r\n";
+  const enc = new TextEncoder();
+
+  const partHeader =
+    `--${boundary}${CRLF}` +
+    `Content-Disposition: form-data; name="segment_index"${CRLF}${CRLF}` +
+    `${segmentIndex}${CRLF}` +
+    `--${boundary}${CRLF}` +
+    `Content-Disposition: form-data; name="media"; filename="chunk"${CRLF}` +
+    `Content-Type: application/octet-stream${CRLF}${CRLF}`;
+
+  const partFooter = `${CRLF}--${boundary}--${CRLF}`;
+
+  return Buffer.concat([
+    Buffer.from(enc.encode(partHeader)),
+    chunk,
+    Buffer.from(enc.encode(partFooter)),
+  ]);
+}
+
+// ── Service Class ──────────────────────────────────────────────────────────────
 export class XApiService {
   private client: TwitterApi;
+  private accessToken: string;
 
   constructor(token: string) {
+    this.accessToken = token;
     this.client = new TwitterApi(token);
   }
 
@@ -162,10 +208,6 @@ export class XApiService {
 
   async postThread(tweets: { text: string; mediaIds?: string[] }[]) {
     try {
-      // Twitter API v2 supports threading by replying to the previous tweet ID.
-      // However, the `tweetThread` helper is available in v1.1 or needs manual chaining in v2.
-      // Let's implement manual chaining for v2.
-      
       let lastTweetId: string | undefined;
       const postedTweets = [];
 
@@ -174,16 +216,16 @@ export class XApiService {
         if (tweet.mediaIds && tweet.mediaIds.length > 0) {
           params.media = { media_ids: tweet.mediaIds.slice(0, 4) as any };
         }
-        
+
         if (lastTweetId) {
           params.reply = { in_reply_to_tweet_id: lastTweetId };
         }
 
-        const result = await this.client.v2.tweet(params.text, { 
-            media: params.media, 
-            reply: params.reply 
+        const result = await this.client.v2.tweet(params.text, {
+          media: params.media,
+          reply: params.reply
         });
-        
+
         lastTweetId = result.data.id;
         postedTweets.push(result.data);
       }
@@ -197,38 +239,104 @@ export class XApiService {
     }
   }
 
-  async uploadMedia(fileBuffer: Buffer, mimeType: string, options?: { mediaCategory?: string }) {
-    const payload: any = { mimeType };
-    if (options?.mediaCategory) {
-      payload.target = options.mediaCategory;
+  // ── PUBLIC: Upload media via new X API v2 dedicated endpoints ──────────────
+  // Requires OAuth 2.0 user token with `media.write` scope.
+  // Replaces the DEAD v1.1 upload.twitter.com endpoint (sunset June 9 2025).
+  async uploadMedia(
+    fileBuffer: Buffer,
+    mimeType: string,
+    options?: { mediaCategory?: MediaCategory }
+  ): Promise<string> {
+    const totalBytes = fileBuffer.byteLength;
+    const mediaCategory =
+      options?.mediaCategory ?? this.inferCategory(mimeType);
+
+    console.log(
+      `[XApi] Starting v2 media upload. bytes=${totalBytes} type=${mimeType} category=${mediaCategory}`
+    );
+
+    // ── INIT ────────────────────────────────────────────────────────────────
+    const initData = await this.jsonRequest<{
+      data: { id: string; media_key: string; expires_after_secs: number };
+    }>("POST", "https://api.x.com/2/media/upload/initialize", {
+      media_type: mimeType,
+      media_category: mediaCategory,
+      total_bytes: totalBytes,
+    });
+
+    const mediaId = initData.data.id;
+    console.log(`[XApi] INIT ok. media_id=${mediaId}`);
+    logger.info("x_media_upload_initialized", { mediaId, mediaCategory, totalBytes });
+
+    // ── APPEND (chunked) ────────────────────────────────────────────────────
+    const totalChunks = Math.ceil(totalBytes / CHUNK_SIZE);
+
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const chunk = fileBuffer.subarray(start, start + CHUNK_SIZE);
+
+      // Build multipart/form-data manually so we control the binary boundary
+      // DO NOT use JSON for append — the API expects multipart with raw bytes
+      const boundary = `----XApiBoundary${Date.now()}${i}`;
+      const body = buildMultipartBody(boundary, chunk, i);
+
+      const appendRes = await fetch(
+        `https://api.x.com/2/media/upload/${mediaId}/append`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            "Content-Type": `multipart/form-data; boundary=${boundary}`,
+          },
+          body: body as unknown as BodyInit,
+        }
+      );
+
+      if (!appendRes.ok && appendRes.status !== 204) {
+        const errText = await appendRes.text().catch(() => "(empty)");
+        console.error(`[XApi] APPEND chunk ${i} failed: HTTP ${appendRes.status} — ${errText}`);
+        throw new Error(
+          `[XApi] APPEND chunk ${i} failed: HTTP ${appendRes.status} — ${errText}`
+        );
+      }
+
+      console.log(`[XApi] APPEND chunk ${i + 1}/${totalChunks} ok`);
+      logger.debug("x_media_upload_chunk_appended", { mediaId, chunk: i + 1, total: totalChunks });
     }
-    
-    try {
-      // Twitter API v1.1 is required for media upload
-      const result = await (this.client.v1 as any).uploadMedia(fileBuffer, payload);
-      if (typeof result === "string") return result;
-      return String(result?.media_id_string || result?.media_id || result);
-    } catch (error: any) {
-      const errorDetails = {
-        message: error instanceof Error ? error.message : "Unknown error",
-        code: error?.code,
-        data: error?.data,
-        response: error?.response?.data,
-        headers: error?.response?.headers,
-        statusCode: error?.response?.status,
-        requestBody: payload
+
+    console.log(`[XApi] All chunks uploaded. media_id=${mediaId}`);
+    logger.info("x_media_upload_chunks_complete", { mediaId, totalChunks });
+
+    // ── FINALIZE ────────────────────────────────────────────────────────────
+    const finalizeData = await this.jsonRequest<{
+      data: {
+        id: string;
+        media_key: string;
+        size: number;
+        expires_after_secs: number;
+        processing_info?: {
+          state: "pending" | "in_progress" | "succeeded" | "failed";
+          check_after_secs?: number;
+          error?: { code: number; name: string; message: string };
+        };
       };
-      
-      logger.error("x_media_upload_failed", {
-        mimeType,
-        ...errorDetails
-      });
-      throw error;
+    }>("POST", `https://api.x.com/2/media/upload/${mediaId}/finalize`, {});
+
+    console.log(`[XApi] FINALIZE ok. media_key=${finalizeData.data.media_key}`);
+    logger.info("x_media_upload_finalized", { mediaId });
+
+    // ── STATUS POLL (video / gif only) ──────────────────────────────────────
+    if (finalizeData.data.processing_info) {
+      const waitSecs =
+        finalizeData.data.processing_info.check_after_secs ?? 1;
+      await this.pollUntilReady(mediaId, waitSecs);
     }
+
+    return finalizeData.data.id;
   }
-  
+
   async getUser() {
-      return await this.client.v2.me({ "user.fields": ["profile_image_url", "username", "name"] });
+    return await this.client.v2.me({ "user.fields": ["profile_image_url", "username", "name"] });
   }
 
   async getFollowerCount() {
@@ -247,5 +355,101 @@ export class XApiService {
       "tweet.fields": ["public_metrics"],
     });
     return response?.data || [];
+  }
+
+  // ── PRIVATE: Poll GET /2/media/upload/:id until succeeded or failed ────────
+  private async pollUntilReady(
+    mediaId: string,
+    initialWaitSecs: number
+  ): Promise<void> {
+    let waitMs = initialWaitSecs * 1000;
+    console.log(`[XApi] Polling processing status for media_id=${mediaId}`);
+    logger.info("x_media_upload_polling_start", { mediaId });
+
+    for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
+      await sleep(waitMs);
+
+      const statusData = await this.jsonRequest<{
+        data: {
+          id: string;
+          processing_info: {
+            state: "pending" | "in_progress" | "succeeded" | "failed";
+            check_after_secs?: number;
+            progress_percent?: number;
+            error?: { code: number; name: string; message: string };
+          };
+        };
+      }>("GET", `https://api.x.com/2/media/upload/${mediaId}`);
+
+      const { state, check_after_secs, progress_percent, error } =
+        statusData.data.processing_info;
+
+      console.log(
+        `[XApi] Processing: state=${state} progress=${progress_percent ?? 0}%`
+      );
+      logger.debug("x_media_upload_polling_status", { mediaId, state, progressPercent: progress_percent });
+
+      if (state === "succeeded") {
+        console.log(`[XApi] Processing complete. media_id=${mediaId}`);
+        logger.info("x_media_upload_processing_complete", { mediaId });
+        return;
+      }
+
+      if (state === "failed") {
+        const errorMsg = error?.message ?? "unknown";
+        const errorCode = error?.code;
+        throw new Error(
+          `[XApi] Media processing failed: ${errorMsg} (code ${errorCode})`
+        );
+      }
+
+      waitMs = (check_after_secs ?? 2) * 1000;
+    }
+
+    throw new Error(
+      `[XApi] Timed out waiting for media processing after ${MAX_POLL_ATTEMPTS} attempts`
+    );
+  }
+
+  // ── PRIVATE: JSON POST/GET helper ──────────────────────────────────────────
+  private async jsonRequest<T>(
+    method: "GET" | "POST",
+    url: string,
+    body?: Record<string, unknown>
+  ): Promise<T> {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(method === "POST" ? { body: JSON.stringify(body ?? {}) } : {}),
+    });
+
+    if (!res.ok) {
+      let errBody: string;
+      try {
+        errBody = JSON.stringify(await res.json());
+      } catch {
+        errBody = (await res.text()) || "(empty)";
+      }
+      logger.error("x_api_request_failed", {
+        method,
+        url,
+        status: res.status,
+        body: errBody,
+      });
+      throw new Error(`[XApi] ${method} ${url} → HTTP ${res.status}: ${errBody}`);
+    }
+
+    if (res.status === 204) return {} as T;
+    return res.json() as Promise<T>;
+  }
+
+  // ── PRIVATE: Infer media category from MIME type ───────────────────────────
+  private inferCategory(mimeType: string): MediaCategory {
+    if (mimeType === "image/gif") return "tweet_gif";
+    if (mimeType.startsWith("video/")) return "tweet_video";
+    return "tweet_image";
   }
 }

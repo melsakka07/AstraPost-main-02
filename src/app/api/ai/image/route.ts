@@ -33,7 +33,7 @@ import { upload } from "@/lib/storage";
 const ImageGenRequestSchema = z.object({
   prompt: z.string().max(1000).optional(),
   tweetContent: z.string().max(5000).optional(),
-  model: z.enum(["nano-banana-2", "banana-pro", "gemini-imagen4"]).default("nano-banana-2"),
+  model: z.enum(["nano-banana-2", "nano-banana-pro"]).default("nano-banana-2"),
   aspectRatio: z.enum(["1:1", "16:9", "4:3", "9:16"]).default("1:1"),
   style: z.enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"]).optional(),
 });

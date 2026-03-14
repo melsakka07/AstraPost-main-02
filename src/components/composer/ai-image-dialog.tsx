@@ -35,7 +35,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-type ImageModel = "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+type ImageModel = "nano-banana-2" | "nano-banana-pro";
 type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
 type ImageStyle =
   | "photorealistic"
@@ -65,8 +65,7 @@ interface AiImageDialogProps {
 
 const MODEL_LABELS: Record<ImageModel, string> = {
   "nano-banana-2": "Nano Banana 2 (Fast)",
-  "banana-pro": "Banana Pro (Quality)",
-  "gemini-imagen4": "Gemini Imagen 4 (Best)",
+  "nano-banana-pro": "Nano Banana Pro (Best)",
 };
 
 const ASPECT_RATIO_LABELS: Record<AspectRatio, string> = {
@@ -358,6 +357,7 @@ export function AiImageDialog({
                     alt="Generated image"
                     fill
                     className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 512px"
                   />
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
@@ -391,6 +391,7 @@ export function AiImageDialog({
                           alt={`Generated ${idx + 1}`}
                           fill
                           className="object-cover"
+                          sizes="64px"
                         />
                       </button>
                     ))}

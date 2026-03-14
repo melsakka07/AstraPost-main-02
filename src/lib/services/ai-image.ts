@@ -1,13 +1,14 @@
 /**
- * AI Image Generation Service (Google Gemini Only)
- * Provider-agnostic abstraction for AI image generation using Google Gemini API
+ * AI Image Generation Service (Replicate API - Nano Banana Models)
+ * Provider-agnostic abstraction for AI image generation using Replicate
+ * Models: google/nano-banana-2, google/nano-banana-pro
  */
 
 // ============================================================================
 // Types and Interfaces
 // ============================================================================
 
-export type ImageModel = "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+export type ImageModel = "nano-banana-2" | "nano-banana-pro";
 
 export type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
 
@@ -107,9 +108,9 @@ export function validateModelForPlan(
 }
 
 /**
- * Convert aspect ratio to Gemini format
+ * Convert aspect ratio to Replicate format for Nano Banana models
  */
-function convertAspectRatioToGemini(aspectRatio: AspectRatio): string {
+function convertAspectRatioToReplicate(aspectRatio: AspectRatio): string {
   switch (aspectRatio) {
     case "1:1":
       return "1:1";
@@ -125,59 +126,142 @@ function convertAspectRatioToGemini(aspectRatio: AspectRatio): string {
 }
 
 // ============================================================================
-// Provider Implementations using Google Gemini API
+// Replicate API Helper Functions
+// ============================================================================
+
+interface ReplicatePrediction {
+  id: string;
+  status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
+  output?: string | string[];
+  error?: string;
+  logs?: string;
+}
+
+/**
+ * Poll a Replicate prediction until completion
+ */
+async function pollPrediction(
+  predictionId: string,
+  token: string
+): Promise<ReplicatePrediction> {
+  const maxAttempts = 120; // 2 minutes max
+  const pollInterval = 1000; // 1 second
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const response = await fetch(
+      `https://api.replicate.com/v1/predictions/${predictionId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Replicate API error: ${response.statusText}`);
+    }
+
+    const prediction: ReplicatePrediction = await response.json();
+
+    if (prediction.status === "succeeded") {
+      return prediction;
+    }
+
+    if (prediction.status === "failed" || prediction.status === "canceled") {
+      throw new Error(
+        prediction.error || `Prediction ${prediction.status}`
+      );
+    }
+
+    // Wait before polling again
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error("Prediction timed out");
+}
+
+/**
+ * Create and wait for a Replicate prediction
+ */
+async function createPrediction(
+  version: string,
+  input: Record<string, any>,
+  token: string
+): Promise<ReplicatePrediction> {
+  // Create prediction
+  const createResponse = await fetch(
+    `https://api.replicate.com/v1/predictions`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version,
+        input,
+      }),
+    }
+  );
+
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text();
+    throw new Error(
+      `Failed to create prediction: ${createResponse.statusText} - ${errorText}`
+    );
+  }
+
+  const prediction: ReplicatePrediction = await createResponse.json();
+
+  // Poll for result
+  return pollPrediction(prediction.id, token);
+}
+
+// ============================================================================
+// Provider Implementations using Replicate API (Nano Banana Models)
 // ============================================================================
 
 /**
- * Gemini Nano (Nano Banana 2) Provider
- * Fast, efficient using Gemini 2.5 Flash Image
+ * Nano Banana 2 Provider (fast, efficient)
+ * Model: google/nano-banana-2 (Gemini 2.5 Flash Image)
  */
-class GeminiNanoProvider implements ImageGenerationProvider {
+class NanoBanana2Provider implements ImageGenerationProvider {
   name = "nano-banana-2" as const;
+  // Use model owner/name format for latest version
+  private version = "google/nano-banana-2";
 
   async generate(params: ImageGenParams): Promise<ImageGenResult> {
     const { width, height } = getDimensionsFromAspectRatio(params.aspectRatio);
     const prompt = buildStyledPrompt(params.prompt, params.style);
 
-    // Dynamic import for @google/genai
-    const { GoogleGenAI } = await import("@google/genai");
-
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY or GOOGLE_AI_API_KEY environment variable is not set");
+    const token = process.env.REPLICATE_API_TOKEN;
+    if (!token) {
+      throw new Error("REPLICATE_API_TOKEN environment variable is not set");
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image",
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        config: {
-          responseModalities: ["IMAGE"],
-          imageConfig: {
-            aspectRatio: convertAspectRatioToGemini(params.aspectRatio),
-            imageSize: "1K",
-          },
+      const result = await createPrediction(
+        this.version,
+        {
+          prompt,
+          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
+          resolution: "1K",
+          output_format: "png",
+          safety_filter_level: "block_only_high",
+          image_input: [],
         },
-      } as any); // Using any to bypass TypeScript type limitations
-
-      // Extract image from response - gemini-2.5-flash-exp returns response.candidates
-      const candidate = (response as any).candidates?.[0];
-      const imagePart = candidate?.content?.parts?.find(
-        (part: any) => part.inlineData?.data
+        token
       );
 
-      if (!imagePart) {
-        throw new Error("No image data returned from Gemini API");
+      if (!result.output) {
+        throw new Error("No image data returned from Replicate API");
       }
 
-      const base64Data = imagePart.inlineData.data;
-      const imageUrl = `data:image/png;base64,${base64Data}`;
+      // Nano Banana models return a single string URL
+      const imageUrl = typeof result.output === "string"
+        ? result.output
+        : result.output[0]!;
 
       return {
         imageUrl,
@@ -195,123 +279,46 @@ class GeminiNanoProvider implements ImageGenerationProvider {
 }
 
 /**
- * Gemini Nano Pro (Banana Pro) Provider
- * High quality using Gemini 3 Pro Image
+ * Nano Banana Pro Provider (highest quality, advanced features)
+ * Model: google/nano-banana-pro (Gemini 3 Pro Image)
+ * Features: Text rendering, multi-image blending, Google Search integration, 4K support
  */
-class GeminiNanoProProvider implements ImageGenerationProvider {
-  name = "banana-pro" as const;
+class NanoBananaProProvider implements ImageGenerationProvider {
+  name = "nano-banana-pro" as const;
+  // Use model owner/name format for latest version
+  private version = "google/nano-banana-pro";
 
   async generate(params: ImageGenParams): Promise<ImageGenResult> {
     const { width, height } = getDimensionsFromAspectRatio(params.aspectRatio);
     const prompt = buildStyledPrompt(params.prompt, params.style);
 
-    // Dynamic import for @google/genai
-    const { GoogleGenAI } = await import("@google/genai");
-
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY or GOOGLE_AI_API_KEY environment variable is not set");
+    const token = process.env.REPLICATE_API_TOKEN;
+    if (!token) {
+      throw new Error("REPLICATE_API_TOKEN environment variable is not set");
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-
-      // Use the correct config format for gemini-3-pro-image-preview
-      const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        config: {
-          responseModalities: ["IMAGE"],
-          imageConfig: {
-            aspectRatio: convertAspectRatioToGemini(params.aspectRatio),
-            imageSize: "1K",
-          },
+      const result = await createPrediction(
+        this.version,
+        {
+          prompt,
+          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
+          resolution: "2K", // Higher resolution for Pro
+          output_format: "png",
+          safety_filter_level: "block_only_high",
+          image_input: [],
         },
-      } as any); // Using any to bypass TypeScript type limitations
-
-      // Extract image from response - gemini-3-pro-image-preview returns response.candidates directly
-      const candidate = (response as any).candidates?.[0];
-      const imagePart = candidate?.content?.parts?.find(
-        (part: any) => part.inlineData?.data
+        token
       );
 
-      if (!imagePart) {
-        throw new Error("No image data returned from Gemini API");
+      if (!result.output) {
+        throw new Error("No image data returned from Replicate API");
       }
 
-      const base64Data = imagePart.inlineData.data;
-      const imageUrl = `data:image/png;base64,${base64Data}`;
-
-      return {
-        imageUrl,
-        width,
-        height,
-        model: this.name,
-        prompt,
-      };
-    } catch (error) {
-      throw new Error(
-        `Failed to generate image with ${this.name}: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
-    }
-  }
-}
-
-/**
- * Google Gemini Imagen 4 Provider
- * Highest quality, latest model
- */
-class GeminiImagen4Provider implements ImageGenerationProvider {
-  name = "gemini-imagen4" as const;
-
-  async generate(params: ImageGenParams): Promise<ImageGenResult> {
-    const { width, height } = getDimensionsFromAspectRatio(params.aspectRatio);
-    const prompt = buildStyledPrompt(params.prompt, params.style) + ", masterpiece, best quality, ultra detailed";
-
-    // Dynamic import for @google/genai
-    const { GoogleGenAI } = await import("@google/genai");
-
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY or GOOGLE_AI_API_KEY environment variable is not set");
-    }
-
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-
-      // Use the correct config format for gemini-3-pro-image-preview with higher resolution
-      const response = await ai.models.generateContent({
-        model: "gemini-3-pro-image-preview",
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        config: {
-          responseModalities: ["IMAGE"],
-          imageConfig: {
-            aspectRatio: convertAspectRatioToGemini(params.aspectRatio),
-            imageSize: "2K", // Higher resolution for Imagen4
-          },
-        },
-      } as any); // Using any to bypass TypeScript type limitations
-
-      // Extract image from response - gemini-3-pro-image-preview returns response.candidates directly
-      const candidate = (response as any).candidates?.[0];
-      const imagePart = candidate?.content?.parts?.find(
-        (part: any) => part.inlineData?.data
-      );
-
-      if (!imagePart) {
-        throw new Error("No image data returned from Gemini API");
-      }
-
-      const base64Data = imagePart.inlineData.data;
-      const imageUrl = `data:image/png;base64,${base64Data}`;
+      // Nano Banana Pro returns a single string URL
+      const imageUrl = typeof result.output === "string"
+        ? result.output
+        : result.output[0]!;
 
       return {
         imageUrl,
@@ -340,11 +347,9 @@ export function createImageProvider(
 ): ImageGenerationProvider {
   switch (model) {
     case "nano-banana-2":
-      return new GeminiNanoProvider();
-    case "banana-pro":
-      return new GeminiNanoProProvider();
-    case "gemini-imagen4":
-      return new GeminiImagen4Provider();
+      return new NanoBanana2Provider();
+    case "nano-banana-pro":
+      return new NanoBananaProProvider();
     default:
       throw new Error(`Unknown image model: ${model}`);
   }

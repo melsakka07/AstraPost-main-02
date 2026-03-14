@@ -159,6 +159,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                       alt="Tweet media"
                       fill
                       className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
                 )}
@@ -173,6 +174,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                       alt={`Tweet media ${i + 1}`}
                       fill
                       className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 300px"
                     />
                   </div>
                 ))}
@@ -187,6 +189,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                       alt={`Tweet media ${i + 1}`}
                       fill
                       className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 300px"
                     />
                   </div>
                 ))}
@@ -197,6 +200,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                       alt="Tweet media 3"
                       fill
                       className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 300px"
                     />
                   </div>
                 )}
@@ -211,6 +215,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                       alt={`Tweet media ${i + 1}`}
                       fill
                       className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 300px"
                     />
                   </div>
                 ))}

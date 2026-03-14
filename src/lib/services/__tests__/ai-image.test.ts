@@ -8,44 +8,21 @@ import {
   validateModelForPlan,
 } from "../ai-image";
 
-// Mock @google/genai
-vi.mock("@google/genai", () => {
-  return {
-    GoogleGenAI: vi.fn().mockImplementation(function () {
-      return {
-        models: {
-          generateContent: vi.fn().mockResolvedValue({
-            candidates: [
-              {
-                content: {
-                  parts: [
-                    {
-                      inlineData: {
-                        mimeType: "image/png",
-                        data: "base64encodedimage",
-                      },
-                    },
-                  ],
-                },
-              },
-            ],
-          }),
-        },
-      };
-    }),
-  };
-});
+// Mock fetch for Replicate API
+global.fetch = vi.fn();
 
 describe("AI Image Service", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     vi.resetModules();
-    process.env = { ...originalEnv, GEMINI_API_KEY: "test-key" };
+    process.env = { ...originalEnv, REPLICATE_API_TOKEN: "test-token" };
+    vi.mocked(global.fetch).mockReset();
   });
 
   afterEach(() => {
     process.env = originalEnv;
+    vi.mocked(global.fetch).mockReset();
   });
 
   describe("Utility Functions", () => {
@@ -64,11 +41,10 @@ describe("AI Image Service", () => {
     });
 
     it("should validate model availability", () => {
-      const available = ["nano-banana-2", "banana-pro"] as any[];
-      
+      const available = ["nano-banana-2"] as any[];
+
       expect(validateModelForPlan("nano-banana-2", available).valid).toBe(true);
-      expect(validateModelForPlan("banana-pro", available).valid).toBe(true);
-      expect(validateModelForPlan("gemini-imagen4", available).valid).toBe(false);
+      expect(validateModelForPlan("nano-banana-pro", available).valid).toBe(false);
     });
   });
 
@@ -77,11 +53,8 @@ describe("AI Image Service", () => {
       const p1 = createImageProvider("nano-banana-2");
       expect(p1.name).toBe("nano-banana-2");
 
-      const p2 = createImageProvider("banana-pro");
-      expect(p2.name).toBe("banana-pro");
-
-      const p3 = createImageProvider("gemini-imagen4");
-      expect(p3.name).toBe("gemini-imagen4");
+      const p2 = createImageProvider("nano-banana-pro");
+      expect(p2.name).toBe("nano-banana-pro");
     });
 
     it("should throw on unknown model", () => {
@@ -91,6 +64,22 @@ describe("AI Image Service", () => {
 
   describe("Image Generation", () => {
     it("should generate image successfully", async () => {
+      // Mock successful Replicate API response
+      vi.mocked(global.fetch).mockImplementation((url) => {
+        if (typeof url === "string" && url.includes("/predictions")) {
+          // Create prediction
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              id: "test-prediction-id",
+              status: "succeeded",
+              output: "https://replicate.example.com/image.png",
+            }),
+          } as Response);
+        }
+        return Promise.resolve({ ok: false } as Response);
+      });
+
       const result = await generateImage({
         prompt: "test prompt",
         aspectRatio: "1:1",
@@ -98,7 +87,7 @@ describe("AI Image Service", () => {
       });
 
       expect(result).toEqual({
-        imageUrl: "data:image/png;base64,base64encodedimage",
+        imageUrl: "https://replicate.example.com/image.png",
         width: 1024,
         height: 1024,
         model: "nano-banana-2",
@@ -107,8 +96,7 @@ describe("AI Image Service", () => {
     });
 
     it("should fail if API key is missing", async () => {
-      delete process.env.GEMINI_API_KEY;
-      delete process.env.GOOGLE_AI_API_KEY;
+      delete process.env.REPLICATE_API_TOKEN;
 
       await expect(
         generateImage({
@@ -116,7 +104,7 @@ describe("AI Image Service", () => {
           aspectRatio: "1:1",
           model: "nano-banana-2",
         })
-      ).rejects.toThrow("GEMINI_API_KEY or GOOGLE_AI_API_KEY environment variable is not set");
+      ).rejects.toThrow("REPLICATE_API_TOKEN environment variable is not set");
     });
   });
 });

@@ -104,8 +104,8 @@ export function Composer() {
   const [isAiImageOpen, setIsAiImageOpen] = useState(false);
   const [aiImageTargetTweetId, setAiImageTargetTweetId] = useState<string | null>(null);
   const [userPlanLimits, setUserPlanLimits] = useState<{
-    availableModels: ("nano-banana-2" | "banana-pro" | "gemini-imagen4")[];
-    preferredModel: "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+    availableModels: ("nano-banana-2" | "nano-banana-pro")[];
+    preferredModel: "nano-banana-2" | "nano-banana-pro";
     remainingQuota: number;
   }>({
     availableModels: ["nano-banana-2"],
@@ -159,22 +159,22 @@ export function Composer() {
 
         // Map plan to available models and quota
         const getLimitsForPlan = (plan: string): {
-          availableModels: ("nano-banana-2" | "banana-pro" | "gemini-imagen4")[];
-          preferredModel: "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+          availableModels: ("nano-banana-2" | "nano-banana-pro")[];
+          preferredModel: "nano-banana-2" | "nano-banana-pro";
           remainingQuota: number;
         } => {
           switch (plan) {
             case "pro_monthly":
             case "pro_annual":
               return {
-                availableModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
-                preferredModel: preferredModel as "nano-banana-2" | "banana-pro" | "gemini-imagen4",
+                availableModels: ["nano-banana-2", "nano-banana-pro"],
+                preferredModel: preferredModel as "nano-banana-2" | "nano-banana-pro",
                 remainingQuota: 50,
               };
             case "agency":
               return {
-                availableModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
-                preferredModel: preferredModel as "nano-banana-2" | "banana-pro" | "gemini-imagen4",
+                availableModels: ["nano-banana-2", "nano-banana-pro"],
+                preferredModel: preferredModel as "nano-banana-2" | "nano-banana-pro",
                 remainingQuota: -1, // Unlimited
               };
             default:

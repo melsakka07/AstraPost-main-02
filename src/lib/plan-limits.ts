@@ -1,6 +1,6 @@
 export type AnalyticsExportCapability = "none" | "csv_pdf" | "white_label_pdf";
 
-export type ImageModel = "nano-banana-2" | "banana-pro" | "gemini-imagen4";
+export type ImageModel = "nano-banana-2" | "nano-banana-pro";
 
 export interface PlanLimits {
   postsPerMonth: number;
@@ -50,7 +50,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: 100,
     aiImagesPerMonth: 50,
-    availableImageModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
+    availableImageModels: ["nano-banana-2", "nano-banana-pro"],
     maxXAccounts: 3,
     canUseAi: true,
     canScheduleThreads: true,
@@ -70,7 +70,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: 100,
     aiImagesPerMonth: 50,
-    availableImageModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
+    availableImageModels: ["nano-banana-2", "nano-banana-pro"],
     maxXAccounts: 3,
     canUseAi: true,
     canScheduleThreads: true,
@@ -90,7 +90,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     postsPerMonth: Infinity,
     aiGenerationsPerMonth: Infinity,
     aiImagesPerMonth: -1, // -1 = unlimited
-    availableImageModels: ["nano-banana-2", "banana-pro", "gemini-imagen4"],
+    availableImageModels: ["nano-banana-2", "nano-banana-pro"],
     maxXAccounts: 10,
     canUseAi: true,
     canScheduleThreads: true,

@@ -411,6 +411,24 @@ AstroPost supports content generation in multiple languages:
    - Fixed `currentPlan` prop passing with conditional spread
    - All import order warnings auto-fixed with `pnpm lint --fix`
 
+5. **X (Twitter) API Media Upload 403 Error** (2026-03-14)
+   - Fixed 403 Forbidden errors when uploading media via X API
+   - Root cause: Using deprecated v1.1 endpoint (`upload.twitter.com/1.1/media/upload.json`) which was sunset on June 9, 2025
+   - Solution: Migrated to v2 chunked upload endpoints (`api.x.com/2/media/upload/*`)
+   - Added `media.write` OAuth scope to configuration
+   - Replaced `uploadMedia` method with proper v2 implementation using raw multipart body
+   - Updated `next.config.ts` to use `serverExternalPackages` instead of deprecated `experimental.serverComponentsExternalPackages`
+   - **Full documentation:** `docs/technical/x-api-media-upload-fix.md`
+   - **Important:** All existing users must reconnect their X accounts to receive new OAuth tokens with `media.write` scope
+
+6. **AI Image Generation 422 Error** (2026-03-14)
+   - Fixed 422 Unprocessable Entity errors when generating images via Replicate API
+   - Root cause: Using hardcoded version hash IDs that were invalid or outdated
+   - Solution: Changed from version hashes to model owner/name format (`google/nano-banana-2`, `google/nano-banana-pro`)
+   - This approach always uses the latest stable version of the models
+   - Models now working: `google/nano-banana-2` (Gemini 2.5 Flash), `google/nano-banana-pro` (Gemini 3 Pro)
+   - **Full documentation:** `docs/technical/ai-image-replicate-fix.md`
+
 ### TypeScript Errors in `.next/dev/types/validator.ts`
 
 TypeScript may show errors in `.next/dev/types/validator.ts` when running `pnpm typecheck`. These are:
@@ -431,6 +449,9 @@ The project includes technical documentation in `docs/`:
 
 - `docs/business/starter-prompt.md` — AstroPost business context for AI prompts
 - `docs/technical/react-markdown.md` — Markdown rendering guide
+- `docs/technical/x-api-media-upload-fix.md` — X (Twitter) API media upload 403 fix documentation
+- `docs/technical/ai-image-replicate-fix.md` — AI Image Generation Replicate API model fix documentation
+- `docs/replicate_api_i2i_nano-banana-pro.md` — Replicate Nano Banana Pro model API reference
 - `docs/enhancments.md` — Planned enhancements and roadmap
 
 ## Guidelines for AI Assistants

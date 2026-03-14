@@ -18,7 +18,8 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["bullmq", "ioredis"],
+  // Exclude ioredis from server external packages to avoid warnings
+  serverExternalPackages: [],
 
   // Image optimization configuration
   images: {

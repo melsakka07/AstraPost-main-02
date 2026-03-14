@@ -72,6 +72,7 @@ export const auth = betterAuth({
         "users.read",
         "offline.access",
         "users.email",
+        "media.write", // Required for v2 media upload endpoints
       ],
     },
   },
