@@ -18,9 +18,6 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  // Exclude ioredis from server external packages to avoid warnings
-  serverExternalPackages: [],
-
   // Image optimization configuration
   images: {
     remotePatterns: [
@@ -49,6 +46,19 @@ const nextConfig: NextConfig = {
 
   // Enable compression
   compress: true,
+
+  // Webpack configuration to handle ioredis module resolution
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Fix ioredis module resolution issue with BullMQ
+      // BullMQ imports ioredis/built/utils which Next.js can't resolve properly
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'ioredis/built/utils': 'ioredis/built/index.js',
+      };
+    }
+    return config;
+  },
 
   // Security headers
   async headers() {
