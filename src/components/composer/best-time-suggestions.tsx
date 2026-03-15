@@ -46,6 +46,12 @@ export function BestTimeSuggestions({ onSelect }: BestTimeSuggestionsProps) {
     fetchTimes();
   }, []);
 
+  const handleNow = () => {
+    const now = new Date();
+    const dateStr = format(now, "yyyy-MM-dd'T'HH:mm");
+    onSelect(dateStr);
+  };
+
   const handleSelect = (slot: TimeSlot) => {
     // Calculate next occurrence
     const today = new Date();
@@ -89,6 +95,14 @@ export function BestTimeSuggestions({ onSelect }: BestTimeSuggestionsProps) {
         </Button>
       ) : (
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-7 text-xs bg-primary/10 hover:bg-primary/20 text-primary border-transparent"
+            onClick={handleNow}
+          >
+            Now
+          </Button>
           {times.map((slot, i) => (
             <Button
               key={i}
