@@ -38,7 +38,7 @@ export function ConnectedLinkedInAccounts({
   };
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Linkedin className="h-5 w-5 text-[#0077b5]" />

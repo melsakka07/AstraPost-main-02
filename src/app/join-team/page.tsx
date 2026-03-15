@@ -55,7 +55,7 @@ function JoinTeamContent() {
         </div>
         <CardTitle className="text-2xl">Join Team Workspace</CardTitle>
         <CardDescription>
-          You have been invited to join a team on AstroPost.
+          You have been invited to join a team on AstraPost.
         </CardDescription>
       </CardHeader>
       <CardContent className="text-center text-muted-foreground">

@@ -6,11 +6,11 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Documentation",
-  description: "Everything you need to know about using AstroPost effectively.",
+  description: "Everything you need to know about using AstraPost effectively.",
   alternates: { canonical: "/docs" },
   openGraph: {
-    title: "Documentation — AstroPost",
-    description: "Everything you need to know about using AstroPost effectively.",
+    title: "Documentation — AstraPost",
+    description: "Everything you need to know about using AstraPost effectively.",
     url: "/docs",
   },
 };
@@ -33,9 +33,9 @@ export default function DocsPage() {
     {
       title: "Getting Started",
       icon: <Rocket className="h-5 w-5" />,
-      description: "Learn the basics of setting up your AstroPost account.",
+      description: "Learn the basics of setting up your AstraPost account.",
       articles: [
-        { title: "Introduction to AstroPost", href: "/docs/intro", comingSoon: true },
+        { title: "Introduction to AstraPost", href: "/docs/intro", comingSoon: true },
         { title: "Connecting Your Social Accounts", href: "/docs/connecting-accounts", comingSoon: true },
         { title: "Your First Post", href: "/docs/first-post", comingSoon: true },
       ],
@@ -88,7 +88,7 @@ export default function DocsPage() {
             How can we help?
           </h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            Everything you need to know about using AstroPost effectively.
+            Everything you need to know about using AstraPost effectively.
           </p>
 
           {/* Search */}

@@ -8,12 +8,12 @@ interface ResetPasswordEmailProps {
 
 export const ResetPasswordEmail = ({ url, name }: ResetPasswordEmailProps) => {
   return (
-    <BaseLayout preview="Reset your password for AstroPost">
+    <BaseLayout preview="Reset your password for AstraPost">
       <Text className="text-black text-[14px] leading-[24px]">
         Hello {name || 'there'},
       </Text>
       <Text className="text-black text-[14px] leading-[24px]">
-        Someone requested a password reset for your AstroPost account. If this was you, click the button below to reset your password:
+        Someone requested a password reset for your AstraPost account. If this was you, click the button below to reset your password:
       </Text>
       <Section className="text-center mt-[32px] mb-[32px]">
         <Button

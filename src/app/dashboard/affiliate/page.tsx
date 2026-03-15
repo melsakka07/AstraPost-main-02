@@ -211,10 +211,12 @@ export default function AffiliatePage() {
                 )}
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-md p-8">
-                <ShoppingCart className="h-8 w-8 mb-3 opacity-50" />
-                <p>Your generated tweet will appear here</p>
-                <p className="text-xs mt-2">Enter a product URL and click generate to start</p>
+              <div className="h-full flex flex-col items-center justify-center rounded-lg bg-gradient-to-b from-muted/50 to-muted/20 p-8 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <ShoppingCart className="h-7 w-7 text-primary" />
+                </div>
+                <p className="font-medium text-foreground">Ready to generate</p>
+                <p className="mt-1 text-sm text-muted-foreground max-w-[240px]">Enter a product URL and click generate to create an affiliate tweet</p>
               </div>
             )}
           </CardContent>

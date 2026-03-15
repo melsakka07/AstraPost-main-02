@@ -78,7 +78,7 @@ export default async function DashboardLayout({
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
 
   return (
-    <div className="flex min-h-full bg-background">
+    <div data-dashboard-layout className="flex min-h-dvh bg-background">
       <OnboardingRedirect isCompleted={isOnboarded} />
       {isOnboarded && <DashboardTour />}
       <Sidebar />

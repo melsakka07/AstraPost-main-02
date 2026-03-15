@@ -20,7 +20,7 @@ export const user = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
     
-    // AstroPost specific fields
+    // AstraPost specific fields
     isAdmin: boolean("is_admin").default(false),
     isSuspended: boolean("is_suspended").default(false),
     timezone: text("timezone").default("Asia/Riyadh"),
@@ -113,7 +113,7 @@ export const verification = pgTable("verification", {
     .notNull(),
 });
 
-// AstroPost Tables
+// AstraPost Tables
 
 export const xAccounts = pgTable("x_accounts", {
   id: text("id").primaryKey(),

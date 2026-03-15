@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Copy, Calendar, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { Copy, Calendar, ExternalLink, Loader2, Package, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -101,8 +101,14 @@ export function RecentAffiliateLinks() {
       </CardHeader>
       <CardContent>
         {links.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No affiliate links generated yet.
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Package className="h-6 w-6 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-sm font-semibold">No affiliate links yet</h3>
+            <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+              Generate your first affiliate tweet above to start tracking clicks and conversions.
+            </p>
           </div>
         ) : (
           <Table>

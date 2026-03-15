@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
-import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick } from "lucide-react";
+import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick, PlusCircle, ListOrdered, MoreHorizontal } from "lucide-react";
 import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { ExportButton } from "@/components/analytics/export-button";
@@ -9,10 +9,11 @@ import { FollowerChart } from "@/components/analytics/follower-chart";
 import { ImpressionsChart } from "@/components/analytics/impressions-chart";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
 import { TopTweetsList } from "@/components/analytics/top-tweets-list";
-import { PageToolbar } from "@/components/dashboard/page-toolbar";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
@@ -183,41 +184,44 @@ export default async function AnalyticsPage({
   const bestTimeData = await AnalyticsEngine.getBestTimesToPost(session.user.id);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      <PageToolbar
-        title="Analytics Overview"
-        description="Track growth trends, post performance, and job refresh health."
-        actions={
-          <>
-            <DateRangeSelector />
-            <ExportButton range={effectiveRange} />
-            <div className="hidden items-center rounded-md border p-0.5 lg:flex">
-              <Button
-                variant={isCompact ? "ghost" : "secondary"}
-                size="sm"
-                className="h-7 px-2"
-                asChild
-              >
-                <Link href={analyticsHref("comfortable")}>Comfortable</Link>
+    <DashboardPageWrapper
+      icon={BarChart3}
+      title="Analytics Overview"
+      description="Track growth trends, post performance, and job refresh health."
+      actions={
+        <>
+          <DateRangeSelector />
+          <ExportButton range={effectiveRange} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">More options</span>
               </Button>
-              <Button
-                variant={isCompact ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2"
-                asChild
-              >
-                <Link href={analyticsHref("compact")}>Compact</Link>
-              </Button>
-            </div>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/queue">Open Queue</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="/dashboard/compose">New Post</Link>
-            </Button>
-          </>
-        }
-      />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={analyticsHref(isCompact ? "comfortable" : "compact")}>
+                  {isCompact ? "Comfortable View" : "Compact View"}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/queue">
+                  <ListOrdered className="mr-2 h-4 w-4" />
+                  Open Queue
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/compose">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  New Post
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      }
+    >
 
       {isFree && (
         <UpgradeBanner 
@@ -225,6 +229,12 @@ export default async function AnalyticsPage({
           description="See 30-day history, top performing tweets, and deeper insights with Pro."
         />
       )}
+
+      {/* ── Overview Section ── */}
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Overview</h2>
+        <div className="h-px flex-1 bg-border" />
+      </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -349,7 +359,13 @@ export default async function AnalyticsPage({
         </CardContent>
       </Card>
 
-      <div className={`grid md:grid-cols-2 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}>
+      {/* ── Performance Section ── */}
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Impressions</CardTitle>
@@ -404,6 +420,12 @@ export default async function AnalyticsPage({
         </BlurredOverlay>
       </div>
 
+      {/* ── Insights Section ── */}
+      <div className="flex items-center gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Insights</h2>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <div className="grid lg:grid-cols-2 gap-6">
           <div className="space-y-4">
               <h2 className="text-xl font-semibold">Best Time to Post</h2>
@@ -433,6 +455,6 @@ export default async function AnalyticsPage({
               </BlurredOverlay>
           </div>
       </div>
-    </div>
+    </DashboardPageWrapper>
   );
 }

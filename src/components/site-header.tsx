@@ -14,7 +14,7 @@ export async function SiteHeader() {
   const isAuthenticated = !!session;
 
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header data-site-header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav
         className="container mx-auto flex items-center justify-between px-4 py-3"
         aria-label="Main navigation"
@@ -24,10 +24,10 @@ export async function SiteHeader() {
           <Link
             href="/"
             className="flex items-center gap-2 font-bold text-xl"
-            aria-label="AstroPost - Go to homepage"
+            aria-label="AstraPost - Go to homepage"
           >
             <Rocket className="h-6 w-6 text-primary" />
-            <span>AstroPost</span>
+            <span>AstraPost</span>
           </Link>
 
           {/* Desktop nav — client component (needs usePathname for active state) */}

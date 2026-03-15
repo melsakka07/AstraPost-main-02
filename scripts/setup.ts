@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 /**
- * Interactive setup wizard for AstroPost.
+ * Interactive setup wizard for AstraPost.
  * Run with: npx tsx scripts/setup.ts
  */
 
@@ -225,7 +225,7 @@ function printNextSteps(envStatus: EnvStatus) {
 }
 
 async function main() {
-  header("AstroPost - Setup Wizard");
+  header("AstraPost - Setup Wizard");
 
   // Step 1: Check Node version
   log("Checking Node.js version...", "cyan");

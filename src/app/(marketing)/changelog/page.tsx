@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Changelog",
-  description: "Stay up to date with the latest features and improvements to AstroPost.",
+  description: "Stay up to date with the latest features and improvements to AstraPost.",
   alternates: { canonical: "/changelog" },
   openGraph: {
-    title: "Changelog — AstroPost",
-    description: "Stay up to date with the latest features and improvements to AstroPost.",
+    title: "Changelog — AstraPost",
+    description: "Stay up to date with the latest features and improvements to AstraPost.",
     url: "/changelog",
   },
 };
@@ -50,7 +50,7 @@ export default function ChangelogPage() {
       version: "v1.0.0",
       date: "March 10, 2026",
       title: "Official Launch",
-      description: "We are out of beta! AstroPost is now available for everyone.",
+      description: "We are out of beta! AstraPost is now available for everyone.",
       changes: [
         { type: "new", content: "Smart Scheduler: Drag & drop calendar interface." },
         { type: "new", content: "AI Writer: Generate threads and hooks using GPT-4o." },

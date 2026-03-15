@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Connect with thousands of creators, share your wins, get feedback on your content, and grow together.",
   alternates: { canonical: "/community" },
   openGraph: {
-    title: "Community — AstroPost",
+    title: "Community — AstraPost",
     description:
       "Connect with thousands of creators, share your wins, get feedback on your content, and grow together.",
     url: "/community",
@@ -38,7 +38,7 @@ export default function CommunityPage() {
     {
       icon: <Trophy className="h-6 w-6" />,
       title: "Exclusive AMAs",
-      description: "Chat with top creators and the AstroPost team."
+      description: "Chat with top creators and the AstraPost team."
     }
   ];
 
@@ -55,7 +55,7 @@ export default function CommunityPage() {
           <div className="space-y-6">
             <Badge variant="outline">Community</Badge>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Join the AstroPost Community
+              Join the AstraPost Community
             </h1>
             <p className="text-xl text-muted-foreground leading-relaxed">
               Connect with thousands of creators, share your wins, get feedback on your content, and grow together.

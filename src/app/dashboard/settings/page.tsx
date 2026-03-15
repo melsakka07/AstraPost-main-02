@@ -10,6 +10,7 @@ import { PlanUsage } from "@/components/settings/plan-usage";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { SecuritySettings } from "@/components/settings/security-settings";
+import { SettingsSectionNav } from "@/components/settings/settings-section-nav";
 import { VoiceProfileForm } from "@/components/settings/voice-profile-form";
 import { XHealthCheckButton } from "@/components/settings/x-health-check-button";
 import { Badge } from "@/components/ui/badge";
@@ -66,112 +67,118 @@ export default async function SettingsPage({
       title="Settings"
       description="Manage your account, connections, and preferences."
     >
+      <SettingsSectionNav />
+
       <div className="space-y-6">
         {/* Profile Section */}
-        <ProfileForm
+        <div id="profile" className="scroll-mt-24">
+          <ProfileForm
             initialData={{
-                name: session.user.name,
-                email: session.user.email,
-                timezone: userRow?.timezone ?? null,
-                language: userRow?.language ?? null
+              name: session.user.name,
+              email: session.user.email,
+              timezone: userRow?.timezone ?? null,
+              language: userRow?.language ?? null
             }}
-        />
+          />
+        </div>
 
-        {/* Plan Section */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              <CardTitle>Subscription</CardTitle>
-            </div>
-            <CardDescription>Your current plan and billing details</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {billingNotice && (
-              <div
-                className={
-                  billingNotice.tone === "success"
-                    ? "rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
-                    : billingNotice.tone === "warning"
-                    ? "rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"
-                    : "rounded-md border border-border bg-muted/60 px-4 py-3 text-sm text-foreground"
-                }
-              >
-                {billingNotice.text}
-              </div>
-            )}
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground mb-1">Current Plan</div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="text-base px-3 py-1 uppercase">
-                    {currentPlan}
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {hasStripeCustomerId ? (
-                  <ManageSubscriptionButton />
-                ) : isPaidPlan ? (
-                  <Button variant="outline" asChild>
-                    <a href="/pricing?billing=restore">Restore Billing</a>
-                  </Button>
-                ) : (
-                  <Button asChild>
-                    <a href="/pricing">Upgrade Plan</a>
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="text-xs text-muted-foreground px-2">
-              {hasStripeCustomerId
-                ? "Use the billing portal to update payment methods, invoices, or cancellation settings."
-                : isPaidPlan
-                ? "Your account is on a paid plan without an active billing profile. Restore billing to manage subscription details."
-                : "Upgrade to a paid plan to unlock billing portal access and self-service subscription management."}
-            </div>
-            <PlanUsage />
-          </CardContent>
-        </Card>
-
-        {/* Team Management */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              <CardTitle>Team Management</CardTitle>
-            </div>
-            <CardDescription>Invite team members and manage access roles</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
-              <div className="text-sm text-muted-foreground">
-                Collaborate with your team by inviting members to your workspace.
-              </div>
-              <Button variant="outline" asChild>
-                <a href="/dashboard/settings/team">Manage Team</a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Connected Accounts */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="h-full">
+        {/* Subscription Section */}
+        <div id="subscription" className="scroll-mt-24 space-y-6">
+          <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Twitter className="h-5 w-5 text-primary" />
-                <CardTitle>X (Twitter)</CardTitle>
+                <CreditCard className="h-5 w-5 text-primary" />
+                <CardTitle>Subscription</CardTitle>
               </div>
-              <CardDescription>Manage your X (Twitter) accounts</CardDescription>
+              <CardDescription>Your current plan and billing details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <ConnectedXAccounts initialAccounts={connectedAccounts} />
-              <XHealthCheckButton />
+              {billingNotice && (
+                <div
+                  className={
+                    billingNotice.tone === "success"
+                      ? "rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+                      : billingNotice.tone === "warning"
+                      ? "rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"
+                      : "rounded-md border border-border bg-muted/60 px-4 py-3 text-sm text-foreground"
+                  }
+                >
+                  {billingNotice.text}
+                </div>
+              )}
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-1">Current Plan</div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-base px-3 py-1 uppercase">
+                      {currentPlan}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {hasStripeCustomerId ? (
+                    <ManageSubscriptionButton />
+                  ) : isPaidPlan ? (
+                    <Button variant="outline" asChild>
+                      <a href="/pricing?billing=restore">Restore Billing</a>
+                    </Button>
+                  ) : (
+                    <Button asChild>
+                      <a href="/pricing">Upgrade Plan</a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground px-2">
+                {hasStripeCustomerId
+                  ? "Use the billing portal to update payment methods, invoices, or cancellation settings."
+                  : isPaidPlan
+                  ? "Your account is on a paid plan without an active billing profile. Restore billing to manage subscription details."
+                  : "Upgrade to a paid plan to unlock billing portal access and self-service subscription management."}
+              </div>
+              <PlanUsage />
             </CardContent>
           </Card>
 
-          <div className="h-full space-y-6">
+          {/* Team Management */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <CardTitle>Team Management</CardTitle>
+              </div>
+              <CardDescription>Invite team members and manage access roles</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+                <div className="text-sm text-muted-foreground">
+                  Collaborate with your team by inviting members to your workspace.
+                </div>
+                <Button variant="outline" asChild>
+                  <a href="/dashboard/settings/team">Manage Team</a>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Connected Accounts Section */}
+        <div id="accounts" className="scroll-mt-24">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="h-full">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Twitter className="h-5 w-5 text-primary" />
+                  <CardTitle>X (Twitter)</CardTitle>
+                </div>
+                <CardDescription>Manage your X accounts</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ConnectedXAccounts initialAccounts={connectedAccounts} />
+                <XHealthCheckButton />
+              </CardContent>
+            </Card>
+
             <ConnectedLinkedInAccounts
               initialAccounts={connectedLinkedInAccounts.map(a => ({
                 id: a.id,
@@ -192,11 +199,20 @@ export default async function SettingsPage({
           </div>
         </div>
 
-        <VoiceProfileForm />
+        {/* AI Voice Section */}
+        <div id="voice" className="scroll-mt-24">
+          <VoiceProfileForm />
+        </div>
 
-        <SecuritySettings />
+        {/* Security Section */}
+        <div id="security" className="scroll-mt-24">
+          <SecuritySettings />
+        </div>
 
-        <PrivacySettings />
+        {/* Privacy Section */}
+        <div id="privacy" className="scroll-mt-24">
+          <PrivacySettings />
+        </div>
       </div>
     </DashboardPageWrapper>
   );

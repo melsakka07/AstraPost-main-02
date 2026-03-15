@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface TweetDraft {
@@ -162,63 +163,92 @@ export function TweetCard({
         </CardContent>
         
         <CardFooter className="flex justify-between items-center border-t pt-3">
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-primary"
-              onClick={() => triggerFileUpload(tweet.id)}
-              aria-label="Upload media"
-            >
-              <ImageIcon className="h-5 w-5" />
-            </Button>
+          <TooltipProvider delayDuration={300}>
+            <div className="flex gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-primary"
+                    onClick={() => triggerFileUpload(tweet.id)}
+                    aria-label="Upload media"
+                  >
+                    <ImageIcon className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Upload Media</TooltipContent>
+              </Tooltip>
 
-            {openAiImage && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-primary"
-                onClick={() => openAiImage(tweet.id)}
-                aria-label="Generate AI image"
-              >
-                <Wand2 className="h-5 w-5" />
-              </Button>
-            )}
+              {openAiImage && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-primary"
+                      onClick={() => openAiImage(tweet.id)}
+                      aria-label="Generate AI image"
+                    >
+                      <Wand2 className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Generate AI Image</TooltipContent>
+                </Tooltip>
+              )}
 
-            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="text-primary"
-                >
-                  <Smile className="h-5 w-5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent">
-                <EmojiPicker onEmojiClick={onEmojiClick} />
-              </PopoverContent>
-            </Popover>
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-primary"
+                        aria-label="Add emoji"
+                      >
+                        <Smile className="h-5 w-5" />
+                      </Button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>Add Emoji</TooltipContent>
+                </Tooltip>
+                <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent">
+                  <EmojiPicker onEmojiClick={onEmojiClick} />
+                </PopoverContent>
+              </Popover>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-primary"
-              onClick={() => openAiTool("rewrite", tweet.id)}
-              aria-label="Rewrite with AI"
-            >
-              <Sparkles className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-primary"
-              onClick={() => openAiTool("hashtags", tweet.id)}
-              aria-label="Generate Hashtags"
-            >
-              <Hash className="h-5 w-5" />
-            </Button>
-          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-primary"
+                    onClick={() => openAiTool("rewrite", tweet.id)}
+                    aria-label="Rewrite with AI"
+                  >
+                    <Sparkles className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Rewrite with AI</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-primary"
+                    onClick={() => openAiTool("hashtags", tweet.id)}
+                    aria-label="Generate hashtags"
+                  >
+                    <Hash className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Generate Hashtags</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
           
           <div className="flex items-center gap-4">
             <span className={cn(

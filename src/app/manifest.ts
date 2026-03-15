@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AstroPost",
-    short_name: "AstroPost",
+    name: "AstraPost",
+    short_name: "AstraPost",
     description:
-      "Schedule tweets, generate threads with AI, and analyze your growth with AstroPost.",
+      "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

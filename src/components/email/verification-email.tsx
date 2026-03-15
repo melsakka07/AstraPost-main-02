@@ -8,12 +8,12 @@ interface VerificationEmailProps {
 
 export const VerificationEmail = ({ url, name }: VerificationEmailProps) => {
   return (
-    <BaseLayout preview="Verify your email address for AstroPost">
+    <BaseLayout preview="Verify your email address for AstraPost">
       <Text className="text-black text-[14px] leading-[24px]">
         Hello {name || 'there'},
       </Text>
       <Text className="text-black text-[14px] leading-[24px]">
-        Welcome to AstroPost! Please verify your email address by clicking the button below:
+        Welcome to AstraPost! Please verify your email address by clicking the button below:
       </Text>
       <Section className="text-center mt-[32px] mb-[32px]">
         <Button

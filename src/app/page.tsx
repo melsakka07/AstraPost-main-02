@@ -28,7 +28,7 @@ export default function Home() {
 
           <p className="mx-auto max-w-2xl text-xl leading-relaxed text-muted-foreground">
             Schedule threads, generate viral content with AI, and track your
-            analytics. AstroPost is the all-in-one tool for serious creators.
+            analytics. AstraPost is the all-in-one tool for serious creators.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
@@ -135,7 +135,7 @@ export default function Home() {
                 </h2>
                 <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
                   Join thousands of creators who are growing their audience with
-                  AstroPost.
+                  AstraPost.
                 </p>
               </div>
               <div className="flex flex-col items-center justify-center gap-4 pt-2 sm:flex-row">

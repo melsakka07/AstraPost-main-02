@@ -31,7 +31,7 @@ export function HeroMockup() {
   return (
     <div
       role="img"
-      aria-label="AstroPost dashboard preview"
+      aria-label="AstraPost dashboard preview"
       className="relative mx-auto mt-14 max-w-5xl px-4 sm:px-6"
     >
       {/* Ambient glow — scale-105 so it softly bleeds past the chrome edges */}

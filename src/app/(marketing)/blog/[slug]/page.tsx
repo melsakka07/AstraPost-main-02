@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description: post.excerpt,
       type: "article",
       publishedTime: post.date,
-      authors: ["AstroPost Team"],
+      authors: ["AstraPost Team"],
       images: post.image ? [{ url: post.image }] : undefined,
     },
     twitter: {
@@ -85,7 +85,7 @@ export default async function BlogPostPage({
                   A
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-foreground font-medium">AstroPost Team</span>
+                  <span className="text-foreground font-medium">AstraPost Team</span>
                   <span className="text-xs">{post.date}</span>
                 </div>
               </div>
@@ -130,10 +130,10 @@ export default async function BlogPostPage({
               A
             </div>
             <div>
-              <h3 className="font-bold text-lg">Written by the AstroPost Team</h3>
+              <h3 className="font-bold text-lg">Written by the AstraPost Team</h3>
               <p className="text-muted-foreground mt-2">
                 We're building the best AI-powered social media management platform for content creators
-                in the MENA region. Join thousands of creators scaling their presence with AstroPost.
+                in the MENA region. Join thousands of creators scaling their presence with AstraPost.
               </p>
             </div>
           </div>
@@ -152,7 +152,7 @@ export default async function BlogPostPage({
             </div>
             <h3 className="text-3xl md:text-4xl font-bold">Ready to Grow Your Audience?</h3>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Join thousands of creators using AstroPost to schedule posts, analyze performance, and
+              Join thousands of creators using AstraPost to schedule posts, analyze performance, and
               create viral content with AI.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">

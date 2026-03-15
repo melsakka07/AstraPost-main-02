@@ -307,7 +307,7 @@ export default function ChatPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6 pb-4 border-b">
-          <h1 className="text-2xl font-bold">AstroPost Assistant</h1>
+          <h1 className="text-2xl font-bold">AstraPost Assistant</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
               Welcome, {session.user.name}!

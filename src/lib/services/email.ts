@@ -85,9 +85,9 @@ export async function sendPostFailureEmail(to: string, postId: string, reason: s
 export async function sendVerificationEmail(to: string, url: string, name?: string) {
   await sendEmail({
     to,
-    subject: "Verify your email address for AstroPost",
+    subject: "Verify your email address for AstraPost",
     react: VerificationEmail({ url, name }),
-    text: `Welcome to AstroPost! Please verify your email address by clicking here: ${url}`,
+    text: `Welcome to AstraPost! Please verify your email address by clicking here: ${url}`,
     metadata: { type: 'verification' },
   });
 }
@@ -95,7 +95,7 @@ export async function sendVerificationEmail(to: string, url: string, name?: stri
 export async function sendResetPasswordEmail(to: string, url: string, name?: string) {
   await sendEmail({
     to,
-    subject: "Reset your password for AstroPost",
+    subject: "Reset your password for AstraPost",
     react: ResetPasswordEmail({ url, name }),
     text: `Reset your password by clicking here: ${url}`,
     metadata: { type: 'reset_password' },
@@ -107,12 +107,12 @@ export async function sendTeamInvitationEmail(to: string, token: string, teamNam
   
   await sendEmail({
     to,
-    subject: `You've been invited to join ${teamName} on AstroPost`,
+    subject: `You've been invited to join ${teamName} on AstraPost`,
     text: `You have been invited to join the team "${teamName}".\n\nClick here to join: ${url}\n\nThis link expires in 7 days.`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Team Invitation</h2>
-        <p>You have been invited to join the team <strong>${teamName}</strong> on AstroPost.</p>
+        <p>You have been invited to join the team <strong>${teamName}</strong> on AstraPost.</p>
         <p>Click the button below to accept the invitation:</p>
         <a href="${url}" style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Join Team</a>
         <p style="margin-top: 24px; font-size: 14px; color: #666;">This link expires in 7 days.</p>

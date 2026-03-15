@@ -8,7 +8,7 @@ const testimonials = [
     handle: "@sarahj_tech",
     role: "Tech Content Creator",
     content:
-      "AstroPost completely changed how I manage my X account. The AI thread writer is a game changer for my productivity.",
+      "AstraPost completely changed how I manage my X account. The AI thread writer is a game changer for my productivity.",
     avatar:
       "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
   },
@@ -44,7 +44,7 @@ export function SocialProof() {
             Trusted by creators worldwide
           </h2>
           <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-            Join 10,000+ creators, developers, and brands who use AstroPost to
+            Join 10,000+ creators, developers, and brands who use AstraPost to
             grow their audience.
           </p>
         </div>

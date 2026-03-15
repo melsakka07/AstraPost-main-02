@@ -1,16 +1,19 @@
 import { headers } from "next/headers";
 import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { Settings2 as Settings2Icon } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
+import { CopyIdButton } from "@/components/jobs/copy-id-button";
 import { RetryPostButton } from "@/components/queue/retry-post-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { jobRuns } from "@/lib/schema";
+import { jobRuns, tweets } from "@/lib/schema";
 
 export default async function JobsPage({
   searchParams,
@@ -59,6 +62,21 @@ export default async function JobsPage({
     .limit(limit)
     .offset(page * limit);
 
+  // Fetch first-tweet content for posts referenced in job runs
+  const postIds = [...new Set(runs.map((r) => r.postId).filter(Boolean))] as string[];
+  const postPreviews = new Map<string, string>();
+  if (postIds.length > 0) {
+    const previews = await db
+      .select({ postId: tweets.postId, content: tweets.content })
+      .from(tweets)
+      .where(and(sql`${tweets.postId} IN ${postIds}`, eq(tweets.position, 0)));
+    for (const p of previews) {
+      if (p.postId) postPreviews.set(p.postId, p.content || "");
+    }
+  }
+
+  const truncateId = (id: string) => id.length > 8 ? id.slice(0, 8) : id;
+
   const badgeVariant = (s: string) => {
     if (s === "success") return "default";
     if (s === "failed") return "destructive";
@@ -78,37 +96,46 @@ export default async function JobsPage({
           <CardTitle className="text-base">Filter Jobs</CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="flex flex-col gap-3 sm:flex-row sm:flex-wrap" method="GET">
-            <Select name="status" defaultValue={status || "all"}>
-              <SelectTrigger className="h-10 sm:min-w-[180px]">
-                <SelectValue placeholder="All statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="running">Running</SelectItem>
-                <SelectItem value="retrying">Retrying</SelectItem>
-                <SelectItem value="success">Success</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
+          <form className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end" method="GET">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Select name="status" defaultValue={status || "all"}>
+                <SelectTrigger className="h-10 sm:min-w-[180px]">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="running">Running</SelectItem>
+                  <SelectItem value="retrying">Retrying</SelectItem>
+                  <SelectItem value="success">Success</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Select name="queue" defaultValue={queue || "all"}>
-              <SelectTrigger className="h-10 sm:min-w-[180px]">
-                <SelectValue placeholder="All queues" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All queues</SelectItem>
-                <SelectItem value="schedule-queue">Schedule Queue</SelectItem>
-                <SelectItem value="analytics-queue">Analytics Queue</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Queue</Label>
+              <Select name="queue" defaultValue={queue || "all"}>
+                <SelectTrigger className="h-10 sm:min-w-[180px]">
+                  <SelectValue placeholder="All queues" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All queues</SelectItem>
+                  <SelectItem value="schedule-queue">Schedule Queue</SelectItem>
+                  <SelectItem value="analytics-queue">Analytics Queue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <Input
-              name="q"
-              defaultValue={q || ""}
-              placeholder="Search postId / jobId / correlationId"
-              className="h-10 min-w-0 flex-1 sm:min-w-[280px]"
-            />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Search</Label>
+              <Input
+                name="q"
+                defaultValue={q || ""}
+                placeholder="Search postId / jobId / correlationId"
+                className="h-10 sm:min-w-[280px]"
+              />
+            </div>
 
             <button
               type="submit"
@@ -135,70 +162,83 @@ export default async function JobsPage({
         </Card>
       ) : (
         <div className="space-y-3">
-          {runs.map((r) => (
-            <Card key={r.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={badgeVariant(String(r.status)) as any}>
-                      {String(r.status)}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">{String(r.queueName)}</Badge>
-                    {r.postId && (
-                      <Link href={`/dashboard/jobs?q=${encodeURIComponent(String(r.postId))}`}>
-                        <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer">
-                          post {r.postId}
-                        </Badge>
-                      </Link>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(r.startedAt).toLocaleString()}
-                  </div>
-                </div>
-
-                <div className="grid gap-2 text-sm bg-muted/30 rounded-md p-3">
-                  <div className="text-muted-foreground text-xs">
-                    jobId: <span className="break-all text-foreground font-mono">{String(r.jobId)}</span>
-                  </div>
-                  {r.correlationId && (
-                    <div className="text-muted-foreground text-xs">
-                      correlationId:{" "}
-                      <span className="break-all text-foreground font-mono">{String(r.correlationId)}</span>
+          {runs.map((r) => {
+            const preview = r.postId ? postPreviews.get(r.postId) : undefined;
+            return (
+              <Card key={r.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="pt-6 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={badgeVariant(String(r.status)) as any}>
+                        {String(r.status)}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">{String(r.queueName)}</Badge>
+                      {r.postId && (
+                        <Link href={`/dashboard/jobs?q=${encodeURIComponent(String(r.postId))}`}>
+                          <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer font-mono">
+                            {truncateId(r.postId)}
+                          </Badge>
+                        </Link>
+                      )}
                     </div>
+                    <div className="text-xs text-muted-foreground" title={new Date(r.startedAt).toLocaleString()}>
+                      {formatDistanceToNow(new Date(r.startedAt), { addSuffix: true })}
+                    </div>
+                  </div>
+
+                  {/* Post content preview */}
+                  {preview && (
+                    <p className="line-clamp-2 text-sm text-muted-foreground italic border-l-2 border-border pl-3">
+                      {preview}
+                    </p>
                   )}
-                  <div className="flex items-center gap-4 text-xs">
-                    {(r.attempts || r.attemptsMade) && (
-                      <div className="text-muted-foreground">
-                        attempts: <span className="text-foreground font-medium">{r.attemptsMade || 0}</span>
-                        {" / "}
-                        <span className="text-foreground font-medium">{r.attempts || "?"}</span>
+
+                  <div className="grid gap-2 text-sm bg-muted/30 rounded-md p-3">
+                    <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                      <span>Job ID:</span>
+                      <span className="text-foreground font-mono">{truncateId(String(r.jobId))}</span>
+                      <CopyIdButton value={String(r.jobId)} />
+                    </div>
+                    {r.correlationId && (
+                      <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                        <span>Correlation:</span>
+                        <span className="text-foreground font-mono">{truncateId(String(r.correlationId))}</span>
+                        <CopyIdButton value={String(r.correlationId)} />
                       </div>
                     )}
-                    <div className="text-muted-foreground">
-                      duration:{" "}
-                      <span className="text-foreground font-medium">
-                        {r.finishedAt
-                          ? `${Math.max(0, Math.round((new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime()) / 1000))}s`
-                          : "—"}
-                      </span>
+                    <div className="flex items-center gap-4 text-xs">
+                      {(r.attempts || r.attemptsMade) && (
+                        <div className="text-muted-foreground">
+                          Attempts: <span className="text-foreground font-medium">{r.attemptsMade || 0}</span>
+                          {" / "}
+                          <span className="text-foreground font-medium">{r.attempts || "?"}</span>
+                        </div>
+                      )}
+                      <div className="text-muted-foreground">
+                        Duration:{" "}
+                        <span className="text-foreground font-medium">
+                          {r.finishedAt
+                            ? `${Math.max(0, Math.round((new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime()) / 1000))}s`
+                            : "—"}
+                        </span>
+                      </div>
                     </div>
+                    {r.error && (
+                      <div className="break-words text-destructive text-xs bg-destructive/10 rounded px-2 py-1 mt-2">
+                        {String(r.error)}
+                      </div>
+                    )}
                   </div>
-                  {r.error && (
-                    <div className="break-words text-destructive text-xs bg-destructive/10 rounded px-2 py-1 mt-2">
-                      {String(r.error)}
+
+                  {String(r.status) === "failed" && r.postId && (
+                    <div className="pt-2">
+                      <RetryPostButton postId={String(r.postId)} />
                     </div>
                   )}
-                </div>
-
-                {String(r.status) === "failed" && r.postId && (
-                  <div className="pt-2">
-                    <RetryPostButton postId={String(r.postId)} />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
 
           {/* Pagination */}
           <div className="flex items-center justify-between pt-4 border-t">

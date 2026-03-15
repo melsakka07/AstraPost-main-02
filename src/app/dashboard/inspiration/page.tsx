@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight } from "lucide-react";
+import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight, Download } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
 import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
@@ -238,7 +238,10 @@ export default function InspirationPage() {
     >
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="import">Import Tweet</TabsTrigger>
+          <TabsTrigger value="import">
+            <Download className="h-4 w-4 mr-2" />
+            Import Tweet
+          </TabsTrigger>
           <TabsTrigger value="history">
             <History className="h-4 w-4 mr-2" />
             History

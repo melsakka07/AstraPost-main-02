@@ -83,12 +83,12 @@ const SOCIAL_LINKS: Array<{
   Icon: React.ComponentType<{ className?: string }>;
 }> = [
   {
-    label: "Follow AstroPost on X (Twitter)",
+    label: "Follow AstraPost on X (Twitter)",
     href: "https://twitter.com/astropost",
     Icon: XIcon,
   },
   {
-    label: "Join the AstroPost Discord community",
+    label: "Join the AstraPost Discord community",
     href: "https://discord.gg/astropost",
     Icon: DiscordIcon,
   },
@@ -96,7 +96,7 @@ const SOCIAL_LINKS: Array<{
 
 export function SiteFooter() {
   return (
-    <footer className="bg-muted/20" aria-label="Site footer">
+    <footer data-site-footer className="bg-muted/20" aria-label="Site footer">
       {/* Gradient separator — consistent with page section dividers */}
       <div aria-hidden="true" className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
       <div className="container mx-auto max-w-6xl px-4 py-16">
@@ -107,10 +107,10 @@ export function SiteFooter() {
             <Link
               href="/"
               className="inline-flex items-center gap-2 font-bold text-lg group"
-              aria-label="AstroPost — Go to homepage"
+              aria-label="AstraPost — Go to homepage"
             >
               <Rocket className="h-5 w-5 text-primary transition-transform duration-300 group-hover:rotate-12" />
-              <span>AstroPost</span>
+              <span>AstraPost</span>
             </Link>
 
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -161,7 +161,7 @@ export function SiteFooter() {
         {/* Bottom bar */}
         <div className="mt-16 border-t border-border/50 pt-8">
           <div className="flex flex-col items-center justify-between gap-3 text-xs text-muted-foreground sm:flex-row">
-            <p>&copy; {new Date().getFullYear()} AstroPost. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} AstraPost. All rights reserved.</p>
             <p className="flex items-center gap-1.5">
               <LockIcon className="h-3.5 w-3.5 text-primary/70" />
               Secured with industry-standard encryption

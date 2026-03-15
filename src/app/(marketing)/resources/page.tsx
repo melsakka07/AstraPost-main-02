@@ -7,11 +7,11 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Resources",
-  description: "Guides, tutorials, and tools to help you succeed with AstroPost.",
+  description: "Guides, tutorials, and tools to help you succeed with AstraPost.",
   alternates: { canonical: "/resources" },
   openGraph: {
-    title: "Resources — AstroPost",
-    description: "Guides, tutorials, and tools to help you succeed with AstroPost.",
+    title: "Resources — AstraPost",
+    description: "Guides, tutorials, and tools to help you succeed with AstraPost.",
     url: "/resources",
   },
 };
@@ -21,14 +21,14 @@ export default function ResourcesPage() {
     {
       icon: <Book className="h-6 w-6 text-primary" />,
       title: "Knowledge Base",
-      description: "Step-by-step guides on how to use AstroPost features.",
+      description: "Step-by-step guides on how to use AstraPost features.",
       link: "/docs",
       button: "View Docs"
     },
     {
       icon: <FileText className="h-6 w-6 text-primary" />,
       title: "API Reference",
-      description: "For developers integrating with AstroPost.",
+      description: "For developers integrating with AstraPost.",
       link: "/docs/api",
       button: "Read API Docs"
     },
@@ -63,7 +63,7 @@ export default function ResourcesPage() {
             Everything you need to succeed
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Everything you need to succeed with AstroPost.
+            Everything you need to succeed with AstraPost.
           </p>
         </div>
 

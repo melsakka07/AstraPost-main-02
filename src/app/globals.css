@@ -116,6 +116,24 @@
   }
 }
 
+/* ─── Dashboard shell override ───────────────────────────────────
+   When the dashboard layout is active, hide the marketing header,
+   footer, and let the dashboard own the full viewport.
+   Uses :has() (95%+ browser support) for zero-flash server rendering. */
+body:has([data-dashboard-layout]) [data-site-header],
+body:has([data-dashboard-layout]) [data-site-footer] {
+  display: none !important;
+}
+
+body:has([data-dashboard-layout]) [data-app-shell] {
+  min-height: auto;
+}
+
+body:has([data-dashboard-layout]) [data-main-content] {
+  min-height: 100dvh;
+  padding: 0;
+}
+
 /* Prose styles for blog content */
 @layer components {
   .prose {

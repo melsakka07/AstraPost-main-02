@@ -7,11 +7,11 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Learn how AstroPost protects your data and respects your privacy.",
+  description: "Learn how AstraPost protects your data and respects your privacy.",
   alternates: { canonical: "/legal/privacy" },
   openGraph: {
-    title: "Privacy Policy — AstroPost",
-    description: "Learn how AstroPost protects your data and respects your privacy.",
+    title: "Privacy Policy — AstraPost",
+    description: "Learn how AstraPost protects your data and respects your privacy.",
     url: "/legal/privacy",
   },
 };
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
     {
       number: "1",
       title: "Introduction",
-      content: "Welcome to AstroPost (\"we,\" \"our,\" or \"us\"). We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website (regardless of where you visit it from) and tell you about your privacy rights and how the law protects you."
+      content: "Welcome to AstraPost (\"we,\" \"our,\" or \"us\"). We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website (regardless of where you visit it from) and tell you about your privacy rights and how the law protects you."
     },
     {
       number: "2",

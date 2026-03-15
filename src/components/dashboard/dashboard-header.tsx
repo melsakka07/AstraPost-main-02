@@ -24,7 +24,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ user, currentTeamId, memberships }: DashboardHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-background px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-x-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:gap-x-6 sm:px-6 lg:px-8">
       <AccountSwitcher 
         user={user}
         currentTeamId={currentTeamId}

@@ -6,7 +6,19 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus, Sparkles, Loader2, Hash } from "lucide-react";
+import {
+  ChevronDown,
+  FileText,
+  Globe,
+  Hash,
+  ListOrdered,
+  Loader2,
+  Megaphone,
+  Plus,
+  Send,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 import { AiImageDialog } from "@/components/composer/ai-image-dialog";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
@@ -18,6 +30,7 @@ import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -791,35 +804,55 @@ export function Composer() {
       <div className="space-y-6">
         <Card>
           <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={() => openAiTool("thread")}
-              >
-                <Sparkles className="h-4 w-4 text-purple-500" />
-                AI Writer
-              </Button>
-              <TemplatesDialog onSelect={handleTemplateSelect} />
-              <InspirationPanel 
-                language={aiLanguage} 
+            {/* AI Tools — Primary */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">AI Tools</label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => openAiTool("thread")}
+                >
+                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  AI Writer
+                </Button>
+                <TemplatesDialog onSelect={handleTemplateSelect} />
+              </div>
+              <InspirationPanel
+                language={aiLanguage}
                 onSelect={(topic) => {
                   setAiTopic(topic);
                   openAiTool("thread");
-                }} 
+                }}
               />
-              <Button variant="outline" onClick={() => openAiTool("hook")}>
-                Hook
-              </Button>
-              <Button variant="outline" onClick={() => openAiTool("cta")}>
-                CTA
-              </Button>
-              <Button variant="outline" onClick={() => openAiTool("translate")}>
-                Translate
-              </Button>
-              <Button variant="outline" onClick={() => setTweets(applyNumbering([...tweets]))}>
-                Number 1/N
-              </Button>
+
+              {/* Secondary tools — dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between text-muted-foreground">
+                    More Tools
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
+                  <DropdownMenuItem onClick={() => openAiTool("hook")}>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Hook Idea
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openAiTool("cta")}>
+                    <Megaphone className="mr-2 h-4 w-4" />
+                    Call to Action
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => openAiTool("translate")}>
+                    <Globe className="mr-2 h-4 w-4" />
+                    Translate
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTweets(applyNumbering([...tweets]))}>
+                    <ListOrdered className="mr-2 h-4 w-4" />
+                    Number 1/N
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="space-y-2">
@@ -875,27 +908,33 @@ export function Composer() {
             </div>
 
             <div className="flex flex-col gap-2">
-                <Button 
-                    className="w-full size-lg text-lg" 
+                <Button
+                    className="w-full h-11 text-base font-semibold"
                     onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
                     disabled={isSubmitting}
                 >
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {scheduledDate ? "Schedule Post" : "Post Now"}
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  {scheduledDate ? "Schedule Post" : "Post Now"}
                 </Button>
 
-                <Button 
+                <Button
                     variant="outline"
                     className="w-full"
                     onClick={() => handleSubmit("draft")}
                     disabled={isSubmitting}
                 >
+                    <FileText className="mr-2 h-4 w-4" />
                     Save as Draft
                 </Button>
-                
-                <Button 
+
+                <Button
                     variant="ghost"
-                    className="w-full text-muted-foreground hover:text-foreground"
+                    size="sm"
+                    className="w-full text-xs text-muted-foreground hover:text-foreground"
                     onClick={() => setIsSaveTemplateOpen(true)}
                     disabled={isSubmitting}
                 >

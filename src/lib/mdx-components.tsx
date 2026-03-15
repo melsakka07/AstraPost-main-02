@@ -230,7 +230,7 @@ export function ComparisonTable({
           <tr className="bg-muted/50">
             <th className="px-6 py-4 text-left font-semibold">Feature</th>
             {betterThan && <th className="px-6 py-4 text-center font-semibold">{betterThan}</th>}
-            <th className="px-6 py-4 text-center font-semibold bg-primary/10">AstroPost</th>
+            <th className="px-6 py-4 text-center font-semibold bg-primary/10">AstraPost</th>
             {worseThan && <th className="px-6 py-4 text-center font-semibold">{worseThan}</th>}
           </tr>
         </thead>

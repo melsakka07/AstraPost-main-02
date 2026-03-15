@@ -2,9 +2,10 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { and, asc, eq, gte, lte, isNotNull } from "drizzle-orm";
+import { CalendarDays, PlusCircle } from "lucide-react";
 import { BulkImportDialog } from "@/components/calendar/bulk-import-dialog";
 import { CalendarView } from "@/components/calendar/calendar-view";
-import { PageToolbar } from "@/components/dashboard/page-toolbar";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -47,26 +48,28 @@ export default async function CalendarPage({
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <PageToolbar
-        title="Content Calendar"
-        description="Review scheduled content and drag to reschedule."
-        actions={
-          <>
-            <BulkImportDialog xAccounts={xAccountsList} />
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/queue">Open Queue</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/dashboard/compose">Schedule New Post</Link>
-            </Button>
-          </>
-        }
-      />
-
-      <div className="flex-1 rounded-lg border bg-background p-4 shadow-sm overflow-hidden mx-4 md:mx-auto max-w-7xl w-full my-4">
+    <DashboardPageWrapper
+      icon={CalendarDays}
+      title="Content Calendar"
+      description="Review scheduled content and drag to reschedule."
+      actions={
+        <>
+          <BulkImportDialog xAccounts={xAccountsList} />
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/queue">Open Queue</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/compose">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Schedule New Post
+            </Link>
+          </Button>
+        </>
+      }
+    >
+      <div className="rounded-lg border bg-background p-4 shadow-sm overflow-hidden -mx-1">
         <CalendarView posts={scheduledPosts} currentDate={currentDate} />
       </div>
-    </div>
+    </DashboardPageWrapper>
   );
 }

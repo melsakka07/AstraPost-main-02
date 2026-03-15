@@ -4,8 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/auth";
 
 export const metadata = {
-  title: "Public Roadmap | AstroPost",
-  description: "Help shape the future of AstroPost. Submit ideas and vote on features.",
+  title: "Public Roadmap | AstraPost",
+  description: "Help shape the future of AstraPost. Submit ideas and vote on features.",
 };
 
 export default async function RoadmapPage() {
@@ -28,7 +28,7 @@ export default async function RoadmapPage() {
             Public Roadmap
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            We're building AstroPost in public. Submit your ideas, report bugs, and vote on what we should build next.
+            We're building AstraPost in public. Submit your ideas, report bugs, and vote on what we should build next.
           </p>
         </div>
 

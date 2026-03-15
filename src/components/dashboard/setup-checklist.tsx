@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Circle, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Circle,
+  Rocket,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +20,9 @@ interface SetupChecklistProps {
   hasProPlan: boolean;
 }
 
+const STORAGE_KEY = "setup-checklist-hidden";
+const COLLAPSED_KEY = "setup-checklist-collapsed";
+
 export function SetupChecklist({
   hasXAccount,
   hasScheduledPost,
@@ -22,15 +30,19 @@ export function SetupChecklist({
   hasProPlan,
 }: SetupChecklistProps) {
   const [isVisible, setIsVisible] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const hidden = localStorage.getItem("setup-checklist-hidden");
+    const hidden = localStorage.getItem(STORAGE_KEY);
     if (hidden === "true") {
-      // Use setTimeout to avoid synchronous state update warning during effect
       setTimeout(() => setIsVisible(false), 0);
     }
-    setTimeout(() => setIsMounted(true), 0);
+    const collapsed = localStorage.getItem(COLLAPSED_KEY);
+    setTimeout(() => {
+      if (collapsed !== "true") setIsExpanded(true);
+      setIsMounted(true);
+    }, 0);
   }, []);
 
   if (!isMounted) return null;
@@ -60,7 +72,7 @@ export function SetupChecklist({
     {
       id: "explore-analytics",
       label: "Explore Analytics",
-      completed: hasXAccount && hasScheduledPost, // Mark as done if they're active
+      completed: hasXAccount && hasScheduledPost,
       href: "/dashboard/analytics",
       cta: "View",
     },
@@ -79,71 +91,106 @@ export function SetupChecklist({
 
   const handleDismiss = () => {
     setIsVisible(false);
-    localStorage.setItem("setup-checklist-hidden", "true");
+    localStorage.setItem(STORAGE_KEY, "true");
   };
 
-  if (!isVisible && !allCompleted) {
-    // Optional: Show a minimized version or nothing? 
-    // For now, if dismissed, it's gone until localstorage is cleared or we add a "show checklist" button somewhere.
-    return null;
-  }
+  const toggleExpanded = () => {
+    const next = !isExpanded;
+    setIsExpanded(next);
+    localStorage.setItem(COLLAPSED_KEY, next ? "false" : "true");
+  };
 
-  if (allCompleted && isVisible) {
-      // Auto-dismiss after completion? Or show a success state?
-      // Let's show a success state then allow dismiss
-  }
+  if (!isVisible) return null;
+  if (allCompleted) return null;
 
   return (
-    <Card className="mb-6 border-primary/20 bg-primary/5">
-      <CardHeader className="flex flex-row items-start justify-between pb-2">
-        <div className="space-y-1">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            🚀 Getting Started
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              {completedCount}/{steps.length} completed
-            </span>
-          </CardTitle>
-          <Progress value={progress} className="h-2 w-[200px]" />
+    <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
+      {/* Compact header — always visible */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <Rocket className="h-4 w-4 text-primary" />
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleDismiss}>
-          <X className="h-4 w-4" />
-          <span className="sr-only">Dismiss</span>
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {steps.map((step) => (
-            <div
-              key={step.id}
+
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="text-sm font-semibold">Getting Started</span>
+          <span className="text-xs text-muted-foreground">
+            {completedCount}/{steps.length}
+          </span>
+          <Progress value={progress} className="hidden h-1.5 w-24 sm:block" />
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={toggleExpanded}
+            aria-label={isExpanded ? "Collapse checklist" : "Expand checklist"}
+          >
+            <ChevronDown
               className={cn(
-                "flex items-center justify-between rounded-lg border p-3 transition-colors bg-background",
-                step.completed ? "border-green-500/20 bg-green-500/5" : "hover:bg-muted/50"
+                "h-4 w-4 transition-transform duration-200",
+                isExpanded && "rotate-180"
               )}
-            >
-              <div className="flex items-center gap-3">
+            />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={handleDismiss}
+            aria-label="Dismiss checklist"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Expandable step list */}
+      <div
+        className={cn(
+          "grid transition-all duration-300 ease-in-out",
+          isExpanded
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className="flex flex-wrap gap-2 px-4 pb-4">
+            {steps.map((step) => (
+              <Link
+                key={step.id}
+                href={step.completed ? "#" : step.href}
+                className={cn(
+                  "group flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all",
+                  step.completed
+                    ? "border-green-500/20 bg-green-500/5 text-muted-foreground pointer-events-none"
+                    : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
+                )}
+              >
                 {step.completed ? (
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
                 ) : (
-                  <Circle className="h-5 w-5 text-muted-foreground" />
+                  <Circle className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" />
                 )}
                 <span
                   className={cn(
-                    "text-sm font-medium",
-                    step.completed && "text-muted-foreground line-through"
+                    "whitespace-nowrap",
+                    step.completed && "line-through"
                   )}
                 >
                   {step.label}
                 </span>
-              </div>
-              {!step.completed && (
-                <Button variant="ghost" size="sm" asChild className="h-7 px-2 text-xs">
-                  <Link href={step.href}>{step.cta}</Link>
-                </Button>
-              )}
-            </div>
-          ))}
+                {!step.completed && (
+                  <span className="ml-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                    {step.cta}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -112,14 +112,76 @@ export default function ViralAnalyzerPage() {
         </Alert>
       )}
 
-      {/* Insufficient Data */}
+      {/* Insufficient Data — Preview Mockup */}
       {insufficientData && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Not enough tweet data to analyze. Publish more tweets (at least 5 with 100+ impressions) to get viral content insights.
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-6">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Not enough tweet data to analyze. Publish more tweets (at least 5 with 100+ impressions) to get viral content insights.
+            </AlertDescription>
+          </Alert>
+
+          <div className="relative">
+            <div className="pointer-events-none select-none opacity-40 blur-[2px]">
+              <div className="grid gap-4 md:grid-cols-4">
+                {[
+                  { label: "Tweets Analyzed", value: "24" },
+                  { label: "Avg Engagement", value: "3.2%" },
+                  { label: "Top Engagement", value: "12.8%" },
+                  { label: "Total Impressions", value: "48,320" },
+                ].map((item) => (
+                  <Card key={item.label}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">{item.label}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-3xl font-bold">{item.value}</div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-2">
+                {[
+                  { icon: Hash, title: "Top Hashtags", desc: "Hashtags that drive most engagement" },
+                  { icon: Clock, title: "Best Times to Post", desc: "When your content gets the most engagement" },
+                  { icon: BarChart3, title: "Tweet Length Performance", desc: "Which lengths perform best for you" },
+                  { icon: Type, title: "Top Keywords", desc: "Word patterns that resonate with your audience" },
+                ].map((card) => (
+                  <Card key={card.title}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <card.icon className="h-5 w-5 text-primary" />
+                        {card.title}
+                      </CardTitle>
+                      <CardDescription>{card.desc}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {[1, 2, 3].map((i) => (
+                          <Skeleton key={i} className="h-8 w-full" />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="rounded-xl border bg-background/95 px-8 py-6 text-center shadow-lg backdrop-blur-sm max-w-md">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold">Unlock Viral Insights</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your top-performing content patterns.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Loading Skeleton */}

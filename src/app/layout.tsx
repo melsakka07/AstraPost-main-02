@@ -30,11 +30,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://astropost.com"),
   title: {
-    default: "AstroPost | AI-Powered Social Media Management",
-    template: "%s | AstroPost",
+    default: "AstraPost | AI-Powered Social Media Management",
+    template: "%s | AstraPost",
   },
   description:
-    "Schedule tweets, generate threads with AI, and analyze your growth with AstroPost. The ultimate tool for X (Twitter) creators.",
+    "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost. The ultimate tool for X (Twitter) creators.",
   keywords: [
     "Twitter",
     "X",
@@ -46,32 +46,32 @@ export const metadata: Metadata = {
     "Growth Tool",
     "Marketing Automation"
   ],
-  authors: [{ name: "AstroPost Team" }],
-  creator: "AstroPost",
+  authors: [{ name: "AstraPost Team" }],
+  creator: "AstraPost",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "/",
-    siteName: "AstroPost",
-    title: "AstroPost | AI-Powered Social Media Management",
+    siteName: "AstraPost",
+    title: "AstraPost | AI-Powered Social Media Management",
     description:
-      "Schedule tweets, generate threads with AI, and analyze your growth with AstroPost.",
+      "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "AstroPost Dashboard Preview",
+        alt: "AstraPost Dashboard Preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AstroPost",
+    title: "AstraPost",
     description:
-      "Schedule tweets, generate threads with AI, and analyze your growth with AstroPost.",
+      "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
     images: ["/og-image.png"],
-    creator: "@AstroPostApp",
+    creator: "@AstraPostApp",
   },
   robots: {
     index: true,
@@ -105,10 +105,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* We only show the site header on public pages, dashboard has its own layout */}
-          <div className="flex flex-col min-h-screen">
+          <div data-app-shell className="flex flex-col min-h-screen">
              <SiteHeader />
-             <main id="main-content" className="flex-1 min-w-0">{children}</main>
+             <div data-main-content className="flex-1 min-w-0">{children}</div>
              <SiteFooter />
           </div>
           <UpgradeModal />

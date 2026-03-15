@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Expert advice on social media growth, content creation, and building your audience in the MENA region.",
   alternates: { canonical: "/blog" },
   openGraph: {
-    title: "Blog — AstroPost",
+    title: "Blog — AstraPost",
     description:
       "Expert advice on social media growth, content creation, and building your audience in the MENA region.",
     url: "/blog",

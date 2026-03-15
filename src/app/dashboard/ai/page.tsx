@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, Hash, PenTool, Sparkles, Loader2, Copy, Check } from "lucide-react";
+import { Bot, Globe, Hash, PenTool, Sparkles, Loader2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { HashtagGenerator } from "@/components/ai/hashtag-generator";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
@@ -34,6 +36,8 @@ export default function AIWriterPage() {
   // Thread Writer State
   const [topic, setTopic] = useState("");
   const [tone, setTone] = useState("casual");
+  const [language, setLanguage] = useState("en");
+  const [tweetCount, setTweetCount] = useState(5);
   const [generatedContent, setGeneratedContent] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -47,7 +51,7 @@ export default function AIWriterPage() {
       const res = await fetch("/api/ai/thread", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, tone, language: "en", tweetCount: 5 }),
+        body: JSON.stringify({ topic, tone, language, tweetCount }),
       });
 
       if (!res.ok) {
@@ -126,7 +130,7 @@ export default function AIWriterPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <label htmlFor="topic" className="text-sm font-medium">Topic or Idea</label>
+                  <Label htmlFor="topic">Topic or Idea</Label>
                   <Textarea
                     id="topic"
                     placeholder="e.g. The future of remote work..."
@@ -139,22 +143,67 @@ export default function AIWriterPage() {
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="tone" className="text-sm font-medium">Tone</label>
-                  <Select value={tone} onValueChange={setTone}>
-                    <SelectTrigger id="tone">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="casual">Casual</SelectItem>
-                      <SelectItem value="humorous">Humorous</SelectItem>
-                      <SelectItem value="controversial">Controversial</SelectItem>
-                      <SelectItem value="educational">Educational</SelectItem>
-                      <SelectItem value="inspirational">Inspirational</SelectItem>
-                      <SelectItem value="viral">Viral</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="tone">Tone</Label>
+                    <Select value={tone} onValueChange={setTone}>
+                      <SelectTrigger id="tone">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="casual">Casual</SelectItem>
+                        <SelectItem value="humorous">Humorous</SelectItem>
+                        <SelectItem value="controversial">Controversial</SelectItem>
+                        <SelectItem value="educational">Educational</SelectItem>
+                        <SelectItem value="inspirational">Inspirational</SelectItem>
+                        <SelectItem value="viral">Viral</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="language">
+                      <Globe className="inline h-3.5 w-3.5 mr-1" />
+                      Language
+                    </Label>
+                    <Select value={language} onValueChange={setLanguage}>
+                      <SelectTrigger id="language">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ar">Arabic</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="it">Italian</SelectItem>
+                        <SelectItem value="pt">Portuguese</SelectItem>
+                        <SelectItem value="tr">Turkish</SelectItem>
+                        <SelectItem value="ru">Russian</SelectItem>
+                        <SelectItem value="hi">Hindi</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Thread Length</Label>
+                    <span className="text-sm font-medium tabular-nums text-muted-foreground">{tweetCount} tweets</span>
+                  </div>
+                  <Slider
+                    value={[tweetCount]}
+                    onValueChange={(values) => setTweetCount(values[0] ?? 5)}
+                    min={3}
+                    max={15}
+                    step={1}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Short (3)</span>
+                    <span>Long (15)</span>
+                  </div>
                 </div>
 
                 <Button
@@ -203,10 +252,12 @@ export default function AIWriterPage() {
                     {generatedContent}
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm border-2 border-dashed rounded-md p-8">
-                    <Sparkles className="h-8 w-8 mb-3 opacity-50" />
-                    <p>Your generated thread will appear here</p>
-                    <p className="text-xs mt-2">Configure your options and click generate to start</p>
+                  <div className="h-full flex flex-col items-center justify-center rounded-lg bg-gradient-to-b from-muted/50 to-muted/20 p-8 text-center">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                      <PenTool className="h-7 w-7 text-primary" />
+                    </div>
+                    <p className="font-medium text-foreground">Ready to generate</p>
+                    <p className="mt-1 text-sm text-muted-foreground max-w-[240px]">Enter a topic, set your preferences, then click Generate Thread</p>
                   </div>
                 )}
               </CardContent>

@@ -8,11 +8,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "Read AstroPost's terms of service and understand your rights and obligations.",
+    "Read AstraPost's terms of service and understand your rights and obligations.",
   alternates: { canonical: "/legal/terms" },
   openGraph: {
-    title: "Terms of Service — AstroPost",
-    description: "Read AstroPost's terms of service and understand your rights and obligations.",
+    title: "Terms of Service — AstraPost",
+    description: "Read AstraPost's terms of service and understand your rights and obligations.",
     url: "/legal/terms",
   },
 };
@@ -40,12 +40,12 @@ export default function TermsPage() {
     {
       number: "1",
       title: "Introduction",
-      content: "These Terms of Service (\"Terms\") govern your access to and use of AstroPost's website, products, and services (\"Services\"). Please read these Terms carefully, and contact us if you have any questions. By accessing or using our Services, you agree to be bound by these Terms and by our Privacy Policy."
+      content: "These Terms of Service (\"Terms\") govern your access to and use of AstraPost's website, products, and services (\"Services\"). Please read these Terms carefully, and contact us if you have any questions. By accessing or using our Services, you agree to be bound by these Terms and by our Privacy Policy."
     },
     {
       number: "2",
       title: "Use of Services",
-      content: "You may use our Services only if you can form a binding contract with AstroPost, and only in compliance with these Terms and all applicable local, state, national, and international laws, rules, and regulations."
+      content: "You may use our Services only if you can form a binding contract with AstraPost, and only in compliance with these Terms and all applicable local, state, national, and international laws, rules, and regulations."
     },
     {
       number: "3",
@@ -54,16 +54,16 @@ export default function TermsPage() {
     },
     {
       number: "4",
-      title: "AstroPost Rights",
-      content: "All right, title, and interest in and to the Services (excluding Content provided by users) are and will remain the exclusive property of AstroPost and its licensors. The Services are protected by copyright, trademark, and other laws of both the United States and foreign countries."
+      title: "AstraPost Rights",
+      content: "All right, title, and interest in and to the Services (excluding Content provided by users) are and will remain the exclusive property of AstraPost and its licensors. The Services are protected by copyright, trademark, and other laws of both the United States and foreign countries."
     },
     {
       number: "5",
       title: "Restrictions",
       items: [
-        "Access, tamper with, or use non-public areas of the Services, AstroPost's computer systems, or the technical delivery systems of AstroPost's providers.",
+        "Access, tamper with, or use non-public areas of the Services, AstraPost's computer systems, or the technical delivery systems of AstraPost's providers.",
         "Probe, scan, or test the vulnerability of any system or network or breach or circumvent any security or authentication measures.",
-        "Access or search or attempt to access or search the Services by any means (automated or otherwise) other than through our currently available, published interfaces that are provided by AstroPost.",
+        "Access or search or attempt to access or search the Services by any means (automated or otherwise) other than through our currently available, published interfaces that are provided by AstraPost.",
         "Interfere with, or disrupt, (or attempt to do so), the access of any user, host or network, including, without limitation, sending a virus, overloading, flooding, spamming, mail-bombing the Services."
       ]
     },

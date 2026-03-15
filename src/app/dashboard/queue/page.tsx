@@ -2,8 +2,8 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { eq, and, asc, gte, sql, inArray } from "drizzle-orm";
-import { Calendar, Clock, AlertTriangle, ShieldCheck } from "lucide-react";
-import { PageToolbar } from "@/components/dashboard/page-toolbar";
+import { Calendar, CheckCircle2, Clock, AlertTriangle, ListOrdered, PlusCircle, ShieldCheck } from "lucide-react";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { CancelPostButton } from "@/components/queue/cancel-post-button";
 import { PostApprovalActions } from "@/components/queue/post-approval-actions";
 import { QueueRealtimeListener } from "@/components/queue/queue-realtime-listener";
@@ -124,40 +124,43 @@ export default async function QueuePage({
   };
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      <QueueRealtimeListener />
-      <PageToolbar
-        title={ctx.isOwner ? "Scheduled Queue" : `${dbUser?.name || 'Team'}'s Queue`}
-        description="Manage scheduled and failed posts with faster scan and control."
-        actions={
-          <>
-            <Badge variant="outline" className="text-muted-foreground">
-              {postCount} / {limits.postsPerMonth === Infinity ? "∞" : limits.postsPerMonth} Posts this month
-            </Badge>
-            <div className="hidden items-center rounded-md border p-0.5 lg:flex">
-              <Button
-                variant={isCompact ? "ghost" : "secondary"}
-                size="sm"
-                className="h-7 px-2"
-                asChild
-              >
-                <Link href={queueDensityHref("comfortable")}>Comfortable</Link>
-              </Button>
-              <Button
-                variant={isCompact ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2"
-                asChild
-              >
-                <Link href={queueDensityHref("compact")}>Compact</Link>
-              </Button>
-            </div>
-            <Button asChild size="sm">
-              <Link href="/dashboard/compose">New Post</Link>
+    <DashboardPageWrapper
+      icon={ListOrdered}
+      title={ctx.isOwner ? "Scheduled Queue" : `${dbUser?.name || 'Team'}'s Queue`}
+      description="Manage scheduled and failed posts."
+      actions={
+        <>
+          <Badge variant="outline" className="text-muted-foreground">
+            {postCount} / {limits.postsPerMonth === Infinity ? "∞" : limits.postsPerMonth} this month
+          </Badge>
+          <div className="hidden items-center rounded-md border p-0.5 lg:flex">
+            <Button
+              variant={isCompact ? "ghost" : "secondary"}
+              size="sm"
+              className="h-7 px-2"
+              asChild
+            >
+              <Link href={queueDensityHref("comfortable")}>Comfortable</Link>
             </Button>
-          </>
-        }
-      />
+            <Button
+              variant={isCompact ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 px-2"
+              asChild
+            >
+              <Link href={queueDensityHref("compact")}>Compact</Link>
+            </Button>
+          </div>
+          <Button asChild>
+            <Link href="/dashboard/compose">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Post
+            </Link>
+          </Button>
+        </>
+      }
+    >
+      <QueueRealtimeListener />
 
       {isNearLimit && (
         <UpgradeBanner 
@@ -270,21 +273,20 @@ export default async function QueuePage({
       )}
 
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Failed Posts</h2>
-        <p className="text-sm text-muted-foreground">Retry or edit failed content quickly</p>
+        <h2 className="text-xl font-semibold tracking-tight">Failed Posts</h2>
+        {failedPosts.length > 0 && (
+          <p className="text-sm text-muted-foreground">Retry or edit failed content quickly</p>
+        )}
       </div>
 
       {failedPosts.length === 0 ? (
-        <EmptyState
-          icon={<AlertTriangle className="h-6 w-6" />}
-          title="No failed posts"
-          description="All queue jobs are currently healthy."
-          primaryAction={
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/jobs">View Job History</Link>
-            </Button>
-          }
-        />
+        <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50/30 px-4 py-6 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">All clear!</h3>
+          <p className="mt-1 text-xs text-emerald-600/80 dark:text-emerald-400/70">No failed posts. All queue jobs are healthy.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {failedPosts.map((post) => (
@@ -314,6 +316,6 @@ export default async function QueuePage({
           ))}
         </div>
       )}
-    </div>
+    </DashboardPageWrapper>
   );
 }

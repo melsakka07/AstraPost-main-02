@@ -7,12 +7,12 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Features",
   description:
-    "AstroPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.",
+    "AstraPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.",
   alternates: { canonical: "/features" },
   openGraph: {
-    title: "Features — AstroPost",
+    title: "Features — AstraPost",
     description:
-      "AstroPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.",
+      "AstraPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.",
     url: "/features",
   },
 };
@@ -102,7 +102,7 @@ export default function FeaturesPage() {
             Everything you need to master X
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            AstroPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.
+            AstraPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.
           </p>
         </div>
 
@@ -133,7 +133,7 @@ export default function FeaturesPage() {
           <div className="relative">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Ready to get started?</h2>
             <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-              Join thousands of creators using AstroPost to grow their audience.
+              Join thousands of creators using AstraPost to grow their audience.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" className="h-11 px-8 group" asChild>

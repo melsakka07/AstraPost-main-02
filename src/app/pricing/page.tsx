@@ -10,7 +10,7 @@ import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
 
 export const metadata = {
-  title: "Pricing | AstroPost",
+  title: "Pricing | AstraPost",
   description: "Simple, transparent pricing for creators and teams.",
 };
 

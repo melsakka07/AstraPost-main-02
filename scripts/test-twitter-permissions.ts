@@ -394,7 +394,7 @@ async function testMediaUpload(client: TwitterApi): Promise<void> {
       log(colors.red + "   Current: " + colors.bright + "Read only" + colors.reset);
       log(colors.green + "   Required: " + colors.bright + "Read and Write" + colors.reset);
       log("\n" + colors.cyan + "5. After changing permissions:" + colors.reset);
-      log(colors.cyan + "   - Go to /dashboard/settings in AstroPost" + colors.reset);
+      log(colors.cyan + "   - Go to /dashboard/settings in AstraPost" + colors.reset);
       log(colors.cyan + "   - Disconnect your X account" + colors.reset);
       log(colors.cyan + "   - Connect again with the updated permissions" + colors.reset);
       log("\n" + colors.bright + colors.red + "═══════════════════════════════════════════════════════" + colors.reset + "\n");
@@ -440,7 +440,7 @@ async function testMediaUpload(client: TwitterApi): Promise<void> {
 async function testTweetWithMedia(client: TwitterApi, mediaId: string): Promise<void> {
   logSection("Test 6: Post Tweet with Media");
 
-  const testText = `Testing AstroPost media upload - ${new Date().toISOString()}`;
+  const testText = `Testing AstraPost media upload - ${new Date().toISOString()}`;
 
   try {
     // Check if dry run mode is enabled
