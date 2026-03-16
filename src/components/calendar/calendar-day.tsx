@@ -4,11 +4,12 @@ import { useDroppable } from "@dnd-kit/core";
 import { format, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CalendarPostItem } from "./calendar-post-item";
+import { type CalendarPost } from "./calendar-view";
 
 interface CalendarDayProps {
   id: string;
   date: Date;
-  posts: any[];
+  posts: CalendarPost[];
   isCurrentMonth: boolean;
   view: "month" | "week" | "day";
 }

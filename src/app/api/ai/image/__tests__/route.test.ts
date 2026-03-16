@@ -16,46 +16,35 @@ vi.mock("@/lib/db", () => {
       user: {
         findFirst: vi.fn(),
       },
-      feedbackVotes: {
-        findFirst: vi.fn(),
-      },
-      xAccounts: {
-        findFirst: vi.fn(),
-      },
     },
     select: vi.fn(),
     from: vi.fn(),
     where: vi.fn(),
     insert: vi.fn(),
     values: vi.fn().mockResolvedValue(true),
-    delete: vi.fn(),
-    update: vi.fn(),
-    set: vi.fn(),
   };
 
   dbMock.select.mockImplementation(() => dbMock);
   dbMock.from.mockImplementation(() => dbMock);
   dbMock.where.mockImplementation(() => dbMock);
   dbMock.insert.mockImplementation(() => dbMock);
-  dbMock.delete.mockImplementation(() => dbMock);
-  dbMock.update.mockImplementation(() => dbMock);
-  dbMock.set.mockImplementation(() => dbMock);
 
   return { db: dbMock };
 });
 
 vi.mock("@/lib/rate-limiter", () => ({
   checkRateLimit: vi.fn(),
+  createRateLimitResponse: vi.fn(() => new Response(null, { status: 429 })),
+  redis: {
+    setex: vi.fn().mockResolvedValue("OK"),
+    get: vi.fn(),
+    del: vi.fn(),
+  },
 }));
 
 vi.mock("@/lib/services/ai-image", () => ({
-  generateImage: vi.fn(),
-  downloadImage: vi.fn(),
+  startImageGeneration: vi.fn(),
   validateModelForPlan: vi.fn(),
-}));
-
-vi.mock("@/lib/storage", () => ({
-  upload: vi.fn(),
 }));
 
 vi.mock("ai", () => ({
@@ -68,34 +57,29 @@ vi.mock("@openrouter/ai-sdk-provider", () => ({
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { checkRateLimit } from "@/lib/rate-limiter";
-import { generateImage, downloadImage, validateModelForPlan } from "@/lib/services/ai-image";
-import { upload } from "@/lib/storage";
+import { checkRateLimit, redis } from "@/lib/rate-limiter";
+import { startImageGeneration, validateModelForPlan } from "@/lib/services/ai-image";
 import { POST } from "../route";
 
-describe("AI Image API", () => {
+describe("AI Image API (POST)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
-    // Default mocks
+
+    // Default happy-path mocks
     (auth.api.getSession as any).mockResolvedValue({ user: { id: "user-1" } });
     (db.query.user.findFirst as any).mockResolvedValue({ plan: "pro_monthly" });
     (validateModelForPlan as any).mockReturnValue({ valid: true });
     (checkRateLimit as any).mockResolvedValue({ success: true });
     // @ts-ignore
     (db.where as any).mockReturnValue([{ count: 0 }]); // Quota check
-    (generateImage as any).mockResolvedValue({
-      imageUrl: "data:image/png;base64,test",
-      width: 1024,
-      height: 1024,
-      model: "nano-banana-2",
-      prompt: "test prompt",
+    (startImageGeneration as any).mockResolvedValue({
+      predictionId: "pred-abc123",
+      status: "starting",
     });
-    (downloadImage as any).mockResolvedValue(Buffer.from("test"));
-    (upload as any).mockResolvedValue({ url: "https://storage.com/image.png" });
+    (redis.setex as any).mockResolvedValue("OK");
   });
 
-  it("should generate image successfully", async () => {
+  it("should start image generation and return predictionId", async () => {
     const req = new NextRequest("http://localhost/api/ai/image", {
       method: "POST",
       body: JSON.stringify({
@@ -109,9 +93,14 @@ describe("AI Image API", () => {
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data.imageUrl).toBe("https://storage.com/image.png");
-    expect(generateImage).toHaveBeenCalled();
-    expect(upload).toHaveBeenCalled();
+    expect(data.predictionId).toBe("pred-abc123");
+    expect(data.estimatedSeconds).toBe(20);
+    expect(startImageGeneration).toHaveBeenCalled();
+    expect(redis.setex).toHaveBeenCalledWith(
+      "ai:img:pred:pred-abc123",
+      1800,
+      expect.any(String),
+    );
   });
 
   it("should return 401 if unauthorized", async () => {
@@ -138,7 +127,7 @@ describe("AI Image API", () => {
     expect(res.status).toBe(429);
   });
 
-  it("should return 403 if quota exceeded", async () => {
+  it("should return 403 if monthly image quota exceeded", async () => {
     // @ts-ignore
     (db.where as any).mockReturnValue([{ count: 100 }]); // Over limit
 
@@ -149,5 +138,18 @@ describe("AI Image API", () => {
 
     const res = await POST(req);
     expect(res.status).toBe(403);
+  });
+
+  it("should not call startImageGeneration when quota exceeded", async () => {
+    // @ts-ignore
+    (db.where as any).mockReturnValue([{ count: 100 }]);
+
+    const req = new NextRequest("http://localhost/api/ai/image", {
+      method: "POST",
+      body: JSON.stringify({ prompt: "test" }),
+    });
+
+    await POST(req);
+    expect(startImageGeneration).not.toHaveBeenCalled();
   });
 });

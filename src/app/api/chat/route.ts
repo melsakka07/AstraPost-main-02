@@ -6,7 +6,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 
 // Zod schema for message validation
@@ -40,26 +40,8 @@ export async function POST(req: Request) {
     columns: { plan: true },
   });
 
-  const { success, reset } = await checkRateLimit(
-    session.user.id,
-    dbUser?.plan || "free",
-    "ai"
-  );
-  if (!success) {
-    return new Response(
-      JSON.stringify({
-        error: "Too many requests",
-        retryAfter: Math.ceil((reset - Date.now()) / 1000),
-      }),
-      {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString(),
-        },
-      }
-    );
-  }
+  const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
+  if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   const aiAccess = await checkAiLimitDetailed(session.user.id);
   if (!aiAccess.allowed) {

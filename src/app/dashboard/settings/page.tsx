@@ -1,4 +1,6 @@
 import { headers } from "next/headers";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { CreditCard, Twitter, Users, Settings as SettingsIcon } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -26,7 +28,7 @@ export default async function SettingsPage({
   searchParams?: Promise<{ billing?: string | string[] }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  if (!session) redirect("/login?callbackUrl=/dashboard/settings");
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const billingParam = resolvedSearchParams?.billing;
   const billingState = Array.isArray(billingParam) ? billingParam[0] : billingParam;
@@ -97,9 +99,9 @@ export default async function SettingsPage({
                 <div
                   className={
                     billingNotice.tone === "success"
-                      ? "rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+                      ? "rounded-md border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
                       : billingNotice.tone === "warning"
-                      ? "rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"
+                      ? "rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning"
                       : "rounded-md border border-border bg-muted/60 px-4 py-3 text-sm text-foreground"
                   }
                 >
@@ -120,11 +122,11 @@ export default async function SettingsPage({
                     <ManageSubscriptionButton />
                   ) : isPaidPlan ? (
                     <Button variant="outline" asChild>
-                      <a href="/pricing?billing=restore">Restore Billing</a>
+                      <Link href="/pricing?billing=restore">Restore Billing</Link>
                     </Button>
                   ) : (
                     <Button asChild>
-                      <a href="/pricing">Upgrade Plan</a>
+                      <Link href="/pricing">Upgrade Plan</Link>
                     </Button>
                   )}
                 </div>
@@ -155,7 +157,7 @@ export default async function SettingsPage({
                   Collaborate with your team by inviting members to your workspace.
                 </div>
                 <Button variant="outline" asChild>
-                  <a href="/dashboard/settings/team">Manage Team</a>
+                  <Link href="/dashboard/settings/team">Manage Team</Link>
                 </Button>
               </div>
             </CardContent>

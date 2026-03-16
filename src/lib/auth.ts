@@ -5,6 +5,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import { db } from "./db"
 import { generateReferralCode } from "./referral/utils";
 import { user as userTable } from "./schema"
+import { encryptToken, isEncryptedToken } from "./security/token-encryption";
 import { sendResetPasswordEmail, sendVerificationEmail } from "./services/email"
 
 
@@ -32,15 +33,53 @@ export const auth = betterAuth({
         after: async (user) => {
           const trialEndsAt = new Date();
           trialEndsAt.setDate(trialEndsAt.getDate() + 14);
-          
+
           const referralCode = await generateReferralCode(user.name);
 
           await db.update(userTable)
-            .set({ 
+            .set({
               trialEndsAt,
-              referralCode 
+              referralCode
             })
             .where(and(eq(userTable.id, user.id), isNull(userTable.trialEndsAt)));
+        },
+      },
+    },
+    account: {
+      // Encrypt OAuth tokens before BetterAuth persists them to the database.
+      // This ensures `account.accessToken` and `account.refreshToken` are never
+      // stored in plaintext. The `isEncryptedToken()` guard is idempotent —
+      // already-encrypted values are not double-encrypted.
+      create: {
+        before: async (data) => {
+          return {
+            data: {
+              ...data,
+              accessToken:
+                data.accessToken && !isEncryptedToken(data.accessToken)
+                  ? encryptToken(data.accessToken)
+                  : data.accessToken,
+              refreshToken:
+                data.refreshToken && !isEncryptedToken(data.refreshToken)
+                  ? encryptToken(data.refreshToken)
+                  : data.refreshToken,
+            },
+          };
+        },
+      },
+      update: {
+        before: async (data) => {
+          return {
+            data: {
+              ...data,
+              ...(data.accessToken && !isEncryptedToken(data.accessToken)
+                ? { accessToken: encryptToken(data.accessToken) }
+                : {}),
+              ...(data.refreshToken && !isEncryptedToken(data.refreshToken)
+                ? { refreshToken: encryptToken(data.refreshToken) }
+                : {}),
+            },
+          };
         },
       },
     },

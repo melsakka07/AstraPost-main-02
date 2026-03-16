@@ -13,17 +13,23 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 /.playwright-mcp
 
 # next.js
 /.next/
 /out/
 
+# turbopack cache
+.turbo/
+
 # production
 /build
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # local tooling
@@ -35,15 +41,14 @@
 
 # other lockfiles
 package-lock.json
+yarn.lock
 
-# local debug artifacts
-*.png
-
-# debug
+# debug / logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -51,19 +56,21 @@ yarn-error.log*
 # vercel
 .vercel
 
+# sentry
+.sentryclirc
+.sentry-build-plugin.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-# uploads
+# uploads (user-generated content, not tracked)
 public/uploads
 
-# PWA
+# PWA generated files
 public/sw.js
 public/workbox-*.js
 public/worker-*.js
 public/sw.js.map
 public/workbox-*.js.map
 public/worker-*.js.map
-
-nul

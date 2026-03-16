@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { eq, and, desc } from "drizzle-orm";
 import { FileText, Plus } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -12,7 +13,7 @@ import { posts } from "@/lib/schema";
 
 export default async function DraftsPage() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  if (!session) redirect("/login?callbackUrl=/dashboard/drafts");
 
   const draftPosts = await db.query.posts.findMany({
     where: and(

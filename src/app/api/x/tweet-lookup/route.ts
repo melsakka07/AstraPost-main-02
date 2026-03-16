@@ -10,7 +10,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { normalizePlan } from "@/lib/plan-limits";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { importTweet, isValidTweetUrl } from "@/lib/services/tweet-importer";
 
 // ============================================================================
@@ -71,17 +71,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Check rate limit
     const rateLimitResult = await checkRateLimit(userId, plan, "tweet_lookup");
-
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Rate limit exceeded",
-          reset: rateLimitResult.reset,
-          remaining: rateLimitResult.remaining,
-        },
-        { status: 429 }
-      );
-    }
+    if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
     // 6. Import tweet
     const result = await importTweet(tweetUrl);

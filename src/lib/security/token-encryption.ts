@@ -8,11 +8,17 @@ function decodeKey(raw: string): Buffer {
   return Buffer.from(trimmed, "base64");
 }
 
-function getKeys(): Buffer[] {
-  const raw = process.env.TOKEN_ENCRYPTION_KEYS;
-  if (!raw) {
-    throw new Error("TOKEN_ENCRYPTION_KEYS is required");
-  }
+// Module-level key cache. Parsing TOKEN_ENCRYPTION_KEYS involves base64/hex
+// decoding and length validation on every encrypt/decrypt call — once per
+// request for every X account lookup. Caching after the first parse cuts
+// repeated allocations and makes hot paths measurably cheaper.
+//
+// The cache is intentionally module-scoped (not exported) so only this file
+// can populate or read it. Tests that need to exercise different key sets
+// should use jest.resetModules() or similar to force re-evaluation.
+let _cachedKeys: Buffer[] | null = null;
+
+function parseAndValidateKeys(raw: string): Buffer[] {
   const parts = raw
     .split(",")
     .map((p) => p.trim())
@@ -27,6 +33,16 @@ function getKeys(): Buffer[] {
     }
   }
   return keys;
+}
+
+function getKeys(): Buffer[] {
+  if (_cachedKeys) return _cachedKeys;
+  const raw = process.env.TOKEN_ENCRYPTION_KEYS;
+  if (!raw) {
+    throw new Error("TOKEN_ENCRYPTION_KEYS is required");
+  }
+  _cachedKeys = parseAndValidateKeys(raw);
+  return _cachedKeys;
 }
 
 export function encryptToken(plaintext: string): string {

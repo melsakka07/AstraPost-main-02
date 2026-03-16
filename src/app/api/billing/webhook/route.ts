@@ -6,6 +6,27 @@ import { subscriptions, user } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 
+type PlanValue = "free" | "pro_monthly" | "pro_annual" | "agency";
+type SubscriptionStatusValue = "active" | "past_due" | "cancelled" | "trialing";
+
+/**
+ * Maps a Stripe subscription status to our DB enum.
+ * Stripe statuses not in our enum (paused, unpaid, incomplete, incomplete_expired)
+ * are treated as past_due — the grace period flow handles them appropriately.
+ */
+function toSubscriptionStatus(stripeStatus: string): SubscriptionStatusValue {
+  if (stripeStatus === "canceled") return "cancelled"; // Stripe uses American spelling
+  if (
+    stripeStatus === "active" ||
+    stripeStatus === "past_due" ||
+    stripeStatus === "trialing" ||
+    stripeStatus === "cancelled"
+  ) {
+    return stripeStatus;
+  }
+  return "past_due";
+}
+
 function unixToDate(value: number | null | undefined) {
   return typeof value === "number" ? new Date(value * 1000) : null;
 }
@@ -53,6 +74,35 @@ function normalizeCheckoutPlan(plan: string | undefined) {
   return "pro_monthly";
 }
 
+/**
+ * Maps the actual Stripe price ID to a plan tier using server-side env var mappings.
+ * This is the authoritative source — never rely solely on attacker-supplied metadata.
+ *
+ * Covers all four price IDs used by the checkout endpoint:
+ *   STRIPE_PRICE_ID_MONTHLY         → pro_monthly
+ *   STRIPE_PRICE_ID_ANNUAL          → pro_annual
+ *   STRIPE_PRICE_ID_AGENCY_MONTHLY  → agency
+ *   STRIPE_PRICE_ID_AGENCY_ANNUAL   → agency
+ *
+ * Returns null only when the price ID doesn't match any configured env var,
+ * which triggers a metadata fallback with a structured warning. This should
+ * not happen in production once all four env vars are set.
+ */
+function getPlanFromPriceId(priceId: string | null | undefined): PlanValue | null {
+  if (!priceId) return null;
+  const {
+    STRIPE_PRICE_ID_MONTHLY,
+    STRIPE_PRICE_ID_ANNUAL,
+    STRIPE_PRICE_ID_AGENCY_MONTHLY,
+    STRIPE_PRICE_ID_AGENCY_ANNUAL,
+  } = process.env;
+  if (STRIPE_PRICE_ID_MONTHLY        && priceId === STRIPE_PRICE_ID_MONTHLY)        return "pro_monthly";
+  if (STRIPE_PRICE_ID_ANNUAL         && priceId === STRIPE_PRICE_ID_ANNUAL)         return "pro_annual";
+  if (STRIPE_PRICE_ID_AGENCY_MONTHLY && priceId === STRIPE_PRICE_ID_AGENCY_MONTHLY) return "agency";
+  if (STRIPE_PRICE_ID_AGENCY_ANNUAL  && priceId === STRIPE_PRICE_ID_AGENCY_ANNUAL)  return "agency";
+  return null;
+}
+
 async function runSideEffect(task: () => Promise<void>, name: string) {
   try {
     await task();
@@ -64,7 +114,6 @@ async function runSideEffect(task: () => Promise<void>, name: string) {
 async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.Session) {
   const stripeSubscriptionId = toId(session.subscription);
   const userId = session.metadata?.userId;
-  const plan = normalizeCheckoutPlan(session.metadata?.plan);
   const stripeCustomerId = toId(session.customer);
 
   if (!stripeSubscriptionId || !userId || !stripeCustomerId) {
@@ -75,9 +124,38 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     })}`);
   }
 
+  // Retrieve the subscription to get period info and the actual price ID.
+  // We expand line_items on the checkout session separately because the subscription
+  // items endpoint is the most reliable way to get the purchased price.
   const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
   const period = getSubscriptionPeriod(subscription as unknown as Stripe.Subscription);
   const firstItem = subscription.items.data[0];
+  const purchasedPriceId = firstItem?.price?.id;
+
+  // Determine plan from the server-side price ID mapping (authoritative).
+  // Fall back to normalised metadata only when the price ID is not in env vars
+  // (e.g. agency plans that don't yet have a dedicated env var configured).
+  // A structured warning is logged so operators can close the gap.
+  const planFromPriceId = getPlanFromPriceId(purchasedPriceId);
+  let plan: PlanValue;
+
+  if (planFromPriceId) {
+    plan = planFromPriceId;
+  } else {
+    const metadataPlan = normalizeCheckoutPlan(session.metadata?.plan);
+    console.warn("webhook_checkout_plan_metadata_fallback", {
+      userId,
+      purchasedPriceId: purchasedPriceId ?? null,
+      metadataPlan,
+      message:
+        "Price ID not matched by any configured env var — falling back to session metadata. " +
+        "Set STRIPE_PRICE_ID_MONTHLY, STRIPE_PRICE_ID_ANNUAL, " +
+        "STRIPE_PRICE_ID_AGENCY_MONTHLY, and STRIPE_PRICE_ID_AGENCY_ANNUAL to eliminate this warning.",
+    });
+    plan = metadataPlan as PlanValue;
+  }
+
+  const subStatus = toSubscriptionStatus(subscription.status);
 
   await db.update(user).set({
     plan,
@@ -91,7 +169,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     stripeSubscriptionId: subscription.id,
     stripePriceId: firstItem?.price?.id || "",
     plan,
-    status: subscription.status,
+    status: subStatus,
     currentPeriodStart: period.currentPeriodStart,
     currentPeriodEnd: period.currentPeriodEnd,
     cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
@@ -101,7 +179,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     set: {
       stripePriceId: firstItem?.price?.id || "",
       plan,
-      status: subscription.status,
+      status: subStatus,
       currentPeriodStart: period.currentPeriodStart,
       currentPeriodEnd: period.currentPeriodEnd,
       cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
@@ -129,7 +207,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const period = getSubscriptionPeriod(subscription);
   await db.update(subscriptions).set({
-    status: subscription.status,
+    status: toSubscriptionStatus(subscription.status),
     currentPeriodStart: period.currentPeriodStart,
     currentPeriodEnd: period.currentPeriodEnd,
     cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,

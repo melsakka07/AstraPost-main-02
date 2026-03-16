@@ -74,15 +74,26 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
   const personalTeamsFiltered = filteredTeams.filter(t => t.isPersonal);
   const otherTeamsFiltered = filteredTeams.filter(t => !t.isPersonal);
 
-  const handleTeamSelect = (team: Team) => {
+  const handleTeamSelect = async (team: Team) => {
     setOpen(false);
-    
-    // Set cookie
-    // eslint-disable-next-line
-    document.cookie = `current-team-id=${team.id}; path=/; max-age=31536000; SameSite=Lax`;
-    
-    toast.success(`Switched to ${team.name}`);
-    router.refresh();
+
+    try {
+      const res = await fetch("/api/team/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: team.id }),
+      });
+
+      if (!res.ok) {
+        toast.error("Failed to switch workspace");
+        return;
+      }
+
+      toast.success(`Switched to ${team.name}`);
+      router.refresh();
+    } catch {
+      toast.error("Failed to switch workspace");
+    }
   };
 
   return (

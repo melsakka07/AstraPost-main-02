@@ -3,17 +3,18 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { auth } from "@/lib/auth";
 import { LANGUAGES } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 
 const threadRequestSchema = z.object({
-  topic: z.string(),
+  topic: z.string().min(1).max(500),
   tone: z.enum(["professional", "casual", "educational", "inspirational", "humorous", "viral", "controversial"]).default("professional"),
   tweetCount: z.number().min(3).max(15).optional().default(5),
   language: z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]).optional().default("en"),
@@ -35,16 +36,8 @@ export async function POST(req: Request) {
         columns: { plan: true, voiceProfile: true }
     });
     
-    const { success, reset } = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
-    if (!success) {
-        return new Response(JSON.stringify({ 
-            error: "Too many requests", 
-            retryAfter: Math.ceil((reset - Date.now()) / 1000) 
-        }), { 
-            status: 429,
-            headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() }
-        });
-    }
+    const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
+    if (!rlResult.success) return createRateLimitResponse(rlResult);
 
     const aiAccess = await checkAiLimitDetailed(session.user.id);
     if (!aiAccess.allowed) {
@@ -74,28 +67,9 @@ export async function POST(req: Request) {
     // Use a capable model for structured output
     const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
 
-    let voiceInstructions = "";
-    if (dbUser?.voiceProfile) {
-        const vp = dbUser.voiceProfile as any;
-        // Check if it's the structured object format we expect
-        if (vp.tone && vp.styleKeywords) {
-             voiceInstructions = `
-            Voice Profile Instructions:
-            - Tone: ${vp.tone}
-            - Style Keywords: ${Array.isArray(vp.styleKeywords) ? vp.styleKeywords.join(", ") : vp.styleKeywords}
-            - Sentence Structure: ${vp.sentenceStructure}
-            - Vocabulary: ${vp.vocabularyLevel}
-            - Emoji Usage: ${vp.emojiUsage}
-            - Formatting: ${vp.formattingHabits}
-            - Rules: ${Array.isArray(vp.doAndDonts) ? vp.doAndDonts.join("; ") : vp.doAndDonts}
-            
-            ADHERE STRICTLY TO THIS WRITING STYLE. mimic the user's voice perfectly.
-            `;
-        } else if (typeof vp === 'string') {
-             // Fallback for legacy text profiles
-             voiceInstructions = `Voice Profile Instructions:\n${vp}\nAdhere strictly to this writing style.`;
-        }
-    }
+    // Validate the stored voiceProfile against the strict schema and sanitize
+    // every field before interpolation. Returns "" for null/invalid profiles.
+    const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
 
     const prompt = `
       You are an expert social media content writer for X (Twitter).

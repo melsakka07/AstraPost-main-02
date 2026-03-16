@@ -1,11 +1,13 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
-import { SiteFooter } from "@/components/site-footer";
-import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { UpgradeModal } from "@/components/ui/upgrade-modal";
 import type { Metadata, Viewport } from "next";
+
+/** Locales that should switch the document to RTL. */
+const RTL_LOCALES = new Set(["ar", "he", "fa", "ur"]);
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,11 +26,11 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // maximumScale removed — WCAG 1.4.4 requires text to be resizable up to 200%
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://astropost.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://astrapost.app"),
   title: {
     default: "AstraPost | AI-Powered Social Media Management",
     template: "%s | AstraPost",
@@ -89,13 +91,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  // `locale` cookie is set by the user's language preference in Settings.
+  // Falls back to "en" so unauthenticated/marketing pages default to English.
+  const locale = cookieStore.get("locale")?.value ?? "en";
+  const dir = RTL_LOCALES.has(locale) ? "rtl" : "ltr";
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} dir={dir} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen overflow-x-hidden antialiased`}
       >
@@ -105,11 +113,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div data-app-shell className="flex flex-col min-h-screen">
-             <SiteHeader />
-             <div data-main-content className="flex-1 min-w-0">{children}</div>
-             <SiteFooter />
-          </div>
+          {children}
           <UpgradeModal />
           <Toaster richColors position="top-right" />
         </ThemeProvider>

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { scheduleQueue } from "@/lib/queue/client";
+import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, tweets, media } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -224,14 +224,7 @@ export async function PATCH(
         await scheduleQueue.add(
             "publish-post",
             { postId, userId: ctx.currentTeamId }, // Use team owner ID for the job
-            {
-                delay,
-                jobId: postId,
-                attempts: 5,
-                backoff: { type: "exponential", delay: 60_000 },
-                removeOnComplete: true,
-                removeOnFail: false,
-            }
+            { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
         );
     }
   } catch (e) {

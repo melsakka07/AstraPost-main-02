@@ -71,7 +71,7 @@ export class XApiService {
     const expiresAt = account.tokenExpiresAt;
     const refreshTokenValue = account.refreshTokenEnc
       ? decryptToken(account.refreshTokenEnc)
-      : account.refreshToken;
+      : null;
     const shouldRefresh =
       !!refreshTokenValue && (!expiresAt || expiresAt.getTime() - Date.now() < 60_000);
 
@@ -84,7 +84,7 @@ export class XApiService {
         });
 
         const { accessToken, refreshToken, expiresIn } =
-          await client.refreshOAuth2Token(refreshTokenValue!);
+          await client.refreshOAuth2Token(refreshTokenValue);
         const newExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
         await db
@@ -94,7 +94,6 @@ export class XApiService {
             refreshTokenEnc: refreshToken
               ? encryptToken(refreshToken)
               : account.refreshTokenEnc,
-            refreshToken: null,
             tokenExpiresAt: newExpiresAt,
           })
           .where(eq(xAccounts.id, account.id));
@@ -126,7 +125,7 @@ export class XApiService {
     const expiresAt = account.tokenExpiresAt;
     const refreshTokenValue = account.refreshTokenEnc
       ? decryptToken(account.refreshTokenEnc)
-      : account.refreshToken;
+      : null;
     const shouldRefresh =
       !!refreshTokenValue &&
       (!expiresAt || expiresAt.getTime() - Date.now() < 60_000);
@@ -139,7 +138,7 @@ export class XApiService {
         });
 
         const { accessToken, refreshToken, expiresIn } =
-          await client.refreshOAuth2Token(refreshTokenValue!);
+          await client.refreshOAuth2Token(refreshTokenValue);
         const newExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
         await db
@@ -147,7 +146,6 @@ export class XApiService {
           .set({
             accessToken: encryptToken(accessToken),
             refreshTokenEnc: refreshToken ? encryptToken(refreshToken) : account.refreshTokenEnc,
-            refreshToken: null,
             tokenExpiresAt: newExpiresAt,
           })
           .where(eq(xAccounts.id, account.id));

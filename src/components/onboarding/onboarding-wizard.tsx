@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Twitter, PenTool, Calendar, Rocket, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import twitter from "twitter-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,11 @@ export function OnboardingWizard() {
   const [tweetContent, setTweetContent] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [createdPostId, setCreatedPostId] = useState<string | null>(null);
+
+  // Twitter-weighted character count — matches the main composer (tweet-card.tsx).
+  // URLs count as 23 chars; emoji and CJK characters have different weights.
+  const tweetWeightedLength = twitter.parseTweet(tweetContent).weightedLength;
+  const isTweetOverLimit = tweetWeightedLength > 280;
 
   useEffect(() => {
     const stepParam = searchParams.get("step");
@@ -68,9 +74,14 @@ export function OnboardingWizard() {
       } else if (currentStep === 2) {
         // Action: Create Draft
         if (!tweetContent.trim()) {
-             toast.error("Please write something");
-             setLoading(false);
-             return;
+          toast.error("Please write something");
+          setLoading(false);
+          return;
+        }
+        if (isTweetOverLimit) {
+          toast.error(`Tweet is too long (${tweetWeightedLength}/280 characters)`);
+          setLoading(false);
+          return;
         }
         
         const res = await fetch("/api/posts", {
@@ -181,7 +192,7 @@ export function OnboardingWizard() {
           {currentStep === 1 && (
             <div className="text-center space-y-6 max-w-sm">
               {accounts.length > 0 ? (
-                  <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg flex flex-col items-center gap-2">
+                  <div className="bg-success/10 border border-success/30 text-success p-4 rounded-lg flex flex-col items-center gap-2">
                       <CheckCircle2 className="h-8 w-8" />
                       <div className="font-semibold">Connected as @{accounts[0].xUsername}</div>
                       <p className="text-sm">You are ready to proceed!</p>
@@ -207,7 +218,12 @@ export function OnboardingWizard() {
                   className="w-full min-h-[150px] p-4 rounded-md border border-input bg-background text-base shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                   placeholder="Hello World! This is my first tweet via AstraPost. 🚀"
                 />
-                <p className="text-xs text-muted-foreground text-right">{tweetContent.length}/280</p>
+                <p className={cn(
+                  "text-xs text-right font-medium",
+                  isTweetOverLimit ? "text-destructive" : "text-muted-foreground"
+                )}>
+                  {tweetWeightedLength}/280
+                </p>
             </div>
           )}
 

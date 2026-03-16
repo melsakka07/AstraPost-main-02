@@ -98,8 +98,12 @@ export function TweetCard({
 
   return (
     <div className="relative group">
-      <div 
-        className="absolute -left-8 top-4 text-muted-foreground font-mono text-sm cursor-grab active:cursor-grabbing hover:text-foreground transition-colors"
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={`Reorder tweet ${index + 1}`}
+        aria-roledescription="sortable"
+        className="absolute -left-8 top-4 text-muted-foreground font-mono text-sm cursor-grab active:cursor-grabbing hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded"
         {...dragHandleProps}
         title="Drag to reorder"
       >

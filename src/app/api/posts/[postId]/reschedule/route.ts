@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { scheduleQueue } from "@/lib/queue/client";
+import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts } from "@/lib/schema";
 
 export async function POST(
@@ -62,14 +62,7 @@ export async function POST(
   await scheduleQueue.add(
     "publish-post",
     { postId, userId: session.user.id, correlationId },
-    {
-      delay,
-      jobId: postId,
-      attempts: 5,
-      backoff: { type: "exponential", delay: 60_000 },
-      removeOnComplete: true,
-      removeOnFail: false,
-    }
+    { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
   );
 
   const res = NextResponse.json({ success: true });

@@ -9,22 +9,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { nanoid } from "nanoid";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { checkRateLimit, createRateLimitResponse, redis } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 import {
-  generateImage,
-  downloadImage,
+  startImageGeneration,
   type ImageModel,
   type AspectRatio,
   type ImageStyle,
   validateModelForPlan,
 } from "@/lib/services/ai-image";
-import { upload } from "@/lib/storage";
 
 // ============================================================================
 // Schema Validation
@@ -36,14 +33,6 @@ const ImageGenRequestSchema = z.object({
   model: z.enum(["nano-banana-2", "nano-banana-pro"]).default("nano-banana-2"),
   aspectRatio: z.enum(["1:1", "16:9", "4:3", "9:16"]).default("1:1"),
   style: z.enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"]).optional(),
-});
-
-const ImageGenResponseSchema = z.object({
-  imageUrl: z.string(),
-  width: z.number(),
-  height: z.number(),
-  model: z.string(),
-  prompt: z.string(),
 });
 
 // ============================================================================
@@ -133,17 +122,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Check rate limit
     const rateLimitResult = await checkRateLimit(userId, plan, "ai_image");
-
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Rate limit exceeded",
-          reset: rateLimitResult.reset,
-          remaining: rateLimitResult.remaining,
-        },
-        { status: 429 }
-      );
-    }
+    if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
     // 6. Check AI image quota (monthly limit)
     if (planLimits.aiImagesPerMonth > 0) {
@@ -193,7 +172,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 8. Generate image
+    // 8. Start image generation asynchronously (no polling — avoids serverless timeout).
+    //    The client polls GET /api/ai/image/status?id=<predictionId> for the result.
     const genParams: {
       prompt: string;
       aspectRatio: AspectRatio;
@@ -209,51 +189,18 @@ export async function POST(req: NextRequest) {
       genParams.style = style as ImageStyle;
     }
 
-    const imageResult = await generateImage(genParams);
+    const { predictionId } = await startImageGeneration(genParams);
 
-    // 9. Download and store image
-    let imageBuffer: Buffer;
-    try {
-      imageBuffer = await downloadImage(imageResult.imageUrl);
-    } catch (downloadError) {
-      console.error("Failed to download generated image:", downloadError);
-      // If download fails, return the base64 data URL directly
-      return NextResponse.json(ImageGenResponseSchema.parse(imageResult));
-    }
+    // 9. Cache prediction metadata in Redis (30 min TTL) so the status endpoint
+    //    can verify ownership, reconstruct params, and record usage on completion.
+    await redis.setex(
+      `ai:img:pred:${predictionId}`,
+      1800,
+      JSON.stringify({ userId, model, finalPrompt, aspectRatio, style: style ?? null }),
+    );
 
-    // 10. Upload to storage (local or Vercel Blob)
-    const filename = `ai-image-${nanoid()}.png`;
-    const uploadResult = await upload(imageBuffer, filename, "ai-images");
-
-    if (!uploadResult.url) {
-      throw new Error("Failed to upload image to storage");
-    }
-
-    // 11. Record usage in aiGenerations table
-    await db.insert(aiGenerations).values({
-      id: nanoid(),
-      userId,
-      type: "image",
-      inputPrompt: finalPrompt,
-      outputContent: {
-        model,
-        aspectRatio,
-        style,
-        imageUrl: uploadResult.url,
-        width: imageResult.width,
-        height: imageResult.height,
-      },
-      createdAt: new Date(),
-    });
-
-    // 12. Return result with stored URL
-    return NextResponse.json({
-      imageUrl: uploadResult.url,
-      width: imageResult.width,
-      height: imageResult.height,
-      model: imageResult.model,
-      prompt: imageResult.prompt,
-    });
+    // 10. Return prediction ID — client will poll for the result.
+    return NextResponse.json({ predictionId, estimatedSeconds: 20 });
   } catch (error) {
     console.error("AI image generation error:", error);
 
@@ -266,8 +213,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-// ============================================================================
-// Imports (needed for the query above)
-// ============================================================================
 

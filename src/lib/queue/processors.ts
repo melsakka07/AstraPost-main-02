@@ -2,27 +2,37 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { Job } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-import { eq, and } from "drizzle-orm";
+import { type InferSelectModel, eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
-import { scheduleQueue } from "@/lib/queue/client";
-import { posts, jobRuns, user, tweets, media, notifications } from "@/lib/schema";
+import { scheduleQueue, SCHEDULE_JOB_OPTIONS, type PublishPostPayload, type AnalyticsJobPayload } from "@/lib/queue/client";
+import { posts, jobRuns, user, tweets, media, notifications, xAccounts } from "@/lib/schema";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
 import { sendPostFailureEmail } from "@/lib/services/email";
 import { XApiService } from "@/lib/services/x-api";
 
+/** Shape of a post as loaded by the schedule processor (post + tweets + media). */
+type FullPost = InferSelectModel<typeof posts> & {
+  tweets: (InferSelectModel<typeof tweets> & {
+    media: InferSelectModel<typeof media>[];
+  })[];
+  xAccount: InferSelectModel<typeof xAccounts> | null;
+};
 
-export const scheduleProcessor = async (job: Job) => {
-  const { postId, userId } = job.data;
-  const correlationId = (job.data as any)?.correlationId as string | undefined;
+/** Max date into the future we will ever enqueue a recurrence job (1 year from now). */
+const MAX_RECURRENCE_FUTURE_MS = 365 * 24 * 60 * 60 * 1000;
+
+
+export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
+  const { postId, userId, correlationId } = job.data;
   logger.info("schedule_job_started", {
     queue: job.queueName,
     jobId: job.id,
     postId,
     correlationId,
   });
-  let post: any;
+  let post: FullPost | undefined;
 
   try {
     // 1. Fetch post and related tweets
@@ -53,8 +63,8 @@ export const scheduleProcessor = async (job: Job) => {
         correlationId: correlationId || `${job.queueName}:${job.id}:${postId}`,
         postId,
         status: "running",
-        attempts: (job.opts as any)?.attempts,
-        attemptsMade: (job as any)?.attemptsMade,
+        attempts: job.opts?.attempts,
+        attemptsMade: job.attemptsMade,
         startedAt: new Date(),
         finishedAt: null,
         error: null,
@@ -66,8 +76,8 @@ export const scheduleProcessor = async (job: Job) => {
           correlationId: correlationId || `${job.queueName}:${job.id}:${postId}`,
           postId,
           status: "running",
-          attempts: (job.opts as any)?.attempts,
-          attemptsMade: (job as any)?.attemptsMade,
+          attempts: job.opts?.attempts,
+          attemptsMade: job.attemptsMade,
           startedAt: new Date(),
           finishedAt: null,
           error: null,
@@ -87,13 +97,17 @@ export const scheduleProcessor = async (job: Job) => {
 
     const isDryRun = process.env.TWITTER_DRY_RUN === "1";
 
+    if (!post.xAccountId) {
+      throw new Error("Post has no associated X account");
+    }
+    const xAccountId = post.xAccountId;
     const xService = isDryRun
       ? {
           uploadMedia: async () => `dry_media_${crypto.randomUUID()}`,
           postTweet: async () => ({ data: { id: `dry_tweet_${crypto.randomUUID()}` } }),
           postTweetReply: async () => ({ data: { id: `dry_tweet_${crypto.randomUUID()}` } }),
         }
-      : await XApiService.getClientForAccountId(post.xAccountId);
+      : await XApiService.getClientForAccountId(xAccountId);
 
     if (!xService) {
       throw new Error("No connected X account");
@@ -101,7 +115,20 @@ export const scheduleProcessor = async (job: Job) => {
 
     const loadMediaBuffer = async (fileUrl: string) => {
       if (fileUrl.startsWith("/")) {
-        const filePath = path.join(process.cwd(), "public", fileUrl);
+        // Resolve the absolute path and assert it is within public/uploads/.
+        // path.join() normalises ".." segments, so without this check a
+        // DB record with fileUrl="/../../../etc/passwd" would read arbitrary
+        // files from the server filesystem.
+        const uploadsRoot = path.resolve(process.cwd(), "public", "uploads");
+        const filePath = path.resolve(process.cwd(), "public", fileUrl);
+        const withinUploads =
+          filePath === uploadsRoot ||
+          filePath.startsWith(uploadsRoot + path.sep);
+        if (!withinUploads) {
+          throw new Error(
+            `Path traversal detected: media URL "${fileUrl}" resolves outside uploads directory`
+          );
+        }
         return await readFile(filePath);
       }
       const res = await fetch(fileUrl);
@@ -172,18 +199,33 @@ export const scheduleProcessor = async (job: Job) => {
         .where(eq(tweets.id, tweetRow.id));
     }
 
-    // 5. Update post status to published
-    await db.update(posts)
-      .set({ 
-        status: "published", 
-        publishedAt: new Date(),
-        failReason: null,
-        lastErrorCode: null,
-        lastErrorAt: null,
-      })
-      .where(eq(posts.id, postId));
+    // 5. Atomically mark post published + record successful job run.
+    // Combining these two writes in one transaction guarantees that the audit
+    // record in job_runs is never missing when the post status is "published",
+    // even if the process crashes immediately after the DB commit.
+    await db.transaction(async (tx) => {
+      await tx.update(posts)
+        .set({
+          status: "published",
+          publishedAt: new Date(),
+          failReason: null,
+          lastErrorCode: null,
+          lastErrorAt: null,
+        })
+        .where(eq(posts.id, postId));
 
-    // Check milestones
+      await tx.update(jobRuns)
+        .set({
+          status: "success",
+          attempts: job.opts?.attempts,
+          attemptsMade: job.attemptsMade,
+          finishedAt: new Date(),
+          error: null,
+        })
+        .where(and(eq(jobRuns.queueName, job.queueName), eq(jobRuns.jobId, String(job.id))));
+    });
+
+    // Check milestones (best-effort — failure here must not roll back the publish)
     await checkMilestone(post.userId, "post_published");
 
     // 6. Handle Recurrence
@@ -196,33 +238,35 @@ export const scheduleProcessor = async (job: Job) => {
 
       const endDate = post.recurrenceEndDate ? new Date(post.recurrenceEndDate) : null;
 
-      if (!endDate || nextDate <= endDate) {
-        const newPostId = crypto.randomUUID();
-        await db.insert(posts).values({
-          id: newPostId,
-          userId: post.userId,
-          xAccountId: post.xAccountId,
-          groupId: post.groupId,
-          type: post.type,
-          status: "scheduled",
-          scheduledAt: nextDate,
-          recurrencePattern: post.recurrencePattern,
-          recurrenceEndDate: post.recurrenceEndDate,
-          aiGenerated: post.aiGenerated,
+      // Safety cap: never schedule recurrence more than 1 year into the future.
+      // Prevents unbounded queue growth when no endDate is set or endDate is very far out.
+      const maxFutureDate = new Date(Date.now() + MAX_RECURRENCE_FUTURE_MS);
+      if (nextDate > maxFutureDate) {
+        logger.warn("recurrence_cap_reached", {
+          postId,
+          nextDate,
+          pattern: post.recurrencePattern,
+          maxFutureDate,
         });
+      } else if (!endDate || nextDate <= endDate) {
+        const newPostId = crypto.randomUUID();
+
+        // Bulk-insert recurrence: pre-generate all IDs, then insert in 3 batched calls
+        // instead of N*M sequential round trips (up to 75 for a 15-tweet thread).
+        const recurrenceTweetRows: (typeof tweets.$inferInsert)[] = [];
+        const recurrenceMediaRows: (typeof media.$inferInsert)[] = [];
 
         for (const t of post.tweets) {
           const newTweetId = crypto.randomUUID();
-          await db.insert(tweets).values({
+          recurrenceTweetRows.push({
             id: newTweetId,
             postId: newPostId,
             content: t.content,
             position: t.position,
             mediaIds: t.mediaIds,
           });
-
           for (const m of t.media) {
-            await db.insert(media).values({
+            recurrenceMediaRows.push({
               id: crypto.randomUUID(),
               postId: newPostId,
               tweetId: newTweetId,
@@ -234,34 +278,43 @@ export const scheduleProcessor = async (job: Job) => {
           }
         }
 
+        // Extract fields before async callbacks — TypeScript narrows past `if (!post)` throw
+        // but control-flow analysis doesn't carry through async transaction callbacks.
+        const postUserId = post.userId;
+        const postXAccountId = post.xAccountId;
+        const postGroupId = post.groupId;
+        const postType = post.type;
+        const postRecurrencePattern = post.recurrencePattern;
+        const postRecurrenceEndDate = post.recurrenceEndDate;
+        const postAiGenerated = post.aiGenerated;
+
+        await db.transaction(async (tx) => {
+          await tx.insert(posts).values({
+            id: newPostId,
+            userId: postUserId,
+            xAccountId: postXAccountId,
+            groupId: postGroupId,
+            type: postType,
+            status: "scheduled",
+            scheduledAt: nextDate,
+            recurrencePattern: postRecurrencePattern,
+            recurrenceEndDate: postRecurrenceEndDate,
+            aiGenerated: postAiGenerated,
+          });
+          if (recurrenceTweetRows.length > 0) await tx.insert(tweets).values(recurrenceTweetRows);
+          if (recurrenceMediaRows.length > 0) await tx.insert(media).values(recurrenceMediaRows);
+        });
+
         const delay = Math.max(0, nextDate.getTime() - Date.now());
         await scheduleQueue.add(
           "publish-post",
           { postId: newPostId, userId: post.userId, correlationId: `recurrence:${correlationId}` },
-          {
-            delay,
-            jobId: newPostId,
-            attempts: 5,
-            backoff: { type: "exponential", delay: 60_000 },
-            removeOnComplete: true,
-            removeOnFail: false,
-          }
+          { delay, jobId: newPostId, ...SCHEDULE_JOB_OPTIONS }
         );
 
         logger.info("recurrence_scheduled", { oldPostId: postId, newPostId, nextDate });
       }
     }
-
-    await db
-      .update(jobRuns)
-      .set({
-        status: "success",
-        attempts: (job.opts as any)?.attempts,
-        attemptsMade: (job as any)?.attemptsMade,
-        finishedAt: new Date(),
-        error: null,
-      })
-      .where(and(eq(jobRuns.queueName, job.queueName), eq(jobRuns.jobId, String(job.id))));
 
     logger.info("schedule_job_completed", {
       queue: job.queueName,
@@ -279,8 +332,8 @@ export const scheduleProcessor = async (job: Job) => {
           ? "X authorization forbidden. Ensure your app has write access and reconnect your X account to grant tweet.write."
           : null;
 
-    const attempts = (job.opts as any)?.attempts as number | undefined;
-    const attemptsMade = (job as any)?.attemptsMade as number | undefined;
+    const attempts = job.opts?.attempts;
+    const attemptsMade = job.attemptsMade;
     const isFinalAttempt =
       typeof attempts === "number" && typeof attemptsMade === "number"
         ? attemptsMade + 1 >= attempts
@@ -298,14 +351,20 @@ export const scheduleProcessor = async (job: Job) => {
       final: isFinalAttempt,
     });
     
-    const updateSet: Record<string, any> = {
+    const updateSet: {
+      status: "failed" | "scheduled";
+      failReason: string;
+      lastErrorCode: number | null;
+      lastErrorAt: Date;
+      retryCount?: number;
+    } = {
       status: isFinalAttempt ? "failed" : "scheduled",
       failReason: userHint || (error instanceof Error ? error.message : "Unknown error"),
       lastErrorCode: typeof code === "number" ? code : null,
       lastErrorAt: new Date(),
     };
     if (post) {
-      updateSet.retryCount = (post.retryCount || 0) + 1;
+      updateSet.retryCount = (post.retryCount ?? 0) + 1;
     }
 
     await db.update(posts).set(updateSet).where(eq(posts.id, postId));
@@ -339,8 +398,8 @@ export const scheduleProcessor = async (job: Job) => {
         });
     }
     
-    if (isFinalAttempt && (userId || post?.userId)) {
-      const targetUserId = userId || post?.userId;
+    const targetUserId = userId || post?.userId;
+    if (isFinalAttempt && targetUserId) {
       await db.insert(notifications).values({
         id: crypto.randomUUID(),
         userId: targetUserId,
@@ -373,14 +432,13 @@ export const scheduleProcessor = async (job: Job) => {
   }
 };
 
-export const analyticsProcessor = async (job: Job) => {
-    const correlationId = (job.data as any)?.correlationId as string | undefined;
+export const analyticsProcessor = async (job: Job<AnalyticsJobPayload>) => {
+    const { correlationId, runIds } = job.data;
     logger.info("analytics_job_started", {
       queue: job.queueName,
       jobId: job.id,
       correlationId,
     });
-    const runIds = (job.data as any)?.runIds as string[] | undefined;
     if (runIds && runIds.length > 0) {
       await refreshFollowersAndMetricsForRuns(runIds);
       logger.info("analytics_job_completed", {

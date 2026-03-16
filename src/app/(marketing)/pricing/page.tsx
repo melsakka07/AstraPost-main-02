@@ -109,7 +109,7 @@ export default async function PricingPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" variant="outline" asChild>
-                <Link href="/contact">Contact Sales</Link>
+                <Link href="/community">Contact Sales</Link>
               </Button>
               <Button size="lg" variant="ghost" asChild>
                 <Link href="/docs">View Documentation</Link>

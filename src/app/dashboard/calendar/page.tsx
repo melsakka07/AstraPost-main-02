@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { and, asc, eq, gte, lte, isNotNull } from "drizzle-orm";
 import { CalendarDays, PlusCircle } from "lucide-react";
@@ -17,10 +18,23 @@ export default async function CalendarPage({
   searchParams: Promise<{ date?: string; view?: string }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  if (!session) redirect("/login?callbackUrl=/dashboard/calendar");
 
-  const { date } = await searchParams;
-  const currentDate = date ? new Date(date) : new Date();
+  const { date, view } = await searchParams;
+
+  // Validate the ?date= param — reject invalid dates, NaN, and unreasonable years
+  // to prevent empty calendars or date-range queries against epoch/invalid timestamps.
+  const currentDate = (() => {
+    if (!date) return new Date();
+    const parsed = new Date(date);
+    const year = parsed.getFullYear();
+    if (isNaN(parsed.getTime()) || year < 2000 || year > 2100) return new Date();
+    return parsed;
+  })();
+
+  // Validate the ?view= param — only accept the three known view types.
+  const initialView: "month" | "week" | "day" =
+    view === "week" || view === "day" ? view : "month";
 
   const xAccountsList = await db.query.xAccounts.findMany({
     where: eq(xAccounts.userId, session.user.id),
@@ -68,7 +82,7 @@ export default async function CalendarPage({
       }
     >
       <div className="rounded-lg border bg-background p-4 shadow-sm overflow-hidden -mx-1">
-        <CalendarView posts={scheduledPosts} currentDate={currentDate} />
+        <CalendarView posts={scheduledPosts} currentDate={currentDate} initialView={initialView} />
       </div>
     </DashboardPageWrapper>
   );

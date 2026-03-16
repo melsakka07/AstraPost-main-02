@@ -83,6 +83,7 @@ export function Composer() {
   ]);
   const previewTweet = tweets[0];
   const [scheduledDate, setScheduledDate] = useState<string>("");
+  const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
   const [recurrencePattern, setRecurrencePattern] = useState<string>("none");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,7 +124,9 @@ export function Composer() {
   }>({
     availableModels: ["nano-banana-2"],
     preferredModel: "nano-banana-2",
-    remainingQuota: 3,
+    // Start at 0 — updated from server once session is available.
+    // Avoids showing a stale hard-coded value before the API responds.
+    remainingQuota: 0,
   });
 
   const { openWithContext: openUpgradeModal } = useUpgradeModal();
@@ -160,64 +163,33 @@ export function Composer() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch user's AI image plan limits
+  // Fetch server-authoritative AI image plan limits.
+  // The server is the single source of truth for available models and quota —
+  // this removes the client-side getLimitsForPlan that diverged from plan-limits.ts.
   useEffect(() => {
     if (!session?.user) return;
-
+    let cancelled = false;
     (async () => {
       try {
-        // Get user's plan info from session or fetch from API
-        const userPlan = (session.user as any).plan || "free";
-        const preferredModel = (session.user as any).preferredImageModel || "nano-banana-2";
-
-        // Map plan to available models and quota
-        const getLimitsForPlan = (plan: string): {
-          availableModels: ("nano-banana-2" | "nano-banana-pro")[];
-          preferredModel: "nano-banana-2" | "nano-banana-pro";
-          remainingQuota: number;
-        } => {
-          switch (plan) {
-            case "pro_monthly":
-            case "pro_annual":
-              return {
-                availableModels: ["nano-banana-2", "nano-banana-pro"],
-                preferredModel: preferredModel as "nano-banana-2" | "nano-banana-pro",
-                remainingQuota: 50,
-              };
-            case "agency":
-              return {
-                availableModels: ["nano-banana-2", "nano-banana-pro"],
-                preferredModel: preferredModel as "nano-banana-2" | "nano-banana-pro",
-                remainingQuota: -1, // Unlimited
-              };
-            default:
-              return {
-                availableModels: ["nano-banana-2"],
-                preferredModel: "nano-banana-2",
-                remainingQuota: 3,
-              };
-          }
-        };
-
-        const limits = getLimitsForPlan(userPlan);
-
-        // Fetch actual remaining quota from API
-        try {
-          const res = await fetch("/api/ai/quota");
-          if (res.ok) {
-            const data = await res.json();
-            limits.remainingQuota = data.remainingImages ?? limits.remainingQuota;
-          }
-        } catch {
-          // Quota endpoint not available, use default
-        }
-
-        setUserPlanLimits(limits);
+        const res = await fetch("/api/ai/image/quota");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        setUserPlanLimits({
+          availableModels: data.availableModels ?? ["nano-banana-2"],
+          preferredModel: data.preferredModel ?? "nano-banana-2",
+          remainingQuota: data.remainingImages ?? 0,
+        });
       } catch (e) {
-        console.error("Failed to fetch AI image plan limits:", e);
+        console.error("Failed to fetch AI image quota:", e);
       }
     })();
-  }, [session]);
+    return () => { cancelled = true; };
+  }, [session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Detect browser timezone once after mount (SSR-safe — avoids hydration mismatch)
+  useEffect(() => {
+    setBrowserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  }, []);
 
   // Auto-save
   useEffect(() => {
@@ -728,13 +700,21 @@ export function Composer() {
 
       const data = await res.json();
       const count = Array.isArray(data.postIds) ? data.postIds.length : 1;
-      let message = count > 1 ? `Created ${count} posts.` : "Post drafted!";
-      if (action === "schedule") message = count > 1 ? `Scheduled ${count} posts.` : "Post scheduled!";
-      if (action === "publish_now") message = count > 1 ? `Queued ${count} posts.` : "Post published (queued)!";
+      let message = count > 1 ? `Created ${count} drafts.` : "Post drafted!";
+      if (action === "schedule") {
+        message = count > 1 ? `Scheduled ${count} posts.` : "Post scheduled!";
+      }
+      if (action === "publish_now") {
+        // Posts are handed off to the background worker — they publish within seconds,
+        // not instantly. "Sent to queue" is accurate; "published" would be premature.
+        message = count > 1 ? `${count} posts sent to queue — publishing shortly.` : "Post sent to queue — publishing shortly.";
+      }
 
       toast.success(message);
       setTweets([{ id: Math.random().toString(36).substr(2, 9), content: "", media: [] }]);
       setScheduledDate("");
+      setRecurrencePattern("none");
+      setRecurrenceEndDate("");
       localStorage.removeItem("astra-post-drafts"); // Clear auto-save
     } catch (error) {
         console.error(error);
@@ -813,7 +793,7 @@ export function Composer() {
                   className="w-full justify-start gap-2"
                   onClick={() => openAiTool("thread")}
                 >
-                  <Sparkles className="h-4 w-4 text-purple-500" />
+                  <Sparkles className="h-4 w-4 text-primary" />
                   AI Writer
                 </Button>
                 <TemplatesDialog onSelect={handleTemplateSelect} />
@@ -867,11 +847,35 @@ export function Composer() {
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">Schedule for</label>
-                <Input 
-                    type="datetime-local" 
+                <Input
+                    type="datetime-local"
                     value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setScheduledDate(value);
+                      // Reset recurrence when the date is cleared so orphaned
+                      // recurrence state is never silently submitted.
+                      if (!value) {
+                        setRecurrencePattern("none");
+                        setRecurrenceEndDate("");
+                      }
+                    }}
                 />
+                {browserTimezone && (
+                  <p className="text-xs text-muted-foreground">
+                    Times are in{" "}
+                    <span className="font-medium text-foreground">{browserTimezone}</span>
+                    {" "}
+                    <span className="tabular-nums">
+                      (UTC{(() => {
+                        const off = -new Date().getTimezoneOffset();
+                        const h = Math.floor(Math.abs(off) / 60);
+                        const m = Math.abs(off) % 60;
+                        return `${off >= 0 ? "+" : "-"}${h}${m > 0 ? `:${String(m).padStart(2, "0")}` : ""}`;
+                      })()})
+                    </span>
+                  </p>
+                )}
                 <BestTimeSuggestions onSelect={setScheduledDate} />
 
                 {/* Recurrence Options */}
@@ -999,7 +1003,7 @@ export function Composer() {
           </div>
           <div className="bg-background border rounded-md p-4 space-y-4">
              <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0 overflow-hidden relative">
+                <div className="w-10 h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
                     {userImage ? (
                         <Image src={userImage} alt={userName} fill className="object-cover" />
                     ) : (
@@ -1045,7 +1049,7 @@ export function Composer() {
         </div>
       </div>
       <Dialog open={isAiOpen} onOpenChange={setIsAiOpen}>
-        <DialogContent className="max-w-2xl h-[600px] flex flex-col">
+        <DialogContent className="max-w-2xl h-[90dvh] max-h-[600px] flex flex-col overflow-y-auto">
           <Tabs defaultValue="generate" className="flex-1 flex flex-col">
             <DialogHeader>
               <div className="flex items-center justify-between pr-8">
@@ -1222,8 +1226,8 @@ export function Composer() {
                     >
                       <div className="flex justify-between items-center mb-1">
                         <span className="font-semibold text-sm capitalize flex items-center gap-2">
-                          {item.type === "thread" ? <Sparkles className="w-3 h-3 text-purple-500" /> :
-                           item.type === "hashtags" ? <Hash className="w-3 h-3 text-blue-500" /> :
+                          {item.type === "thread" ? <Sparkles className="w-3 h-3 text-primary" /> :
+                           item.type === "hashtags" ? <Hash className="w-3 h-3 text-primary" /> :
                            <Sparkles className="w-3 h-3" />}
                           {item.type}
                         </span>

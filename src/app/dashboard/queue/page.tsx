@@ -1,6 +1,7 @@
 
 import { headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { eq, and, asc, gte, sql, inArray } from "drizzle-orm";
 import { Calendar, CheckCircle2, Clock, AlertTriangle, ListOrdered, PlusCircle, ShieldCheck } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -25,7 +26,7 @@ export default async function QueuePage({
   searchParams?: Promise<{ density?: string | string[] }>;
 }) {
   const ctx = await getTeamContext();
-  if (!ctx) return null;
+  if (!ctx) redirect("/login?callbackUrl=/dashboard/queue");
 
   const session = await auth.api.getSession({ headers: await headers() });
   
@@ -172,22 +173,22 @@ export default async function QueuePage({
       {awaitingApprovalPosts.length > 0 && (
           <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold tracking-tight text-amber-600 flex items-center gap-2">
+                <h2 className="text-xl font-semibold tracking-tight text-warning flex items-center gap-2">
                     <ShieldCheck className="h-5 w-5" />
                     Awaiting Approval
                 </h2>
               </div>
               {awaitingApprovalPosts.map((post) => (
-                <Card key={post.id} className="border-amber-200 bg-amber-50/30">
+                <Card key={post.id} className="border-warning/30 bg-warning/10">
                     <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-amber-100 p-4 text-center sm:min-w-[100px]">
-                            <ShieldCheck className="h-6 w-6 mb-2 text-amber-600" />
+                        <div className="flex flex-col items-center justify-center rounded-lg bg-warning/15 p-4 text-center sm:min-w-[100px]">
+                            <ShieldCheck className="h-6 w-6 mb-2 text-warning" />
                             <div className="text-xs text-muted-foreground">Needs Review</div>
                         </div>
                         <div className="min-w-0 flex-1 space-y-2">
                             <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="flex gap-2 items-center">
-                                    <Badge variant="outline" className="border-amber-200 text-amber-700 bg-amber-50">
+                                    <Badge variant="outline" className="border-warning/30 text-warning bg-warning/10">
                                         {post.type === "thread" ? "Thread" : "Tweet"}
                                     </Badge>
                                     <span className="text-xs text-muted-foreground">
@@ -280,12 +281,12 @@ export default async function QueuePage({
       </div>
 
       {failedPosts.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-emerald-200 bg-emerald-50/30 px-4 py-6 text-center dark:border-emerald-900/40 dark:bg-emerald-950/20">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="rounded-lg border border-dashed border-success/30 bg-success/10 px-4 py-6 text-center">
+          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-success/15">
+            <CheckCircle2 className="h-5 w-5 text-success" />
           </div>
-          <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">All clear!</h3>
-          <p className="mt-1 text-xs text-emerald-600/80 dark:text-emerald-400/70">No failed posts. All queue jobs are healthy.</p>
+          <h3 className="text-sm font-semibold text-success">All clear!</h3>
+          <p className="mt-1 text-xs text-success/70">No failed posts. All queue jobs are healthy.</p>
         </div>
       ) : (
         <div className="space-y-4">

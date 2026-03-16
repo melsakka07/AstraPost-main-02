@@ -1,10 +1,10 @@
-import { and, asc, eq, gte, isNotNull } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { posts, tweetAnalytics, tweets } from "@/lib/schema";
 
 export type BestTimeBucket = {
-  day: number; // 0-6 (Sun-Sat)
-  hour: number; // 0-23
+  day: number;   // 0-6 (Sun-Sat)
+  hour: number;  // 0-23
   score: number; // Normalized 0-100 score based on engagement
   count: number; // Number of posts in this bucket
 };
@@ -13,17 +13,27 @@ export class AnalyticsEngine {
   /**
    * Calculates the best time to post based on historical performance.
    * Currently uses Twitter data as the primary source.
+   *
+   * Aggregation is performed entirely in SQL (GROUP BY day-of-week + hour,
+   * AVG engagement rate, COUNT). The result is bounded at 168 rows regardless
+   * of history depth — previously all matching rows were fetched into JS memory
+   * and aggregated there, which scaled unboundedly for high-volume accounts.
    */
   static async getBestTimesToPost(userId: string): Promise<BestTimeBucket[]> {
-    // 1. Fetch posts with analytics from the last 90 days
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-    const postPerformance = await db
+    // Push GROUP BY (day-of-week, hour) + AVG + COUNT into the database.
+    // ::float8 ensures the pg driver returns a native JS number rather than
+    // the Postgres `numeric` type which the driver serialises as a string.
+    // LIMIT 168 = 24 hours × 7 days — the theoretical maximum of distinct
+    // time buckets, so it never silently drops valid data.
+    const rows = await db
       .select({
-        publishedAt: posts.publishedAt,
-        impressions: tweetAnalytics.impressions,
-        engagementRate: tweetAnalytics.engagementRate,
+        day:     sql<number>`EXTRACT(DOW FROM ${posts.publishedAt})::int`,
+        hour:    sql<number>`EXTRACT(HOUR FROM ${posts.publishedAt})::int`,
+        avgRate: sql<number>`AVG(${tweetAnalytics.engagementRate}::float8)`,
+        count:   sql<number>`COUNT(*)::int`,
       })
       .from(tweetAnalytics)
       .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
@@ -34,61 +44,34 @@ export class AnalyticsEngine {
           gte(posts.publishedAt, ninetyDaysAgo),
           isNotNull(posts.publishedAt),
           // Filter out posts with very low impressions to avoid skewing data
-          gte(tweetAnalytics.impressions, 10) 
+          gte(tweetAnalytics.impressions, 10)
         )
-      );
+      )
+      .groupBy(
+        sql`EXTRACT(DOW FROM ${posts.publishedAt})`,
+        sql`EXTRACT(HOUR FROM ${posts.publishedAt})`
+      )
+      .orderBy(sql`AVG(${tweetAnalytics.engagementRate}::float8) DESC`)
+      .limit(168); // 24h × 7 days = max distinct buckets
 
-    if (postPerformance.length < 5) {
+    // Preserve original threshold: require at least 5 underlying data points
+    // across all buckets before returning recommendations.
+    const totalDataPoints = rows.reduce((sum, r) => sum + Number(r.count), 0);
+    if (totalDataPoints < 5) {
       return []; // Not enough data
     }
 
-    // 2. Aggregate by (Day, Hour)
-    const buckets = new Map<string, { totalRate: number; count: number }>();
+    // Rows are already sorted DESC by avgRate, so rows[0] holds the maximum.
+    // One-pass normalisation — no second scan needed.
+    const maxRate = Number(rows[0]?.avgRate ?? 0);
+    if (maxRate <= 0) return [];
 
-    for (const post of postPerformance) {
-      if (!post.publishedAt) continue;
-      const date = new Date(post.publishedAt);
-      const day = date.getDay();
-      const hour = date.getHours();
-      const key = `${day}-${hour}`;
-
-      const current = buckets.get(key) || { totalRate: 0, count: 0 };
-      // Parse engagement rate string to float
-      const rate = parseFloat(post.engagementRate?.toString() || "0");
-      
-      buckets.set(key, {
-        totalRate: current.totalRate + rate,
-        count: current.count + 1
-      });
-    }
-
-    // 3. Calculate Average Score
-    const result: BestTimeBucket[] = [];
-    let maxScore = 0;
-
-    buckets.forEach((val, key) => {
-      const [day = 0, hour = 0] = key.split("-").map(Number);
-      const avgRate = val.totalRate / val.count;
-      // Weight by count slightly to favor consistent performance? 
-      // For now, just raw engagement rate average.
-      result.push({
-        day,
-        hour,
-        score: avgRate,
-        count: val.count
-      });
-      if (avgRate > maxScore) maxScore = avgRate;
-    });
-
-    // 4. Normalize Scores 0-100
-    if (maxScore > 0) {
-      return result.map(r => ({
-        ...r,
-        score: Math.round((r.score / maxScore) * 100)
-      })).sort((a, b) => b.score - a.score);
-    }
-
-    return result;
+    return rows.map((r) => ({
+      day:   r.day,
+      hour:  r.hour,
+      score: Math.round((Number(r.avgRate) / maxRate) * 100),
+      count: Number(r.count),
+    }));
   }
 
   /**

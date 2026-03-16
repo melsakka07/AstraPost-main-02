@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { scheduleQueue } from "@/lib/queue/client";
+import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, tweets, xAccounts } from "@/lib/schema";
 
 export async function POST(req: Request) {
@@ -93,14 +93,7 @@ export async function POST(req: Request) {
                 await scheduleQueue.add(
                     "publish-post",
                     { postId, userId: session.user.id, correlationId },
-                    {
-                        delay,
-                        jobId: postId,
-                        attempts: 5,
-                        backoff: { type: "exponential", delay: 60_000 },
-                        removeOnComplete: true,
-                        removeOnFail: false,
-                    }
+                    { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
                 );
             } catch (e) {
                 errors.push(`Row ${index + 2}: ${(e as Error).message}`);

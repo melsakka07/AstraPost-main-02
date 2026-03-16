@@ -3,13 +3,17 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { voiceProfileSchema as vpSchema } from "@/lib/ai/voice-profile";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { user } from "@/lib/schema";
 
 const analyzeRequestSchema = z.object({
-  tweets: z.array(z.string().min(10)).min(3).max(10),
+  // Cap each tweet sample to prevent prompt-stuffing via the analysis endpoint.
+  // 560 chars = 2× max tweet length; generous enough for threads while
+  // preventing multi-KB injection payloads from reaching the LLM prompt.
+  tweets: z.array(z.string().min(10).max(560)).min(3).max(10),
 });
 
 const voiceProfileSchema = z.object({
@@ -85,9 +89,21 @@ export async function POST(req: Request) {
       prompt,
     });
 
+    // Re-validate the AI output against our strict application schema before
+    // persisting. generateObject constrains the shape but does not enforce our
+    // field-length limits; a model that ignores length hints could still return
+    // oversized strings that later cause prompt injection when interpolated.
+    const validated = vpSchema.safeParse(object);
+    if (!validated.success) {
+      return new Response(
+        JSON.stringify({ error: "AI returned an invalid voice profile shape" }),
+        { status: 500 }
+      );
+    }
+
     // Save to DB
     await db.update(user)
-      .set({ voiceProfile: object })
+      .set({ voiceProfile: validated.data })
       .where(eq(user.id, session.user.id));
 
     return Response.json(object);

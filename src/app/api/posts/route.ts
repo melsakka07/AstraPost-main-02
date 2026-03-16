@@ -1,13 +1,11 @@
-import { headers } from "next/headers";
 import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkAccountLimitDetailed, checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { scheduleQueue } from "@/lib/queue/client";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { tweets, media, xAccounts, linkedinAccounts, instagramAccounts, account, user, posts } from "@/lib/schema";
 import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
 import { getTeamContext } from "@/lib/team-context";
@@ -16,7 +14,7 @@ const createPostSchema = z.object({
   tweets: z
     .array(
       z.object({
-        content: z.string().max(3000), // Increased max length for LinkedIn/Threads
+        content: z.string().min(1).max(3000), // min(1): blank tweets fail at publish; catch early
         media: z
           .array(
             z.object({
@@ -55,16 +53,8 @@ export async function POST(req: Request) {
     });
     
     // Rate limit check against the Team Owner's plan
-    const { success, reset } = await checkRateLimit(ctx.currentTeamId, dbUser?.plan || "free", "posts");
-    if (!success) {
-        return new Response(JSON.stringify({ 
-            error: "Too many requests", 
-            retryAfter: Math.ceil((reset - Date.now()) / 1000) 
-        }), { 
-            status: 429,
-            headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() }
-        });
-    }
+    const rlResult = await checkRateLimit(ctx.currentTeamId, dbUser?.plan || "free", "posts");
+    if (!rlResult.success) return createRateLimitResponse(rlResult);
 
     const correlationId = getCorrelationId(req);
     logger.info("api_request", {
@@ -72,7 +62,7 @@ export async function POST(req: Request) {
       method: "POST",
       correlationId,
       userId: ctx.currentTeamId, // Log against team owner
-      actorId: ctx.isOwner ? undefined : (await auth.api.getSession({ headers: await headers() }))?.user.id
+      actorId: ctx.isOwner ? undefined : ctx.session.user.id
     });
 
     const json = await req.json();
@@ -86,58 +76,62 @@ export async function POST(req: Request) {
 
     // Only sync accounts if we are the owner operating on our own workspace
     if (ctx.isOwner) {
-      const session = await auth.api.getSession({ headers: await headers() });
-      if (session) {
-        const linkedAccounts = await db.query.account.findMany({
-          where: and(eq(account.userId, session.user.id), eq(account.providerId, "twitter")),
+      const ownerSession = ctx.session;
+      const linkedAccounts = await db.query.account.findMany({
+        where: and(eq(account.userId, ownerSession.user.id), eq(account.providerId, "twitter")),
+      });
+
+      for (const la of linkedAccounts) {
+        if (!la.accessToken) continue;
+
+        // BetterAuth now stores tokens encrypted (v1:… format).
+        // Normalise to plaintext before comparing or re-encrypting for x_accounts.
+        const plainAccessToken = decryptToken(la.accessToken);
+        const plainRefreshToken = la.refreshToken ? decryptToken(la.refreshToken) : null;
+
+        const existing = await db.query.xAccounts.findFirst({
+          where: eq(xAccounts.xUserId, la.accountId),
         });
 
-        for (const la of linkedAccounts) {
-          if (!la.accessToken) continue;
-          const existing = await db.query.xAccounts.findFirst({
-            where: eq(xAccounts.xUserId, la.accountId),
+        if (!existing) {
+          const limitCheck = await checkAccountLimitDetailed(ownerSession.user.id);
+          if (!limitCheck.allowed) continue;
+
+          await db.insert(xAccounts).values({
+            id: crypto.randomUUID(),
+            userId: ownerSession.user.id,
+            xUserId: la.accountId,
+            xUsername: ownerSession.user.name || "twitter_user",
+            xDisplayName: ownerSession.user.name || "Twitter User",
+            xAvatarUrl: ownerSession.user.image,
+            accessToken: encryptToken(plainAccessToken),
+            refreshTokenEnc: plainRefreshToken ? encryptToken(plainRefreshToken) : null,
+            refreshToken: null,
+            tokenExpiresAt: la.accessTokenExpiresAt,
+            isActive: true,
           });
+        } else {
+          // Update logic...
+          const accessTokenChanged = decryptToken(existing.accessToken) !== plainAccessToken;
+          const refreshTokenChanged =
+            (existing.refreshToken || null) !== (plainRefreshToken || null) ||
+            (Boolean(plainRefreshToken) && !existing.refreshTokenEnc);
+          const expiresChanged =
+            (existing.tokenExpiresAt?.getTime() || null) !==
+            (la.accessTokenExpiresAt?.getTime() || null);
 
-          if (!existing) {
-            const limitCheck = await checkAccountLimitDetailed(session.user.id);
-            if (!limitCheck.allowed) continue;
-
-            await db.insert(xAccounts).values({
-              id: crypto.randomUUID(),
-              userId: session.user.id,
-              xUserId: la.accountId,
-              xUsername: session.user.name || "twitter_user",
-              xDisplayName: session.user.name || session.user.name || "Twitter User",
-              xAvatarUrl: session.user.image,
-              accessToken: encryptToken(la.accessToken),
-              refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : null,
-              refreshToken: null,
-              tokenExpiresAt: la.accessTokenExpiresAt,
-              isActive: true,
-            });
-          } else {
-            // Update logic...
-             const accessTokenChanged = decryptToken(existing.accessToken) !== la.accessToken;
-             const refreshTokenChanged =
-               (existing.refreshToken || null) !== (la.refreshToken || null) ||
-               (Boolean(la.refreshToken) && !existing.refreshTokenEnc);
-             const expiresChanged =
-               (existing.tokenExpiresAt?.getTime() || null) !==
-               (la.accessTokenExpiresAt?.getTime() || null);
-     
-             if (accessTokenChanged || refreshTokenChanged || expiresChanged) {
-               await db
-                 .update(xAccounts)
-                 .set({
-                   accessToken: encryptToken(la.accessToken),
-                   refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : existing.refreshTokenEnc,
-                   refreshToken: null,
-                   tokenExpiresAt: la.accessTokenExpiresAt,
-                   isActive: true,
-                   updatedAt: new Date(),
-                 })
-                 .where(eq(xAccounts.id, existing.id));
-             }
+          if (accessTokenChanged || refreshTokenChanged || expiresChanged) {
+            await db
+              .update(xAccounts)
+              .set({
+                accessToken: encryptToken(plainAccessToken),
+                refreshTokenEnc: plainRefreshToken ? encryptToken(plainRefreshToken) : existing.refreshTokenEnc,
+                refreshToken: null,
+                tokenExpiresAt: la.accessTokenExpiresAt,
+                isActive: true,
+                updatedAt: new Date(),
+              })
+              .where(eq(xAccounts.id, existing.id));
           }
         }
       }
@@ -214,7 +208,7 @@ export async function POST(req: Request) {
     }
 
     // Determine Status
-    let status = "draft";
+    let status: "draft" | "scheduled" | "awaiting_approval" = "draft";
     let finalScheduledAt: Date | null = null;
     let requiresApproval = false;
 
@@ -237,31 +231,51 @@ export async function POST(req: Request) {
         status = "draft";
     }
 
+    // E16: Validate recurrence end date is within 1 year of the scheduled date (or now).
+    // Prevents unbounded queue growth from recurrence patterns with no realistic horizon.
+    if (recurrencePattern && recurrencePattern !== "none" && recurrenceEndDate) {
+      const anchor = finalScheduledAt ?? new Date();
+      const maxAllowedEndDate = new Date(anchor.getTime() + 365 * 24 * 60 * 60 * 1000);
+      if (new Date(recurrenceEndDate) > maxAllowedEndDate) {
+        return new Response(
+          JSON.stringify({ error: "Recurrence end date cannot be more than 1 year from the scheduled date" }),
+          { status: 400 }
+        );
+      }
+    }
+
     const groupId = selectedAccounts.length > 1 ? crypto.randomUUID() : null;
     const createdPostIds: string[] = [];
-    
-    // Get actual user ID for authorship
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
-        return new Response("Unauthorized", { status: 401 });
-    }
-    const authorId = session.user.id;
+
+    // Get actual user ID for authorship (use session already resolved by getTeamContext)
+    const authorId = ctx.session.user.id;
+
+    // --- Bulk-insert: pre-generate all IDs and collect rows before touching the DB ---
+    // Replaces 3-level nested sequential awaits (worst case 780 round trips) with
+    // 3 batched INSERT calls inside a single transaction.
+    const postRows:  (typeof posts.$inferInsert)[]   = [];
+    const tweetRows: (typeof tweets.$inferInsert)[]  = [];
+    const mediaRows: (typeof media.$inferInsert)[]   = [];
+    const queueJobs: { postId: string; delay: number }[] = [];
+
+    const postType = tweetsData.length > 1 ? "thread" : undefined;
 
     for (const acc of selectedAccounts) {
       const postId = crypto.randomUUID();
       createdPostIds.push(postId);
 
-      await db.insert(posts).values({
+      postRows.push({
         id: postId,
-        userId: authorId, // Author is the logged in user
+        userId: authorId,
         xAccountId: acc.platform === 'twitter' ? acc.id : null,
         linkedinAccountId: acc.platform === 'linkedin' ? acc.id : null,
+        instagramAccountId: acc.platform === 'instagram' ? acc.id : null,
         platform: acc.platform,
         groupId,
-        type: tweetsData.length > 1 ? "thread" : (acc.platform === 'linkedin' ? 'linkedin_post' : 'tweet'),
-        status: status,
+        type: postType ?? (acc.platform === 'linkedin' ? 'linkedin_post' : 'tweet'),
+        status,
         scheduledAt: finalScheduledAt,
-        requiresApproval: requiresApproval,
+        requiresApproval,
         recurrencePattern: recurrencePattern && recurrencePattern !== "none" ? recurrencePattern : null,
         recurrenceEndDate: recurrenceEndDate ? new Date(recurrenceEndDate) : null,
         idempotencyKey: idempotencyKey ? `${idempotencyKey}:${acc.platform}:${acc.id}` : null,
@@ -271,16 +285,10 @@ export async function POST(req: Request) {
         const tweetId = crypto.randomUUID();
         const t = tweetsData[i]!;
 
-        await db.insert(tweets).values({
-          id: tweetId,
-          postId,
-          content: t.content,
-          position: i + 1,
-        });
+        tweetRows.push({ id: tweetId, postId, content: t.content, position: i + 1 });
 
-        const mediaItems = t.media || [];
-        for (const m of mediaItems) {
-          await db.insert(media).values({
+        for (const m of (t.media ?? [])) {
+          mediaRows.push({
             id: crypto.randomUUID(),
             postId,
             tweetId,
@@ -292,20 +300,28 @@ export async function POST(req: Request) {
       }
 
       if (status === "scheduled") {
-        const delay = finalScheduledAt!.getTime() - Date.now();
-        await scheduleQueue.add(
-          "publish-post",
-          { postId, userId: session.user.id, correlationId },
-          {
-            delay: Math.max(0, delay),
-            jobId: postId,
-            attempts: 5,
-            backoff: { type: "exponential", delay: 60_000 },
-            removeOnComplete: true,
-            removeOnFail: false,
-          }
-        );
+        queueJobs.push({ postId, delay: Math.max(0, finalScheduledAt!.getTime() - Date.now()) });
       }
+    }
+
+    // Single transaction: insert posts → tweets → media in 3 batched calls
+    await db.transaction(async (tx) => {
+      await tx.insert(posts).values(postRows);
+      if (tweetRows.length > 0) await tx.insert(tweets).values(tweetRows);
+      if (mediaRows.length > 0) await tx.insert(media).values(mediaRows);
+    });
+
+    // Enqueue all BullMQ jobs concurrently after the DB transaction commits
+    if (queueJobs.length > 0) {
+      await Promise.all(
+        queueJobs.map(({ postId, delay }) =>
+          scheduleQueue.add(
+            "publish-post",
+            { postId, userId: authorId, correlationId },
+            { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
+          )
+        )
+      );
     }
 
     const res = Response.json({ success: true, groupId, postIds: createdPostIds });

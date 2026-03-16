@@ -1,0 +1,1 @@
+CREATE INDEX "analytics_snapshots_tweet_id_fetched_at_idx" ON "tweet_analytics_snapshots" USING btree ("tweet_id","fetched_at");

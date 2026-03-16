@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -9,8 +9,11 @@ import { user } from "@/lib/schema";
 const profileSchema = z.object({
   name: z.string().min(2).max(50),
   timezone: z.string(),
-  language: z.string().min(2),
+  language: z.string().min(2).max(10),
 });
+
+// One year in seconds — locale preference is stable, long TTL is appropriate
+const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export async function PATCH(req: Request) {
   const session = await auth.api.getSession({
@@ -27,12 +30,25 @@ export async function PATCH(req: Request) {
 
     await db
       .update(user)
-      .set({
-        name,
-        timezone,
-        language,
-      })
+      .set({ name, timezone, language })
       .where(eq(user.id, session.user.id));
+
+    // Persist the locale cookie so the root layout's lang/dir attributes
+    // (Finding 2.15 / E19) immediately reflect the user's language choice
+    // without requiring a full sign-out / sign-in cycle.
+    //
+    // httpOnly: false — the root layout reads this server-side via cookies(),
+    // but client-side code may also need it for RTL direction toggling.
+    // sameSite: lax — secure for cross-origin navigations; allows top-level
+    // GET navigations to carry the cookie.
+    const cookieStore = await cookies();
+    cookieStore.set("locale", language, {
+      maxAge: LOCALE_COOKIE_MAX_AGE,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

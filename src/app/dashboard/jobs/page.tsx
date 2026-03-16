@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { Settings2 as Settings2Icon } from "lucide-react";
@@ -26,7 +27,7 @@ export default async function JobsPage({
   }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  if (!session) redirect("/login?callbackUrl=/dashboard/jobs");
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   const params = resolvedSearchParams || {};
@@ -43,7 +44,7 @@ export default async function JobsPage({
 
   const where = and(
     eq(jobRuns.userId, session.user.id),
-    statusFilter ? eq(jobRuns.status, statusFilter) : sql<boolean>`true`,
+    statusFilter ? eq(jobRuns.status, statusFilter as "running" | "success" | "failed" | "retrying") : sql<boolean>`true`,
     queueFilter ? eq(jobRuns.queueName, queueFilter) : sql<boolean>`true`,
     q
       ? or(

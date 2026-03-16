@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
-import { and, asc, desc, eq, gte, sql } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { and, asc, desc, eq, gte, isNotNull } from "drizzle-orm";
 import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick, PlusCircle, ListOrdered, MoreHorizontal } from "lucide-react";
 import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
@@ -27,7 +28,7 @@ export default async function AnalyticsPage({
   searchParams?: Promise<{ accountId?: string | string[]; density?: string | string[]; range?: string | string[] }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return null;
+  if (!session) redirect("/login?callbackUrl=/dashboard/analytics");
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
   
   // Params
@@ -40,22 +41,27 @@ export default async function AnalyticsPage({
   const rangeValue = Array.isArray(rangeParam) ? rangeParam[0] : rangeParam;
   const range = rangeValue || "30d";
 
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { plan: true, trialEndsAt: true }
-  });
-  
+  // ── Round 1: two independent queries in parallel ──────────────────────────
+  // dbUser is needed to compute effectiveRange/startDate.
+  // accounts is needed to resolve selectedAccountId.
+  // Both are independent so they run concurrently.
+  const [dbUser, accounts] = await Promise.all([
+    db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true, trialEndsAt: true },
+    }),
+    db.query.xAccounts.findMany({
+      where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)),
+      orderBy: [desc(xAccounts.isDefault), asc(xAccounts.createdAt)],
+    }),
+  ]);
+
   const isTrialActive = dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
   const isFree = !isTrialActive && dbUser?.plan === "free";
-  
+
   // Enforce limits if free
   const effectiveRange = isFree ? "7d" : range;
   const rangeDays = parseInt(effectiveRange.replace("d", "")) || 30;
-
-  const accounts = await db.query.xAccounts.findMany({
-    where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)),
-    orderBy: [desc(xAccounts.isDefault), asc(xAccounts.createdAt)],
-  });
 
   const selectedAccountIdParam = resolvedSearchParams?.accountId;
   const selectedAccountId =
@@ -75,19 +81,78 @@ export default async function AnalyticsPage({
   const nowTimestamp = now.getTime();
   const startDate = new Date(nowTimestamp - rangeDays * 24 * 60 * 60 * 1000);
 
-  // 1. Follower Data
-  const followerPoints = selectedAccountId
-    ? await db.query.followerSnapshots.findMany({
-        where: and(
-          eq(followerSnapshots.userId, session.user.id),
-          eq(followerSnapshots.xAccountId, selectedAccountId),
-          gte(followerSnapshots.capturedAt, startDate)
-        ),
-        orderBy: [asc(followerSnapshots.capturedAt)],
-        limit: 1000,
-      })
-    : [];
+  // ── Round 2: five independent queries in parallel ──────────────────────────
+  // All depend only on values already resolved above; none depend on each other.
+  const [
+    followerPoints,
+    refreshRuns,
+    snapshots,
+    topTweets,
+    bestTimeData,
+  ] = await Promise.all([
+    // 1. Follower snapshots
+    selectedAccountId
+      ? db.query.followerSnapshots.findMany({
+          where: and(
+            eq(followerSnapshots.userId, session.user.id),
+            eq(followerSnapshots.xAccountId, selectedAccountId),
+            gte(followerSnapshots.capturedAt, startDate)
+          ),
+          orderBy: [asc(followerSnapshots.capturedAt)],
+          limit: 1000,
+        })
+      : Promise.resolve([]),
 
+    // 2. Analytics refresh runs
+    selectedAccountId
+      ? db.query.analyticsRefreshRuns.findMany({
+          where: and(
+            eq(analyticsRefreshRuns.userId, session.user.id),
+            eq(analyticsRefreshRuns.xAccountId, selectedAccountId)
+          ),
+          orderBy: [desc(analyticsRefreshRuns.startedAt)],
+          limit: 5,
+        })
+      : Promise.resolve([]),
+
+    // 3. Tweet metrics snapshots
+    db
+      .select({
+        fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
+        impressions: tweetAnalyticsSnapshots.impressions,
+        likes: tweetAnalyticsSnapshots.likes,
+        retweets: tweetAnalyticsSnapshots.retweets,
+        replies: tweetAnalyticsSnapshots.replies,
+        clicks: tweetAnalyticsSnapshots.linkClicks,
+      })
+      .from(tweetAnalyticsSnapshots)
+      .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))),
+
+    // 4. Top tweets by impressions (isNotNull replaces the @ts-ignore sql string)
+    db
+      .select({
+        content: tweets.content,
+        xTweetId: tweets.xTweetId,
+        tweetId: tweets.id,
+        impressions: tweetAnalytics.impressions,
+        likes: tweetAnalytics.likes,
+        retweets: tweetAnalytics.retweets,
+        replies: tweetAnalytics.replies,
+      })
+      .from(tweetAnalytics)
+      .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(and(eq(posts.userId, session.user.id), isNotNull(tweets.xTweetId)))
+      .orderBy(desc(tweetAnalytics.impressions))
+      .limit(5),
+
+    // 5. Best times to post heatmap
+    AnalyticsEngine.getBestTimesToPost(session.user.id),
+  ]);
+
+  // ── Derive chart data from query results ───────────────────────────────────
   const followerByDay = new Map<string, number>();
   for (const p of followerPoints) {
     const key = new Date(p.capturedAt).toISOString().slice(0, 10);
@@ -107,35 +172,6 @@ export default async function AnalyticsPage({
   const latestFollowers = lastValue;
   const followersStart = followerChartData[0]?.value || 0;
   const followerGrowth = latestFollowers - followersStart;
-
-  // 2. Refresh Runs
-  const refreshRuns = selectedAccountId
-    ? await db.query.analyticsRefreshRuns.findMany({
-        where: and(
-          eq(analyticsRefreshRuns.userId, session.user.id),
-          eq(analyticsRefreshRuns.xAccountId, selectedAccountId)
-        ),
-        orderBy: [desc(analyticsRefreshRuns.startedAt)],
-        limit: 5,
-      })
-    : [];
-
-  // 3. Tweet Metrics
-  const snapshots = await db
-    .select({
-      fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
-      impressions: tweetAnalyticsSnapshots.impressions,
-      likes: tweetAnalyticsSnapshots.likes,
-      retweets: tweetAnalyticsSnapshots.retweets,
-      replies: tweetAnalyticsSnapshots.replies,
-      clicks: tweetAnalyticsSnapshots.linkClicks,
-    })
-    .from(tweetAnalyticsSnapshots)
-    .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
-    .innerJoin(posts, eq(tweets.postId, posts.id))
-    .where(
-      and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))
-    );
 
   const totals = snapshots.reduce(
     (acc, s) => {
@@ -161,27 +197,6 @@ export default async function AnalyticsPage({
     const d = new Date(nowTimestamp - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     impressionsChartData.push({ date: d, value: byDay.get(d) || 0 });
   }
-
-  // 4. Top Tweets
-  const topTweets = await db
-    .select({
-      content: tweets.content,
-      xTweetId: tweets.xTweetId,
-      tweetId: tweets.id,
-      impressions: tweetAnalytics.impressions,
-      likes: tweetAnalytics.likes,
-      retweets: tweetAnalytics.retweets,
-      replies: tweetAnalytics.replies,
-    })
-    .from(tweetAnalytics)
-    .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
-    .innerJoin(posts, eq(tweets.postId, posts.id))
-    .where(and(eq(posts.userId, session.user.id), sql`${tweets.xTweetId} IS NOT NULL`))
-    .orderBy(desc(tweetAnalytics.impressions))
-    .limit(5);
-
-  // 5. Best Time Data
-  const bestTimeData = await AnalyticsEngine.getBestTimesToPost(session.user.id);
 
   return (
     <DashboardPageWrapper
@@ -337,9 +352,9 @@ export default async function AnalyticsPage({
                         className={
                           "rounded px-2 py-0.5 text-xs " +
                           (r.status === "success"
-                            ? "bg-emerald-500/10 text-emerald-600"
+                            ? "bg-success/10 text-success"
                             : r.status === "failed"
-                              ? "bg-red-500/10 text-red-600"
+                              ? "bg-destructive/10 text-destructive"
                               : "bg-muted text-muted-foreground")
                         }
                       >
@@ -449,8 +464,15 @@ export default async function AnalyticsPage({
                     }
                   />
                 ) : (
-                  // @ts-ignore - xTweetId is filtered to be not null in the query
-                  <TopTweetsList tweets={topTweets} isCompact={isCompact} />
+                  <TopTweetsList
+                    // Narrow xTweetId from string|null to string — isNotNull() in the
+                    // WHERE clause guarantees no nulls, but Drizzle's type inference
+                    // can't reflect WHERE clause narrowing on selected columns.
+                    tweets={topTweets.filter(
+                      (t): t is typeof t & { xTweetId: string } => t.xTweetId !== null
+                    )}
+                    isCompact={isCompact}
+                  />
                 )}
               </BlurredOverlay>
           </div>

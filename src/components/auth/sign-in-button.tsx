@@ -76,7 +76,7 @@ export function SignInButton() {
         />
       </div>
       {error && (
-        <p className="text-sm text-destructive">{error}</p>
+        <p role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
       )}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Signing in..." : "Sign in"}

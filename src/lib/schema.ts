@@ -1,6 +1,101 @@
 
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, integer, jsonb, decimal, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, boolean, integer, jsonb, decimal, index, uniqueIndex } from "drizzle-orm/pg-core";
+
+// ── Enums ──────────────────────────────────────────────────────────────────
+
+// ── Existing enums (already in DB) ─────────────────────────────────────────
+export const postStatusEnum = pgEnum("post_status", [
+  "draft",
+  "scheduled",
+  "published",
+  "failed",
+  "cancelled",
+  "awaiting_approval",
+]);
+
+export const planEnum = pgEnum("plan", [
+  "free",
+  "pro_monthly",
+  "pro_annual",
+  "agency",
+]);
+
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "active",
+  "past_due",
+  "cancelled",
+  "trialing",
+]);
+
+export const jobRunStatusEnum = pgEnum("job_run_status", [
+  "running",
+  "success",
+  "failed",
+  "retrying",
+]);
+
+// ── New enums (migration required) ─────────────────────────────────────────
+
+/** Platform a post targets. Shared by posts and analytics_refresh_runs. */
+export const platformEnum = pgEnum("platform", [
+  "twitter",
+  "linkedin",
+  "instagram",
+]);
+
+/** Structural type of a post (single tweet vs thread vs platform-native). */
+export const postTypeEnum = pgEnum("post_type", [
+  "tweet",
+  "thread",
+  "linkedin_post",
+  "instagram_post",
+]);
+
+/** Recurrence cadence stored on repeating posts (null = no recurrence). */
+export const recurrencePatternEnum = pgEnum("recurrence_pattern", [
+  "daily",
+  "weekly",
+  "monthly",
+  "yearly",
+]);
+
+/** Role a team member holds in a workspace. 'owner' is derived, never stored. */
+export const teamRoleEnum = pgEnum("team_role", [
+  "admin",
+  "editor",
+  "viewer",
+]);
+
+/** Lifecycle state of a team invitation. */
+export const invitationStatusEnum = pgEnum("invitation_status", [
+  "pending",
+  "accepted",
+  "expired",
+]);
+
+/** Status of a background analytics refresh run. */
+export const analyticsRunStatusEnum = pgEnum("analytics_run_status", [
+  "running",
+  "success",
+  "failed",
+]);
+
+/** Lifecycle state of a feedback item. */
+export const feedbackStatusEnum = pgEnum("feedback_status", [
+  "pending",
+  "planned",
+  "in_progress",
+  "completed",
+  "declined",
+]);
+
+/** Category of a feedback submission. */
+export const feedbackCategoryEnum = pgEnum("feedback_category", [
+  "feature",
+  "bug",
+  "other",
+]);
 
 // IMPORTANT! ID fields should ALWAYS use UUID types, EXCEPT the BetterAuth tables.
 // However, to maintain consistency with the existing user table which uses text IDs, 
@@ -25,7 +120,7 @@ export const user = pgTable(
     isSuspended: boolean("is_suspended").default(false),
     timezone: text("timezone").default("Asia/Riyadh"),
     language: text("language").default("ar"), // 'ar' or 'en'
-    plan: text("plan").default("free"), // 'free', 'pro_monthly', 'pro_annual', 'agency'
+    plan: planEnum("plan").default("free"),
     planExpiresAt: timestamp("plan_expires_at"),
     stripeCustomerId: text("stripe_customer_id"),
     trialEndsAt: timestamp("trial_ends_at"),
@@ -123,7 +218,6 @@ export const xAccounts = pgTable("x_accounts", {
   xDisplayName: text("x_display_name"),
   xAvatarUrl: text("x_avatar_url"),
   accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token"),
   refreshTokenEnc: text("refresh_token_enc"),
   tokenExpiresAt: timestamp("token_expires_at"),
   followersCount: integer("followers_count").default(0),
@@ -142,7 +236,6 @@ export const linkedinAccounts = pgTable("linkedin_accounts", {
   linkedinName: text("linkedin_name").notNull(),
   linkedinAvatarUrl: text("linkedin_avatar_url"),
   accessToken: text("access_token").notNull(),
-  refreshToken: text("refresh_token"),
   refreshTokenEnc: text("refresh_token_enc"),
   tokenExpiresAt: timestamp("token_expires_at"),
   isActive: boolean("is_active").default(true),
@@ -174,10 +267,10 @@ export const posts = pgTable("posts", {
   xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
   linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, { onDelete: "cascade" }),
   instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, { onDelete: "cascade" }),
-  platform: text("platform").default("twitter"), // 'twitter', 'linkedin', 'instagram'
+  platform: platformEnum("platform").default("twitter"),
   groupId: text("group_id"),
-  type: text("type").default("tweet"), // 'tweet', 'thread', 'linkedin_post'
-  status: text("status").default("draft"), // 'draft', 'scheduled', 'published', 'failed', 'cancelled'
+  type: postTypeEnum("type").default("tweet"),
+  status: postStatusEnum("status").default("draft"),
   scheduledAt: timestamp("scheduled_at"),
   publishedAt: timestamp("published_at"),
   failReason: text("fail_reason"),
@@ -190,7 +283,7 @@ export const posts = pgTable("posts", {
   approvedAt: timestamp("approved_at"),
   reviewerNotes: text("reviewer_notes"),
   inspiredByTweetId: text("inspired_by_tweet_id"), // ID of the source tweet from Inspiration feature
-  recurrencePattern: text("recurrence_pattern"), // 'daily', 'weekly', 'monthly', 'yearly'
+  recurrencePattern: recurrencePatternEnum("recurrence_pattern"),
   recurrenceEndDate: timestamp("recurrence_end_date"),
   idempotencyKey: text("idempotency_key").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -219,8 +312,8 @@ export const analyticsRefreshRuns = pgTable("analytics_refresh_runs", {
   xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
   linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, { onDelete: "cascade" }),
   instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, { onDelete: "cascade" }),
-  platform: text("platform").default("twitter"), // 'twitter', 'linkedin', 'instagram'
-  status: text("status").default("running"),
+  platform: platformEnum("platform").default("twitter"),
+  status: analyticsRunStatusEnum("status").default("running"),
   error: text("error"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   finishedAt: timestamp("finished_at"),
@@ -233,7 +326,7 @@ export const teamMembers = pgTable("team_members", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   teamId: text("team_id").notNull().references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
-  role: text("role").notNull().default("viewer"), // 'admin', 'editor', 'viewer'
+  role: teamRoleEnum("role").notNull().default("viewer"),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
@@ -247,10 +340,10 @@ export const teamInvitations = pgTable("team_invitations", {
   id: text("id").primaryKey(),
   teamId: text("team_id").notNull().references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
   email: text("email").notNull(),
-  role: text("role").notNull().default("viewer"),
+  role: teamRoleEnum("role").notNull().default("viewer"),
   token: text("token").notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
-  status: text("status").default("pending"), // 'pending', 'accepted', 'expired'
+  status: invitationStatusEnum("status").default("pending"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("team_invitations_team_id_idx").on(table.teamId),
@@ -335,6 +428,8 @@ export const tweetAnalyticsSnapshots = pgTable("tweet_analytics_snapshots", {
 }, (table) => [
   index("analytics_snapshots_tweet_id_idx").on(table.tweetId),
   index("analytics_snapshots_fetched_at_idx").on(table.fetchedAt),
+  // Compound index for time-series queries: WHERE tweetId = ? ORDER BY fetchedAt DESC
+  index("analytics_snapshots_tweet_id_fetched_at_idx").on(table.tweetId, table.fetchedAt),
 ]);
 
 export const socialAnalytics = pgTable("social_analytics", {
@@ -388,8 +483,8 @@ export const subscriptions = pgTable("subscriptions", {
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
   stripePriceId: text("stripe_price_id"),
-  plan: text("plan"),
-  status: text("status"), // 'active', 'past_due', 'cancelled', 'trialing'
+  plan: planEnum("plan"),
+  status: subscriptionStatusEnum("status"),
   currentPeriodStart: timestamp("current_period_start"),
   currentPeriodEnd: timestamp("current_period_end"),
   cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
@@ -405,7 +500,7 @@ export const jobRuns = pgTable("job_runs", {
   jobId: text("job_id").notNull(),
   correlationId: text("correlation_id"),
   postId: text("post_id").references(() => posts.id, { onDelete: "set null" }),
-  status: text("status").notNull(),
+  status: jobRunStatusEnum("status").notNull(),
   attempts: integer("attempts"),
   attemptsMade: integer("attempts_made"),
   error: text("error"),
@@ -496,8 +591,8 @@ export const feedback = pgTable("feedback", {
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  category: text("category").default("feature"), // 'feature', 'bug', 'other'
-  status: text("status").default("pending"), // 'pending', 'planned', 'in_progress', 'completed', 'declined'
+  category: feedbackCategoryEnum("category").default("feature"),
+  status: feedbackStatusEnum("status").default("pending"),
   upvotes: integer("upvotes").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),

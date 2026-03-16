@@ -6,9 +6,10 @@ import { GripVertical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { type CalendarPost } from "./calendar-view";
 
 interface CalendarPostItemProps {
-  post: any;
+  post: CalendarPost;
   isOverlay?: boolean;
 }
 

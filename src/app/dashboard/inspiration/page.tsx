@@ -56,9 +56,26 @@ export default function InspirationPage() {
 
   // History and Bookmarks state
   const [activeTab, setActiveTab] = useState<"import" | "history" | "bookmarks">("import");
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem("inspiration_history");
+      return stored ? (JSON.parse(stored) as HistoryItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isBookmarking, setIsBookmarking] = useState(false);
+
+  // Persist history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("inspiration_history", JSON.stringify(history));
+    } catch {
+      // localStorage may be unavailable (private mode, storage full) — fail silently
+    }
+  }, [history]);
 
   // URL validation
   const validateUrl = useCallback((url: string) => {

@@ -14,7 +14,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 
 // ============================================================================
@@ -194,17 +194,7 @@ export async function POST(req: NextRequest) {
 
     // 5. Check AI rate limit
     const rateLimitResult = await checkRateLimit(userId, plan, "ai");
-
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        {
-          error: "Rate limit exceeded",
-          reset: rateLimitResult.reset,
-          remaining: rateLimitResult.remaining,
-        },
-        { status: 429 }
-      );
-    }
+    if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
     // 6. Check AI quota (monthly limit)
     if (planLimits.aiGenerationsPerMonth > 0) {

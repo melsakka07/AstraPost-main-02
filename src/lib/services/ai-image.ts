@@ -366,6 +366,84 @@ export async function generateImage(
   return provider.generate(params);
 }
 
+// ============================================================================
+// Async Prediction API (for client-side polling pattern)
+// ============================================================================
+
+/**
+ * Start an image generation prediction without waiting for it to complete.
+ * Returns the Replicate prediction ID so the caller can poll for the result
+ * via a separate status endpoint — avoids blocking serverless functions.
+ */
+export async function startImageGeneration(
+  params: ImageGenParams,
+): Promise<{ predictionId: string; status: string }> {
+  const token = process.env.REPLICATE_API_TOKEN;
+  if (!token) throw new Error("REPLICATE_API_TOKEN environment variable is not set");
+
+  const model = params.model ?? "nano-banana-2";
+  const prompt = buildStyledPrompt(params.prompt, params.style);
+  const version =
+    model === "nano-banana-pro" ? "google/nano-banana-pro" : "google/nano-banana-2";
+  const resolution = model === "nano-banana-pro" ? "2K" : "1K";
+
+  const createResponse = await fetch("https://api.replicate.com/v1/predictions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      version,
+      input: {
+        prompt,
+        aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
+        resolution,
+        output_format: "png",
+        safety_filter_level: "block_only_high",
+        image_input: [],
+      },
+    }),
+  });
+
+  if (!createResponse.ok) {
+    const errorText = await createResponse.text();
+    throw new Error(
+      `Failed to create prediction: ${createResponse.statusText} - ${errorText}`,
+    );
+  }
+
+  const prediction: ReplicatePrediction = await createResponse.json();
+  return { predictionId: prediction.id, status: prediction.status };
+}
+
+/**
+ * Check the current status of a Replicate prediction (single poll, no waiting).
+ * The caller is responsible for retrying at an appropriate interval.
+ */
+export async function checkImagePrediction(
+  predictionId: string,
+): Promise<ReplicatePrediction> {
+  const token = process.env.REPLICATE_API_TOKEN;
+  if (!token) throw new Error("REPLICATE_API_TOKEN environment variable is not set");
+
+  const response = await fetch(
+    `https://api.replicate.com/v1/predictions/${predictionId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Replicate API error: ${response.statusText}`);
+  }
+
+  return response.json() as Promise<ReplicatePrediction>;
+}
+
 /**
  * Download image from URL and return as buffer
  */

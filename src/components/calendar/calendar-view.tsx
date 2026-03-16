@@ -43,14 +43,23 @@ import { CalendarPostItem } from "./calendar-post-item";
 
 type ViewType = "month" | "week" | "day";
 
-interface CalendarViewProps {
-  posts: any[];
-  currentDate: Date;
+export interface CalendarPost {
+  id: string;
+  type: string | null;
+  status: string | null;
+  scheduledAt: Date | null;
+  tweets: { id: string; content: string; position: number }[];
 }
 
-export function CalendarView({ posts, currentDate }: CalendarViewProps) {
+interface CalendarViewProps {
+  posts: CalendarPost[];
+  currentDate: Date;
+  initialView?: ViewType;
+}
+
+export function CalendarView({ posts, currentDate, initialView = "month" }: CalendarViewProps) {
   const router = useRouter();
-  const [view, setView] = React.useState<ViewType>("month");
+  const [view, setView] = React.useState<ViewType>(initialView);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [isUpdating, setIsUpdating] = React.useState(false);
 
@@ -138,7 +147,7 @@ export function CalendarView({ posts, currentDate }: CalendarViewProps) {
     const newDateStr = over.id as string; // YYYY-MM-DD
     const originalPost = posts.find((p) => p.id === postId);
 
-    if (!originalPost) return;
+    if (!originalPost?.scheduledAt) return;
 
     const originalDate = new Date(originalPost.scheduledAt);
     const newDate = new Date(newDateStr);
@@ -168,7 +177,7 @@ export function CalendarView({ posts, currentDate }: CalendarViewProps) {
     }
   };
 
-  const activePost = activeId ? posts.find((p) => p.id === activeId) : null;
+  const activePost: CalendarPost | null = activeId ? (posts.find((p) => p.id === activeId) ?? null) : null;
 
   return (
     <div className="flex flex-col h-full space-y-4">

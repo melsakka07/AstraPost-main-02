@@ -3,11 +3,12 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { auth } from "@/lib/auth";
 import { LANGUAGES } from "@/lib/constants";
 import { db } from "@/lib/db";
 import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { checkRateLimit } from "@/lib/rate-limiter";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
@@ -17,8 +18,8 @@ const requestSchema = z.object({
   tone: z
     .enum(["professional", "casual", "educational", "inspirational", "funny", "viral"])
     .default("professional"),
-  topic: z.string().optional(),
-  input: z.string().optional(),
+  topic: z.string().max(500).optional(),
+  input: z.string().max(1000).optional(),
 });
 
 const responseSchema = z.object({
@@ -37,16 +38,8 @@ export async function POST(req: Request) {
         columns: { plan: true, voiceProfile: true }
     });
     
-    const { success, reset } = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
-    if (!success) {
-        return new Response(JSON.stringify({ 
-            error: "Too many requests", 
-            retryAfter: Math.ceil((reset - Date.now()) / 1000) 
-        }), { 
-            status: 429,
-            headers: { "Retry-After": Math.ceil((reset - Date.now()) / 1000).toString() }
-        });
-    }
+    const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
+    if (!rlResult.success) return createRateLimitResponse(rlResult);
 
     const aiAccess = await checkAiLimitDetailed(session.user.id);
     if (!aiAccess.allowed) {
@@ -80,26 +73,9 @@ export async function POST(req: Request) {
 
     const langLabel = LANGUAGES.find(l => l.code === language)?.label || 'English';
 
-    let voiceInstructions = "";
-    if (dbUser?.voiceProfile) {
-        const vp = dbUser.voiceProfile as any;
-        if (vp.tone && vp.styleKeywords) {
-             voiceInstructions = `
-            Voice Profile Instructions:
-            - Tone: ${vp.tone}
-            - Style: ${Array.isArray(vp.styleKeywords) ? vp.styleKeywords.join(", ") : vp.styleKeywords}
-            - Structure: ${vp.sentenceStructure}
-            - Vocabulary: ${vp.vocabularyLevel}
-            - Emoji Usage: ${vp.emojiUsage}
-            - Formatting: ${vp.formattingHabits}
-            - Rules: ${Array.isArray(vp.doAndDonts) ? vp.doAndDonts.join("; ") : vp.doAndDonts}
-            
-            ADHERE STRICTLY TO THIS WRITING STYLE.
-            `;
-        } else if (typeof vp === 'string') {
-             voiceInstructions = `Voice Profile Instructions:\n${vp}\nAdhere strictly to this writing style.`;
-        }
-    }
+    // Validate the stored voiceProfile against the strict schema and sanitize
+    // every field before interpolation. Returns "" for null/invalid profiles.
+    const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
 
     const prompt = (() => {
       if (tool === "hook") {

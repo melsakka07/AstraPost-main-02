@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import {
   Wand2,
@@ -108,20 +108,78 @@ export function AiImageDialog({
   );
   const [imageHistory, setImageHistory] = useState<GeneratedImage[]>([]);
 
-  // Reset state when dialog opens
+  // Ref to the active polling timer so we can cancel it when the dialog closes
+  // or the component unmounts.
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activePollingIdRef = useRef<string | null>(null);
+
+  // Cancel any in-flight poll when the dialog closes.
+  const cancelPolling = () => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+    activePollingIdRef.current = null;
+  };
+
+  // Reset state when dialog opens/closes
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      // Reset state when closing
+      cancelPolling();
       setPrompt("");
       setGeneratedImage(null);
       setImageHistory([]);
+      setIsGenerating(false);
     }
     onOpenChange(newOpen);
   };
 
+  // Poll GET /api/ai/image/status every 2 s until completion.
+  // Defined as a plain function (no useCallback) so the latest state setters
+  // and refs are always in scope without needing to track deps.
+  function pollForResult(predictionId: string) {
+    pollTimerRef.current = setTimeout(async () => {
+      // If the polling ID changed (dialog closed / regenerated), bail out.
+      if (activePollingIdRef.current !== predictionId) return;
+
+      try {
+        const res = await fetch(`/api/ai/image/status?id=${predictionId}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast.error(data.error || "Image generation failed.");
+          setIsGenerating(false);
+          activePollingIdRef.current = null;
+          return;
+        }
+
+        if (data.status === "starting" || data.status === "processing") {
+          pollForResult(predictionId);
+        } else if (data.status === "succeeded") {
+          const generated: GeneratedImage = {
+            imageUrl: data.imageUrl,
+            width: data.width,
+            height: data.height,
+            model: data.model,
+            prompt: data.prompt,
+          };
+          setGeneratedImage(generated);
+          setImageHistory((prev) => [...prev, generated]);
+          toast.success("Image generated successfully!");
+          setIsGenerating(false);
+          activePollingIdRef.current = null;
+        }
+      } catch {
+        toast.error("Failed to check image status. Please try again.");
+        setIsGenerating(false);
+        activePollingIdRef.current = null;
+      }
+    }, 2000);
+  }
+
   // Auto-generate prompt from tweet content if prompt is empty
   const handleGenerate = async () => {
-    if (remainingQuota <= 0) {
+    if (remainingQuota === 0) {
       toast.error(
         "You've reached your monthly AI image quota. Please upgrade to continue.",
         {
@@ -134,6 +192,7 @@ export function AiImageDialog({
       return;
     }
 
+    cancelPolling();
     setIsGenerating(true);
 
     try {
@@ -143,10 +202,7 @@ export function AiImageDialog({
         model: ImageModel;
         aspectRatio: AspectRatio;
         style?: ImageStyle;
-      } = {
-        model,
-        aspectRatio,
-      };
+      } = { model, aspectRatio };
 
       if (prompt.trim()) {
         requestBody.prompt = prompt.trim();
@@ -170,8 +226,7 @@ export function AiImageDialog({
 
       if (!response.ok) {
         const error = await response.json();
-        if (response.status === 402) {
-          // Payment required / quota exceeded
+        if (response.status === 402 || response.status === 403) {
           toast.error(error.error || "Quota exceeded. Please upgrade.", {
             action: {
               label: "Upgrade",
@@ -181,22 +236,19 @@ export function AiImageDialog({
         } else if (response.status === 429) {
           toast.error("Rate limit exceeded. Please wait a moment.");
         } else {
-          toast.error(error.error || "Failed to generate image");
+          toast.error(error.error || "Failed to start image generation");
         }
         setIsGenerating(false);
         return;
       }
 
-      const data: GeneratedImage = await response.json();
-
-      setGeneratedImage(data);
-      setImageHistory((prev) => [...prev, data]);
-
-      toast.success("Image generated successfully!");
+      // Server returns {predictionId, estimatedSeconds} — start client-side polling.
+      const { predictionId } = await response.json();
+      activePollingIdRef.current = predictionId;
+      pollForResult(predictionId);
     } catch (error) {
       console.error("AI image generation error:", error);
       toast.error("Failed to generate image. Please try again.");
-    } finally {
       setIsGenerating(false);
     }
   };
