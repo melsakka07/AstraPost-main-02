@@ -30,12 +30,19 @@ export const analyticsQueue = new Queue<AnalyticsJobPayload>("analytics-queue", 
  * survives a transient `job_runs` DB write failure, unlike `removeOnComplete: true`
  * which deletes the entry immediately when the processor returns.
  *
- * `removeOnFail: false` keeps failed jobs in Redis indefinitely so the Jobs
- * dashboard can surface them and operators can inspect / re-queue them.
+ * `removeOnFail: { age }` retains failed jobs for 7 days so the Jobs dashboard
+ * can surface them for operator review, then prunes them automatically.
+ * The previous `removeOnFail: false` kept failed jobs indefinitely — in a
+ * production system with 5 retries × N users, this causes unbounded Redis
+ * growth that can exhaust memory and take down the queue entirely.
+ *
+ * WARNING: X media IDs expire 24 h after upload.
+ * Max total retry window (5 attempts, exponential from 60 s) is ~30 min —
+ * well within 24 h. Do NOT increase `attempts` beyond ~8 without recalculating.
  */
 export const SCHEDULE_JOB_OPTIONS = {
   attempts: 5,
   backoff: { type: "exponential" as const, delay: 60_000 },
   removeOnComplete: { count: 1_000, age: 86_400 } as const,
-  removeOnFail: false,
+  removeOnFail: { age: 7 * 24 * 60 * 60 } as const, // 7-day TTL then prune
 } as const;

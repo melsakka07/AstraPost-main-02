@@ -137,8 +137,29 @@ interface ReplicatePrediction {
   logs?: string;
 }
 
+// ============================================================================
+// DEPRECATED — Synchronous blocking path (DO NOT USE in production)
+//
+// The functions, classes, and factory below use a synchronous polling loop
+// that blocks for up to 2 minutes waiting for a Replicate prediction to
+// complete. In serverless environments (Vercel, AWS Lambda) this hits the
+// ~60-second function timeout and silently fails.
+//
+// The active production path is:
+//   startImageGeneration()   — fire-and-forget prediction creation
+//   checkImagePrediction()   — single-poll status check (client-driven)
+//
+// These synchronous symbols are retained only to avoid breaking existing
+// unit tests. No new production code should call them.
+// ============================================================================
+
 /**
- * Poll a Replicate prediction until completion
+ * @deprecated Use `startImageGeneration()` + `checkImagePrediction()` for
+ * non-blocking operation. This synchronous path blocks for up to 2 minutes
+ * and will time out in serverless environments.
+ *
+ * Polls a Replicate prediction until it reaches a terminal state. Retries
+ * every second for up to 120 seconds before throwing "Prediction timed out".
  */
 async function pollPrediction(
   predictionId: string,
@@ -182,14 +203,16 @@ async function pollPrediction(
 }
 
 /**
- * Create and wait for a Replicate prediction
+ * @deprecated Use `startImageGeneration()` for non-blocking prediction
+ * creation. This function creates a prediction then immediately blocks
+ * in `pollPrediction()` for up to 2 minutes — it will time out in
+ * serverless environments.
  */
 async function createPrediction(
   version: string,
-  input: Record<string, any>,
+  input: Record<string, string | number | boolean | string[] | null>,
   token: string
 ): Promise<ReplicatePrediction> {
-  // Create prediction
   const createResponse = await fetch(
     `https://api.replicate.com/v1/predictions`,
     {
@@ -198,10 +221,7 @@ async function createPrediction(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        version,
-        input,
-      }),
+      body: JSON.stringify({ version, input }),
     }
   );
 
@@ -214,21 +234,25 @@ async function createPrediction(
 
   const prediction: ReplicatePrediction = await createResponse.json();
 
-  // Poll for result
+  // Poll for result — blocks for up to 2 minutes
   return pollPrediction(prediction.id, token);
 }
 
 // ============================================================================
-// Provider Implementations using Replicate API (Nano Banana Models)
+// DEPRECATED — Synchronous provider implementations
 // ============================================================================
 
 /**
+ * @deprecated Use `startImageGeneration({ model: "nano-banana-2", ... })` for
+ * non-blocking operation. This provider's `generate()` method calls
+ * `createPrediction()` which blocks for up to 2 minutes and will time out
+ * in serverless environments.
+ *
  * Nano Banana 2 Provider (fast, efficient)
  * Model: google/nano-banana-2 (Gemini 2.5 Flash Image)
  */
 class NanoBanana2Provider implements ImageGenerationProvider {
   name = "nano-banana-2" as const;
-  // Use model owner/name format for latest version
   private version = "google/nano-banana-2";
 
   async generate(params: ImageGenParams): Promise<ImageGenResult> {
@@ -249,7 +273,6 @@ class NanoBanana2Provider implements ImageGenerationProvider {
           resolution: "1K",
           output_format: "png",
           safety_filter_level: "block_only_high",
-          image_input: [],
         },
         token
       );
@@ -258,18 +281,11 @@ class NanoBanana2Provider implements ImageGenerationProvider {
         throw new Error("No image data returned from Replicate API");
       }
 
-      // Nano Banana models return a single string URL
       const imageUrl = typeof result.output === "string"
         ? result.output
         : result.output[0]!;
 
-      return {
-        imageUrl,
-        width,
-        height,
-        model: this.name,
-        prompt,
-      };
+      return { imageUrl, width, height, model: this.name, prompt };
     } catch (error) {
       throw new Error(
         `Failed to generate image with ${this.name}: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -279,13 +295,17 @@ class NanoBanana2Provider implements ImageGenerationProvider {
 }
 
 /**
+ * @deprecated Use `startImageGeneration({ model: "nano-banana-pro", ... })` for
+ * non-blocking operation. This provider's `generate()` method calls
+ * `createPrediction()` which blocks for up to 2 minutes and will time out
+ * in serverless environments.
+ *
  * Nano Banana Pro Provider (highest quality, advanced features)
  * Model: google/nano-banana-pro (Gemini 3 Pro Image)
  * Features: Text rendering, multi-image blending, Google Search integration, 4K support
  */
-class NanoBananaProProvider implements ImageGenerationProvider {
+class NanaBananaProProvider implements ImageGenerationProvider {
   name = "nano-banana-pro" as const;
-  // Use model owner/name format for latest version
   private version = "google/nano-banana-pro";
 
   async generate(params: ImageGenParams): Promise<ImageGenResult> {
@@ -303,10 +323,9 @@ class NanoBananaProProvider implements ImageGenerationProvider {
         {
           prompt,
           aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
-          resolution: "2K", // Higher resolution for Pro
+          resolution: "2K",
           output_format: "png",
           safety_filter_level: "block_only_high",
-          image_input: [],
         },
         token
       );
@@ -315,18 +334,11 @@ class NanoBananaProProvider implements ImageGenerationProvider {
         throw new Error("No image data returned from Replicate API");
       }
 
-      // Nano Banana Pro returns a single string URL
       const imageUrl = typeof result.output === "string"
         ? result.output
         : result.output[0]!;
 
-      return {
-        imageUrl,
-        width,
-        height,
-        model: this.name,
-        prompt,
-      };
+      return { imageUrl, width, height, model: this.name, prompt };
     } catch (error) {
       throw new Error(
         `Failed to generate image with ${this.name}: ${error instanceof Error ? error.message : "Unknown error"}`
@@ -336,11 +348,14 @@ class NanoBananaProProvider implements ImageGenerationProvider {
 }
 
 // ============================================================================
-// Factory and Service Functions
+// DEPRECATED — Factory and synchronous top-level API
 // ============================================================================
 
 /**
- * Provider factory - returns the appropriate provider instance
+ * @deprecated Use `startImageGeneration()` instead. This factory instantiates
+ * synchronous blocking providers that will time out in serverless environments.
+ *
+ * Provider factory — returns a provider instance for the given model.
  */
 export function createImageProvider(
   model: ImageModel
@@ -349,14 +364,18 @@ export function createImageProvider(
     case "nano-banana-2":
       return new NanoBanana2Provider();
     case "nano-banana-pro":
-      return new NanoBananaProProvider();
+      return new NanaBananaProProvider();
     default:
       throw new Error(`Unknown image model: ${model}`);
   }
 }
 
 /**
- * Generate an image using the specified model
+ * @deprecated Use `startImageGeneration()` + `checkImagePrediction()` for
+ * non-blocking operation. This function delegates to a synchronous blocking
+ * provider and will time out in serverless environments after ~60 seconds.
+ *
+ * Generate an image using the specified model (synchronous, blocking).
  */
 export async function generateImage(
   params: ImageGenParams
@@ -383,18 +402,21 @@ export async function startImageGeneration(
 
   const model = params.model ?? "nano-banana-2";
   const prompt = buildStyledPrompt(params.prompt, params.style);
-  const version =
+  const modelName =
     model === "nano-banana-pro" ? "google/nano-banana-pro" : "google/nano-banana-2";
   const resolution = model === "nano-banana-pro" ? "2K" : "1K";
 
-  const createResponse = await fetch("https://api.replicate.com/v1/predictions", {
+  // Use the model name endpoint — /v1/models/{model_owner}/{model_name}/predictions
+  // This endpoint always runs the latest deployment and does not require a version hash.
+  // We MUST NOT send the "model" or "version" parameter in the body for this endpoint.
+  const createResponse = await fetch(`https://api.replicate.com/v1/models/${modelName}/predictions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      Prefer: "wait",
     },
     body: JSON.stringify({
-      version,
       input: {
         prompt,
         aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),

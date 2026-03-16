@@ -6,9 +6,29 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
 
+/**
+ * Validates a timezone string against the IANA time zone database using the
+ * runtime's built-in `Intl.DateTimeFormat`. This is preferred over a static
+ * regex or a bundled IANA list because it delegates to the V8 ICU data that
+ * is already loaded — zero extra bundle size and always up-to-date.
+ *
+ * `Intl.DateTimeFormat` throws `RangeError: Invalid time zone specified` for
+ * any string that does not exist in the IANA database.
+ */
+function isValidIANATimezone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const profileSchema = z.object({
   name: z.string().min(2).max(50),
-  timezone: z.string(),
+  timezone: z
+    .string()
+    .refine(isValidIANATimezone, { message: "Invalid timezone" }),
   language: z.string().min(2).max(10),
 });
 

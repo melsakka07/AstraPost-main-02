@@ -293,6 +293,12 @@ export const posts = pgTable("posts", {
   index("posts_status_idx").on(table.status),
   index("posts_scheduled_at_idx").on(table.scheduledAt),
   index("posts_group_id_idx").on(table.groupId),
+  // Composite index for the analytics processor query pattern:
+  //   WHERE userId = ? AND status = 'published' AND publishedAt > ?
+  // Without this, Postgres must intersect the individual single-column indexes
+  // or do a full userId scan filtered by status/date.  With it, the planner
+  // satisfies the entire predicate from one B-tree scan ordered by publishedAt.
+  index("posts_user_status_published_idx").on(table.userId, table.status, table.publishedAt),
 ]);
 
 export const followerSnapshots = pgTable("follower_snapshots", {
@@ -491,6 +497,26 @@ export const subscriptions = pgTable("subscriptions", {
   cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+});
+
+/**
+ * Tracks processed Stripe webhook event IDs to prevent duplicate side-effects.
+ *
+ * Stripe retries webhooks on non-2xx responses (and occasionally on successful
+ * ones due to network conditions). Without deduplication, side-effects such as
+ * billing emails and notifications fire on every retry.
+ *
+ * The unique constraint on `stripeEventId` is intentionally the deduplication
+ * key — `ON CONFLICT DO NOTHING` in the webhook handler makes the insert a
+ * no-op if the event was already recorded.
+ *
+ * Retention: rows are never cleaned up in the hot path. A periodic job or
+ * manual maintenance query can prune rows older than 90 days.
+ */
+export const processedWebhookEvents = pgTable("processed_webhook_events", {
+  id: text("id").primaryKey(),
+  stripeEventId: text("stripe_event_id").notNull().unique(),
+  processedAt: timestamp("processed_at").defaultNow().notNull(),
 });
 
 export const jobRuns = pgTable("job_runs", {

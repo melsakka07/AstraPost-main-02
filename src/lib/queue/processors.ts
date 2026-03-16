@@ -120,7 +120,9 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         // DB record with fileUrl="/../../../etc/passwd" would read arbitrary
         // files from the server filesystem.
         const uploadsRoot = path.resolve(process.cwd(), "public", "uploads");
-        const filePath = path.resolve(process.cwd(), "public", fileUrl);
+        // Strip leading slash so path.resolve doesn't treat fileUrl as an
+        // absolute path (which would discard "public" on Windows).
+        const filePath = path.resolve(process.cwd(), "public", fileUrl.replace(/^\//, ""));
         const withinUploads =
           filePath === uploadsRoot ||
           filePath.startsWith(uploadsRoot + path.sep);

@@ -270,4 +270,116 @@ describe("scheduleProcessor — integration", () => {
     await expect(scheduleProcessor(makeJob() as any)).rejects.toThrow();
     expect(mockPostTweet).not.toHaveBeenCalled();
   });
+
+  // ── Permanent-failure (all retries exhausted) ────────────────────────────
+
+  it("sets post status to 'failed' (not 'scheduled') on the final retry attempt", async () => {
+    // attempts=3, attemptsMade=2 → this is attempt 3 of 3 → isFinalAttempt = true
+    mockDb.query.posts.findFirst.mockResolvedValue(makePost());
+    mockPostTweet.mockRejectedValue(new Error("X API permanently unavailable"));
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 3, attemptsMade: 2 }) as any),
+    ).rejects.toThrow();
+
+    const setValues = allSetValues();
+    const failedUpdate = setValues.find((v) => v.status === "failed");
+    expect(failedUpdate).toBeDefined();
+    // Must NOT be set back to "scheduled" on a final attempt.
+    const scheduledUpdate = setValues.find((v) => v.status === "scheduled");
+    expect(scheduledUpdate).toBeUndefined();
+  });
+
+  it("keeps post status as 'scheduled' on a non-final retry attempt", async () => {
+    // attempts=5, attemptsMade=1 → attempt 2 of 5 → isFinalAttempt = false
+    mockDb.query.posts.findFirst.mockResolvedValue(makePost());
+    mockPostTweet.mockRejectedValue(new Error("X API transient error"));
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 1 }) as any),
+    ).rejects.toThrow();
+
+    const setValues = allSetValues();
+    const scheduledUpdate = setValues.find((v) => v.status === "scheduled");
+    expect(scheduledUpdate).toBeDefined();
+    // Must NOT flip to permanently failed on a retryable attempt.
+    const failedUpdate = setValues.find((v) => v.status === "failed");
+    expect(failedUpdate).toBeUndefined();
+  });
+
+  it("inserts a jobRuns record with status 'retrying' on a non-final attempt", async () => {
+    mockDb.query.posts.findFirst.mockResolvedValue(makePost());
+    mockPostTweet.mockRejectedValue(new Error("Temporary failure"));
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 0 }) as any),
+    ).rejects.toThrow();
+
+    const insertedValues = allInsertValues();
+    const retryingRecord = insertedValues.find((v) => v.status === "retrying");
+    expect(retryingRecord).toBeDefined();
+  });
+
+  it("inserts a notification on the final failed attempt", async () => {
+    mockDb.query.posts.findFirst.mockResolvedValue(makePost());
+    mockDb.query.user.findFirst.mockResolvedValue({ email: "user@example.com" });
+    mockPostTweet.mockRejectedValue(new Error("Permanent X API error"));
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+    ).rejects.toThrow();
+
+    const insertedValues = allInsertValues();
+    const notificationRecord = insertedValues.find((v) => v.type === "post_failed");
+    expect(notificationRecord).toBeDefined();
+    expect(notificationRecord?.title).toBe("Post Publishing Failed");
+  });
+
+  it("does NOT insert a notification on a non-final retry attempt", async () => {
+    mockDb.query.posts.findFirst.mockResolvedValue(makePost());
+    mockPostTweet.mockRejectedValue(new Error("Transient failure"));
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 0 }) as any),
+    ).rejects.toThrow();
+
+    const insertedValues = allInsertValues();
+    const notificationRecord = insertedValues.find((v) => v.type === "post_failed");
+    expect(notificationRecord).toBeUndefined();
+  });
+
+  it("sets post failReason to a user-friendly hint for X 401 errors", async () => {
+    mockDb.query.posts.findFirst.mockResolvedValue(makePost());
+    const authError = Object.assign(new Error("Unauthorized"), { code: 401 });
+    mockPostTweet.mockRejectedValue(authError);
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+    ).rejects.toThrow();
+
+    const setValues = allSetValues();
+    const failedUpdate = setValues.find((v) => v.status === "failed");
+    expect(failedUpdate?.failReason).toContain("reconnect");
+  });
+
+  it("skips already-published tweets (idempotency on retry)", async () => {
+    // The second tweet already has an xTweetId — simulate a retry where the
+    // first tweet was published but the process crashed before updating the DB.
+    mockDb.query.posts.findFirst.mockResolvedValue(
+      makePost({
+        tweets: [
+          { id: "tw-1", content: "Already posted", position: 1, media: [], xTweetId: "existing-x-id" },
+          { id: "tw-2", content: "New tweet", position: 2, media: [], xTweetId: null },
+        ],
+      }),
+    );
+    mockPostTweetReply.mockResolvedValue({ data: { id: "new-x-id" } });
+
+    await scheduleProcessor(makeJob() as any);
+
+    // postTweet must NOT be called because tw-1 already has an xTweetId.
+    expect(mockPostTweet).not.toHaveBeenCalled();
+    // postTweetReply IS called for tw-2, replying to the existing x tweet.
+    expect(mockPostTweetReply).toHaveBeenCalledWith("New tweet", "existing-x-id", []);
+  });
 });

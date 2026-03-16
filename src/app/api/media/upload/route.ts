@@ -1,12 +1,11 @@
 import { headers } from "next/headers";
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
+import { upload } from "@/lib/storage";
 
 // ── Magic-bytes detection ──────────────────────────────────────────────────
 // We never trust the attacker-controlled Content-Type header (file.type) or
@@ -63,6 +62,12 @@ function detectMimeFromBuffer(buf: Buffer): DetectedFile | null {
   return null;
 }
 
+// ── Constants ──────────────────────────────────────────────────────────────
+
+/** Absolute ceiling across all types (used for cheap pre-check before buffer read). */
+const ABSOLUTE_MAX_BYTES = 50 * 1024 * 1024; // 50 MB (video ceiling)
+const IMAGE_MAX_BYTES = 15 * 1024 * 1024;     // 15 MB
+
 // ── Route handler ──────────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
@@ -87,16 +92,15 @@ export async function POST(req: Request) {
       return new Response("No file uploaded", { status: 400 });
     }
 
-    // ── Size pre-check (cheap — protects memory before reading the full buffer)
+    // ── Size pre-check (cheap — protects memory before reading the full buffer) ──
     // We use the absolute maximum across all supported types here so that we do
     // NOT trust the attacker-controlled file.type to choose the ceiling.
     // The per-type limit is enforced again below, after magic-bytes detection.
-    const ABSOLUTE_MAX_BYTES = 50 * 1024 * 1024; // 50 MB (video ceiling)
     if (file.size > ABSOLUTE_MAX_BYTES) {
       return new Response("File too large", { status: 400 });
     }
 
-    // ── Magic-bytes validation ──────────────────────────────────────────────
+    // ── Magic-bytes validation ─────────────────────────────────────────────
     // Read the full buffer, then detect the actual file type from its content.
     // The extension and MIME reported by the browser are intentionally ignored.
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -109,8 +113,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Per-type size enforcement (now uses the verified detected type) ──────
-    const IMAGE_MAX_BYTES = 15 * 1024 * 1024; // 15 MB
+    // ── Per-type size enforcement (now uses the verified detected type) ─────
     const isVideo = detected.mime.startsWith("video/");
     const typeMaxBytes = isVideo ? ABSOLUTE_MAX_BYTES : IMAGE_MAX_BYTES;
     if (file.size > typeMaxBytes) {
@@ -120,32 +123,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Build a safe filename using only the canonical extension ───────────
+    // ── Build a safe filename using only the canonical extension ──────────
     // Never use path.extname(file.name) — that trusts attacker-supplied input.
     const filename = `${randomUUID()}${detected.ext}`;
     const fileType =
       detected.ext === ".gif" ? "gif"
-      : detected.mime.startsWith("video/") ? "video"
+      : isVideo ? "video"
       : "image";
 
-    // ── Persist ────────────────────────────────────────────────────────────
-    // In production, upload to Vercel Blob (see src/lib/storage.ts).
-    // In local dev, write to public/uploads/ which is served statically.
-    const uploadsRoot = path.resolve(process.cwd(), "public", "uploads");
-    const filePath = path.resolve(uploadsRoot, filename);
-    // Defence-in-depth: filename is a UUID+safe-ext so this should never fire,
-    // but assert containment in case the UUID generator behaves unexpectedly.
-    if (!filePath.startsWith(uploadsRoot + path.sep) && filePath !== uploadsRoot) {
-      return new Response("Invalid filename", { status: 400 });
-    }
-
-    await mkdir(uploadsRoot, { recursive: true });
-    await writeFile(filePath, buffer);
-
-    const url = `/uploads/${filename}`;
+    // ── Persist to durable storage ────────────────────────────────────────
+    // upload() routes to Vercel Blob in production (BLOB_READ_WRITE_TOKEN set)
+    // and to public/uploads/media/ on local dev — both via the same abstraction.
+    // We pass ABSOLUTE_MAX_BYTES as the config ceiling so validateFile() inside
+    // upload() doesn't re-reject files that already passed our per-type checks.
+    const result = await upload(buffer, filename, "media", {
+      maxSize: ABSOLUTE_MAX_BYTES,
+    });
 
     return Response.json({
-      url,
+      url: result.url,
       filename,
       mimeType: detected.mime,
       fileType,

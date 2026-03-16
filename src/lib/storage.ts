@@ -33,6 +33,8 @@ const DEFAULT_CONFIG: Required<StorageConfig> = {
     "image/gif",
     "image/webp",
     "image/svg+xml",
+    // Video
+    "video/mp4",
     // Documents
     "application/pdf",
     "text/plain",
@@ -42,7 +44,9 @@ const DEFAULT_CONFIG: Required<StorageConfig> = {
 };
 
 /**
- * Allowed file extensions mapped from MIME types
+ * Allowed file extensions matched against the detected filename.
+ * NOTE: validateFile() uses this set directly; config.allowedTypes is for
+ * documentation / external consumers only.
  */
 const ALLOWED_EXTENSIONS = new Set([
   ".jpg",
@@ -51,6 +55,7 @@ const ALLOWED_EXTENSIONS = new Set([
   ".gif",
   ".webp",
   ".svg",
+  ".mp4",
   ".pdf",
   ".txt",
   ".csv",

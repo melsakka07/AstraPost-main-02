@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { TwitterApi } from "twitter-api-v2";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { redis } from "@/lib/rate-limiter";
 import { xAccounts } from "@/lib/schema";
 import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
 
@@ -9,11 +10,37 @@ import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
 const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB per chunk
 const MAX_POLL_ATTEMPTS = 30;
 
+/**
+ * TTL for the per-account token-refresh distributed lock (seconds).
+ * X token refresh typically completes in <3 s. 30 s is a safety net so the
+ * lock auto-expires if the worker holding it is killed mid-refresh.
+ */
+const REFRESH_LOCK_TTL_SECS = 30;
+
+/**
+ * How long a worker that lost the lock race waits before re-reading the
+ * freshly-written token from the DB.
+ */
+const REFRESH_LOCK_WAIT_MS = 1_500;
+
 type MediaCategory =
   | "tweet_image"
   | "tweet_gif"
   | "tweet_video"
   | "amplify_video";
+
+/**
+ * Minimal shape required to perform a token refresh.
+ * Both getClientForUser and getClientForAccountId produce rows that satisfy
+ * this type, so the shared refreshWithLock helper can accept either.
+ */
+type RefreshableAccount = {
+  id: string;
+  userId: string;
+  accessToken: string;
+  refreshTokenEnc: string | null;
+  tokenExpiresAt: Date | null;
+};
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -58,56 +85,138 @@ export class XApiService {
     this.client = new TwitterApi(token);
   }
 
+  /**
+   * Refresh the OAuth 2.0 access token for `account` under a per-account
+   * Redis distributed lock.
+   *
+   * ## Why a lock is necessary
+   * X's PKCE refresh tokens are **single-use**. With BullMQ concurrency > 1
+   * or multiple worker processes, two workers can simultaneously read
+   * `shouldRefresh = true` for the same account, both call the X refresh
+   * endpoint with the identical refresh token, and the provider invalidates
+   * the first worker's new access token the moment the second call succeeds.
+   * The result is a hard 401 that cannot be retried without user interaction.
+   *
+   * ## Lock strategy
+   * - **Acquired**:     Perform the refresh, persist new tokens to DB, then
+   *                     release the lock in `finally`.
+   * - **Not acquired**: Another worker is already refreshing — wait
+   *                     `REFRESH_LOCK_WAIT_MS` ms, re-read the account row
+   *                     (which now contains the freshly-written token), and
+   *                     return an `XApiService` backed by that token.
+   * - **Redis down**:   Log a warning and fall through to refresh without the
+   *                     lock. This preserves single-worker functionality during
+   *                     a Redis outage — the data hazard is the lesser evil.
+   */
+  private static async refreshWithLock(
+    account: RefreshableAccount,
+    userId: string
+  ): Promise<XApiService> {
+    const lockKey = `x:token_refresh_lock:${account.id}`;
+
+    // Attempt to acquire the lock. Returns "OK" on success, null if already held.
+    let lockResult: string | null = null;
+    let redisAvailable = true;
+    try {
+      lockResult = await redis.set(lockKey, "1", "EX", REFRESH_LOCK_TTL_SECS, "NX");
+    } catch (redisError) {
+      redisAvailable = false;
+      logger.warn("x_token_refresh_lock_redis_unavailable", {
+        xAccountId: account.id,
+        userId,
+        error: redisError instanceof Error ? redisError.message : String(redisError),
+        action: "falling_through_without_lock",
+      });
+    }
+
+    const lockAcquired = !redisAvailable || lockResult === "OK";
+
+    if (!lockAcquired) {
+      // Another worker holds the lock — wait for it to complete, then use
+      // the freshly-written token from the DB.
+      logger.info("x_token_refresh_lock_contended", {
+        xAccountId: account.id,
+        userId,
+        waitMs: REFRESH_LOCK_WAIT_MS,
+      });
+
+      await sleep(REFRESH_LOCK_WAIT_MS);
+
+      const freshAccount = await db.query.xAccounts.findFirst({
+        where: eq(xAccounts.id, account.id),
+      });
+
+      if (!freshAccount) {
+        throw new Error(`X account ${account.id} not found after waiting for refresh lock.`);
+      }
+
+      return new XApiService(decryptToken(freshAccount.accessToken));
+    }
+
+    // We hold the lock (or Redis is unavailable). Perform the refresh and
+    // release in `finally` so the lock is never left dangling on error.
+    try {
+      logger.info("x_token_refresh_start", { xAccountId: account.id, userId });
+
+      const refreshTokenValue = decryptToken(account.refreshTokenEnc!);
+      const twitterClient = new TwitterApi({
+        clientId: process.env.TWITTER_CLIENT_ID!,
+        clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+      });
+
+      const { accessToken, refreshToken, expiresIn } =
+        await twitterClient.refreshOAuth2Token(refreshTokenValue);
+      // expiresIn is optional in the twitter-api-v2 types; fall back to 2 h
+      // so tokenExpiresAt is never null/NaN after a successful refresh (which
+      // would cause every subsequent job to try to refresh again, burning the
+      // single-use refresh token and causing a 400 on the second attempt).
+      const newExpiresAt = new Date(Date.now() + (expiresIn ?? 7200) * 1000);
+
+      await db
+        .update(xAccounts)
+        .set({
+          accessToken: encryptToken(accessToken),
+          refreshTokenEnc: refreshToken
+            ? encryptToken(refreshToken)
+            : account.refreshTokenEnc,
+          tokenExpiresAt: newExpiresAt,
+        })
+        .where(eq(xAccounts.id, account.id));
+
+      logger.info("x_token_refresh_success", { xAccountId: account.id, userId });
+      return new XApiService(accessToken);
+    } catch (error) {
+      logger.warn("x_token_refresh_failed", {
+        xAccountId: account.id,
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error("X Session expired. Please reconnect your account.");
+    } finally {
+      if (redisAvailable) {
+        try {
+          await redis.del(lockKey);
+        } catch {
+          // Lock will auto-expire via TTL — safe to swallow
+        }
+      }
+    }
+  }
+
   static async getClientForUser(userId: string): Promise<XApiService | null> {
     const account = await db.query.xAccounts.findFirst({
       where: and(eq(xAccounts.userId, userId), eq(xAccounts.isActive, true)),
       orderBy: (t, { desc, asc }) => [desc(t.isDefault), asc(t.createdAt)],
     });
 
-    if (!account) {
-      return null;
-    }
+    if (!account) return null;
 
-    const expiresAt = account.tokenExpiresAt;
-    const refreshTokenValue = account.refreshTokenEnc
-      ? decryptToken(account.refreshTokenEnc)
-      : null;
     const shouldRefresh =
-      !!refreshTokenValue && (!expiresAt || expiresAt.getTime() - Date.now() < 60_000);
+      !!account.refreshTokenEnc &&
+      (!account.tokenExpiresAt || account.tokenExpiresAt.getTime() - Date.now() < 60_000);
 
     if (shouldRefresh) {
-      logger.info("x_token_refresh_start", { xAccountId: account.id, userId });
-      try {
-        const client = new TwitterApi({
-          clientId: process.env.TWITTER_CLIENT_ID!,
-          clientSecret: process.env.TWITTER_CLIENT_SECRET!,
-        });
-
-        const { accessToken, refreshToken, expiresIn } =
-          await client.refreshOAuth2Token(refreshTokenValue);
-        const newExpiresAt = new Date(Date.now() + expiresIn * 1000);
-
-        await db
-          .update(xAccounts)
-          .set({
-            accessToken: encryptToken(accessToken),
-            refreshTokenEnc: refreshToken
-              ? encryptToken(refreshToken)
-              : account.refreshTokenEnc,
-            tokenExpiresAt: newExpiresAt,
-          })
-          .where(eq(xAccounts.id, account.id));
-
-        logger.info("x_token_refresh_success", { xAccountId: account.id, userId });
-        return new XApiService(accessToken);
-      } catch (error) {
-        logger.warn("x_token_refresh_failed", {
-          xAccountId: account.id,
-          userId,
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
-        throw new Error("X Session expired. Please reconnect your account.");
-      }
+      return XApiService.refreshWithLock(account, userId);
     }
 
     return new XApiService(decryptToken(account.accessToken));
@@ -118,46 +227,14 @@ export class XApiService {
       where: eq(xAccounts.id, accountId),
     });
 
-    if (!account) {
-      return null;
-    }
+    if (!account) return null;
 
-    const expiresAt = account.tokenExpiresAt;
-    const refreshTokenValue = account.refreshTokenEnc
-      ? decryptToken(account.refreshTokenEnc)
-      : null;
     const shouldRefresh =
-      !!refreshTokenValue &&
-      (!expiresAt || expiresAt.getTime() - Date.now() < 60_000);
+      !!account.refreshTokenEnc &&
+      (!account.tokenExpiresAt || account.tokenExpiresAt.getTime() - Date.now() < 60_000);
 
     if (shouldRefresh) {
-      try {
-        const client = new TwitterApi({
-          clientId: process.env.TWITTER_CLIENT_ID!,
-          clientSecret: process.env.TWITTER_CLIENT_SECRET!,
-        });
-
-        const { accessToken, refreshToken, expiresIn } =
-          await client.refreshOAuth2Token(refreshTokenValue);
-        const newExpiresAt = new Date(Date.now() + expiresIn * 1000);
-
-        await db
-          .update(xAccounts)
-          .set({
-            accessToken: encryptToken(accessToken),
-            refreshTokenEnc: refreshToken ? encryptToken(refreshToken) : account.refreshTokenEnc,
-            tokenExpiresAt: newExpiresAt,
-          })
-          .where(eq(xAccounts.id, account.id));
-
-        return new XApiService(accessToken);
-      } catch (error) {
-        logger.warn("x_token_refresh_failed", {
-          xAccountId: account.id,
-          error: error instanceof Error ? error.message : "Unknown error",
-        });
-        throw new Error("X Session expired. Please reconnect your account.");
-      }
+      return XApiService.refreshWithLock(account, account.userId);
     }
 
     return new XApiService(decryptToken(account.accessToken));

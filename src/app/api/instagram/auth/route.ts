@@ -6,10 +6,7 @@ const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
 const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/instagram/callback`;
 
 export async function GET(req: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
@@ -18,18 +15,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "FACEBOOK_APP_ID not configured" }, { status: 500 });
   }
 
-  // Scopes needed for Instagram Graph API
-  // instagram_basic: Basic metadata
-  // instagram_content_publish: Publishing posts
-  // instagram_manage_comments: Managing comments (optional)
-  // instagram_manage_insights: Analytics
-  // pages_show_list: To list Pages
-  // pages_read_engagement: To read Page content
-  const scope = "instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement";
-  
-  const state = crypto.randomUUID(); // Should store this for CSRF protection
+  const scope =
+    "instagram_basic,instagram_content_publish,instagram_manage_insights,pages_show_list,pages_read_engagement";
 
-  const url = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${state}&scope=${scope}`;
+  // Generate a cryptographically random CSRF state token.
+  const state = crypto.randomUUID();
 
-  return NextResponse.redirect(url);
+  const authUrl =
+    `https://www.facebook.com/v19.0/dialog/oauth` +
+    `?client_id=${FACEBOOK_APP_ID}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&state=${state}` +
+    `&scope=${scope}`;
+
+  // Store state in a HttpOnly, SameSite=lax cookie so it survives the
+  // cross-origin redirect back from Facebook/Instagram without being accessible to JS.
+  const response = NextResponse.redirect(authUrl);
+  response.cookies.set("instagram_oauth_state", state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",           // Required: allows cookie on top-level cross-site GET
+    path: "/api/instagram/callback", // Scope to callback only
+    maxAge: 600,               // 10 minutes — more than enough for the OAuth round-trip
+  });
+  return response;
 }

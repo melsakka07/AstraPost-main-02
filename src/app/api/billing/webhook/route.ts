@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
-import { subscriptions, user } from "@/lib/schema";
+import { processedWebhookEvents, subscriptions, user } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 
@@ -206,13 +206,67 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const period = getSubscriptionPeriod(subscription);
-  await db.update(subscriptions).set({
-    status: toSubscriptionStatus(subscription.status),
-    currentPeriodStart: period.currentPeriodStart,
-    currentPeriodEnd: period.currentPeriodEnd,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
-    cancelledAt: unixToDate(subscription.canceled_at),
-  }).where(eq(subscriptions.stripeSubscriptionId, subscription.id));
+  const firstItem = subscription.items.data[0];
+  const newPriceId = firstItem?.price?.id ?? null;
+  const newPlan = getPlanFromPriceId(newPriceId);
+
+  if (!newPlan && newPriceId) {
+    console.warn("webhook_subscription_updated_unknown_price", {
+      stripeSubscriptionId: subscription.id,
+      newPriceId,
+      message:
+        "Price ID not matched by any configured env var — plan column will not be updated. " +
+        "Set STRIPE_PRICE_ID_MONTHLY / STRIPE_PRICE_ID_ANNUAL / " +
+        "STRIPE_PRICE_ID_AGENCY_MONTHLY / STRIPE_PRICE_ID_AGENCY_ANNUAL.",
+    });
+  }
+
+  // Fetch existing record BEFORE the update to capture the previous plan for change detection.
+  const existingRecord = await getSubscriptionRecord(subscription.id);
+
+  await db
+    .update(subscriptions)
+    .set({
+      status: toSubscriptionStatus(subscription.status),
+      currentPeriodStart: period.currentPeriodStart,
+      currentPeriodEnd: period.currentPeriodEnd,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+      cancelledAt: unixToDate(subscription.canceled_at),
+      ...(newPlan && newPriceId ? { plan: newPlan, stripePriceId: newPriceId } : {}),
+    })
+    .where(eq(subscriptions.stripeSubscriptionId, subscription.id));
+
+  // Sync user.plan only when the plan actually changed — avoids spurious user table writes.
+  if (!newPlan || !existingRecord || existingRecord.plan === newPlan) return;
+
+  await db
+    .update(user)
+    .set({ plan: newPlan, planExpiresAt: null })
+    .where(eq(user.id, existingRecord.userId));
+
+  console.warn("webhook_subscription_plan_synced", {
+    userId: existingRecord.userId,
+    oldPlan: existingRecord.plan,
+    newPlan,
+    stripeSubscriptionId: subscription.id,
+  });
+
+  const planLabel = newPlan.replace(/_/g, " ");
+  await runSideEffect(
+    () =>
+      notifyBillingEvent({
+        userId: existingRecord.userId,
+        type: "billing_plan_changed",
+        title: "Plan updated",
+        message: `Your subscription has been updated to the ${planLabel} plan.`,
+        metadata: {
+          oldPlan: existingRecord.plan,
+          newPlan,
+          stripeSubscriptionId: subscription.id,
+        },
+      }),
+    "billing_plan_changed"
+  );
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -448,6 +502,18 @@ export async function POST(req: Request) {
     return new Response("Webhook Error", { status: 400 });
   }
 
+  // ── Idempotency guard ────────────────────────────────────────────────────
+  // Stripe retries webhooks on non-2xx responses and occasionally on timeouts.
+  // We skip processing and return 200 immediately if we have already recorded
+  // this event ID — preventing duplicate billing emails and notifications.
+  const alreadyProcessed = await db.query.processedWebhookEvents.findFirst({
+    where: eq(processedWebhookEvents.stripeEventId, event.id),
+    columns: { id: true },
+  });
+  if (alreadyProcessed) {
+    return new Response(null, { status: 200 });
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -474,6 +540,15 @@ export async function POST(req: Request) {
       default:
         break;
     }
+
+    // Record the event as successfully processed.
+    // This insert is intentionally placed AFTER the switch so that any
+    // processing failure (thrown exception) leaves the event unrecorded,
+    // allowing Stripe's retry to re-attempt it.
+    await db.insert(processedWebhookEvents).values({
+      id: crypto.randomUUID(),
+      stripeEventId: event.id,
+    });
   } catch (error) {
     console.error("Stripe webhook processing failed", {
       eventType: event.type,

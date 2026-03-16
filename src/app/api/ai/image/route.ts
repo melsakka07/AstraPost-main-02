@@ -10,6 +10,7 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
+import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
@@ -40,27 +41,35 @@ const ImageGenRequestSchema = z.object({
 // ============================================================================
 
 /**
- * Generate an image prompt from tweet content using AI
+ * Generate an image prompt from tweet content using AI.
+ *
+ * User-supplied content is sanitized with `sanitizeForPrompt` before being
+ * embedded in the LLM call. The `---` delimiters bound the user block so that
+ * instruction-injection attempts cannot bleed into the surrounding prompt.
  */
 async function generateImagePromptFromTweet(
   tweetContent: string
 ): Promise<string> {
+  // Sanitize: strip non-printable controls, normalize line endings, collapse
+  // excessive blank lines, and cap at 500 chars (the schema allows up to 5000
+  // but we don't need more than that for prompt generation).
+  const sanitized = sanitizeForPrompt(tweetContent, 500);
+
   try {
     const { text } = await generateText({
       model: openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o"),
       system: `You are an expert at creating vivid, specific image prompts for social media content.
-Generate a visual prompt that captures the essence of the tweet.
+Generate a visual prompt that captures the essence of the post.
 Keep the prompt under 200 words. Focus on visual elements, composition, mood, and style.
 Do not include text overlays in the image unless specifically requested.
-Return ONLY the prompt, no explanation or additional text.`,
-      prompt: `Generate an image prompt for this social media post:\n\n${tweetContent}`,
+Return ONLY the image prompt, no explanation or additional text.`,
+      prompt: `Generate an image prompt for the following social media post (respond with only the image prompt, nothing else):\n\n---\n${sanitized}\n---`,
     });
 
     return text.trim();
   } catch (error) {
     console.error("Failed to generate image prompt:", error);
-    // Fallback to a basic prompt based on tweet content
-    return `Visual representation of: ${tweetContent.slice(0, 100)}`;
+    return `Visual representation of: ${sanitized.slice(0, 100)}`;
   }
 }
 
@@ -161,8 +170,22 @@ export async function POST(req: NextRequest) {
     let finalPrompt = prompt;
 
     if (!finalPrompt && tweetContent) {
-      // Auto-generate prompt from tweet content
+      // Auto-generate prompt from tweet content via OpenRouter (GPT-4o).
+      // Record this LLM call in aiGenerations so it appears in the usage ledger
+      // alongside the image generation it precedes — operators can see the true
+      // AI cost per image request, and quota dashboards reflect both operations.
       finalPrompt = await generateImagePromptFromTweet(tweetContent);
+
+      // Fire-and-forget DB record; errors here must not block the image flow.
+      db.insert(aiGenerations).values({
+        id: crypto.randomUUID(),
+        userId,
+        type: "image_prompt",
+        inputPrompt: tweetContent.slice(0, 2000),
+        tokensUsed: 0, // OpenRouter streaming does not expose token counts here
+      }).catch((err: unknown) => {
+        console.error("Failed to record image_prompt ai generation", err);
+      });
     }
 
     if (!finalPrompt) {

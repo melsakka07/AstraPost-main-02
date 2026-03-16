@@ -1,0 +1,1 @@
+CREATE INDEX "posts_user_status_published_idx" ON "posts" USING btree ("user_id","status","published_at");

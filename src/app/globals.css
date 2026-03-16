@@ -122,6 +122,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Arabic typography — activates only when lang="ar" is set on <html>.
+     Cairo is loaded via Next.js font optimisation (layout.tsx) and exposed
+     as the --font-arabic CSS custom property. The Latin fallback chain
+     ensures readable text if the font fails to load. */
+  :lang(ar) {
+    font-family: var(--font-arabic), system-ui, sans-serif;
+  }
 }
 
 /* ─── Dashboard shell override ───────────────────────────────────

@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cairo, Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -17,6 +17,19 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+/**
+ * Cairo — Arabic + Latin typeface loaded via Next.js font optimization.
+ * Applied via :lang(ar) in globals.css so it activates only when the
+ * document language is Arabic, leaving the Geist stack unchanged for all
+ * other locales. Weights 400–700 cover body copy, UI labels, and headings.
+ */
+const cairo = Cairo({
+  variable: "--font-arabic",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -105,7 +118,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen overflow-x-hidden antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} min-h-screen overflow-x-hidden antialiased`}
       >
         <ThemeProvider
           attribute="class"
