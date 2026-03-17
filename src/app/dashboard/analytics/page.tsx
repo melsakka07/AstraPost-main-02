@@ -1,4 +1,3 @@
-import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -6,6 +5,7 @@ import { and, asc, desc, eq, gte, isNotNull } from "drizzle-orm";
 import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick, PlusCircle, ListOrdered, MoreHorizontal } from "lucide-react";
 import { AccountSelector } from "@/components/analytics/account-selector";
 import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
+import { FollowerChart, ImpressionsChart } from "@/components/analytics/charts-client";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { ExportButton } from "@/components/analytics/export-button";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
@@ -16,22 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyticsRefreshRuns, followerSnapshots, posts, tweetAnalytics, tweetAnalyticsSnapshots, tweets, user, xAccounts } from "@/lib/schema";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
-
-const FollowerChart = dynamic(
-  () => import("@/components/analytics/follower-chart").then((m) => m.FollowerChart),
-  { ssr: false, loading: () => <Skeleton className="h-[250px] w-full" /> }
-);
-
-const ImpressionsChart = dynamic(
-  () => import("@/components/analytics/impressions-chart").then((m) => m.ImpressionsChart),
-  { ssr: false, loading: () => <Skeleton className="h-[200px] w-full" /> }
-);
 
 export default async function AnalyticsPage({
   searchParams,

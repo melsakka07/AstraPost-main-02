@@ -24,8 +24,8 @@ export function ImpressionsChart({ data, className }: ImpressionsChartProps) {
         <CardTitle>Impressions</CardTitle>
       </CardHeader>
       <CardContent className="pl-2">
-        <div className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="w-full">
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart
               data={data}
               margin={{

@@ -1,4 +1,3 @@
-import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -6,17 +5,12 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { and, asc, eq, gte, lte, isNotNull } from "drizzle-orm";
 import { CalendarDays, PlusCircle } from "lucide-react";
 import { BulkImportDialog } from "@/components/calendar/bulk-import-dialog";
+import { CalendarViewClient } from "@/components/calendar/calendar-view-client";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { posts, xAccounts } from "@/lib/schema";
-
-const CalendarView = dynamic(
-  () => import("@/components/calendar/calendar-view").then((m) => m.CalendarView),
-  { ssr: false, loading: () => <Skeleton className="h-[600px] w-full rounded-lg" /> }
-);
 
 export default async function CalendarPage({
   searchParams,
@@ -88,7 +82,7 @@ export default async function CalendarPage({
       }
     >
       <div className="rounded-lg border bg-background p-4 shadow-sm overflow-hidden -mx-1">
-        <CalendarView posts={scheduledPosts} currentDate={currentDate} initialView={initialView} />
+        <CalendarViewClient posts={scheduledPosts} currentDate={currentDate} initialView={initialView} />
       </div>
     </DashboardPageWrapper>
   );
