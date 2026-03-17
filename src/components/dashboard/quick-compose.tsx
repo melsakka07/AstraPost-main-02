@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 
-const MAX_LENGTH = 280;
+const MAX_LENGTH = 1000;
 
 export function QuickCompose() {
   const [content, setContent] = useState("");
@@ -59,7 +59,7 @@ export function QuickCompose() {
             disabled={!hasContent}
           >
             Continue in Editor
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
           </Button>
         </div>
       </CardContent>

@@ -43,7 +43,7 @@ export function CalendarPostItem({ post, isOverlay }: CalendarPostItemProps) {
         "bg-card border-l-4 border-l-primary/50"
       )}
     >
-      <CardContent className="p-2 space-y-1">
+      <CardContent className="p-2 space-y-1 min-h-[44px] flex flex-col justify-center">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <Badge variant="outline" className="text-[10px] px-1 h-5">
             {type}

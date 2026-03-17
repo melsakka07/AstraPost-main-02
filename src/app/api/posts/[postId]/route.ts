@@ -189,8 +189,9 @@ export async function PATCH(
                  await db.insert(media).values({
                      id: crypto.randomUUID(),
                      postId: postId,
+                     userId: existingPost.userId,
                      tweetId: tweetId,
-                     fileUrl: m.url, 
+                     fileUrl: m.url,
                      fileType: m.fileType,
                      fileSize: m.size,
                  });

@@ -1,7 +1,7 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Copy, Calendar, ExternalLink, Loader2, Package, RefreshCw } from "lucide-react";
@@ -84,7 +84,10 @@ export function RecentAffiliateLinks() {
           <CardTitle>Recent Generations</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div role="status" aria-label="Loading recent generations">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+            <span className="sr-only">Loading recent generations...</span>
+          </div>
         </CardContent>
       </Card>
     );
@@ -129,10 +132,13 @@ export function RecentAffiliateLinks() {
                   <TableCell className="font-medium max-w-[200px]">
                     <div className="flex items-center gap-3">
                       {link.productImageUrl && (
-                        <img 
-                          src={link.productImageUrl} 
-                          alt="Product" 
-                          className="h-10 w-10 rounded object-cover border"
+                        <Image
+                          src={link.productImageUrl}
+                          alt="Product thumbnail"
+                          width={40}
+                          height={40}
+                          className="rounded object-cover border"
+                          unoptimized
                         />
                       )}
                       <div className="truncate">

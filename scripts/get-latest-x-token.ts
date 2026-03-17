@@ -34,7 +34,7 @@ async function main() {
 
     const refreshToken = acc.refreshTokenEnc
       ? decryptToken(acc.refreshTokenEnc)
-      : acc.refreshToken || "";
+      : "";
 
     console.log("\n=== Add these to your .env ===");
     console.log("TWITTER_TEST_ACCESS_TOKEN=" + accessToken);

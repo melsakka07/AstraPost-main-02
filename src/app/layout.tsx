@@ -30,6 +30,7 @@ const cairo = Cairo({
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
+  preload: true,
 });
 
 export const viewport: Viewport = {
@@ -40,6 +41,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   // maximumScale removed — WCAG 1.4.4 requires text to be resizable up to 200%
+  // colorScheme: tells the browser which themes the page supports so native UI
+  // elements (scrollbars, form controls, mobile status bar) match the active theme
+  // and prevents a white background flash before ThemeProvider hydrates.
+  colorScheme: "light dark",
 };
 
 export const metadata: Metadata = {
@@ -118,8 +123,25 @@ export default async function RootLayout({
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} min-h-screen overflow-x-hidden antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} min-h-dvh overflow-x-hidden antialiased`}
       >
+        {/*
+          Skip-to-main-content link — WCAG 2.4.1 "Bypass Blocks" (Level A).
+          Visually hidden until focused via keyboard; jumps straight to the
+          <main id="main-content"> element in the dashboard/page layouts.
+          - start-4 uses CSS logical property so it appears on the correct
+            side in both LTR (left) and RTL (right) layouts.
+          - Text is translated for Arabic sessions so screen-reader users
+            hear the announcement in their own language.
+          - Colors use design-system tokens so it works in dark mode
+            without any JavaScript or hydration dependency.
+        */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          {dir === "rtl" ? "تخطى إلى المحتوى الرئيسي" : "Skip to main content"}
+        </a>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

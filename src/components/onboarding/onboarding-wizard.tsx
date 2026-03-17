@@ -34,7 +34,7 @@ export function OnboardingWizard() {
   // Twitter-weighted character count — matches the main composer (tweet-card.tsx).
   // URLs count as 23 chars; emoji and CJK characters have different weights.
   const tweetWeightedLength = twitter.parseTweet(tweetContent).weightedLength;
-  const isTweetOverLimit = tweetWeightedLength > 280;
+  const isTweetOverLimit = tweetWeightedLength > 1000;
 
   useEffect(() => {
     const stepParam = searchParams.get("step");
@@ -79,7 +79,7 @@ export function OnboardingWizard() {
           return;
         }
         if (isTweetOverLimit) {
-          toast.error(`Tweet is too long (${tweetWeightedLength}/280 characters)`);
+          toast.error(`Tweet is too long (${tweetWeightedLength}/1000 characters)`);
           setLoading(false);
           return;
         }
@@ -135,25 +135,46 @@ export function OnboardingWizard() {
   };
 
   const handleConnectX = async () => {
-     await signIn.social({
+    setLoading(true);
+    try {
+      await signIn.social({
         provider: "twitter",
-        callbackURL: "/dashboard/onboarding?step=2" 
-     });
+        callbackURL: "/dashboard/onboarding?step=2",
+      });
+      // signIn.social() redirects the page; loading stays true during navigation
+    } catch {
+      toast.error("Failed to connect X account");
+      setLoading(false);
+    }
   };
 
   if (checkingAccounts) {
-      return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+      return (
+        <div role="status" aria-label="Loading onboarding" className="flex justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
+          <span className="sr-only">Loading...</span>
+        </div>
+      );
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
+    <div className="max-w-3xl mx-auto py-6 md:py-12 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-center mb-2">Welcome to AstraPost! 🚀</h1>
         <p className="text-muted-foreground text-center">Let's get you set up in just a few steps.</p>
       </div>
 
-      {/* Progress Steps */}
-      <div className="flex justify-between items-center mb-12 relative">
+      {/* Mobile compact stepper — single-line indicator to avoid label collisions */}
+      <div className="flex md:hidden items-center gap-2 mb-6 text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">
+          Step {currentStep} of {steps.length}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>{steps[currentStep - 1]!.title}</span>
+      </div>
+
+      {/* Desktop progress stepper — full horizontal, hidden on mobile */}
+      <div className="hidden md:flex justify-between items-center mb-12 relative">
         <div className="absolute left-0 top-1/2 w-full h-1 bg-muted -z-10" />
         {steps.map((step) => {
           const isCompleted = step.id < currentStep;
@@ -182,13 +203,13 @@ export function OnboardingWizard() {
       </div>
 
       {/* Step Content */}
-      <Card className="min-h-[400px] flex flex-col shadow-lg border-2">
+      <Card className="min-h-[300px] md:min-h-[400px] flex flex-col shadow-lg border-2">
         <CardHeader className="text-center border-b bg-muted/20">
           <CardTitle className="text-2xl">{steps[currentStep - 1]!.title}</CardTitle>
           <CardDescription>{steps[currentStep - 1]!.description}</CardDescription>
         </CardHeader>
         
-        <CardContent className="flex-1 flex flex-col items-center justify-center p-8 space-y-6">
+        <CardContent className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 space-y-6">
           {currentStep === 1 && (
             <div className="text-center space-y-6 max-w-sm">
               {accounts.length > 0 ? (
@@ -200,9 +221,13 @@ export function OnboardingWizard() {
               ) : (
                   <>
                     <p className="text-muted-foreground">Connect your X account to enable scheduling and analytics. We need 'write' permissions to post for you.</p>
-                    <Button onClick={handleConnectX} size="lg" className="bg-black hover:bg-black/90 text-white w-full">
-                        <Twitter className="mr-2 h-5 w-5 fill-white" />
-                        Connect X Account
+                    <Button onClick={handleConnectX} size="lg" disabled={loading} className="bg-black hover:bg-black/90 text-white w-full min-h-[44px]">
+                        {loading ? (
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : (
+                          <Twitter className="mr-2 h-5 w-5 fill-white" />
+                        )}
+                        {loading ? "Connecting..." : "Connect X Account"}
                     </Button>
                   </>
               )}
@@ -222,7 +247,7 @@ export function OnboardingWizard() {
                   "text-xs text-right font-medium",
                   isTweetOverLimit ? "text-destructive" : "text-muted-foreground"
                 )}>
-                  {tweetWeightedLength}/280
+                  {tweetWeightedLength}/1000
                 </p>
             </div>
           )}
@@ -269,14 +294,15 @@ export function OnboardingWizard() {
         </CardContent>
         
         <CardFooter className="flex justify-between border-t p-6 bg-muted/10">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
             disabled={currentStep === 1 || loading}
+            className="min-h-[44px]"
           >
             Back
           </Button>
-          <Button onClick={handleNext} disabled={loading} size="lg">
+          <Button onClick={handleNext} disabled={loading} size="lg" className="min-h-[44px]">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {currentStep === steps.length ? "Go to Dashboard" : "Next Step"}
           </Button>

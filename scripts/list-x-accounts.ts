@@ -22,7 +22,7 @@ async function main() {
       console.log("  Created At:", acc.createdAt);
       console.log("  Token Expires At:", acc.tokenExpiresAt);
       console.log("  Has Access Token:", !!acc.accessToken);
-      console.log("  Has Refresh Token:", !!(acc.refreshTokenEnc || acc.refreshToken));
+      console.log("  Has Refresh Token:", !!acc.refreshTokenEnc);
     });
   }
 

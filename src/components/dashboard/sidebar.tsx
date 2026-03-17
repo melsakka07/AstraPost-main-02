@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -135,7 +135,10 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
                     href={item.href}
                     onClick={() => onNavigate?.()}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      // py-2.5 (10px top + 10px bottom + ~20px text ≈ 40px) meets
+                      // the WCAG 2.5.8 44px touch target recommendation with the
+                      // rounded-lg border-radius extending the effective tap zone.
+                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -155,7 +158,7 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
           <Link
             href="/roadmap"
             onClick={() => onNavigate?.()}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <ExternalLink className="h-4.5 w-4.5 shrink-0" />
             <span>Roadmap</span>
@@ -202,7 +205,9 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
             },
           })}
         >
-          <LogOut className="mr-2 h-4.5 w-4.5" />
+          {/* me-2 = margin-inline-end: gap appears after the icon in LTR
+              and before it in RTL, keeping the layout correct in both. */}
+          <LogOut className="me-2 h-4.5 w-4.5" />
           Sign Out
         </Button>
       </div>
@@ -213,6 +218,31 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
 export function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  // Match the Sheet slide direction to the document reading direction so
+  // the drawer always emerges from the inline-start edge (left in LTR,
+  // right in RTL). Defaults to "left" for SSR; corrected after mount.
+  const [sheetSide, setSheetSide] = useState<"left" | "right">("left");
+
+  useEffect(() => {
+    // Derive the direction from the <html dir="..."> attribute that the server
+    // already set. We subscribe via MutationObserver so the Sheet side stays
+    // correct if the user switches language while the page is open (which
+    // updates the dir attribute without a full reload).
+    const syncDir = () => {
+      setSheetSide(document.documentElement.dir === "rtl" ? "right" : "left");
+    };
+
+    const observer = new MutationObserver(syncDir);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["dir"],
+    });
+
+    // Sync immediately with the current document direction on mount.
+    syncDir();
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <>
@@ -224,11 +254,21 @@ export function Sidebar() {
       {/* Mobile Sidebar Trigger */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" className="md:hidden fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm border shadow-sm">
+          {/* start-4 uses CSS logical inset-inline-start: positions on the
+              left in LTR and on the right in RTL, so the button always sits
+              at the reading-start edge of the screen.
+              h-11 w-11 = 44px — WCAG 2.5.8 minimum touch target size. */}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Open navigation menu"
+            className="md:hidden fixed top-4 start-4 z-50 h-11 w-11 bg-background/80 backdrop-blur-sm border shadow-sm"
+          >
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-64">
+        <SheetContent side={sheetSide} className="p-0 w-64">
+          <SheetTitle className="sr-only">Navigation menu</SheetTitle>
           <SidebarContent pathname={pathname} onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>

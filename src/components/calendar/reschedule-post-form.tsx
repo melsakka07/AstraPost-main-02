@@ -21,6 +21,7 @@ export function ReschedulePostForm({
     <div className="flex flex-col gap-2">
       <Input
         type="datetime-local"
+        autoFocus
         value={scheduledAt}
         onChange={(e) => setScheduledAt(e.target.value)}
       />

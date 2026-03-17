@@ -50,7 +50,12 @@ export async function sendEmail(input: SendEmailInput) {
       subject: input.subject,
       text: input.text || '', 
       ...(html ? { html } : {}),
-      ...(input.metadata ? { tags: Object.entries(input.metadata).map(([name, value]) => ({ name, value: String(value) })) } : {}),
+      ...(input.metadata ? {
+        tags: Object.entries(input.metadata).map(([name, value]) => ({
+          name: name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 256),
+          value: String(value).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 256),
+        })),
+      } : {}),
     });
 
     if (error) {

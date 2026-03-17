@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import {
@@ -16,8 +16,8 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
 
   const recentTweets = await db.query.tweets.findMany({
     where: and(
-      sql<boolean>`${tweets.xTweetId} IS NOT NULL`,
-      sql<boolean>`${tweets.createdAt} >= ${since}`
+      isNotNull(tweets.xTweetId),
+      gte(tweets.createdAt, since)
     ),
     with: {
       post: {

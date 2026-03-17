@@ -94,7 +94,7 @@ export function InspirationPanel({ onSelect, language }: InspirationPanelProps) 
               >
                 <div className="flex justify-between items-start">
                   <h4 className="font-semibold text-sm mb-1">{t.topic}</h4>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity rtl:scale-x-[-1]" />
                 </div>
                 <p className="text-xs text-muted-foreground italic">"{t.hook}"</p>
               </div>

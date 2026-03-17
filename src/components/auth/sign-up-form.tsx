@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,6 +18,8 @@ export function SignUpForm() {
   const [referralCode, setReferralCode] = useState("")
   const [error, setError] = useState("")
   const [isPending, setIsPending] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,6 +100,7 @@ export function SignUpForm() {
         <Input
           id="name"
           type="text"
+          autoComplete="name"
           placeholder="Your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -109,6 +113,8 @@ export function SignUpForm() {
         <Input
           id="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -118,27 +124,59 @@ export function SignUpForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="Create a password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isPending}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            placeholder="Create a password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isPending}
+            className="pe-10"
+            aria-describedby={error ? "signup-error" : undefined}
+            aria-invalid={error === "Password must be at least 8 characters" || error === "Passwords do not match" ? true : undefined}
+          />
+          <button
+            type="button"
+            className="absolute inset-y-0 end-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword
+              ? <EyeOff className="h-4 w-4" aria-hidden="true" />
+              : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="confirmPassword">Confirm Password</Label>
-        <Input
-          id="confirmPassword"
-          type="password"
-          placeholder="Confirm your password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          disabled={isPending}
-        />
+        <div className="relative">
+          <Input
+            id="confirmPassword"
+            type={showConfirmPassword ? "text" : "password"}
+            autoComplete="new-password"
+            placeholder="Confirm your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            disabled={isPending}
+            className="pe-10"
+            aria-describedby={error ? "signup-error" : undefined}
+            aria-invalid={error === "Passwords do not match" ? true : undefined}
+          />
+          <button
+            type="button"
+            className="absolute inset-y-0 end-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+            onClick={() => setShowConfirmPassword((v) => !v)}
+            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+          >
+            {showConfirmPassword
+              ? <EyeOff className="h-4 w-4" aria-hidden="true" />
+              : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        </div>
       </div>
       <div className="space-y-2">
         <Label htmlFor="referralCode">Referral Code (Optional)</Label>
@@ -152,7 +190,7 @@ export function SignUpForm() {
         />
       </div>
       {error && (
-        <p role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
+        <p id="signup-error" role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
       )}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Creating account..." : "Create account"}

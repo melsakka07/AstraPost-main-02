@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Loader2, ShieldCheck, ShieldAlert, Copy } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -151,12 +152,15 @@ export function SecuritySettings() {
                 </div>
                 {is2FAEnabled ? (
                     <div className="flex items-center gap-2">
-                         <Input 
-                            type="password" 
-                            placeholder="Confirm Password" 
-                            value={password} 
+                         <Label htmlFor="disable-2fa-password" className="sr-only">Confirm password to disable 2FA</Label>
+                     <Input
+                            id="disable-2fa-password"
+                            type="password"
+                            placeholder="Confirm Password"
+                            value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             className="w-40"
+                            autoComplete="current-password"
                          />
                          <Button variant="destructive" onClick={handleDisable} disabled={loading || !password}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -180,32 +184,34 @@ export function SecuritySettings() {
                 </p>
                 
                 <div className="flex flex-col items-center justify-center p-4 bg-white rounded-lg w-fit mx-auto">
-                    {/* Fallback QR display */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(uri)}`} 
-                        alt="QR Code" 
-                        className="h-40 w-40"
+                    <Image
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(uri)}`}
+                        alt="QR Code for two-factor authentication setup"
+                        width={160}
+                        height={160}
                     />
                 </div>
                 
                 <div className="flex items-center gap-2 justify-center">
                     <code className="bg-muted px-2 py-1 rounded text-sm">{secret}</code>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => {
+                    <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Copy secret key" onClick={() => {
                         navigator.clipboard.writeText(secret)
                         toast.success("Secret copied")
                     }}>
-                        <Copy className="h-4 w-4" />
+                        <Copy className="h-4 w-4" aria-hidden="true" />
                     </Button>
                 </div>
 
                 <div className="space-y-2 max-w-sm mx-auto">
-                    <Label>Verification Code</Label>
+                    <Label htmlFor="totp-code">Verification Code</Label>
                     <div className="flex gap-2">
-                        <Input 
-                            value={code} 
-                            onChange={(e) => setCode(e.target.value)} 
-                            placeholder="123456" 
+                        <Input
+                            id="totp-code"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            value={code}
+                            onChange={(e) => setCode(e.target.value)}
+                            placeholder="123456"
                             maxLength={6}
                         />
                         <Button onClick={handleVerify} disabled={loading || code.length < 6}>

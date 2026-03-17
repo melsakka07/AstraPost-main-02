@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAccountLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { account, xAccounts } from "@/lib/schema";
-import { encryptToken } from "@/lib/security/token-encryption";
+import { decryptToken, encryptToken, isEncryptedToken } from "@/lib/security/token-encryption";
 import { XApiService } from "@/lib/services/x-api";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -30,7 +30,10 @@ export async function POST() {
 
     let profile: { username?: string; name?: string; profile_image_url?: string } = {};
     try {
-      const svc = new XApiService(la.accessToken);
+      // Better Auth encrypts tokens via databaseHooks before persisting them.
+      // We must decrypt before passing to XApiService which expects a raw Bearer token.
+      const rawToken = isEncryptedToken(la.accessToken) ? decryptToken(la.accessToken) : la.accessToken;
+      const svc = new XApiService(rawToken);
       const me = await svc.getUser();
       profile = {
         username: (me as any)?.data?.username,
@@ -50,6 +53,13 @@ export async function POST() {
         return createPlanLimitResponse(accountLimit);
       }
 
+      // Better Auth already encrypts tokens via databaseHooks. Store them as-is
+      // to avoid double-encryption. For legacy plaintext tokens, encrypt once.
+      const encAccessToken = isEncryptedToken(la.accessToken) ? la.accessToken : encryptToken(la.accessToken);
+      const encRefreshToken = la.refreshToken
+        ? (isEncryptedToken(la.refreshToken) ? la.refreshToken : encryptToken(la.refreshToken))
+        : null;
+
       await db.insert(xAccounts).values({
         id: crypto.randomUUID(),
         userId: session.user.id,
@@ -57,22 +67,25 @@ export async function POST() {
         xUsername: profile.username || session.user.name || "twitter_user",
         xDisplayName: profile.name || session.user.name || "Twitter User",
         xAvatarUrl: profile.profile_image_url || session.user.image,
-          accessToken: encryptToken(la.accessToken),
-        refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : null,
-        refreshToken: null,
+        accessToken: encAccessToken,
+        refreshTokenEnc: encRefreshToken,
         tokenExpiresAt: la.accessTokenExpiresAt,
         isActive: true,
       });
     } else {
+      const encAccessToken = isEncryptedToken(la.accessToken) ? la.accessToken : encryptToken(la.accessToken);
+      const encRefreshToken = la.refreshToken
+        ? (isEncryptedToken(la.refreshToken) ? la.refreshToken : encryptToken(la.refreshToken))
+        : null;
+
       await db
         .update(xAccounts)
         .set({
           xUsername: profile.username || existing.xUsername,
           xDisplayName: profile.name || existing.xDisplayName,
           xAvatarUrl: profile.profile_image_url || existing.xAvatarUrl,
-            accessToken: encryptToken(la.accessToken),
-          refreshTokenEnc: la.refreshToken ? encryptToken(la.refreshToken) : existing.refreshTokenEnc,
-          refreshToken: null,
+          accessToken: encAccessToken,
+          refreshTokenEnc: encRefreshToken ?? existing.refreshTokenEnc,
           tokenExpiresAt: la.accessTokenExpiresAt,
           isActive: true,
         })

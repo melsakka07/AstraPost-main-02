@@ -108,7 +108,7 @@ export default async function SettingsPage({
                   {billingNotice.text}
                 </div>
               )}
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+              <div className="flex flex-col gap-3 rounded-lg bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground mb-1">Current Plan</div>
                   <div className="flex items-center gap-2">
@@ -121,11 +121,11 @@ export default async function SettingsPage({
                   {hasStripeCustomerId ? (
                     <ManageSubscriptionButton />
                   ) : isPaidPlan ? (
-                    <Button variant="outline" asChild>
+                    <Button variant="outline" className="w-full sm:w-auto" asChild>
                       <Link href="/pricing?billing=restore">Restore Billing</Link>
                     </Button>
                   ) : (
-                    <Button asChild>
+                    <Button className="w-full sm:w-auto" asChild>
                       <Link href="/pricing">Upgrade Plan</Link>
                     </Button>
                   )}
@@ -152,11 +152,11 @@ export default async function SettingsPage({
               <CardDescription>Invite team members and manage access roles</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30">
+              <div className="flex flex-col gap-3 rounded-lg bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-muted-foreground">
                   Collaborate with your team by inviting members to your workspace.
                 </div>
-                <Button variant="outline" asChild>
+                <Button variant="outline" className="w-full sm:w-auto" asChild>
                   <Link href="/dashboard/settings/team">Manage Team</Link>
                 </Button>
               </div>

@@ -257,7 +257,7 @@ export function AdaptationPanel({
                       </div>
                       <p className="text-sm whitespace-pre-wrap">{tweet}</p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {tweet.length} / 280 characters
+                        {tweet.length} / 1000 characters
                       </p>
                     </div>
                   ))}

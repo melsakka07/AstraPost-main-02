@@ -1,13 +1,13 @@
+import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq, gte, isNotNull } from "drizzle-orm";
 import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick, PlusCircle, ListOrdered, MoreHorizontal } from "lucide-react";
+import { AccountSelector } from "@/components/analytics/account-selector";
 import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { ExportButton } from "@/components/analytics/export-button";
-import { FollowerChart } from "@/components/analytics/follower-chart";
-import { ImpressionsChart } from "@/components/analytics/impressions-chart";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
 import { TopTweetsList } from "@/components/analytics/top-tweets-list";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -16,11 +16,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { analyticsRefreshRuns, followerSnapshots, posts, tweetAnalytics, tweetAnalyticsSnapshots, tweets, user, xAccounts } from "@/lib/schema";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
+
+const FollowerChart = dynamic(
+  () => import("@/components/analytics/follower-chart").then((m) => m.FollowerChart),
+  { ssr: false, loading: () => <Skeleton className="h-[250px] w-full" /> }
+);
+
+const ImpressionsChart = dynamic(
+  () => import("@/components/analytics/impressions-chart").then((m) => m.ImpressionsChart),
+  { ssr: false, loading: () => <Skeleton className="h-[200px] w-full" /> }
+);
 
 export default async function AnalyticsPage({
   searchParams,
@@ -257,34 +268,12 @@ export default async function AnalyticsPage({
           {selectedAccountId ? <ManualRefreshButton xAccountId={selectedAccountId} /> : null}
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="overflow-x-auto pb-1">
-            <div className="flex min-w-max items-center gap-2">
-            {accounts.length === 0 ? (
-              <div className="text-sm text-muted-foreground">Connect an X account to enable follower tracking.</div>
-            ) : (
-              accounts.map((a) => {
-                const active = a.id === selectedAccountId;
-                const params = new URLSearchParams({ accountId: a.id });
-                if (isCompact) params.set("density", "compact");
-                if (range) params.set("range", range);
-                return (
-                  <Link
-                    key={a.id}
-                    href={`/dashboard/analytics?${params.toString()}`}
-                    className={
-                      "rounded-md border px-3 py-1.5 text-sm transition-colors " +
-                      (active
-                        ? "bg-primary/10 text-primary border-primary/30"
-                        : "text-muted-foreground hover:bg-muted")
-                    }
-                  >
-                    @{a.xUsername}
-                  </Link>
-                );
-              })
-            )}
-            </div>
-          </div>
+          <AccountSelector
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            isCompact={isCompact}
+            range={effectiveRange}
+          />
 
           <div className={`grid md:grid-cols-3 ${isCompact ? "gap-3" : "gap-4"}`}>
             <Card>
@@ -292,7 +281,7 @@ export default async function AnalyticsPage({
                 <CardTitle className="text-sm font-medium">Current followers</CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-                <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>{latestFollowers?.toLocaleString() || "—"}</div>
+                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{latestFollowers?.toLocaleString() || "—"}</div>
               </CardContent>
             </Card>
             <Card>
@@ -300,7 +289,7 @@ export default async function AnalyticsPage({
                 <CardTitle className="text-sm font-medium">Growth ({effectiveRange})</CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-                <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>
+                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
                   {followerGrowth > 0 ? "+" : ""}{followerGrowth.toLocaleString()}
                 </div>
               </CardContent>
@@ -310,7 +299,7 @@ export default async function AnalyticsPage({
                 <CardTitle className="text-sm font-medium">Start of Period</CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-                <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>
+                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
                   {followersStart.toLocaleString()}
                 </div>
               </CardContent>
@@ -387,7 +376,7 @@ export default async function AnalyticsPage({
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>{totals.impressions.toLocaleString()}</div>
+            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.impressions.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -396,7 +385,7 @@ export default async function AnalyticsPage({
             <Heart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>{totals.likes.toLocaleString()}</div>
+            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.likes.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -405,7 +394,7 @@ export default async function AnalyticsPage({
             <Repeat2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>{totals.retweets.toLocaleString()}</div>
+            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.retweets.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -414,7 +403,7 @@ export default async function AnalyticsPage({
             <MessageCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>{totals.replies.toLocaleString()}</div>
+            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.replies.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
@@ -423,7 +412,7 @@ export default async function AnalyticsPage({
             <MousePointerClick className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-2xl"} font-bold`}>{totals.clicks.toLocaleString()}</div>
+            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.clicks.toLocaleString()}</div>
           </CardContent>
         </Card>
       </div>
@@ -443,14 +432,14 @@ export default async function AnalyticsPage({
 
       <div className="grid lg:grid-cols-2 gap-6">
           <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Best Time to Post</h2>
+              <h3 className="text-xl font-semibold">Best Time to Post</h3>
               <BlurredOverlay isLocked={isFree} title="Optimization Insights" description="Upgrade to Pro to see when your audience is most active.">
                   <BestTimeHeatmap data={bestTimeData} />
               </BlurredOverlay>
           </div>
 
           <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Top Performing Tweets</h2>
+              <h3 className="text-xl font-semibold">Top Performing Tweets</h3>
               <BlurredOverlay isLocked={isFree} title="Top Tweets" description="See your best performing content with Pro analytics.">
                 {topTweets.length === 0 ? (
                   <EmptyState

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +16,7 @@ export function SignInButton() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isPending, setIsPending] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   if (sessionPending) {
     return <Button disabled>Loading...</Button>
@@ -56,27 +58,47 @@ export function SignInButton() {
         <Input
           id="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           disabled={isPending}
+          aria-describedby={error ? "signin-error" : undefined}
+          aria-invalid={error ? true : undefined}
         />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="Your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={isPending}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            placeholder="Your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isPending}
+            className="pe-10"
+            aria-describedby={error ? "signin-error" : undefined}
+            aria-invalid={error ? true : undefined}
+          />
+          <button
+            type="button"
+            className="absolute inset-y-0 end-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword
+              ? <EyeOff className="h-4 w-4" aria-hidden="true" />
+              : <Eye className="h-4 w-4" aria-hidden="true" />}
+          </button>
+        </div>
       </div>
       {error && (
-        <p role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
+        <p id="signin-error" role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
       )}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Signing in..." : "Sign in"}

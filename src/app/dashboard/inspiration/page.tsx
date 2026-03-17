@@ -254,7 +254,7 @@ export default function InspirationPage() {
       description="Import tweets from X and adapt them with AI assistance."
     >
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-3">
+        <TabsList className="grid w-full max-w-md grid-cols-3 overflow-x-auto">
           <TabsTrigger value="import">
             <Download className="h-4 w-4 mr-2" />
             Import Tweet
@@ -277,7 +277,7 @@ export default function InspirationPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="tweet-url">Paste X/Tweet URL</Label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
                       id="tweet-url"
                       type="url"
@@ -294,6 +294,7 @@ export default function InspirationPage() {
                     <Button
                       onClick={handleImport}
                       disabled={!isValidUrl || isLoading}
+                      className="w-full sm:w-auto"
                     >
                       {isLoading ? (
                         <>
@@ -303,7 +304,7 @@ export default function InspirationPage() {
                       ) : (
                         <>
                           Import
-                          <ArrowRight className="h-4 w-4 ml-2" />
+                          <ArrowRight className="h-4 w-4 ms-2 rtl:scale-x-[-1]" />
                         </>
                       )}
                     </Button>
@@ -424,9 +425,9 @@ export default function InspirationPage() {
                   <p className="text-muted-foreground">No history yet. Import a tweet to get started.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <ul role="list" className="space-y-3">
                   {history.map((item) => (
-                    <div
+                    <li
                       key={item.id}
                       className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                     >
@@ -443,9 +444,9 @@ export default function InspirationPage() {
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </CardContent>
           </Card>
@@ -461,9 +462,9 @@ export default function InspirationPage() {
                   <p className="text-muted-foreground">No bookmarks yet. Bookmark inspiring tweets to save them for later.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <ul role="list" className="space-y-3">
                   {bookmarks.map((bookmark) => (
-                    <div
+                    <li
                       key={bookmark.id}
                       className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                     >
@@ -504,9 +505,9 @@ export default function InspirationPage() {
                           </Button>
                         </div>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </CardContent>
           </Card>

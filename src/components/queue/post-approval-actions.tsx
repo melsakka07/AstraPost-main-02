@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 
 interface PostApprovalActionsProps {
   postId: string;
+  ariaLabel?: string;
 }
 
-export function PostApprovalActions({ postId }: PostApprovalActionsProps) {
+export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsProps) {
   const router = useRouter();
 
   const handleAction = async (action: "approve" | "reject") => {
@@ -38,6 +39,7 @@ export function PostApprovalActions({ postId }: PostApprovalActionsProps) {
       <Button
         variant="outline"
         size="sm"
+        aria-label={ariaLabel ? `Reject ${ariaLabel}` : undefined}
         className="text-destructive hover:text-destructive"
         onClick={() => handleAction("reject")}
       >
@@ -46,6 +48,7 @@ export function PostApprovalActions({ postId }: PostApprovalActionsProps) {
       </Button>
       <Button
         size="sm"
+        aria-label={ariaLabel ? `Approve ${ariaLabel}` : undefined}
         className="bg-green-600 hover:bg-green-700 text-white"
         onClick={() => handleAction("approve")}
       >

@@ -1,15 +1,20 @@
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
-import { X, Image as ImageIcon, Sparkles, Hash, Smile, Wand2 } from "lucide-react";
+import { X, Image as ImageIcon, Sparkles, Hash, Smile, Wand2, ChevronUp, ChevronDown } from "lucide-react";
 import twitter from 'twitter-text';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import type { EmojiClickData } from 'emoji-picker-react';
+
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 interface TweetDraft {
   id: string;
@@ -40,6 +45,8 @@ interface TweetCardProps {
   openAiTool: (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => void;
   openAiImage?: (tweetId: string) => void;
   dragHandleProps?: any;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
 export function TweetCard({
@@ -53,12 +60,15 @@ export function TweetCard({
   triggerFileUpload,
   openAiTool,
   openAiImage,
-  dragHandleProps
+  dragHandleProps,
+  onMoveUp,
+  onMoveDown,
 }: TweetCardProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
   const getCharCount = (text: string) => twitter.parseTweet(text).weightedLength;
-  const isOverLimit = (text: string) => getCharCount(text) > 280;
+  const isOverLimit = (text: string) => getCharCount(text) > 1000;
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     updateTweet(tweet.id, tweet.content + emojiData.emoji);
@@ -103,7 +113,7 @@ export function TweetCard({
         tabIndex={0}
         aria-label={`Reorder tweet ${index + 1}`}
         aria-roledescription="sortable"
-        className="absolute -left-8 top-4 text-muted-foreground font-mono text-sm cursor-grab active:cursor-grabbing hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded"
+        className="hidden md:block absolute -left-8 top-4 text-muted-foreground font-mono text-sm cursor-grab active:cursor-grabbing hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rounded"
         {...dragHandleProps}
         title="Drag to reorder"
       >
@@ -119,6 +129,7 @@ export function TweetCard({
             value={tweet.content}
             onChange={(e) => updateTweet(tweet.id, e.target.value)}
             placeholder="What's happening?"
+            dir="auto"
             className="min-h-[120px] resize-none border-none focus-visible:ring-0 text-lg p-0"
           />
           
@@ -159,6 +170,7 @@ export function TweetCard({
                     type="button"
                     className="absolute top-1 right-1 rounded-sm bg-background/80 p-0.5 hover:bg-background opacity-0 group-hover/preview:opacity-100 transition-opacity"
                     onClick={() => updateTweetPreview?.(tweet.id, null)}
+                    aria-label="Dismiss link preview"
                  >
                     <X className="h-4 w-4" />
                  </button>
@@ -169,12 +181,37 @@ export function TweetCard({
         <CardFooter className="flex justify-between items-center border-t pt-3">
           <TooltipProvider delayDuration={300}>
             <div className="flex gap-1">
+              {/* Mobile-only reorder buttons — desktop uses the drag handle */}
+              {totalTweets > 1 && (
+                <div className="flex md:hidden gap-0.5 me-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="touch-target"
+                    onClick={onMoveUp}
+                    disabled={!onMoveUp}
+                    aria-label={`Move tweet ${index + 1} up`}
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="touch-target"
+                    onClick={onMoveDown}
+                    disabled={!onMoveDown}
+                    aria-label={`Move tweet ${index + 1} down`}
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-primary"
+                    className="touch-target text-primary"
                     onClick={() => triggerFileUpload(tweet.id)}
                     aria-label="Upload media"
                   >
@@ -190,7 +227,7 @@ export function TweetCard({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-primary"
+                      className="touch-target text-primary"
                       onClick={() => openAiImage(tweet.id)}
                       aria-label="Generate AI image"
                     >
@@ -201,33 +238,61 @@ export function TweetCard({
                 </Tooltip>
               )}
 
-              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
+              {isDesktop ? (
+                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="touch-target text-primary"
+                          aria-label="Add emoji"
+                        >
+                          <Smile className="h-5 w-5" />
+                        </Button>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Add Emoji</TooltipContent>
+                  </Tooltip>
+                  <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent">
+                    <EmojiPicker onEmojiClick={onEmojiClick} />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-primary"
+                        className="touch-target text-primary"
                         aria-label="Add emoji"
+                        onClick={() => setShowEmojiPicker(true)}
                       >
                         <Smile className="h-5 w-5" />
                       </Button>
-                    </PopoverTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>Add Emoji</TooltipContent>
-                </Tooltip>
-                <PopoverContent className="w-auto p-0 border-none shadow-none bg-transparent">
-                  <EmojiPicker onEmojiClick={onEmojiClick} />
-                </PopoverContent>
-              </Popover>
+                    </TooltipTrigger>
+                    <TooltipContent>Add Emoji</TooltipContent>
+                  </Tooltip>
+                  <Sheet open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                    <SheetContent side="bottom" className="h-[400px] px-0">
+                      <EmojiPicker
+                        onEmojiClick={onEmojiClick}
+                        width="100%"
+                        height={350}
+                      />
+                    </SheetContent>
+                  </Sheet>
+                </>
+              )}
 
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-primary"
+                    className="touch-target text-primary"
                     onClick={() => openAiTool("rewrite", tweet.id)}
                     aria-label="Rewrite with AI"
                   >
@@ -242,7 +307,7 @@ export function TweetCard({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-primary"
+                    className="touch-target text-primary"
                     onClick={() => openAiTool("hashtags", tweet.id)}
                     aria-label="Generate hashtags"
                   >
@@ -255,19 +320,26 @@ export function TweetCard({
           </TooltipProvider>
           
           <div className="flex items-center gap-4">
-            <span className={cn(
-              "text-sm font-medium",
-              isOverLimit(tweet.content) ? "text-destructive" : "text-muted-foreground"
-            )}>
-              {getCharCount(tweet.content)} / 280
+            <span
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={`${getCharCount(tweet.content)} of 1000 characters used`}
+              className={cn(
+                "text-sm font-medium tabular-nums",
+                isOverLimit(tweet.content) ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              {getCharCount(tweet.content)} / 1000
             </span>
             
             {totalTweets > 1 && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-destructive hover:bg-destructive/10"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="touch-target text-destructive hover:bg-destructive/10"
                 onClick={() => removeTweet(tweet.id)}
+                aria-label={`Remove tweet ${index + 1}`}
               >
                 <X className="h-5 w-5" />
               </Button>

@@ -18,7 +18,7 @@ async function main() {
       const next = encryptToken(plain);
       await db
         .update(xAccounts)
-        .set({ refreshTokenEnc: next, refreshToken: null })
+        .set({ refreshTokenEnc: next })
         .where(eq(xAccounts.id, a.id));
       rotatedRefresh++;
     }

@@ -178,7 +178,7 @@ export default async function QueuePage({
                     Awaiting Approval
                 </h2>
               </div>
-              {awaitingApprovalPosts.map((post) => (
+              {awaitingApprovalPosts.map((post, index) => (
                 <Card key={post.id} className="border-warning/30 bg-warning/10">
                     <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
                         <div className="flex flex-col items-center justify-center rounded-lg bg-warning/15 p-4 text-center sm:min-w-[100px]">
@@ -196,7 +196,10 @@ export default async function QueuePage({
                                     </span>
                                 </div>
                                 {(ctx.isOwner || ctx.role === "admin") && (
-                                    <PostApprovalActions postId={post.id} />
+                                    <PostApprovalActions
+                                      postId={post.id}
+                                      ariaLabel={`post ${index + 1}: ${String(post.tweets[0]?.content ?? "").slice(0, 50)}`}
+                                    />
                                 )}
                             </div>
                             <p className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} whitespace-pre-wrap break-words`}>{post.tweets[0]?.content}</p>
@@ -237,7 +240,7 @@ export default async function QueuePage({
         />
       ) : (
         <div className="space-y-4">
-            {scheduledPosts.map((post) => (
+            {scheduledPosts.map((post, index) => (
                 <Card key={post.id}>
                     <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
                         <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 p-4 text-center sm:min-w-[100px]">
@@ -258,7 +261,10 @@ export default async function QueuePage({
                                         <span className="text-xs text-muted-foreground">by {post.user.name}</span>
                                     )}
                                 </div>
-                                <CancelPostButton postId={post.id} />
+                                <CancelPostButton
+                                  postId={post.id}
+                                  ariaLabel={`Cancel scheduled post ${index + 1}: ${String(post.tweets[0]?.content ?? "").slice(0, 50)}`}
+                                />
                             </div>
                             <p className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} whitespace-pre-wrap break-words`}>{post.tweets[0]?.content}</p>
                             {post.tweets.length > 1 && (
@@ -290,7 +296,7 @@ export default async function QueuePage({
         </div>
       ) : (
         <div className="space-y-4">
-          {failedPosts.map((post) => (
+          {failedPosts.map((post, index) => (
             <Card key={post.id}>
               <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
                 <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 p-4 text-center sm:min-w-[100px]">
@@ -305,7 +311,10 @@ export default async function QueuePage({
                       </Badge>
                       <Badge variant="destructive">{post.status}</Badge>
                     </div>
-                    <RetryPostButton postId={post.id} />
+                    <RetryPostButton
+                    postId={post.id}
+                    ariaLabel={`Retry failed post ${index + 1}: ${String(post.tweets[0]?.content ?? "").slice(0, 50)}`}
+                  />
                   </div>
                   <p className="whitespace-pre-wrap break-words">{post.tweets[0]?.content}</p>
                   {post.failReason && (

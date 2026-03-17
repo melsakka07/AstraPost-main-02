@@ -36,7 +36,6 @@ async function main() {
     xDisplayName: "Smoke User",
     xAvatarUrl: null,
     accessToken: encryptToken("smoke-access-token"),
-    refreshToken: null,
     refreshTokenEnc: null,
     tokenExpiresAt: null,
     followersCount: 0,

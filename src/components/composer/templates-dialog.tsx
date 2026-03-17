@@ -122,8 +122,9 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
 
           <TabsContent value="my-templates" className="flex-1 flex flex-col overflow-hidden">
             {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div role="status" aria-label="Loading templates" className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+                <span className="sr-only">Loading templates...</span>
               </div>
             ) : userTemplates.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">

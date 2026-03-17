@@ -73,7 +73,7 @@ export default function ChangelogPage() {
   ];
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-dvh">
       {/* Background gradient */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />

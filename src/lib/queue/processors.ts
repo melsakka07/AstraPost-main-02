@@ -271,6 +271,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
             recurrenceMediaRows.push({
               id: crypto.randomUUID(),
               postId: newPostId,
+              userId: post.userId,
               tweetId: newTweetId,
               fileUrl: m.fileUrl,
               fileType: m.fileType,

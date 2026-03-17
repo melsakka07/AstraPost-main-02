@@ -35,7 +35,7 @@ export default function Home() {
             <Button size="lg" className="h-12 px-8 text-lg group" asChild>
               <Link href="/register">
                 Get Started for Free
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="h-12 px-8 text-lg" asChild>
@@ -110,7 +110,7 @@ export default function Home() {
             <Button size="lg" variant="outline" asChild>
               <Link href="/features">
                 Explore All Features
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
               </Link>
             </Button>
           </div>
@@ -142,7 +142,7 @@ export default function Home() {
                 <Button size="lg" className="h-12 px-8 text-lg group" asChild>
                   <Link href="/register">
                     Start Your Free Trial
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="h-12 px-8" asChild>

@@ -74,7 +74,7 @@ export default function DocsPage() {
   ];
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-dvh">
       {/* Background gradient */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
@@ -139,7 +139,7 @@ export default function DocsPage() {
                       >
                         <FileText className="h-3.5 w-3.5 mr-2 shrink-0 text-muted-foreground group-hover:text-primary transition-colors" />
                         {article.title}
-                        <ArrowRight className="ml-auto h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <ArrowRight className="ms-auto h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity rtl:scale-x-[-1]" />
                       </Link>
                     )}
                   </li>
@@ -155,7 +155,7 @@ export default function DocsPage() {
           <p className="text-muted-foreground mb-4">Our support team is here to help you get back on track.</p>
           <Link href="mailto:support@astropost.com" className="text-primary font-medium hover:underline inline-flex items-center gap-1 group">
             Contact Support
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
           </Link>
         </div>
       </div>

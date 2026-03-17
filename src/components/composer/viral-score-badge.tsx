@@ -89,8 +89,8 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-transparent">
-        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      <div role="status" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-transparent">
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" aria-hidden="true" />
         <span className="text-xs text-muted-foreground">Analyzing...</span>
       </div>
     );

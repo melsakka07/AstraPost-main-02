@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 import { CalendarDay } from "./calendar-day";
 import { CalendarPostItem } from "./calendar-post-item";
@@ -59,9 +60,17 @@ interface CalendarViewProps {
 
 export function CalendarView({ posts, currentDate, initialView = "month" }: CalendarViewProps) {
   const router = useRouter();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [view, setView] = React.useState<ViewType>(initialView);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [isUpdating, setIsUpdating] = React.useState(false);
+
+  // After hydration, default to "week" on mobile when no explicit view was requested
+  React.useEffect(() => {
+    if (!isDesktop && initialView === "month") {
+      setView("week");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -181,22 +190,22 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      <div className="flex items-center justify-between shrink-0">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="icon" onClick={handlePrev}>
-            <ChevronLeft className="h-4 w-4" />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={handlePrev} aria-label="Previous period">
+            <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
           </Button>
-          <Button variant="outline" size="icon" onClick={handleNext}>
-            <ChevronRight className="h-4 w-4" />
+          <Button variant="outline" size="icon" onClick={handleNext} aria-label="Next period">
+            <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
           </Button>
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-base sm:text-lg font-semibold">
             {format(currentDate, "MMMM yyyy")}
           </h2>
-          <Button variant="ghost" onClick={handleToday}>
+          <Button variant="ghost" onClick={handleToday} className="min-h-[44px]">
             Today
           </Button>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           <Select
             value={view}
@@ -204,7 +213,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
               setView(v as ViewType);
             }}
           >
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-full sm:w-[120px] min-h-[44px]">
               <SelectValue placeholder="View" />
             </SelectTrigger>
             <SelectContent>

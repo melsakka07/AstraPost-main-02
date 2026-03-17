@@ -92,7 +92,7 @@ analyticsWorker.on("failed", (job, err) => {
   // `attempts` limit (they self-heal on the next scheduled run), so this guard
   // prevents false positives while still catching any explicitly-capped job.
   const maxAttempts = job?.opts?.attempts;
-  if (job && maxAttempts !== undefined && job.attemptsMade >= maxAttempts) {
+  if (job && maxAttempts !== undefined && maxAttempts > 0 && job.attemptsMade >= maxAttempts) {
     logger.error("job_permanently_failed", {
       queue: "analytics-queue",
       jobId: job.id,

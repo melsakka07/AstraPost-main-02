@@ -49,7 +49,7 @@ export default function ResourcesPage() {
   ];
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-dvh">
       {/* Background gradient */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
@@ -84,7 +84,7 @@ export default function ResourcesPage() {
                 <Button variant="outline" className="w-full group" asChild>
                   <Link href={resource.link}>
                     {resource.button}
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                   </Link>
                 </Button>
               </CardFooter>

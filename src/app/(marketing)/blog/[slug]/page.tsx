@@ -62,7 +62,7 @@ export default async function BlogPostPage({
             href="/blog"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-8 group"
           >
-            <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" /> Back to Blog
+            <ArrowLeft className="me-2 h-4 w-4 transition-transform group-hover:-translate-x-1 rtl:scale-x-[-1] rtl:group-hover:translate-x-1" /> Back to Blog
           </Link>
 
           <div className="space-y-6">

@@ -21,7 +21,7 @@ const threadRequestSchema = z.object({
 });
 
 const tweetSchema = z.object({
-  tweets: z.array(z.string().max(280)),
+  tweets: z.array(z.string().max(1100)),
 });
 
 export async function POST(req: Request) {
@@ -79,28 +79,33 @@ export async function POST(req: Request) {
       ${voiceInstructions}
       
       Constraints:
-      - Each tweet must be under 260 characters (leaving room for numbering).
+      - Each tweet MUST be strictly under 800 characters. Count carefully — this is a hard limit.
       - Do not include numbering (1/5, etc) in the output text, I will add it myself.
       - Make it engaging and viral-worthy.
       - Ensure correct grammar and modern style.
     `;
 
-    const { object } = await generateObject({
+    const { object, usage } = await generateObject({
       model,
       schema: tweetSchema,
       prompt,
     });
 
     await recordAiUsage(
-        session.user.id, 
-        "thread", 
-        0, // tokens not available from generateObject directly yet
-        prompt, 
+        session.user.id,
+        "thread",
+        usage?.totalTokens ?? 0,
+        prompt,
         object,
         language
     );
 
-    return Response.json(object);
+    // Truncate any tweets that exceed 1000 characters to avoid client-side issues
+    const sanitized = {
+      tweets: object.tweets.map((t) => (t.length > 1000 ? t.slice(0, 997) + "..." : t)),
+    };
+
+    return Response.json(sanitized);
   } catch (error) {
     console.error("AI Generation Error:", error);
     return new Response(JSON.stringify({ error: "Failed to generate thread" }), { status: 500 });

@@ -73,8 +73,13 @@ function JoinTeamContent() {
 
 export default function JoinTeamPage() {
     return (
-        <div className="container flex h-screen w-screen flex-col items-center justify-center">
-            <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin text-primary" />}>
+        <div className="container flex h-dvh w-screen flex-col items-center justify-center">
+            <Suspense fallback={
+              <div role="status" aria-label="Loading page">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
+                <span className="sr-only">Loading...</span>
+              </div>
+            }>
                 <JoinTeamContent />
             </Suspense>
         </div>

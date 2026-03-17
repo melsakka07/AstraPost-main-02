@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Copy, Check, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
@@ -256,6 +256,8 @@ export default function ChatPage() {
     },
   });
   const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Load messages from localStorage on mount
   useEffect(() => {
@@ -281,6 +283,27 @@ export default function ChatPage() {
     }
   }, [messages]);
 
+  // Auto-scroll to the latest message whenever messages update
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Push content above the virtual keyboard on iOS (visualViewport API)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setKeyboardHeight(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    };
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
   const clearMessages = () => {
     setMessages([]);
     localStorage.removeItem(STORAGE_KEY);
@@ -304,31 +327,42 @@ export default function ChatPage() {
   const isStreaming = status === "streaming";
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6 pb-4 border-b">
-          <h1 className="text-2xl font-bold">AstraPost Assistant</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
+    // Outer wrapper fills the visual viewport; paddingBottom shrinks content above the
+    // virtual keyboard on iOS 15 and older (where dvh doesn't track the keyboard).
+    // On Android / iOS 16+ dvh already adjusts, so keyboardHeight stays 0.
+    <div
+      className="flex flex-col h-dvh overflow-hidden"
+      style={keyboardHeight > 0 ? { paddingBottom: `${keyboardHeight}px` } : undefined}
+    >
+      <div className="max-w-4xl mx-auto w-full flex flex-col flex-1 min-h-0 px-4">
+        {/* Header */}
+        <div className="shrink-0 flex justify-between items-center py-4 border-b flex-wrap gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold">AstraPost Assistant</h1>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <span className="hidden sm:block text-sm text-muted-foreground">
               Welcome, {session.user.name}!
             </span>
             {messages.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={clearMessages}>
+              <Button variant="ghost" size="sm" onClick={clearMessages} className="min-h-[44px]">
                 Clear chat
               </Button>
             )}
           </div>
         </div>
 
+        {/* Error banner */}
         {error && (
-          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <p className="text-sm text-destructive">
-              Error: {error.message || "Something went wrong"}
-            </p>
+          <div className="shrink-0 py-2">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive">
+                Error: {error.message || "Something went wrong"}
+              </p>
+            </div>
           </div>
         )}
 
-        <div className="min-h-[50vh] space-y-4 mb-4">
+        {/* Messages — flex-1 so it fills available space and scrolls independently */}
+        <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
               Start a conversation with AI
@@ -372,8 +406,11 @@ export default function ChatPage() {
           {isStreaming && messages[messages.length - 1]?.role === "user" && (
             <ThinkingIndicator />
           )}
+          {/* Scroll anchor — auto-scroll targets this element */}
+          <div ref={messagesEndRef} aria-hidden="true" />
         </div>
 
+        {/* Input form — pinned to the bottom; safe-area inset for iPhone home bar */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -382,16 +419,18 @@ export default function ChatPage() {
             sendMessage({ role: "user", parts: [{ type: "text", text }] });
             setInput("");
           }}
-          className="flex gap-2"
+          className="shrink-0 flex gap-2 py-3 border-t"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
+          {/* text-base prevents iOS from auto-zooming when input font-size < 16px */}
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1 p-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 min-h-[44px] px-3 py-2 text-base border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
             disabled={isStreaming}
           />
-          <Button type="submit" disabled={!input.trim() || isStreaming}>
+          <Button type="submit" disabled={!input.trim() || isStreaming} className="min-h-[44px]">
             {isStreaming ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -174,7 +174,7 @@ export default function ViralAnalyzerPage() {
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                   <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold">Unlock Viral Insights</h3>
+                <h2 className="text-lg font-semibold">Unlock Viral Insights</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
                   Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your top-performing content patterns.
                 </p>
@@ -381,10 +381,10 @@ export default function ViralAnalyzerPage() {
                 <div className="space-y-4">
                   {/* Best Days */}
                   <div>
-                    <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" aria-hidden="true" />
                       Best Days
-                    </h4>
+                    </h3>
                     <div className="flex flex-wrap gap-2">
                       {analysis.bestDays.map((item, i) => (
                         <Badge key={i} variant="outline" className="text-sm">
@@ -396,7 +396,7 @@ export default function ViralAnalyzerPage() {
 
                   {/* Best Hours */}
                   <div>
-                    <h4 className="text-sm font-medium mb-3">Best Hours</h4>
+                    <h3 className="text-sm font-medium mb-3">Best Hours</h3>
                     <div className="flex flex-wrap gap-2">
                       {analysis.bestHours.map((item, i) => (
                         <Badge key={i} variant="secondary" className="text-sm">

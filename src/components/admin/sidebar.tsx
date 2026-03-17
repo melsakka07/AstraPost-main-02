@@ -34,7 +34,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-muted/30 fixed left-0 top-0 bottom-0">
+    <div className="flex h-dvh w-64 flex-col border-r bg-muted/30 fixed left-0 top-0 bottom-0">
       <div className="flex h-14 items-center border-b px-6">
         <Link href="/admin" className="flex items-center gap-2 font-semibold text-lg">
           <ShieldCheck className="h-6 w-6 text-primary" />

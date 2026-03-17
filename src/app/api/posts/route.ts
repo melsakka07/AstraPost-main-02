@@ -3,12 +3,20 @@ import { z } from "zod";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { checkAccountLimitDetailed, checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import { checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { tweets, media, xAccounts, linkedinAccounts, instagramAccounts, account, user, posts } from "@/lib/schema";
-import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
+import { tweets, media, xAccounts, linkedinAccounts, instagramAccounts, user, posts } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
+import type { InferSelectModel } from "drizzle-orm";
+
+type XAccountRow = InferSelectModel<typeof xAccounts>;
+type LinkedInAccountRow = InferSelectModel<typeof linkedinAccounts>;
+type InstagramAccountRow = InferSelectModel<typeof instagramAccounts>;
+type PlatformAccount =
+  | { id: string; platform: "twitter"; obj: XAccountRow }
+  | { id: string; platform: "linkedin"; obj: LinkedInAccountRow }
+  | { id: string; platform: "instagram"; obj: InstagramAccountRow };
 
 const createPostSchema = z.object({
   tweets: z
@@ -74,69 +82,6 @@ export async function POST(req: Request) {
 
     const { tweets: tweetsData, scheduledAt, action, targetAccountIds, recurrencePattern, recurrenceEndDate } = result.data;
 
-    // Only sync accounts if we are the owner operating on our own workspace
-    if (ctx.isOwner) {
-      const ownerSession = ctx.session;
-      const linkedAccounts = await db.query.account.findMany({
-        where: and(eq(account.userId, ownerSession.user.id), eq(account.providerId, "twitter")),
-      });
-
-      for (const la of linkedAccounts) {
-        if (!la.accessToken) continue;
-
-        // BetterAuth now stores tokens encrypted (v1:… format).
-        // Normalise to plaintext before comparing or re-encrypting for x_accounts.
-        const plainAccessToken = decryptToken(la.accessToken);
-        const plainRefreshToken = la.refreshToken ? decryptToken(la.refreshToken) : null;
-
-        const existing = await db.query.xAccounts.findFirst({
-          where: eq(xAccounts.xUserId, la.accountId),
-        });
-
-        if (!existing) {
-          const limitCheck = await checkAccountLimitDetailed(ownerSession.user.id);
-          if (!limitCheck.allowed) continue;
-
-          await db.insert(xAccounts).values({
-            id: crypto.randomUUID(),
-            userId: ownerSession.user.id,
-            xUserId: la.accountId,
-            xUsername: ownerSession.user.name || "twitter_user",
-            xDisplayName: ownerSession.user.name || "Twitter User",
-            xAvatarUrl: ownerSession.user.image,
-            accessToken: encryptToken(plainAccessToken),
-            refreshTokenEnc: plainRefreshToken ? encryptToken(plainRefreshToken) : null,
-            refreshToken: null,
-            tokenExpiresAt: la.accessTokenExpiresAt,
-            isActive: true,
-          });
-        } else {
-          // Update logic...
-          const accessTokenChanged = decryptToken(existing.accessToken) !== plainAccessToken;
-          const refreshTokenChanged =
-            (existing.refreshToken || null) !== (plainRefreshToken || null) ||
-            (Boolean(plainRefreshToken) && !existing.refreshTokenEnc);
-          const expiresChanged =
-            (existing.tokenExpiresAt?.getTime() || null) !==
-            (la.accessTokenExpiresAt?.getTime() || null);
-
-          if (accessTokenChanged || refreshTokenChanged || expiresChanged) {
-            await db
-              .update(xAccounts)
-              .set({
-                accessToken: encryptToken(plainAccessToken),
-                refreshTokenEnc: plainRefreshToken ? encryptToken(plainRefreshToken) : existing.refreshTokenEnc,
-                refreshToken: null,
-                tokenExpiresAt: la.accessTokenExpiresAt,
-                isActive: true,
-                updatedAt: new Date(),
-              })
-              .where(eq(xAccounts.id, existing.id));
-          }
-        }
-      }
-    }
-
     const availableX = await db.query.xAccounts.findMany({
       where: and(eq(xAccounts.userId, ctx.currentTeamId), eq(xAccounts.isActive, true)),
     });
@@ -147,7 +92,7 @@ export async function POST(req: Request) {
       where: and(eq(instagramAccounts.userId, ctx.currentTeamId), eq(instagramAccounts.isActive, true)),
     });
 
-    const selectedAccounts: { id: string; platform: 'twitter' | 'linkedin' | 'instagram'; obj: any }[] = [];
+    const selectedAccounts: PlatformAccount[] = [];
     const rawIds = targetAccountIds || [];
 
     for (const idStr of rawIds) {
@@ -291,6 +236,7 @@ export async function POST(req: Request) {
           mediaRows.push({
             id: crypto.randomUUID(),
             postId,
+            userId: authorId,
             tweetId,
             fileUrl: m.url,
             fileType: m.fileType,

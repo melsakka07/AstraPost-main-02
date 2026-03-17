@@ -142,7 +142,6 @@ export const user = pgTable(
     preferredImageModel: text("preferred_image_model").default("nano-banana-2"), // 'nano-banana-2', 'banana-pro', 'gemini-imagen4'
   },
   (table) => [
-    index("user_email_idx").on(table.email),
     index("user_referral_code_idx").on(table.referralCode)
   ]
 );
@@ -393,6 +392,7 @@ export const tweets = pgTable("tweets", {
 export const media = pgTable("media", {
   id: text("id").primaryKey(),
   postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
   tweetId: text("tweet_id").references(() => tweets.id, { onDelete: "cascade" }),
   fileUrl: text("file_url").notNull(),
   fileType: text("file_type"), // 'image', 'video', 'gif'
@@ -415,7 +415,6 @@ export const tweetAnalytics = pgTable("tweet_analytics", {
   fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
 }, (table) => [
   uniqueIndex("analytics_tweet_id_unique").on(table.tweetId),
-  index("analytics_tweet_id_idx").on(table.tweetId),
   index("analytics_fetched_at_idx").on(table.fetchedAt)
 ]);
 
@@ -786,6 +785,10 @@ export const mediaRelations = relations(media, ({ one }) => ({
   post: one(posts, {
     fields: [media.postId],
     references: [posts.id],
+  }),
+  user: one(user, {
+    fields: [media.userId],
+    references: [user.id],
   }),
   tweet: one(tweets, {
     fields: [media.tweetId],

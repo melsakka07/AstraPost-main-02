@@ -5,5 +5,5 @@ CREATE TABLE "processed_webhook_events" (
 	CONSTRAINT "processed_webhook_events_stripe_event_id_unique" UNIQUE("stripe_event_id")
 );
 --> statement-breakpoint
-ALTER TABLE "linkedin_accounts" DROP COLUMN "refresh_token";--> statement-breakpoint
-ALTER TABLE "x_accounts" DROP COLUMN "refresh_token";
+ALTER TABLE "linkedin_accounts" DROP COLUMN IF EXISTS "refresh_token";--> statement-breakpoint
+ALTER TABLE "x_accounts" DROP COLUMN IF EXISTS "refresh_token";

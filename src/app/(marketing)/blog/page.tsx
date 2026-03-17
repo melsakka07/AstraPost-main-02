@@ -26,7 +26,7 @@ export default async function BlogPage() {
   const regularPosts = posts.slice(1);
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-dvh">
       {/* Background gradient */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
@@ -95,7 +95,7 @@ export default async function BlogPage() {
                   {featuredPost.excerpt}
                 </p>
                 <div className="flex items-center text-primary font-medium group-hover:gap-3 transition-all">
-                  Read Featured Article <ArrowRight className="ml-2 h-4 w-4" />
+                  Read Featured Article <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
                 </div>
               </div>
             </div>
@@ -144,7 +144,7 @@ export default async function BlogPage() {
                       {post.excerpt}
                     </p>
                     <div className="pt-2 flex items-center text-sm font-medium text-primary">
-                      Read Article <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      Read Article <ArrowRight className="ms-1 h-4 w-4 group-hover:translate-x-1 transition-transform rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                     </div>
                   </div>
                 </Link>

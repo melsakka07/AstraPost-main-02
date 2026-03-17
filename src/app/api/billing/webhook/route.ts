@@ -6,6 +6,9 @@ import { processedWebhookEvents, subscriptions, user } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 
+// Module-level singleton — avoids recreating on every webhook call
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
 type PlanValue = "free" | "pro_monthly" | "pro_annual" | "agency";
 type SubscriptionStatusValue = "active" | "past_due" | "cancelled" | "trialing";
 
@@ -486,8 +489,6 @@ export async function POST(req: Request) {
     console.error("Stripe config missing");
     return new Response("Config Error", { status: 500 });
   }
-
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
   let event: Stripe.Event;
 

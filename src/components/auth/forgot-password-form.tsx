@@ -59,15 +59,19 @@ export function ForgotPasswordForm() {
         <Input
           id="email"
           type="email"
+          inputMode="email"
+          autoComplete="email"
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           disabled={isPending}
+          aria-describedby={error ? "forgotpwd-error" : undefined}
+          aria-invalid={error ? true : undefined}
         />
       </div>
       {error && (
-        <p role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
+        <p id="forgotpwd-error" role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
       )}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Sending..." : "Send reset link"}

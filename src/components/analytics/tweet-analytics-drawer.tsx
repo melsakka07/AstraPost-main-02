@@ -43,8 +43,9 @@ export function TweetAnalyticsDrawer({ tweetId, open, onOpenChange }: TweetAnaly
         </SheetHeader>
 
         {loading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div role="status" aria-label="Loading analytics" className="flex justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+            <span className="sr-only">Loading analytics...</span>
           </div>
         ) : data?.current ? (
           <div className="space-y-6 mt-6">

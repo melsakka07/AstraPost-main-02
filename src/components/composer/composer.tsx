@@ -11,6 +11,7 @@ import {
   FileText,
   Globe,
   Hash,
+  Info,
   ListOrdered,
   Loader2,
   Megaphone,
@@ -27,6 +28,7 @@ import { SortableTweet } from "@/components/composer/sortable-tweet";
 import { TargetAccountsSelect, SocialAccountLite } from "@/components/composer/target-accounts-select";
 import { TemplatesDialog } from "@/components/composer/templates-dialog";
 import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -34,10 +36,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSession } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
 import { createUserTemplate } from "@/lib/templates";
@@ -94,6 +98,11 @@ export function Composer() {
   const [accounts, setAccounts] = useState<SocialAccountLite[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const draftId = searchParams?.get("draft");
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  // Used to restore the draft's linked account once accounts have loaded
+  const [draftXAccountId, setDraftXAccountId] = useState<string | null>(null);
 
   // AI State
   const [isAiOpen, setIsAiOpen] = useState(false);
@@ -130,6 +139,7 @@ export function Composer() {
   });
 
   const { openWithContext: openUpgradeModal } = useUpgradeModal();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -193,6 +203,7 @@ export function Composer() {
 
   // Auto-save
   useEffect(() => {
+    if (draftId) return; // Draft will be loaded from API — skip localStorage restore
     const saved = localStorage.getItem("astra-post-drafts");
     if (saved) {
       try {
@@ -214,9 +225,58 @@ export function Composer() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       localStorage.setItem("astra-post-drafts", JSON.stringify(tweets));
-    }, 1000); 
+    }, 1000);
     return () => clearTimeout(timeout);
   }, [tweets]);
+
+  // Load draft from database when ?draft=<id> is present in the URL
+  useEffect(() => {
+    if (!draftId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/posts/${draftId}`);
+        if (!res.ok || cancelled) return;
+        const post = await res.json();
+        if (cancelled) return;
+
+        const loadedTweets: TweetDraft[] = (post.tweets || []).map(
+          (t: { content?: string; media?: Array<{ fileUrl: string; fileType: "image" | "video" | "gif"; fileSize?: number }> }) => ({
+            id: Math.random().toString(36).substr(2, 9),
+            content: t.content || "",
+            media: (t.media || []).map((m) => ({
+              url: m.fileUrl,
+              mimeType: m.fileType === "image" ? "image/jpeg" : m.fileType === "video" ? "video/mp4" : "image/gif",
+              fileType: m.fileType,
+              size: m.fileSize || 0,
+            })),
+          })
+        );
+
+        if (loadedTweets.length > 0) {
+          setTweets(loadedTweets);
+          setEditingDraftId(draftId);
+          if (post.xAccountId) setDraftXAccountId(post.xAccountId);
+          if (post.scheduledAt) {
+            setScheduledDate(new Date(post.scheduledAt).toISOString().slice(0, 16));
+          }
+          toast.success("Draft loaded for editing");
+        }
+      } catch (e) {
+        console.error("Failed to load draft:", e);
+        toast.error("Failed to load draft");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [draftId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Once both accounts and the draft's linked account ID are known, restore the selection
+  useEffect(() => {
+    if (!draftXAccountId || accounts.length === 0) return;
+    if (accounts.some((a) => a.id === draftXAccountId)) {
+      setTargetAccountIds([draftXAccountId]);
+    }
+  }, [draftXAccountId, accounts]);
 
   const handleSaveTemplate = async () => {
     if (!templateTitle.trim()) {
@@ -293,6 +353,10 @@ export function Composer() {
     setTweets(tweets.filter((t) => t.id !== id));
   };
 
+  const moveTweet = (fromIndex: number, toIndex: number) => {
+    setTweets((items) => arrayMove(items, fromIndex, toIndex));
+  };
+
   const updateTweet = (id: string, content: string) => {
     setTweets(
       tweets.map((t) => (t.id === id ? { ...t, content } : t))
@@ -320,7 +384,7 @@ export function Composer() {
     return drafts.map((t, idx) => {
       const prefix = `${idx + 1}/${total} `;
       const cleaned = t.content.replace(/^\s*\d+\/\d+\s+/g, "");
-      const maxLen = 280 - prefix.length;
+      const maxLen = 1000 - prefix.length;
       const next = cleaned.length > maxLen ? cleaned.slice(0, maxLen) : cleaned;
       return { ...t, content: `${prefix}${next}` };
     });
@@ -423,7 +487,6 @@ export function Composer() {
     }
   };
 
-  const searchParams = useSearchParams();
   const restoreId = searchParams?.get("restore");
 
   useEffect(() => {
@@ -674,40 +737,64 @@ export function Composer() {
   const handleSubmit = async (action: "draft" | "schedule" | "publish_now") => {
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tweets: tweets.map(t => ({
-            content: t.content,
-            media: t.media
-          })),
-          targetAccountIds,
-          scheduledAt: scheduledDate || undefined,
-          recurrencePattern: recurrencePattern === "none" ? undefined : recurrencePattern,
-          recurrenceEndDate: recurrenceEndDate || undefined,
-          action
-        }),
-      });
+      let res: Response;
+      if (editingDraftId) {
+        // Update the existing draft via PATCH
+        res = await fetch(`/api/posts/${editingDraftId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tweets: tweets.map(t => ({
+              content: t.content,
+              media: t.media,
+            })),
+            scheduledAt: scheduledDate || undefined,
+            action,
+          }),
+        });
+      } else {
+        res = await fetch("/api/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tweets: tweets.map(t => ({
+              content: t.content,
+              media: t.media,
+            })),
+            targetAccountIds,
+            scheduledAt: scheduledDate || undefined,
+            recurrencePattern: recurrencePattern === "none" ? undefined : recurrencePattern,
+            recurrenceEndDate: recurrenceEndDate || undefined,
+            action,
+          }),
+        });
+      }
 
       if (!res.ok) {
         if (res.status === 402) {
-             await handlePlanLimit(res, "Plan limit reached. Upgrade to continue.");
+          await handlePlanLimit(res, "Plan limit reached. Upgrade to continue.");
         }
         const error = await res.json();
         throw new Error(error.error || "Failed to submit");
       }
 
-      const data = await res.json();
-      const count = Array.isArray(data.postIds) ? data.postIds.length : 1;
-      let message = count > 1 ? `Created ${count} drafts.` : "Post drafted!";
-      if (action === "schedule") {
-        message = count > 1 ? `Scheduled ${count} posts.` : "Post scheduled!";
-      }
-      if (action === "publish_now") {
-        // Posts are handed off to the background worker — they publish within seconds,
-        // not instantly. "Sent to queue" is accurate; "published" would be premature.
-        message = count > 1 ? `${count} posts sent to queue — publishing shortly.` : "Post sent to queue — publishing shortly.";
+      let message: string;
+      if (editingDraftId) {
+        if (action === "draft") message = "Draft saved!";
+        else if (action === "schedule") message = "Post scheduled!";
+        else message = "Post sent to queue — publishing shortly.";
+      } else {
+        const data = await res.json();
+        const count = Array.isArray(data.postIds) ? data.postIds.length : 1;
+        if (action === "schedule") {
+          message = count > 1 ? `Scheduled ${count} posts.` : "Post scheduled!";
+        } else if (action === "publish_now") {
+          // Posts are handed off to the background worker — they publish within seconds,
+          // not instantly. "Sent to queue" is accurate; "published" would be premature.
+          message = count > 1 ? `${count} posts sent to queue — publishing shortly.` : "Post sent to queue — publishing shortly.";
+        } else {
+          message = count > 1 ? `Created ${count} drafts.` : "Post drafted!";
+        }
       }
 
       toast.success(message);
@@ -715,9 +802,10 @@ export function Composer() {
       setScheduledDate("");
       setRecurrencePattern("none");
       setRecurrenceEndDate("");
+      setEditingDraftId(null);
       localStorage.removeItem("astra-post-drafts"); // Clear auto-save
     } catch (error) {
-        console.error(error);
+      console.error(error);
       toast.error(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);
@@ -728,6 +816,188 @@ export function Composer() {
   const userImage = selectedAccount?.avatarUrl || session?.user?.image;
   const userName = selectedAccount?.displayName || session?.user?.name || "User Name";
   const userHandle = selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle";
+
+  const aiDialogTitle =
+    aiTool === "thread" ? "AI Thread Writer" :
+    aiTool === "hook" ? "AI Hook Generator" :
+    aiTool === "cta" ? "AI CTA Generator" :
+    aiTool === "translate" ? "AI Translate Thread" :
+    aiTool === "hashtags" ? "AI Hashtag Generator" : "AI Rewrite";
+
+  const aiDialogDesc =
+    aiTool === "thread" ? "Generate a thread about any topic instantly." :
+    aiTool === "hook" ? "Generate a strong first tweet to start your thread." :
+    aiTool === "cta" ? "Generate a short call-to-action to end your thread." :
+    aiTool === "translate" ? "Translate the entire thread while keeping tweet limits." :
+    aiTool === "hashtags" ? "Generate trending hashtags for your tweet." : "Rewrite a tweet in a new tone.";
+
+  const isAiGenerateDisabled =
+    isGenerating ||
+    (aiTool === "thread" && !aiTopic) ||
+    (aiTool === "hook" && !aiTopic && !(tweets[0]?.content || "").trim()) ||
+    (aiTool === "rewrite" && !aiRewriteText.trim());
+
+  const aiTabsGenerateContent = (
+    <TabsContent value="generate" className="flex-1 overflow-y-auto py-4 space-y-4">
+      {(aiTool === "thread" || aiTool === "hook") && (
+        <div className="space-y-2">
+          <Label>Topic</Label>
+          <Input
+            placeholder="e.g. Productivity tips for developers"
+            value={aiTopic}
+            onChange={(e) => setAiTopic(e.target.value)}
+          />
+        </div>
+      )}
+
+      {aiTool === "rewrite" && (
+        <div className="space-y-2">
+          <Label>Tweet</Label>
+          <Textarea
+            value={aiRewriteText}
+            onChange={(e) => setAiRewriteText(e.target.value)}
+            className="min-h-[120px]"
+          />
+        </div>
+      )}
+
+      {aiTool === "translate" && (
+        <div className="space-y-2">
+          <Label>Target Language</Label>
+          <Select value={aiTranslateTarget} onValueChange={setAiTranslateTarget}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map(l => (
+                <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Tone</Label>
+          <Select value={aiTone} onValueChange={setAiTone}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="professional">Professional</SelectItem>
+              <SelectItem value="casual">Casual</SelectItem>
+              <SelectItem value="funny">Funny</SelectItem>
+              <SelectItem value="educational">Educational</SelectItem>
+              <SelectItem value="inspirational">Inspirational</SelectItem>
+              <SelectItem value="viral">Viral</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Language</Label>
+          <Select value={aiLanguage} onValueChange={setAiLanguage}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map(l => (
+                <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {aiTool === "thread" && (
+        <>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <Label>Length (Tweets)</Label>
+              <span className="text-sm text-muted-foreground">{aiCount[0]}</span>
+            </div>
+            <Slider
+              value={aiCount}
+              onValueChange={setAiCount}
+              min={3}
+              max={10}
+              step={1}
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-md border px-3 py-2">
+            <span className="text-sm">Add numbering (1/N)</span>
+            <Button
+              type="button"
+              variant={aiAddNumbering ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAiAddNumbering((v) => !v)}
+            >
+              {aiAddNumbering ? "On" : "Off"}
+            </Button>
+          </div>
+        </>
+      )}
+
+      {aiTool === "hashtags" && generatedHashtags.length > 0 && (
+        <div className="space-y-3">
+          <Label>Generated Hashtags (Click to add)</Label>
+          <div className="flex flex-wrap gap-2">
+            {generatedHashtags.map((tag) => (
+              <Button
+                key={tag}
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  if (aiTargetTweetId) {
+                    const t = tweets.find(x => x.id === aiTargetTweetId);
+                    if (t) updateTweet(aiTargetTweetId, `${t.content} ${tag}`.trim());
+                    toast.success(`Added ${tag}`);
+                  }
+                }}
+              >
+                {tag}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+    </TabsContent>
+  );
+
+  const aiTabsHistoryContent = (
+    <TabsContent value="history" className="flex-1 overflow-y-auto">
+      <div className="space-y-2">
+        {historyItems.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">No history found.</div>
+        ) : (
+          historyItems.map((item) => (
+            <div
+              key={item.id}
+              className="p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => restoreHistory(item)}
+            >
+              <div className="flex justify-between items-center mb-1">
+                <span className="font-semibold text-sm capitalize flex items-center gap-2">
+                  {item.type === "thread" ? <Sparkles className="w-3 h-3 text-primary" /> :
+                   item.type === "hashtags" ? <Hash className="w-3 h-3 text-primary" /> :
+                   <Sparkles className="w-3 h-3" />}
+                  {item.type}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(item.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {item.inputPrompt?.split('\n')[0] || "No prompt"}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+    </TabsContent>
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -765,13 +1035,25 @@ export function Composer() {
                         triggerFileUpload={triggerFileUpload}
                         openAiTool={openAiTool}
                         openAiImage={openAiImageDialog}
+                        onMove={moveTweet}
                     />
                 ))}
             </SortableContext>
         </DndContext>
 
-        <Button 
-          variant="outline" 
+        {tweets.some((t) => t.content.length > 280) && (
+          <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
+            <Info className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-700 dark:text-amber-400">
+              <span className="font-medium">X Premium required for long posts.</span>{" "}
+              One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on{" "}
+              <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard account, these tweets will fail and appear as errors in your queue.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Button
+          variant="outline"
           className="w-full py-6 border-dashed"
           onClick={addTweet}
         >
@@ -880,7 +1162,7 @@ export function Composer() {
 
                 {/* Recurrence Options */}
                 {scheduledDate && (
-                    <div className="grid grid-cols-2 gap-2 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Repeat</label>
                             <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
@@ -1048,220 +1330,59 @@ export function Composer() {
           </div>
         </div>
       </div>
-      <Dialog open={isAiOpen} onOpenChange={setIsAiOpen}>
-        <DialogContent className="max-w-2xl h-[90dvh] max-h-[600px] flex flex-col overflow-y-auto">
-          <Tabs defaultValue="generate" className="flex-1 flex flex-col">
-            <DialogHeader>
-              <div className="flex items-center justify-between pr-8">
-                <DialogTitle>
-                  {aiTool === "thread"
-                    ? "AI Thread Writer"
-                    : aiTool === "hook"
-                      ? "AI Hook Generator"
-                      : aiTool === "cta"
-                        ? "AI CTA Generator"
-                        : aiTool === "translate"
-                          ? "AI Translate Thread"
-                        : aiTool === "hashtags"
-                          ? "AI Hashtag Generator"
-                        : "AI Rewrite"}
-                </DialogTitle>
-                <TabsList>
-                  <TabsTrigger value="generate">Generate</TabsTrigger>
-                  <TabsTrigger value="history" onClick={fetchHistory}>History</TabsTrigger>
-                </TabsList>
+      {isDesktop ? (
+        <Dialog open={isAiOpen} onOpenChange={setIsAiOpen}>
+          <DialogContent className="max-w-2xl h-[90dvh] max-h-[600px] flex flex-col overflow-y-auto">
+            <Tabs defaultValue="generate" className="flex-1 flex flex-col">
+              <DialogHeader>
+                <div className="flex items-center justify-between pr-8">
+                  <DialogTitle>{aiDialogTitle}</DialogTitle>
+                  <TabsList>
+                    <TabsTrigger value="generate">Generate</TabsTrigger>
+                    <TabsTrigger value="history" onClick={fetchHistory}>History</TabsTrigger>
+                  </TabsList>
+                </div>
+                <DialogDescription>{aiDialogDesc}</DialogDescription>
+              </DialogHeader>
+              {aiTabsGenerateContent}
+              {aiTabsHistoryContent}
+              <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
+                <Button onClick={handleAiRun} disabled={isAiGenerateDisabled}>
+                  {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Generate
+                </Button>
+              </DialogFooter>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Sheet open={isAiOpen} onOpenChange={setIsAiOpen}>
+          <SheetContent side="bottom" className="h-[90dvh] flex flex-col overflow-hidden pb-safe">
+            <Tabs defaultValue="generate" className="flex-1 flex flex-col overflow-hidden">
+              <SheetHeader className="shrink-0 pb-2">
+                <div className="flex items-center justify-between">
+                  <SheetTitle>{aiDialogTitle}</SheetTitle>
+                  <TabsList>
+                    <TabsTrigger value="generate">Generate</TabsTrigger>
+                    <TabsTrigger value="history" onClick={fetchHistory}>History</TabsTrigger>
+                  </TabsList>
+                </div>
+                <SheetDescription>{aiDialogDesc}</SheetDescription>
+              </SheetHeader>
+              {aiTabsGenerateContent}
+              {aiTabsHistoryContent}
+              <div className="flex justify-end gap-2 pt-4 shrink-0 border-t mt-2">
+                <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
+                <Button onClick={handleAiRun} disabled={isAiGenerateDisabled}>
+                  {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Generate
+                </Button>
               </div>
-              <DialogDescription>
-                {aiTool === "thread"
-                  ? "Generate a thread about any topic instantly."
-                  : aiTool === "hook"
-                    ? "Generate a strong first tweet to start your thread."
-                    : aiTool === "cta"
-                      ? "Generate a short call-to-action to end your thread."
-                      : aiTool === "translate"
-                        ? "Translate the entire thread while keeping tweet limits."
-                      : aiTool === "hashtags"
-                        ? "Generate trending hashtags for your tweet."
-                      : "Rewrite a tweet in a new tone."}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <TabsContent value="generate" className="flex-1 overflow-y-auto py-4 space-y-4">
-              {(aiTool === "thread" || aiTool === "hook") && (
-                <div className="space-y-2">
-                  <Label>Topic</Label>
-                  <Input
-                    placeholder="e.g. Productivity tips for developers"
-                    value={aiTopic}
-                    onChange={(e) => setAiTopic(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {aiTool === "rewrite" && (
-                <div className="space-y-2">
-                  <Label>Tweet</Label>
-                  <Textarea
-                    value={aiRewriteText}
-                    onChange={(e) => setAiRewriteText(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                </div>
-              )}
-
-              {aiTool === "translate" && (
-                <div className="space-y-2">
-                  <Label>Target Language</Label>
-                  <Select value={aiTranslateTarget} onValueChange={setAiTranslateTarget}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map(l => (
-                        <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tone</Label>
-                  <Select value={aiTone} onValueChange={setAiTone}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="casual">Casual</SelectItem>
-                      <SelectItem value="funny">Funny</SelectItem>
-                      <SelectItem value="educational">Educational</SelectItem>
-                      <SelectItem value="inspirational">Inspirational</SelectItem>
-                      <SelectItem value="viral">Viral</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Language</Label>
-                  <Select value={aiLanguage} onValueChange={setAiLanguage}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map(l => (
-                        <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {aiTool === "thread" && (
-                <>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <Label>Length (Tweets)</Label>
-                      <span className="text-sm text-muted-foreground">{aiCount[0]}</span>
-                    </div>
-                    <Slider
-                      value={aiCount}
-                      onValueChange={setAiCount}
-                      min={3}
-                      max={10}
-                      step={1}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-md border px-3 py-2">
-                    <span className="text-sm">Add numbering (1/N)</span>
-                    <Button
-                      type="button"
-                      variant={aiAddNumbering ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setAiAddNumbering((v) => !v)}
-                    >
-                      {aiAddNumbering ? "On" : "Off"}
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {aiTool === "hashtags" && generatedHashtags.length > 0 && (
-                <div className="space-y-3">
-                  <Label>Generated Hashtags (Click to add)</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {generatedHashtags.map((tag) => (
-                      <Button
-                        key={tag}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          if (aiTargetTweetId) {
-                            const t = tweets.find(x => x.id === aiTargetTweetId);
-                            if (t) updateTweet(aiTargetTweetId, `${t.content} ${tag}`.trim());
-                            toast.success(`Added ${tag}`);
-                          }
-                        }}
-                      >
-                        {tag}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="history" className="flex-1 overflow-y-auto">
-              <div className="space-y-2">
-                {historyItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">No history found.</div>
-                ) : (
-                  historyItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => restoreHistory(item)}
-                    >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-sm capitalize flex items-center gap-2">
-                          {item.type === "thread" ? <Sparkles className="w-3 h-3 text-primary" /> :
-                           item.type === "hashtags" ? <Hash className="w-3 h-3 text-primary" /> :
-                           <Sparkles className="w-3 h-3" />}
-                          {item.type}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {item.inputPrompt?.split('\n')[0] || "No prompt"}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </TabsContent>
-
-            <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
-              <Button
-                onClick={handleAiRun}
-                disabled={
-                  isGenerating ||
-                  (aiTool === "thread" && !aiTopic) ||
-                  (aiTool === "hook" && !aiTopic && !(tweets[0]?.content || "").trim()) ||
-                  (aiTool === "rewrite" && !aiRewriteText.trim())
-                }
-              >
-                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Generate
-              </Button>
-            </DialogFooter>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+            </Tabs>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* AI Image Dialog */}
       <AiImageDialog

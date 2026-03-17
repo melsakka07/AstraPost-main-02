@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
-export function CancelPostButton({ postId }: { postId: string }) {
+export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLabel?: string }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -45,7 +45,7 @@ export function CancelPostButton({ postId }: { postId: string }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+        <Button variant="ghost" size="sm" aria-label={ariaLabel} className="text-destructive hover:text-destructive hover:bg-destructive/10">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
           Cancel
         </Button>

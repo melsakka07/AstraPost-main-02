@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-export function RetryPostButton({ postId }: { postId: string }) {
+export function RetryPostButton({ postId, ariaLabel }: { postId: string; ariaLabel?: string }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -13,6 +13,7 @@ export function RetryPostButton({ postId }: { postId: string }) {
     <Button
       variant="outline"
       disabled={isPending}
+      aria-label={ariaLabel}
       onClick={async () => {
         setIsPending(true);
         try {

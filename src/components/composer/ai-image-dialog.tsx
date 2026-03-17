@@ -309,6 +309,7 @@ export function AiImageDialog({
             <Label htmlFor="prompt">Image Prompt</Label>
             <Textarea
               id="prompt"
+              autoFocus
               placeholder={
                 tweetContent
                   ? `AI will generate a prompt from: "${tweetContent.slice(0, 100)}${tweetContent.length > 100 ? "..." : ""}"`
@@ -455,8 +456,8 @@ export function AiImageDialog({
 
           {/* Loading State */}
           {isGenerating && (
-            <div className="flex flex-col items-center justify-center py-8 space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div role="status" aria-label="Generating image" className="flex flex-col items-center justify-center py-8 space-y-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
               <p className="text-sm text-muted-foreground">
                 Generating your image...
               </p>

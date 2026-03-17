@@ -78,12 +78,14 @@ export default async function DashboardLayout({
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
 
   return (
-    <div data-dashboard-layout className="flex min-h-dvh bg-background">
+    // pb-safe adds env(safe-area-inset-bottom) padding so content never slides
+    // under the home indicator on notched iPhones / modern Android devices.
+    <div data-dashboard-layout className="flex min-h-dvh bg-background pb-safe">
       <OnboardingRedirect isCompleted={isOnboarded} />
       {isOnboarded && <DashboardTour />}
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <DashboardHeader 
+        <DashboardHeader
           user={{
             id: session.user.id,
             name: session.user.name,
@@ -97,7 +99,25 @@ export default async function DashboardLayout({
           trialEndsAt={dbUser?.trialEndsAt ?? null}
           plan={dbUser?.plan ?? "free"}
         />
-        <main className="flex-1 p-4 pt-4 md:p-8 md:pt-8">
+        {/*
+          id="main-content" — target for the skip-to-main-content link added
+          in the root layout (Task 1.2). Without this id the skip link silently
+          does nothing.
+
+          tabIndex={-1} — allows the element to receive programmatic focus when
+          the skip link is activated. Required for Firefox; Chrome/Safari handle
+          it without this but it does no harm elsewhere.
+
+          outline-none — suppresses the browser's default focus ring on this
+          non-interactive container. The next Tab press after the skip link lands
+          the user on the first interactive element inside <main>, which will
+          show its own focus-visible ring as expected.
+        */}
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 p-4 pt-4 outline-none md:p-8 md:pt-8"
+        >
           {children}
         </main>
       </div>

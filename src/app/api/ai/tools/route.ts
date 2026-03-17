@@ -22,8 +22,12 @@ const requestSchema = z.object({
   input: z.string().max(1000).optional(),
 });
 
+// Keep the schema constraint generous — the AI sometimes exceeds the prompt's
+// character limit by a few characters, and Zod validation failure causes
+// generateObject to throw. We enforce the actual limit in the prompt and
+// truncate on return if needed.
 const responseSchema = z.object({
-  text: z.string().max(280),
+  text: z.string().max(1100),
 });
 
 export async function POST(req: Request) {
@@ -135,7 +139,8 @@ ${input || ""}`;
     );
 
     return Response.json(object);
-  } catch {
+  } catch (err) {
+    console.error("AI tools error:", err);
     return new Response(JSON.stringify({ error: "AI tool failed" }), { status: 500 });
   }
 }

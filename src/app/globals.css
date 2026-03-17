@@ -118,16 +118,50 @@
 @layer base {
   * {
     @apply border-border;
+    /* Prevent the blue/grey tap highlight flash on iOS and Android */
+    -webkit-tap-highlight-color: transparent;
   }
+
   body {
     @apply bg-background text-foreground;
+    /* Prevent iOS from inflating font sizes when rotating to landscape */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
+
+  /* Remove 300ms tap delay and disable browser-managed double-tap zoom
+     on all interactive elements — does NOT disable pinch-to-zoom (WCAG safe) */
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea,
+  label,
+  summary {
+    touch-action: manipulation;
+  }
+
   /* Arabic typography — activates only when lang="ar" is set on <html>.
      Cairo is loaded via Next.js font optimisation (layout.tsx) and exposed
      as the --font-arabic CSS custom property. The Latin fallback chain
      ensures readable text if the font fails to load. */
   :lang(ar) {
     font-family: var(--font-arabic), system-ui, sans-serif;
+  }
+
+  /* Respect the user's reduced-motion preference.
+     Kills all transitions and animations sitewide — including accordion,
+     sheet, and dialog animations from Radix UI. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
@@ -302,9 +336,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
     transition: transform 0.3s ease;
   }
 
-  .prose a:hover::after {
-    transform: scaleX(1);
-  }
+  /* hover state moved to @media (hover: hover) block below */
 
   /* Beautiful blockquotes */
   .prose blockquote {
@@ -384,9 +416,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
     transition: background 0.2s ease;
   }
 
-  .prose table tbody tr:hover td {
-    background: hsl(var(--muted) / 0.3);
-  }
+  /* hover state moved to @media (hover: hover) block below */
 
   .prose table tbody tr:last-child td {
     border-bottom: none;
@@ -405,10 +435,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
 
-  .prose img:hover {
-    transform: scale(1.02);
-    box-shadow: 0 20px 25px -5px hsl(var(--foreground) / 0.05);
-  }
+  /* hover state moved to @media (hover: hover) block below */
 
   /* Larger prose variant */
   .prose-lg {
@@ -480,9 +507,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
     background: linear-gradient(135deg, hsl(var(--muted) / 0.5), hsl(var(--muted) / 0.2));
   }
 
-  .dark .prose table tbody tr:hover td {
-    background: hsl(var(--muted) / 0.2);
-  }
+  /* hover state moved to @media (hover: hover) block below */
 }
 
 /* Hide the MDX h1 title — it duplicates the page hero heading.
@@ -496,6 +521,47 @@ body:has([data-dashboard-layout]) [data-main-content] {
   .prose hr + h2,
   .prose hr + h3 {
     margin-top: 0;
+  }
+}
+
+/* ─── Mobile / Touch Utilities ───────────────────────────────────────────────
+   Safe-area inset helpers for notched devices (iPhone 14+, modern Android).
+   Use env() with a 0px fallback so desktop browsers are unaffected.
+
+   Usage:
+     <main class="pb-safe">   — pushes content above home indicator
+     <nav  class="pb-safe-or-4"> — whichever is bigger: safe-area or 1rem
+   ──────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  /* Logical properties for RTL compatibility */
+  .ps-safe {
+    padding-inline-start: env(safe-area-inset-left, 0px);
+  }
+  .pe-safe {
+    padding-inline-end: env(safe-area-inset-right, 0px);
+  }
+  /* Ensures at least 1rem padding OR the device safe-area — whichever is larger.
+     Useful for bottom-fixed toolbars that need breathing room on all devices. */
+  .pb-safe-or-4 {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem);
+  }
+
+  /* ─── Touch Target ─────────────────────────────────────────────────────────
+     WCAG 2.5.8 requires a minimum 24×24px target (AA) with 44×44px strongly
+     recommended (AAA / Apple HIG / Material). Apply to any icon-only button
+     that would otherwise be too small:
+
+       <Button size="icon" className="touch-target …">
+   ──────────────────────────────────────────────────────────────────────── */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
@@ -518,13 +584,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
   color: hsl(var(--muted-foreground));
 }
 
-.prose :is(h2, h3, h4):hover .anchor-link {
-  opacity: 1;
-}
-
-.prose .anchor-link:hover {
-  color: hsl(var(--primary));
-}
+/* hover states moved to @media (hover: hover) block below */
 
 /* Mobile: adjust anchor link position */
 @media (max-width: 768px) {
@@ -550,4 +610,41 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
 .animate-accordion-up {
   animation: accordion-up 0.2s ease-out;
+}
+
+/* ─── Hover-only effects ─────────────────────────────────────────────────────
+   Scoped to devices that natively support hover (mice, trackpads).
+   On touch-only screens (iOS, Android) @media (hover: hover) does NOT match,
+   so none of these rules fire — preventing the "sticky hover" bug where the
+   last-tapped element keeps its highlighted state until the next tap.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (hover: hover) {
+  /* Prose link underline animation */
+  .prose a:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Blog image zoom on hover */
+  .prose img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 20px 25px -5px hsl(var(--foreground) / 0.05);
+  }
+
+  /* Table row highlight */
+  .prose table tbody tr:hover td {
+    background: hsl(var(--muted) / 0.3);
+  }
+
+  .dark .prose table tbody tr:hover td {
+    background: hsl(var(--muted) / 0.2);
+  }
+
+  /* Blog heading anchor link reveal */
+  .prose :is(h2, h3, h4):hover .anchor-link {
+    opacity: 1;
+  }
+
+  .prose .anchor-link:hover {
+    color: hsl(var(--primary));
+  }
 }

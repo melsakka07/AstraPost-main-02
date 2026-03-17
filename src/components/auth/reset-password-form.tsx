@@ -77,11 +77,14 @@ export function ResetPasswordForm() {
         <Input
           id="password"
           type="password"
+          autoComplete="new-password"
           placeholder="Enter new password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           disabled={isPending}
+          aria-describedby={formError ? "resetpwd-error" : undefined}
+          aria-invalid={formError === "Password must be at least 8 characters" || formError === "Passwords do not match" ? true : undefined}
         />
       </div>
       <div className="space-y-2">
@@ -89,15 +92,18 @@ export function ResetPasswordForm() {
         <Input
           id="confirmPassword"
           type="password"
+          autoComplete="new-password"
           placeholder="Confirm new password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
           disabled={isPending}
+          aria-describedby={formError ? "resetpwd-error" : undefined}
+          aria-invalid={formError === "Passwords do not match" ? true : undefined}
         />
       </div>
       {formError && (
-        <p role="alert" aria-live="polite" className="text-sm text-destructive">{formError}</p>
+        <p id="resetpwd-error" role="alert" aria-live="polite" className="text-sm text-destructive">{formError}</p>
       )}
       <Button type="submit" className="w-full" disabled={isPending}>
         {isPending ? "Resetting..." : "Reset password"}
