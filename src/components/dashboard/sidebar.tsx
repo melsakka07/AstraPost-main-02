@@ -92,10 +92,14 @@ function SidebarContent({ pathname, onNavigate, aiUsage }: SidebarContentProps) 
   return (
     <div className="flex flex-col h-full">
       {/* Brand */}
-      <div className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-6">
+      <Link
+        href="/"
+        className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-6 hover:opacity-80 transition-opacity"
+        aria-label="Go to AstraPost home"
+      >
         <Rocket className="h-6 w-6 text-primary" />
         <span className="text-xl font-bold tracking-tight">AstraPost</span>
-      </div>
+      </Link>
 
       {/* Navigation sections */}
       <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Dashboard navigation">
