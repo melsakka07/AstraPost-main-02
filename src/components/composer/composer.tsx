@@ -1287,7 +1287,7 @@ export function Composer() {
              <div className="flex gap-3">
                 <div className="w-10 h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
                     {userImage ? (
-                        <Image src={userImage} alt={userName} fill className="object-cover" />
+                        <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
                             {userName[0]?.toUpperCase() || "U"}
