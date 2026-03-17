@@ -69,7 +69,7 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
           Templates
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl h-[600px] flex flex-col">
+      <DialogContent className="max-w-3xl h-[85dvh] md:h-[600px] flex flex-col">
         <DialogHeader>
           <DialogTitle>Content Templates</DialogTitle>
           <DialogDescription>
@@ -77,14 +77,14 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="mb-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="mb-4 shrink-0">
             <TabsTrigger value="system">System Templates</TabsTrigger>
             <TabsTrigger value="my-templates">My Templates</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="system" className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex gap-2 pb-4 overflow-x-auto">
+          <TabsContent value="system" className="flex-1 flex flex-col overflow-hidden min-h-0">
+            <div className="flex gap-2 pb-4 shrink-0 flex-wrap sm:flex-nowrap sm:overflow-x-auto">
               {systemCategories.map(cat => (
                 <Button
                   key={cat}
@@ -98,8 +98,8 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
               ))}
             </div>
 
-            <ScrollArea className="flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+            <ScrollArea className="flex-1 min-h-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 pr-4">
                 {filteredSystem.map(template => (
                   <div 
                     key={template.id} 
@@ -120,7 +120,7 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="my-templates" className="flex-1 flex flex-col overflow-hidden">
+          <TabsContent value="my-templates" className="flex-1 flex flex-col overflow-hidden min-h-0">
             {loading ? (
               <div role="status" aria-label="Loading templates" className="flex items-center justify-center h-full">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
@@ -132,8 +132,8 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
                 <p className="text-sm">Save your drafts as templates to see them here.</p>
               </div>
             ) : (
-              <ScrollArea className="flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+              <ScrollArea className="flex-1 min-h-0">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 pr-4">
                   {userTemplates.map(template => (
                     <div 
                       key={template.id} 

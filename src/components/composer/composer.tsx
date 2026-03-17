@@ -81,6 +81,15 @@ interface PlanLimitPayload {
   reset_at?: string | null;
 }
 
+const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  const value = `${String(h).padStart(2, "0")}:${m}`;
+  const period = h < 12 ? "AM" : "PM";
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return { value, label: `${displayH}:${m} ${period}` };
+});
+
 export function Composer() {
   const [tweets, setTweets] = useState<TweetDraft[]>([
     { id: "1", content: "", media: [] },
@@ -1129,20 +1138,44 @@ export function Composer() {
 
             <div className="space-y-2">
                 <label className="text-sm font-medium">Schedule for</label>
-                <Input
-                    type="datetime-local"
-                    value={scheduledDate}
+                {/* Split into date + time to avoid native calendar popup overflowing on mobile */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    type="date"
+                    aria-label="Schedule date"
+                    value={scheduledDate ? scheduledDate.slice(0, 10) : ""}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      setScheduledDate(value);
-                      // Reset recurrence when the date is cleared so orphaned
-                      // recurrence state is never silently submitted.
-                      if (!value) {
+                      const newDate = e.target.value;
+                      if (!newDate) {
+                        setScheduledDate("");
                         setRecurrencePattern("none");
                         setRecurrenceEndDate("");
+                      } else {
+                        const existingTime = scheduledDate ? scheduledDate.slice(11, 16) : "12:00";
+                        setScheduledDate(`${newDate}T${existingTime}`);
                       }
                     }}
-                />
+                  />
+                  <Select
+                    value={scheduledDate ? scheduledDate.slice(11, 16) : ""}
+                    disabled={!scheduledDate}
+                    onValueChange={(newTime) => {
+                      const existingDate = scheduledDate ? scheduledDate.slice(0, 10) : "";
+                      if (existingDate) setScheduledDate(`${existingDate}T${newTime}`);
+                    }}
+                  >
+                    <SelectTrigger aria-label="Schedule time">
+                      <SelectValue placeholder="Time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIME_SLOTS.map((slot) => (
+                        <SelectItem key={slot.value} value={slot.value}>
+                          {slot.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 {browserTimezone && (
                   <p className="text-xs text-muted-foreground">
                     Times are in{" "}

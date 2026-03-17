@@ -7,7 +7,7 @@ import twitter from 'twitter-text';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -277,6 +277,8 @@ export function TweetCard({
                   </Tooltip>
                   <Sheet open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                     <SheetContent side="bottom" className="h-[400px] px-0">
+                      <SheetTitle className="sr-only">Emoji picker</SheetTitle>
+                      <SheetDescription className="sr-only">Select an emoji to insert</SheetDescription>
                       <EmojiPicker
                         onEmojiClick={onEmojiClick}
                         width="100%"

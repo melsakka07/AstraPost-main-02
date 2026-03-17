@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
@@ -254,6 +254,7 @@ export function Sidebar({ aiUsage }: SidebarProps) {
         </SheetTrigger>
         <SheetContent side={sheetSide} className="p-0 w-64">
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>
+          <SheetDescription className="sr-only">Main navigation links</SheetDescription>
           <SidebarContent pathname={pathname} onNavigate={() => setOpen(false)} aiUsage={aiUsage} />
         </SheetContent>
       </Sheet>

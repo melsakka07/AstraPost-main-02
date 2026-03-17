@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
@@ -21,10 +21,14 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
     return `trial-banner-dismissed:${trialEndsAt.toISOString().slice(0, 10)}`;
   }, [trialEndsAt]);
 
-  const dismissedByStorage =
-    typeof window !== "undefined" && bannerKey
-      ? sessionStorage.getItem(bannerKey) === "1"
-      : false;
+  // useSyncExternalStore handles SSR correctly: getServerSnapshot always
+  // returns false (banner visible), getSnapshot reads sessionStorage on the
+  // client. This avoids the typeof-window hydration mismatch.
+  const dismissedByStorage = useSyncExternalStore(
+    () => () => {},
+    () => (bannerKey ? sessionStorage.getItem(bannerKey) === "1" : false),
+    () => false,
+  );
 
   if (!isDashboardRoute || !shouldShowForPlan || !trialEndsAt) return null;
   if (dismissed || dismissedByStorage) return null;
