@@ -21,6 +21,12 @@ export interface PlanLimits {
   maxTeamMembers: number | null;
   maxInspirationBookmarks: number;
   canUseInspiration: boolean;
+  canUseContentCalendar: boolean;
+  canUseUrlToThread: boolean;
+  canUseVariantGenerator: boolean;
+  canUseCompetitorAnalyzer: boolean;
+  canUseReplyGenerator: boolean;
+  canUseBioOptimizer: boolean;
 }
 
 export type PlanType = "free" | "pro_monthly" | "pro_annual" | "agency";
@@ -45,6 +51,12 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxTeamMembers: null,
     maxInspirationBookmarks: 5,
     canUseInspiration: true,
+    canUseContentCalendar: false,
+    canUseUrlToThread: false,
+    canUseVariantGenerator: false,
+    canUseCompetitorAnalyzer: false,
+    canUseReplyGenerator: false,
+    canUseBioOptimizer: false,
   },
   pro_monthly: {
     postsPerMonth: Infinity,
@@ -65,6 +77,12 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxTeamMembers: null,
     maxInspirationBookmarks: -1, // -1 = unlimited
     canUseInspiration: true,
+    canUseContentCalendar: true,
+    canUseUrlToThread: true,
+    canUseVariantGenerator: true,
+    canUseCompetitorAnalyzer: true,
+    canUseReplyGenerator: true,
+    canUseBioOptimizer: true,
   },
   pro_annual: {
     postsPerMonth: Infinity,
@@ -85,6 +103,12 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxTeamMembers: null,
     maxInspirationBookmarks: -1, // -1 = unlimited
     canUseInspiration: true,
+    canUseContentCalendar: true,
+    canUseUrlToThread: true,
+    canUseVariantGenerator: true,
+    canUseCompetitorAnalyzer: true,
+    canUseReplyGenerator: true,
+    canUseBioOptimizer: true,
   },
   agency: {
     postsPerMonth: Infinity,
@@ -105,6 +129,12 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     maxTeamMembers: 5,
     maxInspirationBookmarks: -1, // -1 = unlimited
     canUseInspiration: true,
+    canUseContentCalendar: true,
+    canUseUrlToThread: true,
+    canUseVariantGenerator: true,
+    canUseCompetitorAnalyzer: true,
+    canUseReplyGenerator: true,
+    canUseBioOptimizer: true,
   },
 };
 

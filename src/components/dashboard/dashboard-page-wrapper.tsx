@@ -21,19 +21,23 @@ export function DashboardPageWrapper({
   return (
     <div className={`mx-auto w-full max-w-7xl space-y-6 md:space-y-8 ${className || ""}`}>
       {/* Header with Icon Badge */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
-            <Icon className="h-6 w-6 text-primary" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10 sm:h-12 sm:w-12">
+            <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold tracking-tight sm:text-3xl">{title}</h1>
             {description && (
-              <p className="text-muted-foreground mt-1">{description}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground sm:mt-1">{description}</p>
             )}
           </div>
         </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+        {actions && (
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+            {actions}
+          </div>
+        )}
       </div>
 
       {/* Page Content */}
@@ -50,14 +54,18 @@ interface SimplePageHeaderProps {
 
 export function SimplePageHeader({ title, description, actions }: SimplePageHeaderProps) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="text-xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {description && (
-          <p className="text-muted-foreground mt-1">{description}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground sm:mt-1">{description}</p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && (
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }

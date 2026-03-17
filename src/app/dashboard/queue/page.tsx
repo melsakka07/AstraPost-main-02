@@ -154,8 +154,8 @@ export default async function QueuePage({
           </div>
           <Button asChild>
             <Link href="/dashboard/compose">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Post
+              <PlusCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">New Post</span>
             </Link>
           </Button>
         </>
@@ -181,8 +181,8 @@ export default async function QueuePage({
               {awaitingApprovalPosts.map((post, index) => (
                 <Card key={post.id} className="border-warning/30 bg-warning/10">
                     <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-warning/15 p-4 text-center sm:min-w-[100px]">
-                            <ShieldCheck className="h-6 w-6 mb-2 text-warning" />
+                        <div className="flex flex-row items-center gap-3 rounded-lg bg-warning/15 p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px]">
+                            <ShieldCheck className="h-5 w-5 shrink-0 text-warning sm:h-6 sm:w-6 sm:mb-2" />
                             <div className="text-xs text-muted-foreground">Needs Review</div>
                         </div>
                         <div className="min-w-0 flex-1 space-y-2">
@@ -243,13 +243,15 @@ export default async function QueuePage({
             {scheduledPosts.map((post, index) => (
                 <Card key={post.id}>
                     <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
-                        <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 p-4 text-center sm:min-w-[100px]">
-                            <Clock className="h-6 w-6 mb-2 text-primary" />
-                            <div className="text-sm font-bold">
-                                {post.scheduledAt ? new Date(post.scheduledAt).toLocaleDateString() : "No Date"}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                                {post.scheduledAt ? new Date(post.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                        <div className="flex flex-row items-center gap-3 rounded-lg bg-muted/50 p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px]">
+                            <Clock className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6 sm:mb-1" />
+                            <div>
+                                <div className="text-sm font-bold">
+                                    {post.scheduledAt ? new Date(post.scheduledAt).toLocaleDateString() : "No Date"}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    {post.scheduledAt ? new Date(post.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                                </div>
                             </div>
                         </div>
                         <div className="min-w-0 flex-1 space-y-2">
@@ -282,7 +284,7 @@ export default async function QueuePage({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight">Failed Posts</h2>
         {failedPosts.length > 0 && (
-          <p className="text-sm text-muted-foreground">Retry or edit failed content quickly</p>
+          <p className="hidden text-sm text-muted-foreground sm:block">Retry or edit failed content quickly</p>
         )}
       </div>
 
@@ -299,8 +301,8 @@ export default async function QueuePage({
           {failedPosts.map((post, index) => (
             <Card key={post.id}>
               <CardContent className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}>
-                <div className="flex flex-col items-center justify-center rounded-lg bg-muted/50 p-4 text-center sm:min-w-[100px]">
-                  <AlertTriangle className="h-6 w-6 mb-2 text-destructive" />
+                <div className="flex flex-row items-center gap-3 rounded-lg bg-muted/50 p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px]">
+                  <AlertTriangle className="h-5 w-5 shrink-0 text-destructive sm:h-6 sm:w-6 sm:mb-2" />
                   <div className="text-xs text-muted-foreground">Failed</div>
                 </div>
                 <div className="min-w-0 flex-1 space-y-2">

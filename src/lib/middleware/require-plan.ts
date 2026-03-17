@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan, type PlanType } from "@/lib/plan-limits";
 import { aiGenerations, posts, user, xAccounts } from "@/lib/schema";
 
-export type GatedFeature = "ai_writer" | "ai_quota" | "scheduled_posts" | "x_accounts" | "analytics_export" | "viral_score" | "best_times" | "voice_profile" | "linkedin_access";
+export type GatedFeature = "ai_writer" | "ai_quota" | "scheduled_posts" | "x_accounts" | "analytics_export" | "viral_score" | "best_times" | "voice_profile" | "linkedin_access" | "content_calendar" | "url_to_thread" | "variant_generator" | "competitor_analyzer" | "reply_generator" | "bio_optimizer";
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
 interface PlanContext {
@@ -389,6 +389,114 @@ export async function checkLinkedinAccessDetailed(userId: string): Promise<PlanG
     limit: 0,
     used: 1,
     suggestedPlan: getSuggestedPlan(context.plan, "linkedin_access"),
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkContentCalendarAccessDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  if (context.isTrialActive) return { allowed: true };
+  const limits = getPlanLimits(context.plan);
+  if (limits.canUseContentCalendar) return { allowed: true };
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "content_calendar",
+    message: "AI Content Calendar is a Pro feature.",
+    plan: context.plan,
+    limit: 0,
+    used: 1,
+    suggestedPlan: "pro_monthly",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkUrlToThreadAccessDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  if (context.isTrialActive) return { allowed: true };
+  const limits = getPlanLimits(context.plan);
+  if (limits.canUseUrlToThread) return { allowed: true };
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "url_to_thread",
+    message: "URL → Thread Converter is a Pro feature.",
+    plan: context.plan,
+    limit: 0,
+    used: 1,
+    suggestedPlan: "pro_monthly",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkVariantGeneratorAccessDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  if (context.isTrialActive) return { allowed: true };
+  const limits = getPlanLimits(context.plan);
+  if (limits.canUseVariantGenerator) return { allowed: true };
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "variant_generator",
+    message: "A/B Variant Generator is a Pro feature.",
+    plan: context.plan,
+    limit: 0,
+    used: 1,
+    suggestedPlan: "pro_monthly",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkCompetitorAnalyzerAccessDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  if (context.isTrialActive) return { allowed: true };
+  const limits = getPlanLimits(context.plan);
+  if (limits.canUseCompetitorAnalyzer) return { allowed: true };
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "competitor_analyzer",
+    message: "Competitor Analyzer is a Pro feature.",
+    plan: context.plan,
+    limit: 0,
+    used: 1,
+    suggestedPlan: "pro_monthly",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkReplyGeneratorAccessDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  if (context.isTrialActive) return { allowed: true };
+  const limits = getPlanLimits(context.plan);
+  if (limits.canUseReplyGenerator) return { allowed: true };
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "reply_generator",
+    message: "Reply Suggester is a Pro feature.",
+    plan: context.plan,
+    limit: 0,
+    used: 1,
+    suggestedPlan: "pro_monthly",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkBioOptimizerAccessDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  if (context.isTrialActive) return { allowed: true };
+  const limits = getPlanLimits(context.plan);
+  if (limits.canUseBioOptimizer) return { allowed: true };
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "bio_optimizer",
+    message: "AI Bio Optimizer is a Pro feature.",
+    plan: context.plan,
+    limit: 0,
+    used: 1,
+    suggestedPlan: "pro_monthly",
     trialActive: context.isTrialActive,
     resetAt: null,
   });

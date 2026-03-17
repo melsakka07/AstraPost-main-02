@@ -20,6 +20,10 @@ import {
   Rocket,
   Menu,
   ExternalLink,
+  Users,
+  MessageCircle,
+  CalendarRange,
+  UserPen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -54,6 +58,9 @@ const sidebarSections: SidebarSection[] = [
     label: "AI Tools",
     items: [
       { icon: Bot, label: "AI Writer", href: "/dashboard/ai" },
+      { icon: CalendarRange, label: "Content Calendar", href: "/dashboard/ai/calendar" },
+      { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply" },
+      { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio" },
       { icon: Lightbulb, label: "Inspiration", href: "/dashboard/inspiration" },
       { icon: ShoppingCart, label: "Affiliate", href: "/dashboard/affiliate" },
     ],
@@ -63,6 +70,7 @@ const sidebarSections: SidebarSection[] = [
     items: [
       { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics" },
       { icon: TrendingUp, label: "Viral Analyzer", href: "/dashboard/analytics/viral" },
+      { icon: Users, label: "Competitor", href: "/dashboard/analytics/competitor" },
     ],
   },
   {
