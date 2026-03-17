@@ -15,6 +15,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { POST } from "./route";
 
 // ─── Hoisted mocks ─────────────────────────────────────────────────────────────
 
@@ -99,10 +100,6 @@ vi.mock("@/lib/services/notifications", () => ({
 vi.mock("@/lib/services/email", () => ({
   sendBillingEmail: vi.fn().mockResolvedValue(undefined),
 }));
-
-// ─── Import SUT after mocks ────────────────────────────────────────────────────
-
-import { POST } from "./route";
 
 // ─── Test fixtures ────────────────────────────────────────────────────────────
 

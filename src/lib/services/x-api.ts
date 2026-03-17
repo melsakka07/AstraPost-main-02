@@ -326,10 +326,6 @@ export class XApiService {
     const mediaCategory =
       options?.mediaCategory ?? this.inferCategory(mimeType);
 
-    console.log(
-      `[XApi] Starting v2 media upload. bytes=${totalBytes} type=${mimeType} category=${mediaCategory}`
-    );
-
     // ── INIT ────────────────────────────────────────────────────────────────
     const initData = await this.jsonRequest<{
       data: { id: string; media_key: string; expires_after_secs: number };
@@ -340,7 +336,6 @@ export class XApiService {
     });
 
     const mediaId = initData.data.id;
-    console.log(`[XApi] INIT ok. media_id=${mediaId}`);
     logger.info("x_media_upload_initialized", { mediaId, mediaCategory, totalBytes });
 
     // ── APPEND (chunked) ────────────────────────────────────────────────────
@@ -375,11 +370,9 @@ export class XApiService {
         );
       }
 
-      console.log(`[XApi] APPEND chunk ${i + 1}/${totalChunks} ok`);
       logger.debug("x_media_upload_chunk_appended", { mediaId, chunk: i + 1, total: totalChunks });
     }
 
-    console.log(`[XApi] All chunks uploaded. media_id=${mediaId}`);
     logger.info("x_media_upload_chunks_complete", { mediaId, totalChunks });
 
     // ── FINALIZE ────────────────────────────────────────────────────────────
@@ -397,7 +390,6 @@ export class XApiService {
       };
     }>("POST", `https://api.x.com/2/media/upload/${mediaId}/finalize`, {});
 
-    console.log(`[XApi] FINALIZE ok. media_key=${finalizeData.data.media_key}`);
     logger.info("x_media_upload_finalized", { mediaId });
 
     // ── STATUS POLL (video / gif only) ──────────────────────────────────────
@@ -438,7 +430,6 @@ export class XApiService {
     initialWaitSecs: number
   ): Promise<void> {
     let waitMs = initialWaitSecs * 1000;
-    console.log(`[XApi] Polling processing status for media_id=${mediaId}`);
     logger.info("x_media_upload_polling_start", { mediaId });
 
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
@@ -459,13 +450,9 @@ export class XApiService {
       const { state, check_after_secs, progress_percent, error } =
         statusData.data.processing_info;
 
-      console.log(
-        `[XApi] Processing: state=${state} progress=${progress_percent ?? 0}%`
-      );
       logger.debug("x_media_upload_polling_status", { mediaId, state, progressPercent: progress_percent });
 
       if (state === "succeeded") {
-        console.log(`[XApi] Processing complete. media_id=${mediaId}`);
         logger.info("x_media_upload_processing_complete", { mediaId });
         return;
       }

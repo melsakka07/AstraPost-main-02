@@ -268,7 +268,7 @@ export function Composer() {
       }
     })();
     return () => { cancelled = true; };
-  }, [draftId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [draftId]);
 
   // Once both accounts and the draft's linked account ID are known, restore the selection
   useEffect(() => {

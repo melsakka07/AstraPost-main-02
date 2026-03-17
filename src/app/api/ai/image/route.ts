@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!modelValidation.valid) {
-      console.log(`[AI Image] 403: Invalid model ${model} for plan ${plan}`);
+      console.warn(`[AI Image] 403: Invalid model ${model} for plan ${plan}`);
       return NextResponse.json(
         { error: modelValidation.error },
         { status: 403 }
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
       const imagesUsed = monthlyCount[0]?.count || 0;
 
       if (imagesUsed >= planLimits.aiImagesPerMonth) {
-        console.log(`[AI Image] 403: Quota exceeded. Used: ${imagesUsed}, Limit: ${planLimits.aiImagesPerMonth}`);
+        console.warn(`[AI Image] 403: Quota exceeded. Used: ${imagesUsed}, Limit: ${planLimits.aiImagesPerMonth}`);
         return NextResponse.json(
           {
             error: "Monthly AI image quota exceeded",

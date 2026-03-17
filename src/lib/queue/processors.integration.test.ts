@@ -34,10 +34,10 @@ const { mockDb, mockPostTweet, mockPostTweetReply, mockSetFn, mockInsertValuesFn
         limit: () => builder,
         offset: () => builder,
         // Thenable: lets `await builder` work without wrapping in Promise.resolve().
-        then: (
+        then: ((
           resolve?: ((value: unknown) => unknown) | null,
           reject?: ((reason: unknown) => unknown) | null,
-        ) => Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined),
+        ) => Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined)) as unknown as PromiseLike<unknown>["then"],
       };
       return builder;
     }
@@ -133,10 +133,10 @@ function makePost(overrides: Partial<Record<string, unknown>> = {}) {
 
 // Convenience: collect all values passed to .set() and .values() across the run.
 function allSetValues() {
-  return mockSetFn.mock.calls.map((c) => c[0] as Record<string, unknown>);
+  return mockSetFn.mock.calls.map((c) => (c as unknown[])[0] as Record<string, unknown>);
 }
 function allInsertValues() {
-  return mockInsertValuesFn.mock.calls.map((c) => c[0] as Record<string, unknown>);
+  return mockInsertValuesFn.mock.calls.map((c) => (c as unknown[])[0] as Record<string, unknown>);
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -160,10 +160,10 @@ describe("scheduleProcessor — integration", () => {
         orderBy: () => builder,
         limit: () => builder,
         offset: () => builder,
-        then: (
+        then: ((
           resolve?: ((value: unknown) => unknown) | null,
           reject?: ((reason: unknown) => unknown) | null,
-        ) => Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined),
+        ) => Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined)) as unknown as PromiseLike<unknown>["then"],
       };
       return builder;
     }

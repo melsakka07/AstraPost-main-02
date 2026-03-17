@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { checkRateLimit, redis } from "@/lib/rate-limiter";
+import { startImageGeneration, validateModelForPlan } from "@/lib/services/ai-image";
+import { POST } from "../route";
 
 // Mocks
 vi.mock("@/lib/auth", () => ({
@@ -54,12 +59,6 @@ vi.mock("ai", () => ({
 vi.mock("@openrouter/ai-sdk-provider", () => ({
   openrouter: vi.fn(),
 }));
-
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { checkRateLimit, redis } from "@/lib/rate-limiter";
-import { startImageGeneration, validateModelForPlan } from "@/lib/services/ai-image";
-import { POST } from "../route";
 
 describe("AI Image API (POST)", () => {
   beforeEach(() => {
