@@ -3,7 +3,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { analyticsRefreshRuns } from "@/lib/schema";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
+import { analyticsRefreshRuns, user } from "@/lib/schema";
 
 const schema = z.object({
   xAccountId: z.string(),
@@ -12,6 +13,13 @@ const schema = z.object({
 export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
+
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+  const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+  if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   const url = new URL(req.url);
   const parsed = schema.safeParse({ xAccountId: url.searchParams.get("xAccountId") });

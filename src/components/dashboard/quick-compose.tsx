@@ -18,15 +18,13 @@ export function QuickCompose() {
   const handleCompose = () => {
     if (!hasContent) return;
 
-    // Save to localStorage so Composer can pick it up
+    // Prepend to existing drafts so Composer can pick them all up
+    const existing = JSON.parse(localStorage.getItem("astra-post-drafts") || "[]");
     localStorage.setItem(
       "astra-post-drafts",
       JSON.stringify([
-        {
-          id: Math.random().toString(36).substr(2, 9),
-          content,
-          media: [],
-        },
+        { id: Math.random().toString(36).substr(2, 9), content, media: [] },
+        ...existing,
       ])
     );
 

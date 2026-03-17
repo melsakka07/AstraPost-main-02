@@ -90,12 +90,20 @@ export async function POST(req: Request) {
 
   const openrouter = createOpenRouter({ apiKey });
 
-  const result = streamText({
-    model: openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-5-mini"),
-    messages: convertToModelMessages(messages),
-  });
+  try {
+    const result = streamText({
+      model: openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-5-mini"),
+      messages: convertToModelMessages(messages),
+    });
 
-  return (
-    result as unknown as { toUIMessageStreamResponse: () => Response }
-  ).toUIMessageStreamResponse();
+    return (
+      result as unknown as { toUIMessageStreamResponse: () => Response }
+    ).toUIMessageStreamResponse();
+  } catch (err) {
+    console.error("[chat] streamText error:", err);
+    return new Response(
+      JSON.stringify({ error: "AI service unavailable. Please try again later." }),
+      { status: 503, headers: { "Content-Type": "application/json" } }
+    );
+  }
 }
