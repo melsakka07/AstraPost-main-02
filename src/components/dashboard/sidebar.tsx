@@ -18,7 +18,6 @@ import {
   Settings,
   LogOut,
   Rocket,
-  Menu,
   ExternalLink,
   Users,
   MessageCircle,
@@ -27,7 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
@@ -241,6 +240,13 @@ export function Sidebar({ aiUsage }: SidebarProps) {
     return () => observer.disconnect();
   }, []);
 
+  // Listen for the custom event dispatched by DashboardHeader's hamburger button.
+  useEffect(() => {
+    const handleOpen = () => setOpen(true);
+    document.addEventListener("sidebar:open", handleOpen);
+    return () => document.removeEventListener("sidebar:open", handleOpen);
+  }, []);
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -248,22 +254,8 @@ export function Sidebar({ aiUsage }: SidebarProps) {
         <SidebarContent pathname={pathname} aiUsage={aiUsage} />
       </div>
 
-      {/* Mobile Sidebar Trigger */}
+      {/* Mobile Sidebar Sheet — trigger lives in DashboardHeader */}
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          {/* start-4 uses CSS logical inset-inline-start: positions on the
-              left in LTR and on the right in RTL, so the button always sits
-              at the reading-start edge of the screen.
-              h-11 w-11 = 44px — WCAG 2.5.8 minimum touch target size. */}
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Open navigation menu"
-            className="md:hidden fixed top-4 start-4 z-50 h-11 w-11 bg-background/80 backdrop-blur-sm border shadow-sm"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </SheetTrigger>
         <SheetContent side={sheetSide} className="p-0 w-64">
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>
           <SheetDescription className="sr-only">Main navigation links</SheetDescription>

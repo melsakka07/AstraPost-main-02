@@ -104,17 +104,17 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
           role="combobox"
           aria-expanded={open}
           aria-label="Select a team"
-          className="w-[200px] justify-between"
+          className="w-auto justify-between gap-1.5 px-2 sm:w-[200px] sm:gap-2 sm:px-3"
         >
-          <Avatar className="mr-2 h-5 w-5">
+          <Avatar className="h-6 w-6 shrink-0">
             <AvatarImage
               src={selectedTeam.image || `https://avatar.vercel.sh/${selectedTeam.id}.png`}
               alt={selectedTeam.name}
             />
             <AvatarFallback>SC</AvatarFallback>
           </Avatar>
-          <span className="truncate">{selectedTeam.name}</span>
-          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+          <span className="hidden truncate sm:block sm:flex-1">{selectedTeam.name}</span>
+          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
