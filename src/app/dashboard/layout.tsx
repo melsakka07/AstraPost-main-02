@@ -10,6 +10,7 @@ import { TrialBanner } from "@/components/ui/trial-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user, posts, teamMembers } from "@/lib/schema";
+import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
 import { getTeamContext } from "@/lib/team-context";
 
 export default async function DashboardLayout({
@@ -77,13 +78,22 @@ export default async function DashboardLayout({
 
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
 
+  // Fetch AI usage server-side so Sidebar renders without a client-side skeleton flash.
+  // Null fallback means Sidebar shows its skeleton state if the query fails.
+  let aiUsage: Awaited<ReturnType<typeof getMonthlyAiUsage>> | null = null;
+  try {
+    aiUsage = await getMonthlyAiUsage(session.user.id);
+  } catch {
+    // Non-fatal — sidebar gracefully falls back to skeleton
+  }
+
   return (
     // pb-safe adds env(safe-area-inset-bottom) padding so content never slides
     // under the home indicator on notched iPhones / modern Android devices.
     <div data-dashboard-layout className="flex min-h-dvh bg-background pb-safe">
       <OnboardingRedirect isCompleted={isOnboarded} />
       {isOnboarded && <DashboardTour />}
-      <Sidebar />
+      <Sidebar aiUsage={aiUsage} />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader
           user={{

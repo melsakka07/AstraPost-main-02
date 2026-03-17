@@ -26,6 +26,7 @@ import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
+import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { cn } from "@/lib/utils";
 
 interface SidebarSection {
@@ -76,30 +77,10 @@ const sidebarSections: SidebarSection[] = [
 interface SidebarContentProps {
   pathname: string;
   onNavigate?: () => void;
+  aiUsage: MonthlyAiUsage | null;
 }
 
-function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
-  const [aiUsage, setAiUsage] = useState<{
-    used: number;
-    limit: number | null;
-    resetDate: string;
-  } | null>(null);
-
-  useEffect(() => {
-    const loadUsage = async () => {
-      try {
-        const res = await fetch("/api/user/ai-usage", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = await res.json();
-        setAiUsage(data);
-      } catch {
-        // Silently fail — sidebar should not break if AI usage endpoint is down
-      }
-    };
-
-    void loadUsage();
-  }, []);
-
+function SidebarContent({ pathname, onNavigate, aiUsage }: SidebarContentProps) {
   const aiProgress =
     aiUsage && typeof aiUsage.limit === "number" && aiUsage.limit > 0
       ? Math.min(100, Math.round((aiUsage.used / aiUsage.limit) * 100))
@@ -215,7 +196,11 @@ function SidebarContent({ pathname, onNavigate }: SidebarContentProps) {
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  aiUsage: MonthlyAiUsage | null;
+}
+
+export function Sidebar({ aiUsage }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   // Match the Sheet slide direction to the document reading direction so
@@ -248,7 +233,7 @@ export function Sidebar() {
     <>
       {/* Desktop Sidebar */}
       <div className="hidden md:flex md:sticky md:top-0 md:h-dvh md:w-64 md:shrink-0 flex-col bg-card border-r border-border">
-        <SidebarContent pathname={pathname} />
+        <SidebarContent pathname={pathname} aiUsage={aiUsage} />
       </div>
 
       {/* Mobile Sidebar Trigger */}
@@ -269,7 +254,7 @@ export function Sidebar() {
         </SheetTrigger>
         <SheetContent side={sheetSide} className="p-0 w-64">
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-          <SidebarContent pathname={pathname} onNavigate={() => setOpen(false)} />
+          <SidebarContent pathname={pathname} onNavigate={() => setOpen(false)} aiUsage={aiUsage} />
         </SheetContent>
       </Sheet>
     </>
