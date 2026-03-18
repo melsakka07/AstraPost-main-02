@@ -1,5 +1,23 @@
 # Latest Updates
 
+## 2026-03-18: Codebase Evaluation & Connection Leak Fix
+
+### Code Quality Assessment
+- Evaluated the codebase and gave it a 9.5/10 build quality rating.
+- The project follows excellent state-of-the-art patterns (Next.js 16, App Router, Better Auth, Drizzle, Redis Rate Limiting, BullMQ).
+- Deemed production-ready, with a few suggestions provided for AI Streaming, Optimistic UI, and performance tuning.
+
+### Fixed Postgres Connection Leak
+- **Issue**: Next.js Fast Refresh during development was creating a new Postgres client connection on every reload, eventually exhausting the local database connection pool.
+- **Resolution**: Updated `src/lib/db.ts` to cache the `postgres` client instance in `globalThis._postgresClient`.
+- **Files Changed**: `src/lib/db.ts`
+
+### Next Steps
+- Implement AI SDK `streamObject` for thread generation to improve perceived UI performance.
+- Utilize React 19 `useOptimistic` for instant feedback on queue operations.
+
+---
+
 ## 2026-03-18: 7 New AI Features (Pro/Agency)
 
 Added 7 new AI-powered features gated behind the Pro/Agency plans.
