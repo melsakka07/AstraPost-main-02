@@ -4,6 +4,9 @@
 
 AstroPost is a production-ready AI-powered social media management platform for X (Twitter). It enables users to schedule tweets and threads, publish reliably via a background worker, track analytics, and generate content using AI — targeting Arabic-speaking content creators in the MENA region.
 
+### Code Tracker
+Please go check this file \docs\0-MY-LATEST-UPDATES.md to get the latest updates on the code and the changes made.
+
 ### Tech Stack
 
 - **Framework**: Next.js 16 with App Router, React 19, TypeScript
@@ -16,6 +19,7 @@ AstroPost is a production-ready AI-powered social media management platform for 
 - **UI**: shadcn/ui components with Tailwind CSS 4
 - **Billing**: Stripe (Pro Monthly / Pro Annual plans)
 - **Storage**: Local filesystem (dev) / Vercel Blob (production)
+
 
 ## AI Integration with OpenRouter
 
@@ -606,3 +610,7 @@ This project uses **pnpm** (see `pnpm-lock.yaml`). When running commands:
 
 - Use `pnpm` instead of `npm` where possible
 - Scripts defined in `package.json` work with `pnpm run [script]`
+
+### Code Initial Test
+To test the initial functionality of the code, run the following command:
+`pnpm lint && pnpm typecheck`

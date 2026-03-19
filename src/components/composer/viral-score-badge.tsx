@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Sparkles, Lock, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Sparkles, Lock, Loader2, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { cn } from "@/lib/utils";
@@ -10,62 +10,105 @@ interface ViralScoreBadgeProps {
   content: string;
 }
 
+type BadgeState = "idle" | "loading" | "restricted" | "rate_limited" | "error" | "score";
+
+interface BadgeData {
+  state: BadgeState;
+  score: number | null;
+  feedback: string[];
+  errorMessage: string | null;
+}
+
 export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
-  const [score, setScore] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRestricted, setIsRestricted] = useState(false);
+  const [data, setData] = useState<BadgeData>({
+    state: "idle",
+    score: null,
+    feedback: [],
+    errorMessage: null,
+  });
   const { openWithContext } = useUpgradeModal();
+  const contentRef = useRef(content);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const fetchScore = useCallback(async (contentToAnalyze: string) => {
+    setData(prev => ({ ...prev, state: "loading", errorMessage: null }));
+    try {
+      const res = await fetch("/api/ai/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: contentToAnalyze }),
+      });
+
+      if (res.status === 402) {
+        setData(prev => ({ ...prev, state: "restricted" }));
+        return;
+      }
+
+      if (res.status === 429) {
+        setData(prev => ({ ...prev, state: "rate_limited", errorMessage: "Rate limit reached. Try again in a few minutes." }));
+        return;
+      }
+
+      if (res.status === 503) {
+        setData(prev => ({ ...prev, state: "error", errorMessage: "Service temporarily unavailable." }));
+        return;
+      }
+
+      if (!res.ok) {
+        setData(prev => ({ ...prev, state: "error", errorMessage: "Failed to analyze content." }));
+        return;
+      }
+
+      const result = await res.json();
+      setData({
+        state: "score",
+        score: result.score,
+        feedback: result.feedback || [],
+        errorMessage: null,
+      });
+    } catch (e) {
+      console.error(e);
+      setData(prev => ({ ...prev, state: "error", errorMessage: "Network error." }));
+    }
+  }, []);
 
   useEffect(() => {
     if (!content || content.length < 10) {
-      setScore(null);
-      setIsRestricted(false); // Reset restricted state if content is cleared
+      contentRef.current = content;
       return;
     }
 
-    const timer = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const res = await fetch("/api/ai/score", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content }),
-        });
+    if (contentRef.current === content) return;
+    contentRef.current = content;
 
-        if (res.status === 402) {
-          setIsRestricted(true);
-          setIsLoading(false);
-          return;
-        }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
 
-        if (!res.ok) throw new Error("Failed");
+    timerRef.current = setTimeout(() => {
+      fetchScore(content);
+    }, 2000);
 
-        const data = await res.json();
-        setScore(data.score);
-        setFeedback(data.feedback);
-        setIsRestricted(false);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsLoading(false);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
       }
-    }, 2000); // 2s debounce
-
-    return () => clearTimeout(timer);
-  }, [content]);
+    };
+  }, [content, fetchScore]);
 
   if (!content || content.length < 10) return null;
 
-  if (isRestricted) {
+  const { state, score, feedback, errorMessage } = data;
+
+  if (state === "restricted") {
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div 
-              className="relative group cursor-pointer" 
-              onClick={() => openWithContext({ 
-                feature: "viral_score", 
+            <div
+              className="relative group cursor-pointer"
+              onClick={() => openWithContext({
+                feature: "viral_score",
                 message: "Unlock AI Viral Score to predict tweet performance before you post.",
                 suggestedPlan: "pro_monthly"
               })}
@@ -87,7 +130,43 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
     );
   }
 
-  if (isLoading) {
+  if (state === "rate_limited") {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-orange-200 dark:border-orange-900 text-orange-600 dark:text-orange-400">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-xs font-medium">Rate limited</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">{errorMessage || "Too many requests. Please wait a few minutes."}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-xs font-medium">Error</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">{errorMessage || "Analysis failed. Try again."}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (state === "loading") {
     return (
       <div role="status" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-transparent">
         <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" aria-hidden="true" />
@@ -96,7 +175,7 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
     );
   }
 
-  if (score === null) return null;
+  if (state === "idle" || score === null) return null;
 
   let color = "text-red-600 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-900";
   if (score >= 40) color = "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-900";

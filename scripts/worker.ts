@@ -10,6 +10,8 @@ logger.info("worker_started", {
   nodeEnv: process.env.NODE_ENV,
 });
 
+console.log(`\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue' and 'analytics-queue'...\nPress Ctrl+C to exit.\n`);
+
 const scheduleWorker = new Worker(
   "schedule-queue",
   scheduleProcessor,
@@ -20,6 +22,13 @@ scheduleWorker.on("completed", (job) => {
   logger.info("job_completed", {
     queue: "schedule-queue",
     jobId: job.id,
+  });
+});
+
+scheduleWorker.on("error", (err) => {
+  logger.error("worker_error", {
+    queue: "schedule-queue",
+    error: err.message,
   });
 });
 
@@ -77,6 +86,13 @@ analyticsWorker.on("completed", (job) => {
   });
 });
 
+analyticsWorker.on("error", (err) => {
+  logger.error("worker_error", {
+    queue: "analytics-queue",
+    error: err.message,
+  });
+});
+
 analyticsWorker.on("failed", (job, err) => {
   // Log every analytics failure for observability.
   logger.error("job_failed", {
@@ -114,13 +130,17 @@ analyticsQueue.add("update-metrics", {}, {
     jobId: "analytics-job"
 }).catch(console.error);
 
-process.on("SIGTERM", async () => {
-  logger.warn("sigterm_received", {
+const shutdown = async (signal: string) => {
+  logger.warn(`${signal}_received`, {
     pid: process.pid,
   });
+  console.log(`\n🛑 [Worker] Shutting down gracefully (${signal})...`);
   await scheduleQueue.close();
   await analyticsQueue.close();
   await scheduleWorker.close();
   await analyticsWorker.close();
   process.exit(0);
-});
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

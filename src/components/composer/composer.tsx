@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -91,6 +91,7 @@ const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
 });
 
 export function Composer() {
+  const dndId = useId();
   const [tweets, setTweets] = useState<TweetDraft[]>([
     { id: "1", content: "", media: [] },
   ]);
@@ -1017,11 +1018,14 @@ export function Composer() {
         accept="image/*,video/*"
         multiple
         onChange={handleFileUpload}
+        title="Upload media files"
+        aria-label="Upload media files"
       />
 
       {/* Editor Column */}
       <div className="lg:col-span-2 space-y-4">
         <DndContext 
+            id={dndId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}

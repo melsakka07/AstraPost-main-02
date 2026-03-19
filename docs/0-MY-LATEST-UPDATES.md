@@ -1,5 +1,63 @@
 # Latest Updates
 
+## 2026-03-19: ViralScoreBadge UI Improvements
+
+### Improved Error States and User Feedback
+- **Issue**: The `ViralScoreBadge` component silently failed on rate limiting (429) and service errors (503), showing no feedback to users about what happened. Users saw the "Analyzing..." spinner indefinitely or no feedback at all.
+- **Resolution**:
+  - Refactored component to use a single `BadgeData` state object for cleaner state management
+  - Added distinct UI states for: `rate_limited` (orange badge with warning icon), `error` (red badge with error icon), and `restricted` (blurred badge with lock icon)
+  - Added user-friendly error messages displayed in tooltips
+  - Used `useCallback` for the fetch function to properly handle the eslint `react-hooks/set-state-in-effect` rule
+  - Used refs to track content changes and debounce timers properly
+- **Files Changed**: `src/components/composer/viral-score-badge.tsx`
+
+### BullMQ/ioredis Warnings (Fixed)
+- **Issue**: Turbopack was showing warnings about `ioredis/built/utils` and `ioredis/built/classes` not being properly resolvable when `ioredis` is in `serverExternalPackages`.
+- **Resolution**: Updated the webpack alias in `next.config.ts` to cover both `ioredis/built/utils` AND `ioredis/built/classes`, pointing both to `ioredis/built/index.js`.
+- **Files Changed**: `next.config.ts`
+
+---
+
+## 2026-03-19: Worker Script Developer Experience Improvements
+
+### Improved Worker Script Logging & Error Handling
+- **Issue**: The worker script (`scripts/worker.ts`) appeared to hang without any clear indication that it was successfully running and waiting for jobs. It also lacked `error` event listeners on the `Worker` instances, meaning Redis connection errors or internal BullMQ errors would fail silently or crash unexpectedly. Finally, it didn't handle `SIGINT` for graceful shutdown on Windows (Ctrl+C).
+- **Resolution**: 
+  - Added a clear console message upon successful startup indicating the worker is waiting for jobs.
+  - Added `.on("error")` event listeners to both `scheduleWorker` and `analyticsWorker` to explicitly log worker-level errors.
+  - Added a graceful shutdown handler for `SIGINT` in addition to `SIGTERM`.
+- **Files Changed**: `scripts/worker.ts`
+
+### Next Steps
+- Consider setting up an external dashboard (e.g., BullMQ Dashboard) for better visibility into queue states and failed jobs during development.
+
+---
+
+## 2026-03-19: Turbopack Error Reversion
+
+### Reverted Turbopack transpilePackages Change
+- **Issue**: The previous fix (`transpilePackages: ["bullmq", "ioredis"]`) caused a fatal Turbopack error: `The packages specified in the 'transpilePackages' conflict with the 'serverExternalPackages': ["ioredis"]`, crashing the development server and preventing login.
+- **Resolution**: Removed `transpilePackages: ["bullmq", "ioredis"]` from `next.config.ts`. The Turbopack resolution warnings for `ioredis` will remain, but the server will now run successfully.
+- **Files Changed**: `next.config.ts`
+
+### Next Steps
+- Investigate alternative ways to suppress the Turbopack warning for `ioredis` without conflicting with `serverExternalPackages`.
+
+---
+
+## 2026-03-19: Accessibility fixes
+
+### Fixed Axe Forms Warning in Composer
+- **Issue**: Hidden file input for uploading media in the composer page triggered an `axe/forms` accessibility diagnostic ("Form elements must have labels").
+- **Resolution**: Added `title="Upload media files"` and `aria-label="Upload media files"` attributes to the hidden file input.
+- **Files Changed**: `src/components/composer/composer.tsx`
+
+### Next Steps
+- Continue addressing accessibility warnings to ensure compliance with WCAG standards across the platform.
+
+---
+
 ## 2026-03-18: Codebase Evaluation & Connection Leak Fix
 
 ### Code Quality Assessment
