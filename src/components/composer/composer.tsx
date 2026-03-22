@@ -1503,12 +1503,12 @@ export function Composer() {
                   <span className="text-muted-foreground">{userHandle}</span>
                 </div>
                 <p className="text-sm whitespace-pre-wrap">{previewTweet?.content || "Preview text will appear here..."}</p>
-                {(previewTweet?.media?.length || 0) > 0 && (
+                {(previewTweet?.media?.length || 0) > 0 && previewTweet?.media?.[0]?.url && (
                   <div className="mt-2 rounded-lg overflow-hidden border">
                     {previewTweet?.media?.[0]?.fileType === "video" ? (
-                      <video src={previewTweet?.media?.[0]?.url} className="w-full h-auto" controls />
+                      <video src={previewTweet.media[0].url} className="w-full h-auto" controls />
                     ) : (
-                      <Image src={previewTweet?.media?.[0]?.url || ""} alt="Preview" width={600} height={400} className="w-full h-auto" />
+                      <Image src={previewTweet.media[0].url} alt="Preview" width={600} height={400} className="w-full h-auto" />
                     )}
                   </div>
                 )}

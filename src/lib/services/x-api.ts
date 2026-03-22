@@ -252,8 +252,11 @@ export class XApiService {
       logger.info("x_tweet_posted", { tweetId: response?.data?.id, hasMedia: false });
       return response;
     } catch (error) {
+      const apiError = error as any;
       logger.error("x_tweet_post_failed", {
         error: error instanceof Error ? error.message : "Unknown error",
+        code: apiError?.code,
+        xApiErrors: apiError?.data?.errors ?? apiError?.data ?? null,
       });
       throw error;
     }
@@ -273,9 +276,12 @@ export class XApiService {
       logger.info("x_tweet_reply_posted", { tweetId: response?.data?.id, replyToTweetId });
       return response;
     } catch (error) {
+      const apiError = error as any;
       logger.error("x_tweet_reply_post_failed", {
         replyToTweetId,
         error: error instanceof Error ? error.message : "Unknown error",
+        code: apiError?.code,
+        xApiErrors: apiError?.data?.errors ?? apiError?.data ?? null,
       });
       throw error;
     }

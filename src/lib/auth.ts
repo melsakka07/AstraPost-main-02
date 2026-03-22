@@ -110,7 +110,6 @@ export const auth = betterAuth({
         "tweet.write",
         "users.read",
         "offline.access",
-        "users.email",
         "media.write", // Required for v2 media upload endpoints
       ],
     },

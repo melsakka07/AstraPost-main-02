@@ -299,10 +299,80 @@ async function testUserTokenPermissions(): Promise<void> {
       return; // Can't continue if read fails
     }
 
-    // Test 4b: Verify OAuth client can be created with valid credentials
-    logSection("Test 4b: OAuth Client Setup");
+    // Test 4b: Raw fetch to POST /2/tweets to check write permission
+    // This sends a raw request to see the EXACT error response from X API
+    logSection("Test 4b: Write Permission (raw POST /2/tweets)");
     try {
-      // Verify OAuth client can be created with valid credentials
+      const rawRes = await fetch("https://api.x.com/2/tweets", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${testAccessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: `AstraPost write test ${Date.now()}` }),
+      });
+
+      if (rawRes.ok) {
+        const data = await rawRes.json();
+        const tweetId = data?.data?.id;
+        logResult({
+          name: "Write Permission",
+          status: "PASS",
+          message: `Tweet posted successfully! ID: ${tweetId}`,
+          details: { tweetId, url: `https://x.com/i/status/${tweetId}` },
+        });
+
+        // Clean up: delete the test tweet
+        if (tweetId) {
+          try {
+            await fetch(`https://api.x.com/2/tweets/${tweetId}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${testAccessToken}` },
+            });
+            log("  (test tweet deleted)", "gray");
+          } catch { /* best effort cleanup */ }
+        }
+      } else {
+        const errBody = await rawRes.text().catch(() => "(empty)");
+        let parsed: any = null;
+        try { parsed = JSON.parse(errBody); } catch { /* not JSON */ }
+
+        logResult({
+          name: "Write Permission",
+          status: "FAIL",
+          message: `HTTP ${rawRes.status}: ${parsed?.detail || parsed?.title || errBody}`,
+          details: {
+            status: rawRes.status,
+            response: parsed || errBody,
+            fix: rawRes.status === 403
+              ? "Go to developer.x.com → App Settings → User authentication settings → Set permissions to 'Read and Write', then reconnect your X account"
+              : rawRes.status === 401
+                ? "Token expired or invalid — reconnect your X account"
+                : undefined,
+          },
+        });
+
+        if (rawRes.status === 403) {
+          log("\n" + colors.bright + colors.red + "═══════════════════════════════════════════════════════" + colors.reset);
+          log(colors.bright + colors.red + "  HOW TO FIX 403 ON TWEET POSTING:" + colors.reset);
+          log(colors.yellow + "  1. Go to: https://developer.x.com/en/portal/dashboard" + colors.reset);
+          log(colors.yellow + "  2. Select your app → Settings → User authentication settings" + colors.reset);
+          log(colors.yellow + "  3. Change App permissions to 'Read and Write'" + colors.reset);
+          log(colors.yellow + "  4. In AstraPost: disconnect + reconnect your X account" + colors.reset);
+          log(colors.bright + colors.red + "═══════════════════════════════════════════════════════\n" + colors.reset);
+        }
+      }
+    } catch (error: any) {
+      logResult({
+        name: "Write Permission",
+        status: "FAIL",
+        message: `Network error: ${error.message}`,
+      });
+    }
+
+    // Test 4c: Verify OAuth client can be created with valid credentials
+    logSection("Test 4c: OAuth Client Setup");
+    try {
       new TwitterApi({
         clientId: process.env.TWITTER_CLIENT_ID!,
         clientSecret: process.env.TWITTER_CLIENT_SECRET!,
@@ -321,9 +391,6 @@ async function testUserTokenPermissions(): Promise<void> {
       });
     }
 
-    // Test 4c: Test media upload (this is where 403 errors occur)
-    await testMediaUpload(client);
-
   } catch (error: any) {
     logResult({
       name: "User Token Test",
@@ -338,149 +405,9 @@ async function testUserTokenPermissions(): Promise<void> {
   }
 }
 
-/**
- * Test 5: Media Upload Test (The main source of 403 errors)
- */
-async function testMediaUpload(client: TwitterApi): Promise<void> {
-  logSection("Test 5: Media Upload (403 Error Test)");
-
-  // Create a minimal test image (1x1 PNG)
-  const testImageBuffer = Buffer.from(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-    "base64"
-  );
-
-  try {
-    log("Attempting to upload a 1x1 PNG test image...", "blue");
-
-    const mediaId = await client.v1.uploadMedia(testImageBuffer, {
-      mimeType: "image/png",
-    });
-
-    logResult({
-      name: "Media Upload",
-      status: "PASS",
-      message: `Successfully uploaded test image! Media ID: ${mediaId}`,
-      details: { mediaId },
-    });
-
-    // If we got here, we have write permissions - try to clean up by posting and deleting
-    log("\nMedia upload succeeded! Testing tweet with media...", "blue");
-    await testTweetWithMedia(client, mediaId);
-
-  } catch (error: any) {
-    const statusCode = error?.response?.status;
-    const errorCode = error?.code;
-    const errorMessage = error?.data?.errors?.[0]?.message || error.message;
-
-    if (statusCode === 403 || errorCode === 403) {
-      logResult({
-        name: "Media Upload",
-        status: "FAIL",
-        message: "❌ 403 Forbidden - App permissions insufficient!",
-        details: {
-          error: errorMessage,
-          statusCode,
-          fix: "Go to https://developer.twitter.com/en/portal/dashboard and change app permissions from 'Read' to 'Read and Write'",
-        },
-      });
-
-      log("\n" + colors.bright + colors.red + "═══════════════════════════════════════════════════════" + colors.reset);
-      log(colors.bright + colors.red + "🔧 HOW TO FIX 403 ERROR ON MEDIA UPLOAD:" + colors.reset);
-      log("\n" + colors.yellow + "1. Go to: https://developer.twitter.com/en/portal/dashboard" + colors.reset);
-      log(colors.yellow + "2. Select your app" + colors.reset);
-      log(colors.yellow + "3. Go to: Settings → App permissions" + colors.reset);
-      log(colors.yellow + "4. Change from 'Read' to 'Read and Write':" + colors.reset);
-      log(colors.red + "   Current: " + colors.bright + "Read only" + colors.reset);
-      log(colors.green + "   Required: " + colors.bright + "Read and Write" + colors.reset);
-      log("\n" + colors.cyan + "5. After changing permissions:" + colors.reset);
-      log(colors.cyan + "   - Go to /dashboard/settings in AstraPost" + colors.reset);
-      log(colors.cyan + "   - Disconnect your X account" + colors.reset);
-      log(colors.cyan + "   - Connect again with the updated permissions" + colors.reset);
-      log("\n" + colors.bright + colors.red + "═══════════════════════════════════════════════════════" + colors.reset + "\n");
-
-    } else if (statusCode === 401) {
-      logResult({
-        name: "Media Upload",
-        status: "FAIL",
-        message: "❌ 401 Unauthorized - Access token may be expired",
-        details: {
-          error: errorMessage,
-          fix: "Reconnect your X account in /dashboard/settings",
-        },
-      });
-    } else if (statusCode === 429) {
-      logResult({
-        name: "Media Upload",
-        status: "FAIL",
-        message: "❌ 429 Rate Limited - Too many upload attempts",
-        details: {
-          error: errorMessage,
-          fix: "Wait a few minutes before testing again",
-        },
-      });
-    } else {
-      logResult({
-        name: "Media Upload",
-        status: "FAIL",
-        message: `❌ Media upload failed: ${errorMessage}`,
-        details: {
-          statusCode,
-          errorCode,
-          fullError: error?.data || error?.message,
-        },
-      });
-    }
-  }
-}
-
-/**
- * Test 6: Tweet with Media (only runs if media upload succeeds)
- */
-async function testTweetWithMedia(client: TwitterApi, mediaId: string): Promise<void> {
-  logSection("Test 6: Post Tweet with Media");
-
-  const testText = `Testing AstraPost media upload - ${new Date().toISOString()}`;
-
-  try {
-    // Check if dry run mode is enabled
-    const dryRun = process.env.TWITTER_DRY_RUN === "1";
-
-    if (dryRun) {
-      log("TWITTER_DRY_RUN=1 - Skipping actual tweet post", "yellow");
-      logResult({
-        name: "Tweet with Media",
-        status: "PASS",
-        message: "Dry run mode - would post tweet with media",
-        details: { mediaId, text: testText },
-      });
-    } else {
-      const tweet = await client.v2.tweet(testText, {
-        media: { media_ids: [mediaId] as any },
-      });
-
-      logResult({
-        name: "Tweet with Media",
-        status: "PASS",
-        message: `✅ Successfully posted tweet with image! Tweet ID: ${tweet.data.id}`,
-        details: { tweetId: tweet.data.id, url: `https://x.com/i/status/${tweet.data.id}` },
-      });
-
-      log("\n" + colors.green + colors.bright + "🎉 SUCCESS! Your app has full Read and Write permissions!" + colors.reset);
-      log(colors.cyan + "You can delete the test tweet at: " + colors.bright + `https://x.com/i/status/${tweet.data.id}` + colors.reset + "\n");
-    }
-  } catch (error: any) {
-    logResult({
-      name: "Tweet with Media",
-      status: "FAIL",
-      message: error.message,
-      details: {
-        code: error.code,
-        status: error?.response?.status,
-      },
-    });
-  }
-}
+// Tests 5 and 6 (v1.1 media upload + tweet with media) were removed.
+// The v1.1 upload endpoint was sunset on June 9, 2025.
+// Write permission is now tested in Test 4b via raw POST /2/tweets.
 
 /**
  * Test 7: Check token refresh endpoint (common source of 400 errors)

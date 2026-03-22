@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import { useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronsUpDown, Check, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -38,10 +39,19 @@ interface AccountSwitcherProps {
   }[];
 }
 
+function useIsClient() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
+
 export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherProps) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const isClient = useIsClient();
 
   // Construct the full list of selectable accounts
   // 1. Personal Workspace
@@ -95,6 +105,19 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
       toast.error("Failed to switch workspace");
     }
   };
+
+  if (!isClient) {
+    return (
+      <button
+        className="inline-flex h-9 w-auto items-center gap-1.5 rounded-md border px-2 text-sm sm:w-[200px] sm:gap-2 sm:px-3"
+        disabled
+        aria-label="Select a team"
+      >
+        <span className="h-6 w-6 shrink-0 rounded-full bg-muted" />
+        <span className="hidden sm:block sm:flex-1 text-muted-foreground">Loading...</span>
+      </button>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
