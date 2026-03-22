@@ -22,6 +22,7 @@ export function ReschedulePostForm({
       <Input
         type="datetime-local"
         autoFocus
+        aria-label="New scheduled date and time"
         value={scheduledAt}
         onChange={(e) => setScheduledAt(e.target.value)}
       />

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq, and, gte } from "drizzle-orm";
+import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { FailureBanner } from "@/components/dashboard/failure-banner";
 import { OnboardingRedirect } from "@/components/dashboard/onboarding-redirect";
@@ -93,7 +94,10 @@ export default async function DashboardLayout({
     <div data-dashboard-layout className="flex min-h-dvh bg-background pb-safe">
       <OnboardingRedirect isCompleted={isOnboarded} />
       {isOnboarded && <DashboardTour />}
-      <Sidebar aiUsage={aiUsage} />
+      <Sidebar
+        aiUsage={aiUsage}
+        user={{ name: session.user.name, image: session.user.image || null }}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader
           user={{
@@ -126,11 +130,14 @@ export default async function DashboardLayout({
         <main
           id="main-content"
           tabIndex={-1}
-          className="flex-1 p-4 pt-4 outline-none md:p-8 md:pt-8"
+          // pb-16 reserves room for the fixed BottomNav on mobile (M1)
+          className="flex-1 p-4 pt-4 pb-20 outline-none md:p-8 md:pt-8 md:pb-8"
         >
           {children}
         </main>
       </div>
+      {/* M1 — bottom navigation bar (mobile only) */}
+      <BottomNav />
     </div>
   );
 }

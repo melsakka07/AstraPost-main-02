@@ -7,7 +7,10 @@ import { useSearchParams } from "next/navigation";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import {
-  ChevronDown,
+  BookmarkPlus,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
   FileText,
   Globe,
   Hash,
@@ -18,6 +21,7 @@ import {
   Plus,
   Send,
   Sparkles,
+  X as XIcon,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -29,13 +33,14 @@ import { TargetAccountsSelect, SocialAccountLite } from "@/components/composer/t
 import { TemplatesDialog } from "@/components/composer/templates-dialog";
 import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -62,6 +67,8 @@ interface TweetDraft {
     mimeType: string;
     fileType: "image" | "video" | "gif";
     size: number;
+    uploading?: boolean;
+    placeholderId?: string;
   }>;
   linkPreview?: LinkPreview | null;
 }
@@ -87,16 +94,32 @@ const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
   const value = `${String(h).padStart(2, "0")}:${m}`;
   const period = h < 12 ? "AM" : "PM";
   const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return { value, label: `${displayH}:${m} ${period}` };
+  return { value, label: `${displayH}:${m} ${period}`, hour: h };
 });
+
+const TIME_SLOT_GROUPS = [
+  { label: "Morning", slots: TIME_SLOTS.filter(s => s.hour >= 5 && s.hour < 12) },
+  { label: "Afternoon", slots: TIME_SLOTS.filter(s => s.hour >= 12 && s.hour < 17) },
+  { label: "Evening", slots: TIME_SLOTS.filter(s => s.hour >= 17 && s.hour < 21) },
+  { label: "Night", slots: TIME_SLOTS.filter(s => s.hour >= 21 || s.hour < 5) },
+];
+
+function formatTimeAgo(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "just now";
+  return `${Math.floor(seconds / 60)}m ago`;
+}
 
 export function Composer() {
   const dndId = useId();
+  const searchParams = useSearchParams();
+  const draftId = searchParams?.get("draft");
   const [tweets, setTweets] = useState<TweetDraft[]>([
     { id: "1", content: "", media: [] },
   ]);
-  const previewTweet = tweets[0];
-  const [scheduledDate, setScheduledDate] = useState<string>("");
+  const [scheduledDate, setScheduledDate] = useState<string>(
+    searchParams?.get("scheduledAt") ?? ""
+  );
   const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
   const [recurrencePattern, setRecurrencePattern] = useState<string>("none");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>("");
@@ -108,8 +131,6 @@ export function Composer() {
   const [accounts, setAccounts] = useState<SocialAccountLite[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const { data: session } = useSession();
-  const searchParams = useSearchParams();
-  const draftId = searchParams?.get("draft");
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   // Used to restore the draft's linked account once accounts have loaded
   const [draftXAccountId, setDraftXAccountId] = useState<string | null>(null);
@@ -132,6 +153,16 @@ export function Composer() {
   const [templateTitle, setTemplateTitle] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateCategory, setTemplateCategory] = useState("Personal");
+
+  // Overwrite confirmation (C1)
+  const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+  const [pendingTweets, setPendingTweets] = useState<TweetDraft[] | null>(null);
+
+  // Preview carousel index (H6)
+  const [previewIndex, setPreviewIndex] = useState(0);
+
+  // Auto-save timestamp (H5)
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   // AI Image Dialog State
   const [isAiImageOpen, setIsAiImageOpen] = useState(false);
@@ -234,7 +265,13 @@ export function Composer() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      localStorage.setItem("astra-post-drafts", JSON.stringify(tweets));
+      // Strip uploading placeholders before persisting so reloads don't show ghost items
+      const saveable = tweets.map((t) => ({
+        ...t,
+        media: t.media.filter((m) => !m.uploading),
+      }));
+      localStorage.setItem("astra-post-drafts", JSON.stringify(saveable));
+      setLastSavedAt(new Date());
     }, 1000);
     return () => clearTimeout(timeout);
   }, [tweets]);
@@ -360,7 +397,19 @@ export function Composer() {
 
   const removeTweet = (id: string) => {
     if (tweets.length === 1) return;
-    setTweets(tweets.filter((t) => t.id !== id));
+    const previousTweets = [...tweets];
+    const nextTweets = tweets.filter((t) => t.id !== id);
+    setTweets(nextTweets);
+    setPreviewIndex((prev) => Math.min(prev, nextTweets.length - 1));
+    toast("Tweet removed", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setTweets(previousTweets);
+          setPreviewIndex((prev) => Math.min(prev, previousTweets.length - 1));
+        },
+      },
+    });
   };
 
   const moveTweet = (fromIndex: number, toIndex: number) => {
@@ -376,12 +425,6 @@ export function Composer() {
   const updateTweetPreview = (id: string, preview: any) => {
     setTweets(
       tweets.map((t) => (t.id === id ? { ...t, linkPreview: preview } : t))
-    );
-  };
-
-  const addTweetMedia = (id: string, items: TweetDraft["media"]) => {
-    setTweets(
-      tweets.map((t) => (t.id === id ? { ...t, media: [...t.media, ...items].slice(0, 4) } : t))
     );
   };
 
@@ -412,6 +455,12 @@ export function Composer() {
       setAiTargetTweetId(null);
       setAiRewriteText("");
       setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
+      if (tool === "thread" && !aiTopic) {
+        const existingContent = tweets[0]?.content?.trim();
+        if (existingContent) {
+          setAiTopic(existingContent.slice(0, 500));
+        }
+      }
     }
     setIsAiOpen(true);
   };
@@ -425,6 +474,13 @@ export function Composer() {
       console.error(e);
     }
   };
+
+  // Prefetch history whenever the AI panel opens (H7)
+  useEffect(() => {
+    if (isAiOpen) {
+      void fetchHistory();
+    }
+  }, [isAiOpen]);  
 
   // AI Image Dialog handlers
   const openAiImageDialog = (tweetId: string) => {
@@ -553,7 +609,14 @@ export function Composer() {
         if (aiAddNumbering) {
           newTweets = applyNumbering(newTweets);
         }
+        // C1: ask before overwriting existing content
+        if (tweets.some((t) => t.content.trim())) {
+          setPendingTweets(newTweets);
+          setConfirmOverwrite(true);
+          return;
+        }
         setTweets(newTweets);
+        setPreviewIndex(0);
         setIsAiOpen(false);
         toast.success("Thread generated!");
         return;
@@ -694,48 +757,78 @@ export function Composer() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !activeTweetId) return;
-
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    try {
-      const existingCount = tweets.find((t) => t.id === activeTweetId)?.media.length || 0;
-      const remaining = Math.max(0, 4 - existingCount);
-      const toUpload = files.slice(0, remaining);
-      if (toUpload.length === 0) {
-        toast.error("Max 4 media per tweet");
-        return;
-      }
+    const tweetId = activeTweetId;
+    const existingCount = tweets.find((t) => t.id === tweetId)?.media.length ?? 0;
+    const remaining = Math.max(0, 4 - existingCount);
+    const toUpload = files.slice(0, remaining);
 
-      const uploaded: TweetDraft["media"] = [];
-      for (const file of toUpload) {
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (toUpload.length === 0) {
+      toast.error("Max 4 media per tweet");
+      return;
+    }
+
+    // Add placeholder spinner items immediately so the user sees feedback
+    const placeholders: TweetDraft["media"] = toUpload.map((file) => ({
+      url: "",
+      mimeType: file.type,
+      fileType: (file.type.startsWith("video/") ? "video" : file.type === "image/gif" ? "gif" : "image") as "image" | "video" | "gif",
+      size: file.size,
+      uploading: true,
+      placeholderId: Math.random().toString(36).slice(2, 11),
+    }));
+
+    setTweets((prev) =>
+      prev.map((t) => (t.id === tweetId ? { ...t, media: [...t.media, ...placeholders] } : t))
+    );
+
+    let successCount = 0;
+    for (let i = 0; i < toUpload.length; i++) {
+      const file = toUpload[i]!;
+      const { placeholderId } = placeholders[i]!;
+      try {
         const formData = new FormData();
         formData.append("file", file);
-
-        const res = await fetch("/api/media/upload", {
-          method: "POST",
-          body: formData,
-        });
+        const res = await fetch("/api/media/upload", { method: "POST", body: formData });
         if (!res.ok) {
           const msg = await res.text().catch(() => "Upload failed");
           throw new Error(msg || "Upload failed");
         }
         const data = await res.json();
-        uploaded.push({
-          url: data.url,
-          mimeType: data.mimeType,
-          fileType: data.fileType,
-          size: data.size,
-        });
+        // Replace placeholder with real media item
+        setTweets((prev) =>
+          prev.map((t) =>
+            t.id === tweetId
+              ? {
+                  ...t,
+                  media: t.media.map((m) =>
+                    m.placeholderId === placeholderId
+                      ? { url: data.url, mimeType: data.mimeType, fileType: data.fileType, size: data.size }
+                      : m
+                  ),
+                }
+              : t
+          )
+        );
+        successCount++;
+      } catch (error) {
+        console.error(error);
+        // Remove failed placeholder
+        setTweets((prev) =>
+          prev.map((t) =>
+            t.id === tweetId ? { ...t, media: t.media.filter((m) => m.placeholderId !== placeholderId) } : t
+          )
+        );
+        toast.error(error instanceof Error ? error.message : "Failed to upload file");
       }
+    }
 
-      addTweetMedia(activeTweetId, uploaded);
-      toast.success("Media uploaded");
-    } catch (error) {
-      console.error(error);
-      toast.error(error instanceof Error ? error.message : "Failed to upload media");
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    if (successCount > 0) {
+      toast.success(successCount === 1 ? "Media uploaded" : `${successCount} files uploaded`);
     }
   };
 
@@ -745,6 +838,11 @@ export function Composer() {
   };
 
   const handleSubmit = async (action: "draft" | "schedule" | "publish_now") => {
+    const isUploading = tweets.some((t) => t.media.some((m) => m.uploading));
+    if (isUploading) {
+      toast.error("Please wait for all media to finish uploading.");
+      return;
+    }
     setIsSubmitting(true);
     try {
       let res: Response;
@@ -809,6 +907,7 @@ export function Composer() {
 
       toast.success(message);
       setTweets([{ id: Math.random().toString(36).substr(2, 9), content: "", media: [] }]);
+      setPreviewIndex(0);
       setScheduledDate("");
       setRecurrencePattern("none");
       setRecurrenceEndDate("");
@@ -826,6 +925,10 @@ export function Composer() {
   const userImage = selectedAccount?.avatarUrl || session?.user?.image;
   const userName = selectedAccount?.displayName || session?.user?.name || "User Name";
   const userHandle = selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle";
+
+  // Preview carousel — computed after all state declarations (H6)
+  const safePreviewIndex = Math.min(previewIndex, tweets.length - 1);
+  const previewTweet = tweets[safePreviewIndex];
 
   const aiDialogTitle =
     aiTool === "thread" ? "AI Thread Writer" :
@@ -931,7 +1034,7 @@ export function Composer() {
               value={aiCount}
               onValueChange={setAiCount}
               min={3}
-              max={10}
+              max={15}
               step={1}
             />
           </div>
@@ -1049,6 +1152,13 @@ export function Composer() {
                         openAiTool={openAiTool}
                         openAiImage={openAiImageDialog}
                         onMove={moveTweet}
+                        {...(tweet.id === aiTargetTweetId && generatedHashtags.length > 0 && {
+                          suggestedHashtags: generatedHashtags,
+                          onHashtagClick: (tag: string) => {
+                            updateTweet(tweet.id, `${tweet.content} ${tag}`.trim());
+                            setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
+                          },
+                        })}
                     />
                 ))}
             </SortableContext>
@@ -1065,23 +1175,67 @@ export function Composer() {
           </Alert>
         )}
 
+        {lastSavedAt && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground/60 justify-end px-1">
+            <Clock className="h-3 w-3" />
+            <span>Auto-saved · {formatTimeAgo(lastSavedAt)}</span>
+          </div>
+        )}
         <Button
           variant="outline"
           className="w-full py-6 border-dashed"
           onClick={addTweet}
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add to Thread
+          {tweets.length === 1 ? "Convert to Thread" : "Add to Thread"}
         </Button>
       </div>
 
-      {/* Sidebar / Preview Column */}
-      <div className="space-y-6">
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            {/* AI Tools — Primary */}
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">AI Tools</label>
+      {/* Sidebar Column */}
+      <div className="space-y-4">
+        {/* C3: Desktop — inline AI panel replaces content tools card when open */}
+        {isAiOpen && isDesktop ? (
+          <Card>
+            <CardContent className="pt-4">
+              <Tabs defaultValue="generate" className="flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="min-w-0 pr-2">
+                    <h3 className="font-semibold text-sm truncate">{aiDialogTitle}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{aiDialogDesc}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <TabsList className="h-7">
+                      <TabsTrigger value="generate" className="text-xs h-6 px-2">Generate</TabsTrigger>
+                      <TabsTrigger value="history" className="text-xs h-6 px-2">History</TabsTrigger>
+                    </TabsList>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 ml-1"
+                      onClick={() => setIsAiOpen(false)}
+                      aria-label="Close AI panel"
+                    >
+                      <XIcon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                {aiTabsGenerateContent}
+                {aiTabsHistoryContent}
+                <div className="flex justify-end gap-2 pt-3 border-t mt-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsAiOpen(false)}>Cancel</Button>
+                  <Button size="sm" onClick={handleAiRun} disabled={isAiGenerateDisabled}>
+                    {isGenerating && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+                    Generate
+                  </Button>
+                </div>
+              </Tabs>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Card 1: Content Tools (H1) */
+          <Card>
+            <CardContent className="pt-5 space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Content Tools</p>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
@@ -1091,309 +1245,294 @@ export function Composer() {
                   <Sparkles className="h-4 w-4 text-primary" />
                   AI Writer
                 </Button>
-                <TemplatesDialog onSelect={handleTemplateSelect} />
+                <InspirationPanel
+                  language={aiLanguage}
+                  onSelect={(topic) => {
+                    setAiTopic(topic);
+                    openAiTool("thread");
+                  }}
+                />
               </div>
-              <InspirationPanel
-                language={aiLanguage}
-                onSelect={(topic) => {
-                  setAiTopic(topic);
-                  openAiTool("thread");
-                }}
-              />
+              <TemplatesDialog onSelect={handleTemplateSelect} />
+              {/* H4: Secondary AI tools now visible — no more buried dropdown */}
+              <div className="grid grid-cols-3 gap-1.5">
+                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook")}>
+                  <Zap className="h-3.5 w-3.5" />Hook
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("cta")}>
+                  <Megaphone className="h-3.5 w-3.5" />CTA
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("translate")}>
+                  <Globe className="h-3.5 w-3.5" />Translate
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start gap-2 text-muted-foreground text-xs"
+                onClick={() => setTweets(applyNumbering([...tweets]))}
+              >
+                <ListOrdered className="h-3.5 w-3.5" />
+                Number tweets (1/N)
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-              {/* Secondary tools — dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between text-muted-foreground">
-                    More Tools
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
-                  <DropdownMenuItem onClick={() => openAiTool("hook")}>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Hook Idea
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => openAiTool("cta")}>
-                    <Megaphone className="mr-2 h-4 w-4" />
-                    Call to Action
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => openAiTool("translate")}>
-                    <Globe className="mr-2 h-4 w-4" />
-                    Translate
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTweets(applyNumbering([...tweets]))}>
-                    <ListOrdered className="mr-2 h-4 w-4" />
-                    Number 1/N
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        {/* Card 2: Publishing (H1 — split from content tools) */}
+        <Card>
+          <CardContent className="pt-5 space-y-4">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Publishing</p>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Post to accounts</label>
-              <TargetAccountsSelect 
-                  value={targetAccountIds} 
-                  onChange={setTargetAccountIds}  
-                  accounts={accounts}
-                  loading={accountsLoading}
+              <Label htmlFor="post-accounts">Post to accounts</Label>
+              <TargetAccountsSelect
+                value={targetAccountIds}
+                onChange={setTargetAccountIds}
+                accounts={accounts}
+                loading={accountsLoading}
               />
             </div>
 
             <div className="space-y-2">
-                <label className="text-sm font-medium">Schedule for</label>
-                {/* Split into date + time to avoid native calendar popup overflowing on mobile */}
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    type="date"
-                    aria-label="Schedule date"
-                    value={scheduledDate ? scheduledDate.slice(0, 10) : ""}
-                    onChange={(e) => {
-                      const newDate = e.target.value;
-                      if (!newDate) {
-                        setScheduledDate("");
-                        setRecurrencePattern("none");
-                        setRecurrenceEndDate("");
-                      } else {
-                        const existingTime = scheduledDate ? scheduledDate.slice(11, 16) : "12:00";
-                        setScheduledDate(`${newDate}T${existingTime}`);
-                      }
-                    }}
-                  />
-                  <Select
-                    value={scheduledDate ? scheduledDate.slice(11, 16) : ""}
-                    disabled={!scheduledDate}
-                    onValueChange={(newTime) => {
-                      const existingDate = scheduledDate ? scheduledDate.slice(0, 10) : "";
-                      if (existingDate) setScheduledDate(`${existingDate}T${newTime}`);
-                    }}
-                  >
-                    <SelectTrigger aria-label="Schedule time">
-                      <SelectValue placeholder="Time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIME_SLOTS.map((slot) => (
-                        <SelectItem key={slot.value} value={slot.value}>
-                          {slot.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {browserTimezone && (
-                  <p className="text-xs text-muted-foreground">
-                    Times are in{" "}
-                    <span className="font-medium text-foreground">{browserTimezone}</span>
-                    {" "}
-                    <span className="tabular-nums">
-                      (UTC{(() => {
-                        const off = -new Date().getTimezoneOffset();
-                        const h = Math.floor(Math.abs(off) / 60);
-                        const m = Math.abs(off) % 60;
-                        return `${off >= 0 ? "+" : "-"}${h}${m > 0 ? `:${String(m).padStart(2, "0")}` : ""}`;
-                      })()})
-                    </span>
-                  </p>
-                )}
-                <BestTimeSuggestions onSelect={setScheduledDate} />
+              <Label htmlFor="schedule-date">Schedule for</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <DatePicker
+                  id="schedule-date"
+                  value={scheduledDate ? scheduledDate.slice(0, 10) : ""}
+                  onChange={(newDate) => {
+                    if (!newDate) {
+                      setScheduledDate("");
+                      setRecurrencePattern("none");
+                      setRecurrenceEndDate("");
+                    } else {
+                      const existingTime = scheduledDate ? scheduledDate.slice(11, 16) : "12:00";
+                      setScheduledDate(`${newDate}T${existingTime}`);
+                    }
+                  }}
+                />
+                {/* P2: Time grouped by period */}
+                <Select
+                  value={scheduledDate ? scheduledDate.slice(11, 16) : ""}
+                  disabled={!scheduledDate}
+                  onValueChange={(newTime) => {
+                    const existingDate = scheduledDate ? scheduledDate.slice(0, 10) : "";
+                    if (existingDate) setScheduledDate(`${existingDate}T${newTime}`);
+                  }}
+                >
+                  <SelectTrigger aria-label="Schedule time">
+                    <SelectValue placeholder="Time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIME_SLOT_GROUPS.map((group) => (
+                      <SelectGroup key={group.label}>
+                        <SelectLabel>{group.label}</SelectLabel>
+                        {group.slots.map((slot) => (
+                          <SelectItem key={slot.value} value={slot.value}>{slot.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {browserTimezone && (
+                <p className="text-xs text-muted-foreground">
+                  Times are in{" "}
+                  <span className="font-medium text-foreground">{browserTimezone}</span>
+                  {" "}
+                  <span className="tabular-nums">
+                    (UTC{(() => {
+                      const off = -new Date().getTimezoneOffset();
+                      const h = Math.floor(Math.abs(off) / 60);
+                      const m = Math.abs(off) % 60;
+                      return `${off >= 0 ? "+" : "-"}${h}${m > 0 ? `:${String(m).padStart(2, "0")}` : ""}`;
+                    })()})
+                  </span>
+                </p>
+              )}
+              <BestTimeSuggestions onSelect={setScheduledDate} />
 
-                {/* Recurrence Options */}
-                {scheduledDate && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-muted-foreground">Repeat</label>
-                            <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
-                                <SelectTrigger className="h-8">
-                                    <SelectValue placeholder="None" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">Never</SelectItem>
-                                    <SelectItem value="daily">Daily</SelectItem>
-                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                    <SelectItem value="yearly">Yearly</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        {recurrencePattern !== "none" && (
-                             <div className="space-y-1">
-                                <label className="text-xs font-medium text-muted-foreground">End Date</label>
-                                <Input 
-                                    type="date" 
-                                    className="h-8"
-                                    value={recurrenceEndDate}
-                                    onChange={(e) => setRecurrenceEndDate(e.target.value)}
-                                />
-                            </div>
-                        )}
+              {scheduledDate && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Repeat</label>
+                    <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
+                      <SelectTrigger className="h-8"><SelectValue placeholder="None" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Never</SelectItem>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {recurrencePattern !== "none" && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">End Date</label>
+                      <DatePicker className="h-8" value={recurrenceEndDate} onChange={setRecurrenceEndDate} />
                     </div>
-                )}
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* H2: Action context — shows what will happen before the user clicks */}
+            <p className="text-xs text-center text-muted-foreground">
+              {scheduledDate ? (
+                <>Scheduling for{" "}
+                  <span className="font-medium text-foreground">
+                    {new Date(scheduledDate).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                    {" at "}
+                    {new Date(scheduledDate).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                  </span>
+                </>
+              ) : (
+                <>Posting immediately to{" "}
+                  <span className="font-medium text-foreground">
+                    {accounts.find(a => targetAccountIds.includes(a.id))?.username
+                      ? `@${accounts.find(a => targetAccountIds.includes(a.id))?.username}`
+                      : "selected account"}
+                  </span>
+                </>
+              )}
+            </p>
 
             <div className="flex flex-col gap-2">
-                <Button
-                    className="w-full h-11 text-base font-semibold"
-                    onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
-                    disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-2 h-4 w-4" />
-                  )}
-                  {scheduledDate ? "Schedule Post" : "Post Now"}
-                </Button>
-
-                <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleSubmit("draft")}
-                    disabled={isSubmitting}
-                >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Save as Draft
-                </Button>
-
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => setIsSaveTemplateOpen(true)}
-                    disabled={isSubmitting}
-                >
-                    Save as Template
-                </Button>
+              <Button
+                className="w-full h-11 text-base font-semibold"
+                onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                {scheduledDate ? "Schedule Post" : "Post Now"}
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => handleSubmit("draft")} disabled={isSubmitting}>
+                <FileText className="mr-2 h-4 w-4" />
+                Save as Draft
+              </Button>
+              {/* P6: Template button elevated from ghost to visible outline */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 text-muted-foreground hover:text-foreground"
+                onClick={() => setIsSaveTemplateOpen(true)}
+                disabled={isSubmitting}
+              >
+                <BookmarkPlus className="h-4 w-4" />
+                Save as Template
+              </Button>
             </div>
           </CardContent>
         </Card>
 
+        {/* Save Template Dialog */}
         <Dialog open={isSaveTemplateOpen} onOpenChange={setIsSaveTemplateOpen}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Save as Template</DialogTitle>
-                    <DialogDescription>Save your current thread structure as a reusable template.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                        <Label>Title</Label>
-                        <Input 
-                          value={templateTitle} 
-                          onChange={e => setTemplateTitle(e.target.value)} 
-                          placeholder="My Awesome Template" 
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Description</Label>
-                        <Input 
-                          value={templateDescription} 
-                          onChange={e => setTemplateDescription(e.target.value)} 
-                          placeholder="Optional description" 
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Category</Label>
-                        <Select value={templateCategory} onValueChange={setTemplateCategory}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Personal">Personal</SelectItem>
-                                <SelectItem value="Educational">Educational</SelectItem>
-                                <SelectItem value="Promotional">Promotional</SelectItem>
-                                <SelectItem value="Engagement">Engagement</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsSaveTemplateOpen(false)}>Cancel</Button>
-                    <Button onClick={handleSaveTemplate} disabled={!templateTitle.trim() || isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Save Template
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save as Template</DialogTitle>
+              <DialogDescription>Save your current thread structure as a reusable template.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <Input value={templateTitle} onChange={e => setTemplateTitle(e.target.value)} placeholder="My Awesome Template" />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input value={templateDescription} onChange={e => setTemplateDescription(e.target.value)} placeholder="Optional description" />
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={templateCategory} onValueChange={setTemplateCategory}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Personal">Personal</SelectItem>
+                    <SelectItem value="Educational">Educational</SelectItem>
+                    <SelectItem value="Promotional">Promotional</SelectItem>
+                    <SelectItem value="Engagement">Engagement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSaveTemplateOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveTemplate} disabled={!templateTitle.trim() || isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Template
+              </Button>
+            </DialogFooter>
+          </DialogContent>
         </Dialog>
 
+        {/* H6: Preview carousel — cycles through all tweets */}
         <div className="bg-muted/50 rounded-lg p-4">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase">Mobile Preview</h3>
-            <ViralScoreBadge content={previewTweet?.content || ""} />
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase">
+              {tweets.length > 1 ? `Preview · ${safePreviewIndex + 1} / ${tweets.length}` : "Preview"}
+            </h3>
+            <div className="flex items-center gap-1">
+              {tweets.length > 1 && (
+                <>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled={safePreviewIndex === 0}
+                    onClick={() => setPreviewIndex(i => Math.max(0, i - 1))} aria-label="Previous tweet">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled={safePreviewIndex === tweets.length - 1}
+                    onClick={() => setPreviewIndex(i => Math.min(tweets.length - 1, i + 1))} aria-label="Next tweet">
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+              <ViralScoreBadge content={previewTweet?.content || ""} />
+            </div>
           </div>
-          <div className="bg-background border rounded-md p-4 space-y-4">
-             <div className="flex gap-3">
-                <div className="w-10 h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
-                    {userImage ? (
-                        <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
+          <div className="bg-background border rounded-md p-4">
+            <div className="flex gap-3">
+              <div className="w-10 h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
+                {userImage ? (
+                  <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
+                    {userName[0]?.toUpperCase() || "U"}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1 w-full">
+                <div className="flex items-center gap-1 text-sm">
+                  <span className="font-bold">{userName}</span>
+                  <span className="text-muted-foreground">{userHandle}</span>
+                </div>
+                <p className="text-sm whitespace-pre-wrap">{previewTweet?.content || "Preview text will appear here..."}</p>
+                {(previewTweet?.media?.length || 0) > 0 && (
+                  <div className="mt-2 rounded-lg overflow-hidden border">
+                    {previewTweet?.media?.[0]?.fileType === "video" ? (
+                      <video src={previewTweet?.media?.[0]?.url} className="w-full h-auto" controls />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
-                            {userName[0]?.toUpperCase() || "U"}
-                        </div>
+                      <Image src={previewTweet?.media?.[0]?.url || ""} alt="Preview" width={600} height={400} className="w-full h-auto" />
                     )}
-                </div>
-                <div className="space-y-1 w-full">
-                   <div className="flex items-center gap-1 text-sm">
-                      <span className="font-bold">{userName}</span>
-                      <span className="text-muted-foreground">{userHandle}</span>
-                   </div>
-                   <p className="text-sm whitespace-pre-wrap">
-                      {previewTweet?.content || "Preview text will appear here..."}
-                   </p>
-                   {(previewTweet?.media?.length || 0) > 0 && (
-                       <div className="mt-2 rounded-lg overflow-hidden border">
-                           {previewTweet?.media?.[0]?.fileType === "video" ? (
-                             <video src={previewTweet?.media?.[0]?.url} className="w-full h-auto" controls />
-                           ) : (
-                             <Image src={previewTweet?.media?.[0]?.url || ""} alt="Preview" width={600} height={400} className="w-full h-auto" />
-                           )}
-                       </div>
-                   )}
-                   {previewTweet?.linkPreview && !previewTweet.media.length && (
-                       <div className="mt-2 border rounded-md overflow-hidden">
-                           {previewTweet.linkPreview.images?.[0] && (
-                               <div className="relative h-48 w-full">
-                                   <Image src={previewTweet.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
-                               </div>
-                           )}
-                           <div className="p-3 bg-muted/20">
-                               <h4 className="font-medium text-sm line-clamp-1">{previewTweet.linkPreview.title}</h4>
-                               <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{previewTweet.linkPreview.description}</p>
-                               <p className="text-xs text-muted-foreground mt-1 lowercase">{new URL(previewTweet.linkPreview.url).hostname}</p>
-                           </div>
-                       </div>
-                   )}
-                </div>
-             </div>
+                  </div>
+                )}
+                {previewTweet?.linkPreview && !previewTweet.media.length && (
+                  <div className="mt-2 border rounded-md overflow-hidden">
+                    {previewTweet.linkPreview.images?.[0] && (
+                      <div className="relative h-48 w-full">
+                        <Image src={previewTweet.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
+                      </div>
+                    )}
+                    <div className="p-3 bg-muted/20">
+                      <h4 className="font-medium text-sm line-clamp-1">{previewTweet.linkPreview.title}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{previewTweet.linkPreview.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1 lowercase">{new URL(previewTweet.linkPreview.url).hostname}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      {isDesktop ? (
-        <Dialog open={isAiOpen} onOpenChange={setIsAiOpen}>
-          <DialogContent className="max-w-2xl h-[90dvh] max-h-[600px] flex flex-col overflow-y-auto">
-            <Tabs defaultValue="generate" className="flex-1 flex flex-col">
-              <DialogHeader>
-                <div className="flex items-center justify-between pr-8">
-                  <DialogTitle>{aiDialogTitle}</DialogTitle>
-                  <TabsList>
-                    <TabsTrigger value="generate">Generate</TabsTrigger>
-                    <TabsTrigger value="history" onClick={fetchHistory}>History</TabsTrigger>
-                  </TabsList>
-                </div>
-                <DialogDescription>{aiDialogDesc}</DialogDescription>
-              </DialogHeader>
-              {aiTabsGenerateContent}
-              {aiTabsHistoryContent}
-              <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
-                <Button onClick={handleAiRun} disabled={isAiGenerateDisabled}>
-                  {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Generate
-                </Button>
-              </DialogFooter>
-            </Tabs>
-          </DialogContent>
-        </Dialog>
-      ) : (
+      {/* Mobile AI panel — Sheet (C3: desktop uses inline sidebar panel above) */}
+      {!isDesktop && (
         <Sheet open={isAiOpen} onOpenChange={setIsAiOpen}>
           <SheetContent side="bottom" className="h-[90dvh] flex flex-col overflow-hidden pb-safe">
             <Tabs defaultValue="generate" className="flex-1 flex flex-col overflow-hidden">
@@ -1402,7 +1541,7 @@ export function Composer() {
                   <SheetTitle>{aiDialogTitle}</SheetTitle>
                   <TabsList>
                     <TabsTrigger value="generate">Generate</TabsTrigger>
-                    <TabsTrigger value="history" onClick={fetchHistory}>History</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
                   </TabsList>
                 </div>
                 <SheetDescription>{aiDialogDesc}</SheetDescription>
@@ -1420,6 +1559,37 @@ export function Composer() {
           </SheetContent>
         </Sheet>
       )}
+
+      {/* C1: Confirm before overwriting existing compose content */}
+      <AlertDialog open={confirmOverwrite} onOpenChange={setConfirmOverwrite}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace existing content?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Generating a new thread will replace your current {tweets.filter(t => t.content.trim()).length} tweet(s) with AI-generated content. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setConfirmOverwrite(false); setPendingTweets(null); }}>
+              Keep editing
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingTweets) {
+                  setTweets(pendingTweets);
+                  setPreviewIndex(0);
+                  setPendingTweets(null);
+                  setIsAiOpen(false);
+                  toast.success("Thread generated!");
+                }
+                setConfirmOverwrite(false);
+              }}
+            >
+              Replace &amp; Generate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* AI Image Dialog */}
       <AiImageDialog

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Sparkles, Loader2, TrendingUp, Hash, MessageSquare, Lightbulb } from "lucide-react";
+import { Users, Sparkles, Loader2, TrendingUp, Hash, MessageSquare, Lightbulb, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
+import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+
+/** Assign rank-decay scores: 1st item → 100, 2nd → 85, 3rd → 72 … */
+function rankToChartData(items: string[], prefix = ""): { name: string; value: number }[] {
+  return items.map((item, i) => ({
+    name: `${prefix}${item.replace(new RegExp(`^${prefix}`), "")}`,
+    value: Math.round(100 * Math.pow(0.85, i)),
+  }));
+}
 
 interface AnalysisResult {
   username: string;
@@ -187,6 +196,72 @@ export default function CompetitorAnalyzerPage() {
                 {result.displayName} · {result.followerCount.toLocaleString()} followers · {result.tweetCount} tweets analyzed
               </p>
             </div>
+          </div>
+
+          {/* A3 — Visual metrics comparison */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Followers</p>
+                <p className="text-2xl font-bold tabular-nums">{result.followerCount.toLocaleString()}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Tweets Analyzed</p>
+                <p className="text-2xl font-bold tabular-nums">{result.tweetCount}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Content Types</p>
+                <p className="text-2xl font-bold tabular-nums">{result.analysis.preferredContentTypes.length}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground mb-1">Top Hashtags</p>
+                <p className="text-2xl font-bold tabular-nums">{result.analysis.topHashtags.length}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-primary" />
+                  Hashtag Prominence
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ViralBarChart
+                  data={rankToChartData(result.analysis.topHashtags, "#")}
+                  orientation="horizontal"
+                  highlightTop={3}
+                  height={200}
+                  emptyText="No hashtags found"
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4 text-primary" />
+                  Content Mix
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ViralBarChart
+                  data={rankToChartData(result.analysis.preferredContentTypes)}
+                  orientation="horizontal"
+                  highlightTop={2}
+                  height={200}
+                  emptyText="No content types found"
+                />
+              </CardContent>
+            </Card>
           </div>
 
           {/* Summary */}

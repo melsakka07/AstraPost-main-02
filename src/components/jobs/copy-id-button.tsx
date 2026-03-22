@@ -22,6 +22,7 @@ export function CopyIdButton({ value }: { value: string }) {
             variant="ghost"
             size="icon"
             className="h-5 w-5 shrink-0"
+            aria-label={copied ? "Copied!" : "Copy ID"}
             onClick={handleCopy}
           >
             {copied ? (

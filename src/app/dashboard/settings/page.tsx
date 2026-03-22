@@ -14,7 +14,6 @@ import { ProfileForm } from "@/components/settings/profile-form";
 import { SecuritySettings } from "@/components/settings/security-settings";
 import { SettingsSectionNav } from "@/components/settings/settings-section-nav";
 import { VoiceProfileForm } from "@/components/settings/voice-profile-form";
-import { XHealthCheckButton } from "@/components/settings/x-health-check-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -177,7 +176,6 @@ export default async function SettingsPage({
               </CardHeader>
               <CardContent className="space-y-4">
                 <ConnectedXAccounts initialAccounts={connectedAccounts} />
-                <XHealthCheckButton />
               </CardContent>
             </Card>
 

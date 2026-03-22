@@ -16,9 +16,12 @@ interface SortableTweetProps {
   openAiTool: (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => void;
   openAiImage?: (tweetId: string) => void;
   onMove: (fromIndex: number, toIndex: number) => void;
+  suggestedHashtags?: string[];
+  onHashtagClick?: (tag: string) => void;
 }
 
-export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage, onMove }: SortableTweetProps) {
+export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage, onMove, suggestedHashtags, onHashtagClick }: SortableTweetProps) {
+  const isFirst = index === 0;
   const {
     attributes,
     listeners,
@@ -50,8 +53,11 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
             openAiTool={openAiTool}
             {...(openAiImage !== undefined && { openAiImage })}
             dragHandleProps={{...attributes, ...listeners}}
+            isFirst={isFirst}
             {...(index > 0 && { onMoveUp: () => onMove(index, index - 1) })}
             {...(index < totalTweets - 1 && { onMoveDown: () => onMove(index, index + 1) })}
+            {...(suggestedHashtags !== undefined && { suggestedHashtags })}
+            {...(onHashtagClick !== undefined && { onHashtagClick })}
         />
     </div>
   );

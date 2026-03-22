@@ -11,15 +11,17 @@ import { type CalendarPost } from "./calendar-view";
 interface CalendarPostItemProps {
   post: CalendarPost;
   isOverlay?: boolean;
+  view?: "month" | "week" | "day";
+  accentColor?: string;
 }
 
-export function CalendarPostItem({ post, isOverlay }: CalendarPostItemProps) {
+export function CalendarPostItem({ post, isOverlay, view, accentColor }: CalendarPostItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: post.id,
     });
 
-  const style = transform
+  const dndStyle = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
         zIndex: isOverlay ? 999 : undefined,
@@ -29,18 +31,42 @@ export function CalendarPostItem({ post, isOverlay }: CalendarPostItemProps) {
   const content = post.tweets?.[0]?.content || "No content";
   const type = post.type === "thread" ? "Thread" : "Tweet";
   const time = post.scheduledAt ? format(new Date(post.scheduledAt), "HH:mm") : "";
+  const borderColor = accentColor ?? "hsl(var(--primary) / 0.5)";
+
+  // C4 — compact chip in month view to prevent mobile overflow
+  if (view === "month") {
+    return (
+      <div
+        ref={setNodeRef}
+        style={{ ...dndStyle, borderLeftColor: borderColor }}
+        {...attributes}
+        {...listeners}
+        className={cn(
+          "cursor-grab active:cursor-grabbing border-l-[3px] rounded-sm px-1 py-0.5",
+          "min-h-[20px] overflow-hidden bg-primary/5 hover:bg-primary/10 transition-colors",
+          isDragging && "opacity-50",
+          isOverlay && "shadow-xl opacity-90 scale-105 rotate-2 cursor-grabbing"
+        )}
+      >
+        <p className="text-[10px] leading-tight truncate">
+          <span className="font-medium text-muted-foreground mr-1">{time}</span>
+          {content}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <Card
       ref={setNodeRef}
-      style={style}
+      style={{ ...dndStyle, borderLeftColor: borderColor }}
       {...attributes}
       {...listeners}
       className={cn(
         "cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
         isDragging && "opacity-50",
         isOverlay && "shadow-xl opacity-90 scale-105 rotate-2 cursor-grabbing",
-        "bg-card border-l-4 border-l-primary/50"
+        "bg-card border-l-4"
       )}
     >
       <CardContent className="p-2 space-y-1 min-h-[44px] flex flex-col justify-center">

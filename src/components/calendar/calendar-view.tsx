@@ -49,8 +49,12 @@ export interface CalendarPost {
   type: string | null;
   status: string | null;
   scheduledAt: Date | null;
+  xAccountId?: string | null;
   tweets: { id: string; content: string; position: number }[];
 }
+
+// C3 — deterministic per-account color palette
+const ACCOUNT_COLORS = ["#3b82f6", "#22c55e", "#f97316", "#a855f7", "#ec4899"];
 
 interface CalendarViewProps {
   posts: CalendarPost[];
@@ -188,6 +192,19 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
 
   const activePost: CalendarPost | null = activeId ? (posts.find((p) => p.id === activeId) ?? null) : null;
 
+  // C3 — map each unique xAccountId to a stable color
+  const accountColorMap = React.useMemo<Record<string, string>>(() => {
+    const ids = [...new Set(posts.map((p) => p.xAccountId).filter(Boolean))] as string[];
+    return Object.fromEntries(
+      ids.map((id, i) => [id, ACCOUNT_COLORS[i % ACCOUNT_COLORS.length] as string])
+    );
+  }, [posts]);
+
+  const handleDateClick = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    router.push(`/dashboard/compose?scheduledAt=${encodeURIComponent(`${dateStr}T09:00`)}`);
+  };
+
   return (
     <div className="flex flex-col h-full space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
@@ -261,6 +278,8 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
                             posts={dayPosts}
                             isCurrentMonth={isSameMonth(day, currentDate)}
                             view={view}
+                            onDateClick={handleDateClick}
+                            accountColorMap={accountColorMap}
                         />
                     );
                 })}
@@ -268,7 +287,15 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
         </div>
 
         <DragOverlay>
-          {activePost ? <CalendarPostItem post={activePost} isOverlay /> : null}
+          {activePost ? (
+            <CalendarPostItem
+              post={activePost}
+              isOverlay
+              {...(activePost.xAccountId && accountColorMap[activePost.xAccountId]
+                ? { accentColor: accountColorMap[activePost.xAccountId] }
+                : {})}
+            />
+          ) : null}
         </DragOverlay>
       </DndContext>
     </div>

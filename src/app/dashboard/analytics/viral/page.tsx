@@ -1,14 +1,35 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, Clock, Calendar, Hash, Type, BarChart3, Sparkles, Loader2, AlertCircle } from "lucide-react";
+import {
+  AlertCircle,
+  BarChart3,
+  Clock,
+  Hash,
+  Loader2,
+  Sparkles,
+  TrendingUp,
+  Type,
+} from "lucide-react";
+import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
+import { ViralHourChart } from "@/components/analytics/viral-hour-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ViralAnalysis {
@@ -28,6 +49,16 @@ interface ViralAnalysis {
   insights: string[];
 }
 
+const DAY_ORDER = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
 export default function ViralAnalyzerPage() {
   const [days, setDays] = useState("90");
   const [analysis, setAnalysis] = useState<ViralAnalysis | null>(null);
@@ -43,31 +74,28 @@ export default function ViralAnalyzerPage() {
 
     try {
       const res = await fetch(`/api/analytics/viral?days=${days}`);
-      if (!res.ok) {
-        throw new Error("Failed to fetch analysis");
-      }
-
+      if (!res.ok) throw new Error("Failed to fetch analysis");
       const data = await res.json();
-
       if (data.insufficientData) {
         setInsufficientData(true);
       } else {
         setAnalysis(data.analysis);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to analyze viral content");
+      setError(
+        err instanceof Error ? err.message : "Failed to analyze viral content"
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Auto-fetch on mount
   useEffect(() => {
     fetchAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [days]);
 
-  const formatPercent = (val: number) => `${(val * 100).toFixed(1)}%`;
+  const fmt = (val: number) => `${(val * 100).toFixed(1)}%`;
 
   return (
     <DashboardPageWrapper
@@ -104,7 +132,6 @@ export default function ViralAnalyzerPage() {
         </div>
       }
     >
-      {/* Error */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -118,10 +145,10 @@ export default function ViralAnalyzerPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Not enough tweet data to analyze. Publish more tweets (at least 5 with 100+ impressions) to get viral content insights.
+              Not enough tweet data to analyze. Publish more tweets (at least 5
+              with 100+ impressions) to get viral content insights.
             </AlertDescription>
           </Alert>
-
           <div className="relative">
             <div className="pointer-events-none select-none opacity-40 blur-[2px]">
               <div className="grid gap-4 md:grid-cols-4">
@@ -133,7 +160,9 @@ export default function ViralAnalyzerPage() {
                 ].map((item) => (
                   <Card key={item.label}>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">{item.label}</CardTitle>
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        {item.label}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-3xl font-bold">{item.value}</div>
@@ -141,34 +170,7 @@ export default function ViralAnalyzerPage() {
                   </Card>
                 ))}
               </div>
-
-              <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                {[
-                  { icon: Hash, title: "Top Hashtags", desc: "Hashtags that drive most engagement" },
-                  { icon: Clock, title: "Best Times to Post", desc: "When your content gets the most engagement" },
-                  { icon: BarChart3, title: "Tweet Length Performance", desc: "Which lengths perform best for you" },
-                  { icon: Type, title: "Top Keywords", desc: "Word patterns that resonate with your audience" },
-                ].map((card) => (
-                  <Card key={card.title}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <card.icon className="h-5 w-5 text-primary" />
-                        {card.title}
-                      </CardTitle>
-                      <CardDescription>{card.desc}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {[1, 2, 3].map((i) => (
-                          <Skeleton key={i} className="h-8 w-full" />
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             </div>
-
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="rounded-xl border bg-background/95 px-8 py-6 text-center shadow-lg backdrop-blur-sm max-w-md">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -176,7 +178,8 @@ export default function ViralAnalyzerPage() {
                 </div>
                 <h2 className="text-lg font-semibold">Unlock Viral Insights</h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your top-performing content patterns.
+                  Publish 5+ tweets with 100+ impressions to unlock AI-powered
+                  analysis of your top-performing content patterns.
                 </p>
               </div>
             </div>
@@ -205,49 +208,40 @@ export default function ViralAnalyzerPage() {
         <div className="space-y-6">
           {/* Overview Stats */}
           <div className="grid gap-4 md:grid-cols-4">
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Tweets Analyzed
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{analysis.overall.tweetsAnalyzed}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Avg Engagement
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{formatPercent(analysis.overall.avgEngagement)}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Top Engagement
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">{formatPercent(analysis.overall.topEngagement)}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Impressions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{analysis.overall.totalImpressions.toLocaleString()}</div>
-              </CardContent>
-            </Card>
+            {[
+              {
+                label: "Tweets Analyzed",
+                value: String(analysis.overall.tweetsAnalyzed),
+              },
+              {
+                label: "Avg Engagement",
+                value: fmt(analysis.overall.avgEngagement),
+              },
+              {
+                label: "Top Engagement",
+                value: fmt(analysis.overall.topEngagement),
+                highlight: true,
+              },
+              {
+                label: "Total Impressions",
+                value: analysis.overall.totalImpressions.toLocaleString(),
+              },
+            ].map((s) => (
+              <Card key={s.label} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {s.label}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div
+                    className={`text-3xl font-bold ${s.highlight ? "text-green-600" : ""}`}
+                  >
+                    {s.value}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {/* AI Insights */}
@@ -261,9 +255,19 @@ export default function ViralAnalyzerPage() {
             <CardContent>
               <ul className="space-y-3">
                 {analysis.insights.map((insight, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
-                    <span className="text-primary mt-0.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                    <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
+                  <li
+                    key={i}
+                    className="flex items-start gap-3 text-sm leading-relaxed"
+                  >
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <span
+                      dangerouslySetInnerHTML={{
+                        __html: insight.replace(
+                          /\*\*(.*?)\*\*/g,
+                          "<strong>$1</strong>"
+                        ),
+                      }}
+                    />
                   </li>
                 ))}
               </ul>
@@ -271,7 +275,7 @@ export default function ViralAnalyzerPage() {
           </Card>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* Best Hashtags */}
+            {/* V1 — Top Hashtags */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -279,32 +283,26 @@ export default function ViralAnalyzerPage() {
                   Top Hashtags
                 </CardTitle>
                 <CardDescription>
-                  Hashtags that drive most engagement
+                  Hashtags that drive the most engagement
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {analysis.hashtags.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Hash className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No hashtag data yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {analysis.hashtags.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">{item.tag}</Badge>
-                          <span className="text-xs text-muted-foreground">({item.count} tweets)</span>
-                        </div>
-                        <span className="text-sm font-medium">{formatPercent(item.avgEngagement)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <ViralBarChart
+                  data={analysis.hashtags.slice(0, 8).map((h) => ({
+                    name: h.tag,
+                    value: h.avgEngagement,
+                    count: h.count,
+                  }))}
+                  orientation="horizontal"
+                  highlightTop={3}
+                  formatValue={fmt}
+                  height={Math.max(160, analysis.hashtags.slice(0, 8).length * 34)}
+                  emptyText="No hashtag data yet"
+                />
               </CardContent>
             </Card>
 
-            {/* Best Keywords */}
+            {/* V6 — Top Keywords */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
@@ -316,29 +314,26 @@ export default function ViralAnalyzerPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {analysis.keywords.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Type className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No keyword data yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {analysis.keywords.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors">
-                        <span className="text-sm italic">"{item.keyword}"</span>
-                        <span className="text-sm font-medium">{formatPercent(item.avgEngagement)}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <ViralBarChart
+                  data={analysis.keywords.slice(0, 8).map((k) => ({
+                    name: `"${k.keyword}"`,
+                    value: k.avgEngagement,
+                    count: k.count,
+                  }))}
+                  orientation="horizontal"
+                  highlightTop={3}
+                  formatValue={fmt}
+                  height={Math.max(160, analysis.keywords.slice(0, 8).length * 34)}
+                  emptyText="No keyword data yet"
+                />
               </CardContent>
             </Card>
 
-            {/* Content Length */}
+            {/* V4 — Tweet Length Performance */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle className="text-lg">
-                  <BarChart3 className="h-5 w-5 inline mr-2 text-primary" />
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BarChart3 className="h-5 w-5 text-primary" />
                   Tweet Length Performance
                 </CardTitle>
                 <CardDescription>
@@ -346,74 +341,81 @@ export default function ViralAnalyzerPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {analysis.length.map((item, i) => {
-                    const maxAvg = analysis.length[0]?.avg ?? 1;
-                    const percentage = (item.avg / maxAvg) * 100;
-
-                    return (
-                      <div key={i} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">{item.category}</span>
-                          <span className="font-semibold">{formatPercent(item.avg)}</span>
-                        </div>
-                        <Progress value={percentage} className="h-2" />
-                        <span className="text-xs text-muted-foreground">{item.count} tweets</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                <ViralBarChart
+                  data={analysis.length.map((l) => ({
+                    name: l.category,
+                    value: l.avg,
+                    count: l.count,
+                  }))}
+                  orientation="vertical"
+                  highlightTop={1}
+                  formatValue={fmt}
+                  height={200}
+                  emptyText="No length data yet"
+                />
+                <p className="mt-2 text-xs text-muted-foreground text-right">
+                  Short &lt;100 · Medium 100–200 · Long &gt;200 chars
+                </p>
               </CardContent>
             </Card>
 
-            {/* Best Times */}
+            {/* V3 — Best Days */}
             <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Clock className="h-5 w-5 text-primary" />
-                  Best Times to Post
+                  Best Days to Post
                 </CardTitle>
                 <CardDescription>
-                  When your content gets the most engagement
+                  Days when your content gets the most engagement
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {/* Best Days */}
-                  <div>
-                    <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" aria-hidden="true" />
-                      Best Days
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {analysis.bestDays.map((item, i) => (
-                        <Badge key={i} variant="outline" className="text-sm">
-                          {item.day.slice(0, 3)}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Best Hours */}
-                  <div>
-                    <h3 className="text-sm font-medium mb-3">Best Hours</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {analysis.bestHours.map((item, i) => (
-                        <Badge key={i} variant="secondary" className="text-sm">
-                          {item.hour}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <ViralBarChart
+                  data={[...analysis.bestDays]
+                    .sort(
+                      (a, b) =>
+                        DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day)
+                    )
+                    .map((d) => ({
+                      name: d.day.slice(0, 3),
+                      value: d.avgEngagement,
+                      count: d.count,
+                    }))}
+                  orientation="vertical"
+                  highlightTop={2}
+                  formatValue={fmt}
+                  height={200}
+                  emptyText="No day data yet"
+                />
               </CardContent>
             </Card>
 
-            {/* Content Types */}
+            {/* V2 — Best Hours */}
             <Card className="hover:shadow-md transition-shadow lg:col-span-2">
               <CardHeader>
-                <CardTitle className="text-lg">
-                  <Type className="h-5 w-5 inline mr-2 text-primary" />
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Best Hours to Post
+                </CardTitle>
+                <CardDescription>
+                  24-hour engagement — top 3 highlighted
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ViralHourChart
+                  data={analysis.bestHours}
+                  formatValue={fmt}
+                  highlightTop={3}
+                />
+              </CardContent>
+            </Card>
+
+            {/* V5 — Content Types */}
+            <Card className="hover:shadow-md transition-shadow lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Type className="h-5 w-5 text-primary" />
                   Content Type Performance
                 </CardTitle>
                 <CardDescription>
@@ -421,16 +423,23 @@ export default function ViralAnalyzerPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  {analysis.contentTypes.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-md border hover:bg-muted/50 transition-colors">
-                      <span className="text-sm capitalize">{item.type.replace(/_/g, " ")}</span>
-                      <Badge variant={item.avgEngagement > analysis.overall.avgEngagement ? "default" : "secondary"}>
-                        {formatPercent(item.avgEngagement)}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+                <ViralBarChart
+                  data={[...analysis.contentTypes]
+                    .sort((a, b) => b.avgEngagement - a.avgEngagement)
+                    .map((c) => ({
+                      name: c.type.replace(/_/g, " "),
+                      value: c.avgEngagement,
+                      count: c.count,
+                    }))}
+                  orientation="horizontal"
+                  highlightTop={2}
+                  formatValue={fmt}
+                  height={Math.max(
+                    160,
+                    analysis.contentTypes.length * 36
+                  )}
+                  emptyText="No content type data yet"
+                />
               </CardContent>
             </Card>
           </div>

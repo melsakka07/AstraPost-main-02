@@ -43,6 +43,7 @@ export function QuickCompose() {
             <Textarea
               className="min-h-[140px] resize-none pb-8 text-sm leading-relaxed"
               placeholder="Share an idea, a thread hook, or a quick update..."
+              aria-label="Quick compose"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={MAX_LENGTH}
