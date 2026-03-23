@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserPen, Sparkles, Loader2, Copy, Check } from "lucide-react";
+import { UserPen, Sparkles, Loader2, Copy, Check, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useElapsedTime } from "@/hooks/use-elapsed-time";
 
 interface BioVariant {
   text: string;
@@ -43,6 +45,7 @@ export default function BioOptimizerPage() {
   const [language, setLanguage] = useState("en");
   const [variants, setVariants] = useState<BioVariant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const elapsed = useElapsedTime(isLoading);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [connectedUsername, setConnectedUsername] = useState("");
 
@@ -106,7 +109,7 @@ export default function BioOptimizerPage() {
   const copyBio = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
-    toast.success("Bio copied to clipboard");
+    toast.success("Copied to clipboard");
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
@@ -114,8 +117,9 @@ export default function BioOptimizerPage() {
     <DashboardPageWrapper
       icon={UserPen}
       title="AI Bio Optimizer"
-      description="Generate compelling X bio variants optimized for your goals — under 160 characters."
+      description="Enter your niche to generate 3 compelling X bio variants under 160 characters — optimized for your goal."
     >
+      <Breadcrumb items={[{ label: "Bio Optimizer" }]} className="mb-2" />
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         {/* Config */}
         <Card>
@@ -128,16 +132,28 @@ export default function BioOptimizerPage() {
           <CardContent className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="currentBio">Current Bio (optional)</Label>
-              <Textarea
-                id="currentBio"
-                placeholder="Paste your current X bio here, or leave blank..."
-                className="resize-none"
-                rows={3}
-                value={currentBio}
-                onChange={(e) => setCurrentBio(e.target.value)}
-                maxLength={500}
-              />
-              <p className="text-xs text-muted-foreground">{currentBio.length}/500</p>
+              <div className="relative">
+                <Textarea
+                  id="currentBio"
+                  placeholder="Paste your current X bio here, or leave blank..."
+                  className="resize-none pb-6"
+                  rows={3}
+                  value={currentBio}
+                  onChange={(e) => setCurrentBio(e.target.value)}
+                  maxLength={500}
+                />
+                <span
+                  className={`pointer-events-none absolute bottom-2 right-2 select-none text-xs tabular-nums ${
+                    currentBio.length > 160
+                      ? "text-destructive"
+                      : currentBio.length >= 130
+                      ? "text-amber-500"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {currentBio.length}/160
+                </span>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -177,7 +193,13 @@ export default function BioOptimizerPage() {
                     <SelectItem value="ar">Arabic</SelectItem>
                     <SelectItem value="en">English</SelectItem>
                     <SelectItem value="fr">French</SelectItem>
+                    <SelectItem value="de">German</SelectItem>
+                    <SelectItem value="es">Spanish</SelectItem>
+                    <SelectItem value="it">Italian</SelectItem>
+                    <SelectItem value="pt">Portuguese</SelectItem>
                     <SelectItem value="tr">Turkish</SelectItem>
+                    <SelectItem value="ru">Russian</SelectItem>
+                    <SelectItem value="hi">Hindi</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -186,13 +208,13 @@ export default function BioOptimizerPage() {
             <Button
               className="w-full"
               onClick={handleGenerate}
-              disabled={isLoading}
+              disabled={isLoading || !niche.trim()}
               size="lg"
             >
               {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>
+                <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({elapsed}s)</>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" />Generate 3 Bio Variants</>
+                <><Sparkles className="me-2 h-4 w-4" />Generate 3 Bio Variants</>
               )}
             </Button>
           </CardContent>
@@ -201,14 +223,25 @@ export default function BioOptimizerPage() {
         {/* Results */}
         <div className="space-y-3">
           {variants.length === 0 && !isLoading && (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 text-center h-full">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <UserPen className="h-7 w-7 text-primary" />
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-3">
+              {/* Blurred bio card previews */}
+              <div className="space-y-2 opacity-25 pointer-events-none select-none blur-[1px]" aria-hidden="true">
+                {[["Gain Followers", "w-full", "w-4/5"], ["Attract Clients", "w-3/4", "w-full"], ["Build Authority", "w-full", "w-2/3"]].map(([goal, w1, w2]) => (
+                  <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="h-4 w-20 bg-muted-foreground/20 rounded-full" />
+                      <div className="h-6 w-12 bg-muted-foreground/10 rounded" />
+                    </div>
+                    <div className={`h-2.5 bg-muted-foreground/20 rounded ${w1}`} />
+                    <div className={`h-2.5 bg-muted-foreground/20 rounded ${w2}`} />
+                    <div className="h-2 bg-muted-foreground/10 rounded w-1/4" />
+                  </div>
+                ))}
               </div>
-              <p className="font-semibold">3 bio variants will appear here</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Each variant targets a different goal or tone.
-              </p>
+              <div className="text-center">
+                <p className="font-semibold text-sm">3 bio variants will appear here</p>
+                <p className="mt-1 text-xs text-muted-foreground">Each targets a different goal — followers, clients, or authority</p>
+              </div>
             </div>
           )}
 
@@ -230,14 +263,27 @@ export default function BioOptimizerPage() {
                     onClick={() => copyBio(v.text, idx)}
                   >
                     {copiedIdx === idx ? (
-                      <><Check className="h-3.5 w-3.5 mr-1" />Copied</>
+                      <><Check className="h-3.5 w-3.5 me-1" />Copied</>
                     ) : (
-                      <><Copy className="h-3.5 w-3.5 mr-1" />Copy</>
+                      <><Copy className="h-3.5 w-3.5 me-1" />Copy</>
                     )}
                   </Button>
                 </div>
                 <p className="text-sm font-medium leading-relaxed">{v.text}</p>
-                <p className="text-xs text-muted-foreground">{v.text.length}/160 chars</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className={`text-xs tabular-nums ${v.text.length > 160 ? "text-destructive" : "text-emerald-500"}`}>
+                    {v.text.length}/160 chars{v.text.length > 160 && " — over limit"}
+                  </p>
+                  <a
+                    href="https://x.com/settings/profile"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    Open X Settings
+                  </a>
+                </div>
                 <p className="text-xs text-muted-foreground italic">{v.rationale}</p>
               </CardContent>
             </Card>

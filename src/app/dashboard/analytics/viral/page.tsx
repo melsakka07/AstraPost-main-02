@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertCircle,
   BarChart3,
+  CheckCircle2,
   Clock,
   Hash,
   Loader2,
@@ -59,6 +60,14 @@ const DAY_ORDER = [
   "Sunday",
 ];
 
+/** Safely render **bold** markdown syntax as React nodes (no XSS risk). */
+function safeBold(text: string): React.ReactNode {
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+  );
+}
+
 export default function ViralAnalyzerPage() {
   const [days, setDays] = useState("90");
   const [analysis, setAnalysis] = useState<ViralAnalysis | null>(null);
@@ -101,7 +110,7 @@ export default function ViralAnalyzerPage() {
     <DashboardPageWrapper
       icon={TrendingUp}
       title="Viral Content Analyzer"
-      description="Discover what makes your content go viral with AI-powered insights."
+      description="Analyze your last 90 days of posts to find viral patterns — best hashtags, ideal timing, and top content types."
       actions={
         <div className="flex items-center gap-2">
           <Select value={days} onValueChange={setDays}>
@@ -260,19 +269,81 @@ export default function ViralAnalyzerPage() {
                     className="flex items-start gap-3 text-sm leading-relaxed"
                   >
                     <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    <span
-                      dangerouslySetInnerHTML={{
-                        __html: insight.replace(
-                          /\*\*(.*?)\*\*/g,
-                          "<strong>$1</strong>"
-                        ),
-                      }}
-                    />
+                    <span>{safeBold(insight)}</span>
                   </li>
                 ))}
               </ul>
             </CardContent>
           </Card>
+
+          {/* Action Plan — synthesised from analysis data */}
+          {(() => {
+            const bestDay = [...analysis.bestDays].sort((a, b) => b.avgEngagement - a.avgEngagement)[0];
+            const bestHour = [...analysis.bestHours].sort((a, b) => b.avgEngagement - a.avgEngagement)[0];
+            const topHashtag = analysis.hashtags[0];
+            const bestLength = [...analysis.length].sort((a, b) => b.avg - a.avg)[0];
+
+            const actions: Array<{ icon: React.ComponentType<{ className?: string }>; text: React.ReactNode }> = [];
+
+            if (bestDay && bestHour) {
+              actions.push({
+                icon: Clock,
+                text: (
+                  <>
+                    Post on <strong>{bestDay.day}s at {bestHour.hour}</strong> — your engagement is highest then.
+                  </>
+                ),
+              });
+            }
+
+            if (topHashtag) {
+              actions.push({
+                icon: Hash,
+                text: (
+                  <>
+                    Include <strong>#{topHashtag.tag}</strong> — your top hashtag by engagement rate.
+                  </>
+                ),
+              });
+            }
+
+            if (bestLength) {
+              actions.push({
+                icon: Type,
+                text: (
+                  <>
+                    Write <strong>{bestLength.category.toLowerCase()}</strong> tweets — they get the most engagement in your account.
+                  </>
+                ),
+              });
+            }
+
+            if (actions.length === 0) return null;
+
+            return (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    Your Action Plan
+                  </CardTitle>
+                  <CardDescription>3 specific steps to improve your engagement based on your data.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ol className="space-y-3">
+                    {actions.map((action, i) => (
+                      <li key={i} className="flex items-start gap-3 text-sm">
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                          {i + 1}
+                        </div>
+                        <span className="leading-relaxed pt-0.5">{action.text}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* V1 — Top Hashtags */}

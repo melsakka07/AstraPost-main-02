@@ -8,6 +8,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import {
   BookmarkPlus,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -126,6 +127,9 @@ export function Composer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [targetAccountIds, setTargetAccountIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Tracks whether bridge content (sessionStorage / URL prefill) was loaded on
+  // mount, so the localStorage auto-save restore doesn't overwrite it.
+  const bridgeLoadedRef = useRef(false);
   const [activeTweetId, setActiveTweetId] = useState<string | null>(null);
 
   const [accounts, setAccounts] = useState<SocialAccountLite[]>([]);
@@ -134,6 +138,11 @@ export function Composer() {
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   // Used to restore the draft's linked account once accounts have loaded
   const [draftXAccountId, setDraftXAccountId] = useState<string | null>(null);
+
+  // W4: Source attribution from Inspiration page
+  const [sourceAttribution, setSourceAttribution] = useState<{ handle: string; url: string } | null>(null);
+  // W5: Calendar metadata hint (tone + topic) from Content Calendar page
+  const [calendarMeta, setCalendarMeta] = useState<{ tone: string; topic: string } | null>(null);
 
   // AI State
   const [isAiOpen, setIsAiOpen] = useState(false);
@@ -242,9 +251,89 @@ export function Composer() {
     setBrowserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
 
+  // ── Composer Bridge ─────────────────────────────────────────────────────────
+  // Reads content injected by AI tool pages via sessionStorage or the ?prefill
+  // URL param. Priority order:
+  //   1. composer_payload  (AI Writer, Affiliate — multi-tweet array)
+  //   2. inspiration_tweets (Inspiration page — adapted tweet array)
+  //   3. ?prefill=<text>   (Calendar, Reply — single tweet string)
+  // Sets bridgeLoadedRef so the localStorage auto-save restore below doesn't
+  // overwrite content that was just injected.
+  useEffect(() => {
+    if (draftId) return; // Hard draft from URL takes highest priority
+
+    // 1. composer_payload (AI Writer, Affiliate, Hashtag Generator)
+    const payloadStr = sessionStorage.getItem("composer_payload");
+    if (payloadStr) {
+      try {
+        const payload = JSON.parse(payloadStr) as { tweets?: string[] };
+        if (Array.isArray(payload.tweets) && payload.tweets.length > 0) {
+          setTweets(
+            payload.tweets.map((c) => ({
+              id: Math.random().toString(36).substr(2, 9),
+              content: c,
+              media: [],
+            }))
+          );
+          bridgeLoadedRef.current = true;
+          sessionStorage.removeItem("composer_payload");
+          return;
+        }
+      } catch {
+        // Malformed payload — fall through
+      }
+    }
+
+    // 2. inspiration_tweets (Inspiration page)
+    const inspirationStr = sessionStorage.getItem("inspiration_tweets");
+    if (inspirationStr) {
+      try {
+        // W4: Read source attribution before removing from storage
+        const attributionStr = sessionStorage.getItem("inspiration_attribution");
+        if (attributionStr) {
+          try { setSourceAttribution(JSON.parse(attributionStr) as { handle: string; url: string }); } catch {}
+          sessionStorage.removeItem("inspiration_attribution");
+        }
+
+        const inspirationTweets = JSON.parse(inspirationStr) as string[];
+        if (Array.isArray(inspirationTweets) && inspirationTweets.length > 0) {
+          setTweets(
+            inspirationTweets.map((c) => ({
+              id: Math.random().toString(36).substr(2, 9),
+              content: c,
+              media: [],
+            }))
+          );
+          bridgeLoadedRef.current = true;
+          sessionStorage.removeItem("inspiration_tweets");
+          sessionStorage.removeItem("inspiration_source_id");
+          return;
+        }
+      } catch {
+        // Malformed — fall through
+      }
+    }
+
+    // 3. ?prefill=<text> URL param (Calendar, Reply Suggester)
+    const prefill = searchParams?.get("prefill");
+    if (prefill) {
+      setTweets([{ id: "1", content: prefill, media: [] }]);
+      bridgeLoadedRef.current = true;
+      // W5: Read calendar metadata (tone + topic) passed from Content Calendar
+      const calendarTone = searchParams?.get("tone");
+      const calendarTopic = searchParams?.get("topic");
+      if (calendarTone || calendarTopic) {
+        setCalendarMeta({ tone: calendarTone ?? "", topic: calendarTopic ?? "" });
+      }
+      // Remove the param without a navigation so Back still works
+      window.history.replaceState(null, "", "/dashboard/compose");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-save
   useEffect(() => {
     if (draftId) return; // Draft will be loaded from API — skip localStorage restore
+    if (bridgeLoadedRef.current) return; // Bridge content loaded — don't overwrite
     const saved = localStorage.getItem("astra-post-drafts");
     if (saved) {
       try {
@@ -1127,7 +1216,61 @@ export function Composer() {
 
       {/* Editor Column */}
       <div className="lg:col-span-2 space-y-4">
-        <DndContext 
+        {/* W4: Inspiration attribution banner */}
+        {sourceAttribution && (
+          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 shrink-0" />
+              Inspired by{" "}
+              <a
+                href={sourceAttribution.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground hover:underline"
+              >
+                @{sourceAttribution.handle}
+              </a>
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0"
+              onClick={() => setSourceAttribution(null)}
+              aria-label="Dismiss attribution"
+            >
+              <XIcon className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        {/* W5: Calendar metadata hint banner */}
+        {calendarMeta && (calendarMeta.tone || calendarMeta.topic) && (
+          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm">
+            <span className="flex items-center gap-2 text-muted-foreground flex-wrap">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+              {calendarMeta.topic && (
+                <span>Topic: <span className="font-medium text-foreground">{calendarMeta.topic}</span></span>
+              )}
+              {calendarMeta.topic && calendarMeta.tone && (
+                <span className="text-border/60">·</span>
+              )}
+              {calendarMeta.tone && (
+                <span>Tone: <span className="font-medium text-foreground capitalize">{calendarMeta.tone}</span></span>
+              )}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 shrink-0"
+              onClick={() => setCalendarMeta(null)}
+              aria-label="Dismiss calendar hint"
+            >
+              <XIcon className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        <DndContext
             id={dndId}
             sensors={sensors}
             collisionDetection={closestCenter}

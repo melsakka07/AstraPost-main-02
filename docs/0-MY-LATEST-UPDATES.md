@@ -1,5 +1,132 @@
 # Latest Updates
 
+## 2026-03-23: UX Audit — ACC3 / ACC4 / ACC5 / A15 / A16 / F3 / W4 / W5 (plan sync)
+
+Plan deferred-items table updated to reflect items already completed in earlier phases:
+- **ACC3** ✅ — `aria-label` + `aria-valuetext` on Calendar sliders (done in 4C-11)
+- **ACC4** ✅ — Icons alongside color badges in refresh history (done in 4C-12)
+- **ACC5** ✅ — BestTimeHeatmap table markup (done in 4C-14)
+- **A15** ✅ — Color-coded char count on Bio variants (done in 4C-8)
+- **A16** ✅ — "Open X Settings" link on Bio page (done in earlier session)
+- **F3** ✅ — Action-oriented page descriptions (done in 4C-13)
+- **W4** ✅ — Inspiration → Composer source attribution (done in 4D-W4)
+- **W5** ✅ — Calendar → Composer full metadata (done in 4D-W5)
+
+No code changes — plan tracking only.
+
+---
+
+## 2026-03-23: UX Audit — A34: Sticky "Analyze Another" on Competitor Analyzer
+
+**Problem:** After a competitor analysis completes, the result can be 10+ cards long. The input card scrolls off screen, forcing users to scroll back to the top to analyze a different account.
+
+**Fix** (`src/app/dashboard/analytics/competitor/page.tsx`):
+- Added a sticky bar (`sticky top-0 z-10`) at the top of the results section
+- Shows `@username` + follower/tweet count as truncated context line
+- "Analyze Another" button (`variant="outline"`, `Sparkles` icon) calls `setResult(null)`, which hides the results and brings the input card back into view
+- `bg-background/95 backdrop-blur` gives the bar a frosted-glass appearance over scrolling content
+
+`pnpm lint && pnpm typecheck` — 0 errors.
+
+---
+
+## 2026-03-23: UX Audit — M6: Full loading skeleton for Competitor Analyzer
+
+**Problem:** Phase 4C-10 had added skeleton cards for the first half of the result layout (4 metric cards + 2 chart cards + summary), but the bottom half — the 2×2 text-card grid (Topics, Hashtags, Key Strengths, Opportunities) and the Tone Profile card — had no skeleton. The loading state showed structural mismatch vs the real results.
+
+**Fix** (`src/app/dashboard/analytics/competitor/page.tsx`):
+- Extended the `isLoading` skeleton to fully mirror the complete result layout:
+  - 4 metric card skeletons ✅ (already existed)
+  - 2 chart skeletons ✅ (already existed)
+  - Strategic Summary skeleton ✅ (enhanced with posting frequency/time pill skeletons)
+  - **New:** 4 text card skeletons in a 2×2 grid (Topics, Hashtags, Key Strengths, Opportunities) — each with a title skeleton + 4 badge-shaped pill skeletons
+  - **New:** Tone Profile card skeleton with 3 content-type badge pills
+- Fixed `mr-2` → `me-2` on the Analyze button icons (RTL logical property)
+
+`pnpm lint && pnpm typecheck` — 0 errors.
+
+---
+
+## 2026-03-23: UX Audit — M5: Real-time character counter on Bio textarea
+
+**Problem:** The "Current Bio" textarea had a static `{currentBio.length}/500` label rendered as plain text below the field. No visual warning as the user approached or exceeded the 160-char X limit.
+
+**Fix** (`src/app/dashboard/ai/bio/page.tsx`):
+- Wrapped `<Textarea>` in a `relative` div
+- Added `pb-6` to the textarea so typed text doesn't slide under the counter
+- Counter (`{currentBio.length}/160`) positioned `absolute bottom-2 right-2` as a `pointer-events-none` overlay
+- Three-state coloring: `text-muted-foreground` (≤129) → `text-amber-500` (130–160) → `text-destructive` (>160)
+- Counter now reflects the actual X bio limit (160) rather than the form's `maxLength={500}`
+
+`pnpm lint && pnpm typecheck` — 0 errors.
+
+---
+
+## 2026-03-23: UX Audit — M3: URL validation feedback on Inspiration page
+
+**Problem:** The "Please enter a valid X/Twitter URL" hint rendered as `text-xs text-muted-foreground` — identical visual weight to normal helper text, easy to miss. It also fired on the first keystroke.
+
+**Fix** (`src/app/dashboard/inspiration/page.tsx`):
+- Condition changed from `tweetUrl && !isValidUrl` → `tweetUrl.length >= 5 && !isValidUrl` — suppresses the error until the user has typed enough to know they're not mid-paste
+- Color changed from `text-muted-foreground` → `text-destructive`
+- Inline `AlertCircle` icon (already imported) added before the message text with `shrink-0`
+
+`pnpm lint && pnpm typecheck` — 0 errors.
+
+---
+
+## 2026-03-23: UX Audit — M2: Standardize copy button feedback
+
+Three copy functions used non-standard toast messages. All copy buttons now consistently fire `toast.success("Copied to clipboard")` + icon change (Copy → Check, 2s).
+
+| File | Function | Old | Fixed |
+|------|----------|-----|-------|
+| `src/app/dashboard/ai/writer/page.tsx` | `copyAllTweets` | "All tweets copied" | "Copied to clipboard" |
+| `src/app/dashboard/ai/bio/page.tsx` | `copyBio` | "Bio copied to clipboard" | "Copied to clipboard" |
+| `src/components/ai/hashtag-generator.tsx` | `copyAllHashtags` | "All hashtags copied!" | "Copied to clipboard" |
+
+`pnpm lint && pnpm typecheck` — 0 errors.
+
+---
+
+## 2026-03-23: UX Audit Phase 4E — Streaming Thread Generation (M1 Phase 2)
+
+### Eliminated the 5–15s frozen-spinner UX on Thread Writer
+
+**Problem:** `/api/ai/thread` used `generateObject` (structured JSON output), which waits for the entire AI response before returning. Users saw a static spinner for the full generation time with no indication of progress.
+
+**Solution:** Server-Sent Events (SSE) streaming — tweets appear one by one as the AI generates them.
+
+### Server: `src/app/api/ai/thread/route.ts`
+
+- Replaced `generateObject` with `streamText` from AI SDK v5
+- Prompt now instructs the AI to separate tweets with `===TWEET===` delimiter
+- A custom `ReadableStream` buffers incoming text chunks and emits an SSE event (`data: {"index":N,"tweet":"..."}`) each time a delimiter is found
+- Final tweet (no trailing delimiter) is flushed from the buffer after `textStream` ends
+- `data: {"done":true}` signals completion to the client
+- `recordAiUsage` is called after the stream closes (non-blocking from the client's perspective)
+- All error responses (401, 400, 402, 429, 500) remain as JSON — streaming only starts after all auth/rate-limit checks pass
+- Response headers: `Content-Type: text/event-stream`, `X-Accel-Buffering: no`
+
+### Client: `src/app/dashboard/ai/writer/page.tsx`
+
+- `handleGenerate` now reads `res.body` via `ReadableStream.getReader()` instead of `res.json()`
+- `TextDecoder` decodes chunks; SSE buffer accumulates and splits on `\n` boundaries
+- Each `data:` line is parsed as JSON; valid tweet events call `setGeneratedTweets(prev => [...prev, tweet])`
+- `streamDone` flag breaks the read loop on `{"done":true}` or `{"error":"..."}`
+- `finally` block calls `setIsGenerating(false)` — spinner remains visible throughout streaming
+
+### UI improvements for streaming state
+
+- Header shows `Generating N / total…` while streaming (not just the count)
+- "Copy All" and "Open in Composer" buttons are hidden while streaming (shown only after completion)
+- Pulsing skeleton card appears below the last received tweet while more are incoming — signals that generation is still active
+- Empty state (blurred placeholder) shows correctly when `generatedTweets.length === 0` during initial wait
+
+`pnpm lint && pnpm typecheck` — 0 errors.
+
+---
+
 ## 2026-03-22: UX Audit Phase 3 — PR 7: Settings Page S3 (per-account health check)
 
 ### S3 — Inline per-account connection test

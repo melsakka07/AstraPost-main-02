@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 
 /** Assign rank-decay scores: 1st item → 100, 2nd → 85, 3rd → 72 … */
@@ -119,7 +120,7 @@ export default function CompetitorAnalyzerPage() {
     <DashboardPageWrapper
       icon={Users}
       title="Competitor Analyzer"
-      description="Analyze any public X account to discover their content strategy and differentiation opportunities."
+      description="Enter a public X username to uncover their posting strategy, top topics, and where you can stand out."
     >
       {/* Input */}
       <Card>
@@ -157,9 +158,9 @@ export default function CompetitorAnalyzerPage() {
               className="sm:self-end"
             >
               {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyzing...</>
+                <><Loader2 className="me-2 h-4 w-4 animate-spin" />Analyzing...</>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" />Analyze</>
+                <><Sparkles className="me-2 h-4 w-4" />Analyze</>
               )}
             </Button>
           </div>
@@ -174,20 +175,100 @@ export default function CompetitorAnalyzerPage() {
           </div>
           <p className="font-semibold">Enter a public X username to analyze</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Requires TWITTER_BEARER_TOKEN to be configured.
+            Analyze any public X account to discover their posting patterns, top topics, and engagement strategy.
           </p>
         </div>
       )}
 
       {isLoading && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Fetching tweets and analyzing patterns...</p>
+        <div className="space-y-5" aria-busy="true" aria-label="Loading competitor analysis">
+          {/* Metric card skeletons — mirrors 4-column result row */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4 space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-7 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Chart skeletons — mirrors Hashtag Prominence + Content Mix */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4 space-y-3">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-[180px] w-full rounded-md" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Strategic Summary skeleton */}
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-3/5" />
+              <div className="flex gap-2 pt-1">
+                <Skeleton className="h-6 w-32 rounded-md" />
+                <Skeleton className="h-6 w-28 rounded-md" />
+              </div>
+            </CardContent>
+          </Card>
+          {/* Text card skeletons — mirrors Topics / Hashtags / Key Strengths / Opportunities 2×2 grid */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4 space-y-3">
+                  <Skeleton className="h-4 w-28" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {Array.from({ length: 4 }).map((__, j) => (
+                      <Skeleton key={j} className="h-5 w-16 rounded-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Tone Profile skeleton */}
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+              <div className="flex gap-1.5 pt-1">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {result && (
         <div className="space-y-5">
+          {/* A34 — Sticky "Analyze Another" bar so the input doesn't need re-scrolling */}
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded-lg border bg-background/95 px-4 py-2.5 backdrop-blur">
+            <p className="text-sm font-medium truncate">
+              @{result.username}
+              <span className="ms-2 text-xs text-muted-foreground font-normal">
+                {result.followerCount.toLocaleString()} followers · {result.tweetCount} tweets analyzed
+              </span>
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setResult(null)}
+              className="shrink-0"
+            >
+              <Sparkles className="me-1.5 h-3.5 w-3.5" />
+              Analyze Another
+            </Button>
+          </div>
+
           {/* Header */}
           <div className="flex items-center gap-3">
             <div>

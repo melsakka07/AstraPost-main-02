@@ -19,6 +19,7 @@ import {
   LogOut,
   Rocket,
   ExternalLink,
+  Sparkles,
   Users,
   MessageCircle,
   CalendarRange,
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +40,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   href: string;
+  isPro?: boolean;
 }
 
 interface SidebarSection {
@@ -67,10 +70,11 @@ const sidebarSections: SidebarSection[] = [
     label: "AI Tools",
     collapsible: true,
     items: [
-      { icon: Bot, label: "AI Writer", href: "/dashboard/ai" },
-      { icon: CalendarRange, label: "Content Calendar", href: "/dashboard/ai/calendar" },
-      { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply" },
-      { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio" },
+      { icon: Sparkles, label: "AI Hub", href: "/dashboard/ai" },
+      { icon: Bot, label: "AI Writer", href: "/dashboard/ai/writer" },
+      { icon: CalendarRange, label: "Content Calendar", href: "/dashboard/ai/calendar", isPro: true },
+      { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply", isPro: true },
+      { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio", isPro: true },
       { icon: Lightbulb, label: "Inspiration", href: "/dashboard/inspiration" },
       { icon: ShoppingCart, label: "Affiliate", href: "/dashboard/affiliate" },
     ],
@@ -81,7 +85,7 @@ const sidebarSections: SidebarSection[] = [
     items: [
       { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics" },
       { icon: TrendingUp, label: "Viral Analyzer", href: "/dashboard/analytics/viral" },
-      { icon: Users, label: "Competitor", href: "/dashboard/analytics/competitor" },
+      { icon: Users, label: "Competitor", href: "/dashboard/analytics/competitor", isPro: true },
     ],
   },
   {
@@ -175,6 +179,11 @@ function CollapsibleSection({
             >
               <item.icon className="h-4.5 w-4.5 shrink-0" />
               {item.label}
+              {item.isPro && (
+                <Badge variant="outline" className="ms-auto text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary">
+                  Pro
+                </Badge>
+              )}
             </Link>
           );
         })}
@@ -323,6 +332,11 @@ function SidebarContent({
                       >
                         <item.icon className="h-4.5 w-4.5 shrink-0" />
                         {item.label}
+                        {item.isPro && (
+                          <Badge variant="outline" className="ms-auto text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary">
+                            Pro
+                          </Badge>
+                        )}
                       </Link>
                     );
                   })}

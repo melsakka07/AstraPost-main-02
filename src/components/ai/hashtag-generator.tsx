@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Hash, Loader2, Copy, Check, Sparkles, TrendingUp } from "lucide-react";
+import { Hash, Loader2, Copy, Check, PenSquare, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { sendToComposer } from "@/lib/composer-bridge";
 import { LANGUAGES } from "@/lib/constants";
 
 interface PlanLimitPayload {
@@ -107,7 +108,7 @@ export function HashtagGenerator() {
     navigator.clipboard.writeText(allTags);
     setAllCopied(true);
     setTimeout(() => setAllCopied(false), 2000);
-    toast.success("All hashtags copied!");
+    toast.success("Copied to clipboard");
   };
 
   const removeHashtag = (index: number) => {
@@ -167,12 +168,12 @@ export function HashtagGenerator() {
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="mr-2 h-4 w-4" />
+                <Sparkles className="me-2 h-4 w-4" />
                 Generate Hashtags
               </>
             )}
@@ -189,19 +190,18 @@ export function HashtagGenerator() {
               Generated Hashtags
               <Badge variant="secondary">{generatedHashtags.length}</Badge>
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={copyAllHashtags}>
-              {allCopied ? (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copy All
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={copyAllHashtags} aria-label="Copy all hashtags">
+                {allCopied ? (
+                  <><Check className="me-2 h-4 w-4" />Copied!</>
+                ) : (
+                  <><Copy className="me-2 h-4 w-4" />Copy All</>
+                )}
+              </Button>
+              <Button size="sm" onClick={() => sendToComposer([generatedHashtags.join(" ")], { source: "hashtag-generator" })} aria-label="Send hashtags to Composer">
+                <PenSquare className="me-2 h-4 w-4" />Compose
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -214,14 +214,14 @@ export function HashtagGenerator() {
                 >
                   {hashtag}
                   {copiedIndex === index && (
-                    <Check className="ml-1 h-3 w-3 text-green-500" />
+                    <Check className="ms-1 h-3 w-3 text-green-500" />
                   )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       removeHashtag(index);
                     }}
-                    className="ml-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                    className="ms-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
                   >
                     ×
                   </button>

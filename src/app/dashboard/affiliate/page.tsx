@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingCart, Sparkles, Loader2, Copy, Check, ExternalLink, Package } from "lucide-react";
+import { ShoppingCart, Sparkles, Loader2, Copy, Check, ExternalLink, Package, PenSquare } from "lucide-react";
 import { toast } from "sonner";
 import { RecentAffiliateLinks } from "@/components/affiliate/recent-affiliate-links";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useElapsedTime } from "@/hooks/use-elapsed-time";
+import { sendToComposer } from "@/lib/composer-bridge";
 
 interface PlanLimitPayload {
   error?: string;
@@ -32,9 +34,11 @@ export default function AffiliatePage() {
   const [url, setUrl] = useState("");
   const [tag, setTag] = useState("");
   const [platform, setPlatform] = useState("amazon");
+  const [language, setLanguage] = useState("ar");
   const [result, setResult] = useState<{ tweet: string, hashtags: string[], productTitle?: string, affiliateUrl?: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const elapsed = useElapsedTime(isGenerating);
 
   const handleGenerate = async () => {
     if (!url) return;
@@ -45,7 +49,7 @@ export default function AffiliatePage() {
       const res = await fetch("/api/ai/affiliate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, affiliateTag: tag, platform }),
+        body: JSON.stringify({ url, affiliateTag: tag, platform, language }),
       });
 
       if (!res.ok) {
@@ -96,7 +100,7 @@ export default function AffiliatePage() {
     <DashboardPageWrapper
       icon={Package}
       title="Affiliate Generator"
-      description="Turn product links into high-converting tweets."
+      description="Paste a product URL to generate a ready-to-post affiliate tweet — pick a tone and language, then copy or send to Composer."
     >
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <Card>
@@ -136,6 +140,23 @@ export default function AffiliatePage() {
             </div>
 
             <div className="space-y-2">
+              <Label>Tweet Language</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ar">Arabic</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="fr">French</SelectItem>
+                  <SelectItem value="de">German</SelectItem>
+                  <SelectItem value="es">Spanish</SelectItem>
+                  <SelectItem value="tr">Turkish</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="affiliate-tag">Affiliate Tag (Optional)</Label>
               <Input
                 id="affiliate-tag"
@@ -156,12 +177,12 @@ export default function AffiliatePage() {
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  Analyzing... ({elapsed}s)
                 </>
               ) : (
                 <>
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="me-2 h-4 w-4" />
                   Generate Tweet
                 </>
               )}
@@ -173,19 +194,21 @@ export default function AffiliatePage() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Generated Result</CardTitle>
             {result && (
-              <Button variant="ghost" size="sm" onClick={copyToClipboard}>
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={copyToClipboard} aria-label="Copy affiliate tweet">
+                  {copied ? (
+                    <><Check className="h-4 w-4 me-2" />Copied!</>
+                  ) : (
+                    <><Copy className="h-4 w-4 me-2" />Copy</>
+                  )}
+                </Button>
+                <Button size="sm" onClick={() => {
+                  const text = `${result.tweet}\n\n${result.hashtags.join(" ")}${result.affiliateUrl ? `\n\n${result.affiliateUrl}` : ""}`;
+                  sendToComposer([text], { source: "affiliate" });
+                }}>
+                  <PenSquare className="h-4 w-4 me-2" />Compose
+                </Button>
+              </div>
             )}
           </CardHeader>
           <CardContent className="flex-1">
@@ -211,12 +234,32 @@ export default function AffiliatePage() {
                 )}
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center rounded-lg bg-gradient-to-b from-muted/50 to-muted/20 p-8 text-center">
-                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <ShoppingCart className="h-7 w-7 text-primary" />
+              <div className="h-full rounded-lg bg-gradient-to-b from-muted/50 to-muted/20 p-5 space-y-4 flex flex-col">
+                {/* Blurred tweet preview */}
+                <div className="flex-1 opacity-25 pointer-events-none select-none blur-[1.5px] space-y-2" aria-hidden="true">
+                  <div className="rounded-lg border bg-card p-3 space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-5 w-5 rounded-full bg-muted-foreground/30" />
+                      <div className="h-2.5 bg-muted-foreground/20 rounded w-20" />
+                    </div>
+                    <div className="h-2.5 bg-muted-foreground/25 rounded w-full" />
+                    <div className="h-2.5 bg-muted-foreground/25 rounded w-4/5" />
+                    <div className="h-2.5 bg-muted-foreground/20 rounded w-3/5" />
+                    <div className="mt-2 flex gap-1 flex-wrap">
+                      {["#AmazonFinds", "#Deal", "#MustHave"].map((tag) => (
+                        <span key={tag} className="h-4 px-1.5 rounded-full bg-primary/20 text-[10px]">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="rounded-md border bg-muted/50 px-2 py-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                    <div className="h-2 bg-muted-foreground/20 rounded w-3/4" />
+                  </div>
                 </div>
-                <p className="font-medium text-foreground">Ready to generate</p>
-                <p className="mt-1 text-sm text-muted-foreground max-w-[240px]">Enter a product URL and click generate to create an affiliate tweet</p>
+                <div className="text-center">
+                  <p className="font-medium text-sm">Your affiliate tweet will appear here</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Paste a product URL above and click Generate Tweet</p>
+                </div>
               </div>
             )}
           </CardContent>

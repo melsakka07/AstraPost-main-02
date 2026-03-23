@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useElapsedTime } from "@/hooks/use-elapsed-time";
 
 interface CalendarItem {
   day: string;
@@ -51,6 +53,23 @@ interface PlanLimitPayload {
   reset_at?: string | null;
 }
 
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function getWeekLabel(weekNum: number, baseDate: Date): string {
+  const day = baseDate.getDay(); // 0=Sun
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(baseDate);
+  monday.setDate(baseDate.getDate() + diffToMonday + (weekNum - 1) * 7);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const sm = MONTH_NAMES[monday.getMonth()];
+  const em = MONTH_NAMES[sunday.getMonth()];
+  if (monday.getMonth() === sunday.getMonth()) {
+    return `Week ${weekNum} · ${sm} ${monday.getDate()}–${sunday.getDate()}`;
+  }
+  return `Week ${weekNum} · ${sm} ${monday.getDate()}–${em} ${sunday.getDate()}`;
+}
+
 export default function ContentCalendarPage() {
   const router = useRouter();
   const { openWithContext } = useUpgradeModal();
@@ -61,7 +80,9 @@ export default function ContentCalendarPage() {
   const [weeks, setWeeks] = useState(1);
   const [tone, setTone] = useState("professional");
   const [items, setItems] = useState<CalendarItem[]>([]);
+  const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const elapsed = useElapsedTime(isGenerating);
 
   const handleGenerate = async () => {
     if (!niche.trim()) {
@@ -106,6 +127,7 @@ export default function ContentCalendarPage() {
 
       const data = await res.json() as { items: CalendarItem[] };
       setItems(data.items ?? []);
+      setGeneratedAt(new Date());
     } catch {
       toast.error("Failed to generate calendar. Please try again.");
     } finally {
@@ -117,23 +139,33 @@ export default function ContentCalendarPage() {
     const params = new URLSearchParams({
       prefill: item.brief,
       type: item.tweetType === "thread" ? "thread" : "tweet",
+      // W5: Pass full metadata so Composer can show tone + topic hint
+      tone: item.tone,
+      topic: item.topic,
     });
     router.push(`/dashboard/compose?${params.toString()}`);
   };
 
-  // Group items by day
-  const byDay = items.reduce<Record<string, CalendarItem[]>>((acc, item) => {
-    if (!acc[item.day]) acc[item.day] = [];
-    acc[item.day]!.push(item);
-    return acc;
-  }, {});
+  // Group items into weeks (by position), then by day within each week
+  const byWeek = items.reduce<Array<{ weekNum: number; byDay: Record<string, CalendarItem[]> }>>(
+    (acc, item, idx) => {
+      const weekIdx = Math.floor(idx / postsPerWeek);
+      if (!acc[weekIdx]) acc[weekIdx] = { weekNum: weekIdx + 1, byDay: {} };
+      const week = acc[weekIdx]!;
+      if (!week.byDay[item.day]) week.byDay[item.day] = [];
+      week.byDay[item.day]!.push(item);
+      return acc;
+    },
+    []
+  );
 
   return (
     <DashboardPageWrapper
       icon={CalendarDays}
       title="AI Content Calendar"
-      description="Generate a full content plan for your niche — topics, times, tones, and briefs."
+      description="Set your niche and schedule to get a week of AI-planned content — topics, tones, and posting times."
     >
+      <Breadcrumb items={[{ label: "Content Calendar" }]} className="mb-2" />
       <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
         {/* Config Panel */}
         <Card className="lg:col-span-1 h-fit">
@@ -163,7 +195,11 @@ export default function ContentCalendarPage() {
                   <SelectItem value="fr">French</SelectItem>
                   <SelectItem value="de">German</SelectItem>
                   <SelectItem value="es">Spanish</SelectItem>
+                  <SelectItem value="it">Italian</SelectItem>
+                  <SelectItem value="pt">Portuguese</SelectItem>
                   <SelectItem value="tr">Turkish</SelectItem>
+                  <SelectItem value="ru">Russian</SelectItem>
+                  <SelectItem value="hi">Hindi</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -196,6 +232,8 @@ export default function ContentCalendarPage() {
                 min={1}
                 max={7}
                 step={1}
+                aria-label="Posts per week"
+                aria-valuetext={`${postsPerWeek} posts per week`}
               />
             </div>
 
@@ -210,6 +248,8 @@ export default function ContentCalendarPage() {
                 min={1}
                 max={4}
                 step={1}
+                aria-label="Weeks to plan"
+                aria-valuetext={`${weeks} ${weeks === 1 ? "week" : "weeks"}`}
               />
             </div>
 
@@ -221,12 +261,12 @@ export default function ContentCalendarPage() {
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  Generating... ({elapsed}s)
                 </>
               ) : (
                 <>
-                  <Sparkles className="mr-2 h-4 w-4" />
+                  <Sparkles className="me-2 h-4 w-4" />
                   Generate Calendar
                 </>
               )}
@@ -237,14 +277,28 @@ export default function ContentCalendarPage() {
         {/* Calendar Results */}
         <div className="lg:col-span-2 space-y-4">
           {items.length === 0 && !isGenerating ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                <CalendarDays className="h-7 w-7 text-primary" />
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-4">
+              {/* Blurred weekly grid preview */}
+              <div className="opacity-25 pointer-events-none select-none blur-[1.5px]" aria-hidden="true">
+                <div className="grid grid-cols-4 gap-1.5 mb-1.5">
+                  {["Mon", "Tue", "Wed", "Thu"].map((d) => (
+                    <div key={d} className="text-center text-[10px] text-muted-foreground font-semibold py-0.5">{d}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="rounded-md border bg-card p-1.5 space-y-1">
+                      <div className="h-2 bg-muted-foreground/30 rounded w-full" />
+                      <div className="h-2 bg-muted-foreground/20 rounded w-3/4" />
+                      <div className="mt-1 h-3.5 w-3.5 rounded-full bg-primary/20" />
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="font-semibold text-foreground">Your calendar will appear here</p>
-              <p className="mt-1 text-sm text-muted-foreground max-w-xs">
-                Enter your niche and preferences, then click Generate Calendar.
-              </p>
+              <div className="text-center">
+                <p className="font-semibold text-sm">Your content calendar will appear here</p>
+                <p className="mt-1 text-xs text-muted-foreground">Set your niche and schedule, then click Generate Calendar</p>
+              </div>
             </div>
           ) : isGenerating ? (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 text-center gap-3">
@@ -252,51 +306,62 @@ export default function ContentCalendarPage() {
               <p className="text-sm text-muted-foreground">Building your content calendar...</p>
             </div>
           ) : (
-            Object.entries(byDay).map(([day, dayItems]) => (
-              <div key={day}>
-                <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
-                  {day}
-                </h3>
-                <div className="space-y-2">
-                  {dayItems.map((item, idx) => (
-                    <Card key={idx} className="hover:border-primary/30 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 space-y-1.5">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span
-                                className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${
-                                  TWEET_TYPE_COLORS[item.tweetType] ?? ""
-                                }`}
-                              >
-                                {item.tweetType}
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {item.tone}
-                              </Badge>
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {item.time}
-                              </span>
-                            </div>
-                            <p className="text-sm font-medium leading-snug">{item.topic}</p>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                              {item.brief}
-                            </p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="shrink-0"
-                            onClick={() => openInComposer(item)}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+            byWeek.map(({ weekNum, byDay }) => (
+              <div key={weekNum} className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-base font-semibold">
+                    {generatedAt ? getWeekLabel(weekNum, generatedAt) : `Week ${weekNum}`}
+                  </h2>
+                  <div className="flex-1 h-px bg-border" />
                 </div>
+                {Object.entries(byDay).map(([day, dayItems]) => (
+                  <div key={day}>
+                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                      {day}
+                    </h3>
+                    <div className="space-y-2">
+                      {dayItems.map((item, idx) => (
+                        <Card key={idx} className="hover:border-primary/30 transition-colors">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 space-y-1.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span
+                                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${
+                                      TWEET_TYPE_COLORS[item.tweetType] ?? ""
+                                    }`}
+                                  >
+                                    {item.tweetType}
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {item.tone}
+                                  </Badge>
+                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    {item.time}
+                                  </span>
+                                </div>
+                                <p className="text-sm font-medium leading-snug">{item.topic}</p>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {item.brief}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="shrink-0"
+                                onClick={() => openInComposer(item)}
+                                aria-label="Open in Composer"
+                              >
+                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ))
           )}

@@ -2,8 +2,9 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq, gte, isNotNull } from "drizzle-orm";
-import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick, PlusCircle, ListOrdered, MoreHorizontal } from "lucide-react";
+import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick, AlignJustify, LayoutGrid, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { AccountSelector } from "@/components/analytics/account-selector";
+import { AnalyticsSectionNav } from "@/components/analytics/analytics-section-nav";
 import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
 import { FollowerChart, ImpressionsChart } from "@/components/analytics/charts-client";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
@@ -14,7 +15,6 @@ import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrap
 import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
@@ -80,6 +80,7 @@ export default async function AnalyticsPage({
   const now = new Date();
   const nowTimestamp = now.getTime();
   const startDate = new Date(nowTimestamp - rangeDays * 24 * 60 * 60 * 1000);
+  const prevStartDate = new Date(startDate.getTime() - rangeDays * 24 * 60 * 60 * 1000);
 
   // ── Round 2: five independent queries in parallel ──────────────────────────
   // All depend only on values already resolved above; none depend on each other.
@@ -87,6 +88,7 @@ export default async function AnalyticsPage({
     followerPoints,
     refreshRuns,
     snapshots,
+    prevSnapshots,
     topTweets,
     bestTimeData,
   ] = await Promise.all([
@@ -130,7 +132,32 @@ export default async function AnalyticsPage({
       .innerJoin(posts, eq(tweets.postId, posts.id))
       .where(and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))),
 
-    // 4. Top tweets by impressions (isNotNull replaces the @ts-ignore sql string)
+    // 4. Previous period tweet metrics snapshots (for trend indicators)
+    db
+      .select({
+        fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
+        impressions: tweetAnalyticsSnapshots.impressions,
+        likes: tweetAnalyticsSnapshots.likes,
+        retweets: tweetAnalyticsSnapshots.retweets,
+        replies: tweetAnalyticsSnapshots.replies,
+        clicks: tweetAnalyticsSnapshots.linkClicks,
+      })
+      .from(tweetAnalyticsSnapshots)
+      .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(
+        and(
+          eq(posts.userId, session.user.id),
+          gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate),
+          and(
+            eq(posts.userId, session.user.id),
+            gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate)
+          )
+        )
+      )
+      .then((rows) => rows.filter((r) => new Date(r.fetchedAt) < startDate)),
+
+    // 5. Top tweets by impressions (isNotNull replaces the @ts-ignore sql string)
     db
       .select({
         content: tweets.content,
@@ -185,6 +212,24 @@ export default async function AnalyticsPage({
     { impressions: 0, likes: 0, retweets: 0, replies: 0, clicks: 0 }
   );
 
+  const prevTotals = prevSnapshots.reduce(
+    (acc, s) => {
+      acc.impressions += s.impressions || 0;
+      acc.likes += s.likes || 0;
+      acc.retweets += s.retweets || 0;
+      acc.replies += s.replies || 0;
+      acc.clicks += s.clicks || 0;
+      return acc;
+    },
+    { impressions: 0, likes: 0, retweets: 0, replies: 0, clicks: 0 }
+  );
+
+  const delta = (current: number, previous: number) => {
+    const diff = current - previous;
+    if (previous === 0) return null;
+    return diff;
+  };
+
   const byDay = new Map<string, number>();
   for (const s of snapshots) {
     const key = new Date(s.fetchedAt).toISOString().slice(0, 10);
@@ -202,51 +247,38 @@ export default async function AnalyticsPage({
     <DashboardPageWrapper
       icon={BarChart3}
       title="Analytics Overview"
-      description="Track growth trends, post performance, and job refresh health."
+      description="Track your follower growth, tweet performance, and posting time insights — all in one view."
       actions={
         <>
           <DateRangeSelector />
           <ExportButton range={effectiveRange} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">More options</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={analyticsHref(isCompact ? "comfortable" : "compact")}>
-                  {isCompact ? "Comfortable View" : "Compact View"}
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/queue">
-                  <ListOrdered className="mr-2 h-4 w-4" />
-                  Open Queue
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/compose">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  New Post
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link
+            href={analyticsHref(isCompact ? "comfortable" : "compact")}
+            aria-label={isCompact ? "Switch to comfortable view" : "Switch to compact view"}
+          >
+            <Button variant="outline" size="icon" className="h-9 w-9">
+              {isCompact ? (
+                <AlignJustify className="h-4 w-4" />
+              ) : (
+                <LayoutGrid className="h-4 w-4" />
+              )}
+            </Button>
+          </Link>
         </>
       }
     >
 
       {isFree && (
-        <UpgradeBanner 
+        <UpgradeBanner
           title="Unlock Advanced Analytics"
           description="See 30-day history, top performing tweets, and deeper insights with Pro."
         />
       )}
 
+      <AnalyticsSectionNav />
+
       {/* ── Overview Section ── */}
-      <div className="flex items-center gap-3">
+      <div id="section-overview" className="flex items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Overview</h2>
         <div className="h-px flex-1 bg-border" />
       </div>
@@ -314,96 +346,96 @@ export default async function AnalyticsPage({
             </BlurredOverlay>
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-base font-semibold">Refresh history</h2>
-            {refreshRuns.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No refreshes yet.</div>
-            ) : (
-              <div className="space-y-2">
-                {refreshRuns.map((r) => (
-                  <div key={r.id} className="flex flex-col gap-2 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                    <div className="text-muted-foreground">
-                      {new Date(r.startedAt).toLocaleString()}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={
-                          "rounded px-2 py-0.5 text-xs " +
-                          (r.status === "success"
-                            ? "bg-success/10 text-success"
-                            : r.status === "failed"
-                              ? "bg-destructive/10 text-destructive"
-                              : "bg-muted text-muted-foreground")
-                        }
-                      >
-                        {String(r.status).toUpperCase()}
-                      </span>
-                      {r.error ? (
-                        <span className="max-w-[320px] truncate text-muted-foreground" title={r.error}>
-                          {r.error}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <details className="group">
+            <summary className="flex cursor-pointer list-none items-center gap-2 select-none">
+              <h2 className="text-base font-semibold">Refresh history</h2>
+              <span className="text-xs text-muted-foreground group-open:hidden">(click to expand)</span>
+              <span className="text-xs text-muted-foreground hidden group-open:inline">(click to collapse)</span>
+            </summary>
+            <div className="mt-2">
+              {refreshRuns.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No refreshes yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {refreshRuns.map((r) => {
+                    const statusIcon =
+                      r.status === "success" ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" aria-hidden="true" />
+                      ) : r.status === "failed" ? (
+                        <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" aria-hidden="true" />
+                      ) : (
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
+                      );
+                    return (
+                      <div key={r.id} className="flex flex-col gap-2 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div className="text-muted-foreground">
+                          {new Date(r.startedAt).toLocaleString()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {statusIcon}
+                          <span
+                            className={
+                              "rounded px-2 py-0.5 text-xs " +
+                              (r.status === "success"
+                                ? "bg-emerald-500/10 text-emerald-600"
+                                : r.status === "failed"
+                                  ? "bg-destructive/10 text-destructive"
+                                  : "bg-muted text-muted-foreground")
+                            }
+                            aria-label={`Status: ${r.status}`}
+                          >
+                            {String(r.status).toUpperCase()}
+                          </span>
+                          {r.error ? (
+                            <span className="max-w-[320px] truncate text-muted-foreground" title={r.error}>
+                              {r.error}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </details>
         </CardContent>
       </Card>
 
       {/* ── Performance Section ── */}
-      <div className="flex items-center gap-3">
+      <div id="section-performance" className="flex items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
         <div className="h-px flex-1 bg-border" />
       </div>
 
       <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Impressions</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.impressions.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Likes</CardTitle>
-            <Heart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.likes.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Retweets</CardTitle>
-            <Repeat2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.retweets.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Replies</CardTitle>
-            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.replies.toLocaleString()}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Link Clicks</CardTitle>
-            <MousePointerClick className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-            <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{totals.clicks.toLocaleString()}</div>
-          </CardContent>
-        </Card>
+        {(
+          [
+            { label: "Impressions", icon: BarChart3, current: totals.impressions, prev: prevTotals.impressions },
+            { label: "Likes", icon: Heart, current: totals.likes, prev: prevTotals.likes },
+            { label: "Retweets", icon: Repeat2, current: totals.retweets, prev: prevTotals.retweets },
+            { label: "Replies", icon: MessageCircle, current: totals.replies, prev: prevTotals.replies },
+            { label: "Link Clicks", icon: MousePointerClick, current: totals.clicks, prev: prevTotals.clicks },
+          ] as const
+        ).map(({ label, icon: Icon, current, prev }) => {
+          const d = delta(current, prev);
+          return (
+            <Card key={label}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{label}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
+                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{current.toLocaleString()}</div>
+                {d !== null && (
+                  <p className={`mt-1 text-xs ${d >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                    {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString()} vs prev {effectiveRange}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="space-y-3">
@@ -414,7 +446,7 @@ export default async function AnalyticsPage({
       </div>
 
       {/* ── Insights Section ── */}
-      <div className="flex items-center gap-3">
+      <div id="section-insights" className="flex items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Insights</h2>
         <div className="h-px flex-1 bg-border" />
       </div>

@@ -6,12 +6,14 @@ import { MessageCircle, Sparkles, Loader2, Copy, Check, ChevronRight } from "luc
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useElapsedTime } from "@/hooks/use-elapsed-time";
 
 interface Reply {
   text: string;
@@ -49,6 +51,7 @@ export default function ReplyGeneratorPage() {
   const [goal, setGoal] = useState("add");
   const [result, setResult] = useState<ReplyResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const elapsed = useElapsedTime(isLoading);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const handleGenerate = async () => {
@@ -119,8 +122,9 @@ export default function ReplyGeneratorPage() {
     <DashboardPageWrapper
       icon={MessageCircle}
       title="Reply Suggester"
-      description="Generate high-quality replies to any public tweet — grow through engagement."
+      description="Paste a tweet URL to generate 5 engagement-ready replies — grow your account through smart interactions."
     >
+      <Breadcrumb items={[{ label: "Reply Suggester" }]} className="mb-2" />
       {/* Input */}
       <Card>
         <CardContent className="p-5 space-y-4">
@@ -145,7 +149,13 @@ export default function ReplyGeneratorPage() {
                   <SelectItem value="ar">Arabic</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                   <SelectItem value="fr">French</SelectItem>
+                  <SelectItem value="de">German</SelectItem>
+                  <SelectItem value="es">Spanish</SelectItem>
+                  <SelectItem value="it">Italian</SelectItem>
+                  <SelectItem value="pt">Portuguese</SelectItem>
                   <SelectItem value="tr">Turkish</SelectItem>
+                  <SelectItem value="ru">Russian</SelectItem>
+                  <SelectItem value="hi">Hindi</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -189,7 +199,7 @@ export default function ReplyGeneratorPage() {
             className="w-full"
           >
             {isLoading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Generating...</>
+              <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({elapsed}s)</>
             ) : (
               <><Sparkles className="mr-2 h-4 w-4" />Generate Replies</>
             )}
@@ -209,14 +219,32 @@ export default function ReplyGeneratorPage() {
 
       {/* Reply options */}
       {!result && !isLoading && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <MessageCircle className="h-7 w-7 text-primary" />
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-6 space-y-4">
+          {/* Blurred conversation preview */}
+          <div className="space-y-2 opacity-25 pointer-events-none select-none blur-[1.5px]" aria-hidden="true">
+            {/* Original tweet bubble */}
+            <div className="flex gap-2 items-start">
+              <div className="h-7 w-7 rounded-full bg-muted-foreground/30 shrink-0" />
+              <div className="rounded-2xl rounded-tl-none bg-muted border px-3 py-2 space-y-1 max-w-[280px]">
+                <div className="h-2.5 bg-muted-foreground/30 rounded w-full" />
+                <div className="h-2.5 bg-muted-foreground/30 rounded w-4/5" />
+              </div>
+            </div>
+            {/* Reply bubbles */}
+            {[["w-4/5", "w-3/5"], ["w-full", "w-2/3"], ["w-3/4", "w-full"]].map(([w1, w2], i) => (
+              <div key={i} className="flex gap-2 items-start justify-end">
+                <div className="rounded-2xl rounded-tr-none bg-primary/10 border border-primary/20 px-3 py-2 space-y-1 max-w-[240px]">
+                  <div className={`h-2.5 bg-primary/30 rounded ${w1}`} />
+                  <div className={`h-2.5 bg-primary/20 rounded ${w2}`} />
+                </div>
+                <div className="h-7 w-7 rounded-full bg-primary/20 shrink-0" />
+              </div>
+            ))}
           </div>
-          <p className="font-semibold">Paste a tweet URL to generate replies</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Works with any public tweet from x.com or twitter.com
-          </p>
+          <div className="text-center">
+            <p className="font-semibold text-sm">3 reply suggestions will appear here</p>
+            <p className="mt-1 text-xs text-muted-foreground">Works with any public tweet from x.com or twitter.com</p>
+          </div>
         </div>
       )}
 
@@ -239,13 +267,16 @@ export default function ReplyGeneratorPage() {
                   <div className="flex-1 space-y-2">
                     <Badge variant="outline" className="text-xs capitalize">{reply.style}</Badge>
                     <p className="text-sm leading-relaxed">{reply.text}</p>
-                    <p className="text-xs text-muted-foreground">{reply.text.length} chars</p>
+                    <p className={`text-xs tabular-nums ${reply.text.length > 280 ? "text-destructive" : reply.text.length >= 200 ? "text-amber-500" : "text-emerald-500"}`}>
+                      {reply.text.length}/280
+                    </p>
                   </div>
                   <div className="flex flex-col gap-1">
                     <Button
                       size="sm"
                       variant="ghost"
                       onClick={() => copyReply(reply.text, idx)}
+                      aria-label="Copy reply"
                     >
                       {copiedIdx === idx ? (
                         <Check className="h-3.5 w-3.5" />
@@ -257,6 +288,7 @@ export default function ReplyGeneratorPage() {
                       size="sm"
                       variant="ghost"
                       onClick={() => sendToComposer(reply.text)}
+                      aria-label="Send reply to Composer"
                     >
                       <ChevronRight className="h-3.5 w-3.5" />
                     </Button>

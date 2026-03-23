@@ -2,11 +2,23 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight, Download } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight, Download, ExternalLink, RefreshCw } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
 import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import type { ImportedTweetContext } from "@/lib/services/tweet-importer";
 
 interface Bookmark {
@@ -67,6 +80,7 @@ export default function InspirationPage() {
   });
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isBookmarking, setIsBookmarking] = useState(false);
+  const importElapsed = useElapsedTime(isLoading);
 
   // Persist history to localStorage whenever it changes
   useEffect(() => {
@@ -146,9 +160,18 @@ export default function InspirationPage() {
     sessionStorage.setItem("inspiration_tweets", JSON.stringify(tweets));
     if (importedData) {
       sessionStorage.setItem("inspiration_source_id", importedData.originalTweet.id);
+      // W4: Store source attribution for display in Composer
+      try {
+        sessionStorage.setItem("inspiration_attribution", JSON.stringify({
+          handle: importedData.originalTweet.author.username,
+          url: tweetUrl,
+        }));
+      } catch {
+        // sessionStorage may be unavailable — fail silently
+      }
     }
     router.push("/dashboard/compose");
-  }, [router, importedData]);
+  }, [router, importedData, tweetUrl]);
 
   // Bookmark the current inspiration
   const handleBookmark = useCallback(async () => {
@@ -251,20 +274,20 @@ export default function InspirationPage() {
     <DashboardPageWrapper
       icon={Lightbulb}
       title="Inspiration"
-      description="Import tweets from X and adapt them with AI assistance."
+      description="Paste an X/Twitter URL to import a tweet, then adapt it with AI — or browse your saved inspiration."
     >
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-3 overflow-x-auto">
           <TabsTrigger value="import">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             Import Tweet
           </TabsTrigger>
           <TabsTrigger value="history">
-            <History className="h-4 w-4 mr-2" />
+            <History className="h-4 w-4 me-2" />
             History
           </TabsTrigger>
           <TabsTrigger value="bookmarks">
-            <Bookmark className="h-4 w-4 mr-2" />
+            <Bookmark className="h-4 w-4 me-2" />
             Bookmarks
           </TabsTrigger>
         </TabsList>
@@ -298,8 +321,8 @@ export default function InspirationPage() {
                     >
                       {isLoading ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Importing...
+                          <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                          Importing... ({importElapsed}s)
                         </>
                       ) : (
                         <>
@@ -309,8 +332,9 @@ export default function InspirationPage() {
                       )}
                     </Button>
                   </div>
-                  {tweetUrl && !isValidUrl && (
-                    <p className="text-xs text-muted-foreground">
+                  {tweetUrl.length >= 5 && !isValidUrl && (
+                    <p className="flex items-center gap-1.5 text-xs text-destructive">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                       Please enter a valid X/Twitter URL
                     </p>
                   )}
@@ -370,7 +394,7 @@ export default function InspirationPage() {
                     onClick={handleBookmark}
                     disabled={isBookmarking}
                   >
-                    <Bookmark className="h-4 w-4 mr-2" />
+                    <Bookmark className="h-4 w-4 me-2" />
                     {isBookmarking ? "Saving..." : "Bookmark"}
                   </Button>
                 </div>
@@ -433,15 +457,43 @@ export default function InspirationPage() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-medium">@{item.sourceTweet.author.username}</span>
                             <Badge variant="outline" className="text-xs">
                               {item.action}
                             </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                            </span>
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {item.sourceTweet.text}
                           </p>
+                        </div>
+                        <div className="flex flex-col gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              const tweetUrl = `https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`;
+                              setTweetUrl(tweetUrl);
+                              setIsValidUrl(true);
+                              setActiveTab("import");
+                            }}
+                          >
+                            <RefreshCw className="h-3 w-3 me-1" />
+                            Re-import
+                          </Button>
+                          <a
+                            href={`https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-1 rounded-md px-2 h-7 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            View on X
+                          </a>
                         </div>
                       </div>
                     </li>
@@ -495,14 +547,34 @@ export default function InspirationPage() {
                           >
                             Re-adapt
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteBookmark(bookmark.id)}
-                          >
-                            Delete
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                              >
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete bookmark?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This cannot be undone. The bookmark will be permanently removed.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteBookmark(bookmark.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </li>
