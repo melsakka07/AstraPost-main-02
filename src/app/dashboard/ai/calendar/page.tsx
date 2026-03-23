@@ -8,6 +8,8 @@ import {
   Loader2,
   Clock,
   ChevronRight,
+  CalendarCheck,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -15,6 +17,13 @@ import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,6 +62,14 @@ interface PlanLimitPayload {
   reset_at?: string | null;
 }
 
+interface XAccount {
+  id: string;
+  xUsername: string;
+  xDisplayName: string;
+  xAvatarUrl: string | null;
+  isDefault: boolean;
+}
+
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function getWeekLabel(weekNum: number, baseDate: Date): string {
@@ -83,6 +100,14 @@ export default function ContentCalendarPage() {
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const elapsed = useElapsedTime(isGenerating);
+
+  // Schedule All dialog state
+  const [scheduleAllOpen, setScheduleAllOpen] = useState(false);
+  const [scheduleAllAccounts, setScheduleAllAccounts] = useState<XAccount[]>([]);
+  const [scheduleAllAccountId, setScheduleAllAccountId] = useState("");
+  const [scheduleAllStartDate, setScheduleAllStartDate] = useState("");
+  const [scheduleAllLoading, setScheduleAllLoading] = useState(false);
+  const [scheduleAllFetching, setScheduleAllFetching] = useState(false);
 
   const handleGenerate = async () => {
     if (!niche.trim()) {
@@ -144,6 +169,117 @@ export default function ContentCalendarPage() {
       topic: item.topic,
     });
     router.push(`/dashboard/compose?${params.toString()}`);
+  };
+
+  // Returns next Monday as YYYY-MM-DD
+  function nextMonday(): string {
+    const d = new Date();
+    const day = d.getDay(); // 0=Sun, 1=Mon, ...
+    const diff = day === 0 ? 1 : day === 1 ? 7 : 8 - day;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Resolve a calendar item's day name + week number + time string to an actual Date
+  function resolveItemDate(dayName: string, weekNum: number, startDate: Date, timeStr: string): Date {
+    const DAY_OFFSETS: Record<string, number> = {
+      Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3,
+      Friday: 4, Saturday: 5, Sunday: 6,
+    };
+    const dayOffset = DAY_OFFSETS[dayName] ?? 0;
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + (weekNum - 1) * 7 + dayOffset);
+    // Parse "9:00 AM" / "2:30 PM" / "14:00"
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (match) {
+      let h = parseInt(match[1]!, 10);
+      const m = parseInt(match[2]!, 10);
+      const mer = match[3]?.toUpperCase();
+      if (mer === "PM" && h < 12) h += 12;
+      if (mer === "AM" && h === 12) h = 0;
+      date.setHours(h, m, 0, 0);
+    }
+    return date;
+  }
+
+  const openScheduleAll = async () => {
+    setScheduleAllStartDate(nextMonday());
+    setScheduleAllOpen(true);
+    setScheduleAllFetching(true);
+    try {
+      const res = await fetch("/api/x/accounts");
+      if (res.ok) {
+        const data = await res.json() as { accounts: XAccount[] };
+        const accounts = data.accounts ?? [];
+        setScheduleAllAccounts(accounts);
+        const def = accounts.find((a) => a.isDefault) ?? accounts[0];
+        if (def) setScheduleAllAccountId(def.id);
+      } else {
+        toast.error("Failed to load accounts");
+      }
+    } catch {
+      toast.error("Failed to load accounts");
+    } finally {
+      setScheduleAllFetching(false);
+    }
+  };
+
+  const handleScheduleAll = async () => {
+    if (!scheduleAllAccountId) {
+      toast.error("Please select an X account");
+      return;
+    }
+    if (!scheduleAllStartDate) {
+      toast.error("Please set a start date for Week 1");
+      return;
+    }
+
+    setScheduleAllLoading(true);
+    // Parse the start date as local midnight to avoid timezone shifts
+    const [y, mo, d] = scheduleAllStartDate.split("-").map(Number);
+    const startDate = new Date(y!, mo! - 1, d!, 0, 0, 0, 0);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]!;
+      const weekNum = Math.floor(i / postsPerWeek) + 1;
+      const scheduledAt = resolveItemDate(item.day, weekNum, startDate, item.time);
+
+      try {
+        const res = await fetch("/api/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tweets: [{ content: item.brief }],
+            targetAccountIds: [`twitter:${scheduleAllAccountId}`],
+            scheduledAt: scheduledAt.toISOString(),
+            action: "schedule",
+          }),
+        });
+        if (res.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+    }
+
+    setScheduleAllLoading(false);
+    setScheduleAllOpen(false);
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} post${successCount !== 1 ? "s" : ""} scheduled`);
+      router.push("/dashboard/queue");
+    } else if (successCount > 0) {
+      toast.warning(`${successCount} scheduled, ${errorCount} failed`);
+      router.push("/dashboard/queue");
+    } else {
+      toast.error("Failed to schedule posts. Please try again.");
+    }
   };
 
   // Group items into weeks (by position), then by day within each week
@@ -276,6 +412,19 @@ export default function ContentCalendarPage() {
 
         {/* Calendar Results */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Schedule All header bar — only shown when results are ready */}
+          {items.length > 0 && !isGenerating && (
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-2.5">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{items.length}</span>{" "}
+                post{items.length !== 1 ? "s" : ""} planned
+              </p>
+              <Button size="sm" onClick={openScheduleAll}>
+                <CalendarCheck className="me-2 h-4 w-4" />
+                Schedule All
+              </Button>
+            </div>
+          )}
           {items.length === 0 && !isGenerating ? (
             <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-4">
               {/* Blurred weekly grid preview */}
@@ -367,6 +516,117 @@ export default function ContentCalendarPage() {
           )}
         </div>
       </div>
+      {/* Schedule All Dialog */}
+      <Dialog open={scheduleAllOpen} onOpenChange={setScheduleAllOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarCheck className="h-5 w-5 text-primary" />
+              Schedule All Calendar Items
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            <p className="text-sm text-muted-foreground">
+              Schedule all{" "}
+              <span className="font-medium text-foreground">{items.length} posts</span> from
+              your content calendar. Each item's brief will be used as the initial draft
+              content — review and refine in your queue before publishing.
+            </p>
+
+            {/* Account selector */}
+            <div className="space-y-2">
+              <Label htmlFor="sa-account" className="flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                Post to
+              </Label>
+              {scheduleAllFetching ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading accounts…
+                </div>
+              ) : scheduleAllAccounts.length === 0 ? (
+                <p className="text-sm text-destructive">
+                  No connected X accounts found.{" "}
+                  <a href="/dashboard/settings" className="underline">
+                    Connect one in Settings
+                  </a>
+                  .
+                </p>
+              ) : (
+                <Select
+                  value={scheduleAllAccountId}
+                  onValueChange={setScheduleAllAccountId}
+                >
+                  <SelectTrigger id="sa-account">
+                    <SelectValue placeholder="Select account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {scheduleAllAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        @{acc.xUsername}
+                        {acc.isDefault && (
+                          <span className="ms-2 text-xs text-muted-foreground">(default)</span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Start date */}
+            <div className="space-y-2">
+              <Label htmlFor="sa-start" className="flex items-center gap-1.5">
+                <CalendarDays className="h-3.5 w-3.5" />
+                Week 1 starts on
+              </Label>
+              <Input
+                id="sa-start"
+                type="date"
+                value={scheduleAllStartDate}
+                onChange={(e) => setScheduleAllStartDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Monday of the first week. Day names in the calendar will be resolved to
+                actual dates from this anchor.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setScheduleAllOpen(false)}
+              disabled={scheduleAllLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleScheduleAll}
+              disabled={
+                scheduleAllLoading ||
+                scheduleAllFetching ||
+                !scheduleAllAccountId ||
+                !scheduleAllStartDate
+              }
+            >
+              {scheduleAllLoading ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  Scheduling…
+                </>
+              ) : (
+                <>
+                  <CalendarCheck className="me-2 h-4 w-4" />
+                  Schedule {items.length} Post{items.length !== 1 ? "s" : ""}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardPageWrapper>
   );
 }

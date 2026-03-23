@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Sparkles, Loader2, TrendingUp, Hash, MessageSquare, Lightbulb, LayoutGrid } from "lucide-react";
+import { Users, Sparkles, Loader2, TrendingUp, Hash, MessageSquare, Lightbulb, LayoutGrid, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -62,6 +62,12 @@ export default function CompetitorAnalyzerPage() {
   const [language, setLanguage] = useState("en");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // C4 — collapsible sections (all open by default)
+  const [chartsOpen, setChartsOpen] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [insightsOpen, setInsightsOpen] = useState(true);
+  const [toneOpen, setToneOpen] = useState(true);
 
   const handleAnalyze = async () => {
     const cleaned = username.replace(/^@/, "").trim();
@@ -307,151 +313,175 @@ export default function CompetitorAnalyzerPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-primary" />
-                  Hashtag Prominence
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ViralBarChart
-                  data={rankToChartData(result.analysis.topHashtags, "#")}
-                  orientation="horizontal"
-                  highlightTop={3}
-                  height={200}
-                  emptyText="No hashtags found"
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4 text-primary" />
-                  Content Mix
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ViralBarChart
-                  data={rankToChartData(result.analysis.preferredContentTypes)}
-                  orientation="horizontal"
-                  highlightTop={2}
-                  height={200}
-                  emptyText="No content types found"
-                />
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Summary */}
+          {/* Charts — collapsible */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
-                Strategic Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed">{result.analysis.summary}</p>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1 rounded-md border px-2 py-1">
-                  📅 {result.analysis.postingFrequency}
-                </span>
-                <span className="flex items-center gap-1 rounded-md border px-2 py-1">
-                  🕐 {result.analysis.bestPostingTimes}
-                </span>
-              </div>
-            </CardContent>
+            <button
+              type="button"
+              onClick={() => setChartsOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              aria-expanded={chartsOpen}
+            >
+              <span className="text-sm font-semibold flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4 text-primary" />
+                Charts
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${chartsOpen ? "" : "-rotate-90"}`} />
+            </button>
+            {chartsOpen && (
+              <CardContent className="pt-0 pb-4 px-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Hash className="h-3.5 w-3.5 text-primary" />Hashtag Prominence
+                    </p>
+                    <ViralBarChart
+                      data={rankToChartData(result.analysis.topHashtags, "#")}
+                      orientation="horizontal"
+                      highlightTop={3}
+                      height={200}
+                      emptyText="No hashtags found"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <LayoutGrid className="h-3.5 w-3.5 text-primary" />Content Mix
+                    </p>
+                    <ViralBarChart
+                      data={rankToChartData(result.analysis.preferredContentTypes)}
+                      orientation="horizontal"
+                      highlightTop={2}
+                      height={200}
+                      emptyText="No content types found"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            )}
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Topics */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-primary" />
-                  Top Topics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-1.5">
-                  {result.analysis.topTopics.map((t, i) => (
-                    <Badge key={i} variant="secondary">{t}</Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Hashtags */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Hash className="h-4 w-4 text-primary" />
-                  Top Hashtags
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-1.5">
-                  {result.analysis.topHashtags.map((h, i) => (
-                    <Badge key={i} variant="outline">#{h.replace(/^#/, "")}</Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Key Strengths */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Key Strengths</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-1.5">
-                  {result.analysis.keyStrengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <span className="mt-0.5 text-green-500">✓</span>
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Differentiation Opportunities */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-primary" />
-                  Your Opportunities
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-1.5">
-                  {result.analysis.differentiationOpportunities.map((o, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm">
-                      <span className="mt-0.5 text-primary">→</span>
-                      {o}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Tone Profile */}
+          {/* Strategic Summary — collapsible */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Tone Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed text-muted-foreground">{result.analysis.toneProfile}</p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {result.analysis.preferredContentTypes.map((t, i) => (
-                  <Badge key={i} variant="secondary" className="text-xs">{t}</Badge>
-                ))}
-              </div>
-            </CardContent>
+            <button
+              type="button"
+              onClick={() => setSummaryOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              aria-expanded={summaryOpen}
+            >
+              <span className="text-sm font-semibold flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-primary" />
+                Strategic Summary
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${summaryOpen ? "" : "-rotate-90"}`} />
+            </button>
+            {summaryOpen && (
+              <CardContent className="pt-0 pb-4 px-5">
+                <p className="text-sm leading-relaxed">{result.analysis.summary}</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1 rounded-md border px-2 py-1">
+                    📅 {result.analysis.postingFrequency}
+                  </span>
+                  <span className="flex items-center gap-1 rounded-md border px-2 py-1">
+                    🕐 {result.analysis.bestPostingTimes}
+                  </span>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Insights grid — collapsible */}
+          <Card>
+            <button
+              type="button"
+              onClick={() => setInsightsOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              aria-expanded={insightsOpen}
+            >
+              <span className="text-sm font-semibold flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Topics, Hashtags & Insights
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${insightsOpen ? "" : "-rotate-90"}`} />
+            </button>
+            {insightsOpen && (
+              <CardContent className="pt-0 pb-4 px-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Topics */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <TrendingUp className="h-3.5 w-3.5 text-primary" />Top Topics
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.analysis.topTopics.map((t, i) => (
+                        <Badge key={i} variant="secondary">{t}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Hashtags */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Hash className="h-3.5 w-3.5 text-primary" />Top Hashtags
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.analysis.topHashtags.map((h, i) => (
+                        <Badge key={i} variant="outline">#{h.replace(/^#/, "")}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Key Strengths */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Key Strengths</p>
+                    <ul className="space-y-1.5">
+                      {result.analysis.keyStrengths.map((s, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-0.5 text-green-500">✓</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Differentiation Opportunities */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Lightbulb className="h-3.5 w-3.5 text-primary" />Your Opportunities
+                    </p>
+                    <ul className="space-y-1.5">
+                      {result.analysis.differentiationOpportunities.map((o, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-0.5 text-primary">→</span>
+                          {o}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Tone Profile — collapsible */}
+          <Card>
+            <button
+              type="button"
+              onClick={() => setToneOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              aria-expanded={toneOpen}
+            >
+              <span className="text-sm font-semibold">Tone Profile</span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${toneOpen ? "" : "-rotate-90"}`} />
+            </button>
+            {toneOpen && (
+              <CardContent className="pt-0 pb-4 px-5">
+                <p className="text-sm leading-relaxed text-muted-foreground">{result.analysis.toneProfile}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {result.analysis.preferredContentTypes.map((t, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">{t}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            )}
           </Card>
         </div>
       )}

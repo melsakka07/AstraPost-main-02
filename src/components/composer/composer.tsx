@@ -1037,7 +1037,8 @@ export function Composer() {
     isGenerating ||
     (aiTool === "thread" && !aiTopic) ||
     (aiTool === "hook" && !aiTopic && !(tweets[0]?.content || "").trim()) ||
-    (aiTool === "rewrite" && !aiRewriteText.trim());
+    (aiTool === "rewrite" && !aiRewriteText.trim()) ||
+    (aiTool === "hashtags" && !(tweets.find((t) => t.id === aiTargetTweetId)?.content ?? "").trim());
 
   const aiTabsGenerateContent = (
     <TabsContent value="generate" className="flex-1 overflow-y-auto py-4 space-y-4">
@@ -1060,6 +1061,19 @@ export function Composer() {
             onChange={(e) => setAiRewriteText(e.target.value)}
             className="min-h-[120px]"
           />
+        </div>
+      )}
+
+      {aiTool === "hashtags" && (
+        <div className="space-y-2">
+          <Label>Tweet content</Label>
+          <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm min-h-[60px]">
+            {tweets.find((t) => t.id === aiTargetTweetId)?.content || (
+              <span className="text-xs italic text-muted-foreground">
+                No content yet — type something in the tweet editor first
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -1397,8 +1411,8 @@ export function Composer() {
                 />
               </div>
               <TemplatesDialog onSelect={handleTemplateSelect} />
-              {/* H4: Secondary AI tools now visible — no more buried dropdown */}
-              <div className="grid grid-cols-3 gap-1.5">
+              {/* H4: Secondary AI tools — 2×2 grid including Hashtags (D5) */}
+              <div className="grid grid-cols-2 gap-1.5">
                 <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook")}>
                   <Zap className="h-3.5 w-3.5" />Hook
                 </Button>
@@ -1407,6 +1421,9 @@ export function Composer() {
                 </Button>
                 <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("translate")}>
                   <Globe className="h-3.5 w-3.5" />Translate
+                </Button>
+                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}>
+                  <Hash className="h-3.5 w-3.5" />Hashtags
                 </Button>
               </div>
               <Button

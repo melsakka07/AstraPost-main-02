@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { MessageCircle, Sparkles, Loader2, Copy, Check, ChevronRight } from "lucide-react";
+import { MessageCircle, Sparkles, Loader2, Copy, Check, ChevronRight, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +53,12 @@ export default function ReplyGeneratorPage() {
   const [isLoading, setIsLoading] = useState(false);
   const elapsed = useElapsedTime(isLoading);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  // Tweet preview state
+  const [preview, setPreview] = useState<{ text: string; author: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewedUrl, setPreviewedUrl] = useState("");
 
   const handleGenerate = async () => {
     if (!tweetUrl.trim()) {
@@ -106,6 +112,47 @@ export default function ReplyGeneratorPage() {
     }
   };
 
+  const handleUrlChange = (value: string) => {
+    setTweetUrl(value);
+    // Clear preview when the URL changes away from the last previewed URL
+    if (value !== previewedUrl) {
+      setPreview(null);
+      setPreviewError(null);
+    }
+  };
+
+  const handlePreview = async () => {
+    if (!tweetUrl.trim()) return;
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreview(null);
+    try {
+      const res = await fetch("/api/x/tweet-lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tweetUrl }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        setPreviewError(err.error ?? "Could not fetch tweet. Check the URL and try again.");
+        return;
+      }
+      const data = await res.json() as {
+        success: boolean;
+        data: { originalTweet: { text: string; author: { username: string; name: string } } };
+      };
+      setPreview({
+        text: data.data.originalTweet.text,
+        author: `@${data.data.originalTweet.author.username}`,
+      });
+      setPreviewedUrl(tweetUrl);
+    } catch {
+      setPreviewError("Failed to preview tweet. Please try again.");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const copyReply = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
@@ -130,13 +177,41 @@ export default function ReplyGeneratorPage() {
         <CardContent className="p-5 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="tweetUrl">Tweet URL</Label>
-            <Input
-              id="tweetUrl"
-              placeholder="https://x.com/username/status/..."
-              value={tweetUrl}
-              onChange={(e) => setTweetUrl(e.target.value)}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="tweetUrl"
+                placeholder="https://x.com/username/status/..."
+                value={tweetUrl}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePreview}
+                disabled={!tweetUrl.trim() || previewLoading}
+                aria-label="Preview tweet"
+                title="Preview tweet before generating"
+              >
+                {previewLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {previewError && (
+              <p className="text-xs text-destructive">{previewError}</p>
+            )}
           </div>
+
+          {/* Tweet preview card — shown after successful preview fetch */}
+          {preview && (
+            <div className="rounded-md border border-border bg-muted/40 px-3 py-3 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">{preview.author}</p>
+              <p className="text-sm leading-relaxed">{preview.text}</p>
+            </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
@@ -201,9 +276,14 @@ export default function ReplyGeneratorPage() {
             {isLoading ? (
               <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({elapsed}s)</>
             ) : (
-              <><Sparkles className="mr-2 h-4 w-4" />Generate Replies</>
+              <><Sparkles className="me-2 h-4 w-4" />Generate Replies</>
             )}
           </Button>
+          {!preview && tweetUrl.trim() && !isLoading && (
+            <p className="text-center text-xs text-muted-foreground">
+              Tip: click <Eye className="inline h-3 w-3 mx-0.5 align-[-1px]" /> to preview the tweet before generating
+            </p>
+          )}
         </CardContent>
       </Card>
 

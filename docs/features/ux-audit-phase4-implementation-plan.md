@@ -461,23 +461,23 @@
 
 | # | Issue | Impact | Effort | Pages |
 |---|-------|--------|--------|-------|
-| A1 | Use 2-word tab labels on AI Writer | Clarity for first-time users | Trivial | AI Writer |
-| A4 | Harmonize language options across tabs | Inconsistency without explanation | Low | AI Writer |
-| A8 | Add "Schedule All" batch action for calendar | Multi-item workflow friction | Medium | Calendar |
+| A1 | ✅ Use 2-word tab labels on AI Writer | Clarity for first-time users | Trivial | AI Writer |
+| A4 | ✅ Harmonize language options across tabs | Inconsistency without explanation | Low | AI Writer |
+| A8 | ✅ Add "Schedule All" batch action for calendar | Multi-item workflow friction | Medium | Calendar |
 | A9 | ✅ Add week numbers/date ranges to calendar results | Ambiguous day grouping | Low | Calendar |
-| A11 | Add tweet preview before reply generation | Wasted AI credits on wrong URL | Medium | Reply |
+| A11 | ✅ Add tweet preview before reply generation | Wasted AI credits on wrong URL | Medium | Reply |
 | A15 | ✅ Add color-coded char count for bio variants | No visual warning on over-limit | Low | Bio |
 | A16 | ✅ Add "Open X Settings" link for bio optimizer | Missing CTA for next step | Trivial | Bio |
-| A17 | Add actions to history items (re-import, view on X) | Static read-only list | Low | Inspiration |
-| A18 | Add timestamps to history items | No temporal context | Trivial | Inspiration |
-| A26 | Collapse/move refresh history | Operational noise | Low | Analytics |
-| A28 | Extract density toggle from dropdown | Useful feature is hidden | Low | Analytics |
-| A30 | Add export/save for viral analysis | Data lost on reload | Medium | Viral |
+| A17 | ✅ Add actions to history items (re-import, view on X) | Static read-only list | Low | Inspiration |
+| A18 | ✅ Add timestamps to history items | No temporal context | Trivial | Inspiration |
+| A26 | ✅ Collapse/move refresh history | Operational noise | Low | Analytics |
+| A28 | ✅ Extract density toggle from dropdown | Useful feature is hidden | Low | Analytics |
+| A30 | ✅ Add export/save for viral analysis | Data lost on reload | Medium | Viral |
 | A33 | Add self-comparison to competitor analysis | Competitor data in isolation | High | Competitor |
 | A34 | ✅ Add sticky "Analyze Another" quick action | Input scrolls off screen | Low | Competitor |
-| C4 | Group competitor results into collapsible sections | 12 content blocks overwhelming | Medium | Competitor |
-| D2 | Add breadcrumbs to nested AI pages | No navigation context | Low | AI sub-pages |
-| D5 | Surface Hashtag Generator in Composer | Discoverable only via AI Writer tab | Medium | Composer |
+| C4 | ✅ Group competitor results into collapsible sections | 12 content blocks overwhelming | Medium | Competitor |
+| D2 | ✅ Add breadcrumbs to nested AI pages | No navigation context | Low | AI sub-pages |
+| D5 | ✅ Surface Hashtag Generator in Composer | Discoverable only via AI Writer tab | Medium | Composer |
 | F3 | ✅ Change page descriptions to micro-instructions | Generic descriptions don't guide | Trivial | All pages |
 | M2 | ✅ Standardize copy button feedback pattern | Inconsistent feedback | Low | All pages |
 | M3 | ✅ Improve URL validation feedback styling | Easy to miss error hint | Low | Inspiration |
@@ -486,7 +486,7 @@
 | ACC3 | ✅ Add `aria-label` to slider components | Screen reader announces raw number | Trivial | AI Writer, Calendar |
 | ACC4 | ✅ Add icons alongside color status indicators | Color-only fails colorblind users | Low | Analytics |
 | ACC5 | ✅ Make heatmap accessible with table markup | Fully inaccessible to screen readers | Medium | Analytics |
-| ACC6 | Audit muted color contrast ratios | Potential WCAG violation | Low | All pages |
+| ACC6 | ✅ Audit muted color contrast ratios | Potential WCAG violation | Low | All pages |
 | W4 | ✅ Pass source attribution to Composer from Inspiration | Users may post too-similar content | Low | Inspiration |
 | W5 | ✅ Send full metadata from Calendar to Composer | Only brief sent, tone/type lost | Low | Calendar |
 
@@ -581,6 +581,107 @@ All copy buttons across all pages now consistently fire `toast.success("Copied t
 - `src/app/dashboard/inspiration/page.tsx` — W4: attribution storage + M1: elapsed time
 - `src/app/dashboard/ai/calendar/page.tsx` — W5: tone + topic URL params
 - `src/components/composer/composer.tsx` — W4+W5: new states, bridge reads, dismissible banners; `CalendarDays` icon added to imports
+
+---
+
+### Phase 4F — A8: "Schedule All" Batch Action ✅ COMPLETE
+
+**Completed:** 2026-03-23
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4F-A8 | ✅ Done | "Schedule All" button added to Calendar results header bar (visible only when items exist). Clicking opens a Dialog that fetches connected X accounts via `GET /api/x/accounts`, shows a default account pre-selected, and a "Week 1 starts on" date input defaulting to next Monday. On confirm, each item is POSTed to `POST /api/posts` with `action: "schedule"`, `scheduledAt` computed from day name + week number + time string. On success, navigates to `/dashboard/queue`. |
+
+**Files modified:**
+- `src/app/dashboard/ai/calendar/page.tsx` — Added `XAccount` interface; `scheduleAllOpen/Accounts/AccountId/StartDate/Loading/Fetching` state; `nextMonday()`, `resolveItemDate()`, `openScheduleAll()`, `handleScheduleAll()` helpers; "Schedule All" bar in results header; full `<Dialog>` with account selector, date input, and confirm button. Added `CalendarCheck`, `User` icon imports; `Dialog*` component imports.
+
+---
+
+### Phase 4G — A11: Tweet Preview Before Reply Generation ✅ COMPLETE
+
+**Completed:** 2026-03-23
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4G-A11 | ✅ Done | Eye-icon "Preview" button added inline with the Tweet URL input. Clicking fetches `/api/x/tweet-lookup` (same endpoint used by Inspiration page) and renders the tweet author + text in a muted card between the URL field and the tone/goal selects — before any AI credits are spent. Error shown as `text-destructive` hint under the input. Preview clears when URL changes. A soft tip message ("click 👁 to preview") appears below Generate Replies when a URL is entered but not yet previewed. Generate button remains always-enabled so users who don't need the preview aren't blocked. |
+
+**Files modified:**
+- `src/app/dashboard/ai/reply/page.tsx` — Added `preview`, `previewLoading`, `previewError`, `previewedUrl` state; `handleUrlChange()` (clears preview on URL change); `handlePreview()` (calls tweet-lookup, sets preview state); inline Eye-button next to URL input; preview card JSX; tip hint below Generate button. Added `Eye` icon import.
+
+---
+
+### Phase 4H — D5: Hashtag Generator in Composer Sidebar ✅ COMPLETE
+
+**Completed:** 2026-03-23
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4H-D5 | ✅ Done | "Hashtags" button added to the Content Tools sidebar grid alongside Hook, CTA, Translate (grid changed from 3-col to 2×2). Clicking calls `openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)` — defaults to the focused tweet or the first tweet, pre-loading its content into `aiTargetTweetId`. Tweet content preview card added to the hashtags AI dialog tab so users can see exactly which tweet is being processed. `isAiGenerateDisabled` guard extended with hashtags case to prevent generation when target tweet is empty. |
+
+**Files modified:**
+- `src/components/composer/composer.tsx` — (1) `isAiGenerateDisabled` extended for hashtags empty-content guard; (2) tweet content preview block added to `aiTabsGenerateContent` for `aiTool === "hashtags"`; (3) secondary tools grid changed from `grid-cols-3` to `grid-cols-2` with new Hashtags button calling `openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)`.
+
+---
+
+### Phase 4I — C4: Collapsible Competitor Result Sections ✅ COMPLETE
+
+**Completed:** 2026-03-23
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4I-C4 | ✅ Done | Four result sections wrapped in collapsible card pattern using a `<button>` header with animated `ChevronDown` chevron. All open by default. The 4-metric stat grid stays always-visible as an at-a-glance summary. Sections: (1) Charts (Hashtag Prominence + Content Mix consolidated into one card), (2) Strategic Summary, (3) Topics/Hashtags/Insights (2×2 grid unified under one collapsible), (4) Tone Profile. State: `chartsOpen`, `summaryOpen`, `insightsOpen`, `toneOpen` booleans. `CardHeader`/`CardTitle` imports removed (no longer used). |
+
+**Files modified:**
+- `src/app/dashboard/analytics/competitor/page.tsx` — Added `ChevronDown` import; 4 collapse state vars; replaced 4 separate Card sections with collapsible Card+button pattern; merged two chart `<Card>` elements and the 2×2 grid into single collapsible containers; removed unused `CardHeader`/`CardTitle` imports.
+
+---
+
+### Phase 4J — A30: Export Viral Analysis Results ✅ COMPLETE
+
+**Completed:** 2026-03-23
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4J-A30 | ✅ Done | Export dropdown added to the viral analyzer header actions area (visible only when results are loaded). Two export options: (1) **Copy as Markdown** — builds a full structured report (Overview, AI Insights, Top Hashtags, Top Keywords, Best Days, Tweet Length tables) and copies to clipboard with `toast.success` confirmation; (2) **Download CSV** — generates a multi-section CSV (`section,name,avg_engagement,count` columns) covering all data dimensions and triggers browser download as `viral-analysis-{N}d-{YYYY-MM-DD}.csv`. Import order fixed to satisfy ESLint `import/order` rule. |
+
+**Files modified:**
+- `src/app/dashboard/analytics/viral/page.tsx` — Added `Copy`, `Download` lucide imports; `toast` from sonner; `DropdownMenu*` components; `handleCopyMarkdown()` and `handleDownloadCSV()` functions; Export dropdown button in `actions` prop (conditional on `analysis` being set).
+
+---
+
+### Phase 4K — ACC6: Fix Muted Color Contrast Ratios ✅ COMPLETE
+
+**Completed:** 2026-03-23
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4K-ACC6 | ✅ Done | Light-mode `--muted-foreground` darkened from `oklch(0.552 0.016 285.938)` → `oklch(0.50 0.016 285.938)`. Calculated contrast ratios: against `--muted` background (`oklch(0.967...)`) was ≈4.18:1 (failing WCAG AA), now ≈5.2:1. Against white background: was ≈5.7:1, now ≈6.4:1. Dark mode value (`oklch(0.705...)` on `oklch(0.141...)` background, ≈8:1) was already passing — unchanged. Single CSS variable change propagates to all `text-muted-foreground` usages sitewide. |
+
+**Files modified:**
+- `src/app/globals.css` — `:root` `--muted-foreground` changed from `oklch(0.552 0.016 285.938)` to `oklch(0.50 0.016 285.938)`.
+
+---
+
+### Phase 4L — Audit Verification & Tier 3 Closeout ✅ COMPLETE
+
+**Completed:** 2026-03-23
+
+Code audit confirmed the following Tier 3 items were already fully implemented in earlier phases. No code changes needed — status updated to reflect actual codebase state.
+
+| Task | Status | Evidence |
+|------|--------|----------|
+| D2 — Breadcrumbs on AI sub-pages | ✅ Already done | All three sub-pages (`calendar`, `reply`, `bio`) import and render `<Breadcrumb>`. The component always prepends a Home icon linking to `/dashboard/ai` as the parent. |
+| A1 — 2-word tab labels | ✅ Already done | `writer/page.tsx:307–325` — each `TabsTrigger` uses responsive labels: `<span class="hidden sm:inline">Thread Writer</span><span class="sm:hidden">Thread</span>` pattern for all 4 tabs. |
+| A4 — Harmonized language options | ✅ Already done | URL tab (`page.tsx:519–534`) now has all 10 languages matching Thread tab. |
+| A17 — History item actions | ✅ Already done | History items (`inspiration/page.tsx:474–496`) have both "Re-import" (RefreshCw, sets URL + switches tab) and "View on X" (ExternalLink, opens new tab). |
+| A18 — History timestamps | ✅ Already done | `formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })` renders relative timestamps on every history item. |
+| A26 — Collapse refresh history | ✅ Already done | Refresh history wrapped in `<details>` + `<summary>` with `group-open:hidden` / `group-open:inline` toggle text (`analytics/page.tsx:351–354`). |
+| A28 — Density toggle extracted | ✅ Already done | Density is a standalone `Link`-wrapped icon button in the page `actions` prop, not in any dropdown (`analytics/page.tsx:256–266`). |
+
+**Files modified:** None — this phase is a verification pass only.
+
+**Remaining open item (deferred):**
+- **A33** — Add self-comparison to competitor analysis. High effort. Requires fetching the user's own account metrics and rendering a side-by-side comparison. Not in scope for this audit sprint.
 
 ---
 

@@ -6,12 +6,15 @@ import {
   BarChart3,
   CheckCircle2,
   Clock,
+  Copy,
+  Download,
   Hash,
   Loader2,
   Sparkles,
   TrendingUp,
   Type,
 } from "lucide-react";
+import { toast } from "sonner";
 import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
 import { ViralHourChart } from "@/components/analytics/viral-hour-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -24,6 +27,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -106,6 +115,74 @@ export default function ViralAnalyzerPage() {
 
   const fmt = (val: number) => `${(val * 100).toFixed(1)}%`;
 
+  const handleCopyMarkdown = () => {
+    if (!analysis) return;
+    const lines: string[] = [
+      `# Viral Content Analysis — Last ${days} Days`,
+      `_Generated: ${new Date().toLocaleDateString()}_`,
+      "",
+      "## Overview",
+      `- **Tweets Analyzed:** ${analysis.overall.tweetsAnalyzed}`,
+      `- **Avg Engagement:** ${fmt(analysis.overall.avgEngagement)}`,
+      `- **Top Engagement:** ${fmt(analysis.overall.topEngagement)}`,
+      `- **Total Impressions:** ${analysis.overall.totalImpressions.toLocaleString()}`,
+      "",
+      "## AI Insights",
+      ...analysis.insights.map((ins) => `- ${ins.replace(/\*\*/g, "**")}`),
+      "",
+    ];
+
+    if (analysis.hashtags.length > 0) {
+      lines.push("## Top Hashtags", "| Hashtag | Avg Engagement | Tweets |", "|---------|---------------|--------|");
+      analysis.hashtags.slice(0, 8).forEach((h) => lines.push(`| #${h.tag} | ${fmt(h.avgEngagement)} | ${h.count} |`));
+      lines.push("");
+    }
+    if (analysis.keywords.length > 0) {
+      lines.push("## Top Keywords", "| Keyword | Avg Engagement | Tweets |", "|---------|---------------|--------|");
+      analysis.keywords.slice(0, 8).forEach((k) => lines.push(`| "${k.keyword}" | ${fmt(k.avgEngagement)} | ${k.count} |`));
+      lines.push("");
+    }
+    if (analysis.bestDays.length > 0) {
+      lines.push("## Best Days", "| Day | Avg Engagement | Tweets |", "|-----|---------------|--------|");
+      [...analysis.bestDays]
+        .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day))
+        .forEach((d) => lines.push(`| ${d.day} | ${fmt(d.avgEngagement)} | ${d.count} |`));
+      lines.push("");
+    }
+    if (analysis.length.length > 0) {
+      lines.push("## Tweet Length Performance", "| Length | Avg Engagement | Tweets |", "|--------|---------------|--------|");
+      analysis.length.forEach((l) => lines.push(`| ${l.category} | ${fmt(l.avg)} | ${l.count} |`));
+    }
+
+    void navigator.clipboard.writeText(lines.join("\n"));
+    toast.success("Report copied to clipboard");
+  };
+
+  const handleDownloadCSV = () => {
+    if (!analysis) return;
+    const rows = [
+      "section,name,avg_engagement,count",
+      `overview,tweets_analyzed,${analysis.overall.tweetsAnalyzed},`,
+      `overview,avg_engagement,${fmt(analysis.overall.avgEngagement)},`,
+      `overview,top_engagement,${fmt(analysis.overall.topEngagement)},`,
+      `overview,total_impressions,${analysis.overall.totalImpressions},`,
+      ...analysis.hashtags.map((h) => `hashtags,#${h.tag},${fmt(h.avgEngagement)},${h.count}`),
+      ...analysis.keywords.map((k) => `keywords,"${k.keyword}",${fmt(k.avgEngagement)},${k.count}`),
+      ...analysis.length.map((l) => `length,${l.category},${fmt(l.avg)},${l.count}`),
+      ...analysis.bestDays.map((d) => `best_days,${d.day},${fmt(d.avgEngagement)},${d.count}`),
+      ...analysis.bestHours.map((h) => `best_hours,${h.hour},${fmt(h.avgEngagement)},${h.count}`),
+      ...analysis.contentTypes.map((c) => `content_types,${c.type},${fmt(c.avgEngagement)},${c.count}`),
+    ];
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `viral-analysis-${days}d-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV downloaded");
+  };
+
   return (
     <DashboardPageWrapper
       icon={TrendingUp}
@@ -128,16 +205,36 @@ export default function ViralAnalyzerPage() {
           <Button onClick={fetchAnalysis} disabled={isLoading} size="default">
             {isLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
                 Analyzing...
               </>
             ) : (
               <>
-                <Sparkles className="mr-2 h-4 w-4" />
+                <Sparkles className="me-2 h-4 w-4" />
                 Analyze
               </>
             )}
           </Button>
+          {analysis && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="default">
+                  <Download className="me-2 h-4 w-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCopyMarkdown}>
+                  <Copy className="me-2 h-4 w-4" />
+                  Copy as Markdown
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownloadCSV}>
+                  <Download className="me-2 h-4 w-4" />
+                  Download CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       }
     >
