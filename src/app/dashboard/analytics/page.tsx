@@ -296,7 +296,7 @@ export default async function AnalyticsPage({
             range={effectiveRange}
           />
 
-          <div className={`grid md:grid-cols-3 ${isCompact ? "gap-3" : "gap-4"}`}>
+          <div className={`grid sm:grid-cols-2 md:grid-cols-3 ${isCompact ? "gap-3" : "gap-4"}`}>
             <Card>
               <CardHeader className="space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Current followers</CardTitle>
@@ -408,7 +408,7 @@ export default async function AnalyticsPage({
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}>
         {(
           [
             { label: "Impressions", icon: BarChart3, current: totals.impressions, prev: prevTotals.impressions },
@@ -451,7 +451,7 @@ export default async function AnalyticsPage({
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
               <h3 className="text-xl font-semibold">Best Time to Post</h3>
               <BlurredOverlay isLocked={isFree} title="Optimization Insights" description="Upgrade to Pro to see when your audience is most active.">

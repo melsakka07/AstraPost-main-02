@@ -43,9 +43,9 @@ export default async function ReferralsPage() {
   const referralCount = currentUser.referrals.length;
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Referrals</h1>
+    <div className="mx-auto w-full max-w-7xl space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Referrals</h1>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -116,7 +116,7 @@ export default async function ReferralsPage() {
               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Referral Link
               </label>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input readOnly value={referralLink} className="flex-1" />
                 <CopyButton value={referralLink} className="text-primary hover:text-primary-foreground" />
               </div>
@@ -125,7 +125,7 @@ export default async function ReferralsPage() {
               <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                 Your Code
               </label>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Input readOnly value={currentUser.referralCode || "Generating..."} className="flex-1" />
                 <CopyButton value={currentUser.referralCode || ""} className="text-primary hover:text-primary-foreground" />
               </div>

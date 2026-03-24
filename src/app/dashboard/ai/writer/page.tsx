@@ -303,7 +303,7 @@ function AIWriterContent() {
 
   return (
     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ActiveTab)} className="space-y-6">
-      <TabsList className="grid w-full max-w-xl grid-cols-4">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="thread">
           <PenTool className="h-3.5 w-3.5 me-1.5" />
           <span className="hidden sm:inline">Thread Writer</span>

@@ -250,9 +250,18 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
         <div className="rounded-md border flex-1 overflow-hidden flex flex-col">
             {view !== "day" && (
                 <div className="grid grid-cols-7 border-b bg-muted/50">
-                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                        <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground border-r last:border-r-0">
-                            {day}
+                    {[
+                        { short: "S", full: "Sun" },
+                        { short: "M", full: "Mon" },
+                        { short: "T", full: "Tue" },
+                        { short: "W", full: "Wed" },
+                        { short: "T", full: "Thu" },
+                        { short: "F", full: "Fri" },
+                        { short: "S", full: "Sat" },
+                    ].map((day, i) => (
+                        <div key={i} className="p-1 sm:p-2 text-center text-xs sm:text-sm font-medium text-muted-foreground border-r last:border-r-0">
+                            <span className="sm:hidden">{day.short}</span>
+                            <span className="hidden sm:inline">{day.full}</span>
                         </div>
                     ))}
                 </div>

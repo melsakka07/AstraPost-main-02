@@ -473,7 +473,7 @@
 | A26 | ✅ Collapse/move refresh history | Operational noise | Low | Analytics |
 | A28 | ✅ Extract density toggle from dropdown | Useful feature is hidden | Low | Analytics |
 | A30 | ✅ Add export/save for viral analysis | Data lost on reload | Medium | Viral |
-| A33 | Add self-comparison to competitor analysis | Competitor data in isolation | High | Competitor |
+| A33 | ✅ Add self-comparison to competitor analysis | Competitor data in isolation | High | Competitor |
 | A34 | ✅ Add sticky "Analyze Another" quick action | Input scrolls off screen | Low | Competitor |
 | C4 | ✅ Group competitor results into collapsible sections | 12 content blocks overwhelming | Medium | Competitor |
 | D2 | ✅ Add breadcrumbs to nested AI pages | No navigation context | Low | AI sub-pages |
@@ -680,8 +680,27 @@ Code audit confirmed the following Tier 3 items were already fully implemented i
 
 **Files modified:** None — this phase is a verification pass only.
 
-**Remaining open item (deferred):**
-- **A33** — Add self-comparison to competitor analysis. High effort. Requires fetching the user's own account metrics and rendering a side-by-side comparison. Not in scope for this audit sprint.
+~~**Remaining open item (deferred):** A33 — now completed in Phase 4M below.~~
+
+---
+
+### Phase 4M — A33: Self-Comparison in Competitor Analyzer ✅ COMPLETE
+
+**Completed:** 2026-03-24
+
+| Task | Status | Notes |
+|------|--------|-------|
+| 4M-A33 | ✅ Done | New `/api/analytics/self-stats` endpoint queries user's published tweets (last 90 days) from the DB and returns: `postingFrequency` (posts/week derived from count), `topHashtags` (extracted via regex, top 10), `preferredContentTypes` (detected: question/link/quote/statistic/thread/plain text, top 6), `tweetsAnalyzed`, and a `hasData` boolean. Competitor page fetches self-stats in parallel with the competitor API call via `Promise.all`. A new "Compare with Your Account" collapsible section is inserted between the metric cards and the Charts section, showing four side-by-side comparison rows: (1) column headers with tweet counts, (2) Posting Frequency text chips, (3) Top Hashtags badges — shared tags highlighted with `variant="default"`, (4) Content Types badges — shared types highlighted, (5) Best Posting Times text row (user's side defers to Best Time Predictor). The "Analyze Another" reset also clears self-stats state. |
+
+**Files created:**
+- `src/app/api/analytics/self-stats/route.ts` — Lightweight GET endpoint computing user's own posting stats from DB; no plan-gate (called only after plan-gated competitor analysis)
+
+**Files modified:**
+- `src/app/dashboard/analytics/competitor/page.tsx` — Added `ArrowLeftRight` icon import; `SelfStats` interface; `selfStats`/`compareOpen` state; parallel `Promise.all` fetch in `handleAnalyze`; "Analyze Another" clears `selfStats`; full "Compare with Your Account" collapsible card section with column headers, posting frequency row, hashtag comparison with shared-tag highlighting, content type comparison with shared-type highlighting, and best posting times row.
+
+**Post-review fixes (2026-03-24):**
+- `self-stats/route.ts` — Selected `posts.id` in query; added `distinctPostCount = new Set(rows.map(r => r.postId)).size` so thread tweets don't inflate frequency; `tweetsAnalyzed` now also uses `distinctPostCount`
+- `competitor/page.tsx` — Removed dead `selfStatsLoading` state (never set to `true`; skeleton was unreachable); replaced `selfStatsLoading ? skeleton` branch with `selfStats === null ? skeleton` so the loading state is meaningful if React flushes the two `setState` calls separately
 
 ---
 

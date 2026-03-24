@@ -131,7 +131,7 @@ export default async function DashboardLayout({
           id="main-content"
           tabIndex={-1}
           // pb-16 reserves room for the fixed BottomNav on mobile (M1)
-          className="flex-1 p-4 pt-4 pb-20 outline-none md:p-8 md:pt-8 md:pb-8"
+          className="flex-1 p-page outline-none"
         >
           {children}
         </main>

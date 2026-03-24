@@ -27,7 +27,7 @@ export function DashboardPageWrapper({
             <Icon className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+            <h1 className="text-page-title">{title}</h1>
             {description && (
               <p className="mt-0.5 text-sm text-muted-foreground sm:mt-1">{description}</p>
             )}
@@ -56,7 +56,7 @@ export function SimplePageHeader({ title, description, actions }: SimplePageHead
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <h1 className="text-xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="text-page-title">{title}</h1>
         {description && (
           <p className="mt-0.5 text-sm text-muted-foreground sm:mt-1">{description}</p>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Sparkles, Loader2, TrendingUp, Hash, MessageSquare, Lightbulb, LayoutGrid, ChevronDown } from "lucide-react";
+import { Users, Sparkles, Loader2, TrendingUp, Hash, MessageSquare, Lightbulb, LayoutGrid, ChevronDown, ArrowLeftRight } from "lucide-react";
 import { toast } from "sonner";
 import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -55,6 +55,14 @@ interface PlanLimitPayload {
   reset_at?: string | null;
 }
 
+interface SelfStats {
+  hasData: boolean;
+  tweetsAnalyzed?: number;
+  postingFrequency?: string;
+  topHashtags?: string[];
+  preferredContentTypes?: string[];
+}
+
 export default function CompetitorAnalyzerPage() {
   const { openWithContext } = useUpgradeModal();
 
@@ -63,7 +71,11 @@ export default function CompetitorAnalyzerPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // A33 — self-comparison state
+  const [selfStats, setSelfStats] = useState<SelfStats | null>(null);
+
   // C4 — collapsible sections (all open by default)
+  const [compareOpen, setCompareOpen] = useState(true);
   const [chartsOpen, setChartsOpen] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [insightsOpen, setInsightsOpen] = useState(true);
@@ -78,19 +90,24 @@ export default function CompetitorAnalyzerPage() {
 
     setIsLoading(true);
     setResult(null);
+    setSelfStats(null);
 
     try {
-      const res = await fetch("/api/analytics/competitor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: cleaned, language }),
-      });
+      // A33 — fetch competitor analysis and user's own stats in parallel
+      const [competitorRes, selfRes] = await Promise.all([
+        fetch("/api/analytics/competitor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: cleaned, language }),
+        }),
+        fetch("/api/analytics/self-stats"),
+      ]);
 
-      if (!res.ok) {
-        if (res.status === 402) {
+      if (!competitorRes.ok) {
+        if (competitorRes.status === 402) {
           let payload: PlanLimitPayload | null = null;
           try {
-            payload = await res.json() as PlanLimitPayload;
+            payload = await competitorRes.json() as PlanLimitPayload;
           } catch {}
           openWithContext({
             error: payload?.error,
@@ -108,13 +125,20 @@ export default function CompetitorAnalyzerPage() {
           });
           return;
         }
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = await competitorRes.json().catch(() => ({})) as { error?: string };
         toast.error(err.error ?? "Failed to analyze account");
         return;
       }
 
-      const data = await res.json() as AnalysisResult;
+      const data = await competitorRes.json() as AnalysisResult;
       setResult(data);
+
+      // Self-stats are best-effort: silently ignore errors
+      if (selfRes.ok) {
+        setSelfStats(await selfRes.json() as SelfStats);
+      } else {
+        setSelfStats({ hasData: false });
+      }
     } catch {
       toast.error("Failed to analyze account. Please try again.");
     } finally {
@@ -267,7 +291,7 @@ export default function CompetitorAnalyzerPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setResult(null)}
+              onClick={() => { setResult(null); setSelfStats(null); }}
               className="shrink-0"
             >
               <Sparkles className="me-1.5 h-3.5 w-3.5" />
@@ -312,6 +336,209 @@ export default function CompetitorAnalyzerPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* A33 — Compare with Your Account */}
+          <Card>
+            <button
+              type="button"
+              onClick={() => setCompareOpen((v) => !v)}
+              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              aria-expanded={compareOpen}
+            >
+              <span className="text-sm font-semibold flex items-center gap-2">
+                <ArrowLeftRight className="h-4 w-4 text-primary" />
+                Compare with Your Account
+              </span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${compareOpen ? "" : "-rotate-90"}`} />
+            </button>
+            {compareOpen && (
+              <CardContent className="pt-0 pb-5 px-5">
+                {selfStats === null ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                    </div>
+                    <Skeleton className="h-16 w-full rounded-lg" />
+                    <Skeleton className="h-16 w-full rounded-lg" />
+                  </div>
+                ) : !selfStats.hasData ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                      <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm font-medium">No data to compare yet</p>
+                    <p className="mt-1 text-xs text-muted-foreground max-w-xs">
+                      Publish posts from AstraPost to see how you stack up against @{result.username}.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {/* Column headers */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-center">
+                        <p className="text-xs font-semibold">Your Account</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {selfStats.tweetsAnalyzed} tweets · last 90 days
+                        </p>
+                      </div>
+                      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-center">
+                        <p className="text-xs font-semibold">@{result.username}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {result.tweetCount} tweets analyzed
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Posting Frequency */}
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                        Posting Frequency
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border px-3 py-2.5 text-center">
+                          <p className="text-sm font-semibold">{selfStats.postingFrequency}</p>
+                        </div>
+                        <div className="rounded-lg border px-3 py-2.5 text-center">
+                          <p className="text-sm font-semibold">{result.analysis.postingFrequency}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Top Hashtags */}
+                    {(() => {
+                      const myTags = (selfStats.topHashtags ?? []).slice(0, 6);
+                      const theirTags = result.analysis.topHashtags.slice(0, 6);
+                      const mySet = new Set(myTags.map((t) => t.toLowerCase().replace(/^#/, "")));
+                      const theirSet = new Set(theirTags.map((t) => t.toLowerCase().replace(/^#/, "")));
+                      const hasOverlap = myTags.some((t) => theirSet.has(t.toLowerCase().replace(/^#/, "")));
+                      return (
+                        <div>
+                          <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <Hash className="h-3.5 w-3.5 text-primary" />
+                            Top Hashtags
+                            {hasOverlap && (
+                              <span className="ms-auto text-xs text-muted-foreground flex items-center gap-1">
+                                <span className="inline-block h-2 w-2 rounded-full bg-primary/70" />
+                                shared tags highlighted
+                              </span>
+                            )}
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {myTags.length === 0 ? (
+                                <span className="text-xs text-muted-foreground">No hashtags yet</span>
+                              ) : (
+                                myTags.map((tag, i) => {
+                                  const norm = tag.toLowerCase().replace(/^#/, "");
+                                  return (
+                                    <Badge
+                                      key={i}
+                                      variant={theirSet.has(norm) ? "default" : "outline"}
+                                      className="text-xs"
+                                    >
+                                      #{norm}
+                                    </Badge>
+                                  );
+                                })
+                              )}
+                            </div>
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {theirTags.length === 0 ? (
+                                <span className="text-xs text-muted-foreground">No hashtags found</span>
+                              ) : (
+                                theirTags.map((tag, i) => {
+                                  const norm = tag.toLowerCase().replace(/^#/, "");
+                                  return (
+                                    <Badge
+                                      key={i}
+                                      variant={mySet.has(norm) ? "default" : "outline"}
+                                      className="text-xs"
+                                    >
+                                      #{norm}
+                                    </Badge>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Content Types */}
+                    {(() => {
+                      const myTypes = (selfStats.preferredContentTypes ?? []).slice(0, 5);
+                      const theirTypes = result.analysis.preferredContentTypes.slice(0, 5);
+                      const mySet = new Set(myTypes.map((t) => t.toLowerCase()));
+                      const theirSet = new Set(theirTypes.map((t) => t.toLowerCase()));
+                      return (
+                        <div>
+                          <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                            <LayoutGrid className="h-3.5 w-3.5 text-primary" />
+                            Content Types
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {myTypes.length === 0 ? (
+                                <span className="text-xs text-muted-foreground">No data yet</span>
+                              ) : (
+                                myTypes.map((type, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant={theirSet.has(type.toLowerCase()) ? "default" : "secondary"}
+                                    className="text-xs"
+                                  >
+                                    {type}
+                                  </Badge>
+                                ))
+                              )}
+                            </div>
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {theirTypes.length === 0 ? (
+                                <span className="text-xs text-muted-foreground">No data found</span>
+                              ) : (
+                                theirTypes.map((type, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant={mySet.has(type.toLowerCase()) ? "default" : "secondary"}
+                                    className="text-xs"
+                                  >
+                                    {type}
+                                  </Badge>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Best Posting Times */}
+                    <div>
+                      <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                        <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                        Best Posting Times
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border px-3 py-2.5">
+                          <p className="text-xs text-muted-foreground mb-1">Your account</p>
+                          <p className="text-sm text-muted-foreground italic">
+                            See Best Time Predictor for details
+                          </p>
+                        </div>
+                        <div className="rounded-lg border px-3 py-2.5">
+                          <p className="text-xs text-muted-foreground mb-1">@{result.username}</p>
+                          <p className="text-sm">{result.analysis.bestPostingTimes}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
 
           {/* Charts — collapsible */}
           <Card>

@@ -429,12 +429,12 @@ export default function ContentCalendarPage() {
             <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-4">
               {/* Blurred weekly grid preview */}
               <div className="opacity-25 pointer-events-none select-none blur-[1.5px]" aria-hidden="true">
-                <div className="grid grid-cols-4 gap-1.5 mb-1.5">
+                <div className="grid grid-cols-2 gap-1.5 mb-1.5 sm:grid-cols-4">
                   {["Mon", "Tue", "Wed", "Thu"].map((d) => (
                     <div key={d} className="text-center text-[10px] text-muted-foreground font-semibold py-0.5">{d}</div>
                   ))}
                 </div>
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {[...Array(8)].map((_, i) => (
                     <div key={i} className="rounded-md border bg-card p-1.5 space-y-1">
                       <div className="h-2 bg-muted-foreground/30 rounded w-full" />

@@ -38,6 +38,10 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* Spacing & sizing tokens */
+  --spacing-page-x: 1rem;
+  --spacing-section: 1.5rem;
+  --radius-card: var(--radius);
 }
 
 :root {
@@ -562,6 +566,34 @@ body:has([data-dashboard-layout]) [data-main-content] {
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* ─── Fluid Typography ──────────────────────────────────────────────────────
+     Scales smoothly from 1.25rem (mobile) to 1.875rem (desktop) without
+     jumping at a single breakpoint. Equivalent to text-xl → text-3xl but
+     continuous. Used for all dashboard page titles via DashboardPageWrapper.
+   ──────────────────────────────────────────────────────────────────────── */
+  .text-page-title {
+    font-size: clamp(1.25rem, 3vw + 0.5rem, 1.875rem);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+  }
+
+  /* ─── Page Content Padding ──────────────────────────────────────────────────
+     Token-driven responsive padding for the dashboard <main> element.
+     Mobile: --spacing-page-x (1rem = p-4), with 5rem bottom for BottomNav.
+     Desktop (md+): 2rem all sides (= p-8), matching the original values.
+   ──────────────────────────────────────────────────────────────────────── */
+  .p-page {
+    padding: var(--spacing-page-x);
+    padding-bottom: 5rem; /* BottomNav clearance on mobile */
+  }
+
+  @media (min-width: 768px) {
+    .p-page {
+      padding: calc(var(--spacing-page-x) * 2);
+    }
   }
 }
 

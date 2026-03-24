@@ -257,7 +257,7 @@ export default function ViralAnalyzerPage() {
           </Alert>
           <div className="relative">
             <div className="pointer-events-none select-none opacity-40 blur-[2px]">
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                 {[
                   { label: "Tweets Analyzed", value: "24" },
                   { label: "Avg Engagement", value: "3.2%" },
@@ -295,7 +295,7 @@ export default function ViralAnalyzerPage() {
 
       {/* Loading Skeleton */}
       {isLoading && !analysis && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardHeader>
@@ -313,7 +313,7 @@ export default function ViralAnalyzerPage() {
       {analysis && (
         <div className="space-y-6">
           {/* Overview Stats */}
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             {[
               {
                 label: "Tweets Analyzed",
