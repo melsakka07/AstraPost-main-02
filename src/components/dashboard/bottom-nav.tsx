@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const BOTTOM_NAV_ITEMS = [
   { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
   { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
-  { icon: Bot, label: "AI", href: "/dashboard/ai" },
+  { icon: Bot, label: "AI Tools", href: "/dashboard/ai" },
 ] as const;
 
 /**

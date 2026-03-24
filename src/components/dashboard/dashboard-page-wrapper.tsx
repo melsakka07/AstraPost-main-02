@@ -1,3 +1,8 @@
+// ── Layout Rule ───────────────────────────────────────────────────────────────
+// Every page under /dashboard/ MUST use <DashboardPageWrapper> as its root.
+// Never wrap a dashboard page in a raw <div>. This ensures consistent header
+// styling, icon badge, description, actions slot, and spacing across the app.
+// ─────────────────────────────────────────────────────────────────────────────
 import { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
 

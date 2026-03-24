@@ -12,7 +12,6 @@ import {
   TrendingUp,
   CalendarDays,
   ListChecks,
-  Bot,
   Lightbulb,
   ShoppingCart,
   Settings,
@@ -24,6 +23,9 @@ import {
   MessageCircle,
   CalendarRange,
   UserPen,
+  History,
+  Trophy,
+  Share2,
   ChevronDown,
 } from "lucide-react";
 import { Drawer as DrawerPrimitive } from "vaul";
@@ -50,6 +52,15 @@ interface SidebarSection {
   collapsible?: boolean;
 }
 
+// ── Navigation Rules ──────────────────────────────────────────────────────────
+// 1. Every /dashboard/* route MUST have an entry here or be reachable from a
+//    page that does. Never ship a dashboard page without a sidebar path.
+// 2. This array is the single source of truth for navigation. If a page is
+//    also linked from a hub/overview card, the hub must be the sidebar entry —
+//    do NOT list both the hub and its sub-pages as peer siblings.
+// 3. Hub pages (e.g. /dashboard/ai) are supplementary launchers. Their cards
+//    must not duplicate links already present here at the same level.
+// ─────────────────────────────────────────────────────────────────────────────
 const sidebarSections: SidebarSection[] = [
   {
     label: "Overview",
@@ -70,11 +81,11 @@ const sidebarSections: SidebarSection[] = [
     label: "AI Tools",
     collapsible: true,
     items: [
-      { icon: Sparkles, label: "AI Hub", href: "/dashboard/ai" },
-      { icon: Bot, label: "AI Writer", href: "/dashboard/ai/writer" },
+      { icon: Sparkles, label: "AI Tools", href: "/dashboard/ai" },
       { icon: CalendarRange, label: "Content Calendar", href: "/dashboard/ai/calendar", isPro: true },
       { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply", isPro: true },
       { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio", isPro: true },
+      { icon: History, label: "AI History", href: "/dashboard/ai/history" },
       { icon: Lightbulb, label: "Inspiration", href: "/dashboard/inspiration" },
       { icon: ShoppingCart, label: "Affiliate", href: "/dashboard/affiliate" },
     ],
@@ -92,6 +103,8 @@ const sidebarSections: SidebarSection[] = [
     label: "System",
     items: [
       { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs" },
+      { icon: Trophy, label: "Achievements", href: "/dashboard/achievements" },
+      { icon: Share2, label: "Referrals", href: "/dashboard/referrals" },
       { icon: Settings, label: "Settings", href: "/dashboard/settings" },
     ],
   },

@@ -2,10 +2,11 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq, desc } from "drizzle-orm";
-import { Sparkles, History, RefreshCcw } from "lucide-react";
+import { History, RefreshCcw, Sparkles } from "lucide-react";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { aiGenerations } from "@/lib/schema";
@@ -21,20 +22,19 @@ export default async function AiHistoryPage() {
   });
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">AI Generation History</h1>
-          <p className="text-muted-foreground">Review and reuse your past AI-generated content.</p>
-        </div>
+    <DashboardPageWrapper
+      icon={History}
+      title="AI Generation History"
+      description="Review and reuse your past AI-generated content."
+      actions={
         <Link href="/dashboard/compose">
           <Button>
             <Sparkles className="mr-2 h-4 w-4" />
             New Content
           </Button>
         </Link>
-      </div>
-
+      }
+    >
       {history.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-12 text-center">
           <History className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
@@ -84,7 +84,7 @@ export default async function AiHistoryPage() {
           ))}
         </div>
       )}
-    </div>
+    </DashboardPageWrapper>
   );
 }
 
@@ -95,7 +95,7 @@ function renderOutput(item: any) {
     if (item.type === "thread" && Array.isArray(content.tweets)) {
         return content.tweets.map((t: string, i: number) => `[Tweet ${i+1}]\n${t}`).join("\n\n");
     }
-    
+
     if (item.type === "hashtags" && Array.isArray(content.hashtags)) {
         return content.hashtags.join(" ");
     }

@@ -562,13 +562,27 @@ The project includes technical documentation in `docs/`:
 - When modifying AI functionality, ensure OpenRouter is used (not direct OpenAI)
 - Keep the BullMQ worker and Next.js app in sync on job payload types
 
+### UI/UX Navigation Rules (MANDATORY)
+
+These rules exist to prevent orphaned pages and navigation redundancy. Apply them on every new page or feature.
+
+1. **Every `/dashboard/*` route needs a sidebar entry** — every page under `/dashboard/` must either have its own entry in `sidebarSections` (in `src/components/dashboard/sidebar.tsx`) or be reachable via a page that does. Never create a page without a navigation path. Orphaned pages waste development effort and confuse users.
+
+2. **Sidebar is the single source of truth for navigation** — if a page is linked from a hub/overview card, it must still have its own sidebar entry (or the hub must be the sidebar entry, not both). Never have two sidebar items pointing at parent/child pages where one is just a link to the other.
+
+3. **Hub pages are supplementary, not primary nav** — overview/launcher pages (like `/dashboard/ai`) are useful for discovery but their cards must not duplicate what is already directly accessible in the sidebar at the same level. Hub → page is one path; sidebar entry is the other. Pick one per tool, not both.
+
+4. **Use `DashboardPageWrapper` for every dashboard page** — all pages under `/dashboard/` must use `<DashboardPageWrapper icon={...} title="..." description="...">` from `@/components/dashboard/dashboard-page-wrapper`. Never wrap a dashboard page in a raw `<div>`. This ensures consistent header styling, spacing, and layout across the entire app.
+
 ### Common Tasks
 
 **Adding a new dashboard page:**
 
 1. Create `src/app/dashboard/[route]/page.tsx`
 2. Use Server Components by default; add `"use client"` only if needed
-3. Add the route to the sidebar in `src/components/dashboard/sidebar.tsx`
+3. Wrap page content in `<DashboardPageWrapper icon={...} title="..." description="...">` — never a raw `<div>`
+4. Add the route to `sidebarSections` in `src/components/dashboard/sidebar.tsx` — no exceptions
+5. If the page is a sub-tool of a hub page, the hub must be the sidebar entry; do not list both the hub AND the sub-tool as peer sidebar items
 
 **Adding a new API route:**
 

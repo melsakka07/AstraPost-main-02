@@ -3,6 +3,7 @@ import {
   Bot,
   CalendarRange,
   Hash,
+  History,
   Link2,
   MessageCircle,
   PenTool,
@@ -59,6 +60,12 @@ const aiTools: AiTool[] = [
     description: "Generate high-quality replies to any public tweet.",
     href: "/dashboard/ai/reply",
     isPro: true,
+  },
+  {
+    icon: History,
+    title: "AI History",
+    description: "Review and reuse your past AI-generated threads, hashtags, and more.",
+    href: "/dashboard/ai/history",
   },
 ];
 
