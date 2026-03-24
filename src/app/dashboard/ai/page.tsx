@@ -1,11 +1,7 @@
 import Link from "next/link";
 import {
-  Bot,
-  CalendarRange,
   Hash,
-  History,
   Link2,
-  MessageCircle,
   PenTool,
   Shuffle,
   Sparkles,
@@ -46,26 +42,6 @@ const aiTools: AiTool[] = [
     title: "Hashtag Generator",
     description: "Find the best hashtags for your content and niche.",
     href: "/dashboard/ai/writer?tab=hashtags",
-  },
-  {
-    icon: CalendarRange,
-    title: "Content Calendar",
-    description: "Plan a full week of posts around any topic in seconds.",
-    href: "/dashboard/ai/calendar",
-    isPro: true,
-  },
-  {
-    icon: MessageCircle,
-    title: "Reply Suggester",
-    description: "Generate high-quality replies to any public tweet.",
-    href: "/dashboard/ai/reply",
-    isPro: true,
-  },
-  {
-    icon: History,
-    title: "AI History",
-    description: "Review and reuse your past AI-generated threads, hashtags, and more.",
-    href: "/dashboard/ai/history",
   },
 ];
 
@@ -111,37 +87,6 @@ export default function AIHubPage() {
         ))}
       </div>
 
-      {/* Bio Optimizer — separate section since it's profile-focused */}
-      <div className="mt-2">
-        <Link href="/dashboard/ai/bio" className="group block">
-          <Card className="transition-colors hover:border-primary/40 hover:bg-muted/40">
-            <CardContent className="flex items-center gap-4 p-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                <Bot className="h-5 w-5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold group-hover:text-primary transition-colors">
-                    Bio Optimizer
-                  </p>
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary"
-                  >
-                    Pro
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Generate compelling X bio variants optimised for your goals — under 160 characters.
-                </p>
-              </div>
-              <p className="shrink-0 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
-                Try it →
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
     </DashboardPageWrapper>
   );
 }

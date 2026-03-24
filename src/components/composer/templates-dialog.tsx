@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { LayoutTemplate, Trash2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutTemplate, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,12 +18,14 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("system");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [userTemplatesPage, setUserTemplatesPage] = useState(0);
 
   const loadTemplates = async () => {
     try {
       setLoading(true);
       const data = await fetchUserTemplates();
       setUserTemplates(data);
+      setUserTemplatesPage(0);
     } catch (error) {
       console.error(error);
       // toast.error("Failed to load your templates"); // Silently fail or show error
@@ -57,9 +59,16 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
 
   const systemCategories = ["all", "Educational", "Promotional", "Personal", "Engagement"];
 
-  const filteredSystem = selectedCategory === "all" 
-    ? SYSTEM_TEMPLATES 
+  const filteredSystem = selectedCategory === "all"
+    ? SYSTEM_TEMPLATES
     : SYSTEM_TEMPLATES.filter(t => t.category === selectedCategory);
+
+  const USER_TEMPLATES_PAGE_SIZE = 5;
+  const userTemplatesPageCount = Math.ceil(userTemplates.length / USER_TEMPLATES_PAGE_SIZE);
+  const pagedUserTemplates = userTemplates.slice(
+    userTemplatesPage * USER_TEMPLATES_PAGE_SIZE,
+    (userTemplatesPage + 1) * USER_TEMPLATES_PAGE_SIZE
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -132,35 +141,61 @@ export function TemplatesDialog({ onSelect }: TemplatesDialogProps) {
                 <p className="text-sm">Save your drafts as templates to see them here.</p>
               </div>
             ) : (
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 pr-4">
-                  {userTemplates.map(template => (
-                    <div 
-                      key={template.id} 
-                      className="border rounded-lg p-4 hover:border-primary cursor-pointer transition-colors flex flex-col gap-2 relative group bg-card text-card-foreground"
-                      onClick={() => handleSelect(template)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-semibold">{template.title}</h3>
-                        <Badge variant="secondary" className="capitalize">{template.category}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{template.description || "No description"}</p>
-                      <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap font-mono">
-                        {template.content[0]}
-                      </div>
-                      
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
-                        onClick={(e) => handleDelete(e, template.id)}
+              <div className="flex flex-col flex-1 min-h-0 gap-3">
+                <ScrollArea className="flex-1 min-h-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 pr-4">
+                    {pagedUserTemplates.map(template => (
+                      <div
+                        key={template.id}
+                        className="border rounded-lg p-4 hover:border-primary cursor-pointer transition-colors flex flex-col gap-2 relative group bg-card text-card-foreground"
+                        onClick={() => handleSelect(template)}
                       >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-semibold">{template.title}</h3>
+                          <Badge variant="secondary" className="capitalize">{template.category}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{template.description || "No description"}</p>
+                        <div className="mt-2 p-2 bg-muted/50 rounded text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap font-mono">
+                          {template.content[0]}
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                          onClick={(e) => handleDelete(e, template.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+                {userTemplatesPageCount > 1 && (
+                  <div className="flex items-center justify-between shrink-0 border-t pt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      onClick={() => setUserTemplatesPage(p => Math.max(0, p - 1))}
+                      disabled={userTemplatesPage === 0}
+                    >
+                      <ChevronLeft className="h-4 w-4" />Prev
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {userTemplatesPage + 1} / {userTemplatesPageCount}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                      onClick={() => setUserTemplatesPage(p => Math.min(userTemplatesPageCount - 1, p + 1))}
+                      disabled={userTemplatesPage >= userTemplatesPageCount - 1}
+                    >
+                      Next<ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
             )}
           </TabsContent>
         </Tabs>

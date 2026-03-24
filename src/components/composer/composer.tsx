@@ -44,7 +44,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -157,7 +157,6 @@ export function Composer() {
   const [aiRewriteText, setAiRewriteText] = useState("");
   const [aiAddNumbering, setAiAddNumbering] = useState(true);
   const [aiTranslateTarget, setAiTranslateTarget] = useState<string>("en");
-  const [historyItems, setHistoryItems] = useState<any[]>([]);
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
   const [templateTitle, setTemplateTitle] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
@@ -554,22 +553,6 @@ export function Composer() {
     setIsAiOpen(true);
   };
 
-  const fetchHistory = async () => {
-    try {
-      const res = await fetch("/api/ai/history");
-      const data = await res.json();
-      setHistoryItems(data.history);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // Prefetch history whenever the AI panel opens (H7)
-  useEffect(() => {
-    if (isAiOpen) {
-      void fetchHistory();
-    }
-  }, [isAiOpen]);  
 
   // AI Image Dialog handlers
   const openAiImageDialog = (tweetId: string) => {
@@ -1182,38 +1165,6 @@ export function Composer() {
     </TabsContent>
   );
 
-  const aiTabsHistoryContent = (
-    <TabsContent value="history" className="flex-1 overflow-y-auto">
-      <div className="space-y-2">
-        {historyItems.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">No history found.</div>
-        ) : (
-          historyItems.map((item) => (
-            <div
-              key={item.id}
-              className="p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => restoreHistory(item)}
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-semibold text-sm capitalize flex items-center gap-2">
-                  {item.type === "thread" ? <Sparkles className="w-3 h-3 text-primary" /> :
-                   item.type === "hashtags" ? <Hash className="w-3 h-3 text-primary" /> :
-                   <Sparkles className="w-3 h-3" />}
-                  {item.type}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {item.inputPrompt?.split('\n')[0] || "No prompt"}
-              </p>
-            </div>
-          ))
-        )}
-      </div>
-    </TabsContent>
-  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1361,14 +1312,10 @@ export function Composer() {
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{aiDialogDesc}</p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <TabsList className="h-7">
-                      <TabsTrigger value="generate" className="text-xs h-6 px-2">Generate</TabsTrigger>
-                      <TabsTrigger value="history" className="text-xs h-6 px-2">History</TabsTrigger>
-                    </TabsList>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 ml-1"
+                      className="h-7 w-7"
                       onClick={() => setIsAiOpen(false)}
                       aria-label="Close AI panel"
                     >
@@ -1377,7 +1324,6 @@ export function Composer() {
                   </div>
                 </div>
                 {aiTabsGenerateContent}
-                {aiTabsHistoryContent}
                 <div className="flex justify-end gap-2 pt-3 border-t mt-2">
                   <Button variant="outline" size="sm" onClick={() => setIsAiOpen(false)}>Cancel</Button>
                   <Button size="sm" onClick={handleAiRun} disabled={isAiGenerateDisabled}>
@@ -1697,17 +1643,10 @@ export function Composer() {
           <SheetContent side="bottom" className="h-[90dvh] flex flex-col overflow-hidden pb-safe">
             <Tabs defaultValue="generate" className="flex-1 flex flex-col overflow-hidden">
               <SheetHeader className="shrink-0 pb-2">
-                <div className="flex items-center justify-between">
-                  <SheetTitle>{aiDialogTitle}</SheetTitle>
-                  <TabsList>
-                    <TabsTrigger value="generate">Generate</TabsTrigger>
-                    <TabsTrigger value="history">History</TabsTrigger>
-                  </TabsList>
-                </div>
+                <SheetTitle>{aiDialogTitle}</SheetTitle>
                 <SheetDescription>{aiDialogDesc}</SheetDescription>
               </SheetHeader>
               {aiTabsGenerateContent}
-              {aiTabsHistoryContent}
               <div className="flex justify-end gap-2 pt-4 shrink-0 border-t mt-2">
                 <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
                 <Button onClick={handleAiRun} disabled={isAiGenerateDisabled}>

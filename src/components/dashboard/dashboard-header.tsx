@@ -33,7 +33,7 @@ export function DashboardHeader({ user, currentTeamId, memberships }: DashboardH
         size="icon"
         aria-label="Open navigation menu"
         className="md:hidden h-10 w-10 shrink-0"
-        onClick={() => document.dispatchEvent(new CustomEvent("sidebar:open"))}
+        onClick={(e) => { (e.currentTarget as HTMLButtonElement).blur(); document.dispatchEvent(new CustomEvent("sidebar:open")); }}
       >
         <Menu className="h-5 w-5" />
       </Button>
