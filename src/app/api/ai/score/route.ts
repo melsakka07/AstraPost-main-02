@@ -1,13 +1,7 @@
-import { headers } from "next/headers";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { checkViralScoreAccessDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { user } from "@/lib/schema";
+import { aiPreamble } from "@/lib/api/ai-preamble";
+import { checkViralScoreAccessDetailed } from "@/lib/middleware/require-plan";
 
 const scoreRequestSchema = z.object({
   content: z.string().min(1).max(5000), // Allow thread content
@@ -20,44 +14,23 @@ const scoreResponseSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-
-    const dbUser = await db.query.user.findFirst({
-        where: eq(user.id, session.user.id),
-        columns: { plan: true }
+    // Score route uses viral-score access check instead of the standard AI access check,
+    // and skips quota consumption since scoring doesn't burn generation credits.
+    const preamble = await aiPreamble({
+      customAiAccess: checkViralScoreAccessDetailed,
+      skipQuotaCheck: true,
     });
-    
-    // Rate limit: using "ai" type for now, but arguably could be its own type if usage is high
-    const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
-    if (!rlResult.success) return createRateLimitResponse(rlResult);
-
-    const access = await checkViralScoreAccessDetailed(session.user.id);
-    if (!access.allowed) {
-      return createPlanLimitResponse(access);
-    }
-
-    // We do NOT check AI quota (checkAiQuotaDetailed) because scoring should be unlimited for Pro users
-    // and we don't want to burn their generation credits on scoring.
+    if (preamble instanceof Response) return preamble;
+    const { model } = preamble;
 
     const json = await req.json();
     const result = scoreRequestSchema.safeParse(json);
-    
+
     if (!result.success) {
       return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
     }
 
     const { content } = result.data;
-
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-        return new Response(JSON.stringify({ error: "AI Service not configured" }), { status: 500 });
-    }
-
-    const openrouter = createOpenRouter({ apiKey });
-    const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
 
     const prompt = `
       You are an expert social media analyst for X (Twitter).

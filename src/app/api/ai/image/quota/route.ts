@@ -12,6 +12,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { aiGenerations, user } from "@/lib/schema";
+import { getMonthWindow } from "@/lib/utils/time";
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -26,12 +27,13 @@ export async function GET() {
     columns: { plan: true },
   });
 
+  // Display-only read: getPlanLimits is used here solely to return UI metadata
+  // (available models, quota counts). No gating decision is made.
+  // Intentional exception to CLAUDE.md §16 — no enforcement side effects.
   const plan = normalizePlan(userRecord?.plan);
   const limits = getPlanLimits(plan);
 
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  const { start: monthStart } = getMonthWindow();
 
   const usageRows = await db
     .select({ count: sql<number>`count(*)::int` })

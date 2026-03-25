@@ -1,50 +1,35 @@
-import { eq, and, isNotNull, desc, sql } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { posts, tweetAnalytics, tweets } from "@/lib/schema";
+import { AnalyticsEngine } from "./analytics-engine";
 
 export interface TimeSlot {
-  day: number; // 0=Sun, 6=Sat
-  hour: number; // 0-23
-  score: number;
+  day: number;   // 0=Sun, 6=Sat
+  hour: number;  // 0-23
+  score: number; // 0-100 normalized engagement score
 }
 
+const FALLBACK_TIMES: TimeSlot[] = [
+  { day: 0, hour: 20, score: 80 }, // Sun 8PM
+  { day: 2, hour: 9,  score: 75 }, // Tue 9AM
+  { day: 4, hour: 19, score: 70 }, // Thu 7PM
+];
+
+/**
+ * Returns the top 3 best posting time slots for a user.
+ *
+ * Delegates to AnalyticsEngine.getBestTimesToPost() which uses a SQL-level
+ * GROUP BY with normalized AVG engagement rate — the same data source used
+ * by the Best Time heatmap on the analytics dashboard. Both surfaces now
+ * share a single algorithm, eliminating the previous divergence between
+ * raw engagement-count scoring (old getBestTimes) and rate-normalized
+ * scoring (AnalyticsEngine).
+ *
+ * Returns hardcoded fallback slots when insufficient data (<5 posts).
+ */
 export async function getBestTimes(userId: string): Promise<TimeSlot[]> {
-  try {
-    const results = await db
-      .select({
-        day: sql<number>`extract(dow from ${posts.publishedAt})`.as("day"),
-        hour: sql<number>`extract(hour from ${posts.publishedAt})`.as("hour"),
-        totalEngagement: sql<number>`sum(${tweetAnalytics.likes} + ${tweetAnalytics.retweets} + ${tweetAnalytics.replies})`,
-        count: sql<number>`count(*)`
-      })
-      .from(tweetAnalytics)
-      .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
-      .innerJoin(posts, eq(tweets.postId, posts.id))
-      .where(and(eq(posts.userId, userId), isNotNull(posts.publishedAt)))
-      .groupBy(sql`extract(dow from ${posts.publishedAt})`, sql`extract(hour from ${posts.publishedAt})`)
-      .orderBy(desc(sql`sum(${tweetAnalytics.likes} + ${tweetAnalytics.retweets} + ${tweetAnalytics.replies}) / count(*)`))
-      .limit(3);
+  const buckets = await AnalyticsEngine.getBestTimesToPost(userId);
 
-    if (results.length === 0) {
-      return [
-        { day: 0, hour: 20, score: 80 }, // Sun 8PM
-        { day: 2, hour: 9, score: 75 },  // Tue 9AM
-        { day: 4, hour: 19, score: 70 }, // Thu 7PM
-      ];
-    }
-
-    return results.map(r => ({
-      day: Number(r.day),
-      hour: Number(r.hour),
-      score: Math.round(Number(r.totalEngagement) / Number(r.count))
-    }));
-  } catch (error) {
-    console.error("Error fetching best times:", error);
-    // Fallback on error
-    return [
-      { day: 0, hour: 20, score: 80 },
-      { day: 2, hour: 9, score: 75 },
-      { day: 4, hour: 19, score: 70 },
-    ];
+  if (buckets.length === 0) {
+    return FALLBACK_TIMES;
   }
+
+  return buckets.slice(0, 3).map(({ day, hour, score }) => ({ day, hour, score }));
 }

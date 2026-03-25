@@ -2,15 +2,7 @@ import { eq, and, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { getPlanLimits } from "@/lib/plan-limits";
 import { aiGenerations, user } from "@/lib/schema";
-
-function getMonthlyWindow() {
-  const start = new Date();
-  start.setDate(1);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setMonth(end.getMonth() + 1);
-  return { start, end };
-}
+import { getMonthWindow } from "@/lib/utils/time";
 
 export interface MonthlyAiUsage {
   used: number;
@@ -25,7 +17,7 @@ export async function getMonthlyAiUsage(userId: string): Promise<MonthlyAiUsage>
   });
 
   const limits = getPlanLimits(dbUser?.plan);
-  const { start, end } = getMonthlyWindow();
+  const { start, end } = getMonthWindow();
 
   const usage = await db
     .select({ count: sql<number>`count(*)` })
@@ -62,29 +54,3 @@ export async function recordAiUsage(
   });
 }
 
-export async function checkAiQuota(userId: string) {
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, userId),
-    columns: { plan: true, trialEndsAt: true }
-  });
-
-  if (dbUser?.plan === "free" && dbUser.trialEndsAt && new Date() < dbUser.trialEndsAt) {
-      return true; 
-  }
-
-  const limits = getPlanLimits(dbUser?.plan);
-  
-  if (limits.aiGenerationsPerMonth === Infinity) return true;
-  if (limits.aiGenerationsPerMonth === 0) return false;
-
-  const { start } = getMonthlyWindow();
-
-  const usage = await db.select({ count: sql<number>`count(*)` })
-    .from(aiGenerations)
-    .where(and(
-      eq(aiGenerations.userId, userId),
-      gte(aiGenerations.createdAt, start)
-    ));
-
-  return Number(usage[0]?.count ?? 0) < limits.aiGenerationsPerMonth;
-}

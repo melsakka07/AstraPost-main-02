@@ -1,8 +1,13 @@
 
 import { db } from "@/lib/db";
+import { checkAiQuotaDetailed } from "@/lib/middleware/require-plan";
 import { user, aiGenerations } from "@/lib/schema";
-import { checkAiQuota } from "@/lib/services/ai-quota";
 import { eq } from "drizzle-orm";
+
+// Helper — mirrors the old checkAiQuota() boolean return value
+async function checkAiQuota(userId: string): Promise<boolean> {
+  return (await checkAiQuotaDetailed(userId)).allowed;
+}
 
 async function main() {
   console.log("Testing AI Quota...");
@@ -20,10 +25,9 @@ async function main() {
   console.log(`Created Free User: ${freeUserId}`);
 
   // 2. Check Quota (Should be false, because free plan has 0 limit in current config)
-  // Wait, current plan-limits.ts:
-  // free: { postsPerMonth: 10, aiGenerationsPerMonth: 0, ... }
-  // So checkAiQuota should return false immediately if limit is 0.
-  
+  // current plan-limits.ts: free: { aiGenerationsPerMonth: 0, ... }
+  // So checkAiQuota should return false immediately.
+
   let hasQuota = await checkAiQuota(freeUserId);
   console.log(`Free User Has Quota (0 usage): ${hasQuota} (Expected: false)`);
   if (hasQuota) throw new Error("Free user should NOT have AI quota (limit is 0)");
@@ -39,18 +43,18 @@ async function main() {
   // 4. Record Usage
   console.log("Recording usage...");
   await db.insert(aiGenerations).values({
-      id: crypto.randomUUID(),
-      userId: freeUserId,
-      type: "test",
-      inputPrompt: "test",
-      outputContent: {},
-      tokensUsed: 100,
+    id: crypto.randomUUID(),
+    userId: freeUserId,
+    type: "test",
+    inputPrompt: "test",
+    outputContent: {},
+    tokensUsed: 100,
   });
 
   // 5. Downgrade to Free
   await db.update(user).set({ plan: "free" }).where(eq(user.id, freeUserId));
   console.log("Downgraded to Free");
-  
+
   hasQuota = await checkAiQuota(freeUserId);
   console.log(`Free User Has Quota (1 usage): ${hasQuota} (Expected: false)`);
   if (hasQuota) throw new Error("Free user should NOT have quota");

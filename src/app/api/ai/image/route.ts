@@ -6,14 +6,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { openrouter } from "@openrouter/ai-sdk-provider";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
-import { and, eq, gte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import {
+  checkAiImageQuotaDetailed,
+  checkImageModelAccessDetailed,
+  createPlanLimitResponse,
+  getUserPlanType,
+} from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse, redis } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 import {
@@ -21,7 +25,6 @@ import {
   type ImageModel,
   type AspectRatio,
   type ImageStyle,
-  validateModelForPlan,
 } from "@/lib/services/ai-image";
 
 // ============================================================================
@@ -56,8 +59,9 @@ async function generateImagePromptFromTweet(
   const sanitized = sanitizeForPrompt(tweetContent, 500);
 
   try {
+    const openrouterProvider = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY || "" });
     const { text } = await generateText({
-      model: openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o"),
+      model: openrouterProvider(process.env.OPENROUTER_MODEL || "openai/gpt-4o"),
       system: `You are an expert at creating vivid, specific image prompts for social media content.
 Generate a visual prompt that captures the essence of the post.
 Keep the prompt under 200 words. Focus on visual elements, composition, mood, and style.
@@ -102,69 +106,21 @@ export async function POST(req: NextRequest) {
     const { prompt, tweetContent, model, aspectRatio, style } =
       validationResult.data;
 
-    // 3. Get user and plan info
+    // 3. Auth identity
     const userId = session.user.id;
-    const userRecord = await db.query.user.findFirst({
-      where: (users, { eq }) => eq(users.id, userId),
-    });
 
-    if (!userRecord) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    // 4. Plan checks — model gate + monthly image quota (standard 402 + upgrade_url on failure)
+    const plan = await getUserPlanType(userId); // for rate-limit tier selection
+    const modelAccess = await checkImageModelAccessDetailed(userId, model as ImageModel);
+    if (!modelAccess.allowed) return createPlanLimitResponse(modelAccess);
 
-    const plan = normalizePlan(userRecord.plan);
-    const planLimits = getPlanLimits(plan);
-
-    // 4. Validate model availability for plan
-    const modelValidation = validateModelForPlan(
-      model as ImageModel,
-      planLimits.availableImageModels
-    );
-
-    if (!modelValidation.valid) {
-      console.warn(`[AI Image] 403: Invalid model ${model} for plan ${plan}`);
-      return NextResponse.json(
-        { error: modelValidation.error },
-        { status: 403 }
-      );
-    }
-
-    // 5. Check rate limit
+    // 5. Rate limit
     const rateLimitResult = await checkRateLimit(userId, plan, "ai_image");
     if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
-    // 6. Check AI image quota (monthly limit)
-    if (planLimits.aiImagesPerMonth > 0) {
-      // -1 means unlimited
-      const currentMonth = new Date();
-      currentMonth.setDate(1);
-      currentMonth.setHours(0, 0, 0, 0);
-
-      const monthlyCount = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(aiGenerations)
-        .where(
-          and(
-            eq(aiGenerations.userId, userId),
-            eq(aiGenerations.type, "image"),
-            gte(aiGenerations.createdAt, currentMonth)
-          )
-        );
-
-      const imagesUsed = monthlyCount[0]?.count || 0;
-
-      if (imagesUsed >= planLimits.aiImagesPerMonth) {
-        console.warn(`[AI Image] 403: Quota exceeded. Used: ${imagesUsed}, Limit: ${planLimits.aiImagesPerMonth}`);
-        return NextResponse.json(
-          {
-            error: "Monthly AI image quota exceeded",
-            limit: planLimits.aiImagesPerMonth,
-            used: imagesUsed,
-          },
-          { status: 403 }
-        );
-      }
-    }
+    // 6. Monthly image quota
+    const imageQuota = await checkAiImageQuotaDetailed(userId);
+    if (!imageQuota.allowed) return createPlanLimitResponse(imageQuota);
 
     // 7. Generate or use provided prompt
     let finalPrompt = prompt;

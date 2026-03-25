@@ -1,25 +1,19 @@
 import { headers } from "next/headers";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { aiPreamble } from "@/lib/api/ai-preamble";
 import { auth } from "@/lib/auth";
-import { LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
 import { db } from "@/lib/db";
-import {
-  checkAiLimitDetailed,
-  checkAiQuotaDetailed,
-  checkBioOptimizerAccessDetailed,
-  createPlanLimitResponse,
-} from "@/lib/middleware/require-plan";
-import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { user, xAccounts } from "@/lib/schema";
+import { checkBioOptimizerAccessDetailed } from "@/lib/middleware/require-plan";
+import { xAccounts } from "@/lib/schema";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
   currentBio: z.string().max(500).optional().default(""),
   goal: z.enum(["gain_followers", "attract_clients", "build_authority", "general"]).default("general"),
-  language: z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]).default("en"),
+  language: LANGUAGE_ENUM.default("en"),
   niche: z.string().max(100).optional().default(""),
 });
 
@@ -62,25 +56,9 @@ export async function GET(_req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return new Response("Unauthorized", { status: 401 });
-
-    const dbUser = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      columns: { plan: true },
-    });
-
-    const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
-    if (!rlResult.success) return createRateLimitResponse(rlResult);
-
-    const access = await checkBioOptimizerAccessDetailed(session.user.id);
-    if (!access.allowed) return createPlanLimitResponse(access);
-
-    const aiAccess = await checkAiLimitDetailed(session.user.id);
-    if (!aiAccess.allowed) return createPlanLimitResponse(aiAccess);
-
-    const aiQuota = await checkAiQuotaDetailed(session.user.id);
-    if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
+    const preamble = await aiPreamble({ featureGate: checkBioOptimizerAccessDetailed });
+    if (preamble instanceof Response) return preamble;
+    const { session, model } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -91,14 +69,6 @@ export async function POST(req: Request) {
     }
 
     const { currentBio, goal, language, niche } = result.data;
-
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "AI service not configured" }), { status: 500 });
-    }
-
-    const openrouter = createOpenRouter({ apiKey });
-    const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
     const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
     const goalLabel = GOAL_LABELS[goal] || GOAL_LABELS.general;
 

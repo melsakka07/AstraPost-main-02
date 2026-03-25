@@ -554,6 +554,41 @@ The project includes technical documentation in `docs/`:
     - Pro/Agency: Unlimited features
     - Always check limits before resource-intensive operations
 
+14. **API Error Responses** *(architectural rule — do not bypass)*
+    - Always use `ApiError` from `@/lib/api/errors` for error responses in route handlers:
+      ```typescript
+      import { ApiError } from "@/lib/api/errors";
+      if (!session) return ApiError.unauthorized();
+      if (!post)    return ApiError.notFound("Post");
+      if (!allowed) return ApiError.forbidden("Viewers cannot edit posts");
+      ```
+    - Never write `new Response(JSON.stringify({ error: "..." }), { status: N })` inline
+    - Never write `NextResponse.json({ error: "..." }, { status: N })` inline
+    - This ensures consistent error shape, status codes, and wording across all routes
+
+15. **Multi-Table Writes Must Use Transactions** *(data integrity rule)*
+    - Any route handler that writes to **more than one table** in a single request MUST wrap all writes in `db.transaction()`:
+      ```typescript
+      await db.transaction(async (tx) => {
+        await tx.insert(posts).values(postRow);
+        await tx.insert(tweets).values(tweetRows);
+        await tx.insert(media).values(mediaRows);
+      });
+      ```
+    - This prevents orphaned records if an insert fails partway through
+    - Code review trigger: if you see two `db.insert()` / `db.delete()` calls in the same handler without a `db.transaction()` wrapper, it's a bug
+
+16. **`getPlanLimits()` in Route Handlers Is a Bug**
+    - Route handlers must NEVER call `getPlanLimits()` or `normalizePlan()` directly
+    - All plan/quota enforcement must go through `require-plan.ts` helpers (`checkXFeatureDetailed`, `checkAiQuotaDetailed`, etc.)
+    - If you need a new gate, add a `makeFeatureGate()` call in `require-plan.ts`
+    - Direct use of `getPlanLimits` in a route file bypasses trial-period logic and standardised 402 responses
+
+17. **Shared Zod Schemas**
+    - Route-specific schemas live in the route file
+    - Schemas used by 2+ routes belong in `src/lib/schemas/common.ts`
+    - Shared enums (language, tone) are in `src/lib/constants.ts` — import from there, never re-declare inline
+
 ### Best Practices
 
 - Read existing code patterns before creating new features

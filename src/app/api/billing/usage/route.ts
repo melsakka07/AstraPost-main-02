@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { user, posts, xAccounts, aiGenerations } from "@/lib/schema";
+import { getMonthWindow } from "@/lib/utils/time";
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -20,11 +21,12 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  // Display-only read: getPlanLimits is used here to return plan metadata and
+  // usage percentages to the billing dashboard. No gating decision is made.
+  // Intentional exception to CLAUDE.md §16 — no enforcement side effects.
   const plan = normalizePlan(dbUser.plan);
   const limits = getPlanLimits(plan);
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  const { start: startOfMonth } = getMonthWindow();
 
   const [postsCount, accountsCount, aiCount] = await Promise.all([
     // Monthly posts

@@ -6,16 +6,20 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { openrouter } from "@openrouter/ai-sdk-provider";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
-import { and, eq, gte, sql } from "drizzle-orm";
-import { nanoid } from "nanoid";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { LANGUAGE_ENUM_LIMITED } from "@/lib/constants";
+import {
+  checkAiLimitDetailed,
+  checkAiQuotaDetailed,
+  checkInspirationAccessDetailed,
+  createPlanLimitResponse,
+  getUserPlanType,
+} from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { aiGenerations } from "@/lib/schema";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 // ============================================================================
 // Schema Validation
@@ -39,14 +43,12 @@ const InspireTone = z.enum([
   "viral",
 ]);
 
-const InspireLanguage = z.enum(["ar", "en"]);
-
 const InspireRequestSchema = z.object({
   originalTweet: z.string().min(1).max(5000),
   threadContext: z.array(z.string().max(5000)).max(10).optional(),
   action: InspireAction,
   tone: InspireTone.optional(),
-  language: InspireLanguage.default("ar"),
+  language: LANGUAGE_ENUM_LIMITED.default("ar"),
   userContext: z.string().max(1000).optional(),
 });
 
@@ -143,18 +145,16 @@ Return ONLY the counter-argument tweet text. No explanation or additional text.`
 export async function POST(req: NextRequest) {
   try {
     // 1. Authentication
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-
+    const session = await auth.api.getSession({ headers: req.headers });
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = session.user.id;
+
     // 2. Parse and validate request
     const body = await req.json();
     const validationResult = InspireRequestSchema.safeParse(body);
-
     if (!validationResult.success) {
       return NextResponse.json(
         { error: "Invalid request", details: validationResult.error.issues },
@@ -162,133 +162,71 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const {
-      originalTweet,
-      threadContext,
-      action,
-      tone,
-      language,
-      userContext,
-    } = validationResult.data;
+    const { originalTweet, threadContext, action, tone, language, userContext } =
+      validationResult.data;
 
-    // 3. Get user and plan info
-    const userId = session.user.id;
-    const userRecord = await db.query.user.findFirst({
-      where: (users, { eq }) => eq(users.id, userId),
-    });
+    // 3. Plan checks — inspiration gate + rate limit (402 + upgrade_url on failure)
+    const plan = await getUserPlanType(userId); // for rate-limit tier selection
+    const inspirationAccess = await checkInspirationAccessDetailed(userId);
+    if (!inspirationAccess.allowed) return createPlanLimitResponse(inspirationAccess);
 
-    if (!userRecord) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const plan = normalizePlan(userRecord.plan);
-    const planLimits = getPlanLimits(plan);
-
-    // 4. Check if user can use inspiration feature
-    if (!planLimits.canUseInspiration) {
-      return NextResponse.json(
-        { error: "Inspiration feature not available in your plan" },
-        { status: 403 }
-      );
-    }
-
-    // 5. Check AI rate limit
+    // 4. Rate limit
     const rateLimitResult = await checkRateLimit(userId, plan, "ai");
     if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
-    // 6. Check AI quota (monthly limit)
-    if (planLimits.aiGenerationsPerMonth > 0) {
-      // -1 means unlimited
-      const currentMonth = new Date();
-      currentMonth.setDate(1);
-      currentMonth.setHours(0, 0, 0, 0);
+    // 5. AI access + quota checks (standardised 402 response with upgrade_url)
+    const aiAccess = await checkAiLimitDetailed(userId);
+    if (!aiAccess.allowed) return createPlanLimitResponse(aiAccess);
 
-      const monthlyCount = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(aiGenerations)
-        .where(
-          and(
-            eq(aiGenerations.userId, userId),
-            gte(aiGenerations.createdAt, currentMonth)
-          )
-        );
+    const aiQuota = await checkAiQuotaDetailed(userId);
+    if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
 
-      const aiUsed = monthlyCount[0]?.count || 0;
-
-      if (aiUsed >= planLimits.aiGenerationsPerMonth) {
-        return NextResponse.json(
-          {
-            error: "Monthly AI quota exceeded",
-            limit: planLimits.aiGenerationsPerMonth,
-            used: aiUsed,
-          },
-          { status: 403 }
-        );
-      }
+    // 7. API key guard
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "AI service not configured" }, { status: 500 });
     }
 
-    // 7. Build the prompt
+    // 8. Build the prompt
     const promptBuilder = ACTION_SYSTEM_PROMPTS[action];
     if (!promptBuilder) {
-      return NextResponse.json(
-        { error: "Invalid action" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
     const systemPrompt = promptBuilder(tone, language, userContext);
-
     let userPrompt = `Original tweet:\n${originalTweet}`;
-
     if (threadContext && threadContext.length > 0) {
       userPrompt += `\n\nThread context (previous tweets/replies):\n${threadContext.join("\n\n")}`;
     }
 
-    // 8. Generate AI response
+    // 9. Generate AI response
+    const openrouterProvider = createOpenRouter({ apiKey });
     const { text } = await generateText({
-      model: openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o"),
+      model: openrouterProvider(process.env.OPENROUTER_MODEL || "openai/gpt-4o"),
       system: systemPrompt,
       prompt: userPrompt,
     });
 
-    // 9. Parse response based on action
-    let tweets: string[];
+    // 10. Parse response based on action
+    const tweets =
+      action === "expand_thread"
+        ? text.split("|||").map((t) => t.trim()).filter((t) => t.length > 0)
+        : [text.trim()];
 
-    if (action === "expand_thread") {
-      // Thread tweets are separated by |||
-      tweets = text.split("|||").map((t) => t.trim()).filter((t) => t.length > 0);
-    } else {
-      // Single tweet response
-      tweets = [text.trim()];
-    }
-
-    // 10. Record usage in aiGenerations table
-    await db.insert(aiGenerations).values({
-      id: nanoid(),
+    // 11. Record usage (standardised path — previously inlined db.insert)
+    await recordAiUsage(
       userId,
-      type: "inspire",
-      inputPrompt: systemPrompt + "\n\n" + userPrompt,
-      outputContent: {
-        action,
-        tone,
-        language,
-        tweets,
-      },
-      createdAt: new Date(),
-    });
+      "inspire",
+      0,
+      `${systemPrompt}\n\n${userPrompt}`,
+      { action, tone, language, tweets },
+      language
+    );
 
-    // 11. Return result
-    return NextResponse.json({
-      tweets,
-      action,
-    });
+    return NextResponse.json({ tweets, action });
   } catch (error) {
     console.error("AI inspire error:", error);
-
     return NextResponse.json(
-      {
-        error: "Failed to generate inspired content",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Failed to generate inspired content", message: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }

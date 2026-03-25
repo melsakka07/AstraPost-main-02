@@ -7,6 +7,36 @@ import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, tweets, media } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
+/**
+ * Shared ownership check used by GET, PATCH, and DELETE.
+ * Caller must guard against undefined/null before invoking this.
+ * Returns a 403 Response on failure, null on success.
+ */
+async function checkPostOwnership(
+  post: {
+    userId: string;
+    xAccount: { userId: string } | null;
+    linkedinAccount: { userId: string } | null;
+  },
+  ctx: { currentTeamId: string }
+): Promise<NextResponse | null> {
+  const accountOwnerId = post.xAccount?.userId ?? post.linkedinAccount?.userId;
+
+  if (accountOwnerId) {
+    if (accountOwnerId !== ctx.currentTeamId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else {
+    // Orphan post (draft without account) — require creator or team owner
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (post.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  return null;
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ postId: string }> }
@@ -38,27 +68,9 @@ export async function GET(
     }
   });
 
-  if (!post) {
-    return NextResponse.json({ error: "Post not found" }, { status: 404 });
-  }
-
-  // Verify access:
-  const accountOwnerId = post.xAccount?.userId || post.linkedinAccount?.userId;
-
-  if (accountOwnerId) {
-    // If attached to an account, that account must belong to the current team
-    if (accountOwnerId !== ctx.currentTeamId) {
-         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  } else {
-    // Orphan post (draft without account)
-    // Allow if current user is the creator OR current user is the team owner
-    // Note: post.userId is the creator.
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (post.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
-         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  }
+  if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  const ownershipError = await checkPostOwnership(post, ctx);
+  if (ownershipError) return ownershipError;
 
   return NextResponse.json(post);
 }
@@ -90,22 +102,9 @@ export async function PATCH(
     }
   });
 
-  if (!existingPost) {
-    return NextResponse.json({ error: "Post not found" }, { status: 404 });
-  }
-
-  // Verify workspace access
-  const accountOwnerId = existingPost.xAccount?.userId || existingPost.linkedinAccount?.userId;
-  if (accountOwnerId) {
-      if (accountOwnerId !== ctx.currentTeamId) {
-          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-  } else {
-      const session = await auth.api.getSession({ headers: await headers() });
-      if (existingPost.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
-           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-  }
+  if (!existingPost) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  const ownershipError = await checkPostOwnership(existingPost, ctx);
+  if (ownershipError) return ownershipError;
 
   // Determine new status and scheduledAt
   let newStatus = existingPost.status;
@@ -169,35 +168,38 @@ export async function PATCH(
     })
     .where(eq(posts.id, postId));
 
-  // 3. Update Tweets (only if provided)
+  // 3. Update Tweets (only if provided) — wrapped in a transaction so a
+  //    failure mid-loop never leaves the post in a partial (tweetless) state.
   if (body.tweets && Array.isArray(body.tweets)) {
-      await db.delete(tweets).where(eq(tweets.postId, postId));
+    await db.transaction(async (tx) => {
+      await tx.delete(tweets).where(eq(tweets.postId, postId));
 
       for (let i = 0; i < body.tweets.length; i++) {
         const t = body.tweets[i];
         const tweetId = crypto.randomUUID();
-        
-        await db.insert(tweets).values({
-            id: tweetId,
-            postId: postId,
-            content: t.content,
-            position: i + 1,
+
+        await tx.insert(tweets).values({
+          id: tweetId,
+          postId: postId,
+          content: t.content,
+          position: i + 1,
         });
 
         if (t.media && Array.isArray(t.media)) {
-             for (const m of t.media) {
-                 await db.insert(media).values({
-                     id: crypto.randomUUID(),
-                     postId: postId,
-                     userId: existingPost.userId,
-                     tweetId: tweetId,
-                     fileUrl: m.url,
-                     fileType: m.fileType,
-                     fileSize: m.size,
-                 });
-             }
+          for (const m of t.media) {
+            await tx.insert(media).values({
+              id: crypto.randomUUID(),
+              postId: postId,
+              userId: existingPost.userId,
+              tweetId: tweetId,
+              fileUrl: m.url,
+              fileType: m.fileType,
+              fileSize: m.size,
+            });
+          }
         }
       }
+    });
   }
 
   // 4. Handle Queue
@@ -261,22 +263,9 @@ export async function DELETE(
     }
   });
 
-  if (!existingPost) {
-    return NextResponse.json({ error: "Post not found" }, { status: 404 });
-  }
-
-  // Verify workspace access
-  const accountOwnerId = existingPost.xAccount?.userId || existingPost.linkedinAccount?.userId;
-  if (accountOwnerId) {
-      if (accountOwnerId !== ctx.currentTeamId) {
-          return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-  } else {
-      const session = await auth.api.getSession({ headers: await headers() });
-      if (existingPost.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
-           return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-      }
-  }
+  if (!existingPost) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  const ownershipError = await checkPostOwnership(existingPost, ctx);
+  if (ownershipError) return ownershipError;
 
   // 2. Remove from Queue if scheduled
   try {

@@ -1,23 +1,14 @@
-import { headers } from "next/headers";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
-import { auth } from "@/lib/auth";
-import { LANGUAGES } from "@/lib/constants";
-import { db } from "@/lib/db";
-import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { user } from "@/lib/schema";
+import { aiPreamble } from "@/lib/api/ai-preamble";
+import { LANGUAGE_ENUM, LANGUAGES, TONE_ENUM } from "@/lib/constants";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
   tool: z.enum(["hook", "cta", "rewrite"]),
-  language: z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]).default("ar"),
-  tone: z
-    .enum(["professional", "casual", "educational", "inspirational", "funny", "viral"])
-    .default("professional"),
+  language: LANGUAGE_ENUM.default("ar"),
+  tone: TONE_ENUM.default("professional"),
   topic: z.string().max(500).optional(),
   input: z.string().max(1000).optional(),
 });
@@ -32,28 +23,9 @@ const responseSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
-      return new Response("Unauthorized", { status: 401 });
-    }
-
-    const dbUser = await db.query.user.findFirst({
-        where: eq(user.id, session.user.id),
-        columns: { plan: true, voiceProfile: true }
-    });
-    
-    const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
-    if (!rlResult.success) return createRateLimitResponse(rlResult);
-
-    const aiAccess = await checkAiLimitDetailed(session.user.id);
-    if (!aiAccess.allowed) {
-      return createPlanLimitResponse(aiAccess);
-    }
-
-    const aiQuota = await checkAiQuotaDetailed(session.user.id);
-    if (!aiQuota.allowed) {
-      return createPlanLimitResponse(aiQuota);
-    }
+    const preamble = await aiPreamble();
+    if (preamble instanceof Response) return preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
@@ -64,16 +36,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "AI Service not configured" }), {
-        status: 500,
-      });
-    }
-
     const { tool, language, tone, topic, input } = parsed.data;
-    const openrouter = createOpenRouter({ apiKey });
-    const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
 
     const langLabel = LANGUAGES.find(l => l.code === language)?.label || 'English';
 
