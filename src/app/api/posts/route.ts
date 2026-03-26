@@ -123,7 +123,7 @@ export async function POST(req: Request) {
         } else if (availableLi.length > 0) {
              const def = availableLi[0];
              if (def) selectedAccounts.push({ id: def.id, platform: 'linkedin', obj: def });
-        } else {
+        } else if (action !== "draft") {
              return new Response(JSON.stringify({ error: "No connected accounts" }), { status: 400 });
         }
     }
@@ -204,6 +204,32 @@ export async function POST(req: Request) {
     const queueJobs: { postId: string; delay: number }[] = [];
 
     const postType = tweetsData.length > 1 ? "thread" : undefined;
+
+    // Draft with no connected account — create a single accountless draft
+    if (selectedAccounts.length === 0 && action === "draft") {
+      const postId = crypto.randomUUID();
+      createdPostIds.push(postId);
+      postRows.push({
+        id: postId,
+        userId: authorId,
+        xAccountId: null,
+        linkedinAccountId: null,
+        instagramAccountId: null,
+        platform: "twitter",
+        groupId: null,
+        type: postType ?? "tweet",
+        status: "draft",
+        scheduledAt: null,
+        requiresApproval: false,
+        recurrencePattern: null,
+        recurrenceEndDate: null,
+        idempotencyKey: null,
+      });
+      for (let i = 0; i < tweetsData.length; i++) {
+        const t = tweetsData[i]!;
+        tweetRows.push({ id: crypto.randomUUID(), postId, content: t.content, position: i + 1 });
+      }
+    }
 
     for (const acc of selectedAccounts) {
       const postId = crypto.randomUUID();
