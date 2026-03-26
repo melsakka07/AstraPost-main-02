@@ -1,5 +1,31 @@
 # Latest Updates
 
+## 2026-03-26: Admin Dashboard — All 4 Phases Complete
+
+Full admin dashboard implemented. See `docs/features/admin-dashboard-progress.md` for the complete changelog.
+
+**Admin login:** See `docs/technical/admin-access.md` for step-by-step instructions.
+The short version: register normally → run `UPDATE "user" SET is_admin = true WHERE email = 'you@example.com';` in the DB → navigate to `/admin`.
+
+**New admin pages:**
+
+| URL | Purpose |
+|-----|---------|
+| `/admin/metrics` | Signups chart + MRR (updated to use AdminPageWrapper) |
+| `/admin/stats` | Platform stats — users, posts, AI usage, queue health |
+| `/admin/subscribers` | Full subscriber CRUD (search, filter, ban, soft-delete) |
+| `/admin/billing` | MRR cards, plan distribution, recent subscription events |
+| `/admin/billing/promo-codes` | Create/edit/delete discount codes with Stripe coupon sync |
+| `/admin/feature-flags` | Toggle platform features on/off (60s cache) |
+| `/admin/announcement` | Global banner for all dashboard users |
+| `/admin/jobs` | BullMQ job monitor |
+
+**New helper:** `src/lib/feature-flags.ts` — `isFeatureEnabled(key)` with 60s in-memory cache.
+
+`pnpm lint && pnpm typecheck` — 0 errors.
+
+---
+
 ## 2026-03-23: UX Audit — ACC3 / ACC4 / ACC5 / A15 / A16 / F3 / W4 / W5 (plan sync)
 
 Plan deferred-items table updated to reflect items already completed in earlier phases:

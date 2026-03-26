@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq, and, gte } from "drizzle-orm";
+import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { FailureBanner } from "@/components/dashboard/failure-banner";
@@ -108,6 +109,7 @@ export default async function DashboardLayout({
           currentTeamId={ctx?.currentTeamId || session.user.id}
           memberships={formattedMemberships}
         />
+        <AnnouncementBanner />
         <FailureBanner hasFailures={!!failedPost} />
         <TrialBanner
           trialEndsAt={dbUser?.trialEndsAt ?? null}

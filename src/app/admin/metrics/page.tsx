@@ -1,4 +1,6 @@
 import { sql, gte, eq, count } from "drizzle-orm";
+import { BarChart } from "lucide-react";
+import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { user, subscriptions, jobRuns } from "@/lib/schema";
@@ -63,8 +65,8 @@ export default async function MetricsPage() {
   const metrics = await getMetrics();
 
   return (
+    <AdminPageWrapper icon={BarChart} title="Metrics" description="Signups, subscriptions, and job activity.">
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Metrics</h1>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -152,5 +154,6 @@ export default async function MetricsPage() {
         </Card>
       </div>
     </div>
+    </AdminPageWrapper>
   );
 }

@@ -1,15 +1,16 @@
 import { headers } from "next/headers";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { planToPrice, VALID_CHECKOUT_PLANS } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
-import { subscriptions, user } from "@/lib/schema";
+import { promoCodes, subscriptions, user } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
 const checkoutSchema = z.object({
   plan: z.enum(VALID_CHECKOUT_PLANS),
+  promoCode: z.string().min(1).max(50).optional(),
 });
 
 export async function POST(req: Request) {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
     return ApiError.badRequest(result.error.issues);
   }
 
-  const { plan } = result.data;
+  const { plan, promoCode } = result.data;
 
   const priceId = planToPrice(plan);
   if (!priceId) {
@@ -84,6 +85,37 @@ export async function POST(req: Request) {
 
   const trialDays = hasHadSubscription ? undefined : 14;
 
+  // ── Promo code resolution ───────────────────────────────────────────────────
+  // Validate against our DB and resolve the Stripe coupon ID (if any).
+  let stripeCouponId: string | null = null;
+  if (promoCode) {
+    const upperCode = promoCode.toUpperCase();
+    const [promo] = await db
+      .select({
+        isActive: promoCodes.isActive,
+        stripeCouponId: promoCodes.stripeCouponId,
+        validFrom: promoCodes.validFrom,
+        validTo: promoCodes.validTo,
+        maxRedemptions: promoCodes.maxRedemptions,
+        redemptionsCount: promoCodes.redemptionsCount,
+      })
+      .from(promoCodes)
+      .where(and(eq(promoCodes.code, upperCode), isNull(promoCodes.deletedAt)))
+      .limit(1);
+
+    if (promo && promo.isActive) {
+      const now = new Date();
+      const valid =
+        (!promo.validFrom || new Date(promo.validFrom) <= now) &&
+        (!promo.validTo || new Date(promo.validTo) >= now) &&
+        (promo.maxRedemptions === null || promo.redemptionsCount < promo.maxRedemptions);
+
+      if (valid) {
+        stripeCouponId = promo.stripeCouponId;
+      }
+    }
+  }
+
   // ── Create Checkout Session ─────────────────────────────────────────────────
   try {
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -93,7 +125,11 @@ export async function POST(req: Request) {
       ...(trialDays !== undefined
         ? { subscription_data: { trial_period_days: trialDays } }
         : {}),
-      allow_promotion_codes: true,
+      // Apply our promo code as a Stripe discount if we have a coupon ID,
+      // otherwise keep allow_promotion_codes: true for native Stripe codes.
+      ...(stripeCouponId
+        ? { discounts: [{ coupon: stripeCouponId }] }
+        : { allow_promotion_codes: true }),
       metadata: { userId: session.user.id, plan },
       success_url: `${appUrl}/dashboard/settings?billing=success`,
       cancel_url: `${appUrl}/pricing?billing=cancelled`,

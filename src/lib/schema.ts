@@ -2,6 +2,9 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, timestamp, boolean, integer, jsonb, decimal, index, uniqueIndex } from "drizzle-orm/pg-core";
 
+// ── Admin / Billing enums ────────────────────────────────────────────────────
+export const discountTypeEnum = pgEnum("discount_type", ["percentage", "fixed"]);
+
 // ── Enums ──────────────────────────────────────────────────────────────────
 
 // ── Existing enums (already in DB) ─────────────────────────────────────────
@@ -140,6 +143,10 @@ export const user = pgTable(
 
     // AI Features
     preferredImageModel: text("preferred_image_model").default("nano-banana-2"), // 'nano-banana-2', 'banana-pro', 'gemini-imagen4'
+
+    // Admin fields
+    bannedAt: timestamp("banned_at"),     // set when admin bans; null = not banned
+    deletedAt: timestamp("deleted_at"),   // soft-delete; null = active account
   },
   (table) => [
     index("user_referral_code_idx").on(table.referralCode)
@@ -854,6 +861,84 @@ export const analyticsRefreshRunsRelations = relations(analyticsRefreshRuns, ({ 
 export const milestonesRelations = relations(milestones, ({ one }) => ({
   user: one(user, {
     fields: [milestones.userId],
+    references: [user.id],
+  }),
+}));
+
+// ── Admin / Billing Tables ───────────────────────────────────────────────────
+
+/**
+ * Promotional codes that can be applied at checkout for discounts.
+ * Soft-deleted via deletedAt; hard deletes are intentionally not supported.
+ */
+export const promoCodes = pgTable("promo_codes", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  description: text("description"),
+  discountType: discountTypeEnum("discount_type").notNull(),
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
+  validFrom: timestamp("valid_from"),
+  validTo: timestamp("valid_to"),
+  maxRedemptions: integer("max_redemptions"), // null = unlimited
+  redemptionsCount: integer("redemptions_count").default(0).notNull(),
+  applicablePlans: jsonb("applicable_plans").default([]).$type<string[]>(), // [] = all plans
+  isActive: boolean("is_active").default(true).notNull(),
+  stripeCouponId: text("stripe_coupon_id"),  // set when a Stripe coupon is created for this code
+  createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+  deletedAt: timestamp("deleted_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (table) => [
+  index("promo_codes_code_idx").on(table.code),
+  index("promo_codes_is_active_idx").on(table.isActive),
+]);
+
+/** Tracks each time a promo code was successfully redeemed at checkout. */
+export const promoCodeRedemptions = pgTable("promo_code_redemptions", {
+  id: text("id").primaryKey(),
+  promoCodeId: text("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  stripeSessionId: text("stripe_session_id"),
+  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }),
+  redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
+}, (table) => [
+  index("promo_redemptions_code_id_idx").on(table.promoCodeId),
+  index("promo_redemptions_user_id_idx").on(table.userId),
+]);
+
+/**
+ * Simple key-value feature flag system.
+ * Admin UI provides toggle switches; `isFeatureEnabled()` reads from this table
+ * with a 60-second in-memory cache.
+ */
+export const featureFlags = pgTable("feature_flags", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  enabled: boolean("enabled").default(false).notNull(),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("feature_flags_key_unique").on(table.key),
+]);
+
+// ── Relations for new admin tables ──────────────────────────────────────────
+
+export const promoCodesRelations = relations(promoCodes, ({ one, many }) => ({
+  createdByUser: one(user, {
+    fields: [promoCodes.createdBy],
+    references: [user.id],
+  }),
+  redemptions: many(promoCodeRedemptions),
+}));
+
+export const promoCodeRedemptionsRelations = relations(promoCodeRedemptions, ({ one }) => ({
+  promoCode: one(promoCodes, {
+    fields: [promoCodeRedemptions.promoCodeId],
+    references: [promoCodes.id],
+  }),
+  user: one(user, {
+    fields: [promoCodeRedemptions.userId],
     references: [user.id],
   }),
 }));

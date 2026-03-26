@@ -3,30 +3,48 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Users,
-  BarChart,
   Activity,
-  ShieldCheck
+  BarChart,
+  BarChart2,
+  CreditCard,
+  LayoutDashboard,
+  Megaphone,
+  ShieldCheck,
+  Tag,
+  ToggleLeft,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const sidebarItems = [
+const sidebarSections = [
   {
-    href: "/admin/metrics",
-    label: "Metrics",
-    icon: BarChart,
+    label: "Overview",
+    items: [
+      { href: "/admin/metrics", label: "Metrics", icon: BarChart },
+      { href: "/admin/stats", label: "Platform Stats", icon: BarChart2 },
+    ],
   },
   {
-    href: "/admin/users",
     label: "Users",
-    icon: Users,
+    items: [
+      { href: "/admin/subscribers", label: "Subscribers", icon: Users },
+    ],
   },
   {
-    href: "/admin/jobs",
-    label: "Jobs (BullMQ)",
-    icon: Activity,
+    label: "Billing",
+    items: [
+      { href: "/admin/billing", label: "Billing Overview", icon: CreditCard },
+      { href: "/admin/billing/promo-codes", label: "Promo Codes", icon: Tag },
+    ],
+  },
+  {
+    label: "Platform",
+    items: [
+      { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
+      { href: "/admin/announcement", label: "Announcement", icon: Megaphone },
+      { href: "/admin/jobs", label: "Jobs (BullMQ)", icon: Activity },
+    ],
   },
 ];
 
@@ -41,20 +59,29 @@ export function AdminSidebar() {
           <span>Admin Panel</span>
         </Link>
       </div>
-      <div className="flex-1 overflow-auto py-6 px-4">
-        <nav className="grid gap-2">
-          {sidebarItems.map((item, index) => (
-            <Link
-              key={index}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted",
-                pathname === item.href && "bg-primary/10 text-primary font-medium"
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.label}
-            </Link>
+      <div className="flex-1 overflow-auto py-4 px-4">
+        <nav className="space-y-5">
+          {sidebarSections.map((section) => (
+            <div key={section.label}>
+              <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+                {section.label}
+              </p>
+              <div className="grid gap-0.5">
+                {section.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted",
+                      pathname === item.href && "bg-primary/10 text-primary font-medium"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
       </div>

@@ -1,11 +1,23 @@
 
 "use client";
 
+import dynamic from "next/dynamic";
 import { Menu } from "lucide-react";
 import { UserProfile } from "@/components/auth/user-profile";
-import { AccountSwitcher } from "@/components/dashboard/account-switcher";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { Button } from "@/components/ui/button";
+
+// Dynamic import with ssr: false keeps the server and first-client render structurally
+// identical (both render null). Without this, AccountSwitcher's useIsClient() hook renders
+// a plain <button> on the server but a full <Popover> tree on the client, shifting React's
+// useId() counters and causing hydration mismatches in downstream Radix components.
+const AccountSwitcher = dynamic(
+  () =>
+    import("@/components/dashboard/account-switcher").then(
+      (m) => m.AccountSwitcher
+    ),
+  { ssr: false }
+);
 
 interface DashboardHeaderProps {
   user: {
