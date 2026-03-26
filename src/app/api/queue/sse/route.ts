@@ -1,82 +1,41 @@
-import { headers } from "next/headers";
-import { QueueEvents } from "bullmq";
-import { auth } from "@/lib/auth";
+import { and, eq, gt, inArray } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { posts } from "@/lib/schema";
+import { getTeamContext } from "@/lib/team-context";
 
-// Vercel serverless max — client EventSource auto-reconnects after timeout
-export const maxDuration = 300;
-
-// Create a new connection for events to avoid blocking the shared connection
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  password: process.env.REDIS_PASSWORD,
-};
-// If REDIS_URL is provided, we should parse it, but for simplicity let's assume env vars are set.
-// Or we can reuse the connection options from ioredis if we exported them.
-// Let's rely on REDIS_URL if available.
-
+/**
+ * Polling endpoint — replaces the previous SSE/BullMQ QueueEvents approach.
+ *
+ * SSE on Vercel serverless held a Redis connection open for 300 s (the function
+ * timeout), which caused Upstash connection exhaustion and repeated "Task timed
+ * out" errors in logs.  Polling is simpler and serverless-friendly:
+ *   - No persistent Redis connection
+ *   - No BullMQ dependency at the HTTP layer
+ *   - Client polls every 10 s instead of holding a socket open
+ *
+ * GET /api/queue/sse?since=<ISO timestamp>
+ *
+ * Returns posts that transitioned to "published" or "failed" since `since`.
+ * The `since` param defaults to 2 minutes ago when omitted (first poll safety net).
+ */
 export async function GET(req: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
+  const ctx = await getTeamContext();
+  if (!ctx) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const encoder = new TextEncoder();
-  
-  const queueEvents = new QueueEvents("schedule-queue", {
-    connection: process.env.REDIS_URL ? { url: process.env.REDIS_URL } : connection,
+  const url = new URL(req.url);
+  const sinceParam = url.searchParams.get("since");
+  const since = sinceParam ? new Date(sinceParam) : new Date(Date.now() - 2 * 60 * 1000);
+
+  const changed = await db.query.posts.findMany({
+    where: and(
+      eq(posts.userId, ctx.currentTeamId),
+      inArray(posts.status, ["published", "failed"]),
+      gt(posts.updatedAt, since)
+    ),
+    columns: { id: true, status: true, failReason: true },
   });
 
-  await queueEvents.waitUntilReady();
-
-  const stream = new ReadableStream({
-    start(controller) {
-      const send = (data: any) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-      };
-
-      const onCompleted = ({ jobId }: { jobId: string }) => {
-        send({ type: "completed", jobId });
-      };
-
-      const onFailed = ({ jobId, failedReason }: { jobId: string; failedReason: string }) => {
-        send({ type: "failed", jobId, failedReason });
-      };
-
-      const onActive = ({ jobId }: { jobId: string }) => {
-        send({ type: "active", jobId });
-      };
-
-      const onProgress = ({ jobId, data }: { jobId: string; data: any }) => {
-        send({ type: "progress", jobId, progress: data });
-      };
-
-      queueEvents.on("completed", onCompleted);
-      queueEvents.on("failed", onFailed);
-      queueEvents.on("active", onActive);
-      queueEvents.on("progress", onProgress);
-
-      // Keep alive
-      const interval = setInterval(() => {
-        controller.enqueue(encoder.encode(": keep-alive\n\n"));
-      }, 15000);
-
-      req.signal.addEventListener("abort", () => {
-        clearInterval(interval);
-        queueEvents.off("completed", onCompleted);
-        queueEvents.off("failed", onFailed);
-        queueEvents.off("active", onActive);
-        queueEvents.off("progress", onProgress);
-        queueEvents.close();
-      });
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-    },
-  });
+  return Response.json({ events: changed, serverTime: new Date().toISOString() });
 }
