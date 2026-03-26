@@ -2,6 +2,9 @@ import { headers } from "next/headers";
 import { QueueEvents } from "bullmq";
 import { auth } from "@/lib/auth";
 
+// Vercel serverless max — client EventSource auto-reconnects after timeout
+export const maxDuration = 300;
+
 // Create a new connection for events to avoid blocking the shared connection
 const connection = {
   host: process.env.REDIS_HOST || "localhost",
