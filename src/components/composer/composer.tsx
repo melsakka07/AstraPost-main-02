@@ -928,7 +928,7 @@ export function Composer() {
               content: t.content,
               media: t.media,
             })),
-            scheduledAt: scheduledDate || undefined,
+            scheduledAt: scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
             action,
           }),
         });
@@ -942,7 +942,7 @@ export function Composer() {
               media: t.media,
             })),
             targetAccountIds,
-            scheduledAt: scheduledDate || undefined,
+            scheduledAt: scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
             recurrencePattern: recurrencePattern === "none" ? undefined : recurrencePattern,
             recurrenceEndDate: recurrenceEndDate || undefined,
             action,
