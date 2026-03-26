@@ -15,7 +15,9 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
   const pathname = usePathname();
   const [dismissed, setDismissed] = useState(false);
   const isDashboardRoute = pathname.startsWith("/dashboard");
-  const shouldShowForPlan = plan === "free" && !!trialEndsAt;
+  // Show when there is a trial end date (regardless of current plan).
+  // Active Stripe trials set plan to the subscribed plan, not "free".
+  const shouldShowForPlan = !!trialEndsAt;
   const bannerKey = useMemo(() => {
     if (!trialEndsAt) return null;
     return `trial-banner-dismissed:${trialEndsAt.toISOString().slice(0, 10)}`;
@@ -38,6 +40,9 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
   const daysLeft = Math.max(0, daysLeftRaw);
   const isExpired = daysLeftRaw < 0;
   const isUrgent = daysLeft <= 3;
+
+  // Hide when trial expired and user is on a paid plan (they converted).
+  if (isExpired && plan !== "free") return null;
 
   const dismiss = () => {
     if (!bannerKey) return;

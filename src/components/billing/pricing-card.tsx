@@ -12,6 +12,10 @@ export interface PricingPlan {
   actionLabel: string;
   popular?: boolean;
   priceId: string; // The ID used for checkout (e.g. "pro_monthly")
+  /** Per-month equivalent shown on annual plans, e.g. "~$24/mo" */
+  perMonthEquivalent?: string;
+  /** Savings percentage vs monthly billing, e.g. 17 */
+  savingsPercent?: number;
 }
 
 interface PricingCardProps {
@@ -51,6 +55,16 @@ export function PricingCard({ plan, currentPlan, isLoading, onSelect, isAnnual }
           <span className="text-3xl font-bold">{plan.price}</span>
           <span className="text-muted-foreground">/{plan.interval}</span>
         </div>
+        {plan.perMonthEquivalent && (
+          <div className="flex items-center gap-1.5 text-sm">
+            <span className="text-muted-foreground">{plan.perMonthEquivalent}</span>
+            {plan.savingsPercent && (
+              <span className="font-medium text-green-600 dark:text-green-400">
+                Save {plan.savingsPercent}%
+              </span>
+            )}
+          </div>
+        )}
         <div className="space-y-2 text-sm">
           {plan.features.map((feature) => (
             <div key={feature} className="flex items-center gap-2">

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { CreditCard, Twitter, Users, Settings as SettingsIcon } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
+import { BillingStatus } from "@/components/settings/billing-status";
+import { BillingSuccessPoller } from "@/components/settings/billing-success-poller";
 import { ConnectedInstagramAccounts } from "@/components/settings/connected-instagram-accounts";
 import { ConnectedLinkedInAccounts } from "@/components/settings/connected-linkedin-accounts";
 import { ConnectedXAccounts } from "@/components/settings/connected-x-accounts";
@@ -85,6 +87,7 @@ export default async function SettingsPage({
 
         {/* Subscription Section */}
         <div id="subscription" className="scroll-mt-24 space-y-6">
+          {billingState === "success" && <BillingSuccessPoller initialPlan={currentPlan} />}
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -94,12 +97,10 @@ export default async function SettingsPage({
               <CardDescription>Your current plan and billing details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {billingNotice && (
+              {billingNotice && billingState !== "success" && (
                 <div
                   className={
-                    billingNotice.tone === "success"
-                      ? "rounded-md border border-success/40 bg-success/10 px-4 py-3 text-sm text-success"
-                      : billingNotice.tone === "warning"
+                    billingNotice.tone === "warning"
                       ? "rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning"
                       : "rounded-md border border-border bg-muted/60 px-4 py-3 text-sm text-foreground"
                   }
@@ -130,6 +131,8 @@ export default async function SettingsPage({
                   )}
                 </div>
               </div>
+              {/* Live subscription lifecycle details (trial countdown, next billing, etc.) */}
+              <BillingStatus />
               <div className="text-xs text-muted-foreground px-2">
                 {hasStripeCustomerId
                   ? "Use the billing portal to update payment methods, invoices, or cancellation settings."

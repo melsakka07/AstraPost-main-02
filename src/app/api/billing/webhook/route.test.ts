@@ -29,6 +29,7 @@ const {
   mockDbUpdateFn,
   mockDbInsertValuesFn,
   mockDbUpdateSetFn,
+  mockDbTransactionFn,
 } = vi.hoisted(() => {
   const mockConstructEvent = vi.fn();
   const mockStripeSubscriptionsRetrieve = vi.fn();
@@ -47,6 +48,15 @@ const {
   const mockDbInsertFn = vi.fn(() => ({ values: mockDbInsertValuesFn }));
   const mockDbUpdateFn = vi.fn(() => ({ set: mockDbUpdateSetFn }));
 
+  // transaction(callback) — executes the callback immediately with a fake tx
+  // that exposes the same insert/update mocks, simulating a real DB transaction.
+  const mockDbTransactionFn = vi.fn(async (callback: (tx: unknown) => Promise<void>) => {
+    await callback({
+      insert: mockDbInsertFn,
+      update: mockDbUpdateFn,
+    });
+  });
+
   return {
     mockConstructEvent,
     mockStripeSubscriptionsRetrieve,
@@ -57,6 +67,7 @@ const {
     mockDbUpdateFn,
     mockDbInsertValuesFn,
     mockDbUpdateSetFn,
+    mockDbTransactionFn,
   };
 });
 
@@ -68,15 +79,17 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
-vi.mock("stripe", () => {
-  // `new Stripe(...)` requires a constructor function — arrow functions cannot be
-  // used with `new`. We use a regular function and return the mock instance from it.
+// Mock @/lib/stripe directly (singleton evaluated at module init — env vars set
+// in beforeEach are too late for the real module).  Use a getter so that the
+// test cases that delete STRIPE_SECRET_KEY still receive null from the mock.
+vi.mock("@/lib/stripe", () => {
+  const mockInstance = {
+    webhooks: { constructEvent: mockConstructEvent },
+    subscriptions: { retrieve: mockStripeSubscriptionsRetrieve },
+  };
   return {
-    default: function StripeConstructorMock() {
-      return {
-        webhooks: { constructEvent: mockConstructEvent },
-        subscriptions: { retrieve: mockStripeSubscriptionsRetrieve },
-      };
+    get stripe() {
+      return process.env.STRIPE_SECRET_KEY ? mockInstance : null;
     },
   };
 });
@@ -90,6 +103,7 @@ vi.mock("@/lib/db", () => ({
     },
     insert: mockDbInsertFn,
     update: mockDbUpdateFn,
+    transaction: mockDbTransactionFn,
   },
 }));
 
@@ -155,6 +169,9 @@ describe("POST /api/billing/webhook", () => {
     mockDbInsertValuesFn.mockImplementation(() => ({
       onConflictDoUpdate: vi.fn().mockResolvedValue(undefined),
     }));
+    mockDbTransactionFn.mockImplementation(async (callback: (tx: unknown) => Promise<void>) => {
+      await callback({ insert: mockDbInsertFn, update: mockDbUpdateFn });
+    });
 
     // Stripe env vars
     process.env.STRIPE_SECRET_KEY = "sk_test_key";
@@ -295,6 +312,7 @@ describe("POST /api/billing/webhook", () => {
       userId: "user-1",
       plan: "pro_monthly", // old plan — different from incoming "pro_annual"
       stripeSubscriptionId: "sub_test",
+      cancelAtPeriodEnd: false,
     });
 
     const res = await POST(makeRequest());
@@ -320,6 +338,7 @@ describe("POST /api/billing/webhook", () => {
       userId: "user-1",
       plan: "pro_monthly", // same plan — no change expected
       stripeSubscriptionId: "sub_test",
+      cancelAtPeriodEnd: false,
     });
 
     const res = await POST(makeRequest());

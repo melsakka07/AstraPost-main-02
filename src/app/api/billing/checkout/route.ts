@@ -1,96 +1,107 @@
 import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
-import Stripe from "stripe";
+import { count, eq } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { planToPrice, VALID_CHECKOUT_PLANS } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
-import { user } from "@/lib/schema";
+import { subscriptions, user } from "@/lib/schema";
+import { stripe } from "@/lib/stripe";
 
 const checkoutSchema = z.object({
-  plan: z.enum(["pro_monthly", "pro_annual", "agency_monthly", "agency_annual"]),
+  plan: z.enum(VALID_CHECKOUT_PLANS),
 });
 
 export async function POST(req: Request) {
-  try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return ApiError.unauthorized();
 
-    const json = await req.json();
-    const result = checkoutSchema.safeParse(json);
+  if (!stripe) {
+    return ApiError.serviceUnavailable("Billing service is not configured.");
+  }
 
-    if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
-    }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appUrl) {
+    return ApiError.serviceUnavailable("App URL is not configured.");
+  }
 
-    const { plan } = result.data;
+  const json = await req.json();
+  const result = checkoutSchema.safeParse(json);
+  if (!result.success) {
+    return ApiError.badRequest(result.error.issues);
+  }
 
-    const dbUser = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      columns: { stripeCustomerId: true, plan: true },
+  const { plan } = result.data;
+
+  const priceId = planToPrice(plan);
+  if (!priceId) {
+    return ApiError.serviceUnavailable(
+      `Price ID for plan "${plan}" is not configured. Contact support.`
+    );
+  }
+
+  // Load the user record to check for existing subscription / customer
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { stripeCustomerId: true, plan: true, trialEndsAt: true },
+  });
+
+  // Block re-subscription via checkout if already on a paid plan with active billing
+  if (dbUser?.stripeCustomerId && dbUser.plan && dbUser.plan !== "free") {
+    return ApiError.conflict(
+      "An active subscription already exists. Use the billing portal to change your plan."
+    );
+  }
+
+  // ── Customer lookup / create ────────────────────────────────────────────────
+  // Reuse the existing Stripe customer so payment history is preserved.
+  let stripeCustomerId = dbUser?.stripeCustomerId ?? null;
+
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email: session.user.email,
+      name: session.user.name ?? undefined,
+      metadata: { userId: session.user.id },
     });
+    stripeCustomerId = customer.id;
 
-    if (dbUser?.stripeCustomerId && dbUser.plan && dbUser.plan !== "free") {
-      return new Response(
-        JSON.stringify({
-          error: "Subscription already exists. Use billing portal to manage your plan.",
-          code: "existing_subscription",
-        }),
-        { status: 409 }
-      );
-    }
+    // Persist the new customer ID immediately so retries reuse it.
+    await db
+      .update(user)
+      .set({ stripeCustomerId })
+      .where(eq(user.id, session.user.id));
+  }
 
-    if (!process.env.STRIPE_SECRET_KEY) {
-       console.error("Stripe Secret Key missing");
-       return new Response(JSON.stringify({ error: "Billing service unavailable" }), { status: 503 });
-    }
+  // ── Trial eligibility ───────────────────────────────────────────────────────
+  // Only offer the Stripe-level 14-day trial on the user's first ever
+  // subscription. If they have any prior subscription record they've already
+  // used their trial.
+  const [subCountRow] = await db
+    .select({ value: count() })
+    .from(subscriptions)
+    .where(eq(subscriptions.userId, session.user.id));
+  const hasHadSubscription = (subCountRow?.value ?? 0) > 0;
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) {
-      return new Response(
-        JSON.stringify({ error: "Billing return URL is not configured", code: "billing_return_url_missing" }),
-        { status: 503 }
-      );
-    }
+  const trialDays = hasHadSubscription ? undefined : 14;
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-    // Map plan to price ID
-    const priceIds: Record<string, string | undefined> = {
-        pro_monthly: process.env.STRIPE_PRICE_ID_MONTHLY || "price_pro_monthly_mock",
-        pro_annual: process.env.STRIPE_PRICE_ID_ANNUAL || "price_pro_annual_mock",
-        agency_monthly: process.env.STRIPE_PRICE_ID_AGENCY_MONTHLY || "price_agency_monthly_mock",
-        agency_annual: process.env.STRIPE_PRICE_ID_AGENCY_ANNUAL || "price_agency_annual_mock",
-    };
-
-    const priceId = priceIds[plan];
-
-    if (!priceId) {
-        return new Response(JSON.stringify({ error: "Price not configured for this plan" }), { status: 400 });
-    }
-
+  // ── Create Checkout Session ─────────────────────────────────────────────────
+  try {
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer_email: session.user.email,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        userId: session.user.id,
-        plan,
-      },
+      customer: stripeCustomerId,
+      line_items: [{ price: priceId, quantity: 1 }],
+      ...(trialDays !== undefined
+        ? { subscription_data: { trial_period_days: trialDays } }
+        : {}),
+      allow_promotion_codes: true,
+      metadata: { userId: session.user.id, plan },
       success_url: `${appUrl}/dashboard/settings?billing=success`,
-      cancel_url: `${appUrl}/dashboard/settings?billing=cancelled`,
+      cancel_url: `${appUrl}/pricing?billing=cancelled`,
     });
 
     return Response.json({ url: checkoutSession.url });
-
   } catch (error) {
-    console.error("Checkout Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to create checkout session" }), { status: 500 });
+    console.error("[billing] checkout session creation failed", error);
+    return ApiError.internal("Failed to create checkout session.");
   }
 }

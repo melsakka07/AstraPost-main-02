@@ -1,13 +1,11 @@
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
-import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { processedWebhookEvents, subscriptions, user } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
-
-// Module-level singleton — avoids recreating on every webhook call
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+import { stripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 
 type PlanValue = "free" | "pro_monthly" | "pro_annual" | "agency";
 type SubscriptionStatusValue = "active" | "past_due" | "cancelled" | "trialing";
@@ -114,7 +112,7 @@ async function runSideEffect(task: () => Promise<void>, name: string) {
   }
 }
 
-async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const stripeSubscriptionId = toId(session.subscription);
   const userId = session.metadata?.userId;
   const stripeCustomerId = toId(session.customer);
@@ -130,7 +128,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
   // Retrieve the subscription to get period info and the actual price ID.
   // We expand line_items on the checkout session separately because the subscription
   // items endpoint is the most reliable way to get the purchased price.
-  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const subscription = await stripe!.subscriptions.retrieve(stripeSubscriptionId);
   const period = getSubscriptionPeriod(subscription as unknown as Stripe.Subscription);
   const firstItem = subscription.items.data[0];
   const purchasedPriceId = firstItem?.price?.id;
@@ -160,26 +158,18 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
 
   const subStatus = toSubscriptionStatus(subscription.status);
 
-  await db.update(user).set({
-    plan,
-    stripeCustomerId,
-    planExpiresAt: null,
-  }).where(eq(user.id, userId));
+  // Multi-table write — must be atomic.
+  await db.transaction(async (tx) => {
+    await tx.update(user).set({
+      plan,
+      stripeCustomerId,
+      planExpiresAt: null,
+    }).where(eq(user.id, userId));
 
-  await db.insert(subscriptions).values({
-    id: crypto.randomUUID(),
-    userId,
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: firstItem?.price?.id || "",
-    plan,
-    status: subStatus,
-    currentPeriodStart: period.currentPeriodStart,
-    currentPeriodEnd: period.currentPeriodEnd,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
-    cancelledAt: unixToDate(subscription.canceled_at),
-  }).onConflictDoUpdate({
-    target: subscriptions.stripeSubscriptionId,
-    set: {
+    await tx.insert(subscriptions).values({
+      id: crypto.randomUUID(),
+      userId,
+      stripeSubscriptionId: subscription.id,
       stripePriceId: firstItem?.price?.id || "",
       plan,
       status: subStatus,
@@ -187,7 +177,18 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
       currentPeriodEnd: period.currentPeriodEnd,
       cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
       cancelledAt: unixToDate(subscription.canceled_at),
-    },
+    }).onConflictDoUpdate({
+      target: subscriptions.stripeSubscriptionId,
+      set: {
+        stripePriceId: firstItem?.price?.id || "",
+        plan,
+        status: subStatus,
+        currentPeriodStart: period.currentPeriodStart,
+        currentPeriodEnd: period.currentPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+        cancelledAt: unixToDate(subscription.canceled_at),
+      },
+    });
   });
 
   await runSideEffect(
@@ -224,8 +225,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     });
   }
 
-  // Fetch existing record BEFORE the update to capture the previous plan for change detection.
+  // Fetch existing record BEFORE the update to detect state changes (plan, cancelAtPeriodEnd).
   const existingRecord = await getSubscriptionRecord(subscription.id);
+  const newCancelAtPeriodEnd = subscription.cancel_at_period_end ?? false;
 
   await db
     .update(subscriptions)
@@ -233,59 +235,207 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       status: toSubscriptionStatus(subscription.status),
       currentPeriodStart: period.currentPeriodStart,
       currentPeriodEnd: period.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+      cancelAtPeriodEnd: newCancelAtPeriodEnd,
       cancelledAt: unixToDate(subscription.canceled_at),
       ...(newPlan && newPriceId ? { plan: newPlan, stripePriceId: newPriceId } : {}),
     })
     .where(eq(subscriptions.stripeSubscriptionId, subscription.id));
 
-  // Sync user.plan only when the plan actually changed — avoids spurious user table writes.
-  if (!newPlan || !existingRecord || existingRecord.plan === newPlan) return;
+  if (!existingRecord) return;
 
-  await db
-    .update(user)
-    .set({ plan: newPlan, planExpiresAt: null })
-    .where(eq(user.id, existingRecord.userId));
+  // ── 3.1 Trial expiration — incomplete_expired → downgrade to free ─────────
+  // Stripe sends this status when a subscription expires before the first
+  // payment (e.g. trial ended with no payment method added). There is no
+  // invoice.payment_failed in this path so we must handle it here.
+  if (subscription.status === "incomplete_expired") {
+    await db
+      .update(user)
+      .set({ plan: "free", planExpiresAt: null })
+      .where(eq(user.id, existingRecord.userId));
 
-  console.warn("webhook_subscription_plan_synced", {
-    userId: existingRecord.userId,
-    oldPlan: existingRecord.plan,
-    newPlan,
-    stripeSubscriptionId: subscription.id,
+    console.warn("webhook_subscription_incomplete_expired_downgrade", {
+      userId: existingRecord.userId,
+      stripeSubscriptionId: subscription.id,
+    });
+
+    const expiredUser = await db.query.user.findFirst({
+      where: eq(user.id, existingRecord.userId),
+      columns: { email: true, name: true },
+    });
+
+    await runSideEffect(
+      () =>
+        notifyBillingEvent({
+          userId: existingRecord.userId,
+          type: "billing_trial_expired",
+          title: "Trial expired",
+          message:
+            "Your trial ended without a payment method on file. Your account has been moved to the Free plan.",
+          metadata: { stripeSubscriptionId: subscription.id },
+        }),
+      "billing_trial_expired"
+    );
+
+    if (expiredUser?.email) {
+      await runSideEffect(
+        () =>
+          sendBillingEmail({
+            to: expiredUser.email,
+            subject: "Your AstraPost trial has expired",
+            text: `Hi ${expiredUser.name || "there"},\n\nYour free trial has ended without a payment method on file. Your account has been moved to the Free plan.\n\nYou can upgrade anytime from your account settings to regain access to all features.\n\nThank you,\nThe AstraPost Team`,
+            metadata: {
+              event: "incomplete_expired",
+              userId: existingRecord.userId,
+              stripeSubscriptionId: subscription.id,
+            },
+          }),
+        "email_trial_expired"
+      );
+    }
+
+    return;
+  }
+
+  // ── 3.2 Plan upgrades / downgrades — sync user.plan ──────────────────────
+  // Only update when the plan actually changed — avoids spurious user table writes.
+  if (newPlan && existingRecord.plan !== newPlan) {
+    await db
+      .update(user)
+      .set({ plan: newPlan, planExpiresAt: null })
+      .where(eq(user.id, existingRecord.userId));
+
+    console.warn("webhook_subscription_plan_synced", {
+      userId: existingRecord.userId,
+      oldPlan: existingRecord.plan,
+      newPlan,
+      stripeSubscriptionId: subscription.id,
+    });
+
+    const planLabel = newPlan.replace(/_/g, " ");
+    await runSideEffect(
+      () =>
+        notifyBillingEvent({
+          userId: existingRecord.userId,
+          type: "billing_plan_changed",
+          title: "Plan updated",
+          message: `Your subscription has been updated to the ${planLabel} plan.`,
+          metadata: {
+            oldPlan: existingRecord.plan,
+            newPlan,
+            stripeSubscriptionId: subscription.id,
+          },
+        }),
+      "billing_plan_changed"
+    );
+  }
+
+  // ── 3.3 Cancellation / 3.5 Reactivation notifications ────────────────────
+  const cancelFlippedToTrue = !existingRecord.cancelAtPeriodEnd && newCancelAtPeriodEnd;
+  const cancelFlippedToFalse = existingRecord.cancelAtPeriodEnd && !newCancelAtPeriodEnd;
+
+  if (!cancelFlippedToTrue && !cancelFlippedToFalse) return;
+
+  const lifecycleUser = await db.query.user.findFirst({
+    where: eq(user.id, existingRecord.userId),
+    columns: { email: true, name: true },
   });
 
-  const planLabel = newPlan.replace(/_/g, " ");
-  await runSideEffect(
-    () =>
-      notifyBillingEvent({
-        userId: existingRecord.userId,
-        type: "billing_plan_changed",
-        title: "Plan updated",
-        message: `Your subscription has been updated to the ${planLabel} plan.`,
-        metadata: {
-          oldPlan: existingRecord.plan,
-          newPlan,
-          stripeSubscriptionId: subscription.id,
-        },
-      }),
-    "billing_plan_changed"
-  );
+  const periodEndDate = period.currentPeriodEnd
+    ? period.currentPeriodEnd.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "the end of your billing period";
+
+  if (cancelFlippedToTrue) {
+    // 3.3 — Cancellation scheduled at period end
+    await runSideEffect(
+      () =>
+        notifyBillingEvent({
+          userId: existingRecord.userId,
+          type: "billing_cancel_scheduled",
+          title: "Subscription cancellation scheduled",
+          message: `Your subscription will be cancelled on ${periodEndDate}. You'll keep full access until then.`,
+          metadata: {
+            stripeSubscriptionId: subscription.id,
+            periodEnd: period.currentPeriodEnd?.toISOString() ?? null,
+          },
+        }),
+      "billing_cancel_scheduled"
+    );
+
+    if (lifecycleUser?.email) {
+      await runSideEffect(
+        () =>
+          sendBillingEmail({
+            to: lifecycleUser.email,
+            subject: "Your AstraPost subscription cancellation is scheduled",
+            text: `Hi ${lifecycleUser.name || "there"},\n\nYour AstraPost subscription has been scheduled for cancellation on ${periodEndDate}.\n\nYou'll continue to have full access to all features until that date. After that, your account will be moved to the Free plan.\n\nIf you change your mind, you can reactivate at any time from your account settings before the cancellation date.\n\nThank you for being an AstraPost customer.`,
+            metadata: {
+              event: "cancel_scheduled",
+              userId: existingRecord.userId,
+              stripeSubscriptionId: subscription.id,
+            },
+          }),
+        "email_cancel_scheduled"
+      );
+    }
+  }
+
+  if (cancelFlippedToFalse) {
+    // 3.5 — Subscription reactivated (cancel reversed before period end)
+    await runSideEffect(
+      () =>
+        notifyBillingEvent({
+          userId: existingRecord.userId,
+          type: "billing_reactivated",
+          title: "Subscription reactivated",
+          message: "Your subscription has been reactivated and will continue on its normal billing schedule.",
+          metadata: { stripeSubscriptionId: subscription.id },
+        }),
+      "billing_reactivated"
+    );
+
+    if (lifecycleUser?.email) {
+      await runSideEffect(
+        () =>
+          sendBillingEmail({
+            to: lifecycleUser.email,
+            subject: "Your AstraPost subscription has been reactivated",
+            text: `Hi ${lifecycleUser.name || "there"},\n\nGreat news — your AstraPost subscription has been reactivated and will continue on its normal billing schedule.\n\nThank you for staying with AstraPost!`,
+            metadata: {
+              event: "reactivated",
+              userId: existingRecord.userId,
+              stripeSubscriptionId: subscription.id,
+            },
+          }),
+        "email_reactivated"
+      );
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  await db.update(subscriptions).set({
-    status: "cancelled",
-    cancelAtPeriodEnd: true,
-    cancelledAt: unixToDate(subscription.canceled_at) || new Date(),
-  }).where(eq(subscriptions.stripeSubscriptionId, subscription.id));
-
+  // Fetch the record BEFORE the transaction so we have the userId for the
+  // user-table update and side-effect calls. The subscription row is written
+  // atomically with the user downgrade below.
   const subRecord = await getSubscriptionRecord(subscription.id);
   if (!subRecord) return;
 
-  await db.update(user).set({
-    plan: "free",
-    planExpiresAt: null,
-  }).where(eq(user.id, subRecord.userId));
+  // Multi-table write — must be atomic.
+  await db.transaction(async (tx) => {
+    await tx.update(subscriptions).set({
+      status: "cancelled",
+      cancelAtPeriodEnd: true,
+      cancelledAt: unixToDate(subscription.canceled_at) || new Date(),
+    }).where(eq(subscriptions.stripeSubscriptionId, subscription.id));
+
+    await tx.update(user).set({
+      plan: "free",
+      planExpiresAt: null,
+    }).where(eq(user.id, subRecord.userId));
+  });
 
   await runSideEffect(
     () =>
@@ -294,12 +444,32 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
         type: "billing_subscription_cancelled",
         title: "Subscription canceled",
         message: "Your subscription has been canceled and your plan is now Free.",
-        metadata: {
-          stripeSubscriptionId: subscription.id,
-        },
+        metadata: { stripeSubscriptionId: subscription.id },
       }),
     "billing_subscription_cancelled"
   );
+
+  // Send cancellation email
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, subRecord.userId),
+    columns: { email: true, name: true },
+  });
+  if (dbUser?.email) {
+    await runSideEffect(
+      () =>
+        sendBillingEmail({
+          to: dbUser.email,
+          subject: "Your AstraPost subscription has been cancelled",
+          text: `Hi ${dbUser.name || "there"},\n\nYour AstraPost subscription has been cancelled and your account has been moved to the Free plan.\n\nYou can resubscribe at any time from your account settings.\n\nThank you for being an AstraPost customer.`,
+          metadata: {
+            event: "customer.subscription.deleted",
+            userId: subRecord.userId,
+            stripeSubscriptionId: subscription.id,
+          },
+        }),
+      "email_subscription_cancelled"
+    );
+  }
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
@@ -311,13 +481,16 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   const graceUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  await db.update(subscriptions).set({
-    status: "past_due",
-  }).where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+  // Multi-table write — must be atomic.
+  await db.transaction(async (tx) => {
+    await tx.update(subscriptions).set({
+      status: "past_due",
+    }).where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
 
-  await db.update(user).set({
-    planExpiresAt: graceUntil,
-  }).where(eq(user.id, subRecord.userId));
+    await tx.update(user).set({
+      planExpiresAt: graceUntil,
+    }).where(eq(user.id, subRecord.userId));
+  });
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
@@ -485,8 +658,8 @@ export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get("Stripe-Signature") as string;
 
-  if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error("Stripe config missing");
+  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error("[billing] Stripe config missing — webhook disabled");
     return new Response("Config Error", { status: 500 });
   }
 
@@ -518,7 +691,7 @@ export async function POST(req: Request) {
   try {
     switch (event.type) {
       case "checkout.session.completed":
-        await handleCheckoutCompleted(stripe, event.data.object as Stripe.Checkout.Session);
+        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
         break;
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);

@@ -45,4 +45,8 @@ export const ApiError = {
   /** 500 — unexpected server failure. */
   internal: (message = "Internal server error") =>
     Response.json({ error: message }, { status: 500 }),
+
+  /** 503 — service temporarily unavailable (e.g. billing not configured). */
+  serviceUnavailable: (message = "Service temporarily unavailable") =>
+    Response.json({ error: message }, { status: 503 }),
 } as const;

@@ -60,6 +60,8 @@ const ANNUAL_PLANS: PricingPlan[] = [
     actionLabel: "Upgrade to Pro Annual",
     priceId: "pro_annual",
     popular: true,
+    perMonthEquivalent: "~$24/mo",
+    savingsPercent: 17,
   },
   {
     name: "Agency",
@@ -70,6 +72,8 @@ const ANNUAL_PLANS: PricingPlan[] = [
     actionLabel: "Upgrade to Agency Annual",
     priceId: "agency_annual",
     popular: false,
+    perMonthEquivalent: "~$83/mo",
+    savingsPercent: 17,
   },
 ];
 

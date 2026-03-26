@@ -131,6 +131,18 @@ export function checkEnv(): void {
     warnings.push("RESEND_API_KEY is not set. Emails will be logged to console only.");
   }
 
+  // Stripe billing — warn loudly if any key is missing
+  const stripeMissing: string[] = [];
+  if (!process.env.STRIPE_SECRET_KEY) stripeMissing.push("STRIPE_SECRET_KEY");
+  if (!process.env.STRIPE_WEBHOOK_SECRET) stripeMissing.push("STRIPE_WEBHOOK_SECRET");
+  if (!process.env.STRIPE_PRICE_ID_MONTHLY) stripeMissing.push("STRIPE_PRICE_ID_MONTHLY");
+  if (!process.env.STRIPE_PRICE_ID_ANNUAL) stripeMissing.push("STRIPE_PRICE_ID_ANNUAL");
+  if (!process.env.STRIPE_PRICE_ID_AGENCY_MONTHLY) stripeMissing.push("STRIPE_PRICE_ID_AGENCY_MONTHLY");
+  if (!process.env.STRIPE_PRICE_ID_AGENCY_ANNUAL) stripeMissing.push("STRIPE_PRICE_ID_AGENCY_ANNUAL");
+  if (stripeMissing.length > 0) {
+    warnings.push(`Stripe billing is partially unconfigured. Missing: ${stripeMissing.join(", ")}. Checkout and webhooks will not work.`);
+  }
+
   // Log warnings in development
   if (process.env.NODE_ENV === "development" && warnings.length > 0) {
     console.warn("\n⚠️  Environment warnings:");
