@@ -189,9 +189,39 @@ export function OnboardingWizard() {
     return d.toISOString();
   };
 
+  // Mark onboarding complete as soon as step 4 is reached so feature card
+  // links work without needing to click "Go to Dashboard" first.
+  useEffect(() => {
+    if (currentStep === 4) {
+      fetch("/api/user/onboarding-complete", { method: "POST" }).catch(
+        console.error
+      );
+    }
+  }, [currentStep]);
+
   const handleSkipSchedule = async () => {
     // O5 — skip step 3, stay as draft, go to step 4
     setCurrentStep(4);
+  };
+
+  const handleSendNow = async () => {
+    setLoading(true);
+    try {
+      if (createdPostId) {
+        const res = await fetch(`/api/posts/${createdPostId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "publish_now" }),
+        });
+        if (!res.ok) throw new Error("Failed to publish");
+        toast.success("Post queued for immediate publishing!");
+      }
+      setCurrentStep(4);
+    } catch {
+      toast.error("Failed to send post");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNext = async () => {
@@ -250,7 +280,6 @@ export function OnboardingWizard() {
         }
         setCurrentStep(4);
       } else if (currentStep === 4) {
-        await fetch("/api/user/onboarding-complete", { method: "POST" });
         window.location.href = "/dashboard";
       }
     } catch (error) {
@@ -435,6 +464,24 @@ export function OnboardingWizard() {
               <p className="text-sm font-medium">
                 When should this go out?
               </p>
+
+              {/* Send Now option */}
+              <button
+                type="button"
+                onClick={handleSendNow}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 transition-colors p-4 text-sm font-medium text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Rocket className="h-4 w-4" />
+                Send Now
+              </button>
+
+              <div className="relative flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex-1 border-t" />
+                <span>or schedule for later</span>
+                <div className="flex-1 border-t" />
+              </div>
+
               {/* O1 — DatePicker + time Select */}
               <div className="space-y-2 text-left">
                 <label className="text-xs text-muted-foreground">Date</label>
