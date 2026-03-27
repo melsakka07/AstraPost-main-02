@@ -155,6 +155,13 @@ export function Composer() {
   const [aiCount, setAiCount] = useState([3]);
   const [aiLanguage, setAiLanguage] = useState("ar");
   const [aiRewriteText, setAiRewriteText] = useState("");
+
+  // Sync AI language with user's preferred language once session loads
+  useEffect(() => {
+    if (session?.user && "language" in session.user) {
+      setAiLanguage((session.user as any).language || "ar");
+    }
+  }, [session?.user]);
   const [aiAddNumbering, setAiAddNumbering] = useState(true);
   const [aiTranslateTarget, setAiTranslateTarget] = useState<string>("en");
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);

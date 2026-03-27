@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useSession } from "@/lib/auth-client";
 import type { Tweet } from "@/lib/services/tweet-importer";
 import { ManualEditor } from "./manual-editor";
 
@@ -50,6 +51,7 @@ export function AdaptationPanel({
   threadContext = [],
   onSendToComposer,
 }: AdaptationPanelProps) {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
   const [aiAction, setAiAction] = useState("rephrase");
   const [aiTone, setAiTone] = useState("professional");
@@ -58,6 +60,13 @@ export function AdaptationPanel({
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync AI language with user's preferred language once session loads
+  useEffect(() => {
+    if (session?.user && "language" in session.user) {
+      setAiLanguage((session.user as any).language || "ar");
+    }
+  }, [session?.user]);
 
   // Reset generated content when source tweet changes
   useEffect(() => {

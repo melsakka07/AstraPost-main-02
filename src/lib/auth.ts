@@ -25,6 +25,11 @@ export const auth = betterAuth({
         required: false,
         defaultValue: "free",
       },
+      language: {
+        type: "string",
+        required: false,
+        defaultValue: "ar",
+      },
     },
   },
   databaseHooks: {

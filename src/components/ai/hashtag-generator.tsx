@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Hash, Loader2, Copy, Check, PenSquare, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useSession } from "@/lib/auth-client";
 import { sendToComposer } from "@/lib/composer-bridge";
 import { LANGUAGES } from "@/lib/constants";
 
@@ -33,6 +34,7 @@ interface HashtagResult {
 }
 
 export function HashtagGenerator() {
+  const { data: session } = useSession();
   const { openWithContext } = useUpgradeModal();
   const [content, setContent] = useState("");
   const [language, setLanguage] = useState("ar");
@@ -40,6 +42,13 @@ export function HashtagGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [allCopied, setAllCopied] = useState(false);
+
+  // Sync AI language with user's preferred language once session loads
+  useEffect(() => {
+    if (session?.user && "language" in session.user) {
+      setLanguage((session.user as any).language || "ar");
+    }
+  }, [session?.user]);
 
   const handleGenerate = async () => {
     if (!content.trim()) {

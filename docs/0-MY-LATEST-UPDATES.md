@@ -1,5 +1,21 @@
 # Latest Updates
 
+## 2026-03-28: Bug Fix — AI Features Respecting User Language Preference
+
+**Files changed:**
+- `src/lib/auth.ts`
+- `src/components/composer/composer.tsx`
+- `src/components/inspiration/adaptation-panel.tsx`
+- `src/components/ai/hashtag-generator.tsx`
+- `src/app/dashboard/affiliate/page.tsx`
+
+**What changed:**
+- Exposed the `language` field in `better-auth` configuration (`src/lib/auth.ts`) so it is included in the `session.user` object returned by `useSession()`.
+- Updated the Composer, Inspiration Adaptation Panel, Hashtag Generator, and Affiliate Generator to dynamically sync their default `language` state with the user's preferred language (`session.user.language`).
+- Previously, these AI features hardcoded their initial state to Arabic (`"ar"`). Now, if a user selects English during onboarding, clicking the "Inspiration" button or generating AI content will correctly default to English.
+
+---
+
 ## 2026-03-28: Bug Fix — Hydration Mismatch Error (#418)
 
 **Files changed:**
