@@ -1,5 +1,22 @@
 # Latest Updates
 
+## 2026-03-28: Bug Fix — Hydration Mismatch Error (#418)
+
+**Files changed:**
+- `src/components/ui/trial-banner.tsx`
+- `src/components/auth/user-profile.tsx`
+- `src/components/dashboard/dashboard-header.tsx`
+- `src/components/site-header.tsx`
+
+**What changed:**
+- **Trial Banner:** Fixed a hydration mismatch caused by calculating `new Date()` directly in the render function. Used the `isMounted` pattern with `useEffect` to ensure the dynamic days-remaining text only renders on the client.
+- **User Profile:** Updated the `<UserProfile />` component to accept an optional `user` prop. Instead of relying on the client-side `useSession` hook (which causes a flash of `<div>Loading...</div>` and subsequent hydration issues), the user object is now passed down from `DashboardHeader` and `SiteHeader` where it is already available from the server session.
+- Added a fallback default prop `= {}` to `UserProfile` to prevent runtime crashes when the component is rendered without props in other files.
+
+**Impact:** Resolves the "Minified React error #418" seen in production console logs and eliminates layout shifts related to auth loading states.
+
+---
+
 ## 2026-03-27: Onboarding — Timezone & Language Preferences (Step 1)
 
 **Files changed:**

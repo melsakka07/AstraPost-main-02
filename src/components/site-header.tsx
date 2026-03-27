@@ -45,7 +45,7 @@ export async function SiteHeader() {
               <Button variant="ghost" asChild>
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
-              <UserProfile />
+              <UserProfile user={session.user} />
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-2">

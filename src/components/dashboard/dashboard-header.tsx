@@ -58,7 +58,7 @@ export function DashboardHeader({ user, currentTeamId, memberships }: DashboardH
       <div className="flex flex-1 items-center justify-end gap-x-3 lg:gap-x-6">
         <NotificationBell />
         <div className="hidden h-6 w-px bg-border lg:block" aria-hidden="true" />
-        <UserProfile />
+        <UserProfile user={user} />
       </div>
     </header>
   );

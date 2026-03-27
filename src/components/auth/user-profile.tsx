@@ -13,17 +13,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSession, signOut } from "@/lib/auth-client";
 
-export function UserProfile() {
+interface UserProfileProps {
+  user?: {
+    name: string;
+    email?: string | null | undefined;
+    image?: string | null | undefined;
+  } | null;
+}
+
+export function UserProfile({ user: initialUser }: UserProfileProps = {}) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
-  if (isPending) {
-    return <div>Loading...</div>;
+  const user = initialUser || session?.user;
+
+  if (isPending && !user) {
+    return <Skeleton className="h-8 w-8 rounded-full" />;
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="flex items-center gap-2">
         <Link href="/login">
@@ -49,14 +60,14 @@ export function UserProfile() {
       <DropdownMenuTrigger asChild>
         <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
           <AvatarImage
-            src={session.user?.image || ""}
-            alt={session.user?.name || "User"}
+            src={user.image || ""}
+            alt={user.name || "User"}
             referrerPolicy="no-referrer"
           />
           <AvatarFallback>
             {(
-              session.user?.name?.[0] ||
-              session.user?.email?.[0] ||
+              user.name?.[0] ||
+              user.email?.[0] ||
               "U"
             ).toUpperCase()}
           </AvatarFallback>
@@ -66,10 +77,10 @@ export function UserProfile() {
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
-              {session.user?.name}
+              {user.name}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {session.user?.email}
+              {user.email}
             </p>
           </div>
         </DropdownMenuLabel>

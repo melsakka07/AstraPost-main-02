@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
@@ -14,6 +14,13 @@ interface TrialBannerProps {
 export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
   const pathname = usePathname();
   const [dismissed, setDismissed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+  }, []);
+
   const isDashboardRoute = pathname.startsWith("/dashboard");
   // Show when there is a trial end date (regardless of current plan).
   // Active Stripe trials set plan to the subscribed plan, not "free".
@@ -31,6 +38,8 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
     () => (bannerKey ? sessionStorage.getItem(bannerKey) === "1" : false),
     () => false,
   );
+
+  if (!isMounted) return null;
 
   if (!isDashboardRoute || !shouldShowForPlan || !trialEndsAt) return null;
   if (dismissed || dismissedByStorage) return null;
