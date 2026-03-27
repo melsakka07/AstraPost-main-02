@@ -669,6 +669,10 @@ export function Composer() {
         if (!res.ok) {
           if (res.status === 402) {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+          } else if (res.status === 429) {
+            const body = await res.json().catch(() => ({})) as { retryAfter?: number };
+            const wait = body.retryAfter ? ` Try again in ${body.retryAfter}s.` : "";
+            toast.error(`Rate limit reached.${wait}`);
           }
           throw new Error("Generation failed");
         }

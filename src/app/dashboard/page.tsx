@@ -241,7 +241,7 @@ export default async function DashboardPage() {
                           ? "..."
                           : ""}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 text-xs text-muted-foreground" suppressHydrationWarning>
                         {post.scheduledAt
                           ? new Date(post.scheduledAt).toLocaleString()
                           : "No date"}
