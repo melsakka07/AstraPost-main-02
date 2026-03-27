@@ -1,5 +1,25 @@
 # Latest Updates
 
+## 2026-03-27: Production Deployment Documentation (updated)
+
+Updated `docs/technical/production-deployment.md` with confirmed live service instances and Railway variable status:
+- Neon instance: `ep-square-truth-an6kpx3y-pooler` · `us-east-1`
+- Upstash Redis instance: `amazing-bee-85245` · `us-east-1` (TLS `rediss://`)
+- Railway variables table updated to show confirmed ✅ / not-needed status
+- Noted `NEXT_PUBLIC_APP_URL` is not needed by the worker (build-time browser var)
+- Flagged `NEXT_PUBLIC_APP_UR` typo (missing `L`) — must be fixed or removed in Railway
+
+Originally created `docs/technical/production-deployment.md` — comprehensive guide covering:
+- **Architecture**: Vercel (Next.js) + Railway (BullMQ worker) split
+- **Environment variables**: Full table for all required/optional vars across Vercel and Railway, including correct scopes and where to get each value
+- **Neon database**: Setup via Vercel Marketplace, migration strategy (`build:ci` on Vercel, manual `db:migrate` for production), pgvector setup, and branching for staging
+- **Worker configuration**: `railway.json` explained, Railway env vars, what each queue does, health monitoring log keys, and graceful shutdown behavior
+- **Vercel Blob**: Setup and storage abstraction usage
+- **Post-deploy checklist**: Steps to verify a fresh production deployment end-to-end
+- **Token rotation**: Key rotation procedure for X OAuth tokens
+
+---
+
 ## 2026-03-26: Admin Dashboard — All 4 Phases Complete
 
 Full admin dashboard implemented. See `docs/features/admin-dashboard-progress.md` for the complete changelog.
