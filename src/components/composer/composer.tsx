@@ -672,8 +672,54 @@ export function Composer() {
           }
           throw new Error("Generation failed");
         }
-        const data = await res.json();
-        let newTweets: TweetDraft[] = data.tweets.map((content: string) => ({
+        if (!res.body) throw new Error("No response body");
+
+        // Read SSE stream — the endpoint returns text/event-stream, not JSON
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = "";
+        let streamDone = false;
+        const collectedTweets: string[] = [];
+
+        while (!streamDone) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          sseBuffer += decoder.decode(value, { stream: true });
+          const lines = sseBuffer.split("\n");
+          sseBuffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data: ")) continue;
+            const jsonStr = trimmed.slice(6);
+            if (!jsonStr) continue;
+
+            try {
+              const event = JSON.parse(jsonStr) as {
+                done?: boolean;
+                error?: string;
+                index?: number;
+                tweet?: string;
+              };
+              if (event.error) {
+                toast.error("Generation failed. Please try again.");
+                streamDone = true;
+                break;
+              }
+              if (event.done) { streamDone = true; break; }
+              if (typeof event.tweet === "string" && event.tweet.length > 0) {
+                collectedTweets.push(event.tweet);
+              }
+            } catch {
+              // partial line — skip
+            }
+          }
+        }
+
+        if (collectedTweets.length === 0) throw new Error("No tweets generated");
+
+        let newTweets: TweetDraft[] = collectedTweets.map((content) => ({
           id: Math.random().toString(36).substr(2, 9),
           content,
           media: [],

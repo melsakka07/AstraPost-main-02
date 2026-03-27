@@ -7,6 +7,8 @@ import {
   BarChart3,
   Calendar,
   CheckCircle2,
+  Globe,
+  Languages,
   Lightbulb,
   ListOrdered,
   Loader2,
@@ -37,29 +39,36 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { signIn } from "@/lib/auth-client";
+import { LANGUAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const steps = [
   {
     id: 1,
+    title: "Preferences",
+    icon: Globe,
+    description: "Set your language and time zone.",
+  },
+  {
+    id: 2,
     title: "Connect X",
     icon: Twitter,
     description: "Connect your X (Twitter) account to get started.",
   },
   {
-    id: 2,
+    id: 3,
     title: "Compose",
     icon: PenTool,
     description: "Write your first tweet or thread.",
   },
   {
-    id: 3,
+    id: 4,
     title: "Schedule",
     icon: Calendar,
     description: "Pick a time to publish.",
   },
   {
-    id: 4,
+    id: 5,
     title: "Explore AI",
     icon: Rocket,
     description: "Discover AI-powered features.",
@@ -137,6 +146,75 @@ const FEATURE_CARDS = [
   },
 ];
 
+const TIMEZONE_GROUPS = [
+  {
+    label: "Middle East & North Africa",
+    zones: [
+      { value: "Asia/Riyadh",      label: "Saudi Arabia — Riyadh (GMT+3)" },
+      { value: "Asia/Dubai",       label: "UAE — Dubai (GMT+4)" },
+      { value: "Asia/Qatar",       label: "Qatar — Doha (GMT+3)" },
+      { value: "Asia/Kuwait",      label: "Kuwait (GMT+3)" },
+      { value: "Asia/Bahrain",     label: "Bahrain (GMT+3)" },
+      { value: "Asia/Muscat",      label: "Oman — Muscat (GMT+4)" },
+      { value: "Africa/Cairo",     label: "Egypt — Cairo (GMT+2/3)" },
+      { value: "Asia/Baghdad",     label: "Iraq — Baghdad (GMT+3)" },
+      { value: "Asia/Beirut",      label: "Lebanon — Beirut (GMT+2/3)" },
+      { value: "Asia/Amman",       label: "Jordan — Amman (GMT+2/3)" },
+      { value: "Asia/Jerusalem",   label: "Palestine/Israel (GMT+2/3)" },
+      { value: "Africa/Casablanca",label: "Morocco — Casablanca (GMT+1)" },
+      { value: "Africa/Algiers",   label: "Algeria (GMT+1)" },
+      { value: "Africa/Tunis",     label: "Tunisia (GMT+1)" },
+      { value: "Africa/Tripoli",   label: "Libya (GMT+2)" },
+      { value: "Asia/Aden",        label: "Yemen — Aden (GMT+3)" },
+    ],
+  },
+  {
+    label: "Europe",
+    zones: [
+      { value: "Europe/London",   label: "UK — London (GMT/BST)" },
+      { value: "Europe/Paris",    label: "France — Paris (GMT+1/2)" },
+      { value: "Europe/Berlin",   label: "Germany — Berlin (GMT+1/2)" },
+      { value: "Europe/Rome",     label: "Italy — Rome (GMT+1/2)" },
+      { value: "Europe/Madrid",   label: "Spain — Madrid (GMT+1/2)" },
+      { value: "Europe/Istanbul", label: "Turkey — Istanbul (GMT+3)" },
+      { value: "Europe/Moscow",   label: "Russia — Moscow (GMT+3)" },
+    ],
+  },
+  {
+    label: "Americas",
+    zones: [
+      { value: "America/New_York",    label: "US — New York (EST/EDT)" },
+      { value: "America/Chicago",     label: "US — Chicago (CST/CDT)" },
+      { value: "America/Denver",      label: "US — Denver (MST/MDT)" },
+      { value: "America/Los_Angeles", label: "US — Los Angeles (PST/PDT)" },
+      { value: "America/Toronto",     label: "Canada — Toronto (EST/EDT)" },
+      { value: "America/Vancouver",   label: "Canada — Vancouver (PST/PDT)" },
+      { value: "America/Sao_Paulo",   label: "Brazil — São Paulo (GMT-3)" },
+    ],
+  },
+  {
+    label: "Asia Pacific",
+    zones: [
+      { value: "Asia/Kolkata",    label: "India (IST, GMT+5:30)" },
+      { value: "Asia/Karachi",    label: "Pakistan — Karachi (GMT+5)" },
+      { value: "Asia/Dhaka",      label: "Bangladesh (GMT+6)" },
+      { value: "Asia/Singapore",  label: "Singapore (GMT+8)" },
+      { value: "Asia/Tokyo",      label: "Japan — Tokyo (GMT+9)" },
+      { value: "Asia/Shanghai",   label: "China — Shanghai (GMT+8)" },
+      { value: "Australia/Sydney",label: "Australia — Sydney (AEDT)" },
+    ],
+  },
+  {
+    label: "Africa",
+    zones: [
+      { value: "Africa/Lagos",        label: "Nigeria — Lagos (GMT+1)" },
+      { value: "Africa/Nairobi",      label: "Kenya — Nairobi (GMT+3)" },
+      { value: "Africa/Johannesburg", label: "South Africa (GMT+2)" },
+      { value: "Africa/Accra",        label: "Ghana — Accra (GMT)" },
+    ],
+  },
+];
+
 export function OnboardingWizard() {
   const searchParams = useSearchParams();
 
@@ -144,6 +222,10 @@ export function OnboardingWizard() {
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [checkingAccounts, setCheckingAccounts] = useState(true);
+
+  // Step 1 — Preferences
+  const [prefLanguage, setPrefLanguage] = useState("ar");
+  const [prefTimezone, setPrefTimezone] = useState("Asia/Riyadh");
 
   // Post State
   const [tweetContent, setTweetContent] = useState("");
@@ -158,10 +240,18 @@ export function OnboardingWizard() {
   const isOverHardLimit = tweetWeightedLength > 1000;
 
   useEffect(() => {
+    // Auto-detect browser timezone
+    try {
+      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (detected) setPrefTimezone(detected);
+    } catch {
+      // fall back to default Asia/Riyadh
+    }
+
     const stepParam = searchParams.get("step");
     if (stepParam) {
       const step = parseInt(stepParam);
-      if (step >= 1 && step <= 4) setCurrentStep(step);
+      if (step >= 1 && step <= steps.length) setCurrentStep(step);
     }
     checkAccounts();
   }, [searchParams]);
@@ -189,10 +279,10 @@ export function OnboardingWizard() {
     return d.toISOString();
   };
 
-  // Mark onboarding complete as soon as step 4 is reached so feature card
+  // Mark onboarding complete as soon as step 5 is reached so feature card
   // links work without needing to click "Go to Dashboard" first.
   useEffect(() => {
-    if (currentStep === 4) {
+    if (currentStep === 5) {
       fetch("/api/user/onboarding-complete", { method: "POST" }).catch(
         console.error
       );
@@ -200,8 +290,8 @@ export function OnboardingWizard() {
   }, [currentStep]);
 
   const handleSkipSchedule = async () => {
-    // O5 — skip step 3, stay as draft, go to step 4
-    setCurrentStep(4);
+    // O5 — skip step 4, stay as draft, go to step 5
+    setCurrentStep(5);
   };
 
   const handleSendNow = async () => {
@@ -216,7 +306,7 @@ export function OnboardingWizard() {
         if (!res.ok) throw new Error("Failed to publish");
         toast.success("Post queued for immediate publishing!");
       }
-      setCurrentStep(4);
+      setCurrentStep(5);
     } catch {
       toast.error("Failed to send post");
     } finally {
@@ -228,13 +318,28 @@ export function OnboardingWizard() {
     setLoading(true);
     try {
       if (currentStep === 1) {
-        if (accounts.length === 0) {
-          toast.error("Please connect an X account first");
+        // Step 1 — save language + timezone
+        const res = await fetch("/api/user/preferences", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ timezone: prefTimezone, language: prefLanguage }),
+        });
+        if (!res.ok) {
+          toast.error("Failed to save preferences");
           setLoading(false);
           return;
         }
         setCurrentStep(2);
       } else if (currentStep === 2) {
+        // Step 2 — Connect X
+        if (accounts.length === 0) {
+          toast.error("Please connect an X account first");
+          setLoading(false);
+          return;
+        }
+        setCurrentStep(3);
+      } else if (currentStep === 3) {
+        // Step 3 — Compose
         if (!tweetContent.trim()) {
           toast.error("Please write something");
           setLoading(false);
@@ -261,8 +366,9 @@ export function OnboardingWizard() {
 
         const data = await res.json();
         setCreatedPostId(data.postIds[0]);
-        setCurrentStep(3);
-      } else if (currentStep === 3) {
+        setCurrentStep(4);
+      } else if (currentStep === 4) {
+        // Step 4 — Schedule
         const iso = getScheduledISO();
         if (!iso) {
           toast.error("Please select a date");
@@ -278,8 +384,9 @@ export function OnboardingWizard() {
           });
           if (!res.ok) throw new Error("Failed to schedule");
         }
-        setCurrentStep(4);
-      } else if (currentStep === 4) {
+        setCurrentStep(5);
+      } else if (currentStep === 5) {
+        // Step 5 — Explore AI → go to dashboard
         window.location.href = "/dashboard";
       }
     } catch (error) {
@@ -388,8 +495,62 @@ export function OnboardingWizard() {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 space-y-6">
-          {/* Step 1 — Connect X */}
+          {/* Step 1 — Preferences (language + timezone) */}
           {currentStep === 1 && (
+            <div className="w-full max-w-sm space-y-5">
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Languages className="h-4 w-4 text-primary" />
+                  Preferred Language
+                </label>
+                <Select value={prefLanguage} onValueChange={setPrefLanguage}>
+                  <SelectTrigger className="w-full" aria-label="Select language">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Used for AI-generated content and writing tools.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-primary" />
+                  Time Zone
+                </label>
+                <Select value={prefTimezone} onValueChange={setPrefTimezone}>
+                  <SelectTrigger className="w-full" aria-label="Select timezone">
+                    <SelectValue placeholder="Select timezone" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIMEZONE_GROUPS.map((group) => (
+                      <SelectGroup key={group.label}>
+                        <SelectLabel>{group.label}</SelectLabel>
+                        {group.zones.map((zone) => (
+                          <SelectItem key={zone.value} value={zone.value}>
+                            {zone.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Ensures your scheduled posts go out at the right local time.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2 — Connect X */}
+          {currentStep === 2 && (
             <div className="text-center space-y-6 max-w-sm">
               {accounts.length > 0 ? (
                 <div className="bg-success/10 border border-success/30 text-success p-4 rounded-lg flex flex-col items-center gap-2">
@@ -423,8 +584,8 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 2 — Compose — O2, O3, O6 */}
-          {currentStep === 2 && (
+          {/* Step 3 — Compose — O2, O3, O6 */}
+          {currentStep === 3 && (
             <div className="w-full max-w-md space-y-3">
               <label className="text-sm font-medium">
                 Draft your first tweet
@@ -458,8 +619,8 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 3 — Schedule — O1 */}
-          {currentStep === 3 && (
+          {/* Step 4 — Schedule — O1 */}
+          {currentStep === 4 && (
             <div className="w-full max-w-xs space-y-4 text-center">
               <p className="text-sm font-medium">
                 When should this go out?
@@ -520,8 +681,8 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 4 — Explore AI — O4, O7 */}
-          {currentStep === 4 && (
+          {/* Step 5 — Explore AI — O4, O7 */}
+          {currentStep === 5 && (
             <div className="text-center space-y-6 max-w-lg w-full">
               <div className="bg-primary/5 p-6 rounded-full inline-block mb-2">
                 <Rocket className="w-12 h-12 text-primary" />
@@ -565,8 +726,8 @@ export function OnboardingWizard() {
           </Button>
 
           <div className="flex items-center gap-2">
-            {/* O5 — Skip scheduling on step 3 */}
-            {currentStep === 3 && (
+            {/* O5 — Skip scheduling on step 4 */}
+            {currentStep === 4 && (
               <Button
                 variant="ghost"
                 onClick={handleSkipSchedule}

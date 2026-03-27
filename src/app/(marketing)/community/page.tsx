@@ -3,7 +3,6 @@ import {
   Users,
   MessagesSquare,
   Trophy,
-  ArrowRight,
   HelpCircle,
   ChevronDown,
   Mail,
@@ -112,14 +111,16 @@ export default function CommunityPage() {
               your content, and grow together.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button size="lg" className="group" asChild>
-                <Link href="https://discord.gg/astrapost">
-                  Join Discord
-                  <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
-                </Link>
+              <Button size="lg" disabled>
+                Join Discord
+                <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 h-4">
+                  Coming Soon
+                </Badge>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="https://x.com/astrapost">Follow on X</Link>
+                <Link href="https://x.com/astrapostai" target="_blank" rel="noopener noreferrer">
+                  Follow on X
+                </Link>
               </Button>
             </div>
           </div>
@@ -247,11 +248,11 @@ export default function CommunityPage() {
               your audience today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="group" asChild>
-                <Link href="https://discord.gg/astrapost">
-                  Join Community Now
-                  <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
-                </Link>
+              <Button size="lg" disabled>
+                Join Community Now
+                <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 h-4">
+                  Coming Soon
+                </Badge>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link href="/dashboard">Start Creating</Link>

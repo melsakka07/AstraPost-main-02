@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Book, FileText, Video, MessageSquare, ArrowRight } from "lucide-react";
+import { Book, FileText, Video, MessageSquare, ArrowRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,29 +23,33 @@ export default function ResourcesPage() {
       title: "Knowledge Base",
       description: "Step-by-step guides on how to use AstraPost features.",
       link: "/docs",
-      button: "View Docs"
+      button: "View Docs",
+      comingSoon: false,
     },
     {
       icon: <FileText className="h-6 w-6 text-primary" />,
       title: "API Reference",
       description: "For developers integrating with AstraPost.",
-      link: "/docs/api",
-      button: "Read API Docs"
+      link: null,
+      button: "Read API Docs",
+      comingSoon: true,
     },
     {
       icon: <Video className="h-6 w-6 text-primary" />,
       title: "Video Tutorials",
       description: "Watch our video series on mastering X growth.",
-      link: "#",
-      button: "Watch Now"
+      link: null,
+      button: "Watch Now",
+      comingSoon: true,
     },
     {
       icon: <MessageSquare className="h-6 w-6 text-primary" />,
       title: "Community Forum",
       description: "Connect with other creators and share tips.",
       link: "/community",
-      button: "Join Community"
-    }
+      button: "Join Community",
+      comingSoon: false,
+    },
   ];
 
   return (
@@ -81,12 +85,19 @@ export default function ResourcesPage() {
                 <p className="text-muted-foreground text-sm leading-relaxed">{resource.description}</p>
               </CardContent>
               <CardFooter>
-                <Button variant="outline" className="w-full group" asChild>
-                  <Link href={resource.link}>
-                    {resource.button}
-                    <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
-                  </Link>
-                </Button>
+                {resource.comingSoon ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    <Clock className="mr-2 h-4 w-4" />
+                    Coming Soon
+                  </Button>
+                ) : (
+                  <Button variant="outline" className="w-full group" asChild>
+                    <Link href={resource.link!}>
+                      {resource.button}
+                      <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
+                    </Link>
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           ))}

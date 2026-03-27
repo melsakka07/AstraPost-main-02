@@ -1,5 +1,57 @@
 # Latest Updates
 
+## 2026-03-27: Onboarding — Timezone & Language Preferences (Step 1)
+
+**Files changed:**
+- `src/components/onboarding/onboarding-wizard.tsx` — new step 1, all existing steps shifted +1
+- `src/app/api/user/preferences/route.ts` — new PATCH endpoint (timezone + language only)
+
+**What changed:**
+
+A new **Step 1: Preferences** was added to the onboarding wizard before "Connect X". It lets users set:
+- **Preferred Language** — select from the 10 supported languages (`LANGUAGES` from `constants.ts`); defaults to Arabic (`ar`)
+- **Time Zone** — grouped IANA timezone selector with 40+ zones; auto-detects the browser's timezone via `Intl.DateTimeFormat().resolvedOptions().timeZone` on mount; defaults to `Asia/Riyadh`
+
+The wizard is now **5 steps** (was 4):
+1. **Preferences** ← NEW
+2. Connect X *(was 1)*
+3. Compose *(was 2)*
+4. Schedule *(was 3)*
+5. Explore AI *(was 4)*
+
+**New API endpoint:** `PATCH /api/user/preferences`
+- Accepts `{ timezone: string, language: string }`
+- Validates timezone with `Intl.DateTimeFormat` (same technique as `/api/user/profile`)
+- Saves directly to the `user` table (columns already existed — no migration required)
+- Sets the `locale` cookie so the root layout's `lang`/`dir` attributes update immediately
+
+**No schema migration needed** — `user.timezone` (default `Asia/Riyadh`) and `user.language` (default `ar`) already existed in the DB schema.
+
+---
+
+## 2026-03-27: Bug Fix — AI Thread Writer in Composer (SyntaxError)
+
+**File:** `src/components/composer/composer.tsx`
+
+**Bug:** Clicking "Generate" in the Composer's AI Thread Writer panel threw:
+```
+SyntaxError: Unexpected token 'd', "data: {"in"... is not valid JSON
+```
+
+**Root cause:** The `/api/ai/thread` endpoint returns an SSE stream (`Content-Type: text/event-stream`).
+The Composer's `handleAiRun` was calling `res.json()` on that stream, which tried to parse the raw
+`data: {...}` SSE lines as JSON — causing the parse failure.
+
+**Fix:** Replaced `res.json()` with the same SSE reader loop already used by the AI Writer page
+(`src/app/dashboard/ai/writer/page.tsx`): reads chunks via `res.body.getReader()`, splits on `\n`,
+strips the `data: ` prefix, and parses each JSON event individually. Collected tweets are assembled
+after the stream closes and then handed to the existing overwrite-guard and numbering logic.
+
+**Impact:** AI Thread Writer in the Composer now works correctly. The AI Writer standalone page was
+unaffected (it already used SSE reading).
+
+---
+
 ## 2026-03-27: Production Deployment Documentation (updated)
 
 Updated `docs/technical/production-deployment.md` with confirmed live service instances and Railway variable status:
