@@ -1,5 +1,18 @@
 # Latest Updates
 
+## 2026-03-28: Fixed Queue Dashboard Error (Missing Migration)
+
+**Files changed:**
+- `drizzle/0034_rainy_runaways.sql`
+- `drizzle/meta/_journal.json`
+
+**What changed:**
+- **Generated Database Migration:** The previous update added `paused_needs_reconnect` to the `post_status` enum in `schema.ts`, but a database migration was missing. This caused a Next.js Server Component render error (`invalid input value for enum post_status: "paused_needs_reconnect"`) on the `/dashboard/queue` page in production.
+- Ran `pnpm db:generate` to create the missing migration (`drizzle/0034_rainy_runaways.sql`).
+- Once this change is pushed and deployed, Vercel will automatically run `pnpm db:migrate` during the build process, which will add the missing enum value to the PostgreSQL database and fix the crash.
+
+---
+
 ## 2026-03-28: Unified OAuth Flow & Resilient Background Posting
 
 **Files changed:**
@@ -21,6 +34,31 @@
 - **Global Error State:** Added `<TokenWarningBanner>` to the dashboard layout. If an inactive account is detected, a prominent warning alerts the user to reconnect their account immediately.
 - **Queue UI Updates:** `paused_needs_reconnect` posts now appear under "Failed Posts" with a yellow "Waiting for reconnection" badge.
 - **Onboarding Cleanup:** Removed the now-redundant "Connect X" step from the onboarding wizard, simplifying the process from 5 steps to 4.
+
+---
+Details:
+I have fully implemented the architectural solution (Approach A: Unified Single OAuth Flow) to resolve the X scheduled posts failure issue as per the technical incident report.
+
+Here's a breakdown of the changes made across the stack:
+
+1. Backend Architecture: Unified OAuth Flow
+
+- auth.ts : Configured better-auth to automatically insert or update the xAccounts table on every login using databaseHooks.account.create.after and update.after . Now, a fresh API integration session is created concurrently with the authentication session, guaranteeing the background worker always has valid tokens.
+- schema.ts : Added the paused_needs_reconnect status to the post_status enum.
+2. Background Jobs & Resilience
+
+- x-api.ts : Wrapped the X token refresh procedure ( refreshWithLock ) in a strict database transaction ( db.transaction ). Additionally, added logging for the SHA-256 fingerprint of the new refresh token upon receipt to enhance auditability and safeguard against atomic failure edge cases.
+- processors.ts : Updated the BullMQ scheduleProcessor worker to distinguish API rejections from authorization gaps (400/401 HTTP codes). When a token is genuinely revoked, the system now:
+  1. Marks the account's isActive flag as false .
+  2. Sets the post status to paused_needs_reconnect (instead of immediately failing it).
+  3. Pauses the job using BullMQ's DelayedError , queuing it for a retry (1-hour window) to await user reconnection rather than exhausting retry counters.
+3. Frontend Adjustments
+
+- onboarding-wizard.tsx : Deprecated the redundant "Connect X" manual step from the onboarding wizard, streamlining the experience since the initial login now covers everything.
+- layout.tsx & token-warning-banner.tsx : Added a new global layout banner that checks if an account has isActive === false . If so, it alerts the user with a direct "Reconnect Now" button.
+- connected-x-accounts.tsx : Cleaned up the settings page by hiding the manual disconnect options and focusing on a read-only account health/status check display.
+- queue-content.tsx & page.tsx : Paused posts waiting for reconnection now appear in the queue list sporting a descriptive yellow "Waiting for reconnection" badge instead of a generic red "Failed" marker. Also, the app will inform the user that their paused queue will retry shortly upon successfully reconnecting.
+Quality Control I ran pnpm run lint && pnpm run typecheck , fixed 3 unused imports and a sort-order warning, and verified that 0 errors persist. I also updated 0-MY-LATEST-UPDATES.md with a detailed changelog of these modifications.
 
 ---
 

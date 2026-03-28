@@ -1,0 +1,1 @@
+ALTER TYPE "public"."post_status" ADD VALUE 'paused_needs_reconnect';
