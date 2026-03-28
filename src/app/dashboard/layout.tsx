@@ -7,11 +7,12 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { FailureBanner } from "@/components/dashboard/failure-banner";
 import { OnboardingRedirect } from "@/components/dashboard/onboarding-redirect";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { TokenWarningBanner } from "@/components/dashboard/token-warning-banner";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { TrialBanner } from "@/components/ui/trial-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { user, posts, teamMembers } from "@/lib/schema";
+import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
 import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -64,18 +65,19 @@ export default async function DashboardLayout({
   // If in team context, show failures for team posts.
   const failedPost = await db.query.posts.findFirst({
     where: and(
-        eq(posts.userId, ctx?.currentTeamId || session.user.id), // Actually posts.userId is the AUTHOR. 
-        // We should check xAccountId's owner. 
-        // But for simplicity, let's just check failures where the user has visibility.
-        // If I am owner, I see all failures for my team.
-        // If I am editor, I might see failures for posts I created?
-        // Let's stick to session.user.id for now for failures, or update to use team context if we want to show team failures.
-        // For now, let's keep it simple: Show failures for posts created by ME.
         eq(posts.userId, session.user.id),
         eq(posts.status, "failed"),
         gte(posts.updatedAt, oneDayAgo)
     ),
     columns: { id: true }
+  });
+
+  const inactiveAccount = await db.query.xAccounts.findFirst({
+    where: and(
+      eq(xAccounts.userId, session.user.id),
+      eq(xAccounts.isActive, false)
+    ),
+    columns: { xUsername: true }
   });
 
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
@@ -110,6 +112,7 @@ export default async function DashboardLayout({
           memberships={formattedMemberships}
         />
         <AnnouncementBanner />
+        {inactiveAccount && <TokenWarningBanner username={inactiveAccount.xUsername} />}
         <FailureBanner hasFailures={!!failedPost} />
         <TrialBanner
           trialEndsAt={dbUser?.trialEndsAt ?? null}

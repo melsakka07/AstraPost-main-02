@@ -1,6 +1,6 @@
 import { readFile } from "fs/promises";
 import path from "path";
-import { Job } from "bullmq";
+import { Job, DelayedError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { type InferSelectModel, eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -84,7 +84,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         },
       });
 
-    if (post.status !== "scheduled") {
+    if (post.status !== "scheduled" && post.status !== "paused_needs_reconnect") {
       logger.info("schedule_job_skipped", {
         queue: job.queueName,
         jobId: job.id,
@@ -93,6 +93,24 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         status: post.status,
       });
       return;
+    }
+
+    if (post.status === "paused_needs_reconnect") {
+      if (!post.xAccount?.isActive) {
+        logger.info("schedule_job_still_needs_reconnect", {
+          queue: job.queueName,
+          jobId: job.id,
+          postId,
+        });
+        if (job.token) {
+          // Delay by another hour to wait for reconnect
+          await job.moveToDelayed(Date.now() + 60 * 60 * 1000, job.token);
+          throw new DelayedError();
+        }
+        return;
+      }
+      // User has reconnected, change status back to scheduled visually or just proceed
+      await db.update(posts).set({ status: "scheduled" }).where(eq(posts.id, postId));
     }
 
     const isDryRun = process.env.TWITTER_DRY_RUN === "1";
@@ -328,12 +346,36 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
 
   } catch (error) {
     const code = (error as any)?.code;
+    const isAuthError =
+      (error instanceof Error && error.message.includes("X Session expired")) ||
+      code === 401 ||
+      code === 400;
+
     const userHint =
-      code === 401
+      isAuthError
         ? "X authorization expired. Please reconnect your X account."
         : code === 403
           ? "X authorization forbidden. Ensure your app has write access and reconnect your X account to grant tweet.write."
           : null;
+
+    if (isAuthError && post?.xAccountId) {
+      logger.warn("schedule_job_paused_needs_reconnect", {
+        queue: job.queueName,
+        jobId: job.id,
+        postId,
+        xAccountId: post.xAccountId,
+      });
+
+      await db.update(xAccounts).set({ isActive: false }).where(eq(xAccounts.id, post.xAccountId));
+      await db.update(posts).set({ status: "paused_needs_reconnect" }).where(eq(posts.id, postId));
+
+      if (job.token) {
+        // Delay for 72 hours
+        await job.moveToDelayed(Date.now() + 72 * 60 * 60 * 1000, job.token);
+        throw new DelayedError();
+      }
+      return;
+    }
 
     const attempts = job.opts?.attempts;
     const attemptsMade = job.attemptsMade;

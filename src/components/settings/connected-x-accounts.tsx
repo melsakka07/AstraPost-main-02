@@ -5,17 +5,6 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { Activity, AlertTriangle, CheckCircle2, Twitter, XCircle } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
@@ -74,7 +63,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
   const shouldSync = params.get("sync") === "1";
   const [accounts, setAccounts] = useState<XAccountItem[]>(initialAccounts);
   const [busy, setBusy] = useState(false);
-  const [disconnecting, setDisconnecting] = useState<string | null>(null);
   // S3 — per-account health status
   const [healthStatus, setHealthStatus] = useState<Record<string, HealthStatus>>({});
   const [checking, setChecking] = useState<string | null>(null);
@@ -111,7 +99,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
       const listRes = await fetch("/api/x/accounts", { method: "GET" });
       const data = await listRes.json();
       setAccounts(data.accounts || []);
-      toast.success("Accounts synced");
+      toast.success("Accounts synced. Paused posts have been automatically re-queued and will publish shortly.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Sync failed");
     } finally {
@@ -123,26 +111,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
     if (!shouldSync) return;
     syncNow();
   }, [shouldSync, syncNow]);
-
-  // S2 — disconnect handler
-  const handleDisconnect = async (accountId: string, username: string) => {
-    setDisconnecting(accountId);
-    try {
-      const res = await fetch(`/api/x/accounts/${accountId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to disconnect account");
-      setAccounts((prev) => prev.filter((a) => a.id !== accountId));
-      setHealthStatus((prev) => {
-        const next = { ...prev };
-        delete next[accountId];
-        return next;
-      });
-      toast.success(`@${username} disconnected`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Disconnect failed");
-    } finally {
-      setDisconnecting(null);
-    }
-  };
 
   // S3 — per-account health check
   const handleHealthCheck = async (accountId: string) => {
@@ -217,7 +185,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                       type="button"
                       variant={a.isDefault ? "default" : "outline"}
                       size="sm"
-                      disabled={busy || !!disconnecting}
+                      disabled={busy}
                       onClick={async () => {
                         setBusy(true);
                         try {
@@ -257,7 +225,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                       type="button"
                       variant="ghost"
                       size="sm"
-                      disabled={isChecking || busy || !!disconnecting}
+                      disabled={isChecking || busy}
                       className="text-muted-foreground hover:text-foreground"
                       aria-label={`Test connection for @${a.xUsername}`}
                       onClick={() => handleHealthCheck(a.id)}
@@ -266,40 +234,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                         className={`h-4 w-4 ${isChecking ? "animate-pulse text-primary" : ""}`}
                       />
                     </Button>
-
-                    {/* S2 — Disconnect with confirmation */}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={busy || disconnecting === a.id}
-                          className="text-muted-foreground hover:text-destructive"
-                          aria-label={`Disconnect @${a.xUsername}`}
-                        >
-                          {disconnecting === a.id ? "Removing…" : "Disconnect"}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Disconnect @{a.xUsername}?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will remove the account from AstraPost. Any scheduled posts
-                            using this account will fail. You can reconnect at any time.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => handleDisconnect(a.id, a.xUsername)}
-                          >
-                            Disconnect
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                 </div>
 
@@ -357,13 +291,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
           onClick={syncNow}
         >
           {busy ? "Syncing..." : "Sync accounts"}
-        </Button>
-        <Button
-          className="flex-1"
-          variant="outline"
-          onClick={handleReconnect}
-        >
-          Connect Another
         </Button>
       </div>
     </div>

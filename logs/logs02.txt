@@ -1,0 +1,47 @@
+2026-03-27T22:33:24.880815020Z [inf]  
+2026-03-27T22:33:24.880821900Z [inf]  > astropost@0.1.0 worker /app
+2026-03-27T22:33:24.880840621Z [inf]  > node --require dotenv/config --import tsx scripts/worker.ts
+2026-03-27T22:33:24.880847669Z [inf]  
+2026-03-27T22:33:24.881908192Z [inf]  Starting Container
+2026-03-27T22:33:26.046474320Z [inf]  worker_started
+2026-03-27T22:33:26.046479857Z [inf]  
+2026-03-27T22:33:26.046484961Z [inf]  ✅ [Worker] Started successfully (PID: 15).
+2026-03-27T22:33:26.046489280Z [inf]  ⏳ Waiting for jobs in 'schedule-queue' and 'analytics-queue'...
+2026-03-27T22:33:26.046494561Z [inf]  Press Ctrl+C to exit.
+2026-03-27T22:33:26.046498684Z [inf]  
+2026-03-28T00:00:06.926481317Z [inf]  analytics_job_started
+2026-03-28T00:00:06.926488429Z [inf]  x_token_refresh_start
+2026-03-28T00:00:06.926494699Z [wrn]  x_token_refresh_failed
+2026-03-28T00:00:06.926501325Z [err]  job_failed
+2026-03-28T06:00:05.567825405Z [inf]  analytics_job_started
+2026-03-28T06:00:05.567832104Z [inf]  x_token_refresh_start
+2026-03-28T06:00:05.567838813Z [wrn]  x_token_refresh_failed
+2026-03-28T06:00:05.567846204Z [err]  job_failed
+2026-03-28T09:00:45.209605679Z [err]  schedule_job_failed
+2026-03-28T09:00:45.209616679Z [err]  job_failed
+2026-03-28T09:00:45.209667823Z [inf]  schedule_job_started
+2026-03-28T09:00:45.209675856Z [err]  x_tweet_post_failed
+2026-03-28T09:01:25.186537017Z [inf]  schedule_job_started
+2026-03-28T09:01:25.769286996Z [err]  schedule_job_failed
+2026-03-28T09:01:25.769362294Z [err]  x_tweet_post_failed
+2026-03-28T09:01:26.225212277Z [err]  job_failed
+2026-03-28T09:01:46.219643799Z [inf]  schedule_job_started
+2026-03-28T09:01:46.219648459Z [err]  x_tweet_post_failed
+2026-03-28T09:01:46.219653011Z [err]  schedule_job_failed
+2026-03-28T09:01:46.219657478Z [err]  job_failed
+2026-03-28T09:02:26.270970184Z [inf]  schedule_job_started
+2026-03-28T09:02:26.911021898Z [err]  x_tweet_post_failed
+2026-03-28T09:02:26.911029895Z [err]  schedule_job_failed
+2026-03-28T09:02:27.362962192Z [err]  job_failed
+2026-03-28T09:03:47.867518167Z [inf]  schedule_job_started
+2026-03-28T09:03:47.867530163Z [err]  x_tweet_post_failed
+2026-03-28T09:03:47.867537190Z [err]  schedule_job_failed
+2026-03-28T09:03:47.867543341Z [err]  job_failed
+2026-03-28T09:04:27.952869825Z [inf]  schedule_job_started
+2026-03-28T09:04:28.111104692Z [err]  x_tweet_post_failed
+2026-03-28T09:04:28.111111492Z [err]  schedule_job_failed
+2026-03-28T09:04:28.583250697Z [err]  job_failed
+2026-03-28T09:05:28.925259204Z [inf]  schedule_job_started
+2026-03-28T09:05:28.925264809Z [err]  x_tweet_post_failed
+2026-03-28T09:05:28.925270652Z [err]  schedule_job_failed
+2026-03-28T09:05:28.925275922Z [err]  job_failed

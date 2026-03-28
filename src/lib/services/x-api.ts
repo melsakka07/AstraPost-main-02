@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { and, eq } from "drizzle-orm";
 import { TwitterApi } from "twitter-api-v2";
 import { db } from "@/lib/db";
@@ -166,22 +167,30 @@ export class XApiService {
 
       const { accessToken, refreshToken, expiresIn } =
         await twitterClient.refreshOAuth2Token(refreshTokenValue);
+      
+      if (refreshToken) {
+        const fingerprint = crypto.createHash("sha256").update(refreshToken).digest("hex");
+        logger.info("x_refresh_token_received", { xAccountId: account.id, fingerprint });
+      }
+
       // expiresIn is optional in the twitter-api-v2 types; fall back to 2 h
       // so tokenExpiresAt is never null/NaN after a successful refresh (which
       // would cause every subsequent job to try to refresh again, burning the
       // single-use refresh token and causing a 400 on the second attempt).
       const newExpiresAt = new Date(Date.now() + (expiresIn ?? 7200) * 1000);
 
-      await db
-        .update(xAccounts)
-        .set({
-          accessToken: encryptToken(accessToken),
-          refreshTokenEnc: refreshToken
-            ? encryptToken(refreshToken)
-            : account.refreshTokenEnc,
-          tokenExpiresAt: newExpiresAt,
-        })
-        .where(eq(xAccounts.id, account.id));
+      await db.transaction(async (tx) => {
+        await tx
+          .update(xAccounts)
+          .set({
+            accessToken: encryptToken(accessToken),
+            refreshTokenEnc: refreshToken
+              ? encryptToken(refreshToken)
+              : account.refreshTokenEnc,
+            tokenExpiresAt: newExpiresAt,
+          })
+          .where(eq(xAccounts.id, account.id));
+      });
 
       logger.info("x_token_refresh_success", { xAccountId: account.id, userId });
       return new XApiService(accessToken);

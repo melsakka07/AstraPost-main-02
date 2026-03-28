@@ -5,7 +5,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import { db } from "./db"
 import { generateReferralCode } from "./referral/utils";
 import { user as userTable } from "./schema"
-import { encryptToken, isEncryptedToken } from "./security/token-encryption";
+import { decryptToken, encryptToken, isEncryptedToken } from "./security/token-encryption";
 import { sendResetPasswordEmail, sendVerificationEmail } from "./services/email"
 
 
@@ -51,10 +51,6 @@ export const auth = betterAuth({
       },
     },
     account: {
-      // Encrypt OAuth tokens before BetterAuth persists them to the database.
-      // This ensures `account.accessToken` and `account.refreshToken` are never
-      // stored in plaintext. The `isEncryptedToken()` guard is idempotent —
-      // already-encrypted values are not double-encrypted.
       create: {
         before: async (data) => {
           return {
@@ -71,6 +67,51 @@ export const auth = betterAuth({
             },
           };
         },
+        after: async (account) => {
+          if (account.providerId === "twitter" && account.accessToken) {
+            try {
+              const rawToken = isEncryptedToken(account.accessToken) 
+                ? decryptToken(account.accessToken) 
+                : account.accessToken;
+                
+              // Fetch user profile from X to populate xAccounts
+              const { XApiService } = await import("./services/x-api");
+              const svc = new XApiService(rawToken);
+              const me = await svc.getUser();
+              const profile = {
+                username: (me as any)?.data?.username,
+                name: (me as any)?.data?.name,
+                profile_image_url: (me as any)?.data?.profile_image_url,
+              };
+
+              const { xAccounts } = await import("./schema");
+              
+              await db.insert(xAccounts).values({
+                id: crypto.randomUUID(),
+                userId: account.userId,
+                xUserId: account.accountId,
+                xUsername: profile.username || "twitter_user",
+                xDisplayName: profile.name || "Twitter User",
+                xAvatarUrl: profile.profile_image_url || null,
+                accessToken: account.accessToken,
+                refreshTokenEnc: account.refreshToken || null,
+                tokenExpiresAt: account.accessTokenExpiresAt || null,
+                isActive: true,
+              }).onConflictDoUpdate({
+                target: xAccounts.xUserId,
+                set: {
+                  accessToken: account.accessToken,
+                  refreshTokenEnc: account.refreshToken || null,
+                  tokenExpiresAt: account.accessTokenExpiresAt || null,
+                  isActive: true,
+                  updatedAt: new Date(),
+                }
+              });
+            } catch (error) {
+              console.error("Failed to sync xAccount on create", error);
+            }
+          }
+        }
       },
       update: {
         before: async (data) => {
@@ -86,6 +127,23 @@ export const auth = betterAuth({
             },
           };
         },
+        after: async (account) => {
+          if (account.providerId === "twitter" && account.accessToken) {
+            try {
+              const { xAccounts } = await import("./schema");
+              // Update tokens and reactivate if it was previously marked inactive
+              await db.update(xAccounts).set({
+                accessToken: account.accessToken,
+                refreshTokenEnc: account.refreshToken || null,
+                tokenExpiresAt: account.accessTokenExpiresAt || null,
+                isActive: true,
+                updatedAt: new Date(),
+              }).where(eq(xAccounts.xUserId, account.accountId));
+            } catch (error) {
+              console.error("Failed to sync xAccount on update", error);
+            }
+          }
+        }
       },
     },
   },

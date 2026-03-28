@@ -14,7 +14,6 @@ import {
   Loader2,
   PenTool,
   Rocket,
-  Twitter,
 } from "lucide-react";
 import { toast } from "sonner";
 import twitter from "twitter-text";
@@ -38,7 +37,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { signIn } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -51,24 +49,18 @@ const steps = [
   },
   {
     id: 2,
-    title: "Connect X",
-    icon: Twitter,
-    description: "Connect your X (Twitter) account to get started.",
-  },
-  {
-    id: 3,
     title: "Compose",
     icon: PenTool,
     description: "Write your first tweet or thread.",
   },
   {
-    id: 4,
+    id: 3,
     title: "Schedule",
     icon: Calendar,
     description: "Pick a time to publish.",
   },
   {
-    id: 5,
+    id: 4,
     title: "Explore AI",
     icon: Rocket,
     description: "Discover AI-powered features.",
@@ -220,8 +212,6 @@ export function OnboardingWizard() {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [checkingAccounts, setCheckingAccounts] = useState(true);
 
   // Step 1 — Preferences
   const [prefLanguage, setPrefLanguage] = useState("ar");
@@ -253,22 +243,7 @@ export function OnboardingWizard() {
       const step = parseInt(stepParam);
       if (step >= 1 && step <= steps.length) setCurrentStep(step);
     }
-    checkAccounts();
   }, [searchParams]);
-
-  const checkAccounts = async () => {
-    try {
-      const res = await fetch("/api/x/accounts");
-      if (res.ok) {
-        const data = await res.json();
-        setAccounts(data.accounts || []);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setCheckingAccounts(false);
-    }
-  };
 
   /** Combine date + time into an ISO string */
   const getScheduledISO = (): string | null => {
@@ -290,8 +265,8 @@ export function OnboardingWizard() {
   }, [currentStep]);
 
   const handleSkipSchedule = async () => {
-    // O5 — skip step 4, stay as draft, go to step 5
-    setCurrentStep(5);
+    // O5 — skip step 3, stay as draft, go to step 4
+    setCurrentStep(4);
   };
 
   const handleSendNow = async () => {
@@ -306,7 +281,7 @@ export function OnboardingWizard() {
         if (!res.ok) throw new Error("Failed to publish");
         toast.success("Post queued for immediate publishing!");
       }
-      setCurrentStep(5);
+      setCurrentStep(4);
     } catch {
       toast.error("Failed to send post");
     } finally {
@@ -331,15 +306,7 @@ export function OnboardingWizard() {
         }
         setCurrentStep(2);
       } else if (currentStep === 2) {
-        // Step 2 — Connect X
-        if (accounts.length === 0) {
-          toast.error("Please connect an X account first");
-          setLoading(false);
-          return;
-        }
-        setCurrentStep(3);
-      } else if (currentStep === 3) {
-        // Step 3 — Compose
+        // Step 2 — Compose
         if (!tweetContent.trim()) {
           toast.error("Please write something");
           setLoading(false);
@@ -366,9 +333,9 @@ export function OnboardingWizard() {
 
         const data = await res.json();
         setCreatedPostId(data.postIds[0]);
-        setCurrentStep(4);
-      } else if (currentStep === 4) {
-        // Step 4 — Schedule
+        setCurrentStep(3);
+      } else if (currentStep === 3) {
+        // Step 3 — Schedule
         const iso = getScheduledISO();
         if (!iso) {
           toast.error("Please select a date");
@@ -384,9 +351,9 @@ export function OnboardingWizard() {
           });
           if (!res.ok) throw new Error("Failed to schedule");
         }
-        setCurrentStep(5);
-      } else if (currentStep === 5) {
-        // Step 5 — Explore AI → go to dashboard
+        setCurrentStep(4);
+      } else if (currentStep === 4) {
+        // Step 4 — Explore AI → go to dashboard
         window.location.href = "/dashboard";
       }
     } catch (error) {
@@ -396,32 +363,6 @@ export function OnboardingWizard() {
       setLoading(false);
     }
   };
-
-  const handleConnectX = async () => {
-    setLoading(true);
-    try {
-      await signIn.social({
-        provider: "twitter",
-        callbackURL: "/dashboard/onboarding?step=2",
-      });
-    } catch {
-      toast.error("Failed to connect X account");
-      setLoading(false);
-    }
-  };
-
-  if (checkingAccounts) {
-    return (
-      <div
-        role="status"
-        aria-label="Loading onboarding"
-        className="flex justify-center py-20"
-      >
-        <Loader2 className="h-8 w-8 animate-spin" aria-hidden="true" />
-        <span className="sr-only">Loading...</span>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-3xl mx-auto py-6 md:py-12 px-4">
@@ -549,43 +490,8 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 2 — Connect X */}
+          {/* Step 2 — Compose — O2, O3, O6 */}
           {currentStep === 2 && (
-            <div className="text-center space-y-6 max-w-sm">
-              {accounts.length > 0 ? (
-                <div className="bg-success/10 border border-success/30 text-success p-4 rounded-lg flex flex-col items-center gap-2">
-                  <CheckCircle2 className="h-8 w-8" />
-                  <div className="font-semibold">
-                    Connected as @{accounts[0].xUsername}
-                  </div>
-                  <p className="text-sm">You are ready to proceed!</p>
-                </div>
-              ) : (
-                <>
-                  <p className="text-muted-foreground">
-                    Connect your X account to enable scheduling and analytics.
-                    We need &apos;write&apos; permissions to post for you.
-                  </p>
-                  <Button
-                    onClick={handleConnectX}
-                    size="lg"
-                    disabled={loading}
-                    className="bg-black hover:bg-black/90 text-white w-full min-h-[44px]"
-                  >
-                    {loading ? (
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    ) : (
-                      <Twitter className="mr-2 h-5 w-5 fill-white" />
-                    )}
-                    {loading ? "Connecting..." : "Connect X Account"}
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Step 3 — Compose — O2, O3, O6 */}
-          {currentStep === 3 && (
             <div className="w-full max-w-md space-y-3">
               <label className="text-sm font-medium">
                 Draft your first tweet
@@ -619,8 +525,8 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 4 — Schedule — O1 */}
-          {currentStep === 4 && (
+          {/* Step 3 — Schedule — O1 */}
+          {currentStep === 3 && (
             <div className="w-full max-w-xs space-y-4 text-center">
               <p className="text-sm font-medium">
                 When should this go out?
@@ -681,8 +587,8 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 5 — Explore AI — O4, O7 */}
-          {currentStep === 5 && (
+          {/* Step 4 — Explore AI — O4, O7 */}
+          {currentStep === 4 && (
             <div className="text-center space-y-6 max-w-lg w-full">
               <div className="bg-primary/5 p-6 rounded-full inline-block mb-2">
                 <Rocket className="w-12 h-12 text-primary" />
@@ -726,8 +632,8 @@ export function OnboardingWizard() {
           </Button>
 
           <div className="flex items-center gap-2">
-            {/* O5 — Skip scheduling on step 4 */}
-            {currentStep === 4 && (
+            {/* O5 — Skip scheduling on step 3 */}
+            {currentStep === 3 && (
               <Button
                 variant="ghost"
                 onClick={handleSkipSchedule}

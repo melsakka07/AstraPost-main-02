@@ -366,15 +366,16 @@ export function QueueContent({
       ) : (
         <div className="space-y-4">
           {failedPosts.map((post: any, index: number) => {
+            const isPaused = post.status === "paused_needs_reconnect";
             const tip = getFailureTip(post.failReason);
             return (
-              <Card key={post.id}>
+              <Card key={post.id} className={isPaused ? "border-warning/30 bg-warning/5" : ""}>
                 <CardContent
                   className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}
                 >
-                  <div className="flex flex-row items-center gap-3 rounded-lg bg-muted/50 p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px]">
-                    <AlertTriangle className="h-5 w-5 shrink-0 text-destructive sm:h-6 sm:w-6 sm:mb-2" />
-                    <div className="text-xs text-muted-foreground">Failed</div>
+                  <div className={`flex flex-row items-center gap-3 rounded-lg p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px] ${isPaused ? "bg-warning/10" : "bg-muted/50"}`}>
+                    <AlertTriangle className={`h-5 w-5 shrink-0 sm:h-6 sm:w-6 sm:mb-2 ${isPaused ? "text-warning" : "text-destructive"}`} />
+                    <div className="text-xs text-muted-foreground">{isPaused ? "Paused" : "Failed"}</div>
                   </div>
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -382,7 +383,11 @@ export function QueueContent({
                         <Badge variant="outline">
                           {post.type === "thread" ? "Thread" : "Tweet"}
                         </Badge>
-                        <Badge variant="destructive">{post.status}</Badge>
+                        {isPaused ? (
+                          <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10">Waiting for reconnection</Badge>
+                        ) : (
+                          <Badge variant="destructive">{post.status}</Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         <Button

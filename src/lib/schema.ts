@@ -15,6 +15,7 @@ export const postStatusEnum = pgEnum("post_status", [
   "failed",
   "cancelled",
   "awaiting_approval",
+  "paused_needs_reconnect",
 ]);
 
 export const planEnum = pgEnum("plan", [

@@ -1,5 +1,29 @@
 # Latest Updates
 
+## 2026-03-28: Unified OAuth Flow & Resilient Background Posting
+
+**Files changed:**
+- `src/lib/auth.ts`
+- `src/lib/schema.ts`
+- `src/lib/queue/processors.ts`
+- `src/lib/services/x-api.ts`
+- `src/app/dashboard/layout.tsx`
+- `src/app/dashboard/queue/page.tsx`
+- `src/components/dashboard/token-warning-banner.tsx` (new)
+- `src/components/onboarding/onboarding-wizard.tsx`
+- `src/components/settings/connected-x-accounts.tsx`
+- `src/components/queue/queue-content.tsx`
+
+**What changed:**
+- **Unified Single OAuth Flow:** Modified `better-auth` configuration in `auth.ts` to seamlessly write OAuth tokens directly to the `xAccounts` table on every login via `databaseHooks.account.create.after` and `update.after`. The separate "Connect X Account" flow is deprecated.
+- **Resilient Token Refresh:** Updated `refreshWithLock` in `x-api.ts` to execute the token update inside a strict database transaction to prevent single-use refresh token loss. Added fingerprint logging for auditability.
+- **Retry Policy for Authorization Failures:** The background worker (`scheduleProcessor`) no longer marks posts as permanently `failed` upon OAuth token expiration (400/401 errors). It now marks the `xAccounts` connection as inactive, sets the post status to `paused_needs_reconnect`, and leverages BullMQ's `DelayedError` to retry in 1 hour.
+- **Global Error State:** Added `<TokenWarningBanner>` to the dashboard layout. If an inactive account is detected, a prominent warning alerts the user to reconnect their account immediately.
+- **Queue UI Updates:** `paused_needs_reconnect` posts now appear under "Failed Posts" with a yellow "Waiting for reconnection" badge.
+- **Onboarding Cleanup:** Removed the now-redundant "Connect X" step from the onboarding wizard, simplifying the process from 5 steps to 4.
+
+---
+
 ## 2026-03-28: Bug Fix — AI Features Respecting User Language Preference
 
 **Files changed:**
