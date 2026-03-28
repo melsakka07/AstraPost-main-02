@@ -283,20 +283,28 @@ export async function POST(req: Request) {
       if (mediaRows.length > 0) await tx.insert(media).values(mediaRows);
     });
 
-    // Enqueue all BullMQ jobs concurrently after the DB transaction commits
+    // Enqueue all BullMQ jobs concurrently after the DB transaction commits.
+    // Wrapped in try/catch so a Redis outage doesn't discard the already-persisted
+    // posts — the user sees success and can retry publishing from the queue page.
+    let queueFailed = false;
     if (queueJobs.length > 0) {
-      await Promise.all(
-        queueJobs.map(({ postId, delay }) =>
-          scheduleQueue.add(
-            "publish-post",
-            { postId, userId: authorId, correlationId },
-            { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
+      try {
+        await Promise.all(
+          queueJobs.map(({ postId, delay }) =>
+            scheduleQueue.add(
+              "publish-post",
+              { postId, userId: authorId, correlationId },
+              { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
+            )
           )
-        )
-      );
+        );
+      } catch (queueError) {
+        console.error("Queue enqueue failed (posts saved to DB, publish pending):", queueError);
+        queueFailed = true;
+      }
     }
 
-    const res = Response.json({ success: true, groupId, postIds: createdPostIds });
+    const res = Response.json({ success: true, groupId, postIds: createdPostIds, queueFailed });
     res.headers.set("x-correlation-id", correlationId);
     return res;
 
