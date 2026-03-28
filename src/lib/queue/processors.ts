@@ -1,6 +1,6 @@
 import { readFile } from "fs/promises";
 import path from "path";
-import { Job, DelayedError } from "bullmq";
+import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { type InferSelectModel, eq, and, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -346,13 +346,30 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
 
   } catch (error) {
     const code = (error as any)?.code;
+    // Extract the human-readable detail from the X API v2 error response.
+    const xApiDetail: string =
+      (error as any)?.data?.detail ||
+      (error as any)?.data?.errors?.[0]?.message ||
+      (error as any)?.data?.errors?.[0]?.detail ||
+      "";
+
+    // 403 "not permitted" means the token lacks tweet.write scope — same recovery
+    // path as an expired token: mark account inactive and wait for reconnect.
     const isAuthError =
       (error instanceof Error && error.message.includes("X Session expired")) ||
       code === 401 ||
-      code === 400;
+      code === 400 ||
+      (code === 403 && xApiDetail.toLowerCase().includes("not permitted"));
 
-    const userHint =
-      isAuthError
+    // 403 "duplicate content" means the tweet was already posted to X (e.g. the
+    // process crashed after the API call but before the DB write). Retrying will
+    // always get the same error, so we treat it as non-retryable immediately.
+    const isDuplicateContent =
+      code === 403 && xApiDetail.toLowerCase().includes("duplicate content");
+
+    const userHint = isDuplicateContent
+      ? "This tweet was already posted to X. It may have been published in a previous attempt but the status was not recorded."
+      : isAuthError
         ? "X authorization expired. Please reconnect your X account."
         : code === 403
           ? "X authorization forbidden. Ensure your app has write access and reconnect your X account to grant tweet.write."
@@ -380,9 +397,10 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
     const attempts = job.opts?.attempts;
     const attemptsMade = job.attemptsMade;
     const isFinalAttempt =
-      typeof attempts === "number" && typeof attemptsMade === "number"
+      isDuplicateContent || // always stop retrying for duplicate content
+      (typeof attempts === "number" && typeof attemptsMade === "number"
         ? attemptsMade + 1 >= attempts
-        : true;
+        : true);
 
     logger.error("schedule_job_failed", {
       queue: job.queueName,
@@ -473,6 +491,10 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       }
     }
 
+    // For duplicate content, tell BullMQ never to retry this job.
+    if (isDuplicateContent) {
+      throw new UnrecoverableError(userHint ?? "Duplicate tweet content");
+    }
     throw error; // Let BullMQ handle retries if configured
   }
 };

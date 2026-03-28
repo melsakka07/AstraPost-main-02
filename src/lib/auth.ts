@@ -131,14 +131,27 @@ export const auth = betterAuth({
           if (account.providerId === "twitter" && account.accessToken) {
             try {
               const { xAccounts } = await import("./schema");
-              // Update tokens and reactivate if it was previously marked inactive
-              await db.update(xAccounts).set({
+              // Upsert so a missing row (e.g. manually deleted) is recreated on
+              // re-login rather than silently leaving the user with no xAccount.
+              await db.insert(xAccounts).values({
+                id: crypto.randomUUID(),
+                userId: account.userId,
+                xUserId: account.accountId,
+                xUsername: account.accountId, // fallback; create.after sets real username
                 accessToken: account.accessToken,
                 refreshTokenEnc: account.refreshToken || null,
                 tokenExpiresAt: account.accessTokenExpiresAt || null,
                 isActive: true,
-                updatedAt: new Date(),
-              }).where(eq(xAccounts.xUserId, account.accountId));
+              }).onConflictDoUpdate({
+                target: xAccounts.xUserId,
+                set: {
+                  accessToken: account.accessToken,
+                  refreshTokenEnc: account.refreshToken || null,
+                  tokenExpiresAt: account.accessTokenExpiresAt || null,
+                  isActive: true,
+                  updatedAt: new Date(),
+                },
+              });
             } catch (error) {
               console.error("Failed to sync xAccount on update", error);
             }
