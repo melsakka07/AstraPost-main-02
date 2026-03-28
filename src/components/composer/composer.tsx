@@ -972,6 +972,14 @@ export function Composer() {
       toast.error("Please wait for all media to finish uploading.");
       return;
     }
+
+    // Validate that every tweet has content (API rejects empty strings)
+    const emptyIndex = tweets.findIndex((t) => !t.content.trim());
+    if (emptyIndex !== -1) {
+      const label = tweets.length > 1 ? `Tweet ${emptyIndex + 1} is empty.` : "Tweet content cannot be empty.";
+      toast.error(label);
+      return;
+    }
     setIsSubmitting(true);
     try {
       let res: Response;
