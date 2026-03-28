@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { Job, DelayedError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-import { type InferSelectModel, eq, and } from "drizzle-orm";
+import { type InferSelectModel, eq, and, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
@@ -367,7 +367,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       });
 
       await db.update(xAccounts).set({ isActive: false }).where(eq(xAccounts.id, post.xAccountId));
-      await db.update(posts).set({ status: "paused_needs_reconnect" }).where(eq(posts.id, postId));
+      await db.update(posts).set({ status: sql`'paused_needs_reconnect'::text::post_status` }).where(eq(posts.id, postId));
 
       if (job.token) {
         // Delay for 72 hours

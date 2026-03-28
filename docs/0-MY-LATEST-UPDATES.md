@@ -1,5 +1,18 @@
 # Latest Updates
 
+## 2026-03-28: Fixed Server Component Render Error (Enum Caching)
+
+**Files changed:**
+- `src/app/dashboard/queue/page.tsx`
+- `src/lib/queue/processors.ts`
+
+**What changed:**
+- **Bypassed Postgres Enum Cache:** Addressed the persistent "invalid input value for enum post_status" error causing the `/dashboard/queue` page to crash in production. Even after the database migration was applied, connection poolers (like PgBouncer used by Supabase/Neon) cache enum definitions. When the server component queried `inArray(posts.status, ["failed", "paused_needs_reconnect"])`, the pooler rejected the new value.
+- Modified the Drizzle query in `page.tsx` to cast the column to text before comparison: `sql\`${posts.status}::text IN ('failed', 'paused_needs_reconnect')\``. This completely bypasses the strict enum validation and resolves the Server Component 500 error.
+- Added a similar defensive cast in `processors.ts` when the background worker updates the post status, preventing the worker from crashing due to the same stale enum cache issue.
+
+---
+
 ## 2026-03-28: Fixed Queue Dashboard Error (Missing Migration)
 
 **Files changed:**

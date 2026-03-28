@@ -79,7 +79,7 @@ export default async function QueuePage({
     scheduledPosts = hasMoreScheduled ? scheduledRaw.slice(0, SCHEDULED_PAGE_SIZE) : scheduledRaw;
 
     failedPosts = await db.query.posts.findMany({
-      where: and(inArray(posts.xAccountId, accountIds), inArray(posts.status, ["failed", "paused_needs_reconnect"])),
+      where: and(inArray(posts.xAccountId, accountIds), sql`${posts.status}::text IN ('failed', 'paused_needs_reconnect')`),
       orderBy: [asc(posts.updatedAt)],
       with: {
         tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
