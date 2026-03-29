@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
-import { desc } from "drizzle-orm";
+import { desc, eq, count, and, gte } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { feedback, feedbackVotes } from "@/lib/schema";
@@ -18,10 +19,11 @@ export async function GET() {
     });
 
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const items = await db.query.feedback.findMany({
+      where: eq(feedback.status, "approved"),
       orderBy: [desc(feedback.upvotes), desc(feedback.createdAt)],
       with: {
         user: {
@@ -55,7 +57,7 @@ export async function GET() {
     return Response.json({ items: formatted });
   } catch (error) {
     console.error("Get Feedback Error:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    return ApiError.internal();
   }
 }
 
@@ -66,20 +68,32 @@ export async function POST(req: Request) {
     });
 
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const body = await req.json().catch(() => null);
     const result = feedbackSchema.safeParse(body);
 
     if (!result.success) {
-      return Response.json(
-        { error: "Invalid input", details: result.error.flatten().fieldErrors },
-        { status: 400 }
-      );
+      return ApiError.badRequest(result.error.issues);
     }
 
     const { title, description, category } = result.data;
+
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const userSubmissionsToday = await db
+      .select({ count: count() })
+      .from(feedback)
+      .where(
+        and(
+          eq(feedback.userId, session.user.id),
+          gte(feedback.createdAt, oneDayAgo)
+        )
+      );
+
+    if ((userSubmissionsToday[0]?.count ?? 0) >= 3) {
+      return ApiError.badRequest("You can only submit a maximum of 3 feedback items per day. Please try again tomorrow.");
+    }
 
     const newFeedback = await db
       .insert(feedback)
@@ -90,7 +104,7 @@ export async function POST(req: Request) {
         description,
         category,
         status: "pending",
-        upvotes: 1, // auto-upvote by creator
+        upvotes: 1,
       })
       .returning();
 
@@ -100,7 +114,6 @@ export async function POST(req: Request) {
       throw new Error("Failed to create feedback");
     }
 
-    // Record creator's auto-upvote vote row
     await db.insert(feedbackVotes).values({
       id: crypto.randomUUID(),
       userId: session.user.id,
@@ -110,6 +123,6 @@ export async function POST(req: Request) {
     return Response.json(createdFeedback);
   } catch (error) {
     console.error("Create Feedback Error:", error);
-    return new Response("Internal Server Error", { status: 500 });
+    return ApiError.internal();
   }
 }

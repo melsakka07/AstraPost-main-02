@@ -33,10 +33,10 @@ export default function Home() {
 
           <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
             <Button size="lg" className="h-12 px-8 text-lg group" asChild>
-              <Link href="/register">
-                Get Started for Free
-                <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
-              </Link>
+              <Link href="/login">
+                  Get Started for Free
+                  <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
+                </Link>
             </Button>
             <Button size="lg" variant="outline" className="h-12 px-8 text-lg" asChild>
               <Link href="/features">View Features</Link>
@@ -140,10 +140,10 @@ export default function Home() {
               </div>
               <div className="flex flex-col items-center justify-center gap-4 pt-2 sm:flex-row">
                 <Button size="lg" className="h-12 px-8 text-lg group" asChild>
-                  <Link href="/register">
-                    Start Your Free Trial
-                    <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
-                  </Link>
+                  <Link href="/login">
+                  Start Your Free Trial
+                  <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
+                </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="h-12 px-8" asChild>
                   <Link href="/pricing">View Pricing</Link>

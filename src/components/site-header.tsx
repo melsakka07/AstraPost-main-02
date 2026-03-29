@@ -53,7 +53,7 @@ export async function SiteHeader() {
                 <Link href="/login">Sign In</Link>
               </Button>
               <Button asChild>
-                <Link href="/register">Get Started</Link>
+                <Link href="/login">Get Started</Link>
               </Button>
             </div>
           )}

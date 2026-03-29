@@ -71,7 +71,7 @@ export default async function PricingPage() {
                 Start with powerful tools and unlock more as you grow.
               </p>
               <Button size="lg" className="group" asChild>
-                <Link href="/register">
+                <Link href="/login">
                   Start for free
                   <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                 </Link>

@@ -134,7 +134,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
                   <Link href="/login">Sign In</Link>
                 </Button>
                 <Button asChild className="w-full" onClick={close}>
-                  <Link href="/register">Get Started Free</Link>
+                  <Link href="/login">Get Started Free</Link>
                 </Button>
               </>
             )}

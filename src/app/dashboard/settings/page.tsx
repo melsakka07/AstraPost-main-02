@@ -13,7 +13,6 @@ import { ManageSubscriptionButton } from "@/components/settings/manage-subscript
 import { PlanUsage } from "@/components/settings/plan-usage";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { ProfileForm } from "@/components/settings/profile-form";
-import { SecuritySettings } from "@/components/settings/security-settings";
 import { SettingsSectionNav } from "@/components/settings/settings-section-nav";
 import { VoiceProfileForm } from "@/components/settings/voice-profile-form";
 import { Badge } from "@/components/ui/badge";
@@ -205,11 +204,6 @@ export default async function SettingsPage({
         {/* AI Voice Section */}
         <div id="voice" className="scroll-mt-24">
           <VoiceProfileForm />
-        </div>
-
-        {/* Security Section */}
-        <div id="security" className="scroll-mt-24">
-          <SecuritySettings />
         </div>
 
         {/* Privacy Section */}

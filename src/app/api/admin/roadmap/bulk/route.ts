@@ -1,0 +1,35 @@
+import { inArray } from "drizzle-orm";
+import { z } from "zod";
+import { requireAdminApi } from "@/lib/admin";
+import { ApiError } from "@/lib/api/errors";
+import { db } from "@/lib/db";
+import { feedback } from "@/lib/schema";
+
+const bulkUpdateSchema = z.object({
+  ids: z.array(z.string()).min(1, "At least one ID is required"),
+  status: z.enum(["approved", "rejected"]),
+});
+
+export async function POST(request: Request) {
+  const auth = await requireAdminApi();
+  if (!auth.ok) return auth.response;
+
+  const body = await request.json().catch(() => null);
+  const result = bulkUpdateSchema.safeParse(body);
+
+  if (!result.success) {
+    return ApiError.badRequest(result.error.issues);
+  }
+
+  const { ids, status } = result.data;
+
+  await db
+    .update(feedback)
+    .set({
+      status,
+      reviewedAt: new Date(),
+    })
+    .where(inArray(feedback.id, ids));
+
+  return Response.json({ success: true, updatedCount: ids.length });
+}

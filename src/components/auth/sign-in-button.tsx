@@ -1,158 +1,74 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { signIn, useSession } from "@/lib/auth-client"
 
 export function SignInButton() {
   const { data: session, isPending: sessionPending } = useSession()
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
   const [isPending, setIsPending] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   if (sessionPending) {
-    return <Button disabled>Loading...</Button>
+    return (
+      <button
+        disabled
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white opacity-50"
+      >
+        <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        Loading...
+      </button>
+    )
   }
 
   if (session) {
     return null
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
+  async function handleSignIn() {
     setIsPending(true)
+    setError(null)
 
     try {
-      const result = await signIn.email({
-        email,
-        password,
+      await signIn.social({
+        provider: "twitter",
         callbackURL: "/dashboard",
       })
-
-      if (result.error) {
-        setError(result.error.message || "Failed to sign in")
-      } else {
-        router.push("/dashboard")
-        router.refresh()
-      }
     } catch {
-      setError("An unexpected error occurred")
-    } finally {
+      setError("Failed to redirect to X. Please try again.")
       setIsPending(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-sm">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={isPending}
-          aria-describedby={error ? "signin-error" : undefined}
-          aria-invalid={error ? true : undefined}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <div className="relative">
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            placeholder="Your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isPending}
-            className="pe-10"
-            aria-describedby={error ? "signin-error" : undefined}
-            aria-invalid={error ? true : undefined}
-          />
-          <button
-            type="button"
-            className="absolute inset-y-0 end-0 flex w-11 items-center justify-center text-muted-foreground hover:text-foreground"
-            onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword
-              ? <EyeOff className="h-4 w-4" aria-hidden="true" />
-              : <Eye className="h-4 w-4" aria-hidden="true" />}
-          </button>
-        </div>
-      </div>
-      {error && (
-        <p id="signin-error" role="alert" aria-live="polite" className="text-sm text-destructive">{error}</p>
-      )}
-      <Button type="submit" className="w-full" disabled={isPending}>
-        {isPending ? "Signing in..." : "Sign in"}
-      </Button>
-
-      <div className="relative my-4">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">
-            Or continue with
-          </span>
-        </div>
-      </div>
-
-      <div className="w-full">
-      <Button 
-        variant="outline" 
-        className="w-full" 
+    <div className="space-y-4">
+      <button
         type="button"
-        onClick={async () => {
-          setIsPending(true);
-          try {
-            await signIn.social({ 
-              provider: "twitter", 
-              callbackURL: "/dashboard" 
-            });
-          } catch (err) {
-            setError("Failed to sign in with X");
-          } finally {
-            setIsPending(false);
-          }
-        }}
+        onClick={handleSignIn}
         disabled={isPending}
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-50"
+        aria-label="Sign in with X"
       >
-        <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-        X
-      </Button>
-      </div>
+        {isPending ? (
+          <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : (
+          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+        )}
+        {isPending ? "Redirecting..." : "Sign in with X"}
+      </button>
 
-      <div className="text-center text-sm text-muted-foreground">
-        <Link href="/forgot-password" className="hover:underline">
-          Forgot password?
-        </Link>
-      </div>
-      <div className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link href="/register" className="text-primary hover:underline">
-          Sign up
-        </Link>
-      </div>
-    </form>
+      {error && (
+        <p role="alert" className="text-sm text-center text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
   )
 }

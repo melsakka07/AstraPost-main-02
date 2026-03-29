@@ -13,7 +13,7 @@ Please go check this file \docs\0-MY-LATEST-UPDATES.md to get the latest updates
 - **AI Integration**: Vercel AI SDK 5 + OpenRouter (access to 100+ AI models)
 - **AI Image Generation**: Replicate API (Flux models)
 - **AI Chat**: Google Gemini API for chat features
-- **Authentication**: Better Auth with Email/Password + X (Twitter) OAuth 2.0
+- **Authentication**: Better Auth with X (Twitter) OAuth 2.0 only (email/password removed)
 - **Database**: PostgreSQL 18 (pgvector) with Drizzle ORM
 - **Queue**: BullMQ + Redis for background job processing
 - **UI**: shadcn/ui components with Tailwind CSS 4
@@ -109,10 +109,7 @@ src/
 │   ├── ai/                       # AI-powered components
 │   │   └── hashtag-generator.tsx # AI hashtag generator component
 │   ├── auth/                     # Authentication components
-│   │   ├── sign-in-button.tsx    # Sign-in form
-│   │   ├── sign-up-form.tsx      # Registration form
-│   │   ├── forgot-password-form.tsx
-│   │   ├── reset-password-form.tsx
+│   │   ├── sign-in-button.tsx    # X OAuth sign-in button (simplified)
 │   │   ├── sign-out-button.tsx
 │   │   └── user-profile.tsx
 │   ├── analytics/                # Analytics-specific components

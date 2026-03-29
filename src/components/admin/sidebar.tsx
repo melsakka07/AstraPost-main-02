@@ -8,6 +8,7 @@ import {
   BarChart2,
   CreditCard,
   LayoutDashboard,
+  Lightbulb,
   Megaphone,
   ShieldCheck,
   Tag,
@@ -43,6 +44,7 @@ const sidebarSections = [
     items: [
       { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
       { href: "/admin/announcement", label: "Announcement", icon: Megaphone },
+      { href: "/admin/roadmap", label: "Roadmap", icon: Lightbulb },
       { href: "/admin/jobs", label: "Jobs (BullMQ)", icon: Activity },
     ],
   },

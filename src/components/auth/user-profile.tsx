@@ -42,7 +42,7 @@ export function UserProfile({ user: initialUser }: UserProfileProps = {}) {
             Sign in
           </Button>
         </Link>
-        <Link href="/register">
+        <Link href="/login">
           <Button size="sm">Sign up</Button>
         </Link>
       </div>

@@ -137,7 +137,7 @@ export default function FeaturesPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" className="h-11 px-8 group" asChild>
-                <Link href="/register">
+                <Link href="/login">
                   Start Free Trial
                   <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                 </Link>

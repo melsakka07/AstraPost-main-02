@@ -2,8 +2,6 @@
 import { render } from '@react-email/render';
 import { Resend } from 'resend';
 import { PostFailureEmail } from '@/components/email/post-failure-email';
-import { ResetPasswordEmail } from '@/components/email/reset-password-email';
-import { VerificationEmail } from '@/components/email/verification-email';
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -84,26 +82,6 @@ export async function sendPostFailureEmail(to: string, postId: string, reason: s
     react: PostFailureEmail({ postId, reason, retryUrl }),
     text: `Your post failed to publish.\n\nReason: ${reason}\n\nView Queue to retry: ${retryUrl}`,
     metadata: { postId, reason, type: 'post_failure' },
-  });
-}
-
-export async function sendVerificationEmail(to: string, url: string, name?: string) {
-  await sendEmail({
-    to,
-    subject: "Verify your email address for AstraPost",
-    react: VerificationEmail({ url, name }),
-    text: `Welcome to AstraPost! Please verify your email address by clicking here: ${url}`,
-    metadata: { type: 'verification' },
-  });
-}
-
-export async function sendResetPasswordEmail(to: string, url: string, name?: string) {
-  await sendEmail({
-    to,
-    subject: "Reset your password for AstraPost",
-    react: ResetPasswordEmail({ url, name }),
-    text: `Reset your password by clicking here: ${url}`,
-    metadata: { type: 'reset_password' },
   });
 }
 

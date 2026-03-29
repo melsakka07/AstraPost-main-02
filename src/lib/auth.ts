@@ -1,12 +1,10 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { twoFactor } from "better-auth/plugins"
 import { and, eq, isNull } from "drizzle-orm"
 import { db } from "./db"
 import { generateReferralCode } from "./referral/utils";
 import { user as userTable } from "./schema"
 import { decryptToken, encryptToken, isEncryptedToken } from "./security/token-encryption";
-import { sendResetPasswordEmail, sendVerificationEmail } from "./services/email"
 
 
 export const auth = betterAuth({
@@ -160,23 +158,13 @@ export const auth = betterAuth({
       },
     },
   },
-  emailAndPassword: {
-    enabled: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendResetPasswordEmail(user.email, url, user.name);
+
+  account: {
+    accountLinking: {
+      trustedProviders: ["twitter"],
     },
   },
-  emailVerification: {
-    sendOnSignUp: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendVerificationEmail(user.email, url, user.name);
-    },
-  },
-  plugins: [
-    twoFactor({
-      issuer: "AstraPost",
-    }),
-  ],
+
   socialProviders: {
     twitter: {
       clientId: process.env.TWITTER_CLIENT_ID!,

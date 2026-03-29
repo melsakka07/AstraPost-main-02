@@ -88,10 +88,8 @@ export const analyticsRunStatusEnum = pgEnum("analytics_run_status", [
 /** Lifecycle state of a feedback item. */
 export const feedbackStatusEnum = pgEnum("feedback_status", [
   "pending",
-  "planned",
-  "in_progress",
-  "completed",
-  "declined",
+  "approved",
+  "rejected",
 ]);
 
 /** Category of a feedback submission. */
@@ -628,6 +626,8 @@ export const feedback = pgTable("feedback", {
   category: feedbackCategoryEnum("category").default("feature"),
   status: feedbackStatusEnum("status").default("pending"),
   upvotes: integer("upvotes").default(0),
+  adminNotes: text("admin_notes"),
+  reviewedAt: timestamp("reviewed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => [
