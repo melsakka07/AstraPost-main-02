@@ -10,7 +10,7 @@ const requestSchema = z.object({
   language: LANGUAGE_ENUM.default("ar"),
   tone: TONE_ENUM.default("professional"),
   topic: z.string().max(500).optional(),
-  input: z.string().max(1000).optional(),
+  input: z.string().max(25000).optional(),
 });
 
 // Keep the schema constraint generous — the AI sometimes exceeds the prompt's

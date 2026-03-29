@@ -601,6 +601,7 @@ export const templates = pgTable("templates", {
   description: text("description"),
   content: jsonb("content").notNull().$type<string[]>(),
   category: text("category").default("Personal"),
+  aiMeta: jsonb("ai_meta").$type<{ templateId: string; tone: string; language: string; outputFormat: string } | null>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

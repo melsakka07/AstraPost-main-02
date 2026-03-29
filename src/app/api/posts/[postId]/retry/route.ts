@@ -4,7 +4,7 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
-import { posts } from "@/lib/schema";
+import { posts, xAccounts } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
 export async function POST(
@@ -40,11 +40,18 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (post.status !== "failed") {
+  const isRetryable = post.status === "failed" || post.status === "paused_needs_reconnect";
+  if (!isRetryable) {
     return NextResponse.json(
       { error: "Only failed posts can be retried." },
       { status: 400 }
     );
+  }
+
+  // If the post was paused because the account was deactivated, re-activate it
+  // so the worker can attempt posting again.
+  if (post.status === "paused_needs_reconnect" && post.xAccountId) {
+    await db.update(xAccounts).set({ isActive: true }).where(eq(xAccounts.id, post.xAccountId));
   }
 
   await db

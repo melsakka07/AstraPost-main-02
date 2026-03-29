@@ -58,12 +58,14 @@ export default async function AiHistoryPage() {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                    <Link href={`/dashboard/compose?restore=${item.id}`}>
-                        <Button variant="ghost" size="sm" className="h-8">
-                            <RefreshCcw className="h-3.5 w-3.5 mr-2" />
-                            Reuse
-                        </Button>
-                    </Link>
+                    {item.type !== "template" && (
+                      <Link href={`/dashboard/compose?restore=${item.id}`}>
+                          <Button variant="ghost" size="sm" className="h-8">
+                              <RefreshCcw className="h-3.5 w-3.5 mr-2" />
+                              Reuse
+                          </Button>
+                      </Link>
+                    )}
                 </div>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
@@ -90,6 +92,11 @@ export default async function AiHistoryPage() {
 
 function renderOutput(item: any) {
     const content = item.outputContent;
+
+    if (item.type === "template") {
+        return "Content was streamed directly to the Composer. Re-generate from the Templates dialog to produce new content.";
+    }
+
     if (!content) return "No content";
 
     if (item.type === "thread" && Array.isArray(content.tweets)) {

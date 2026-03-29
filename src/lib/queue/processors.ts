@@ -353,13 +353,20 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       (error as any)?.data?.errors?.[0]?.detail ||
       "";
 
-    // 403 "not permitted" means the token lacks tweet.write scope — same recovery
-    // path as an expired token: mark account inactive and wait for reconnect.
+    // True auth errors: expired/revoked token. Mark account inactive so the
+    // scheduler skips it until the user reconnects with fresh credentials.
     const isAuthError =
       (error instanceof Error && error.message.includes("X Session expired")) ||
-      code === 401 ||
-      code === 400 ||
-      (code === 403 && xApiDetail.toLowerCase().includes("not permitted"));
+      code === 401;
+
+    // 403 "not permitted" is a permanent app-level failure, NOT an auth error.
+    // Root causes: missing tweet.write scope, Twitter Developer Free-tier plan
+    // restriction on replies, or misconfigured app permissions. Reconnecting
+    // won't help — the user needs to check their Twitter Developer Portal.
+    // We mark the post as failed (not paused_needs_reconnect) so the Retry
+    // button is available immediately and the account stays active.
+    const isPermissionError =
+      code === 403 && xApiDetail.toLowerCase().includes("not permitted");
 
     // 403 "duplicate content" means the tweet was already posted to X (e.g. the
     // process crashed after the API call but before the DB write). Retrying will
@@ -371,9 +378,11 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       ? "This tweet was already posted to X. It may have been published in a previous attempt but the status was not recorded."
       : isAuthError
         ? "X authorization expired. Please reconnect your X account."
-        : code === 403
-          ? "X authorization forbidden. Ensure your app has write access and reconnect your X account to grant tweet.write."
-          : null;
+        : isPermissionError
+          ? "X rejected the post: your app lacks permission. Check that tweet.write (and replies) is enabled in your Twitter Developer Portal, or upgrade your developer plan."
+          : code === 403
+            ? "X authorization forbidden. Ensure your app has write access and reconnect your X account to grant tweet.write."
+            : null;
 
     if (isAuthError && post?.xAccountId) {
       logger.warn("schedule_job_paused_needs_reconnect", {

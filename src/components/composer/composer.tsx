@@ -50,7 +50,7 @@ import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSession } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
-import { createUserTemplate } from "@/lib/templates";
+import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
 
 interface LinkPreview {
   url: string;
@@ -168,6 +168,8 @@ export function Composer() {
   const [templateTitle, setTemplateTitle] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateCategory, setTemplateCategory] = useState("Personal");
+  // AI meta from the last template generation — stored so it can be saved with the template
+  const [lastTemplateAiMeta, setLastTemplateAiMeta] = useState<TemplateAiMeta | null>(null);
 
   // Overwrite confirmation (C1)
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
@@ -425,14 +427,15 @@ export function Composer() {
       toast.error("Title is required");
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       await createUserTemplate({
         title: templateTitle,
         description: templateDescription,
         category: templateCategory,
-        content: tweets.map(t => t.content)
+        content: tweets.map(t => t.content),
+        ...(lastTemplateAiMeta ? { aiMeta: lastTemplateAiMeta } : {}),
       });
       toast.success("Template saved!");
       setIsSaveTemplateOpen(false);
@@ -459,7 +462,7 @@ export function Composer() {
     }
   };
 
-  const handlePlanLimit = async (res: Response, fallbackMessage: string) => {
+  const handlePlanLimit = async (res: Response, _fallbackMessage: string) => {
     let payload: PlanLimitPayload | null = null;
     try {
       payload = (await res.json()) as PlanLimitPayload;
@@ -480,7 +483,6 @@ export function Composer() {
       trialActive: payload?.trial_active,
       resetAt: payload?.reset_at,
     });
-    throw new Error(payload?.message || fallbackMessage);
   };
 
   const addTweet = () => {
@@ -649,12 +651,22 @@ export function Composer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoreId]);
 
-  const handleTemplateSelect = (contents: string[]) => {
-    setTweets(contents.map(c => ({
+  const handleTemplateSelect = (contents: string[], aiMeta?: TemplateAiMeta) => {
+    const newTweets = contents.map((c) => ({
       id: Math.random().toString(36).substr(2, 9),
       content: c,
-      media: []
-    })));
+      media: [] as TweetDraft["media"],
+    }));
+    // Store AI meta so it can be embedded when saving as a template
+    setLastTemplateAiMeta(aiMeta ?? null);
+    // C1: ask before overwriting existing content
+    if (tweets.some((t) => t.content.trim())) {
+      setPendingTweets(newTweets);
+      setConfirmOverwrite(true);
+      return;
+    }
+    setTweets(newTweets);
+    setPreviewIndex(0);
     toast.success("Template applied!");
   };
 
@@ -676,6 +688,7 @@ export function Composer() {
         if (!res.ok) {
           if (res.status === 402) {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+            return;
           } else if (res.status === 429) {
             const body = await res.json().catch(() => ({})) as { retryAfter?: number };
             const wait = body.retryAfter ? ` Try again in ${body.retryAfter}s.` : "";
@@ -765,6 +778,7 @@ export function Composer() {
         if (!res.ok) {
           if (res.status === 402) {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+            return;
           }
           throw new Error("Hook generation failed");
         }
@@ -790,6 +804,7 @@ export function Composer() {
         if (!res.ok) {
           if (res.status === 402) {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+            return;
           }
           throw new Error("CTA generation failed");
         }
@@ -814,6 +829,7 @@ export function Composer() {
         if (!res.ok) {
           if (res.status === 402) {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+            return;
           }
           throw new Error("Translation failed");
         }
@@ -845,6 +861,7 @@ export function Composer() {
         if (!res.ok) {
           if (res.status === 402) {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+            return;
           }
           throw new Error("Hashtag generation failed");
         }
@@ -869,6 +886,7 @@ export function Composer() {
       if (!res.ok) {
         if (res.status === 402) {
           await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+          return;
         }
         throw new Error("Rewrite failed");
       }
@@ -1018,6 +1036,7 @@ export function Composer() {
       if (!res.ok) {
         if (res.status === 402) {
           await handlePlanLimit(res, "Plan limit reached. Upgrade to continue.");
+          return;
         }
         const error = await res.json();
         throw new Error(error.error || "Failed to submit");
@@ -1421,7 +1440,7 @@ export function Composer() {
                   }}
                 />
               </div>
-              <TemplatesDialog onSelect={handleTemplateSelect} />
+              <TemplatesDialog onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)} defaultLanguage={aiLanguage} />
               {/* H4: Secondary AI tools — 2×2 grid including Hashtags (D5) */}
               <div className="grid grid-cols-2 gap-1.5">
                 <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook")}>
@@ -1597,7 +1616,10 @@ export function Composer() {
         </Card>
 
         {/* Save Template Dialog */}
-        <Dialog open={isSaveTemplateOpen} onOpenChange={setIsSaveTemplateOpen}>
+        <Dialog open={isSaveTemplateOpen} onOpenChange={(v) => {
+          setIsSaveTemplateOpen(v);
+          if (!v) { setTemplateTitle(""); setTemplateDescription(""); setTemplateCategory("Personal"); }
+        }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Save as Template</DialogTitle>
@@ -1624,6 +1646,18 @@ export function Composer() {
                   </SelectContent>
                 </Select>
               </div>
+              {lastTemplateAiMeta && (
+                <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                  <p className="font-medium text-foreground flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    AI parameters will be saved
+                  </p>
+                  <p>Tone: <span className="capitalize text-foreground">{lastTemplateAiMeta.tone}</span></p>
+                  <p>Language: <span className="text-foreground">{LANGUAGES.find(l => l.code === lastTemplateAiMeta.language)?.label ?? lastTemplateAiMeta.language}</span></p>
+                  <p>Format: <span className="text-foreground capitalize">{lastTemplateAiMeta.outputFormat.replace("-", " ")}</span></p>
+                  <p className="text-muted-foreground/70 pt-0.5">You can re-generate this content from My Templates.</p>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsSaveTemplateOpen(false)}>Cancel</Button>

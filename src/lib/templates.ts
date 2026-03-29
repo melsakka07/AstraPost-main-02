@@ -1,4 +1,6 @@
 
+import type { TemplateAiMeta } from "@/lib/ai/template-prompts";
+
 export interface Template {
   id: string;
   title: string;
@@ -6,6 +8,7 @@ export interface Template {
   content: string[];
   category: string;
   isUserTemplate?: boolean;
+  aiMeta?: TemplateAiMeta | null;
 }
 
 export const SYSTEM_TEMPLATES: Template[] = [
@@ -104,3 +107,5 @@ export async function createUserTemplate(template: Omit<Template, "id" | "isUser
   const data = await res.json();
   return { ...data, isUserTemplate: true };
 }
+
+export { type TemplateAiMeta } from "@/lib/ai/template-prompts";

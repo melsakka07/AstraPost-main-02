@@ -246,6 +246,13 @@
       "when": 1774716320655,
       "tag": "0034_rainy_runaways",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1774798743144,
+      "tag": "0035_lovely_terrax",
+      "breakpoints": true
     }
   ]
 }

@@ -5,11 +5,19 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templates } from "@/lib/schema";
 
+const aiMetaSchema = z.object({
+  templateId: z.string(),
+  tone: z.string(),
+  language: z.string(),
+  outputFormat: z.string(),
+}).nullable().optional();
+
 const createTemplateSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   content: z.array(z.string()).min(1, "Template must have at least one tweet"),
   category: z.string().default("Personal"),
+  aiMeta: aiMetaSchema,
 });
 
 export async function GET(_req: Request) {
@@ -45,7 +53,7 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
     }
 
-    const { title, description, content, category } = result.data;
+    const { title, description, content, category, aiMeta } = result.data;
 
     const [newTemplate] = await db.insert(templates).values({
       id: crypto.randomUUID(),
@@ -54,6 +62,7 @@ export async function POST(req: Request) {
       description,
       content,
       category,
+      ...(aiMeta !== undefined && { aiMeta }),
     }).returning();
 
     return Response.json(newTemplate);
