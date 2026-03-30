@@ -423,7 +423,6 @@ export async function startImageGeneration(
         resolution,
         output_format: "png",
         safety_filter_level: "block_only_high",
-        image_input: [],
       },
     }),
   });

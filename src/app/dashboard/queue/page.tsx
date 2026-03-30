@@ -73,6 +73,7 @@ export default async function QueuePage({
       with: {
         tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
         user: { columns: { name: true, image: true } },
+        xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
       },
     });
     hasMoreScheduled = scheduledRaw.length > SCHEDULED_PAGE_SIZE;
@@ -84,6 +85,7 @@ export default async function QueuePage({
       with: {
         tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
         user: { columns: { name: true, image: true } },
+        xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
       },
     });
 
@@ -93,6 +95,7 @@ export default async function QueuePage({
       with: {
         tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
         user: { columns: { name: true, image: true } },
+        xAccount: { columns: { id: true, xUsername: true, xSubscriptionTier: true } },
       },
     });
   }

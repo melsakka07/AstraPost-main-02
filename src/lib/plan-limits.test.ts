@@ -5,8 +5,8 @@ describe("plan-limits", () => {
   it("returns enriched free-plan limits", () => {
     const freeLimits = getPlanLimits("free");
 
-    expect(freeLimits.postsPerMonth).toBe(10);
-    expect(freeLimits.aiGenerationsPerMonth).toBe(5);
+    expect(freeLimits.postsPerMonth).toBe(20);
+    expect(freeLimits.aiGenerationsPerMonth).toBe(20);
     expect(freeLimits.maxXAccounts).toBe(1);
     expect(freeLimits.analyticsExport).toBe("none");
     expect(freeLimits.analyticsRetentionDays).toBe(7);

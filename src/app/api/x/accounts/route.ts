@@ -42,6 +42,10 @@ export async function GET() {
       xDisplayName: a.xDisplayName,
       xAvatarUrl: a.xAvatarUrl,
       isDefault: a.isDefault,
+      isActive: a.isActive,
+      tokenExpiresAt: a.tokenExpiresAt,
+      xSubscriptionTier: a.xSubscriptionTier,
+      xSubscriptionTierUpdatedAt: a.xSubscriptionTierUpdatedAt,
     })),
   });
 }

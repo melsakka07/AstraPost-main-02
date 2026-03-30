@@ -25,11 +25,12 @@ export async function GET() {
   const accounts = [
       ...twitterAccounts.map(a => ({
           id: `twitter:${a.id}`,
-          platform: 'twitter',
+          platform: 'twitter' as const,
           username: a.xUsername,
           displayName: a.xDisplayName,
           avatarUrl: a.xAvatarUrl,
-          isDefault: a.isDefault
+          isDefault: a.isDefault,
+          xSubscriptionTier: a.xSubscriptionTier
       })),
       ...linkedInAccounts.map(a => ({
           id: `linkedin:${a.id}`,

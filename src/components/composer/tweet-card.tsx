@@ -10,7 +10,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { XSubscriptionBadge, XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { getMaxCharacterLimit, canPostLongContent } from "@/lib/services/x-subscription";
 import { cn } from "@/lib/utils";
 import type { EmojiClickData } from 'emoji-picker-react';
 
@@ -52,6 +54,7 @@ interface TweetCardProps {
   isFirst?: boolean;
   suggestedHashtags?: string[];
   onHashtagClick?: (tag: string) => void;
+  tier?: XSubscriptionTier | undefined;
 }
 
 export function TweetCard({
@@ -71,13 +74,15 @@ export function TweetCard({
   isFirst,
   suggestedHashtags,
   onHashtagClick,
+  tier,
 }: TweetCardProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const getCharCount = (text: string) => twitter.parseTweet(text).weightedLength;
+  const maxChars = getMaxCharacterLimit(tier);
   const isOverStandardLimit = (text: string) => getCharCount(text) > 280;
-  const isOverLimit = (text: string) => getCharCount(text) > 1000;
+  const isOverLimit = (text: string) => getCharCount(text) > maxChars;
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     updateTweet(tweet.id, tweet.content + emojiData.emoji);
@@ -360,20 +365,25 @@ export function TweetCard({
           </TooltipProvider>
           
           <div className="flex items-center gap-4">
-            <span
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-              aria-label={`${getCharCount(tweet.content)} of 280 characters used`}
-              className={cn(
-                "text-sm font-medium tabular-nums",
-                isOverLimit(tweet.content) ? "text-destructive" :
-                isOverStandardLimit(tweet.content) ? "text-amber-500" :
-                "text-muted-foreground"
+            <div className="flex items-center gap-2">
+              <span
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                aria-label={`${getCharCount(tweet.content)} of ${maxChars} characters used`}
+                className={cn(
+                  "text-sm font-medium tabular-nums",
+                  isOverLimit(tweet.content) ? "text-destructive" :
+                  isOverStandardLimit(tweet.content) ? "text-amber-500" :
+                  "text-muted-foreground"
+                )}
+              >
+                {getCharCount(tweet.content)} / {maxChars.toLocaleString()}
+              </span>
+              {canPostLongContent(tier) && tier && (
+                <XSubscriptionBadge tier={tier} size="sm" />
               )}
-            >
-              {getCharCount(tweet.content)} / 280
-            </span>
+            </div>
             
             {totalTweets > 1 && (
               <Button

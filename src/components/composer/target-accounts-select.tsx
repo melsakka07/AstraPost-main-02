@@ -11,6 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { XSubscriptionBadge, XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 
 export type SocialAccountLite = {
   id: string;
@@ -19,6 +21,7 @@ export type SocialAccountLite = {
   displayName?: string | null;
   avatarUrl?: string | null;
   isDefault?: boolean | null;
+  xSubscriptionTier?: XSubscriptionTier;
 };
 
 export function TargetAccountsSelect({
@@ -41,7 +44,10 @@ export function TargetAccountsSelect({
                 {selected[0].platform === 'twitter' ? <Twitter className="h-3 w-3" /> : 
                  selected[0].platform === 'linkedin' ? <Linkedin className="h-3 w-3" /> :
                  <Instagram className="h-3 w-3" />}
-                {selected[0].username}
+                <span className="truncate">{selected[0].username}</span>
+                {selected[0].platform === 'twitter' && selected[0].xSubscriptionTier && (
+                  <XSubscriptionBadge tier={selected[0].xSubscriptionTier} size="sm" />
+                )}
             </span>
         );
     }
@@ -49,40 +55,45 @@ export function TargetAccountsSelect({
   }, [accounts, value]);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="w-full justify-between" disabled={loading}>
-          <span className="truncate flex items-center gap-2">{loading ? "Loading accounts..." : selectedLabels}</span>
-          <ChevronDown className="h-4 w-4 opacity-60" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64" align="start">
-        <DropdownMenuLabel>Post to</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {accounts.length === 0 ? (
-          <div className="px-2 py-2 text-sm text-muted-foreground">No accounts connected</div>
-        ) : (
-          accounts.map((a) => (
-            <DropdownMenuCheckboxItem
-              key={a.id}
-              checked={value.includes(a.id)}
-              onCheckedChange={(checked) => {
-                const next = checked
-                  ? Array.from(new Set([...value, a.id]))
-                  : value.filter((id) => id !== a.id);
-                onChange(next);
-              }}
-            >
-              <div className="flex items-center gap-2">
-                {a.platform === 'twitter' ? <Twitter className="h-3 w-3 text-sky-500" /> : 
-                 a.platform === 'linkedin' ? <Linkedin className="h-3 w-3 text-[#0077b5]" /> :
-                 <Instagram className="h-3 w-3 text-pink-600" />}
-                <span className="truncate">{a.displayName || a.username}</span>
-              </div>
-            </DropdownMenuCheckboxItem>
-          ))
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <TooltipProvider>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="w-full justify-between" disabled={loading}>
+            <span className="truncate flex items-center gap-2">{loading ? "Loading accounts..." : selectedLabels}</span>
+            <ChevronDown className="h-4 w-4 opacity-60" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-64" align="start">
+          <DropdownMenuLabel>Post to</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {accounts.length === 0 ? (
+            <div className="px-2 py-2 text-sm text-muted-foreground">No accounts connected</div>
+          ) : (
+            accounts.map((a) => (
+              <DropdownMenuCheckboxItem
+                key={a.id}
+                checked={value.includes(a.id)}
+                onCheckedChange={(checked) => {
+                  const next = checked
+                    ? Array.from(new Set([...value, a.id]))
+                    : value.filter((id) => id !== a.id);
+                  onChange(next);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  {a.platform === 'twitter' ? <Twitter className="h-3 w-3 text-sky-500" /> : 
+                   a.platform === 'linkedin' ? <Linkedin className="h-3 w-3 text-[#0077b5]" /> :
+                   <Instagram className="h-3 w-3 text-pink-600" />}
+                  <span className="truncate">{a.displayName || a.username}</span>
+                  {a.platform === 'twitter' && a.xSubscriptionTier && (
+                    <XSubscriptionBadge tier={a.xSubscriptionTier} size="sm" />
+                  )}
+                </div>
+              </DropdownMenuCheckboxItem>
+            ))
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }

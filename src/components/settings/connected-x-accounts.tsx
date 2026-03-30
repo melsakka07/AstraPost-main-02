@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Activity, AlertTriangle, CheckCircle2, Twitter, XCircle } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, RefreshCw, Twitter, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { signIn } from "@/lib/auth-client";
 
 type XAccountItem = {
@@ -17,8 +19,9 @@ type XAccountItem = {
   xAvatarUrl?: string | null;
   isActive?: boolean | null;
   isDefault?: boolean | null;
-  /** Date from server or ISO string after RSC serialization; null if token has no expiry */
   tokenExpiresAt?: Date | string | null;
+  xSubscriptionTier?: string | null;
+  xSubscriptionTierUpdatedAt?: Date | string | null;
 };
 
 interface PlanLimitPayload {
@@ -36,11 +39,15 @@ interface PlanLimitPayload {
   reset_at?: string | null;
 }
 
-// S3 — per-account health state
 interface HealthStatus {
   ok: boolean;
   detail?: string;
   checkedAt: Date;
+}
+
+interface TierRefreshState {
+  previousTier: XSubscriptionTier | null;
+  highlight: boolean;
 }
 
 function relativeTime(date: Date): string {
@@ -49,7 +56,9 @@ function relativeTime(date: Date): string {
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
-  return `${hours}h ago`;
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 function isTokenExpired(account: XAccountItem): boolean {
@@ -63,9 +72,11 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
   const shouldSync = params.get("sync") === "1";
   const [accounts, setAccounts] = useState<XAccountItem[]>(initialAccounts);
   const [busy, setBusy] = useState(false);
-  // S3 — per-account health status
   const [healthStatus, setHealthStatus] = useState<Record<string, HealthStatus>>({});
   const [checking, setChecking] = useState<string | null>(null);
+  const [refreshingTier, setRefreshingTier] = useState<string | null>(null);
+  const [tierRefreshState, setTierRefreshState] = useState<Record<string, TierRefreshState>>({});
+  const tierFetchRef = useRef(false);
 
   const syncNow = useCallback(async () => {
     setBusy(true);
@@ -112,7 +123,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
     syncNow();
   }, [shouldSync, syncNow]);
 
-  // S3 — per-account health check
   const handleHealthCheck = async (accountId: string) => {
     setChecking(accountId);
     try {
@@ -144,8 +154,94 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
     });
   };
 
+  const handleRefreshTier = async (accountId: string, currentTier: XSubscriptionTier) => {
+    setRefreshingTier(accountId);
+    setTierRefreshState((prev) => ({
+      ...prev,
+      [accountId]: { previousTier: currentTier, highlight: false },
+    }));
+    
+    try {
+      const res = await fetch("/api/x/subscription-tier/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountIds: [accountId] }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to refresh tier");
+      }
+      const result = data.results?.[0];
+      if (result?.status === "refreshed") {
+        const newTier = result.tier as XSubscriptionTier;
+        setAccounts((prev) =>
+          prev.map((a) =>
+            a.id === accountId
+              ? { ...a, xSubscriptionTier: newTier, xSubscriptionTierUpdatedAt: result.updatedAt }
+              : a
+          )
+        );
+        
+        const previousTier = tierRefreshState[accountId]?.previousTier ?? null;
+        if (previousTier !== newTier) {
+          setTierRefreshState((prev) => ({
+            ...prev,
+            [accountId]: { previousTier: previousTier, highlight: true },
+          }));
+          setTimeout(() => {
+            setTierRefreshState((prev) => ({
+              ...prev,
+              [accountId]: { ...(prev[accountId] || { previousTier: null, highlight: false }), highlight: false },
+            }));
+          }, 300);
+        }
+        
+        toast.success(`Subscription tier updated: ${result.tier}`);
+      } else if (result?.status === "skipped_cooldown") {
+        toast.info("Tier was recently refreshed. Please wait before refreshing again.");
+      } else if (result?.status === "error") {
+        toast.error(result.error || "Failed to refresh tier");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to refresh tier");
+    } finally {
+      setRefreshingTier(null);
+    }
+  };
+
+  useEffect(() => {
+    if (tierFetchRef.current) return;
+    const accountsWithoutTier = accounts.filter((a) => !a.xSubscriptionTierUpdatedAt);
+    if (accountsWithoutTier.length === 0) return;
+
+    tierFetchRef.current = true;
+    const refreshMissingTiers = async () => {
+      const accountIds = accountsWithoutTier.map((a) => a.id);
+      try {
+        const res = await fetch("/api/x/subscription-tier/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accountIds }),
+        });
+        const data = await res.json();
+        if (res.ok && data.results) {
+          const updates = new Map(data.results.map((r: { accountId: string; tier: string }) => [r.accountId, r.tier]));
+          setAccounts((prev) =>
+            prev.map((a) => {
+              const tier = updates.get(a.id);
+              return tier ? { ...a, xSubscriptionTier: tier as XSubscriptionTier } : a;
+            })
+          );
+        }
+      } catch {
+      }
+    };
+    refreshMissingTiers();
+  }, [accounts]);
+
   return (
-    <div className="space-y-4">
+    <TooltipProvider>
+      <div className="space-y-4">
       {accounts.length === 0 ? (
         <div className="text-center py-4 text-muted-foreground">No accounts connected.</div>
       ) : (
@@ -154,10 +250,12 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
             const expired = isTokenExpired(a);
             const health = healthStatus[a.id];
             const isChecking = checking === a.id;
+            const tierState = tierRefreshState[a.id];
+            const tierUpdatedAt = a.xSubscriptionTierUpdatedAt ? new Date(a.xSubscriptionTierUpdatedAt) : null;
+            const isTierUnknown = !a.xSubscriptionTierUpdatedAt;
 
             return (
               <div key={a.id} className="space-y-1.5">
-                {/* Account row */}
                 <div
                   className={`flex items-center justify-between gap-3 p-3 border rounded-lg ${
                     expired ? "border-destructive/40 bg-destructive/5" : ""
@@ -174,13 +272,29 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                       )}
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold truncate">{a.xDisplayName || a.xUsername}</div>
-                      <div className="text-sm text-muted-foreground truncate">@{a.xUsername}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold truncate">{a.xDisplayName || a.xUsername}</span>
+                        <span className={`transition-all duration-300 ${tierState?.highlight ? "ring-2 ring-primary rounded-full p-0.5" : ""}`}>
+                          <XSubscriptionBadge
+                            tier={(a.xSubscriptionTier as XSubscriptionTier) ?? null}
+                            size="sm"
+                            loading={refreshingTier === a.id}
+                            showUnknown={isTierUnknown}
+                          />
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="truncate">@{a.xUsername}</span>
+                        {tierUpdatedAt && (
+                          <span className="text-xs shrink-0">
+                            Checked {relativeTime(tierUpdatedAt)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Default toggle */}
                     <Button
                       type="button"
                       variant={a.isDefault ? "default" : "outline"}
@@ -208,7 +322,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                       Default
                     </Button>
 
-                    {/* Active/Expired status badge */}
                     {expired ? (
                       <Badge variant="destructive" className="gap-1">
                         <AlertTriangle className="h-3 w-3" />
@@ -220,7 +333,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                       </Badge>
                     )}
 
-                    {/* S3 — per-account test button */}
                     <Button
                       type="button"
                       variant="ghost"
@@ -234,10 +346,23 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                         className={`h-4 w-4 ${isChecking ? "animate-pulse text-primary" : ""}`}
                       />
                     </Button>
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={refreshingTier === a.id || busy}
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label={`Refresh subscription tier for @${a.xUsername}`}
+                      onClick={() => handleRefreshTier(a.id, (a.xSubscriptionTier as XSubscriptionTier) ?? null)}
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${refreshingTier === a.id ? "animate-spin" : ""}`}
+                      />
+                    </Button>
                   </div>
                 </div>
 
-                {/* S1 — Expired token warning with in-page reconnect */}
                 {expired && (
                   <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
                     <div className="flex items-center gap-2 text-destructive">
@@ -257,7 +382,6 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                   </div>
                 )}
 
-                {/* S3 — health check result strip */}
                 {health && (
                   <div
                     className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
@@ -293,6 +417,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
           {busy ? "Syncing..." : "Sync accounts"}
         </Button>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }

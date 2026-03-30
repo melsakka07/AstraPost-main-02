@@ -348,18 +348,21 @@ describe("scheduleProcessor — integration", () => {
     expect(notificationRecord).toBeUndefined();
   });
 
-  it("sets post failReason to a user-friendly hint for X 401 errors", async () => {
+  it("deactivates account and pauses post on X 401 errors (no throw when no token)", async () => {
     mockDb.query.posts.findFirst.mockResolvedValue(makePost());
     const authError = Object.assign(new Error("Unauthorized"), { code: 401 });
     mockPostTweet.mockRejectedValue(authError);
 
-    await expect(
-      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
-    ).rejects.toThrow();
+    // 401 with no job.token → graceful return, NOT a throw.
+    // The processor sets the account inactive and the post to paused_needs_reconnect,
+    // then returns instead of throwing (DelayedError path requires job.token).
+    await scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any);
 
     const setValues = allSetValues();
-    const failedUpdate = setValues.find((v) => v.status === "failed");
-    expect(failedUpdate?.failReason).toContain("reconnect");
+    // X account must be deactivated
+    expect(setValues.some((v) => v.isActive === false)).toBe(true);
+    // Post must NOT be marked "failed" — it is paused pending reconnection
+    expect(setValues.some((v) => v.status === "failed")).toBe(false);
   });
 
   it("skips already-published tweets (idempotency on retry)", async () => {

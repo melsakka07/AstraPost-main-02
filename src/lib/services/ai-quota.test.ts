@@ -30,7 +30,7 @@ describe("getMonthlyAiUsage", () => {
     const usage = await getMonthlyAiUsage("user_1");
 
     expect(usage.used).toBe(3);
-    expect(usage.limit).toBe(5);
+    expect(usage.limit).toBe(20);
     expect(typeof usage.resetDate).toBe("string");
   });
 

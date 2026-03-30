@@ -1,5 +1,273 @@
 # Latest Updates
 
+## 2026-03-30: X Subscription Badge UI Expansion — Phase 5 Complete ✅
+
+**Summary:** Implemented Phase 5 of the X Subscription Badge UI Expansion plan. Enhanced queue page with contextual error messaging for character-limit failures.
+
+**Phase 5A — 280-Character Warning Enhancement:**
+- Added success Alert for paid users with long posts in `composer.tsx`
+- Shows `XSubscriptionBadge` with green/success styling
+- Message: "Your account (@username) supports long posts — this will publish normally with up to 25,000 characters"
+- Uses `CheckCircle2` icon for positive feedback
+
+**Phase 5B — Queue Failure Banners:**
+- Updated `queue/page.tsx` to include `xAccount` relation with `xSubscriptionTier` for all post queries (scheduled, failed, awaiting_approval)
+- Enhanced `getFailureTip()` in `queue-content.tsx` to detect character-limit errors
+- Added `isCharLimit` flag to failure tip return type
+- Shows `XSubscriptionBadge` in failure banner for character-limit errors
+- Different messaging for paid vs free accounts:
+  - Paid: "This post failed despite your paid subscription. Try refreshing your subscription status in Settings."
+  - Free: "This post exceeds the 280-character limit for free X accounts. Edit the content or upgrade to X Premium for long posts."
+- Added `@username` display in failed post cards
+
+**Phase 6 — Data Flow Verification:**
+- Verified all surfaces read `xSubscriptionTier` from consistent data sources
+- Settings page: reads from API response, updates via refresh
+- Composer: reads from `/api/accounts` response
+- Queue: reads from database relations via `xAccount.xSubscriptionTier`
+
+**Files changed:**
+- `src/components/composer/composer.tsx` (success alert for paid users)
+- `src/app/dashboard/queue/page.tsx` (added xAccount relation to queries)
+- `src/components/queue/queue-content.tsx` (character-limit failure detection + badge)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Feature complete! All phases of X Subscription Badge UI Expansion implemented.
+
+---
+
+## 2026-03-30: X Subscription Badge UI Expansion — Phase 3 Complete ✅
+
+**Summary:** Implemented Phase 3 of the X Subscription Badge UI Expansion plan. Added tier context to the Composer component.
+
+**Phase 3A — Account Selector Badge:**
+- Added `xSubscriptionTier` to `/api/accounts` response for Twitter accounts
+- Extended `SocialAccountLite` type with `xSubscriptionTier` field
+- Added badge display in selected label (single account view)
+- Added badge display in dropdown items
+- Wrapped component with `TooltipProvider` for hover tooltips
+
+**Phase 3B — Character Counter Tier Context:**
+- Added `tier` prop to `TweetCard` component
+- Character counter now shows dynamic limit based on tier (280 or 25,000)
+- Added `XSubscriptionBadge` next to character counter for paid accounts
+- Updated warning alert to only show when user lacks paid tier
+- Tier flows from Composer → SortableTweet → TweetCard
+
+**Files changed:**
+- `src/app/api/accounts/route.ts` (added `xSubscriptionTier` to response)
+- `src/components/composer/target-accounts-select.tsx` (badge in selector)
+- `src/components/composer/tweet-card.tsx` (tier-aware character counter)
+- `src/components/composer/sortable-tweet.tsx` (pass tier prop)
+- `src/components/composer/composer.tsx` (derive tier from selected account)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 4 — Add badge to Sidebar account switcher
+
+---
+
+## 2026-03-30: X Subscription Tier Detection — Phase 7 Complete ✅
+
+**Summary:** Implemented Phase 7 of the X Subscription Tier Detection feature. Added Vitest tests for helper functions, Zod schema, and API response parsing.
+
+**Test Coverage:**
+
+1. **Helper Function Tests (`src/lib/services/x-subscription.test.ts`):**
+   - `canPostLongContent()` — 6 tests (None, null, undefined, Basic, Premium, PremiumPlus)
+   - `getMaxCharacterLimit()` — 6 tests (returns 280 or 25,000 based on tier)
+   - `getTierLabel()` — 6 tests (human-readable labels for all tiers)
+
+2. **Zod Schema Validation Tests:**
+   - `xSubscriptionTierEnum` — 8 tests (valid values, invalid values, null handling)
+
+3. **API Response Parsing Tests (`src/lib/services/x-api.test.ts`):**
+   - Returns correct tier for Premium, Basic, PremiumPlus
+   - Returns "None" for missing/null subscription_type
+   - Throws `X_SESSION_EXPIRED` on 401 response
+   - Throws `X_RATE_LIMITED` on 429 response
+   - Throws generic error on other HTTP errors
+
+**Files changed:**
+- `src/lib/services/x-subscription.test.ts` (new file)
+- `src/lib/services/x-api.test.ts` (updated)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅ `pnpm test` ✅ (26 new tests pass)
+**Next:** Feature complete! Ready for integration with composer character limit logic.
+
+---
+
+## 2026-03-30: X Subscription Tier Detection — Phase 6 Complete ✅
+
+**Summary:** Implemented Phase 6 of the X Subscription Tier Detection feature. Added Zod schema and helper functions for subscription tier handling.
+
+**Zod Schema:**
+- Added `xSubscriptionTierEnum` to `src/lib/schemas/common.ts`
+- Enum values: `"None"`, `"Basic"`, `"Premium"`, `"PremiumPlus"`
+- Exported `XSubscriptionTier` type via `z.infer`
+
+**Helper Functions (`src/lib/services/x-subscription.ts`):**
+- `canPostLongContent(tier)` — Returns `true` for Basic, Premium, PremiumPlus
+- `getMaxCharacterLimit(tier)` — Returns 25,000 for paid tiers, 280 for free
+- `getTierLabel(tier)` — Returns human-readable label for display
+
+**Files changed:**
+- `src/lib/schemas/common.ts` (updated)
+- `src/lib/services/x-subscription.ts` (new file)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 7 — Add Vitest tests for helper functions and Zod schema
+
+---
+
+## 2026-03-30: X Subscription Tier Detection — Phase 5 Complete ✅
+
+**Summary:** Implemented Phase 5 of the X Subscription Tier Detection feature. Created the `XSubscriptionBadge` component and integrated it into the connected X accounts list.
+
+**Component Features:**
+- Small colored circle indicator (8px for `sm`, 12px for `md`)
+- Tooltip on hover showing tier label
+- Supports all 4 tiers + null:
+  - Gray (`bg-muted-foreground/40`) for None/null — "Free X account"
+  - Yellow (`bg-yellow-500`) for Basic — "X Basic subscriber"
+  - Blue (`bg-blue-500`) for Premium — "X Premium subscriber ✓"
+  - Blue with gold ring (`bg-blue-500 ring-2 ring-yellow-400`) for PremiumPlus — "X Premium+ subscriber ✓✓"
+- Loading state with animated pulse
+- Dark mode compatible via Tailwind CSS
+
+**Integration:**
+- Badge displays next to account display name
+- Refresh button (RefreshCw icon) to manually refresh tier
+- Auto-fetches missing tiers on component mount
+- Uses `TooltipProvider` from shadcn/ui
+
+**Files changed:**
+- `src/components/settings/x-subscription-badge.tsx` (new file)
+- `src/components/settings/connected-x-accounts.tsx` (updated)
+- `src/app/api/x/accounts/route.ts` (updated to return tier fields)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 6 — Add Zod schema (`xSubscriptionTierEnum`) and helper functions
+
+---
+
+## 2026-03-30: X Subscription Tier Detection — Phase 4 Complete ✅
+
+**Summary:** Implemented Phase 4 of the X Subscription Tier Detection feature. Created the POST `/api/x/subscription-tier/refresh` API route for batch refresh.
+
+**Route Features:**
+- Validates user authentication via Better Auth session
+- Validates ownership of all requested account IDs
+- Accepts `accountIds` array in request body (1-10 accounts, UUID validated with Zod)
+- 15-minute cooldown per account to prevent API spam
+- Sequential processing to respect X API rate limits
+- Returns detailed results per account with status
+
+**Response Shape:**
+```json
+{
+  "results": [
+    {
+      "accountId": "uuid-1",
+      "tier": "Premium",
+      "updatedAt": "2026-03-30T12:00:00.000Z",
+      "status": "refreshed"
+    },
+    {
+      "accountId": "uuid-2",
+      "tier": "Basic",
+      "updatedAt": "2026-03-30T11:30:00.000Z",
+      "status": "skipped_cooldown"
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "refreshed": 1,
+    "skipped": 1,
+    "errors": 0
+  }
+}
+```
+
+**Files changed:**
+- `src/app/api/x/subscription-tier/refresh/route.ts` (new file)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 5 — Create `XSubscriptionBadge` component and integrate into UI
+
+---
+
+## 2026-03-30: X Subscription Tier Detection — Phase 3 Complete ✅
+
+**Summary:** Implemented Phase 3 of the X Subscription Tier Detection feature. Created the GET `/api/x/subscription-tier` API route.
+
+**Route Features:**
+- Validates user authentication via Better Auth session
+- Validates account ownership (user must own the X account)
+- Accepts `accountId` query parameter (UUID validated with Zod)
+- Returns tier from DB if fresh (< 24 hours old)
+- Fetches fresh tier from X API if missing or stale
+- Graceful fallback to cached tier on rate limit or API errors
+- Uses `ApiError` class for consistent error responses
+
+**Response Shape:**
+```json
+{
+  "tier": "Premium",
+  "updatedAt": "2026-03-30T12:00:00.000Z",
+  "fresh": true
+}
+```
+
+**Files changed:**
+- `src/app/api/x/subscription-tier/route.ts` (new file)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 4 — Create POST `/api/x/subscription-tier/refresh` route
+
+---
+
+## 2026-03-30: X Subscription Tier Detection — Phase 2 Complete ✅
+
+**Summary:** Implemented Phase 2 of the X Subscription Tier Detection feature. Added the `fetchXSubscriptionTier()` method to the X API service.
+
+**Methods Added:**
+- `getSubscriptionTier()` — Instance method that calls X API v2 `/2/users/me?user.fields=subscription_type`
+- `fetchXSubscriptionTier(accountId)` — Static method that orchestrates the full flow: lookup account, decrypt token, refresh if needed, fetch tier, update DB
+
+**Error Handling:**
+- `401` → throws `"X_SESSION_EXPIRED"`
+- `429` → throws `"X_RATE_LIMITED"`
+- Other errors → throws `"X_API_ERROR:{status}"`
+
+**Files changed:**
+- `src/lib/services/x-api.ts` (added `getSubscriptionTier()` and `fetchXSubscriptionTier()` methods)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 3 — Create GET `/api/x/subscription-tier` route
+
+---
+
+## 2026-03-30: X Subscription Tier Detection — Phase 1 Complete ✅
+
+**Summary:** Implemented Phase 1 of the X Subscription Tier Detection feature. Added database schema changes to track X subscription tiers for connected accounts.
+
+**Schema Changes:**
+- Added `xSubscriptionTier` column to `x_accounts` table (text, default 'None')
+- Added `xSubscriptionTierUpdatedAt` column to `x_accounts` table (timestamp)
+- Migration generated: `drizzle/0037_naive_dreaming_celestial.sql`
+- Migration applied successfully
+
+**Tier Values:** `"None"`, `"Basic"`, `"Premium"`, `"PremiumPlus"`
+
+**Files changed:**
+- `src/lib/schema.ts` (added two new columns to xAccounts table)
+- `drizzle/0037_naive_dreaming_celestial.sql` (generated migration)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅ `pnpm db:migrate` ✅
+**Next:** Phase 2 — Add `fetchXSubscriptionTier()` method to `x-api.ts`
+
+---
+
 ## 2026-03-30: Bug Fix — Hydration Mismatch in Composer Component ✅
 
 **Summary:** Fixed React hydration mismatch error in the Composer component's user avatar display.

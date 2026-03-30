@@ -1,6 +1,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { TweetCard } from "./tweet-card";
 
 interface SortableTweetProps {
@@ -18,9 +19,10 @@ interface SortableTweetProps {
   onMove: (fromIndex: number, toIndex: number) => void;
   suggestedHashtags?: string[];
   onHashtagClick?: (tag: string) => void;
+  tier?: XSubscriptionTier | undefined;
 }
 
-export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage, onMove, suggestedHashtags, onHashtagClick }: SortableTweetProps) {
+export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage, onMove, suggestedHashtags, onHashtagClick, tier }: SortableTweetProps) {
   const isFirst = index === 0;
   const {
     attributes,
@@ -58,6 +60,7 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
             {...(index < totalTweets - 1 && { onMoveDown: () => onMove(index, index + 1) })}
             {...(suggestedHashtags !== undefined && { suggestedHashtags })}
             {...(onHashtagClick !== undefined && { onHashtagClick })}
+            {...(tier !== undefined && { tier })}
         />
     </div>
   );

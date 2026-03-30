@@ -228,6 +228,8 @@ export const xAccounts = pgTable("x_accounts", {
   followersCount: integer("followers_count").default(0),
   isDefault: boolean("is_default").default(false),
   isActive: boolean("is_active").default(true),
+  xSubscriptionTier: text("x_subscription_tier").default("None"),
+  xSubscriptionTierUpdatedAt: timestamp("x_subscription_tier_updated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

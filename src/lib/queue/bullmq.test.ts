@@ -3,12 +3,31 @@ import { scheduleProcessor } from "./processors";
 
 // Use vi.hoisted to define mocks before vi.mock calls
 const { mockDb, mockPostTweet, mockPostTweetReply, mockUploadMedia } = vi.hoisted(() => {
+  // Chainable select builder that supports .from().where().orderBy().limit() etc.
+  // Used by gamification helpers (checkMilestone) and quota checks inside the processor.
+  function makeSelectBuilder(result: unknown[] = [{ count: 0 }]) {
+    const builder: Record<string, unknown> & { then: PromiseLike<unknown>["then"] } = {
+      from: () => builder,
+      where: () => builder,
+      orderBy: () => builder,
+      limit: () => builder,
+      offset: () => builder,
+      then: ((resolve?: ((v: unknown) => unknown) | null, reject?: ((r: unknown) => unknown) | null) =>
+        Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined)) as unknown as PromiseLike<unknown>["then"],
+    };
+    return builder;
+  }
+
   const mockDb = {
     query: {
       posts: {
         findFirst: vi.fn(),
       },
+      user: {
+        findFirst: vi.fn(),
+      },
     },
+    select: vi.fn(() => makeSelectBuilder()),
     insert: vi.fn(() => ({
       values: vi.fn(() => ({
         onConflictDoUpdate: vi.fn(),
@@ -19,6 +38,7 @@ const { mockDb, mockPostTweet, mockPostTweetReply, mockUploadMedia } = vi.hoiste
         where: vi.fn(),
       })),
     })),
+    transaction: vi.fn(async (cb: (tx: unknown) => unknown) => cb(mockDb)),
   };
 
   const mockPostTweet = vi.fn();

@@ -7,6 +7,19 @@ import { z } from "zod";
  * Any schema referenced by 2+ routes belongs here.
  */
 
+// ─── X Subscription Tier ──────────────────────────────────────────────────────
+
+/**
+ * X (Twitter) subscription tier values returned by the X API v2.
+ * - None: Free account
+ * - Basic: $3/mo — long posts enabled, no blue checkmark
+ * - Premium: $8/mo — long posts + blue checkmark
+ * - PremiumPlus: $16-40/mo — long posts + blue checkmark + additional features
+ */
+export const xSubscriptionTierEnum = z.enum(["None", "Basic", "Premium", "PremiumPlus"]);
+
+export type XSubscriptionTier = z.infer<typeof xSubscriptionTierEnum>;
+
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
 /**

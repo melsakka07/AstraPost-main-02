@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Copy, Calendar, ExternalLink, Loader2, Package, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { sendToComposer } from "@/lib/composer-bridge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,6 @@ interface AffiliateLink {
 export function RecentAffiliateLinks() {
   const [links, setLinks] = useState<AffiliateLink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
   const fetchLinks = async () => {
     setIsLoading(true);
@@ -62,19 +61,13 @@ export function RecentAffiliateLinks() {
 
   const handleSchedule = (link: AffiliateLink) => {
     if (!link.generatedTweet) return;
-    
-    // Use short link if available
-    const urlToPost = link.shortCode 
-        ? `${window.location.origin}/go/${link.shortCode}` 
-        : link.destinationUrl;
 
-    const draftContent = link.generatedTweet + "\n\n" + urlToPost;
-    localStorage.setItem("composer_draft", draftContent);
-    if (link.productImageUrl) {
-        localStorage.setItem("composer_media", link.productImageUrl);
-    }
-    
-    router.push("/dashboard/compose?source=affiliate");
+    const urlToPost = link.shortCode
+      ? `${window.location.origin}/go/${link.shortCode}`
+      : link.destinationUrl;
+
+    const text = `${link.generatedTweet}\n\n${urlToPost}`;
+    sendToComposer([text], { source: "affiliate" });
   };
 
   if (isLoading) {

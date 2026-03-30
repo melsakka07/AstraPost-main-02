@@ -9,6 +9,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import {
   BookmarkPlus,
   CalendarDays,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -47,9 +48,11 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSession } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
+import { canPostLongContent } from "@/lib/services/x-subscription";
 import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
 
 interface LinkPreview {
@@ -1084,8 +1087,9 @@ export function Composer() {
 
   const selectedAccount = accounts.find(a => targetAccountIds.includes(a.id)) || accounts[0];
   const userImage = mounted ? (selectedAccount?.avatarUrl || session?.user?.image) : null;
-  const userName = selectedAccount?.displayName || session?.user?.name || "User Name";
-  const userHandle = selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle";
+  const userName = mounted ? (selectedAccount?.displayName || session?.user?.name || "User Name") : "User Name";
+  const userHandle = mounted ? (selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle") : "@handle";
+  const selectedTier: XSubscriptionTier | undefined = selectedAccount?.platform === 'twitter' ? selectedAccount.xSubscriptionTier : undefined;
 
   // Preview carousel — computed after all state declarations (H6)
   const safePreviewIndex = Math.min(previewIndex, tweets.length - 1);
@@ -1349,6 +1353,7 @@ export function Composer() {
                         openAiTool={openAiTool}
                         openAiImage={openAiImageDialog}
                         onMove={moveTweet}
+                        tier={selectedTier}
                         {...(tweet.id === aiTargetTweetId && generatedHashtags.length > 0 && {
                           suggestedHashtags: generatedHashtags,
                           onHashtagClick: (tag: string) => {
@@ -1361,7 +1366,19 @@ export function Composer() {
             </SortableContext>
         </DndContext>
 
-        {tweets.some((t) => t.content.length > 280) && (
+        {tweets.some((t) => t.content.length > 280) && canPostLongContent(selectedTier) && selectedTier && (
+          <Alert className="border-success/40 bg-success/5 text-success dark:text-success">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <AlertDescription className="flex items-center gap-2 text-success">
+              <XSubscriptionBadge tier={selectedTier} size="md" />
+              <span>
+                Your account ({userHandle}) supports long posts — this will publish normally with up to 25,000 characters.
+              </span>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {tweets.some((t) => t.content.length > 280) && !canPostLongContent(selectedTier) && (
           <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
             <Info className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-amber-700 dark:text-amber-400">

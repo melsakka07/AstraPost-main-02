@@ -126,7 +126,7 @@ describe("AI Image API (POST)", () => {
     expect(res.status).toBe(429);
   });
 
-  it("should return 403 if monthly image quota exceeded", async () => {
+  it("should return 402 if monthly image quota exceeded", async () => {
     // @ts-ignore
     (db.where as any).mockReturnValue([{ count: 100 }]); // Over limit
 
@@ -136,7 +136,7 @@ describe("AI Image API (POST)", () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(402);
   });
 
   it("should not call startImageGeneration when quota exceeded", async () => {

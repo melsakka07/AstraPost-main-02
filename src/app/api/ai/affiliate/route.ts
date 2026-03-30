@@ -16,7 +16,7 @@ const affiliateRequestSchema = z.object({
 });
 
 const tweetSchema = z.object({
-  tweet: z.string().max(280),
+  tweet: z.string().max(1100),
   hashtags: z.array(z.string()),
 });
 

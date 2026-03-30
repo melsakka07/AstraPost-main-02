@@ -7,8 +7,10 @@ const scoreRequestSchema = z.object({
   content: z.string().min(1).max(5000), // Allow thread content
 });
 
+// Azure/Claude via OpenRouter rejects `minimum`/`maximum` in JSON Schema for number fields.
+// Remove the constraints from the schema and clamp/validate after generation.
 const scoreResponseSchema = z.object({
-  score: z.number().min(0).max(100),
+  score: z.number(),
   feedback: z.array(z.string()),
 });
 
@@ -55,7 +57,8 @@ export async function POST(req: Request) {
       prompt,
     });
 
-    return Response.json(object);
+    // Clamp score to 0-100 in case the model returns out-of-range values
+    return Response.json({ ...object, score: Math.min(100, Math.max(0, object.score)) });
   } catch (error) {
     console.error("AI Scoring Error:", error);
     return new Response(JSON.stringify({ error: "Failed to score content" }), { status: 500 });

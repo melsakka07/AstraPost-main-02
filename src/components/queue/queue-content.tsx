@@ -27,11 +27,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
+import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
+import { canPostLongContent } from "@/lib/services/x-subscription";
 
 // Q4 — maps known failReason substrings to a contextual tip
 function getFailureTip(
-  failReason: string | null
-): { tip: string; href?: string } | null {
+  failReason: string | null,
+  tier?: XSubscriptionTier | null
+): { tip: string; href?: string; isCharLimit?: boolean } | null {
   if (!failReason) return null;
   const r = failReason.toLowerCase();
   if (r.includes("authorization expired") || r.includes("401")) {
@@ -51,6 +54,20 @@ function getFailureTip(
   }
   if (r.includes("duplicate")) {
     return { tip: "X rejected this as a duplicate tweet. Edit the content before retrying." };
+  }
+  if (r.includes("too long") || r.includes("character") || r.includes("length") || r.includes("280")) {
+    if (canPostLongContent(tier)) {
+      return {
+        tip: "This post failed despite your paid subscription. Try refreshing your subscription status in Settings.",
+        href: "/dashboard/settings",
+        isCharLimit: true,
+      };
+    }
+    return {
+      tip: "This post exceeds the 280-character limit for free X accounts. Edit the content or upgrade to X Premium for long posts.",
+      href: "/dashboard/settings",
+      isCharLimit: true,
+    };
   }
   return null;
 }
@@ -367,7 +384,8 @@ export function QueueContent({
         <div className="space-y-4">
           {failedPosts.map((post: any, index: number) => {
             const isPaused = post.status === "paused_needs_reconnect";
-            const tip = getFailureTip(post.failReason);
+            const tier = post.xAccount?.xSubscriptionTier as XSubscriptionTier | null | undefined;
+            const tip = getFailureTip(post.failReason, tier);
             return (
               <Card key={post.id} className={isPaused ? "border-warning/30 bg-warning/5" : ""}>
                 <CardContent
@@ -379,7 +397,7 @@ export function QueueContent({
                   </div>
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center flex-wrap">
                         <Badge variant="outline">
                           {post.type === "thread" ? "Thread" : "Tweet"}
                         </Badge>
@@ -387,6 +405,11 @@ export function QueueContent({
                           <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10">Waiting for reconnection</Badge>
                         ) : (
                           <Badge variant="destructive">{post.status}</Badge>
+                        )}
+                        {post.xAccount?.xUsername && (
+                          <span className="text-xs text-muted-foreground">
+                            @{post.xAccount.xUsername}
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
@@ -419,17 +442,20 @@ export function QueueContent({
                     {tip && (
                       <div className="flex items-start gap-1.5 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <span>
-                          {tip.tip}{" "}
-                          {tip.href && (
-                            <Link
-                              href={tip.href}
-                              className="inline-flex items-center gap-0.5 underline underline-offset-2 font-medium"
-                            >
-                              Go to Settings
-                              <ExternalLink className="h-3 w-3" />
-                            </Link>
-                          )}
+                        <span className="flex items-center gap-2 flex-wrap">
+                          {tip.isCharLimit && tier && <XSubscriptionBadge tier={tier} size="sm" />}
+                          <span>
+                            {tip.tip}{" "}
+                            {tip.href && (
+                              <Link
+                                href={tip.href}
+                                className="inline-flex items-center gap-0.5 underline underline-offset-2 font-medium"
+                              >
+                                Go to Settings
+                                <ExternalLink className="h-3 w-3" />
+                              </Link>
+                            )}
+                          </span>
                         </span>
                       </div>
                     )}

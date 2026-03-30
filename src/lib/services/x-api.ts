@@ -430,6 +430,75 @@ export class XApiService {
     return count;
   }
 
+  async getSubscriptionTier(): Promise<string> {
+    const res = await fetch("https://api.twitter.com/2/users/me?user.fields=subscription_type", {
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "(empty)");
+      logger.error("x_subscription_tier_fetch_failed", {
+        status: res.status,
+        body: errText,
+      });
+
+      if (res.status === 401) {
+        throw new Error("X_SESSION_EXPIRED");
+      }
+      if (res.status === 429) {
+        throw new Error("X_RATE_LIMITED");
+      }
+      throw new Error(`X_API_ERROR:${res.status}`);
+    }
+
+    const data = (await res.json()) as {
+      data?: { subscription_type?: string };
+    };
+
+    const tier = data?.data?.subscription_type ?? "None";
+    return tier;
+  }
+
+  static async fetchXSubscriptionTier(accountId: string): Promise<string> {
+    const account = await db.query.xAccounts.findFirst({
+      where: eq(xAccounts.id, accountId),
+    });
+
+    if (!account) {
+      throw new Error(`X account ${accountId} not found`);
+    }
+
+    const shouldRefresh =
+      !!account.refreshTokenEnc &&
+      (!account.tokenExpiresAt || account.tokenExpiresAt.getTime() - Date.now() < 60_000);
+
+    let client: XApiService;
+    if (shouldRefresh) {
+      client = await XApiService.refreshWithLock(account, account.userId);
+    } else {
+      client = new XApiService(decryptToken(account.accessToken));
+    }
+
+    const tier = await client.getSubscriptionTier();
+
+    await db
+      .update(xAccounts)
+      .set({
+        xSubscriptionTier: tier,
+        xSubscriptionTierUpdatedAt: new Date(),
+      })
+      .where(eq(xAccounts.id, accountId));
+
+    logger.info("x_subscription_tier_updated", {
+      xAccountId: accountId,
+      tier,
+    });
+
+    return tier;
+  }
+
   async getTweetsPublicMetrics(tweetIds: string[]) {
     const ids = tweetIds.filter(Boolean);
     if (ids.length === 0) return [] as any[];
