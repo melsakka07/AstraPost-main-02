@@ -2,15 +2,17 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-import { type InferSelectModel, eq, and, sql } from "drizzle-orm";
+import { type InferSelectModel, eq, and, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
-import { scheduleQueue, SCHEDULE_JOB_OPTIONS, type PublishPostPayload, type AnalyticsJobPayload } from "@/lib/queue/client";
+import { scheduleQueue, SCHEDULE_JOB_OPTIONS, type PublishPostPayload, type AnalyticsJobPayload, type RefreshXTiersJobPayload } from "@/lib/queue/client";
 import { posts, jobRuns, user, tweets, media, notifications, xAccounts } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
 import { sendPostFailureEmail } from "@/lib/services/email";
 import { XApiService } from "@/lib/services/x-api";
+import { canPostLongContent } from "@/lib/services/x-subscription";
 
 /** Shape of a post as loaded by the schedule processor (post + tweets + media). */
 type FullPost = InferSelectModel<typeof posts> & {
@@ -129,6 +131,65 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
 
     if (!xService) {
       throw new Error("No connected X account");
+    }
+
+    // Pre-publish tier verification: check if content exceeds tier's character limit
+    const accountTier = post.xAccount?.xSubscriptionTier as XSubscriptionTier | null;
+    const maxAllowedChars = canPostLongContent(accountTier) ? 2_000 : 280;
+
+    for (const tweetRow of post.tweets) {
+      if (tweetRow.content.length > maxAllowedChars) {
+        const tierLabel = accountTier ?? "None";
+        const errorData = {
+          code: "TIER_LIMIT_EXCEEDED",
+          message: `Post exceeds ${maxAllowedChars} characters but the target X account (@${post.xAccount?.xUsername ?? "unknown"}) is on the ${tierLabel} tier. ${canPostLongContent(accountTier) ? "Posts longer than 2,000 characters are not supported." : "X Premium is required for posts longer than 280 characters."}`,
+          postLength: tweetRow.content.length,
+          accountTier: tierLabel,
+          maxAllowed: maxAllowedChars,
+        };
+
+        logger.warn("schedule_job_tier_limit_exceeded", {
+          queue: job.queueName,
+          jobId: job.id,
+          postId,
+          correlationId,
+          ...errorData,
+        });
+
+        await db.update(posts).set({
+          status: "failed",
+          failReason: errorData.message,
+          lastErrorCode: null,
+          lastErrorAt: new Date(),
+        }).where(eq(posts.id, postId));
+
+        await db.insert(jobRuns).values({
+          id: crypto.randomUUID(),
+          userId: post.userId,
+          queueName: job.queueName,
+          jobId: String(job.id),
+          correlationId: correlationId || `${job.queueName}:${job.id}:${postId}`,
+          postId,
+          status: "failed",
+          attempts: job.opts?.attempts,
+          attemptsMade: job.attemptsMade,
+          startedAt: new Date(),
+          finishedAt: new Date(),
+          error: errorData.message,
+        });
+
+        await db.insert(notifications).values({
+          id: crypto.randomUUID(),
+          userId: post.userId,
+          type: "post_failed",
+          title: "Post Too Long for X Account",
+          message: errorData.message,
+          metadata: errorData,
+          isRead: false,
+        });
+
+        throw new UnrecoverableError(errorData.message);
+      }
     }
 
     const loadMediaBuffer = async (fileUrl: string) => {
@@ -533,4 +594,137 @@ export const analyticsProcessor = async (job: Job<AnalyticsJobPayload>) => {
       correlationId,
       mode: "periodic",
     });
+};
+
+// ── X Tier Refresh Processor ──────────────────────────────────────────────────
+
+/** Delay between consecutive X API calls to avoid rate-limiting. */
+const TIER_REFRESH_BATCH_DELAY_MS = 500;
+
+export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) => {
+  const { triggeredBy } = job.data;
+  const correlationId = `x-tier-refresh:${triggeredBy}`;
+
+  logger.info("x_tier_refresh_job_started", {
+    queue: job.queueName,
+    jobId: job.id,
+    correlationId,
+  });
+
+  try {
+    // Find active accounts where tier data is stale (>24h old) or never fetched.
+    const staleAccounts = await db.query.xAccounts.findMany({
+      where: and(
+        eq(xAccounts.isActive, true),
+        or(
+          sql`x_accounts.x_subscription_tier_updated_at is null`,
+          sql`x_accounts.x_subscription_tier_updated_at < now() - interval '24 hours'`,
+        ),
+      ),
+    });
+
+    if (staleAccounts.length === 0) {
+      logger.info("x_tier_refresh_no_stale_accounts", { correlationId });
+      return;
+    }
+
+    let refreshed = 0;
+    let skipped = 0;
+    let errors = 0;
+
+    for (const account of staleAccounts) {
+      const previousTier = (account.xSubscriptionTier ?? "None") as XSubscriptionTier;
+
+      try {
+        const freshTier = await XApiService.fetchXSubscriptionTier(account.id);
+        refreshed++;
+
+        const newTier = freshTier as XSubscriptionTier;
+        if (freshTier !== previousTier) {
+          logger.info("x_tier_changed", {
+            accountId: account.id,
+            xUsername: account.xUsername,
+            previousTier,
+            newTier,
+          });
+
+          // Detect downgrade (Premium → Free)
+          const wasPremium = canPostLongContent(previousTier);
+          const isNowFree = !canPostLongContent(newTier);
+
+          if (wasPremium && isNowFree) {
+            // Check for scheduled posts with content exceeding 280 chars
+            const scheduledPosts = await db.query.posts.findMany({
+              where: and(
+                eq(posts.xAccountId, account.id),
+                eq(posts.status, "scheduled"),
+              ),
+              with: { tweets: { columns: { content: true } } },
+            });
+
+            const oversized = scheduledPosts.filter((p) =>
+              p.tweets.some((t) => t.content.length > 280),
+            );
+
+            if (oversized.length > 0) {
+              try {
+                await db.insert(notifications).values({
+                  id: crypto.randomUUID(),
+                  userId: account.userId,
+                  type: "tier_downgrade_warning",
+                  title: "X Premium Subscription Changed",
+                  message: `Your X Premium subscription for @${account.xUsername} is no longer active. You have ${oversized.length} scheduled post${oversized.length > 1 ? "s" : ""} that exceed 280 characters — these will fail to publish. Please edit them or convert to threads.`,
+                  metadata: {
+                    xUsername: account.xUsername,
+                    previousTier,
+                    newTier,
+                    oversizedCount: oversized.length,
+                    postIds: oversized.map((p) => p.id),
+                  },
+                  isRead: false,
+                });
+              } catch (notifErr) {
+                logger.warn("x_tier_downgrade_notification_failed", {
+                  accountId: account.id,
+                  error: notifErr instanceof Error ? notifErr.message : "Unknown",
+                });
+              }
+            }
+          }
+        }
+      } catch (err) {
+        const code = (err as any)?.code;
+        if (code === 401) {
+          logger.warn("x_tier_refresh_account_auth_error", {
+            accountId: account.id,
+            xUsername: account.xUsername,
+          });
+          skipped++;
+        } else {
+          logger.error("x_tier_refresh_account_error", {
+            accountId: account.id,
+            xUsername: account.xUsername,
+            error: err instanceof Error ? err.message : "Unknown",
+          });
+          errors++;
+        }
+      }
+
+      // Small delay between accounts to avoid X API rate limits
+      await new Promise((resolve) => setTimeout(resolve, TIER_REFRESH_BATCH_DELAY_MS));
+    }
+
+    logger.info("x_tier_refresh_job_completed", {
+      queue: job.queueName,
+      jobId: job.id,
+      correlationId,
+      summary: { total: staleAccounts.length, refreshed, skipped, errors },
+    });
+  } catch (err) {
+    logger.error("x_tier_refresh_job_fatal", {
+      correlationId,
+      error: err instanceof Error ? err.message : "Unknown",
+    });
+    throw err;
+  }
 };

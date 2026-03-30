@@ -3,11 +3,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { Activity, AlertTriangle, CheckCircle2, RefreshCw, Twitter, XCircle } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  RefreshCw,
+  Star,
+  Twitter,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { signIn } from "@/lib/auth-client";
@@ -160,7 +174,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
       ...prev,
       [accountId]: { previousTier: currentTier, highlight: false },
     }));
-    
+
     try {
       const res = await fetch("/api/x/subscription-tier/refresh", {
         method: "POST",
@@ -181,7 +195,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
               : a
           )
         );
-        
+
         const previousTier = tierRefreshState[accountId]?.previousTier ?? null;
         if (previousTier !== newTier) {
           setTierRefreshState((prev) => ({
@@ -195,7 +209,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
             }));
           }, 300);
         }
-        
+
         toast.success(`Subscription tier updated: ${result.tier}`);
       } else if (result?.status === "skipped_cooldown") {
         toast.info("Tier was recently refreshed. Please wait before refreshing again.");
@@ -242,181 +256,282 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
   return (
     <TooltipProvider>
       <div className="space-y-4">
-      {accounts.length === 0 ? (
-        <div className="text-center py-4 text-muted-foreground">No accounts connected.</div>
-      ) : (
-        <div className="space-y-3">
-          {accounts.map((a) => {
-            const expired = isTokenExpired(a);
-            const health = healthStatus[a.id];
-            const isChecking = checking === a.id;
-            const tierState = tierRefreshState[a.id];
-            const tierUpdatedAt = a.xSubscriptionTierUpdatedAt ? new Date(a.xSubscriptionTierUpdatedAt) : null;
-            const isTierUnknown = !a.xSubscriptionTierUpdatedAt;
+        {accounts.length === 0 ? (
+          <div className="py-6 text-center text-sm text-muted-foreground">
+            No accounts connected.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {accounts.map((a) => {
+              const expired = isTokenExpired(a);
+              const health = healthStatus[a.id];
+              const isChecking = checking === a.id;
+              const tierState = tierRefreshState[a.id];
+              const tierUpdatedAt = a.xSubscriptionTierUpdatedAt
+                ? new Date(a.xSubscriptionTierUpdatedAt)
+                : null;
+              const isTierUnknown = !a.xSubscriptionTierUpdatedAt;
 
-            return (
-              <div key={a.id} className="space-y-1.5">
-                <div
-                  className={`flex items-center justify-between gap-3 p-3 border rounded-lg ${
-                    expired ? "border-destructive/40 bg-destructive/5" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-10 w-10 bg-muted rounded-full overflow-hidden shrink-0 relative">
-                      {a.xAvatarUrl ? (
-                        <Image src={a.xAvatarUrl} alt={a.xUsername} fill sizes="40px" className="object-cover" />
-                      ) : (
-                        <div className="h-10 w-10 flex items-center justify-center">
-                          <Twitter className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold truncate">{a.xDisplayName || a.xUsername}</span>
-                        <span className={`transition-all duration-300 ${tierState?.highlight ? "ring-2 ring-primary rounded-full p-0.5" : ""}`}>
-                          <XSubscriptionBadge
-                            tier={(a.xSubscriptionTier as XSubscriptionTier) ?? null}
-                            size="sm"
-                            loading={refreshingTier === a.id}
-                            showUnknown={isTierUnknown}
-                          />
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span className="truncate">@{a.xUsername}</span>
-                        {tierUpdatedAt && (
-                          <span className="text-xs shrink-0">
-                            Checked {relativeTime(tierUpdatedAt)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      type="button"
-                      variant={a.isDefault ? "default" : "outline"}
-                      size="sm"
-                      disabled={busy}
-                      onClick={async () => {
-                        setBusy(true);
-                        try {
-                          const res = await fetch("/api/x/accounts/default", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ xAccountId: a.id, isDefault: !a.isDefault }),
-                          });
-                          if (!res.ok) throw new Error("Failed to update default");
-                          setAccounts((prev) =>
-                            prev.map((x) => (x.id === a.id ? { ...x, isDefault: !a.isDefault } : x))
-                          );
-                        } catch (e) {
-                          toast.error(e instanceof Error ? e.message : "Failed to update default");
-                        } finally {
-                          setBusy(false);
-                        }
-                      }}
-                    >
-                      Default
-                    </Button>
-
-                    {expired ? (
-                      <Badge variant="destructive" className="gap-1">
-                        <AlertTriangle className="h-3 w-3" />
-                        Expired
-                      </Badge>
-                    ) : (
-                      <Badge variant={a.isActive ? "default" : "secondary"}>
-                        {a.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    )}
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={isChecking || busy}
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label={`Test connection for @${a.xUsername}`}
-                      onClick={() => handleHealthCheck(a.id)}
-                    >
-                      <Activity
-                        className={`h-4 w-4 ${isChecking ? "animate-pulse text-primary" : ""}`}
-                      />
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={refreshingTier === a.id || busy}
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label={`Refresh subscription tier for @${a.xUsername}`}
-                      onClick={() => handleRefreshTier(a.id, (a.xSubscriptionTier as XSubscriptionTier) ?? null)}
-                    >
-                      <RefreshCw
-                        className={`h-4 w-4 ${refreshingTier === a.id ? "animate-spin" : ""}`}
-                      />
-                    </Button>
-                  </div>
-                </div>
-
-                {expired && (
-                  <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
-                    <div className="flex items-center gap-2 text-destructive">
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span>
-                        Token expired — posts to this account will fail until you reconnect.
-                      </span>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={handleReconnect}
-                    >
-                      Reconnect
-                    </Button>
-                  </div>
-                )}
-
-                {health && (
+              return (
+                <div key={a.id} className="space-y-1.5">
+                  {/* Account row */}
                   <div
-                    className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
-                      health.ok
-                        ? "border border-success/30 bg-success/5 text-success"
-                        : "border border-destructive/30 bg-destructive/5 text-destructive"
+                    className={`rounded-lg border p-3 transition-colors ${
+                      expired
+                        ? "border-destructive/40 bg-destructive/5"
+                        : "bg-card"
                     }`}
                   >
-                    {health.ok ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                    ) : (
-                      <XCircle className="h-3.5 w-3.5 shrink-0" />
-                    )}
-                    <span className="flex-1 truncate">{health.detail}</span>
-                    <span className="shrink-0 text-muted-foreground">
-                      {relativeTime(health.checkedAt)}
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    <div className="flex items-start gap-3">
+                      {/* Avatar */}
+                      <div className="relative mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-muted sm:h-10 sm:w-10">
+                        {a.xAvatarUrl ? (
+                          <Image
+                            src={a.xAvatarUrl}
+                            alt={a.xDisplayName || a.xUsername}
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Twitter className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
 
-      <div className="flex gap-2">
-        <Button
-          className="flex-1"
-          variant="outline"
-          disabled={busy}
-          onClick={syncNow}
-        >
-          {busy ? "Syncing..." : "Sync accounts"}
-        </Button>
-      </div>
+                      {/* Identity */}
+                      <div className="min-w-0 flex-1">
+                        {/* Name + tier badge */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate font-semibold leading-snug">
+                            {a.xDisplayName || a.xUsername}
+                          </span>
+                          <span
+                            className={`transition-all duration-300 ${
+                              tierState?.highlight
+                                ? "rounded-full p-0.5 ring-2 ring-primary"
+                                : ""
+                            }`}
+                          >
+                            <XSubscriptionBadge
+                              tier={(a.xSubscriptionTier as XSubscriptionTier) ?? null}
+                              size="sm"
+                              loading={refreshingTier === a.id}
+                              showUnknown={isTierUnknown}
+                            />
+                          </span>
+                        </div>
+
+                        {/* Username + status badge + tier timestamp */}
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                          <span className="text-sm text-muted-foreground">
+                            @{a.xUsername}
+                          </span>
+                          {expired ? (
+                            <Badge
+                              variant="destructive"
+                              className="h-4 gap-1 px-1.5 py-0 text-[10px]"
+                            >
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              Expired
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant={a.isActive ? "default" : "secondary"}
+                              className="h-4 px-1.5 py-0 text-[10px]"
+                            >
+                              {a.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          )}
+                          {tierUpdatedAt && (
+                            <span className="text-xs text-muted-foreground/60">
+                              · {relativeTime(tierUpdatedAt)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action buttons — 3 compact icon buttons */}
+                      <div className="flex shrink-0 items-center">
+                        {/* Default toggle */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={busy}
+                              className={
+                                a.isDefault
+                                  ? "h-8 w-8 p-0 text-primary hover:text-primary"
+                                  : "h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              }
+                              aria-label={
+                                a.isDefault ? "Default account" : "Set as default"
+                              }
+                              onClick={async () => {
+                                setBusy(true);
+                                try {
+                                  const res = await fetch("/api/x/accounts/default", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                      xAccountId: a.id,
+                                      isDefault: !a.isDefault,
+                                    }),
+                                  });
+                                  if (!res.ok) throw new Error("Failed to update default");
+                                  setAccounts((prev) =>
+                                    prev.map((x) =>
+                                      x.id === a.id
+                                        ? { ...x, isDefault: !a.isDefault }
+                                        : x
+                                    )
+                                  );
+                                } catch (e) {
+                                  toast.error(
+                                    e instanceof Error ? e.message : "Failed to update default"
+                                  );
+                                } finally {
+                                  setBusy(false);
+                                }
+                              }}
+                            >
+                              <Star
+                                className={`h-4 w-4 transition-all ${
+                                  a.isDefault ? "fill-current" : ""
+                                }`}
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            {a.isDefault ? "Default account" : "Set as default"}
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Test connection */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={isChecking || busy}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              aria-label={`Test connection for @${a.xUsername}`}
+                              onClick={() => handleHealthCheck(a.id)}
+                            >
+                              <Activity
+                                className={`h-4 w-4 ${
+                                  isChecking ? "animate-pulse text-primary" : ""
+                                }`}
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Test connection
+                          </TooltipContent>
+                        </Tooltip>
+
+                        {/* Refresh subscription tier */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={refreshingTier === a.id || busy}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                              aria-label={`Refresh subscription tier for @${a.xUsername}`}
+                              onClick={() =>
+                                handleRefreshTier(
+                                  a.id,
+                                  (a.xSubscriptionTier as XSubscriptionTier) ?? null
+                                )
+                              }
+                            >
+                              <RefreshCw
+                                className={`h-4 w-4 ${
+                                  refreshingTier === a.id ? "animate-spin" : ""
+                                }`}
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Refresh tier
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expired token warning */}
+                  {expired && (
+                    <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <span>
+                          Token expired — posts will fail until you reconnect.
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={handleReconnect}
+                      >
+                        Reconnect
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Health check result */}
+                  {health && (
+                    <div
+                      className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
+                        health.ok
+                          ? "border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                          : "border border-destructive/30 bg-destructive/5 text-destructive"
+                      }`}
+                    >
+                      {health.ok ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <XCircle className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="flex-1 truncate">{health.detail}</span>
+                      <span className="shrink-0 text-muted-foreground">
+                        {relativeTime(health.checkedAt)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Footer: info box + sync button */}
+        <div className="space-y-2">
+          <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div className="space-y-0.5">
+              <p>
+                <span className="font-medium text-foreground">Character limits:</span>{" "}
+                Free X accounts can post up to 280 characters. X Premium subscribers
+                can post up to 2,000 characters per post.
+              </p>
+              <p>
+                The colored dot next to each account shows its subscription tier.
+                Use the refresh icon to update tier status.
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" className="w-full" disabled={busy} onClick={syncNow}>
+            {busy ? "Syncing..." : "Sync accounts"}
+          </Button>
+        </div>
       </div>
     </TooltipProvider>
   );

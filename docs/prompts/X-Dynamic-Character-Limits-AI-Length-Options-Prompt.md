@@ -604,24 +604,72 @@ Run `pnpm test` to confirm all tests pass.
 
 ## Deliverables Checklist
 
-- [ ] **`getMaxCharacterLimit()` updated** — returns 2,000 (not 25,000) for Premium tiers
-- [ ] **`src/lib/x-post-length.ts` created** — `AI_LENGTH_OPTIONS`, `getAvailableLengthOptions()`, `isLengthOptionAllowed()`
-- [ ] **`aiLengthOptionEnum` Zod schema** added to `common.ts`
-- [ ] **`POST /api/ai/thread` updated** — accepts `mode` and `lengthOption`, validates against X tier, staleness check
-- [ ] **`src/lib/ai/length-prompts.ts` created** — length-specific AI system prompt templates (Short, Medium, Long, Thread)
-- [ ] **Composer: dynamic character limit** — 280 for Free, 2,000 for Premium in single-post mode, 280 per tweet in thread mode
-- [ ] **Composer: character counter** — adaptive counter with 280 milestone marker for Premium, length zone labels
-- [ ] **Composer: warning messages updated** — Free users get existing message + thread tip, Premium users get soft 2,000 warning, thread mode gets per-tweet warning
-- [ ] **Composer: multi-account mixed tier** — most restrictive tier applied, contextual note shown
-- [ ] **`AiLengthSelector` component created** — segmented control with disabled states for Free users
-- [ ] **Length selector integrated** — in composer AI panel (single-post mode only) and AI writer page
-- [ ] **BullMQ recurring job** — `refresh-x-tiers` runs daily at 4 AM UTC, processes stale accounts, respects rate limits
-- [ ] **Worker pre-publish tier check** — `TIER_LIMIT_EXCEEDED` error for posts exceeding tier limit, structured error in `job_runs`
-- [ ] **Tier downgrade notification** — in-app notification for users with pending oversized posts after tier downgrade
-- [ ] **Queue failure banner** — `TIER_LIMIT_EXCEEDED` banner with edit action
-- [ ] **Tier downgrade toast** — sonner toast on frontend when tier changes from Premium to Free
-- [ ] **Vitest tests pass** — helpers, route validation, pre-publish check all covered
-- [ ] **`pnpm lint && pnpm typecheck && pnpm test`** — all pass cleanly
+- [x] **`getMaxCharacterLimit()` updated** — returns 2,000 (not 25,000) for Premium tiers
+- [x] **`src/lib/x-post-length.ts` created** — `AI_LENGTH_OPTIONS`, `getAvailableLengthOptions()`, `isLengthOptionAllowed()`
+- [x] **`aiLengthOptionEnum` Zod schema** added to `common.ts`
+- [x] **`POST /api/ai/thread` updated** — accepts `mode` and `lengthOption`, validates against X tier, staleness check
+- [x] **`src/lib/ai/length-prompts.ts` created** — length-specific AI system prompt templates (Short, Medium, Long, Thread)
+- [x] **Composer: dynamic character limit** — 280 for Free, 2,000 for Premium in single-post mode, 280 per tweet in thread mode
+- [x] **Composer: character counter** — adaptive counter with 280 milestone marker for Premium, length zone labels
+- [x] **Composer: warning messages updated** — Free users get existing message + thread tip, Premium users get soft 2,000 warning, thread mode gets per-tweet warning
+- [x] **Composer: multi-account mixed tier** — most restrictive tier applied, contextual note shown
+- [x] **`AiLengthSelector` component created** — segmented control with disabled states for Free users
+- [x] **Length selector integrated** — in composer AI panel (single-post mode only) and AI writer page
+- [x] **BullMQ recurring job** — `refresh-x-tiers` runs daily at 4 AM UTC (`scripts/worker.ts`), `refreshXTiersProcessor` queries stale accounts with 500ms inter-call delay
+- [x] **Worker pre-publish tier check** — `TIER_LIMIT_EXCEEDED` structured error in `scheduleProcessor`, post marked `failed`, job run recorded, user notification created, `UnrecoverableError` thrown
+- [x] **Tier downgrade notification** — `refreshXTiersProcessor` detects Premium→Free downgrade, queries scheduled posts >280 chars, inserts `tier_downgrade_warning` notification
+- [x] **Queue failure banner** — `queue-content.tsx` detects `TIER_LIMIT_EXCEEDED` in `failReason`, shows `XSubscriptionBadge` + "Edit Post" / "Convert to Thread" action buttons
+- [x] **Tier downgrade toast** — `notification-bell.tsx` fires `toast.warning()` with "View Queue" action when `tier_downgrade_warning` notification is received
+- [x] **Vitest tests pass** — 147 tests across 14 files, all passing (2026-03-31)
+- [x] **`pnpm lint && pnpm typecheck && pnpm test`** — all three pass cleanly (2026-03-31)
+
+---
+
+## Verification Report — 2026-03-31
+
+**Verified by:** Claude Code
+**Method:** Direct file inspection of all implementation files
+
+### Phase 1 ✅ Complete
+- `src/lib/services/x-subscription.ts`: `getMaxCharacterLimit()` correctly returns `2_000` for Premium tiers (was 25,000 in initial Phase 6 of tier detection feature).
+- `src/lib/x-post-length.ts`: `AI_LENGTH_OPTIONS`, `getAvailableLengthOptions()`, `isLengthOptionAllowed()` all present and correct.
+- `src/lib/schemas/common.ts`: `aiLengthOptionEnum` and `AiLengthOptionId` type exported.
+
+### Phase 2 ✅ Complete
+- `src/app/api/ai/thread/route.ts`: Request schema includes `mode` and `lengthOption`. Tier validation blocks non-short options for Free accounts with correct `ApiError.forbidden()`. Staleness check (24h) triggers inline `XApiService.fetchXSubscriptionTier()` before validation. Length-specific prompts built via `getLengthPrompt()` from `src/lib/ai/length-prompts.ts`. Single-post streaming uses plain text (`Content-Type: text/plain`); thread mode uses SSE.
+
+### Phase 3 ✅ Complete
+- `src/components/composer/tweet-card.tsx`: `maxChars` computed via `getMaxCharacterLimit(tier)`. Thread mode enforces 280 regardless of tier (`isThreadMode ? 280 : getMaxCharacterLimit(tier)`). Character counter shows dynamic limit with length zone labels.
+
+### Phase 4 ✅ Complete
+- `src/components/composer/ai-length-selector.tsx`: Segmented control (Short/Medium/Long) with lock icons and tooltips for disabled options. Uses `canPostLongContent()` to gate Medium/Long.
+- `src/components/composer/composer.tsx`: `AiLengthSelector` integrated, `aiLengthOption` state sent to API only in single-post mode.
+- `src/app/dashboard/ai/writer/page.tsx`: Thread/Single Post mode toggle integrated (per updates log).
+
+### Phase 5 ✅ Complete
+- `src/lib/queue/client.ts`: `RefreshXTiersJobPayload`, `xTierRefreshQueue` defined.
+- `src/lib/queue/processors.ts`: `refreshXTiersProcessor` queries accounts with stale tier (`>24h` or null), calls `fetchXSubscriptionTier()` per account with 500ms delay, logs summary.
+- `scripts/worker.ts`: `xTierRefreshWorker` created, repeatable job scheduled at `0 4 * * *` UTC with `removeOnComplete: { count: 50 }` and `removeOnFail: { count: 20 }`.
+- **Staleness check in route:** `src/app/api/ai/thread/route.ts` performs inline tier refresh if cached data >24h old before validating length option. ✅
+
+### Phase 6 ✅ Complete
+- `src/lib/queue/processors.ts` (`scheduleProcessor`): Pre-publish check iterates `post.tweets`, compares `content.length` against `maxAllowedChars` (280 or 2,000 based on tier). On failure: post set to `failed` with `failReason`, job run inserted, `notifications` record created (`type: "post_failed"`), `UnrecoverableError` thrown.
+- **Tier downgrade notification:** `refreshXTiersProcessor` detects downgrade, queries scheduled posts, creates `tier_downgrade_warning` notification with `postIds` metadata. ✅
+
+### Phase 7 ✅ Complete
+- `src/components/queue/queue-content.tsx`: `getFailureTip()` checks `failReason.toLowerCase().includes("tier_limit_exceeded")`, sets `isTierLimit: true`. Banner shows `XSubscriptionBadge` + descriptive message + "Edit Post" and "Convert to Thread" buttons.
+- `src/components/dashboard/notification-bell.tsx`: Detects `tier_downgrade_warning` notification type, fires `toast.warning()` with "View Queue" action button and tracks seen IDs to prevent duplicate toasts.
+
+### Phase 8 ✅ Complete (fixed 2026-03-31)
+All test files existed but had failures. Root cause: **Zod v4** uses a stricter UUID regex requiring RFC-4122 compliant UUIDs (version `[1-8]` in position 3, variant `[89ab]` in position 4). Test IDs like `00000000-0000-0000-0000-000000000001` fail this check. Fixed by replacing with proper v4-format UUIDs.
+
+Two additional tests were added to `route.test.ts`:
+- Stale tier (>24h) triggers `fetchXSubscriptionTier()` re-fetch before validation
+- Fresh tier (<24h) skips the re-fetch
+
+Five `getMaxCharacterLimit()` tests added to `x-post-length.test.ts` (Phase 8B requirement).
+
+**Final result:** 147 tests / 14 test files — all passing. `pnpm lint && pnpm typecheck && pnpm test` ✅
 
 ---
 

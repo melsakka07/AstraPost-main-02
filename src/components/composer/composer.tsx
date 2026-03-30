@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AiImageDialog } from "@/components/composer/ai-image-dialog";
+import { AiLengthSelector } from "@/components/composer/ai-length-selector";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
 import { InspirationPanel } from "@/components/composer/inspiration-panel";
 import { SortableTweet } from "@/components/composer/sortable-tweet";
@@ -158,6 +159,7 @@ export function Composer() {
   const [aiTone, setAiTone] = useState("professional");
   const [aiCount, setAiCount] = useState([3]);
   const [aiLanguage, setAiLanguage] = useState("ar");
+  const [aiLengthOption, setAiLengthOption] = useState<"short" | "medium" | "long">("short");
   const [aiRewriteText, setAiRewriteText] = useState("");
 
   // Sync AI language with user's preferred language once session loads
@@ -683,6 +685,7 @@ export function Composer() {
     try {
       if (aiTool === "thread") {
         if (!aiTopic) throw new Error("Topic is required");
+        const isSinglePost = tweets.length === 1;
         const res = await fetch("/api/ai/thread", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -691,6 +694,9 @@ export function Composer() {
             tone: aiTone,
             tweetCount: aiCount[0],
             language: aiLanguage,
+            mode: isSinglePost ? "single" : "thread",
+            ...(isSinglePost ? { lengthOption: aiLengthOption } : {}),
+            ...(isSinglePost && targetAccountIds[0] ? { targetAccountId: targetAccountIds[0] } : {}),
           }),
         });
         if (!res.ok) {
@@ -706,7 +712,24 @@ export function Composer() {
         }
         if (!res.body) throw new Error("No response body");
 
-        // Read SSE stream — the endpoint returns text/event-stream, not JSON
+        if (isSinglePost) {
+          // Single-post mode: plain text response
+          const text = await res.text();
+          if (!text || text.trim().length === 0) throw new Error("No content generated");
+
+          const newTweet: TweetDraft = {
+            id: tweets[0]?.id ?? Math.random().toString(36).substr(2, 9),
+            content: text.trim(),
+            media: tweets[0]?.media ?? [],
+          };
+          setTweets([newTweet]);
+          setPreviewIndex(0);
+          setIsAiOpen(false);
+          toast.success("Post generated!");
+          return;
+        }
+
+        // Thread mode: Read SSE stream — the endpoint returns text/event-stream, not JSON
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let sseBuffer = "";
@@ -1091,6 +1114,18 @@ export function Composer() {
   const userHandle = mounted ? (selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle") : "@handle";
   const selectedTier: XSubscriptionTier | undefined = selectedAccount?.platform === 'twitter' ? selectedAccount.xSubscriptionTier : undefined;
 
+  // Multi-account mixed tier: apply the most restrictive tier among selected X accounts
+  const selectedXAccounts = accounts.filter(a => targetAccountIds.includes(a.id) && a.platform === 'twitter');
+  const effectiveTier: XSubscriptionTier | undefined = (() => {
+    if (selectedXAccounts.length === 0) return selectedTier;
+    const tiers = selectedXAccounts.map(a => a.xSubscriptionTier as XSubscriptionTier | undefined);
+    // If any selected account is Free (None/null), treat the whole group as Free
+    if (tiers.some(t => !canPostLongContent(t))) return undefined;
+    return selectedTier;
+  })();
+  const hasMixedTiers = selectedXAccounts.length > 1 &&
+    !selectedXAccounts.every(a => a.xSubscriptionTier === selectedXAccounts[0]?.xSubscriptionTier);
+
   // Preview carousel — computed after all state declarations (H6)
   const safePreviewIndex = Math.min(previewIndex, tweets.length - 1);
   const previewTweet = tweets[safePreviewIndex];
@@ -1201,6 +1236,15 @@ export function Composer() {
           </Select>
         </div>
       </div>
+
+      {/* AI Length Selector — only for Thread tool in single-post mode (not thread) */}
+      {aiTool === "thread" && tweets.length === 1 && (
+        <AiLengthSelector
+          selectedLength={aiLengthOption}
+          onLengthChange={setAiLengthOption}
+          xSubscriptionTier={selectedTier}
+        />
+      )}
 
       {aiTool === "thread" && (
         <>
@@ -1353,7 +1397,7 @@ export function Composer() {
                         openAiTool={openAiTool}
                         openAiImage={openAiImageDialog}
                         onMove={moveTweet}
-                        tier={selectedTier}
+                        tier={effectiveTier}
                         {...(tweet.id === aiTargetTweetId && generatedHashtags.length > 0 && {
                           suggestedHashtags: generatedHashtags,
                           onHashtagClick: (tag: string) => {
@@ -1366,27 +1410,47 @@ export function Composer() {
             </SortableContext>
         </DndContext>
 
-        {tweets.some((t) => t.content.length > 280) && canPostLongContent(selectedTier) && selectedTier && (
+        {tweets.some((t) => t.content.length > 280) && canPostLongContent(effectiveTier) && effectiveTier && (
           <Alert className="border-success/40 bg-success/5 text-success dark:text-success">
             <CheckCircle2 className="h-4 w-4 text-success" />
             <AlertDescription className="flex items-center gap-2 text-success">
-              <XSubscriptionBadge tier={selectedTier} size="md" />
+              <XSubscriptionBadge tier={effectiveTier} size="md" />
               <span>
-                Your account ({userHandle}) supports long posts — this will publish normally with up to 25,000 characters.
+                Your account ({userHandle}) supports long posts — this will publish normally with up to 2,000 characters.
               </span>
             </AlertDescription>
           </Alert>
         )}
 
-        {tweets.some((t) => t.content.length > 280) && !canPostLongContent(selectedTier) && (
+        {tweets.some((t) => t.content.length > 280) && !canPostLongContent(effectiveTier) && (
           <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
             <Info className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-amber-700 dark:text-amber-400">
               <span className="font-medium">X Premium required for long posts.</span>{" "}
               One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on{" "}
-              <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard account, these tweets will fail and appear as errors in your queue.
+              <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard account, these tweets will fail and appear as errors in your queue.{" "}
+              <span className="text-amber-600/80 dark:text-amber-400/80">Tip: Use the &quot;Convert to Thread&quot; button below to split your content into multiple tweets under 280 characters each.</span>
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Premium soft warning: single post exceeds 2,000 chars */}
+        {tweets.length === 1 && tweets[0]!.content.length > 2000 && canPostLongContent(effectiveTier) && effectiveTier && (
+          <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
+            <Info className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-700 dark:text-amber-400">
+              <span className="font-medium">Post exceeds 2,000 characters.</span>{" "}
+              While your X Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend to see significantly lower engagement. Consider trimming your content or converting to a thread.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Mixed tier note: accounts have different subscription levels */}
+        {hasMixedTiers && (
+          <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+            <Info className="h-3 w-3 shrink-0" />
+            <span>Character limit set to 280 based on the most restrictive account. To use longer posts, remove free-tier accounts or post separately.</span>
+          </div>
         )}
 
         {lastSavedAt && (

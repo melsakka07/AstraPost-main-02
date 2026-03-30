@@ -1,5 +1,183 @@
 # Latest Updates
 
+## 2026-03-31: Dynamic Character Limits — Phase 8 Tests Fixed ✅
+
+**Summary:** Fixed all failing Vitest tests for Phase 8 of the X Dynamic Character Limits feature. All 147 tests now pass.
+
+**Root Cause:**
+- Zod v4 (v4.3.6) uses a stricter UUID regex than v3 — it requires RFC-4122-compliant UUIDs with version `[1-8]` in position 3 and variant `[89ab]` in position 4.
+- Test IDs like `00000000-0000-0000-0000-000000000001` (version `0`) fail this check.
+- 4 tests in `src/app/api/ai/thread/__tests__/route.test.ts` were returning 400 (Zod parse error) instead of 403/200/404 because the `targetAccountId` field failed UUID validation before reaching the tier-check logic.
+
+**Fixes applied:**
+- Replaced invalid test UUIDs with proper v4-format UUIDs (`550e8400-e29b-41d4-a716-44665544000X`)
+- Added 2 staleness tests: stale tier (>24h) triggers `fetchXSubscriptionTier()` re-fetch; fresh tier skips it
+- Added `getMaxCharacterLimit()` tests to `src/lib/x-post-length.test.ts` (Phase 8B requirement)
+- Fixed import order warnings and unused import TS error
+
+**Files changed:**
+- `src/app/api/ai/thread/__tests__/route.test.ts` (UUID fix + staleness tests)
+- `src/lib/x-post-length.test.ts` (added `getMaxCharacterLimit` tests)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅ `pnpm test` ✅ (147 tests / 14 files)
+**All phases of X Dynamic Character Limits & AI Length Options are now complete.**
+
+---
+
+## 2026-03-31: Dynamic Character Limits — Phase 8 Complete ✅
+
+**Summary:** Completed Phase 8 (Update Documentation) — reviewed existing documentation and added user-facing help text about tier limits.
+
+**Phase 8A — Documentation Review:**
+- Reviewed implementation plan for remaining documentation updates
+- Found no dedicated API documentation files in the codebase (API routes are self-documenting via TypeScript)
+- Verified existing UI components already have appropriate tier-related help text:
+  - `ai-length-selector.tsx`: Has tooltip "Requires X Premium subscription" for disabled options
+  - `composer.tsx`: Has tier-aware alerts for long posts (success for Premium, warning for Free)
+  - `tweet-card.tsx`: Has length zone labels ("Short post", "Medium post", "Long post") and 280 milestone marker
+
+**Phase 8B — User-Facing Help Text:**
+- Added help text info box to `connected-x-accounts.tsx` in Settings page
+- Explains character limits: Free X accounts = 280 chars, X Premium = 2,000 chars
+- Describes tier badge meaning and refresh functionality
+
+**Files changed:**
+- `src/components/settings/connected-x-accounts.tsx` (added tier limits help text)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** All 8 phases complete — X Dynamic Character Limits feature fully implemented
+
+---
+
+## 2026-03-31: Dynamic Character Limits — Phase 7 Complete ✅
+
+**Summary:** Implemented Phase 7 (Update Existing Warning & Error Messages) to add Queue page failure banners for TIER_LIMIT_EXCEEDED errors with contextual UI.
+
+**Phase 7A — TIER_LIMIT_EXCEEDED Detection:**
+- Updated `getFailureTip()` function in `queue-content.tsx` to detect `tier_limit_exceeded` errors
+- Added `isTierLimit` flag to identify tier-specific failures
+- Returns the full error message with contextual guidance
+
+**Phase 7B — XSubscriptionBadge Integration:**
+- Shows `XSubscriptionBadge` (gray for Free tier) next to tier limit error messages
+- Visual indicator of the account's current subscription status
+- Tooltip shows tier label on hover
+
+**Phase 7C — Action Buttons for Tier Errors:**
+- Added "Edit Post" button linking to compose page with draft preloaded
+- Added "Convert to Thread" button (only for single posts, not threads)
+- Buttons styled with destructive border to match error context
+
+**Phase 7D — Tier Downgrade Toast Notifications:**
+- Updated `NotificationBell` component to show toast for `tier_downgrade_warning` notifications
+- Uses `toast.warning()` with "View Queue" action button
+- Tracks seen notification IDs to prevent duplicate toasts
+
+**Files changed:**
+- `src/components/queue/queue-content.tsx` (failure tip detection, action buttons)
+- `src/components/dashboard/notification-bell.tsx` (tier downgrade toast)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 8 — Update Documentation (if any remaining docs need updates)
+
+---
+
+## 2026-03-31: Dynamic Character Limits — Phase 6 Complete ✅
+
+**Summary:** Implemented Phase 6 (Pre-Publish Tier Verification) to prevent publishing content that exceeds the account's X subscription tier limit.
+
+**Phase 6A — Pre-Publish Tier Check:**
+- Added tier verification in `scheduleProcessor` before publishing
+- Checks each tweet's content length against the account's tier limit:
+  - Free X accounts: 280 characters max
+  - X Premium (Basic/Premium/PremiumPlus): 2,000 characters max
+- Uses `canPostLongContent()` helper from `x-subscription.ts`
+
+**Phase 6B — TIER_LIMIT_EXCEEDED Error Handling:**
+- When content exceeds tier limit, the job fails gracefully with:
+  - Post status set to `failed` with descriptive `failReason`
+  - Job run record created with `failed` status
+  - User notification created with error details
+  - `UnrecoverableError` thrown to prevent retries
+- Error data includes: `code`, `message`, `postLength`, `accountTier`, `maxAllowed`
+
+**Phase 6C — Tier Downgrade Notifications (Already Implemented):**
+- The `refreshXTiersProcessor` already handles tier downgrades
+- When tier drops from Premium to Free, checks for scheduled posts exceeding 280 chars
+- Creates `tier_downgrade_warning` notification for affected users
+- Lists oversized post IDs in notification metadata
+
+**Files changed:**
+- `src/lib/queue/processors.ts` (pre-publish tier verification)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 7 — Update Existing Warning & Error Messages (Queue page failure banners for TIER_LIMIT_EXCEEDED)
+
+---
+
+## 2026-03-30: Dynamic Character Limits — Phase 5 Complete ✅
+
+**Summary:** Verified Phase 5 (BullMQ Recurring Job) was already fully implemented. Fixed minor import order warning in processors.ts.
+
+**Phase 5 — BullMQ Recurring Job (Already Implemented):**
+- `RefreshXTiersJobPayload` interface defined in `src/lib/queue/client.ts`
+- `xTierRefreshQueue` created in `src/lib/queue/client.ts`
+- `refreshXTiersProcessor` fully implemented in `src/lib/queue/processors.ts`:
+  - Staleness check: finds accounts where `tier_updated_at` is null or >24h old
+  - Calls `fetchXSubscriptionTier()` for each stale account
+  - Detects tier downgrades and creates user notifications
+  - Handles 401 auth errors gracefully (marks account for re-auth)
+  - Batch delay (500ms) to avoid X API rate limits
+  - Logs summary: total, refreshed, skipped, errors
+- `xTierRefreshWorker` created in `scripts/worker.ts`
+- Repeatable job scheduled at 4 AM UTC daily (`0 4 * * *` cron pattern)
+- Event handlers for completed/error/failed jobs
+
+**Bug Fix:**
+- Fixed import order warning in `processors.ts` (moved type import before regular imports)
+
+**Files changed:**
+- `src/lib/queue/processors.ts` (import order fix)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 6 — Pre-Publish Tier Verification (verify character count against current tier before publishing)
+
+---
+
+## 2026-03-30: Dynamic Character Limits — Phase 4 Complete ✅
+
+**Summary:** Implemented Phase 4 of the X Dynamic Character Limits & AI Length Options plan. Added AiLengthSelector to the AI Writer page with Thread/Single Post mode toggle.
+
+**Phase 4A — AiLengthSelector Component:**
+- Component already existed at `src/components/composer/ai-length-selector.tsx`
+- Segmented control (Short/Medium/Long) with lock icons for Free X users
+- Reused in AI Writer page without changes
+
+**Phase 4B — Composer Integration:**
+- Already integrated in composer AI panel (single-post mode only)
+
+**Phase 4C — AI Writer Page Integration:**
+- Added Thread/Single Post mode toggle to `/dashboard/ai/writer` Thread tab
+- Thread mode: shows Thread Length slider (3–15 tweets)
+- Single Post mode: shows AiLengthSelector (Short/Medium/Long)
+- Fetches user's X subscription tier from `/api/accounts` on mount
+- Sends `mode`, `lengthOption`, and `targetAccountId` in API request
+- Handles single-post response (plain text) vs thread response (SSE stream)
+- Single-post results show one text area with dynamic character counter
+- Button text changes: "Generate Thread" vs "Generate Post"
+
+**Bug Fix:**
+- Removed duplicate `isSinglePost` const declaration in `composer.tsx` (pre-existing TS2451 error)
+
+**Files changed:**
+- `src/app/dashboard/ai/writer/page.tsx` (mode toggle, AiLengthSelector, single-post handling)
+- `src/components/composer/composer.tsx` (removed duplicate variable declaration)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+**Next:** Phase 5 — BullMQ recurring job for daily tier refresh
+
+---
+
 ## 2026-03-30: X Subscription Badge UI Expansion — Phase 5 Complete ✅
 
 **Summary:** Implemented Phase 5 of the X Subscription Badge UI Expansion plan. Enhanced queue page with contextual error messaging for character-limit failures.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
@@ -29,13 +29,30 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+  const seenIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
         const res = await fetch("/api/notifications");
         if (res.ok) {
-          const data = await res.json();
+          const data: Notification[] = await res.json();
+          
+          for (const n of data) {
+            if (!seenIdsRef.current.has(n.id) && !n.isRead) {
+              if (n.type === "tier_downgrade_warning") {
+                toast.warning(n.title ?? "X Premium Subscription Changed", {
+                  description: n.message,
+                  action: {
+                    label: "View Queue",
+                    onClick: () => router.push("/dashboard/queue"),
+                  },
+                });
+              }
+              seenIdsRef.current.add(n.id);
+            }
+          }
+          
           setNotifications(data);
           setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
         }
@@ -47,7 +64,7 @@ export function NotificationBell() {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [router]);
 
   const markAsRead = async (id: string) => {
     try {

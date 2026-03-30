@@ -41,16 +41,16 @@ describe("getMaxCharacterLimit", () => {
     expect(getMaxCharacterLimit(undefined)).toBe(280);
   });
 
-  it("returns 25000 for Basic tier", () => {
-    expect(getMaxCharacterLimit("Basic")).toBe(25_000);
+  it("returns 2000 for Basic tier", () => {
+    expect(getMaxCharacterLimit("Basic")).toBe(2_000);
   });
 
-  it("returns 25000 for Premium tier", () => {
-    expect(getMaxCharacterLimit("Premium")).toBe(25_000);
+  it("returns 2000 for Premium tier", () => {
+    expect(getMaxCharacterLimit("Premium")).toBe(2_000);
   });
 
-  it("returns 25000 for PremiumPlus tier", () => {
-    expect(getMaxCharacterLimit("PremiumPlus")).toBe(25_000);
+  it("returns 2000 for PremiumPlus tier", () => {
+    expect(getMaxCharacterLimit("PremiumPlus")).toBe(2_000);
   });
 });
 

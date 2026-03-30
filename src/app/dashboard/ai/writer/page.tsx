@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Bot,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { HashtagGenerator } from "@/components/ai/hashtag-generator";
+import { AiLengthSelector } from "@/components/composer/ai-length-selector";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
+import { useSession } from "@/lib/auth-client";
 import { sendToComposer } from "@/lib/composer-bridge";
+import { type AiLengthOptionId } from "@/lib/schemas/common";
+import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
+import { cn } from "@/lib/utils";
 
 interface PlanLimitPayload {
   error?: string;
@@ -77,7 +82,36 @@ function AIWriterContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copiedAll, setCopiedAll] = useState(false);
   const [copiedTweetIdx, setCopiedTweetIdx] = useState<number | null>(null);
+  // --- Mode / Length / X Tier ---
+  const [mode, setMode] = useState<"thread" | "single">("thread");
+  const [lengthOption, setLengthOption] = useState<AiLengthOptionId>("short");
+  const { data: session } = useSession();
+  const [xTier, setXTier] = useState<string | null>(null);
+  const [xAccountId, setXAccountId] = useState<string | null>(null);
+
   const threadElapsed = useElapsedTime(isGenerating);
+
+  // Fetch the user's default X account tier for length-option gating
+  useEffect(() => {
+    if (!session?.user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/accounts");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const accounts: Array<{ platform: string; xSubscriptionTier?: string | null; id: string }> = data.accounts || [];
+        const xAccount = accounts.find((a) => a.platform === "twitter");
+        if (xAccount && !cancelled) {
+          setXTier(xAccount.xSubscriptionTier ?? null);
+          setXAccountId(xAccount.id ?? null);
+        }
+      } catch {
+        // Silently degrade — length options default to short-only
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- URL → Thread State ---
   const [articleUrl, setArticleUrl] = useState("");
@@ -104,10 +138,18 @@ function AIWriterContent() {
     setIsGenerating(true);
     setGeneratedTweets([]);
     try {
+      const isSingle = mode === "single";
       const res = await fetch("/api/ai/thread", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, tone, language, tweetCount }),
+        body: JSON.stringify({
+          topic,
+          tone,
+          language,
+          mode: isSingle ? "single" : "thread",
+          ...(isSingle ? { lengthOption } : { tweetCount }),
+          ...(isSingle && xAccountId ? { targetAccountId: xAccountId } : {}),
+        }),
       });
 
       if (!res.ok) {
@@ -123,12 +165,25 @@ function AIWriterContent() {
           });
           return;
         }
+        if (res.status === 403) {
+          const body = await res.json().catch(() => ({})) as { error?: string };
+          toast.error(body.error ?? "X Premium required for this length option.");
+          return;
+        }
         throw new Error("Failed to generate");
       }
 
+      if (isSingle) {
+        // Single-post mode: plain text response
+        const text = await res.text();
+        if (!text || text.trim().length === 0) throw new Error("No content generated");
+        setGeneratedTweets([text.trim()]);
+        return;
+      }
+
+      // Thread mode: SSE stream
       if (!res.body) throw new Error("No response body");
 
-      // Read the SSE stream and add tweets one by one as they arrive
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let sseBuffer = "";
@@ -140,7 +195,6 @@ function AIWriterContent() {
 
         sseBuffer += decoder.decode(value, { stream: true });
 
-        // Split on newlines; keep the last (potentially incomplete) line in the buffer
         const lines = sseBuffer.split("\n");
         sseBuffer = lines.pop() ?? "";
 
@@ -381,16 +435,61 @@ function AIWriterContent() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label>Thread Length</Label>
-                  <span className="text-sm font-medium tabular-nums text-muted-foreground">{tweetCount} tweets</span>
+
+              {/* Mode toggle: Thread vs Single Post */}
+              <div className="space-y-2">
+                <Label>Output Mode</Label>
+                <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/50 p-1">
+                  <button
+                    type="button"
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium transition-all",
+                      mode === "thread"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => setMode("thread")}
+                  >
+                    Thread
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      "rounded-md px-3 py-2 text-sm font-medium transition-all",
+                      mode === "single"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                    onClick={() => setMode("single")}
+                  >
+                    Single Post
+                  </button>
                 </div>
-                <Slider value={[tweetCount]} onValueChange={(v) => setTweetCount(v[0] ?? 5)} min={3} max={15} step={1} aria-label="Thread length" />
-                <div className="flex justify-between text-xs text-muted-foreground"><span>Short (3)</span><span>Long (15)</span></div>
               </div>
+
+              {/* AiLengthSelector — only for single-post mode */}
+              {mode === "single" && (
+                <AiLengthSelector
+                  selectedLength={lengthOption}
+                  onLengthChange={setLengthOption}
+                  xSubscriptionTier={xTier as any}
+                />
+              )}
+
+              {/* Thread Length slider — only for thread mode */}
+              {mode === "thread" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Thread Length</Label>
+                    <span className="text-sm font-medium tabular-nums text-muted-foreground">{tweetCount} tweets</span>
+                  </div>
+                  <Slider value={[tweetCount]} onValueChange={(v) => setTweetCount(v[0] ?? 5)} min={3} max={15} step={1} aria-label="Thread length" />
+                  <div className="flex justify-between text-xs text-muted-foreground"><span>Short (3)</span><span>Long (15)</span></div>
+                </div>
+              )}
+
               <Button className="w-full" onClick={handleGenerate} disabled={isGenerating || !topic} size="lg">
-                {isGenerating ? <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({threadElapsed}s)</> : <><Sparkles className="me-2 h-4 w-4" />Generate Thread</>}
+                {isGenerating ? <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({threadElapsed}s)</> : <><Sparkles className="me-2 h-4 w-4" />{mode === "single" ? "Generate Post" : "Generate Thread"}</>}
               </Button>
             </CardContent>
           </Card>
@@ -398,62 +497,99 @@ function AIWriterContent() {
           <div className="flex flex-col gap-3">
             {generatedTweets.length > 0 ? (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {isGenerating
-                      ? `Generating ${generatedTweets.length} / ${tweetCount}…`
-                      : `${generatedTweets.length} tweets`}
-                  </span>
-                  {!isGenerating && (
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={copyAllTweets} aria-label="Copy all tweets">
-                        {copiedAll ? <><Check className="h-3.5 w-3.5 me-1.5" />Copied</> : <><Copy className="h-3.5 w-3.5 me-1.5" />Copy All</>}
-                      </Button>
-                      <Button size="sm" onClick={() => sendToComposer(generatedTweets, { source: "ai-writer", tone })}>
-                        <PenSquare className="h-3.5 w-3.5 me-1.5" />Open in Composer
-                      </Button>
+                {mode === "single" ? (
+                  /* ── Single-post result ── */
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {isGenerating ? "Generating..." : "Generated post"}
+                      </span>
+                      {!isGenerating && (
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(generatedTweets[0] ?? ""); setCopiedAll(true); setTimeout(() => setCopiedAll(false), 2000); toast.success("Copied to clipboard"); }} aria-label="Copy post">
+                            {copiedAll ? <><Check className="h-3.5 w-3.5 me-1.5" />Copied</> : <><Copy className="h-3.5 w-3.5 me-1.5" />Copy</>}
+                          </Button>
+                          <Button size="sm" onClick={() => sendToComposer(generatedTweets, { source: "ai-writer", tone })}>
+                            <PenSquare className="h-3.5 w-3.5 me-1.5" />Open in Composer
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                {generatedTweets.map((tweet, idx) => (
-                  <Card key={idx} className="border focus-within:border-primary/40 transition-colors">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <Badge variant="secondary" className="shrink-0 tabular-nums">#{idx + 1}</Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 shrink-0"
-                          onClick={() => copyTweet(tweet, idx)}
-                          aria-label={`Copy tweet ${idx + 1}`}
-                        >
-                          {copiedTweetIdx === idx ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                        </Button>
-                      </div>
-                      <Textarea
-                        className="resize-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-sm leading-relaxed min-h-[60px] w-full"
-                        value={tweet}
-                        onChange={(e) => updateGeneratedTweet(idx, e.target.value)}
-                        aria-label={`Edit tweet ${idx + 1}`}
-                      />
-                      <p className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}>
-                        {tweet.length}/280
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-                {/* Pulsing skeleton for the next incoming tweet while streaming */}
-                {isGenerating && (
-                  <Card className="border border-dashed border-primary/20 animate-pulse">
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="h-5 w-8 rounded bg-muted" />
-                      </div>
-                      <div className="h-3 rounded bg-muted w-full" />
-                      <div className="h-3 rounded bg-muted w-4/5" />
-                      <div className="h-3 rounded bg-muted w-3/5" />
-                    </CardContent>
-                  </Card>
+                    <Card className="border focus-within:border-primary/40 transition-colors">
+                      <CardContent className="p-4">
+                        <Textarea
+                          className="resize-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-sm leading-relaxed min-h-[120px] w-full"
+                          value={generatedTweets[0] ?? ""}
+                          onChange={(e) => updateGeneratedTweet(0, e.target.value)}
+                          aria-label="Edit generated post"
+                        />
+                        <p className={`mt-2 text-xs tabular-nums ${(generatedTweets[0]?.length ?? 0) > getMaxCharacterLimit(xTier as any) ? "text-destructive" : (generatedTweets[0]?.length ?? 0) >= getMaxCharacterLimit(xTier as any) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}>
+                          {generatedTweets[0]?.length ?? 0}/{getMaxCharacterLimit(xTier as any)}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </>
+                ) : (
+                  /* ── Thread results ── */
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {isGenerating
+                          ? `Generating ${generatedTweets.length} / ${tweetCount}…`
+                          : `${generatedTweets.length} tweets`}
+                      </span>
+                      {!isGenerating && (
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={copyAllTweets} aria-label="Copy all tweets">
+                            {copiedAll ? <><Check className="h-3.5 w-3.5 me-1.5" />Copied</> : <><Copy className="h-3.5 w-3.5 me-1.5" />Copy All</>}
+                          </Button>
+                          <Button size="sm" onClick={() => sendToComposer(generatedTweets, { source: "ai-writer", tone })}>
+                            <PenSquare className="h-3.5 w-3.5 me-1.5" />Open in Composer
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {generatedTweets.map((tweet, idx) => (
+                      <Card key={idx} className="border focus-within:border-primary/40 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <Badge variant="secondary" className="shrink-0 tabular-nums">#{idx + 1}</Badge>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 shrink-0"
+                              onClick={() => copyTweet(tweet, idx)}
+                              aria-label={`Copy tweet ${idx + 1}`}
+                            >
+                              {copiedTweetIdx === idx ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                            </Button>
+                          </div>
+                          <Textarea
+                            className="resize-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-sm leading-relaxed min-h-[60px] w-full"
+                            value={tweet}
+                            onChange={(e) => updateGeneratedTweet(idx, e.target.value)}
+                            aria-label={`Edit tweet ${idx + 1}`}
+                          />
+                          <p className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}>
+                            {tweet.length}/280
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {/* Pulsing skeleton for the next incoming tweet while streaming */}
+                    {isGenerating && (
+                      <Card className="border border-dashed border-primary/20 animate-pulse">
+                        <CardContent className="p-4 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-5 w-8 rounded bg-muted" />
+                          </div>
+                          <div className="h-3 rounded bg-muted w-full" />
+                          <div className="h-3 rounded bg-muted w-4/5" />
+                          <div className="h-3 rounded bg-muted w-3/5" />
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
                 )}
               </>
             ) : (

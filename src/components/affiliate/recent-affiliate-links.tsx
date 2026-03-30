@@ -5,7 +5,6 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { Copy, Calendar, ExternalLink, Loader2, Package, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { sendToComposer } from "@/lib/composer-bridge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { sendToComposer } from "@/lib/composer-bridge";
 
 interface AffiliateLink {
   id: string;

@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Worker } from "bullmq";
-import { connection, scheduleQueue, analyticsQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
-import { scheduleProcessor, analyticsProcessor } from "@/lib/queue/processors";
+import { connection, scheduleQueue, analyticsQueue, xTierRefreshQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
+import { scheduleProcessor, analyticsProcessor, refreshXTiersProcessor } from "@/lib/queue/processors";
 import "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -10,7 +10,7 @@ logger.info("worker_started", {
   nodeEnv: process.env.NODE_ENV,
 });
 
-console.log(`\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue' and 'analytics-queue'...\nPress Ctrl+C to exit.\n`);
+console.log(`\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue', 'analytics-queue', and 'x-tier-refresh-queue'...\nPress Ctrl+C to exit.\n`);
 
 const scheduleWorker = new Worker(
   "schedule-queue",
@@ -130,6 +130,48 @@ analyticsQueue.add("update-metrics", {}, {
     jobId: "analytics-job"
 }).catch(console.error);
 
+// ── X Tier Refresh Worker ───────────────────────────────────────────────────
+// Runs daily at 4 AM UTC to refresh X subscription tiers for all connected
+// accounts whose cached tier data is stale (>24h old) or never fetched.
+const xTierRefreshWorker = new Worker(
+  "x-tier-refresh-queue",
+  refreshXTiersProcessor,
+  { connection: connection as any },
+);
+
+xTierRefreshWorker.on("completed", (job) => {
+  logger.info("job_completed", {
+    queue: "x-tier-refresh-queue",
+    jobId: job.id,
+  });
+});
+
+xTierRefreshWorker.on("error", (err) => {
+  logger.error("worker_error", {
+    queue: "x-tier-refresh-queue",
+    error: err.message,
+  });
+});
+
+xTierRefreshWorker.on("failed", (job, err) => {
+  logger.error("job_failed", {
+    queue: "x-tier-refresh-queue",
+    jobId: job?.id ?? "unknown",
+    error: err.message,
+  });
+});
+
+// Schedule daily tier refresh at 4 AM UTC — low-traffic window.
+xTierRefreshQueue.add(
+  "refresh-x-tiers",
+  { triggeredBy: "scheduler" },
+  {
+    repeat: { pattern: "0 4 * * *" }, // 4:00 AM UTC daily
+    removeOnComplete: { count: 50 },
+    removeOnFail: { count: 20 },
+  },
+).catch(console.error);
+
 const shutdown = async (signal: string) => {
   logger.warn(`${signal}_received`, {
     pid: process.pid,
@@ -137,8 +179,10 @@ const shutdown = async (signal: string) => {
   console.log(`\n🛑 [Worker] Shutting down gracefully (${signal})...`);
   await scheduleQueue.close();
   await analyticsQueue.close();
+  await xTierRefreshQueue.close();
   await scheduleWorker.close();
   await analyticsWorker.close();
+  await xTierRefreshWorker.close();
   process.exit(0);
 };
 

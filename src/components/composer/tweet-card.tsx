@@ -80,9 +80,23 @@ export function TweetCard({
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const getCharCount = (text: string) => twitter.parseTweet(text).weightedLength;
-  const maxChars = getMaxCharacterLimit(tier);
+
+  // Thread mode: each tweet is limited to 280 regardless of tier.
+  // Single-post mode: tier determines the limit (280 for Free, 2,000 for Premium).
+  const isThreadMode = totalTweets > 1;
+  const maxChars = isThreadMode ? 280 : getMaxCharacterLimit(tier);
   const isOverStandardLimit = (text: string) => getCharCount(text) > 280;
   const isOverLimit = (text: string) => getCharCount(text) > maxChars;
+  const charCount = getCharCount(tweet.content);
+  const isPremiumSinglePost = !isThreadMode && canPostLongContent(tier);
+
+  // Length zone label for Premium single-post mode
+  const getLengthZone = () => {
+    if (!isPremiumSinglePost) return null;
+    if (charCount <= 280) return "Short post";
+    if (charCount <= 1_000) return "Medium post";
+    return "Long post";
+  };
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
     updateTweet(tweet.id, tweet.content + emojiData.emoji);
@@ -366,26 +380,60 @@ export function TweetCard({
           </TooltipProvider>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
-                aria-label={`${getCharCount(tweet.content)} of ${maxChars} characters used`}
-                className={cn(
-                  "text-sm font-medium tabular-nums",
-                  isOverLimit(tweet.content) ? "text-destructive" :
-                  isOverStandardLimit(tweet.content) ? "text-amber-500" :
-                  "text-muted-foreground"
+            <div className="flex flex-col items-end gap-0.5">
+              <div className="flex items-center gap-2">
+                <span
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  aria-label={`${charCount} of ${maxChars} characters used`}
+                  className={cn(
+                    "text-sm font-medium tabular-nums",
+                    isOverLimit(tweet.content) ? "text-destructive" :
+                    isOverStandardLimit(tweet.content) ? "text-amber-500" :
+                    "text-muted-foreground"
+                  )}
+                >
+                  {charCount} / {maxChars.toLocaleString()}
+                </span>
+                {canPostLongContent(tier) && tier && !isThreadMode && (
+                  <XSubscriptionBadge tier={tier} size="sm" />
                 )}
-              >
-                {getCharCount(tweet.content)} / {maxChars.toLocaleString()}
-              </span>
-              {canPostLongContent(tier) && tier && (
-                <XSubscriptionBadge tier={tier} size="sm" />
+              </div>
+              {/* Premium single-post: 280 milestone marker + length zone */}
+              {isPremiumSinglePost && charCount > 0 && (
+                <div className="flex items-center gap-2 w-full">
+                  {/* Mini progress bar with 280 milestone */}
+                  <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden relative">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        isOverLimit(tweet.content) ? "bg-destructive" :
+                        isOverStandardLimit(tweet.content) ? "bg-amber-500" :
+                        "bg-primary/40"
+                      )}
+                      style={{ width: `${Math.min(100, (charCount / maxChars) * 100)}%` }}
+                    />
+                    {/* 280 milestone tick */}
+                    <div
+                      className="absolute top-0 h-full w-px bg-muted-foreground/30"
+                      style={{ left: `${(280 / maxChars) * 100}%` }}
+                      title="Standard tweet length (280)"
+                    />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap">
+                    {getLengthZone()}
+                  </span>
+                </div>
+              )}
+              {/* Thread mode per-tweet warning */}
+              {isThreadMode && isOverStandardLimit(tweet.content) && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  Exceeds 280 chars — threads use standard tweet length
+                </p>
               )}
             </div>
-            
+
             {totalTweets > 1 && (
               <Button
                 variant="ghost"

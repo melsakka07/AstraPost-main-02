@@ -20,6 +20,18 @@ export const xSubscriptionTierEnum = z.enum(["None", "Basic", "Premium", "Premiu
 
 export type XSubscriptionTier = z.infer<typeof xSubscriptionTierEnum>;
 
+// ─── AI Length Options ────────────────────────────────────────────────────────
+
+/**
+ * AI generation length options for single-post mode.
+ * - short: ≤280 chars (available to all users)
+ * - medium: 281–1,000 chars (requires X Premium)
+ * - long: 1,001–2,000 chars (requires X Premium)
+ */
+export const aiLengthOptionEnum = z.enum(["short", "medium", "long"]);
+
+export type AiLengthOptionId = z.infer<typeof aiLengthOptionEnum>;
+
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
 /**

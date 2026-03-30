@@ -34,9 +34,16 @@ import { canPostLongContent } from "@/lib/services/x-subscription";
 function getFailureTip(
   failReason: string | null,
   tier?: XSubscriptionTier | null
-): { tip: string; href?: string; isCharLimit?: boolean } | null {
+): { tip: string; href?: string; isCharLimit?: boolean; isTierLimit?: boolean; postId?: string } | null {
   if (!failReason) return null;
   const r = failReason.toLowerCase();
+  if (r.includes("tier_limit_exceeded")) {
+    return {
+      tip: failReason,
+      isCharLimit: true,
+      isTierLimit: true,
+    };
+  }
   if (r.includes("authorization expired") || r.includes("401")) {
     return {
       tip: "Your X token expired. Reconnect your account to fix this.",
@@ -440,23 +447,57 @@ export function QueueContent({
                       </p>
                     )}
                     {tip && (
-                      <div className="flex items-start gap-1.5 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                        <span className="flex items-center gap-2 flex-wrap">
-                          {tip.isCharLimit && tier && <XSubscriptionBadge tier={tier} size="sm" />}
-                          <span>
-                            {tip.tip}{" "}
-                            {tip.href && (
-                              <Link
-                                href={tip.href}
-                                className="inline-flex items-center gap-0.5 underline underline-offset-2 font-medium"
-                              >
-                                Go to Settings
-                                <ExternalLink className="h-3 w-3" />
-                              </Link>
-                            )}
+                      <div className="flex flex-col gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                        <div className="flex items-start gap-1.5">
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          <span className="flex items-center gap-2 flex-wrap">
+                            {tip.isCharLimit && tier && <XSubscriptionBadge tier={tier} size="sm" />}
+                            <span>
+                              {tip.isTierLimit ? (
+                                <>
+                                  This post exceeds the character limit for your X account tier. Edit the content or convert to a thread.
+                                </>
+                              ) : (
+                                tip.tip
+                              )}{" "}
+                              {tip.href && (
+                                <Link
+                                  href={tip.href}
+                                  className="inline-flex items-center gap-0.5 underline underline-offset-2 font-medium"
+                                >
+                                  Go to Settings
+                                  <ExternalLink className="h-3 w-3" />
+                                </Link>
+                              )}
+                            </span>
                           </span>
-                        </span>
+                        </div>
+                        {tip.isTierLimit && (
+                          <div className="flex items-center gap-2 ml-5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="h-7 text-xs border-destructive/30 hover:bg-destructive/10"
+                            >
+                              <Link href={`/dashboard/compose?draft=${post.id}`}>
+                                Edit Post
+                              </Link>
+                            </Button>
+                            {post.type !== "thread" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                asChild
+                                className="h-7 text-xs border-destructive/30 hover:bg-destructive/10"
+                              >
+                                <Link href={`/dashboard/compose?draft=${post.id}&convert=thread`}>
+                                  Convert to Thread
+                                </Link>
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                     {/* Q2 — collapsible thread for failed posts */}

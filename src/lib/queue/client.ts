@@ -22,6 +22,13 @@ export interface AnalyticsJobPayload {
 export const scheduleQueue = new Queue<PublishPostPayload>("schedule-queue", { connection: connection as any });
 export const analyticsQueue = new Queue<AnalyticsJobPayload>("analytics-queue", { connection: connection as any });
 
+/** Payload carried by every job on the X tier refresh queue. */
+export interface RefreshXTiersJobPayload {
+  triggeredBy: "scheduler"; // distinguishes from manual refreshes
+}
+
+export const xTierRefreshQueue = new Queue<RefreshXTiersJobPayload>("x-tier-refresh-queue", { connection: connection as any });
+
 /**
  * Shared BullMQ job options for all publish-post jobs.
  *

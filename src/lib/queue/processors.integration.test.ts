@@ -385,4 +385,131 @@ describe("scheduleProcessor — integration", () => {
     // postTweetReply IS called for tw-2, replying to the existing x tweet.
     expect(mockPostTweetReply).toHaveBeenCalledWith("New tweet", "existing-x-id", []);
   });
+
+  // ── Pre-publish tier verification ────────────────────────────────────────
+
+  it("fails with TIER_LIMIT_EXCEEDED when Free tier account has content > 280 chars", async () => {
+    const longContent = "a".repeat(300);
+    mockDb.query.posts.findFirst.mockResolvedValue(
+      makePost({
+        tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
+        xAccount: { xSubscriptionTier: "None", xUsername: "freeuser" },
+      }),
+    );
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+    ).rejects.toThrow();
+
+    const setValues = allSetValues();
+    const failedUpdate = setValues.find((v) => v.status === "failed");
+    expect(failedUpdate).toBeDefined();
+    expect(failedUpdate?.failReason).toContain("280 characters");
+
+    const insertedValues = allInsertValues();
+    const notificationRecord = insertedValues.find((v) => v.type === "post_failed");
+    expect(notificationRecord).toBeDefined();
+    expect(notificationRecord?.title).toBe("Post Too Long for X Account");
+
+    expect(mockPostTweet).not.toHaveBeenCalled();
+  });
+
+  it("fails with TIER_LIMIT_EXCEEDED when Premium tier account has content > 2000 chars", async () => {
+    const longContent = "a".repeat(2100);
+    mockDb.query.posts.findFirst.mockResolvedValue(
+      makePost({
+        tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
+        xAccount: { xSubscriptionTier: "Premium", xUsername: "premiumuser" },
+      }),
+    );
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+    ).rejects.toThrow();
+
+    const setValues = allSetValues();
+    const failedUpdate = setValues.find((v) => v.status === "failed");
+    expect(failedUpdate).toBeDefined();
+    expect(failedUpdate?.failReason).toContain("2,000 characters");
+
+    expect(mockPostTweet).not.toHaveBeenCalled();
+  });
+
+  it("allows Premium tier account to post content between 281-2000 chars", async () => {
+    const mediumContent = "a".repeat(500);
+    mockDb.query.posts.findFirst.mockResolvedValue(
+      makePost({
+        tweets: [{ id: "tw-1", content: mediumContent, position: 1, media: [], xTweetId: null }],
+        xAccount: { xSubscriptionTier: "Premium", xUsername: "premiumuser" },
+      }),
+    );
+    mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
+
+    await scheduleProcessor(makeJob() as any);
+
+    expect(mockPostTweet).toHaveBeenCalledWith(mediumContent, []);
+
+    const setValues = allSetValues();
+    const publishedUpdate = setValues.find((v) => v.status === "published");
+    expect(publishedUpdate).toBeDefined();
+  });
+
+  it("allows Free tier account to post content <= 280 chars", async () => {
+    const shortContent = "a".repeat(280);
+    mockDb.query.posts.findFirst.mockResolvedValue(
+      makePost({
+        tweets: [{ id: "tw-1", content: shortContent, position: 1, media: [], xTweetId: null }],
+        xAccount: { xSubscriptionTier: "None", xUsername: "freeuser" },
+      }),
+    );
+    mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
+
+    await scheduleProcessor(makeJob() as any);
+
+    expect(mockPostTweet).toHaveBeenCalledWith(shortContent, []);
+
+    const setValues = allSetValues();
+    const publishedUpdate = setValues.find((v) => v.status === "published");
+    expect(publishedUpdate).toBeDefined();
+  });
+
+  it("allows Basic tier account to post long content", async () => {
+    const longContent = "a".repeat(1500);
+    mockDb.query.posts.findFirst.mockResolvedValue(
+      makePost({
+        tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
+        xAccount: { xSubscriptionTier: "Basic", xUsername: "basicuser" },
+      }),
+    );
+    mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
+
+    await scheduleProcessor(makeJob() as any);
+
+    expect(mockPostTweet).toHaveBeenCalledWith(longContent, []);
+
+    const setValues = allSetValues();
+    const publishedUpdate = setValues.find((v) => v.status === "published");
+    expect(publishedUpdate).toBeDefined();
+  });
+
+  it("handles null tier as Free tier (280 char limit)", async () => {
+    const longContent = "a".repeat(300);
+    mockDb.query.posts.findFirst.mockResolvedValue(
+      makePost({
+        tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
+        xAccount: { xSubscriptionTier: null, xUsername: "unknownuser" },
+      }),
+    );
+
+    await expect(
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+    ).rejects.toThrow();
+
+    const setValues = allSetValues();
+    const failedUpdate = setValues.find((v) => v.status === "failed");
+    expect(failedUpdate).toBeDefined();
+    expect(failedUpdate?.failReason).toContain("280 characters");
+
+    expect(mockPostTweet).not.toHaveBeenCalled();
+  });
 });
