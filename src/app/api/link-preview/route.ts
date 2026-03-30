@@ -68,7 +68,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Link preview error:", error);
-    return NextResponse.json({ error: "Failed to fetch preview" }, { status: 400 });
+    // External fetch failed (timeout, unreachable, etc.) — not a client error
+    console.warn("Link preview fetch failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ preview: null });
   }
 }

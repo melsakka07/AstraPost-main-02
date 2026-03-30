@@ -105,6 +105,7 @@ export function TweetCard({
         try {
             const res = await fetch("/api/link-preview", {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ url: firstUrl })
             });
             if (res.ok) {
