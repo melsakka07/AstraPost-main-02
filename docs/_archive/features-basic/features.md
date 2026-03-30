@@ -1,6 +1,6 @@
-# AstroPost — Production Feature Roadmap
+# AstraPost — Production Feature Roadmap
 
-> **Purpose**: This document is a deep-review output of the entire AstroPost codebase. Every feature below was identified by reading actual source files — not guessing. Each item includes the exact gap found, the implementation approach, the files it touches, monetisation impact, and priority tier.
+> **Purpose**: This document is a deep-review output of the entire AstraPost codebase. Every feature below was identified by reading actual source files — not guessing. Each item includes the exact gap found, the implementation approach, the files it touches, monetisation impact, and priority tier.
 >
 > **Legend**: 💰 Direct monetisation · 🔒 Security/compliance · ⚡ Performance/reliability · 🎨 UX/design · 🧪 Quality/testing · 🏗️ Architecture
 
@@ -640,7 +640,7 @@ const twitterCharCount = (text: string) => {
 ---
 
 ### 14.4 SEO Metadata & Open Graph Tags 🎨
-**Gap**: Root layout has `title: "AstroPost"` with no description, no OG image, no Twitter card meta, no structured data.  
+**Gap**: Root layout has `title: "AstraPost"` with no description, no OG image, no Twitter card meta, no structured data.  
 **Implementation**: `generateMetadata()` exports for each marketing page. `/public/og-image.png`. `<script type="application/ld+json">` for product schema. Review `robots.ts` and `sitemap.ts` for completeness.  
 **Files**: `src/app/layout.tsx`, each `(marketing)` page, `src/app/robots.ts`, `src/app/sitemap.ts` | **Effort**: M | **Priority**: P2
 
@@ -807,5 +807,5 @@ const twitterCharCount = (text: string) => {
 ---
 
 *Document version: 2.0 — March 2026*  
-*Based on full codebase audit of AstroPost (branch: genspark_ai_developer)*  
+*Based on full codebase audit of AstraPost (branch: genspark_ai_developer)*  
 *Next review: after P0 and P1 items are shipped*

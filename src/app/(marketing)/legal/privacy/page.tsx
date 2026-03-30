@@ -151,7 +151,7 @@ export default function PrivacyPage() {
               </div>
             </div>
             <Button asChild>
-              <Link href="mailto:privacy@astropost.com">Email Privacy Team</Link>
+              <Link href="mailto:privacy@astrapost.com">Email Privacy Team</Link>
             </Button>
           </div>
         </div>

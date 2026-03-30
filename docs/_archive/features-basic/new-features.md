@@ -1,5 +1,5 @@
 
-# AstroPost New Features Implementation Plan
+# AstraPost New Features Implementation Plan
 
 This document outlines the implementation plan for new features requested by the user.
 

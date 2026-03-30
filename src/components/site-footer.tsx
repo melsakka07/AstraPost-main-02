@@ -84,12 +84,12 @@ const SOCIAL_LINKS: Array<{
 }> = [
   {
     label: "Follow AstraPost on X (Twitter)",
-    href: "https://twitter.com/astropost",
+    href: "https://twitter.com/astrapost",
     Icon: XIcon,
   },
   {
     label: "Join the AstraPost Discord community",
-    href: "https://discord.gg/astropost",
+    href: "https://discord.gg/astrapost",
     Icon: DiscordIcon,
   },
 ];

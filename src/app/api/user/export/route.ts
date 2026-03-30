@@ -46,7 +46,7 @@ export async function GET(_req: Request) {
   return new NextResponse(json, {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="astropost-data-${userId}.json"`
+      "Content-Disposition": `attachment; filename="astrapost-data-${userId}.json"`
     }
   });
 }

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Remove all email/password-based authentication from AstroPost and make X (Twitter) OAuth 2.0 the sole authentication method. Users can only sign in by connecting their X account. This simplifies the auth system, removes password-related security surface area, and aligns with the platform's X-first positioning.
+Remove all email/password-based authentication from AstraPost and make X (Twitter) OAuth 2.0 the sole authentication method. Users can only sign in by connecting their X account. This simplifies the auth system, removes password-related security surface area, and aligns with the platform's X-first positioning.
 
 ## Implementation Plan
 
@@ -91,7 +91,7 @@ See [x-oauth-only-auth-plan.md](./x-oauth-only-auth-plan.md) for the detailed ph
 - **Notes**: All `/register` CTAs changed to `/login` across marketing site. Header "Get Started", mobile menu "Get Started Free", user profile "Sign up", home page hero + CTA section CTAs, features page CTA, and pricing page CTA all updated.
 
 ### Phase 7: OAuth Error Handling (User-Friendly Messages)
-- [x] Handle access denied → "You need to authorize AstroPost to access your X account to continue."
+- [x] Handle access denied → "You need to authorize AstraPost to access your X account to continue."
 - [x] Handle X API unavailable → "X is currently unavailable. Please try again in a few minutes."
 - [x] Handle OAuth callback error → "Sign-in failed. Please try again." with retry button
 - [x] Handle no email from X → "We couldn't get your email from X..."

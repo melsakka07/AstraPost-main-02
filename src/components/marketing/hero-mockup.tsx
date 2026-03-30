@@ -55,7 +55,7 @@ export function HeroMockup() {
           <div className="mx-auto flex max-w-xs flex-1 items-center gap-1.5 rounded-md border border-border/40 bg-background/70 px-3 py-1">
             <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-green-500/60" aria-hidden="true" />
             <span className="truncate text-[11px] text-muted-foreground/50">
-              app.astropost.com/dashboard
+              app.astrapost.com/dashboard
             </span>
           </div>
 

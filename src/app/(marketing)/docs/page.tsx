@@ -153,7 +153,7 @@ export default function DocsPage() {
         <div className="bg-muted/30 rounded-xl p-8 text-center mt-12 border border-dashed">
           <h3 className="text-lg font-semibold mb-2">Can&apos;t find what you&apos;re looking for?</h3>
           <p className="text-muted-foreground mb-4">Our support team is here to help you get back on track.</p>
-          <Link href="mailto:support@astropost.com" className="text-primary font-medium hover:underline inline-flex items-center gap-1 group">
+          <Link href="mailto:support@astrapost.com" className="text-primary font-medium hover:underline inline-flex items-center gap-1 group">
             Contact Support
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
           </Link>

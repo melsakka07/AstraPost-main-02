@@ -1214,7 +1214,7 @@ export function Composer() {
             <SelectContent>
               <SelectItem value="professional">Professional</SelectItem>
               <SelectItem value="casual">Casual</SelectItem>
-              <SelectItem value="funny">Funny</SelectItem>
+              <SelectItem value="humorous">Funny</SelectItem>
               <SelectItem value="educational">Educational</SelectItem>
               <SelectItem value="inspirational">Inspirational</SelectItem>
               <SelectItem value="viral">Viral</SelectItem>
@@ -1246,7 +1246,7 @@ export function Composer() {
         />
       )}
 
-      {aiTool === "thread" && (
+      {aiTool === "thread" && tweets.length > 1 && (
         <>
           <div className="space-y-2">
             <div className="flex justify-between">
@@ -1425,11 +1425,13 @@ export function Composer() {
         {tweets.some((t) => t.content.length > 280) && !canPostLongContent(effectiveTier) && (
           <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
             <Info className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-700 dark:text-amber-400">
-              <span className="font-medium">X Premium required for long posts.</span>{" "}
-              One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on{" "}
-              <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard account, these tweets will fail and appear as errors in your queue.{" "}
-              <span className="text-amber-600/80 dark:text-amber-400/80">Tip: Use the &quot;Convert to Thread&quot; button below to split your content into multiple tweets under 280 characters each.</span>
+            <AlertDescription className="space-y-1 text-amber-700 dark:text-amber-400">
+              <p><span className="font-medium">X Premium required for long posts.</span></p>
+              <p>
+                One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on{" "}
+                <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard account, these tweets will fail and appear as errors in your queue.
+              </p>
+              <p className="text-amber-600/80 dark:text-amber-400/80">Tip: Use the &quot;Convert to Thread&quot; button below to split your content into multiple tweets under 280 characters each.</p>
             </AlertDescription>
           </Alert>
         )}

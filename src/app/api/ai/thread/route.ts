@@ -27,7 +27,7 @@ const threadRequestSchema = z.object({
   language: LANGUAGE_ENUM.optional().default("en"),
   mode: z.enum(["thread", "single"]).default("thread"),
   lengthOption: aiLengthOptionEnum.default("short"),
-  targetAccountId: z.string().uuid().optional(),
+  targetAccountId: z.string().optional().transform((v) => v?.replace(/^twitter:/, "")),
 });
 
 export async function POST(req: Request) {

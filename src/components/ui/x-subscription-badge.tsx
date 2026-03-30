@@ -1,6 +1,6 @@
 "use client";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export type XSubscriptionTier = "None" | "Basic" | "Premium" | "PremiumPlus" | null;
 
@@ -51,16 +51,18 @@ export function XSubscriptionBadge({ tier, size = "sm", loading = false, showUnk
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          className={`${sizeClasses} rounded-full ${config.color} shrink-0 cursor-default`}
-          aria-label={config.label}
-        />
-      </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs">
-        {config.label}
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={`${sizeClasses} rounded-full ${config.color} shrink-0 cursor-default`}
+            aria-label={config.label}
+          />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {config.label}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

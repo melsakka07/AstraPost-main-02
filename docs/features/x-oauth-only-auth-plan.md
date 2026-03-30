@@ -241,7 +241,7 @@
 `git checkout src/app/(auth)/login/page.tsx`
 
 ### Testing Checklist
-- [ ] User denies X access → sees "You need to authorize AstroPost to access your X account to continue." message on login page
+- [ ] User denies X access → sees "You need to authorize AstraPost to access your X account to continue." message on login page
 - [ ] X API is unreachable → sees "X is currently unavailable. Please try again in a few minutes."
 - [ ] OAuth callback error → sees "Sign-in failed. Please try again." with retry option
 - [ ] No email from X → sees "We couldn't get your email from X. Please ensure your X account has a verified email..."

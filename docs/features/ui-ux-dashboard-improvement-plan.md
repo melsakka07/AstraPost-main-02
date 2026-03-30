@@ -1,4 +1,4 @@
-# AstroPost Dashboard UI/UX Improvement Plan
+# AstraPost Dashboard UI/UX Improvement Plan
 
 > **Date:** 2026-03-14
 > **Status:** Complete — All 7 Phases Done
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-After a thorough visual and code review of every dashboard page in AstroPost, this document identifies UI/UX issues and proposes a phased implementation plan. The goal is to achieve **design consistency**, **better empty states**, **improved information hierarchy**, and **a polished, professional feel** — while preserving the existing theme and design language.
+After a thorough visual and code review of every dashboard page in AstraPost, this document identifies UI/UX issues and proposes a phased implementation plan. The goal is to achieve **design consistency**, **better empty states**, **improved information hierarchy**, and **a polished, professional feel** — while preserving the existing theme and design language.
 
 **Pages reviewed:** Dashboard, Compose, Queue, Calendar, Drafts, Analytics, Viral Analyzer, Jobs, AI Writer, Inspiration, Affiliate, Settings (+ Roadmap link)
 

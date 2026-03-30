@@ -47,7 +47,7 @@ export default async function LoginPage({
         )}
 
         <p className="text-center text-xs text-muted-foreground">
-          By continuing, you agree to AstroPost&apos;s{" "}
+          By continuing, you agree to AstraPost&apos;s{" "}
           <a href="/legal/terms" className="underline hover:text-foreground">
             Terms of Service
           </a>{" "}
@@ -71,7 +71,7 @@ const FEATURES = [
 function getErrorMessage(error: string, description?: string): string {
   switch (error) {
     case "access_denied":
-      return "You need to authorize AstroPost to access your X account to continue."
+      return "You need to authorize AstraPost to access your X account to continue."
     case "server_error":
       return "X is currently unavailable. Please try again in a few minutes."
     case "callback_error":

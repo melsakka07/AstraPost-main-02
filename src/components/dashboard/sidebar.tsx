@@ -238,7 +238,7 @@ function SidebarContent({
     signOut({
       fetchOptions: {
         onSuccess: () => {
-          window.location.href = "/login";
+          window.location.href = "/";
         },
       },
     });

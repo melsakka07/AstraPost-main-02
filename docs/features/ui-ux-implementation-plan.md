@@ -1,4 +1,4 @@
-# AstroPost — UI/UX Implementation Plan
+# AstraPost — UI/UX Implementation Plan
 > Landing Page & Footer Links Review
 > Created: 2026-03-14 | Status: In Progress
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-This plan addresses UI/UX improvements across the landing page and all footer-linked pages of AstroPost. Issues were identified through a full visual audit of http://localhost:3000/ and each footer destination. The plan is broken into **6 phases**, each self-contained and shippable. Phases are ordered by impact and dependency.
+This plan addresses UI/UX improvements across the landing page and all footer-linked pages of AstraPost. Issues were identified through a full visual audit of http://localhost:3000/ and each footer destination. The plan is broken into **6 phases**, each self-contained and shippable. Phases are ordered by impact and dependency.
 
 **Overall Theme Constraint:** Maintain the existing design system — OKLch color tokens, Geist font, shadcn/ui components, Tailwind CSS 4, and the `from-primary/10 via-purple-500/10 to-pink-500/10` gradient language.
 
@@ -82,7 +82,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 
 3. **Add Social Media links section**
    - Add a row of icon-links below the brand description
-   - Links: X/Twitter (`https://twitter.com/astropost`), Discord (`https://discord.gg/astropost`)
+   - Links: X/Twitter (`https://twitter.com/astrapost`), Discord (`https://discord.gg/astrapost`)
    - Use `lucide-react` icons: `Twitter` (or `X`), and a simple Discord SVG
    - Style: `text-muted-foreground hover:text-foreground transition-colors`
 
@@ -92,7 +92,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
    - This is a standard pattern for footer navigation headings
 
 5. **Add `aria-label` to footer logo link**
-   - Wrap the brand div in a `<Link>` with `aria-label="AstroPost - Home"`
+   - Wrap the brand div in a `<Link>` with `aria-label="AstraPost - Home"`
 
 6. **Improve copyright bar**
    - Add a trust signal: "Secured by industry-standard encryption"
@@ -103,7 +103,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 - [x] All footer links have smooth hover transitions (`transition-colors duration-200`)
 - [x] Social media links visible in footer (X/Twitter + Discord with inline brand SVGs)
 - [x] Footer headings use uppercase tracking style (`text-xs font-semibold uppercase tracking-wider`)
-- [x] Brand logo wrapped in `<Link>` with `aria-label="AstroPost — Go to homepage"`
+- [x] Brand logo wrapped in `<Link>` with `aria-label="AstraPost — Go to homepage"`
 - [x] `<footer>` has `aria-label="Site footer"` landmark
 - [x] Social icons group has `aria-label="Social media links"`
 - [x] Trust signal added to copyright bar (lock icon + "Secured with industry-standard encryption")
@@ -179,14 +179,14 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 
 3. **Added `HeroMockup` component** (`src/components/marketing/hero-mockup.tsx`)
    - Pure Server Component — no `"use client"` needed
-   - Browser chrome with macOS-style traffic lights + URL bar (`app.astropost.com/dashboard`)
+   - Browser chrome with macOS-style traffic lights + URL bar (`app.astrapost.com/dashboard`)
    - Left sidebar (nav items, active state, brand logo)
    - 4 stat cards with label/value/trend indicators (green/blue)
    - Bar chart skeleton with progressively darker bars (older→lighter, recent→primary/80)
    - Scheduled post queue with avatar circles, content lines, badge pills
    - Ambient glow (gradient) behind the chrome frame
    - Bottom fade overlay (`from-background to-transparent`) masks the cutoff
-   - `role="img" aria-label="AstroPost dashboard preview"` for accessibility
+   - `role="img" aria-label="AstraPost dashboard preview"` for accessibility
    - Dark mode: adapts automatically via Tailwind color tokens
 
 4. **Section divider** — Added `h-px bg-gradient-to-r from-transparent via-border to-transparent` between hero and social proof
@@ -310,13 +310,13 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 
 ### Completed Steps
 
-1. **Fixed title duplication** — All 8 marketing page `metadata.title` entries had "— AstroPost" suffix
-   which caused `"X — AstroPost | AstroPost"` with the root layout template. Corrected to bare names:
+1. **Fixed title duplication** — All 8 marketing page `metadata.title` entries had "— AstraPost" suffix
+   which caused `"X — AstraPost | AstraPost"` with the root layout template. Corrected to bare names:
    - `"Blog"`, `"Changelog"`, `"Community"`, `"Documentation"`, `"Features"`, `"Resources"`,
-     `"Privacy Policy"`, `"Terms of Service"` — template renders clean `"Name | AstroPost"`
+     `"Privacy Policy"`, `"Terms of Service"` — template renders clean `"Name | AstraPost"`
 
 2. **Added `openGraph` + `alternates.canonical`** to all 8 marketing pages:
-   - `openGraph.title` retains the full `"Page — AstroPost"` form for social sharing
+   - `openGraph.title` retains the full `"Page — AstraPost"` form for social sharing
    - `openGraph.url` set to the canonical path
    - `alternates.canonical` set to prevent duplicate indexing
 

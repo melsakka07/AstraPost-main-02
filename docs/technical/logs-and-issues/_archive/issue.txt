@@ -1,6 +1,6 @@
 Technical Issue Analysis: X (Twitter) API Media Upload 403 Forbidden Error                                                                                                             
   Executive Summary                                                                                                                                                                      
-  AstroPost is experiencing 403 Forbidden errors when attempting to upload media via the X (Twitter) API v1.1 endpoint, despite having valid OAuth 2.0 credentials with "Read and       Write" app permissions. The issue appears to be related to OAuth 2.0 token compatibility with the v1.1 media upload endpoint.                                                       
+  AstraPost is experiencing 403 Forbidden errors when attempting to upload media via the X (Twitter) API v1.1 endpoint, despite having valid OAuth 2.0 credentials with "Read and       Write" app permissions. The issue appears to be related to OAuth 2.0 token compatibility with the v1.1 media upload endpoint.                                                       
 
   ---
   Technical Stack

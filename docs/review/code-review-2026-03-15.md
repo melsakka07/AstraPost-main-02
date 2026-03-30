@@ -843,9 +843,9 @@ No `.min(1)`. Empty string `""` passes, gets queued, and fails when the worker t
 **Location:** `src/app/layout.tsx:31`
 **Current State:**
 ```ts
-metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://astropost.com")
+metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://astrapost.com")
 ```
-The fallback is `astropost.com` but the product is `AstraPost`. If `NEXT_PUBLIC_APP_URL` is unset, all OG tags and canonical URLs point to the wrong domain.
+The fallback is `astrapost.com` but the product is `AstraPost`. If `NEXT_PUBLIC_APP_URL` is unset, all OG tags and canonical URLs point to the wrong domain.
 
 **Recommendation:** Change fallback to `"https://astrapost.app"` (or whatever the actual domain is) and ensure `NEXT_PUBLIC_APP_URL` is required in `env.ts`.
 **Impact:** Correct SEO metadata; prevents misattributed canonical URLs.
@@ -1302,7 +1302,7 @@ Worst-case improvement: 780 sequential round trips → 3 batched inserts + N con
 
 **#1 (role="alert"):** Applied `role="alert" aria-live="polite"` to all dynamic error `<p>` elements in `sign-in-button.tsx`, `sign-up-form.tsx`, `forgot-password-form.tsx`, and `reset-password-form.tsx`. Static conditional error block (invalid token) also annotated with `role="alert"`.
 
-**#2 (viewport):** Removed `maximumScale: 1` from `src/app/layout.tsx`. Also corrected the `metadataBase` fallback from `astropost.com` → `astrapost.app` (Finding 4.5).
+**#2 (viewport):** Removed `maximumScale: 1` from `src/app/layout.tsx`. Also corrected the `metadataBase` fallback from `astrapost.com` → `astrapost.app` (Finding 4.5).
 
 **#3 (rate limiter):** Refactored `src/lib/rate-limiter.ts` to fail **closed** on cost-sensitive endpoints (`ai`, `ai_image`, `tweet_lookup`) — returns `{ success: false }` with a 60s reset when Redis is unavailable, ensuring AI API charges cannot accrue unbounded. Low-cost endpoints (`posts`, `media`, `auth`) still fail open. Redis error now wrapped in try/catch for robustness.
 

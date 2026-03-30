@@ -551,7 +551,7 @@
 - `src/app/(marketing)/pricing/page.tsx`: CTA → `/login`
 
 **Phase 7 - OAuth Error Handling (already integrated into Phase 2):**
-- `access_denied` → "You need to authorize AstroPost to access your X account to continue."
+- `access_denied` → "You need to authorize AstraPost to access your X account to continue."
 - `server_error` → "X is currently unavailable. Please try again in a few minutes."
 - `callback_error` → "Sign-in failed. Please try again."
 - `email_not_found` → "We couldn't get your email from X..."

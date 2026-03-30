@@ -1,6 +1,6 @@
 ## Context
 
-You are working on **AstroPost** (also called AstraPost), a production-ready AI-powered social media management SaaS platform for X (Twitter). The project is built with Next.js 16 (App Router), React 19, TypeScript, Better Auth, PostgreSQL (Drizzle ORM), BullMQ, shadcn/ui, and Tailwind CSS 4.
+You are working on **AstraPost** (also called AstraPost), a production-ready AI-powered social media management SaaS platform for X (Twitter). The project is built with Next.js 16 (App Router), React 19, TypeScript, Better Auth, PostgreSQL (Drizzle ORM), BullMQ, shadcn/ui, and Tailwind CSS 4.
 
 Before starting, read the following files to understand the full project structure, conventions, and rules:
 - `CLAUDE.md` — AI assistant guidelines, project structure, coding rules, and architectural constraints
@@ -78,7 +78,7 @@ This must follow **industry best practices for OAuth-only SaaS authentication** 
 
 ### 8. OAuth Error Handling (Best Practice Baseline)
 - Handle common X OAuth failure scenarios with user-friendly messages:
-  - User denies access on X consent screen → "You need to authorize AstroPost to access your X account to continue."
+  - User denies access on X consent screen → "You need to authorize AstraPost to access your X account to continue."
   - X API is down or unreachable → "X is currently unavailable. Please try again in a few minutes."
   - OAuth callback error → Generic "Sign-in failed. Please try again." with a retry button
   - No email returned from X → "We couldn't get your email from X. Please ensure your X account has a verified email address and that you've granted email permission."

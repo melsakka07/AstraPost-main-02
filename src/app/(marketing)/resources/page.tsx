@@ -113,7 +113,7 @@ export default function ResourcesPage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button size="lg" asChild>
-                <Link href="mailto:support@astropost.com">Contact Support</Link>
+                <Link href="mailto:support@astrapost.com">Contact Support</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link href="/docs">Browse Documentation</Link>

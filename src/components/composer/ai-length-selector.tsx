@@ -68,15 +68,17 @@ export function AiLengthSelector({
                           : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
-                    <span>{option.label}</span>
+                    <span className="flex items-center gap-1">
+                      {option.label}
+                      {isDisabled && (
+                        <Lock className="h-2.5 w-2.5 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                      )}
+                    </span>
                     <span className="text-[10px] font-normal tabular-nums">
                       {option.id === "short" && "≤280"}
                       {option.id === "medium" && "281–1K"}
                       {option.id === "long" && "1K–2K"}
                     </span>
-                    {isDisabled && (
-                      <Lock className="absolute -top-1 -right-1 h-3 w-3 text-muted-foreground/60" />
-                    )}
                   </button>
                 </TooltipTrigger>
                 {isDisabled && (

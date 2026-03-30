@@ -1,6 +1,6 @@
-# AstroPost -- New Features & Enhancements Roadmap
+# AstraPost -- New Features & Enhancements Roadmap
 
-> **Purpose**: A comprehensive, actionable roadmap of new features and enhancements designed to elevate AstroPost from its current MVP state to a best-in-class, revenue-generating social media management platform. Every recommendation is based on a thorough, line-by-line audit of the entire codebase and the Business Requirements Document (BRD).
+> **Purpose**: A comprehensive, actionable roadmap of new features and enhancements designed to elevate AstraPost from its current MVP state to a best-in-class, revenue-generating social media management platform. Every recommendation is based on a thorough, line-by-line audit of the entire codebase and the Business Requirements Document (BRD).
 >
 > **Scope**: This document focuses exclusively on *new capabilities and improvements* -- not bug fixes. For known bugs (broken dashboard JOIN, AI writer response parsing, onboarding persistence, etc.), see `docs/features.md`.
 >
@@ -49,7 +49,7 @@ The following features were considered but **explicitly decided not to implement
 
 ### Key Achievement
 
-AstroPost is now a **production-ready** social media management platform with:
+AstraPost is now a **production-ready** social media management platform with:
 - ✅ Complete monetization engine
 - ✅ Advanced AI-powered content tools
 - ✅ Comprehensive analytics suite
@@ -396,7 +396,7 @@ These features directly address the #1 revenue gap: the app currently has **zero
 
 ## 3. AI-Powered Differentiators
 
-These features leverage AstroPost's OpenRouter integration to create competitive advantages that justify the Pro subscription.
+These features leverage AstraPost's OpenRouter integration to create competitive advantages that justify the Pro subscription.
 
 ### 3.1 AI Viral Score (Pre-Publish Quality Signal)
 
@@ -675,8 +675,8 @@ These features leverage AstroPost's OpenRouter integration to create competitive
 **Proposed Implementation**:
 - `GET /api/analytics/export?format=csv&range=30d` returns a downloadable CSV of tweet analytics.
 - `GET /api/analytics/export?format=pdf&range=30d` generates a branded PDF report using `@react-pdf/renderer`.
-- PDF includes: AstroPost logo, date range, summary metrics, top tweets table, engagement chart.
-- Agency plan: white-label PDF (remove AstroPost branding, optionally add client logo).
+- PDF includes: AstraPost logo, date range, summary metrics, top tweets table, engagement chart.
+- Agency plan: white-label PDF (remove AstraPost branding, optionally add client logo).
 - "Export" button on the analytics page.
 
 **Files Involved**: New `src/app/api/analytics/export/route.ts`, new `src/components/analytics/export-button.tsx`, `package.json`.
@@ -928,7 +928,7 @@ These features leverage AstroPost's OpenRouter integration to create competitive
 
 **Proposed Implementation**:
 - Add `referralCode text` (unique, auto-generated) and `referredBy text` columns to `user` table.
-- Referral link format: `https://astropost.com/r/{code}`.
+- Referral link format: `https://astrapost.com/r/{code}`.
 - When a referred user upgrades to Pro, both referrer and referee receive 1 month free (applied via Stripe coupon).
 - `/dashboard/referral` page showing: referral link, copy button, total referrals, total conversions, earned credits.
 
@@ -1167,7 +1167,7 @@ These features leverage AstroPost's OpenRouter integration to create competitive
 
 ### 11.2 SEO Metadata & Open Graph Tags
 
-**Current State**: Root layout has a basic `title: "AstroPost"` with no description, no OG image, no Twitter card meta, and no structured data.
+**Current State**: Root layout has a basic `title: "AstraPost"` with no description, no OG image, no Twitter card meta, and no structured data.
 
 **Proposed Implementation**:
 - `generateMetadata()` exports for each marketing page with: title, description, keywords, OG image, Twitter card.
@@ -1519,7 +1519,7 @@ These features leverage AstroPost's OpenRouter integration to create competitive
 | Emoji picker | 2.2 | S | UX: Medium |
 | Link preview card | 2.5 | M | UX: High |
 
-**Goal**: Complete the feature set that positions AstroPost as a premium tool.
+**Goal**: Complete the feature set that positions AstraPost as a premium tool.
 
 ---
 
@@ -1571,5 +1571,5 @@ These features leverage AstroPost's OpenRouter integration to create competitive
 ---
 
 *Document version: 1.0 -- March 10, 2026*
-*Based on a complete codebase audit of AstroPost (all source files, schema, API routes, components, services, scripts, and documentation)*
+*Based on a complete codebase audit of AstraPost (all source files, schema, API routes, components, services, scripts, and documentation)*
 *Author: Comprehensive Code Review*

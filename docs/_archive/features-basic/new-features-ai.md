@@ -88,7 +88,7 @@
 - Modified `src/lib/rate-limiter.ts` (add `ai_image` rate limit category)
 - Modified `src/app/dashboard/settings/page.tsx` (preferred model selector)
 
-**Revenue Impact**: Very High — AI image generation is a premium, high-perceived-value feature that no competing X scheduling tool offers natively. It transforms AstroPost from a text scheduling tool into a full content creation suite. The model tiering (Free: basic model only, Pro: all models) creates a strong upgrade incentive. Estimated conversion lift: 15-25% among users who try the feature.
+**Revenue Impact**: Very High — AI image generation is a premium, high-perceived-value feature that no competing X scheduling tool offers natively. It transforms AstraPost from a text scheduling tool into a full content creation suite. The model tiering (Free: basic model only, Pro: all models) creates a strong upgrade incentive. Estimated conversion lift: 15-25% among users who try the feature.
 
 **UX Impact**: Very High — eliminates the #1 friction point in visual content creation: leaving the platform to create/find images. Users can go from idea to published visual tweet in under 60 seconds.
 
@@ -98,7 +98,7 @@
 
 ### 3.9 Inspiration — Influencer Tweet Import & AI-Assisted Adaptation
 
-**Current State**: The platform has no mechanism for users to import, reference, or draw inspiration from existing content on X. The existing `3.4 AI Content Inspiration Feed` generates AI topic suggestions from scratch — it does **not** pull real tweets. Users who want to riff on a trending tweet or influencer post must manually copy the text, switch to the AstroPost Composer, paste it, and then manually rewrite it. There is no tweet URL parsing, no context retrieval (subtweets, replies), and no guided adaptation workflow. The existing `/api/ai/tools` route supports a `"rewrite"` tool, but it operates on raw text with no source attribution or ethical guardrails.
+**Current State**: The platform has no mechanism for users to import, reference, or draw inspiration from existing content on X. The existing `3.4 AI Content Inspiration Feed` generates AI topic suggestions from scratch — it does **not** pull real tweets. Users who want to riff on a trending tweet or influencer post must manually copy the text, switch to the AstraPost Composer, paste it, and then manually rewrite it. There is no tweet URL parsing, no context retrieval (subtweets, replies), and no guided adaptation workflow. The existing `/api/ai/tools` route supports a `"rewrite"` tool, but it operates on raw text with no source attribution or ethical guardrails.
 
 **Proposed Implementation**:
 

@@ -1,8 +1,8 @@
-# AstroPost - AI Assistant Guidelines
+# AstraPost - AI Assistant Guidelines
 
 ## Project Overview
 
-AstroPost is a production-ready AI-powered social media management platform for X (Twitter). It enables users to schedule tweets and threads, publish reliably via a background worker, track analytics, and generate content using AI — targeting Arabic-speaking content creators in the MENA region.
+AstraPost is a production-ready AI-powered social media management platform for X (Twitter). It enables users to schedule tweets and threads, publish reliably via a background worker, track analytics, and generate content using AI — targeting Arabic-speaking content creators in the MENA region.
 
 ### Code Tracker
 Please go check this file \docs\0-MY-LATEST-UPDATES.md to get the latest updates on the code and the changes made.
@@ -272,7 +272,7 @@ pnpm run tokens:encrypt-access # One-time: encrypt existing plaintext X tokens
 
 ## AI Features Overview
 
-AstroPost includes several AI-powered features to help users create, analyze, and optimize content:
+AstraPost includes several AI-powered features to help users create, analyze, and optimize content:
 
 ### 1. AI Thread Writer
 - **Endpoint**: `POST /api/ai/thread`
@@ -340,7 +340,7 @@ The AI writer supports multiple tones for different content strategies:
 
 ## AI Language Support
 
-AstroPost supports content generation in multiple languages:
+AstraPost supports content generation in multiple languages:
 - **Arabic (ar)**: Primary target language with RTL support
 - **English (en)**: Default language
 - **French (fr)**
@@ -448,7 +448,7 @@ The errors should clear after Next.js generates fresh types.
 
 The project includes technical documentation in `docs/`:
 
-- `docs/business/starter-prompt.md` — AstroPost business context for AI prompts
+- `docs/business/starter-prompt.md` — AstraPost business context for AI prompts
 - `docs/technical/react-markdown.md` — Markdown rendering guide
 - `docs/technical/x-api-media-upload-fix.md` — X (Twitter) API media upload 403 fix documentation
 - `docs/technical/ai-image-replicate-fix.md` — AI Image Generation Replicate API model fix documentation

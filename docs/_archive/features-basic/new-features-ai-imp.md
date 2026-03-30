@@ -1,5 +1,5 @@
 # AI Features Implementation Plan
-## AstroPost — Features 3.8 & 3.9
+## AstraPost — Features 3.8 & 3.9
 
 **Document Version:** 1.5
 **Created:** 2026-03-12
@@ -20,7 +20,7 @@
 
 ## Overview
 
-This implementation plan covers two major AI-powered features for AstroPost:
+This implementation plan covers two major AI-powered features for AstraPost:
 
 | Feature | Description | Priority | Effort |
 |---------|-------------|----------|--------|

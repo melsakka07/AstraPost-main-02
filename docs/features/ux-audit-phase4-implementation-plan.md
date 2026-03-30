@@ -129,7 +129,7 @@
 - **Fix:** Add conditional coloring: green <=160, red >160.
 
 **A16. No "Apply to X Profile" call-to-action**
-- **Problem:** After generating bios, the only action is "Copy." For a bio optimizer, the ideal next step is applying it to the X profile. While AstroPost can't write to X settings API directly, it can deep-link the user to their X profile settings.
+- **Problem:** After generating bios, the only action is "Copy." For a bio optimizer, the ideal next step is applying it to the X profile. While AstraPost can't write to X settings API directly, it can deep-link the user to their X profile settings.
 - **Fix:** Add a secondary button: "Open X Settings" that links to `https://x.com/settings/profile` (opens in new tab).
 
 ### Inspiration Page (`/dashboard/inspiration`)
@@ -391,7 +391,7 @@
 
 ### vs. Typefully (Thread Editor)
 
-| Feature | AstroPost | Typefully | Gap |
+| Feature | AstraPost | Typefully | Gap |
 |---------|-----------|-----------|-----|
 | Thread preview | Raw text with dashes | Numbered cards with char counts | Critical |
 | Per-tweet editing | Not possible | Inline editing | Critical |
@@ -401,7 +401,7 @@
 
 ### vs. Buffer (Scheduling)
 
-| Feature | AstroPost | Buffer | Gap |
+| Feature | AstraPost | Buffer | Gap |
 |---------|-----------|--------|-----|
 | Content calendar | AI-generated plan | Visual calendar grid | High (A9) |
 | Analytics overview | Single scroll page | Tabbed sections | Medium (A25) |
@@ -410,19 +410,19 @@
 
 ### vs. X/Twitter (Compose Flow)
 
-| Feature | AstroPost | X/Twitter | Gap |
+| Feature | AstraPost | X/Twitter | Gap |
 |---------|-----------|-----------|-----|
-| AI to compose flow | Copy-paste required | N/A (no AI) | AstroPost differentiator |
+| AI to compose flow | Copy-paste required | N/A (no AI) | AstraPost differentiator |
 | Character feedback | Per-field only | Real-time circular | Medium |
 | Thread creation | Separate page | Same flow, + button | Different paradigm |
 
 ### vs. Hootsuite (Analytics)
 
-| Feature | AstroPost | Hootsuite | Gap |
+| Feature | AstraPost | Hootsuite | Gap |
 |---------|-----------|-----------|-----|
 | Competitor analysis | Single account | Multi-account comparison | High (A33) |
-| Viral analysis | Full feature | Not available | AstroPost differentiator |
-| Actionable insights | AI-generated | None | AstroPost differentiator |
+| Viral analysis | Full feature | Not available | AstraPost differentiator |
+| Actionable insights | AI-generated | None | AstraPost differentiator |
 | Data export | Basic | Comprehensive | Medium |
 
 ---

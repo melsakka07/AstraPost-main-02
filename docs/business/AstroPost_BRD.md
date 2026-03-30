@@ -1,8 +1,8 @@
-# 🚀 AstroPost — Business Requirements Document (BRD)
+# 🚀 AstraPost — Business Requirements Document (BRD)
 
 ---
 
-> **Project Name:** AstroPost — AI-Powered X (Twitter) Scheduling & Content Monetization Platform
+> **Project Name:** AstraPost — AI-Powered X (Twitter) Scheduling & Content Monetization Platform
 > **Version:** 1.0
 > **Date:** March 2026
 > **Author:** thunderlight
@@ -47,7 +47,7 @@
 
 ### 1.1 Project Overview
 
-**AstroPost** is an AI-powered SaaS web application designed to serve Arabic-speaking content creators and social media managers who use X (Twitter). Inspired by Postlate.com, AstroPost delivers a superior, feature-rich, and scalable platform that addresses all known product gaps while adding enterprise-grade capabilities.
+**AstraPost** is an AI-powered SaaS web application designed to serve Arabic-speaking content creators and social media managers who use X (Twitter). Inspired by Postlate.com, AstraPost delivers a superior, feature-rich, and scalable platform that addresses all known product gaps while adding enterprise-grade capabilities.
 
 The platform allows users to:
 - Schedule tweets and threads automatically
@@ -83,7 +83,7 @@ Arabic content creators on X face three core challenges:
 
 ### 1.4 Proposed Solution
 
-AstroPost solves these problems by offering:
+AstraPost solves these problems by offering:
 
 - ✅ Fully automated scheduling with intelligent timing recommendations
 - ✅ AI-powered content generation in Arabic and English
@@ -96,7 +96,7 @@ AstroPost solves these problems by offering:
 
 ### 1.5 Vision Statement
 
-> *"Within 12 months of launch, AstroPost becomes the #1 Arabic-native X scheduling tool in the MENA region — serving 10,000 active users with $25,000 MRR."*
+> *"Within 12 months of launch, AstraPost becomes the #1 Arabic-native X scheduling tool in the MENA region — serving 10,000 active users with $25,000 MRR."*
 
 ---
 
@@ -261,7 +261,7 @@ AstroPost solves these problems by offering:
 | Stakeholder | Role |
 |-------------|------|
 | End Users | Arabic-speaking X content creators |
-| Pro Subscribers | Paying customers of AstroPost |
+| Pro Subscribers | Paying customers of AstraPost |
 | X (Twitter) Platform | OAuth 2.0 and API v2 dependency |
 | Stripe | Payment processing and subscription management |
 | Amazon Associates | Affiliate marketing API integration |
@@ -283,7 +283,7 @@ AstroPost solves these problems by offering:
 
 ### 5.2 Competitive Analysis
 
-| Feature | AstroPost | Postlate | Buffer | Typefully | Hypefury | TweetDeck |
+| Feature | AstraPost | Postlate | Buffer | Typefully | Hypefury | TweetDeck |
 |---------|-----------|----------|--------|-----------|----------|-----------|
 | Tweet Scheduling | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Thread Builder | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
@@ -301,7 +301,7 @@ AstroPost solves these problems by offering:
 | Price/month | $19.99 | $19.99 | $18 | $19 | $29 | Free (X) |
 | X ToS Compliant | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ |
 
-> ⚠️ Postlate's "Engagement Boost" feature (fake likes/retweets from 550K follower account) violates X Terms of Service. AstroPost deliberately excludes this feature to protect users.
+> ⚠️ Postlate's "Engagement Boost" feature (fake likes/retweets from 550K follower account) violates X Terms of Service. AstraPost deliberately excludes this feature to protect users.
 
 ---
 
@@ -332,7 +332,7 @@ AstroPost solves these problems by offering:
 - Grow audience to 100,000 followers
 - Earn passive income via Amazon affiliate tweets
 
-**How AstroPost Helps:** Batch-schedule a week's content in one sitting, use AI to generate threads, and auto-generate affiliate tweets.
+**How AstraPost Helps:** Batch-schedule a week's content in one sitting, use AI to generate threads, and auto-generate affiliate tweets.
 
 ---
 
@@ -358,7 +358,7 @@ AstroPost solves these problems by offering:
 - Generate client-facing analytics PDF reports
 - Reduce account management time by 60%
 
-**How AstroPost Helps:** Multi-account workspace (Phase 2), analytics export, team roles, approval workflow.
+**How AstraPost Helps:** Multi-account workspace (Phase 2), analytics export, team roles, approval workflow.
 
 ---
 
@@ -384,7 +384,7 @@ AstroPost solves these problems by offering:
 - Scale to $1,000/month in affiliate commissions
 - Reach broader audience with better-timed posts
 
-**How AstroPost Helps:** Amazon Affiliate Tweet Generator auto-creates compelling promotional tweets with embedded affiliate link and product image.
+**How AstraPost Helps:** Amazon Affiliate Tweet Generator auto-creates compelling promotional tweets with embedded affiliate link and product image.
 
 ---
 
@@ -411,10 +411,10 @@ AstroPost solves these problems by offering:
 
 **FR-AUTH-001 Acceptance Criteria:**
 ```
-GIVEN a new user visits AstroPost
+GIVEN a new user visits AstraPost
 WHEN they click "Connect with X"
 THEN they are redirected to X OAuth authorization
-AND upon granting permission are redirected back to AstroPost dashboard
+AND upon granting permission are redirected back to AstraPost dashboard
 AND their X profile (username, avatar, follower count) is stored
 AND the entire flow completes within 5 seconds
 ```
@@ -640,7 +640,7 @@ Output:
 - **Rate Limiting:** 100 API requests/minute per user IP; 1,000/hour per authenticated user
 - **OWASP Compliance:** Full OWASP Top 10 audit required before launch
 - **Secrets Management:** All API keys stored in environment variables / AWS Secrets Manager; never committed to code
-- **PCI DSS Compliance:** Via Stripe — no card data ever stored on AstroPost servers
+- **PCI DSS Compliance:** Via Stripe — no card data ever stored on AstraPost servers
 - **Vulnerability Scanning:** Automated weekly security scans (Snyk or similar)
 - **Penetration Testing:** Required before Phase 1 launch and annually thereafter
 
@@ -1021,7 +1021,7 @@ CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 ---
 
 **US-002 — Complete Onboarding**
-> *As a new user, I want to be guided through the setup so that I understand how to use AstroPost immediately.*
+> *As a new user, I want to be guided through the setup so that I understand how to use AstraPost immediately.*
 
 | Field | Detail |
 |-------|--------|
@@ -1116,7 +1116,7 @@ CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 |-------|--------|
 | Priority | 🟠 Should Have (Pro) |
 | Story Points | 5 |
-| Acceptance Criteria | "Export" button on analytics page; options: CSV or PDF; PDF includes AstroPost branding, date range, all metric tables; downloads within 10 seconds |
+| Acceptance Criteria | "Export" button on analytics page; options: CSV or PDF; PDF includes AstraPost branding, date range, all metric tables; downloads within 10 seconds |
 
 ---
 
@@ -1142,12 +1142,12 @@ CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ HEADER                                                  │
-│ [🚀 AstroPost Logo]  Features  Pricing  FAQ   [Start Free]│
+│ [🚀 AstraPost Logo]  Features  Pricing  FAQ   [Start Free]│
 ├─────────────────────────────────────────────────────────┤
 │ HERO SECTION                                            │
 │                                                         │
 │   توقّف عن إضاعة ساعاتك في انتظار الوقت المناسب        │
-│   AstroPost schedules your tweets automatically         │
+│   AstraPost schedules your tweets automatically         │
 │                                                         │
 │   [🚀 Start Free — No Credit Card]  [▶ See How It Works] │
 │                                                         │
@@ -1467,7 +1467,7 @@ CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 **Stripe Products to Create:**
 
 ```
-Product: AstroPost Pro
+Product: AstraPost Pro
   Price 1: pro_monthly — $19.99/month — recurring
   Price 2: pro_annual  — $149.00/year — recurring
 ```
@@ -1606,7 +1606,7 @@ Product: AstroPost Pro
 | Passwords | bcrypt | Cost factor 12; salted hashes |
 | API Keys | AWS Secrets Manager | Never in code or environment files in production |
 | Database | Row-Level Security (RLS) | Supabase RLS policies per user |
-| Payment Data | Stripe (PCI DSS) | No card data stored on AstroPost servers |
+| Payment Data | Stripe (PCI DSS) | No card data stored on AstraPost servers |
 
 ---
 
@@ -1618,7 +1618,7 @@ Product: AstroPost Pro
 | PDPL (Saudi Arabia) | Local data processing consent, breach notification | Compliant data handling; 72-hour breach notification procedure |
 | CAN-SPAM | Unsubscribe mechanism, sender identification | All emails include unsubscribe link; Physical address in footer |
 | CCPA (California) | Data disclosure, opt-out of sale | Privacy policy section; No data selling |
-| X API ToS | No artificial engagement, no scraping, automation disclosure | Removed engagement boost; Clear "Posted via AstroPost" attribution |
+| X API ToS | No artificial engagement, no scraping, automation disclosure | Removed engagement boost; Clear "Posted via AstraPost" attribution |
 
 ---
 
@@ -1644,7 +1644,7 @@ Product: AstroPost Pro
 | ID | Risk | Probability | Impact | Severity | Mitigation |
 |----|------|-------------|--------|----------|------------|
 | RISK-001 | X API pricing increases beyond budget (as in 2023 when prices jumped 1,000x) | High | Critical | 🔴 Critical | Monitor weekly; maintain Basic tier budget buffer; build API abstraction layer for swap capability |
-| RISK-002 | X Terms of Service violation → user account bans | Medium | High | 🔴 Critical | Legal review before launch; NO fake engagement; respect all rate limits; display "via AstroPost" attribution |
+| RISK-002 | X Terms of Service violation → user account bans | Medium | High | 🔴 Critical | Legal review before launch; NO fake engagement; respect all rate limits; display "via AstraPost" attribution |
 | RISK-003 | Low free-to-paid conversion (< 5%) | Medium | High | 🟠 High | In-app upgrade prompts at friction moments; 7-day Pro trial; improve free plan UX to show Pro value |
 | RISK-004 | OpenAI API cost overrun from heavy AI usage | Medium | Medium | 🟠 High | Cap AI generations (50/month per Pro user); use GPT-4o-mini for simpler tasks; cache common prompts |
 | RISK-005 | Security breach — OAuth token exposure | Low | Critical | 🟠 High | AES-256 encryption at rest; penetration testing; AWS Secrets Manager; incident response plan |
@@ -1937,7 +1937,7 @@ Before public launch, ALL of the following must pass:
 | Competitor Tracking | Monitor competitor X accounts and benchmark engagement | Very High |
 | Video Editor | Basic in-browser video trimming and captioning tool | Very High |
 | AI Profile Optimizer | AI recommendations for bio, profile photo, header | Medium |
-| LinkedIn Scheduling | Extend AstroPost to schedule LinkedIn posts | High |
+| LinkedIn Scheduling | Extend AstraPost to schedule LinkedIn posts | High |
 | Instagram Scheduling | Extend to Instagram Reels and Stories | Very High |
 | Influencer Marketplace | Connect brands with Arabic influencers | Very High |
 | Native Arabic AI Model | Fine-tuned Arabic language model for better cultural accuracy | Very High |
@@ -1959,8 +1959,8 @@ Before public launch, ALL of the following must pass:
 
 | Field | Value |
 |-------|-------|
-| **Document Title** | AstroPost — Business Requirements Document |
-| **Project Name** | AstroPost |
+| **Document Title** | AstraPost — Business Requirements Document |
+| **Project Name** | AstraPost |
 | **Version** | 1.0 |
 | **Status** | Draft for Review |
 | **Date Created** | March 9, 2026 |
@@ -1971,4 +1971,4 @@ Before public launch, ALL of the following must pass:
 
 ---
 
-*© 2026 AstroPost. All rights reserved. This document is confidential and intended for internal use only.*
+*© 2026 AstraPost. All rights reserved. This document is confidential and intended for internal use only.*

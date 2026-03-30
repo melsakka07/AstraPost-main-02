@@ -141,7 +141,7 @@ export default function TermsPage() {
               </div>
             </div>
             <Button asChild>
-              <Link href="mailto:terms@astropost.com">Email Legal Team</Link>
+              <Link href="mailto:terms@astrapost.com">Email Legal Team</Link>
             </Button>
           </div>
         </div>

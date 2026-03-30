@@ -1,10 +1,10 @@
-# AstroPost — AI Assistant Context
+# AstraPost — AI Assistant Context
 
-I'm working on **AstroPost**, a production-ready AI-powered social media management platform for X (Twitter). Here is the full context you need to assist effectively.
+I'm working on **AstraPost**, a production-ready AI-powered social media management platform for X (Twitter). Here is the full context you need to assist effectively.
 
-## What AstroPost Does
+## What AstraPost Does
 
-AstroPost lets users:
+AstraPost lets users:
 - Schedule tweets and multi-tweet threads with a calendar UI
 - Publish content reliably via a BullMQ background worker with automatic retries
 - Generate content using AI (thread writer, tweet improver, affiliate tweet generator, translation)
@@ -77,7 +77,7 @@ Check the [shadcn/ui documentation](https://ui.shadcn.com/docs/components) befor
 
 ## Request
 
-Please help me implement the above within AstroPost's existing architecture. Ensure any new code:
+Please help me implement the above within AstraPost's existing architecture. Ensure any new code:
 
 - Follows the established file structure and naming conventions
 - Uses Drizzle ORM for all database operations

@@ -154,17 +154,25 @@ export async function PATCH(
       newScheduledAt = new Date(body.scheduledAt);
   }
 
+  // Clear failure metadata when a failed post is being re-scheduled
+  const isRecoveringFromFailure =
+    (existingPost.status === "failed" || existingPost.status === "paused_needs_reconnect") &&
+    newStatus === "scheduled";
+
   // 2. Update Post
   await db.update(posts)
     .set({
-      // We don't support changing account type easily yet, so assuming updates stay within platform or just update scheduling
-      // If we support changing accounts in PATCH, we need more logic. For now ignoring targetAccountIds in PATCH or handling simple cases
       scheduledAt: newScheduledAt,
       status: newStatus,
       updatedAt: new Date(),
       approvedBy,
       approvedAt,
       reviewerNotes,
+      ...(isRecoveringFromFailure && {
+        failReason: null,
+        lastErrorCode: null,
+        lastErrorAt: null,
+      }),
     })
     .where(eq(posts.id, postId));
 
@@ -219,14 +227,18 @@ export async function PATCH(
     }
 
     if (needsReschedule && newScheduledAt) {
-        // Remove old job if exists
-        const job = await scheduleQueue.getJob(postId);
-        if (job) await job.remove();
+        // Remove any existing job regardless of BullMQ state (waiting, active, or failed).
+        // getJob() does not return failed-state jobs, so we use remove() directly.
+        try {
+          await scheduleQueue.remove(postId);
+        } catch {
+          // Safe to ignore — job may not exist
+        }
 
         const delay = Math.max(0, newScheduledAt.getTime() - Date.now());
         await scheduleQueue.add(
             "publish-post",
-            { postId, userId: ctx.currentTeamId }, // Use team owner ID for the job
+            { postId, userId: ctx.currentTeamId },
             { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
         );
     }
