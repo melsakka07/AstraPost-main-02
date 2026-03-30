@@ -134,6 +134,7 @@ export function Composer() {
 
   const [accounts, setAccounts] = useState<SocialAccountLite[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   // Used to restore the draft's linked account once accounts have loaded
@@ -205,6 +206,10 @@ export function Composer() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1078,7 +1083,7 @@ export function Composer() {
   };
 
   const selectedAccount = accounts.find(a => targetAccountIds.includes(a.id)) || accounts[0];
-  const userImage = selectedAccount?.avatarUrl || session?.user?.image;
+  const userImage = mounted ? (selectedAccount?.avatarUrl || session?.user?.image) : null;
   const userName = selectedAccount?.displayName || session?.user?.name || "User Name";
   const userHandle = selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle";
 

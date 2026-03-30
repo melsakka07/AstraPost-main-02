@@ -1,5 +1,31 @@
 # Latest Updates
 
+## 2026-03-30: Bug Fix — Hydration Mismatch in Composer Component ✅
+
+**Summary:** Fixed React hydration mismatch error in the Composer component's user avatar display.
+
+**Issue:** The `userImage` variable was derived from `selectedAccount?.avatarUrl || session?.user?.image`, where `selectedAccount` comes from `accounts` state that is populated asynchronously via `fetch("/api/accounts")`. On the server, `accounts` is empty, so `userImage` is `undefined`. On the client after hydration, the fetch completes and `userImage` gets a value. This caused React to render a fallback `<div>` on the server but an `<Image>` component on the client, triggering a hydration mismatch error.
+
+**Fix:** Added a `mounted` state that is `false` on initial render (both server and client hydration). The `userImage` is set to `null` until `mounted` is `true`, ensuring consistent rendering between server and client. After the component mounts, the actual image URL is used.
+
+**Files changed:**
+- `src/components/composer/composer.tsx` (added `mounted` state, updated `userImage` derivation)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+## 2026-03-30: Bug Fix — ARIA Attribute Value in Mobile Menu ✅
+
+**Summary:** Fixed invalid ARIA attribute value error in mobile-menu.tsx.
+
+**Issue:** The `aria-expanded` attribute was receiving a boolean value directly (`aria-expanded={isOpen}`), which violates ARIA accessibility requirements.
+
+**Fix:** Changed `aria-expanded={isOpen}` to `aria-expanded={isOpen ? "true" : "false"}` to use explicit string values.
+
+**Files changed:**
+- `src/components/mobile-menu.tsx`
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
 ## 2026-03-29: Phase 9 — Final Verification & Cleanup ✅
 
 **Summary:** Completed Phase 9 final codebase sweep and dead code cleanup. All automated checks pass.
