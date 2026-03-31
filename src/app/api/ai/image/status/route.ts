@@ -10,6 +10,49 @@
  *
  * The caller (ai-image-dialog) polls every 2 s until status is "succeeded"
  * or an error is returned.
+ *
+ * ## Fallback Logic
+ *
+ * This endpoint implements a robust, silent fallback mechanism to ensure a smooth
+ * user experience when models fail:
+ *
+ * ### 1. Credit Protection
+ * - Credits are NEVER consumed on failure
+ * - The `aiGenerations` table is only written when status === "succeeded"
+ * - This protects users from being charged for failed generations
+ *
+ * ### 2. Content Safety Checks (No Fallback)
+ * - If the prediction fails due to content moderation, it is identified as a
+ *   CONTENT_BLOCKED error
+ * - Error patterns: safety, content.?polic, blocked, violat, forbidden, HARM, E002
+ * - Action: Immediately returns a permanent error - no fallback is attempted
+ * - User must adjust their prompt and try again
+ *
+ * ### 3. Automatic Model Fallback
+ * - If the primary model (nano-banana-2) fails for any non-content reason:
+ *   - Automatically and silently starts a new prediction using the backup model (nano-banana)
+ *   - Updates Redis cache with the new model state
+ *   - Returns { status: "fallback", predictionId: newPredictionId } to the client
+ *   - The client seamlessly updates its internal tracking and continues polling
+ * - User sees "Switching to backup model…" toast notification
+ *
+ * - If the secondary model (nano-banana-pro) fails for any non-content reason:
+ *   - Same automatic fallback to nano-banana applies
+ *   - Transparent to the user - no credit charged for the failed attempt
+ *
+ * ### 4. Transient Errors
+ * - If the fallback also fails, or if the service is completely overloaded:
+ *   - Returns SERVICE_UNAVAILABLE error with retryable: true
+ *   - Error patterns: high.?demand, unavailable, rate.?limit, E003, ModelRateLimit,
+ *     capacity, try.?again, busy, 503
+ *   - User can retry the request later when the service is less busy
+ *
+ * ## Response Status Codes
+ *
+ * - `starting` / `processing`: Generation in progress, keep polling
+ * - `succeeded`: Generation complete, returns imageUrl + metadata
+ * - `fallback`: Primary/secondary failed, retrying with backup model
+ * - `failed`: Generation failed with error details (check retryable flag)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -83,26 +126,26 @@ export async function GET(req: NextRequest) {
       const isContentBlocked =
         /safety|content.?polic|blocked|violat|forbidden|HARM|E002/i.test(rawError);
 
-      // Automatic model fallback: if the primary model (nano-banana-2) fails for
-      // any non-content-blocked reason, silently retry with nano-banana-pro.
+      // Automatic model fallback: if the primary or secondary model fails for
+      // any non-content-blocked reason, silently retry with the backup model (nano-banana).
       // The fallback is transparent to the user — no credit is charged for the
       // failed attempt, and the new prediction ID is returned so the client can
       // keep polling without interruption.
-      if (meta.model === "nano-banana-2" && !isContentBlocked) {
+      if ((meta.model === "nano-banana-2" || meta.model === "nano-banana-pro") && !isContentBlocked) {
         await redis.del(`ai:img:pred:${predictionId}`);
 
         try {
           const fallback = await startImageGeneration({
             prompt: meta.finalPrompt,
             aspectRatio: meta.aspectRatio,
-            model: "nano-banana-pro",
+            model: "nano-banana",
             ...(meta.style !== null && { style: meta.style }),
           });
 
           // Cache fallback metadata under the new prediction ID.
           const fallbackMeta: PredictionMeta = {
             ...meta,
-            model: "nano-banana-pro",
+            model: "nano-banana",
           };
           await redis.setex(
             `ai:img:pred:${fallback.predictionId}`,

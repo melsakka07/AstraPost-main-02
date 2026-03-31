@@ -1,14 +1,50 @@
 /**
  * AI Image Generation Service (Replicate API - Nano Banana Models)
  * Provider-agnostic abstraction for AI image generation using Replicate
- * Models: google/nano-banana-2, google/nano-banana-pro
+ *
+ * ## Available Models
+ *
+ * ### Primary Model: `nano-banana-2` (google/nano-banana-2)
+ * - **Description**: Gemini 2.5 Flash Image - Fast, efficient generation
+ * - **Resolution**: 1K (1024px base)
+ * - **Use Case**: Quick iterations, high-volume use cases, real-time previews
+ * - **Availability**: All plans (Free, Pro, Agency)
+ *
+ * ### Secondary Model: `nano-banana-pro` (google/nano-banana-pro)
+ * - **Description**: Gemini 3 Pro Image - Highest quality with advanced features
+ * - **Resolution**: 2K (2048px base)
+ * - **Features**: Text rendering, multi-image blending, Google Search integration
+ * - **Use Case**: Final assets, typography, complex scenes, professional output
+ * - **Availability**: Pro and Agency plans only
+ *
+ * ### Backup Model: `nano-banana` (google/nano-banana)
+ * - **Description**: Gemini 2.5 Flash Image - Reliable fallback
+ * - **Resolution**: 1K (1024px base)
+ * - **Purpose**: Automatic fallback when primary or secondary model fails
+ * - **Availability**: All plans (Free, Pro, Agency)
+ *
+ * ## Fallback Behavior
+ *
+ * When either `nano-banana-2` or `nano-banana-pro` fails for any reason (except content
+ * safety violations), the system automatically retries with `nano-banana`. This is
+ * transparent to the user - the polling endpoint returns a new predictionId and the
+ * client seamlessly continues polling without interrupting the user experience.
+ *
+ * Content safety violations (errors containing "safety", "forbidden", "HARM", "violat")
+ * are permanent errors - no fallback is attempted and the user must adjust their prompt.
+ *
+ * ## Credit Protection
+ *
+ * Credits are NEVER consumed on failed generations. The `aiGenerations` table is only
+ * written when an image generation explicitly returns a "succeeded" status. This ensures
+ * users are not charged for model failures or transient errors.
  */
 
 // ============================================================================
 // Types and Interfaces
 // ============================================================================
 
-export type ImageModel = "nano-banana-2" | "nano-banana-pro";
+export type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana";
 
 export type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
 
@@ -351,6 +387,49 @@ class NanaBananaProProvider implements ImageGenerationProvider {
 // DEPRECATED — Factory and synchronous top-level API
 // ============================================================================
 
+class NanoBananaProvider implements ImageGenerationProvider {
+  name = "nano-banana" as const;
+  private version = "google/nano-banana";
+
+  async generate(params: ImageGenParams): Promise<ImageGenResult> {
+    const { width, height } = getDimensionsFromAspectRatio(params.aspectRatio);
+    const prompt = buildStyledPrompt(params.prompt, params.style);
+
+    const token = process.env.REPLICATE_API_TOKEN;
+    if (!token) {
+      throw new Error("REPLICATE_API_TOKEN environment variable is not set");
+    }
+
+    try {
+      const result = await createPrediction(
+        this.version,
+        {
+          prompt,
+          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
+          resolution: "1K",
+          output_format: "png",
+          safety_filter_level: "block_only_high",
+        },
+        token
+      );
+
+      if (!result.output) {
+        throw new Error("No image data returned from Replicate API");
+      }
+
+      const imageUrl = typeof result.output === "string"
+        ? result.output
+        : result.output[0]!;
+
+      return { imageUrl, width, height, model: this.name, prompt };
+    } catch (error) {
+      throw new Error(
+        `Failed to generate image with ${this.name}: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+}
+
 /**
  * @deprecated Use `startImageGeneration()` instead. This factory instantiates
  * synchronous blocking providers that will time out in serverless environments.
@@ -361,6 +440,8 @@ export function createImageProvider(
   model: ImageModel
 ): ImageGenerationProvider {
   switch (model) {
+    case "nano-banana":
+      return new NanoBananaProvider();
     case "nano-banana-2":
       return new NanoBanana2Provider();
     case "nano-banana-pro":
@@ -403,7 +484,8 @@ export async function startImageGeneration(
   const model = params.model ?? "nano-banana-2";
   const prompt = buildStyledPrompt(params.prompt, params.style);
   const modelName =
-    model === "nano-banana-pro" ? "google/nano-banana-pro" : "google/nano-banana-2";
+    model === "nano-banana-pro" ? "google/nano-banana-pro" :
+    model === "nano-banana" ? "google/nano-banana" : "google/nano-banana-2";
   const resolution = model === "nano-banana-pro" ? "2K" : "1K";
 
   // Use the model name endpoint — /v1/models/{model_owner}/{model_name}/predictions

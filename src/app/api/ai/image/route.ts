@@ -34,7 +34,7 @@ import {
 const ImageGenRequestSchema = z.object({
   prompt: z.string().max(1000).optional(),
   tweetContent: z.string().max(5000).optional(),
-  model: z.enum(["nano-banana-2", "nano-banana-pro"]).default("nano-banana-2"),
+  model: z.enum(["nano-banana-2", "nano-banana-pro", "nano-banana"]).default("nano-banana-2"),
   aspectRatio: z.enum(["1:1", "16:9", "4:3", "9:16"]).default("1:1"),
   style: z.enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"]).optional(),
 });
@@ -60,8 +60,13 @@ async function generateImagePromptFromTweet(
 
   try {
     const openrouterProvider = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY || "" });
+    
+    if (!process.env.OPENROUTER_MODEL) {
+      throw new Error("OPENROUTER_MODEL environment variable is not configured");
+    }
+
     const { text } = await generateText({
-      model: openrouterProvider(process.env.OPENROUTER_MODEL || "openai/gpt-4o"),
+      model: openrouterProvider(process.env.OPENROUTER_MODEL),
       system: `You are an expert at creating vivid, specific image prompts for social media content.
 Generate a visual prompt that captures the essence of the post.
 Keep the prompt under 200 words. Focus on visual elements, composition, mood, and style.

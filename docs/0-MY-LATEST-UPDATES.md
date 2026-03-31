@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-03-31: Feature — AI Image Generation Fallback Logic ✅
+
+**Summary:** Enhanced the AI Image Generation to support a robust fallback logic using the newly introduced `nano-banana` model. Also ensured `OPENROUTER_MODEL` environment variable usage is strictly enforced without hardcoded fallback values.
+
+**Implementation Details:**
+1. **Model & Configuration Updates:**
+   - Added `nano-banana` model to `ImageModel` types in `src/lib/services/ai-image.ts` and `src/lib/plan-limits.ts`.
+   - Updated `startImageGeneration` in `src/lib/services/ai-image.ts` to map `nano-banana` to `google/nano-banana` with `1K` resolution.
+   - Updated `src/app/api/ai/image/route.ts` to throw an error if `OPENROUTER_MODEL` is missing, completely removing the hardcoded `openai/gpt-4o` fallback. Added `nano-banana` to the `ImageGenRequestSchema`.
+   - Included the `nano-banana` model explicitly in the available image models array within `PLAN_LIMITS`.
+
+2. **Fallback Mechanism:**
+   - Updated `src/app/api/ai/image/status/route.ts` to trigger a silent fallback prediction using the backup model (`nano-banana`) whenever *either* the primary (`nano-banana-2`) or secondary (`nano-banana-pro`) model fails.
+   - Maintained content safety checks — if a generation is blocked due to safety violations, it fails immediately and gracefully without fallback.
+   - Preserved credit protection logic: credits are never consumed for failed image generations or retries until a successful image is actually saved to the database.
+
+3. **UI State Tracking:**
+   - Appended `nano-banana` to `ImageModel` typings in `src/components/composer/ai-image-dialog.tsx` so the UI is aware of the fallback state when polling.
+
+**Files changed:**
+- `src/lib/services/ai-image.ts` (Added `nano-banana` model)
+- `src/lib/plan-limits.ts` (Added `nano-banana` to plan limits)
+- `src/app/api/ai/image/route.ts` (Removed hardcoded `OPENROUTER_MODEL`, updated schema)
+- `src/app/api/ai/image/status/route.ts` (Implemented fallback logic)
+- `src/components/composer/ai-image-dialog.tsx` (Type definitions)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
 ## 2026-03-31: Feature — Instant Onboarding Redirect + Focused Onboarding Shell ✅
 
 **Summary:** New users now land on the onboarding wizard immediately with no flash of the dashboard. The onboarding page renders in a focused, sidebar-free shell so users aren't distracted. Already-onboarded users who visit the onboarding URL are redirected to the dashboard.

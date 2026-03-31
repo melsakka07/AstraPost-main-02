@@ -37,7 +37,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-type ImageModel = "nano-banana-2" | "nano-banana-pro";
+type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana";
 type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
 type ImageStyle =
   | "photorealistic"
@@ -68,6 +68,7 @@ interface AiImageDialogProps {
 const MODEL_LABELS: Record<ImageModel, string> = {
   "nano-banana-2": "Nano Banana 2 (Fast)",
   "nano-banana-pro": "Nano Banana Pro (Best)",
+  "nano-banana": "Nano Banana",
 };
 
 const ASPECT_RATIO_LABELS: Record<AspectRatio, string> = {

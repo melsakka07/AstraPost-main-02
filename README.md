@@ -628,6 +628,122 @@ Applied globally via `next.config.ts`:
 
 ---
 
+## AI Image Generation
+
+AstraPost integrates with [Replicate](https://replicate.com/) to provide AI-powered image generation using Google's **Nano Banana models**. Users can generate images directly from the Composer with automatic model fallback for maximum reliability.
+
+### Available Models
+
+| Model | Description | Resolution | Plan Availability |
+|---|---|---|---|---|
+| **Primary**: `nano-banana-2` | Gemini 2.5 Flash Image — Fast, efficient generation | 1K (1024px base) | All plans (Free, Pro, Agency) |
+| **Secondary**: `nano-banana-pro` | Gemini 3 Pro Image — Highest quality with advanced features | 2K (2048px base) | Pro and Agency only |
+| **Backup**: `nano-banana` | Gemini 2.5 Flash Image — Reliable fallback | 1K (1024px base) | All plans (Free, Pro, Agency) |
+
+### Model Features
+
+- **nano-banana-2** (Primary)
+  - Best for: Quick iterations, high-volume use cases, real-time previews
+  - Speed optimized with good quality output
+
+- **nano-banana-pro** (Secondary)
+  - Best for: Final assets, typography, complex scenes, professional output
+  - Advanced features: Text rendering, multi-image blending, Google Search integration
+  - Highest quality output at 2K resolution
+
+- **nano-banana** (Backup)
+  - Automatically used when primary or secondary model fails
+  - Ensures reliability without user intervention
+
+### Fallback Behavior
+
+The image generation system implements a robust fallback mechanism:
+
+1. **Credit Protection**
+   - Credits are **never consumed** on failure
+   - The `aiGenerations` table is only written when status === `"succeeded"`
+   - Users are not charged for model failures or transient errors
+
+2. **Content Safety Checks (No Fallback)**
+   - If a prediction fails due to content moderation, it is identified as a `CONTENT_BLOCKED` error
+   - Error patterns: `safety`, `content policy`, `blocked`, `violat`, `forbidden`, `HARM`, `E002`
+   - Action: Immediately returns a permanent error — no fallback is attempted
+   - User must adjust their prompt and try again
+
+3. **Automatic Model Fallback**
+   - If the primary model (`nano-banana-2`) fails for any non-content reason:
+     - Automatically and silently starts a new prediction using the backup model (`nano-banana`)
+     - Updates Redis cache with the new model state
+     - Returns `{ status: "fallback", predictionId: newPredictionId }` to the client
+     - The client seamlessly updates its internal tracking and continues polling
+     - User sees "Switching to backup model…" toast notification
+
+   - If the secondary model (`nano-banana-pro`) fails for any non-content reason:
+     - Same automatic fallback to `nano-banana` applies
+     - Transparent to the user — no credit is charged for the failed attempt
+
+4. **Transient Errors**
+   - If the fallback also fails, or if the service is completely overloaded:
+     - Returns `SERVICE_UNAVAILABLE` error with `retryable: true`
+     - Error patterns: `high demand`, `unavailable`, `rate limit`, `E003`, `ModelRateLimit`, `capacity`, `try again`, `busy`, `503`
+     - User can retry the request later when the service is less busy
+
+### Auto-Prompt Generation
+
+If a prompt isn't provided but `tweetContent` is, the system uses an LLM (via OpenRouter) to auto-generate an optimized visual prompt.
+
+**Requirements:**
+- `OPENROUTER_MODEL` environment variable must be set (e.g., `anthropic/claude-sonnet-4.6`)
+- **IMPORTANT**: Never hardcode the model value in code — always read from `process.env.OPENROUTER_MODEL`
+- Recommended models:
+  - `anthropic/claude-sonnet-4.6` — Latest, best for general purpose
+  - `openai/gpt-4o` — Excellent for structured output
+  - `google/gemini-2.5-flash` — Fast, cost-effective
+
+### Style Options
+
+Generated images can be customized with the following style modifiers:
+
+- **Photorealistic** — Highly detailed, 8K, professional photography, cinematic lighting
+- **Illustration** — Digital illustration, vibrant colors, clean lines, modern art style
+- **Minimalist** — Clean composition, ample white space, simple
+- **Abstract** — Artistic interpretation, creative, non-representational
+- **Infographic** — Clear typography, data visualization, educational
+- **Meme** — Humorous, bold text overlay, internet meme style
+
+### Aspect Ratio Support
+
+| Ratio | Dimensions | Use Case |
+|---|---|---|
+| **1:1** | 1024 × 1024 | Square format, standard posts |
+| **16:9** | 1344 × 768 | Landscape, header images |
+| **4:3** | 1024 × 768 | Standard landscape |
+| **9:16** | 768 × 1344 | Portrait, mobile-first |
+
+### Setup Requirements
+
+To enable AI image generation, configure the following environment variables:
+
+```bash
+# Required for AI image generation
+REPLICATE_API_TOKEN=r8_...  # Get from: https://replicate.com/account
+
+# Required for auto-prompt generation
+OPENROUTER_API_KEY=sk-or-v1-...  # Get from: https://openrouter.ai/settings/keys
+OPENROUTER_MODEL="anthropic/claude-sonnet-4.6"  # NEVER hardcode this value
+```
+
+### Implementation Files
+
+| File | Purpose |
+|---|---|
+| `src/app/api/ai/image/route.ts` | Image generation API endpoint (POST) |
+| `src/app/api/ai/image/status/route.ts` | Polling endpoint with fallback logic (GET) |
+| `src/lib/services/ai-image.ts` | Replicate API client and model mappings |
+| `src/components/composer/ai-image-dialog.tsx` | Client-side UI and fallback handling |
+
+---
+
 ## Testing
 
 ### Unit Tests (Vitest)
