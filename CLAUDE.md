@@ -354,6 +354,18 @@ AstraPost supports content generation in multiple languages:
 
 ## Recent Fixes & Known Issues
 
+### Fixed Issues (2026-03-31)
+
+1. **Onboarding Infinite Loop**
+   - **Root cause:** `onboarding-wizard.tsx` checked `currentStep === 5` to call `/api/user/onboarding-complete`, but the wizard only has 4 steps (`steps.length === 4`). The onboarding-complete API never fired, so `onboardingCompleted` stayed `false` and `OnboardingRedirect` kept redirecting to `/dashboard/onboarding`.
+   - **Fix:** Changed condition to `currentStep === steps.length` (line 260 of `onboarding-wizard.tsx`)
+   - Updated file: `src/components/onboarding/onboarding-wizard.tsx`
+
+2. **Radix UI Hydration Mismatch (Dashboard Header + Onboarding)**
+   - **Root cause:** `NotificationBell` and `UserProfile` in `dashboard-header.tsx` use Radix UI `DropdownMenu` (calls `useId()` internally) and were SSR'd, while `AccountSwitcher` was already wrapped with `dynamic({ ssr: false })`. This inconsistent SSR strategy shifted React's `useId()` counter between server and client, causing ALL downstream Radix components (including the onboarding wizard's `Select` dropdowns) to get mismatched IDs.
+   - **Fix:** Wrapped both `NotificationBell` and `UserProfile` with `next/dynamic({ ssr: false })`. Added `<Suspense>` boundary around `OnboardingWizard` (which uses `useSearchParams()`).
+   - Updated files: `src/components/dashboard/dashboard-header.tsx`, `src/app/dashboard/onboarding/page.tsx`
+
 ### Fixed Issues (2026-03-12)
 
 ### New Feature Implementations (March 2026)

@@ -13,6 +13,8 @@ import {
   Sparkles,
   RefreshCw,
   Check,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -108,10 +110,19 @@ export function AiImageDialog({
   );
   const [imageHistory, setImageHistory] = useState<GeneratedImage[]>([]);
 
+  // Inline error shown when a generation fails (null = no error / cleared).
+  const [generationError, setGenerationError] = useState<{
+    message: string;
+    retryable: boolean;
+    code: string;
+  } | null>(null);
+
   // Ref to the active polling timer so we can cancel it when the dialog closes
   // or the component unmounts.
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activePollingIdRef = useRef<string | null>(null);
+  // Tracks auto-retry attempts so we retry transient errors once before surfacing to the user.
+  const retryCountRef = useRef(0);
 
   // Cancel any in-flight poll when the dialog closes.
   const cancelPolling = () => {
@@ -130,6 +141,8 @@ export function AiImageDialog({
       setGeneratedImage(null);
       setImageHistory([]);
       setIsGenerating(false);
+      setGenerationError(null);
+      retryCountRef.current = 0;
     }
     onOpenChange(newOpen);
   };
@@ -147,7 +160,28 @@ export function AiImageDialog({
         const data = await res.json();
 
         if (!res.ok) {
-          toast.error(data.error || "Image generation failed.");
+          const code: string = data.code ?? "GENERATION_FAILED";
+          const retryable: boolean = data.retryable === true;
+
+          // Auto-retry once for transient service errors before surfacing to user.
+          if (retryable && retryCountRef.current < 1) {
+            retryCountRef.current += 1;
+            // Re-trigger a fresh generation — the failed prediction's Redis key
+            // was already deleted by the status route, so we start from scratch.
+            setIsGenerating(false);
+            activePollingIdRef.current = null;
+            toast.info("Service busy — retrying automatically…", { duration: 3000 });
+            // Short delay so the user sees the retrying message before we re-fire.
+            pollTimerRef.current = setTimeout(() => { void handleGenerate(); }, 3500);
+            return;
+          }
+
+          // Exhausted retries or permanent failure — show inline error panel.
+          setGenerationError({
+            message: data.error || "Image generation failed. Please try again.",
+            retryable,
+            code,
+          });
           setIsGenerating(false);
           activePollingIdRef.current = null;
           return;
@@ -155,7 +189,15 @@ export function AiImageDialog({
 
         if (data.status === "starting" || data.status === "processing") {
           pollForResult(predictionId);
+        } else if (data.status === "fallback") {
+          // Primary model failed — server transparently switched to the fallback
+          // model and returned a new prediction ID. Swap polling targets silently.
+          const newId: string = data.predictionId;
+          activePollingIdRef.current = newId;
+          toast.info("Switching to backup model…", { duration: 3000 });
+          pollForResult(newId);
         } else if (data.status === "succeeded") {
+          retryCountRef.current = 0;
           const generated: GeneratedImage = {
             imageUrl: data.imageUrl,
             width: data.width,
@@ -170,7 +212,11 @@ export function AiImageDialog({
           activePollingIdRef.current = null;
         }
       } catch {
-        toast.error("Failed to check image status. Please try again.");
+        setGenerationError({
+          message: "Network error — could not check image status. Please try again.",
+          retryable: true,
+          code: "NETWORK_ERROR",
+        });
         setIsGenerating(false);
         activePollingIdRef.current = null;
       }
@@ -193,6 +239,8 @@ export function AiImageDialog({
     }
 
     cancelPolling();
+    setGenerationError(null);
+    retryCountRef.current = 0;
     setIsGenerating(true);
 
     try {
@@ -462,8 +510,67 @@ export function AiImageDialog({
                 Generating your image...
               </p>
               <p className="text-xs text-muted-foreground">
-                This may take 10-30 seconds
+                This may take 10–30 seconds
               </p>
+            </div>
+          )}
+
+          {/* Inline error panel — shown after generation fails */}
+          {!isGenerating && generationError && (
+            <div
+              role="alert"
+              className={cn(
+                "rounded-lg border p-4 space-y-3",
+                generationError.retryable
+                  ? "border-orange-500/40 bg-orange-500/5"
+                  : generationError.code === "CONTENT_BLOCKED"
+                    ? "border-destructive/40 bg-destructive/5"
+                    : "border-muted bg-muted/30"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle
+                  className={cn(
+                    "h-5 w-5 mt-0.5 shrink-0",
+                    generationError.retryable
+                      ? "text-orange-500"
+                      : generationError.code === "CONTENT_BLOCKED"
+                        ? "text-destructive"
+                        : "text-muted-foreground"
+                  )}
+                  aria-hidden="true"
+                />
+                <div className="space-y-1 min-w-0">
+                  <p className="text-sm font-medium">
+                    {generationError.retryable
+                      ? "Service temporarily unavailable"
+                      : generationError.code === "CONTENT_BLOCKED"
+                        ? "Prompt blocked by safety filters"
+                        : "Image generation failed"}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {generationError.message}
+                  </p>
+                  {generationError.retryable && (
+                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                      ✓ No credits were used — you can try again freely.
+                    </p>
+                  )}
+                </div>
+              </div>
+              {(generationError.retryable || generationError.code === "CONTENT_BLOCKED") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { void handleGenerate(); }}
+                  className="w-full"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                  {generationError.code === "CONTENT_BLOCKED"
+                    ? "Try with adjusted prompt"
+                    : "Try Again"}
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -478,11 +585,16 @@ export function AiImageDialog({
               >
                 Cancel
               </Button>
-              <Button onClick={handleGenerate} disabled={isGenerating}>
+              <Button onClick={() => { void handleGenerate(); }} disabled={isGenerating}>
                 {isGenerating ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Generating...
+                  </>
+                ) : generationError ? (
+                  <>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Try Again
                   </>
                 ) : (
                   <>

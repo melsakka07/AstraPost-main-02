@@ -1,11 +1,11 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { Rocket } from "lucide-react";
 import { eq, and, gte } from "drizzle-orm";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { FailureBanner } from "@/components/dashboard/failure-banner";
-import { OnboardingRedirect } from "@/components/dashboard/onboarding-redirect";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TokenWarningBanner } from "@/components/dashboard/token-warning-banner";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
@@ -82,6 +82,46 @@ export default async function DashboardLayout({
 
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
 
+  // Read the forwarded pathname set by proxy.ts so we can make routing
+  // decisions server-side without a client-side useEffect flash.
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  const isOnboardingRoute = pathname.startsWith("/dashboard/onboarding");
+
+  // Server-side gate: redirect un-onboarded users to the wizard immediately.
+  // This replaces the old client-side <OnboardingRedirect> component and
+  // eliminates the "flash of dashboard" experienced by new users.
+  if (!isOnboarded && !isOnboardingRoute) {
+    redirect("/dashboard/onboarding");
+  }
+
+  // Mirror gate: already-onboarded users who hit the onboarding URL directly
+  // (bookmarks, browser back button) are sent straight to the dashboard.
+  // Without this, they could re-run the wizard and create duplicate draft posts.
+  if (isOnboarded && isOnboardingRoute) {
+    redirect("/dashboard");
+  }
+
+  // ── Onboarding shell ───────────────────────────────────────────────────────
+  // Render a focused, distraction-free layout (no sidebar, no header, no
+  // bottom nav) so the user can complete onboarding without being pulled away.
+  if (isOnboardingRoute) {
+    return (
+      <div className="min-h-dvh bg-background flex flex-col">
+        {/* Minimal branded header — just enough identity, nothing clickable */}
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <Rocket className="h-5 w-5 text-primary" aria-hidden="true" />
+          <span className="text-lg font-bold tracking-tight">AstraPost</span>
+        </header>
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
+    );
+  }
+
+  // ── Full dashboard shell ───────────────────────────────────────────────────
+
   // Fetch AI usage server-side so Sidebar renders without a client-side skeleton flash.
   // Null fallback means Sidebar shows its skeleton state if the query fails.
   let aiUsage: Awaited<ReturnType<typeof getMonthlyAiUsage>> | null = null;
@@ -95,8 +135,7 @@ export default async function DashboardLayout({
     // pb-safe adds env(safe-area-inset-bottom) padding so content never slides
     // under the home indicator on notched iPhones / modern Android devices.
     <div data-dashboard-layout className="flex min-h-dvh bg-background pb-safe">
-      <OnboardingRedirect isCompleted={isOnboarded} />
-      {isOnboarded && <DashboardTour />}
+      <DashboardTour />
       <Sidebar
         aiUsage={aiUsage}
         user={{ name: session.user.name, image: session.user.image || null }}

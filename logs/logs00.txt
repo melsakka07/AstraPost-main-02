@@ -1,217 +1,826 @@
-2026-03-28T17:13:06.818575549Z [inf]  Starting Container
-2026-03-28T17:13:07.589210721Z [inf]  
-2026-03-28T17:13:07.589214291Z [inf]  > astropost@0.1.0 worker /app
-2026-03-28T17:13:07.589217871Z [inf]  > node --require dotenv/config --import tsx scripts/worker.ts
-2026-03-28T17:13:07.589221280Z [inf]  
-2026-03-28T17:13:08.162526830Z [inf]  worker_started
-2026-03-28T17:13:08.162533890Z [inf]  
-2026-03-28T17:13:08.162537990Z [inf]  ✅ [Worker] Started successfully (PID: 15).
-2026-03-28T17:13:08.162542460Z [inf]  ⏳ Waiting for jobs in 'schedule-queue' and 'analytics-queue'...
-2026-03-28T17:13:08.162545450Z [inf]  Press Ctrl+C to exit.
-2026-03-28T17:13:08.162549010Z [inf]  
-2026-03-28T17:14:48.171744162Z [inf]  schedule_job_started
-2026-03-28T17:14:48.171750102Z [inf]  x_tweet_posted
-2026-03-28T17:14:48.171754022Z [inf]  schedule_job_completed
-2026-03-28T17:14:48.171758901Z [inf]  job_completed
-2026-03-28T17:15:28.175320979Z [inf]  schedule_job_started
-2026-03-28T17:15:28.175333769Z [err]  x_tweet_post_failed
-2026-03-28T17:15:28.175340079Z [err]  schedule_job_failed
-2026-03-28T17:15:28.175345439Z [err]  job_failed
-2026-03-28T17:16:08.178090997Z [inf]  schedule_job_started
-2026-03-28T17:16:08.178097467Z [err]  x_tweet_post_failed
-2026-03-28T17:16:08.178101617Z [err]  schedule_job_failed
-2026-03-28T17:16:08.178105956Z [err]  job_failed
-2026-03-28T17:17:08.183605851Z [inf]  schedule_job_started
-2026-03-28T17:17:08.183611831Z [inf]  x_tweet_posted
-2026-03-28T17:17:08.183616031Z [inf]  x_tweet_reply_posted
-2026-03-28T17:17:08.183620361Z [inf]  x_tweet_reply_posted
-2026-03-28T17:17:08.906268964Z [inf]  schedule_job_completed
-2026-03-28T17:17:08.906303774Z [inf]  job_completed
-2026-03-28T17:18:08.673282406Z [inf]  schedule_job_started
-2026-03-28T17:18:09.407401632Z [err]  x_tweet_post_failed
-2026-03-28T17:18:09.407409032Z [err]  schedule_job_failed
-2026-03-28T17:18:10.074124806Z [err]  job_failed
-2026-03-28T17:19:10.146939406Z [inf]  schedule_job_started
-2026-03-28T17:19:10.719169870Z [err]  x_tweet_post_failed
-2026-03-28T17:19:10.719175450Z [err]  schedule_job_failed
-2026-03-28T17:19:11.229917582Z [err]  job_failed
-2026-03-28T17:19:31.226099908Z [inf]  schedule_job_started
-2026-03-28T17:19:31.226108507Z [inf]  x_tweet_posted
-2026-03-28T17:19:31.226115407Z [inf]  schedule_job_completed
-2026-03-28T17:19:31.226121327Z [inf]  job_completed
-2026-03-28T17:20:01.322848069Z [inf]  schedule_job_started
-2026-03-28T17:20:01.322857539Z [err]  x_tweet_post_failed
-2026-03-28T17:20:01.322862519Z [err]  schedule_job_failed
-2026-03-28T17:20:01.322867779Z [err]  job_failed
-2026-03-28T17:20:21.321462956Z [inf]  schedule_job_started
-2026-03-28T17:20:21.321472016Z [err]  x_tweet_post_failed
-2026-03-28T17:20:21.321477876Z [err]  schedule_job_failed
-2026-03-28T17:20:21.321482836Z [err]  job_failed
-2026-03-28T17:20:50.997287581Z [inf]  schedule_job_started
-2026-03-28T17:20:50.997291561Z [inf]  x_tweet_posted
-2026-03-28T17:20:50.997294841Z [inf]  x_tweet_reply_posted
-2026-03-28T17:20:50.997297841Z [inf]  x_tweet_reply_posted
-2026-03-28T17:20:50.997301141Z [inf]  schedule_job_completed
-2026-03-28T17:20:50.997304051Z [inf]  job_completed
-2026-03-28T17:21:10.995720223Z [inf]  schedule_job_started
-2026-03-28T17:21:10.995728673Z [inf]  x_tweet_posted
-2026-03-28T17:21:12.637228944Z [inf]  schedule_job_completed
-2026-03-28T17:21:12.740586410Z [inf]  job_completed
-2026-03-28T17:21:42.743924433Z [inf]  schedule_job_started
-2026-03-28T17:21:42.743931793Z [err]  x_tweet_post_failed
-2026-03-28T17:21:42.743935923Z [err]  schedule_job_failed
-2026-03-28T17:21:42.743940643Z [err]  job_failed
-2026-03-28T17:22:02.743441191Z [err]  schedule_job_failed
-2026-03-28T17:22:02.743452760Z [err]  job_failed
-2026-03-28T17:22:02.743572299Z [inf]  schedule_job_started
-2026-03-28T17:22:02.743577599Z [err]  x_tweet_post_failed
-2026-03-28T17:22:22.742670506Z [inf]  schedule_job_started
-2026-03-28T17:22:22.742674765Z [err]  x_tweet_post_failed
-2026-03-28T17:22:22.742679605Z [err]  schedule_job_failed
-2026-03-28T17:22:22.742683325Z [err]  job_failed
-2026-03-28T17:23:22.704923743Z [inf]  schedule_job_started
-2026-03-28T17:23:22.704933173Z [inf]  x_tweet_posted
-2026-03-28T17:23:22.704939133Z [inf]  schedule_job_completed
-2026-03-28T17:23:22.704943693Z [inf]  job_completed
-2026-03-28T17:55:15.546496398Z [inf]  schedule_job_started
-2026-03-28T17:55:15.546502808Z [err]  schedule_job_failed
-2026-03-28T17:55:15.546507328Z [err]  job_failed
-2026-03-28T17:56:15.677389434Z [inf]  schedule_job_started
-2026-03-28T17:56:15.677393884Z [err]  schedule_job_failed
-2026-03-28T17:56:15.677398394Z [err]  job_failed
-2026-03-28T17:58:15.448198754Z [inf]  schedule_job_started
-2026-03-28T17:58:15.448206514Z [err]  schedule_job_failed
-2026-03-28T17:58:15.448212224Z [err]  job_failed
-2026-03-28T17:58:45.447657584Z [inf]  schedule_job_started
-2026-03-28T17:58:45.447668114Z [err]  x_tweet_post_failed
-2026-03-28T17:58:45.447673454Z [err]  schedule_job_failed
-2026-03-28T17:58:45.447677824Z [err]  job_failed
-2026-03-28T17:59:45.452665365Z [inf]  schedule_job_started
-2026-03-28T17:59:45.452673434Z [err]  x_tweet_post_failed
-2026-03-28T17:59:45.452679154Z [err]  schedule_job_failed
-2026-03-28T17:59:45.452683974Z [err]  job_failed
-2026-03-28T18:00:05.452084033Z [inf]  analytics_job_started
-2026-03-28T18:00:08.407411125Z [inf]  analytics_job_completed
-2026-03-28T18:00:08.507458607Z [inf]  job_completed
-2026-03-28T18:01:48.510722949Z [inf]  schedule_job_started
-2026-03-28T18:01:48.510729598Z [err]  x_tweet_post_failed
-2026-03-28T18:01:48.510733868Z [err]  schedule_job_failed
-2026-03-28T18:01:48.510738248Z [err]  job_failed
-2026-03-28T18:02:18.507037909Z [inf]  schedule_job_started
-2026-03-28T18:02:18.507045809Z [err]  schedule_job_failed
-2026-03-28T18:02:18.507050929Z [err]  job_failed
-2026-03-28T18:05:48.989373764Z [inf]  schedule_job_started
-2026-03-28T18:05:48.989376714Z [err]  x_tweet_post_failed
-2026-03-28T18:05:48.989379444Z [err]  schedule_job_failed
-2026-03-28T18:05:48.989382104Z [err]  job_failed
-2026-03-28T18:10:19.281626736Z [inf]  schedule_job_started
-2026-03-28T18:10:19.281630466Z [err]  schedule_job_failed
-2026-03-28T18:10:19.281633766Z [err]  Resend API key not found. Email logged to console: {
-2026-03-28T18:10:19.281637196Z [err]    to: 'eng.m.elsakka@gmail.com',
-2026-03-28T18:10:19.281640516Z [err]    subject: 'Action Required: Post Publishing Failed',
-2026-03-28T18:10:19.281643876Z [err]    metadata: {
-2026-03-28T18:10:19.281647126Z [err]      postId: 'd1df4ae0-33cc-49cc-9034-768ca466f7da',
-2026-03-28T18:10:19.281650686Z [err]      reason: 'Post has no associated X account',
-2026-03-28T18:10:19.281657586Z [err]      type: 'post_failure'
-2026-03-28T18:10:19.281660876Z [err]    }
-2026-03-28T18:10:19.281664266Z [err]  }
-2026-03-28T18:10:19.281668026Z [err]  job_failed
-2026-03-28T18:10:19.281671226Z [err]  job_permanently_failed
-2026-03-28T18:13:48.943305030Z [inf]  schedule_job_started
-2026-03-28T18:13:48.943317299Z [err]  x_tweet_post_failed
-2026-03-28T18:13:48.943323299Z [err]  schedule_job_failed
-2026-03-28T18:13:49.575171016Z [err]  job_failed
-2026-03-28T18:13:49.575182636Z [err]  job_permanently_failed
-2026-03-28T18:13:49.575358684Z [err]  Resend API key not found. Email logged to console: {
-2026-03-28T18:13:49.575362084Z [err]    to: 'astravision.ai@gmail.com',
-2026-03-28T18:13:49.575364944Z [err]    subject: 'Action Required: Post Publishing Failed',
-2026-03-28T18:13:49.575368034Z [err]    metadata: {
-2026-03-28T18:13:49.575371294Z [err]      postId: '061031e1-feb6-4dfd-9fe2-3f1acfeae60c',
-2026-03-28T18:13:49.575374344Z [err]      reason: 'X authorization forbidden. Ensure your app has write access and reconnect your X account to grant tweet.write.',
-2026-03-28T18:13:49.575378944Z [err]      type: 'post_failure'
-2026-03-28T18:13:49.575383644Z [err]    }
-2026-03-28T18:13:49.575387614Z [err]  }
-2026-03-28T18:16:29.850010776Z [inf]  schedule_job_started
-2026-03-28T18:16:29.850015506Z [err]  x_tweet_post_failed
-2026-03-28T18:16:29.850023246Z [err]  schedule_job_failed
-2026-03-28T18:16:29.850027566Z [err]  job_failed
-2026-03-28T18:16:39.841519916Z [inf]  schedule_job_started
-2026-03-28T18:16:40.416618199Z [err]  x_tweet_post_failed
-2026-03-28T18:16:40.416622749Z [err]  schedule_job_failed
-2026-03-28T18:16:40.891987111Z [err]  job_failed
-2026-03-28T18:17:50.996104470Z [inf]  schedule_job_started
-2026-03-28T18:17:50.996119720Z [err]  x_tweet_post_failed
-2026-03-28T18:17:50.996128420Z [err]  schedule_job_failed
-2026-03-28T18:17:50.996134410Z [err]  job_failed
-2026-03-28T18:19:00.637568139Z [inf]  schedule_job_started
-2026-03-28T18:19:00.637575439Z [inf]  x_tweet_posted
-2026-03-28T18:19:00.637579859Z [inf]  schedule_job_completed
-2026-03-28T18:19:00.637585709Z [inf]  job_completed
-2026-03-28T19:14:25.148744260Z [inf]  schedule_job_started
-2026-03-28T19:14:25.148758810Z [inf]  x_tweet_posted
-2026-03-28T19:14:25.148765530Z [inf]  schedule_job_completed
-2026-03-28T19:14:25.148775400Z [inf]  job_completed
-2026-03-28T19:17:34.893278152Z [inf]  schedule_job_started
-2026-03-28T19:17:34.893284892Z [err]  x_tweet_post_failed
-2026-03-28T19:17:34.893291232Z [err]  schedule_job_failed
-2026-03-28T19:17:34.893296952Z [err]  job_failed
-2026-03-28T19:18:04.894387141Z [inf]  schedule_job_started
-2026-03-28T19:18:04.894394431Z [err]  x_tweet_post_failed
-2026-03-28T19:18:04.894399161Z [err]  schedule_job_failed
-2026-03-28T19:18:04.894404251Z [err]  job_failed
-2026-03-28T19:19:04.899227195Z [inf]  schedule_job_started
-2026-03-28T19:19:04.899234744Z [err]  x_tweet_post_failed
-2026-03-28T19:19:04.899241044Z [err]  schedule_job_failed
-2026-03-28T19:19:05.251087627Z [err]  job_failed
-2026-03-28T19:21:15.266349245Z [inf]  schedule_job_started
-2026-03-28T19:21:15.266364705Z [err]  x_tweet_post_failed
-2026-03-28T19:21:15.266372705Z [err]  schedule_job_failed
-2026-03-28T19:21:15.266385775Z [err]  job_failed
-2026-03-28T19:25:15.306127370Z [inf]  schedule_job_started
-2026-03-28T19:25:15.306134460Z [err]  x_tweet_post_failed
-2026-03-28T19:25:15.306139300Z [err]  schedule_job_failed
-2026-03-28T19:25:15.306150260Z [err]  job_failed
-2026-03-28T19:33:16.048607461Z [inf]  schedule_job_started
-2026-03-28T19:33:16.048624881Z [err]  x_tweet_post_failed
-2026-03-28T19:33:16.048631671Z [err]  schedule_job_failed
-2026-03-28T19:33:16.048637780Z [err]  Resend API key not found. Email logged to console: {
-2026-03-28T19:33:16.048643550Z [err]    to: 'astravision.ai@gmail.com',
-2026-03-28T19:33:16.048649780Z [err]    subject: 'Action Required: Post Publishing Failed',
-2026-03-28T19:33:16.048655820Z [err]    metadata: {
-2026-03-28T19:33:16.048661190Z [err]      postId: '29ccc024-0074-47f9-99ba-604bc8daec28',
-2026-03-28T19:33:16.048666930Z [err]      reason: 'X authorization forbidden. Ensure your app has write access and reconnect your X account to grant tweet.write.',
-2026-03-28T19:33:16.048672140Z [err]      type: 'post_failure'
-2026-03-28T19:33:16.048677570Z [err]    }
-2026-03-28T19:33:16.048684750Z [err]  }
-2026-03-28T19:33:16.048690120Z [err]  job_failed
-2026-03-28T19:33:16.050555823Z [err]  job_permanently_failed
-2026-03-28T20:30:10.394816042Z [inf]  schedule_job_started
-2026-03-28T20:30:10.394821952Z [err]  x_tweet_post_failed
-2026-03-28T20:30:10.394827652Z [err]  schedule_job_failed
-2026-03-28T20:30:10.394832772Z [err]  job_failed
-2026-03-28T20:30:10.394838622Z [inf]  schedule_job_started
-2026-03-28T20:30:10.394845722Z [err]  x_tweet_post_failed
-2026-03-28T20:30:10.394851202Z [err]  schedule_job_failed
-2026-03-28T20:30:10.836803011Z [err]  job_failed
-2026-03-28T20:31:10.838824054Z [inf]  schedule_job_started
-2026-03-28T20:31:10.838829394Z [err]  x_tweet_post_failed
-2026-03-28T20:31:10.838835294Z [err]  schedule_job_failed
-2026-03-28T20:31:10.838844154Z [err]  job_failed
-2026-03-28T20:31:50.843718599Z [inf]  schedule_job_started
-2026-03-28T20:31:50.843728389Z [err]  x_tweet_post_failed
-2026-03-28T20:31:50.843733239Z [err]  schedule_job_failed
-2026-03-28T20:31:50.843740248Z [err]  job_failed
-2026-03-28T20:32:10.843699093Z [inf]  schedule_job_started
-2026-03-28T20:32:10.843705943Z [inf]  x_tweet_posted
-2026-03-28T20:32:11.658173490Z [inf]  schedule_job_completed
-2026-03-28T20:32:11.760564887Z [inf]  job_completed
-2026-03-28T20:32:51.767480903Z [inf]  schedule_job_started
-2026-03-28T20:32:51.767490483Z [inf]  x_tweet_posted
-2026-03-28T20:32:51.767495803Z [inf]  x_tweet_reply_posted
-2026-03-28T20:32:51.767502393Z [inf]  x_tweet_reply_posted
-2026-03-28T20:32:51.767507763Z [inf]  schedule_job_completed
-2026-03-28T20:32:51.767513323Z [inf]  job_completed
-2026-03-28T20:34:01.778303286Z [inf]  schedule_job_started
-2026-03-28T20:34:01.778312506Z [err]  x_tweet_post_failed
-2026-03-28T20:34:01.778318456Z [err]  schedule_job_failed
-2026-03-28T20:34:01.778322856Z [err]  job_failed
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 252ms (compile: 4ms, render: 248ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 296ms (compile: 4ms, render: 291ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 240ms (compile: 4ms, render: 236ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 246ms (compile: 7ms, render: 238ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 244ms (compile: 6ms, render: 239ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 255ms (compile: 5ms, render: 250ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 249ms (compile: 5ms, render: 244ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 237ms (compile: 3ms, render: 234ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 247ms (compile: 4ms, render: 243ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 237ms (compile: 3ms, render: 233ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 247ms (compile: 4ms, render: 242ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 242ms (compile: 4ms, render: 238ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 245ms (compile: 5ms, render: 240ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 242ms (compile: 5ms, render: 237ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/notifications 200 in 24ms (compile: 5ms, render: 19ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 262ms (compile: 4ms, render: 259ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 238ms (compile: 3ms, render: 235ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 239ms (compile: 3ms, render: 235ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 245ms (compile: 5ms, render: 240ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 238ms (compile: 3ms, render: 234ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 257ms (compile: 4ms, render: 253ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 242ms (compile: 4ms, render: 238ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 418ms (compile: 4ms, render: 413ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 252ms (compile: 4ms, render: 248ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 239ms (compile: 4ms, render: 235ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 266ms (compile: 4ms, render: 262ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 246ms (compile: 6ms, render: 240ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 240ms (compile: 4ms, render: 237ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 234ms (compile: 4ms, render: 230ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 321ms (compile: 5ms, render: 316ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 271ms (compile: 5ms, render: 267ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/auth/get-session 200 in 84ms (compile: 48ms, render: 35ms)
+ GET /api/notifications 200 in 44ms (compile: 7ms, render: 37ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 251ms (compile: 6ms, render: 245ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 261ms (compile: 5ms, render: 256ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/notifications 200 in 23ms (compile: 10ms, render: 13ms)
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 431ms (compile: 5ms, render: 426ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 247ms (compile: 3ms, render: 243ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 247ms (compile: 5ms, render: 242ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 239ms (compile: 4ms, render: 235ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 271ms (compile: 4ms, render: 266ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 200 in 243ms (compile: 8ms, render: 235ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/ai/image/status?id=zs5nbvf8j1rmy0cx8gf8w8f2zm 422 in 243ms (compile: 4ms, render: 238ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/notifications 200 in 20ms (compile: 3ms, render: 17ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/auth/get-session 200 in 29ms (compile: 14ms, render: 15ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ POST /api/auth/sign-out 200 in 39ms (compile: 21ms, render: 18ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET / 200 in 163ms (compile: 7ms, render: 156ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET /api/auth/get-session 200 in 15ms (compile: 7ms, render: 8ms)
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/classes
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+⚠ ./node_modules/.pnpm/bullmq@5.70.4/node_modules/bullmq/dist/esm/utils
+Package ioredis can't be external
+The request ioredis/built/utils matches serverExternalPackages (or the default list).
+The request could not be resolved by Node.js from the importing module. The way Node.js resolves modules is slightly different from the way Next.js resolves modules. Next.js was able to resolve it, while Node.js would not be able to.
+Try to remove this package from serverExternalPackages.
+Or update the import side to use a compatible request that can be resolved by Node.js.
+
+
+ GET / 200 in 365ms (compile: 7ms, render: 359ms)
+ GET /manifest.webmanifest 200 in 26ms (compile: 18ms, render: 8ms)

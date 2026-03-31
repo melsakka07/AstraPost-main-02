@@ -1,5 +1,80 @@
 # Latest Updates
 
+## 2026-03-31: Feature — Instant Onboarding Redirect + Focused Onboarding Shell ✅
+
+**Summary:** New users now land on the onboarding wizard immediately with no flash of the dashboard. The onboarding page renders in a focused, sidebar-free shell so users aren't distracted. Already-onboarded users who visit the onboarding URL are redirected to the dashboard.
+
+**Problem:** When a brand-new user logged in, the full dashboard (sidebar, header, banners) rendered for ~1–2 seconds before the client-side `OnboardingRedirect` component fired a `window.location.href` redirect to `/dashboard/onboarding`. This was a poor first-time experience.
+
+**Solution — 5 changes across the stack:**
+
+1. **`src/proxy.ts`** — Proxy now forwards `x-pathname` as a request header (`NextResponse.next({ request: { headers } })`), giving server layouts reliable access to the current route.
+
+2. **`src/app/dashboard/layout.tsx`** — Replaced the client-side `OnboardingRedirect` component with two server-side `redirect()` calls:
+   - `!isOnboarded && !isOnboardingRoute` → `redirect("/dashboard/onboarding")` (new users go straight to wizard)
+   - `isOnboarded && isOnboardingRoute` → `redirect("/dashboard")` (already-onboarded users can't re-enter the wizard and accidentally create duplicate draft posts)
+   - Onboarding route renders a minimal shell: branded header (Rocket icon + "AstraPost") with no sidebar, no bottom nav, no banners — pure focus on completing the wizard.
+
+3. **`src/app/dashboard/onboarding/page.tsx`** — Added `<Suspense>` boundary (required by Next.js 16 when `useSearchParams()` is used inside a dynamically loaded component).
+
+4. **`src/components/onboarding/onboarding-wizard.tsx`** — The `onboarding-complete` fetch now shows a `toast.error()` on failure instead of silently catching the error. This prevents the silent failure case where the API call fails, `onboardingCompleted` stays `false`, and the user is permanently bounced back to onboarding on every navigation.
+
+5. **`src/app/api/user/onboarding-complete/route.ts`** — Replaced inline `NextResponse.json({ error })` with `ApiError.unauthorized()` / `ApiError.internal()` per CLAUDE.md rule 14. Success path uses plain `Response.json({ success: true })` per project convention.
+
+6. **`src/components/dashboard/onboarding-redirect.tsx`** — **Deleted.** Fully replaced by server-side logic in the layout.
+
+**New user flow:**
+1. Sign in → server-side redirect fires before any HTML is sent → `/dashboard/onboarding` renders immediately
+2. Minimal shell: branded top bar only, no sidebar, no distractions
+3. Complete 4-step wizard → `onboarding-complete` API marks DB → "Go to Dashboard" → full layout renders
+
+**Files changed:**
+- `src/proxy.ts` (forward `x-pathname` header)
+- `src/app/dashboard/layout.tsx` (server-side redirect + onboarding shell)
+- `src/app/dashboard/onboarding/page.tsx` (add `<Suspense>`, keep `dynamic({ ssr: false })`)
+- `src/components/onboarding/onboarding-wizard.tsx` (toast on API failure)
+- `src/app/api/user/onboarding-complete/route.ts` (ApiError + Response.json)
+- `src/components/dashboard/onboarding-redirect.tsx` (**deleted**)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
+## 2026-03-31: Bug Fix — Onboarding Hydration Mismatch (Radix Select IDs) ✅
+
+**Summary:** Fixed Radix UI `aria-controls` hydration mismatch on the onboarding page.
+
+**Root cause:** `OnboardingWizard` was server-rendered, causing Radix UI's internal `useId()` to generate IDs on the server. On the client the `useId()` counter starts at a different offset (shifted by dashboard header components), so `aria-controls` IDs mismatched.
+
+**Fix:** Wrapped `OnboardingWizard` with `next/dynamic({ ssr: false })` in `page.tsx` — same pattern used for `NotificationBell`, `UserProfile`, and `AccountSwitcher` in `dashboard-header.tsx`.
+
+**Files changed:** `src/app/dashboard/onboarding/page.tsx`
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
+## 2026-03-31: Bug Fix — Onboarding Loop & Dashboard Header Hydration Mismatch ✅
+
+**Summary:** Fixed two bugs: (1) users stuck in an infinite onboarding redirect loop after completing the wizard, and (2) Radix UI hydration mismatch console errors on the onboarding page and dashboard header.
+
+**Bug 1 — Onboarding Loop (infinite redirect):**
+- **Root cause:** `onboarding-wizard.tsx` had a `useEffect` that called `/api/user/onboarding-complete` when `currentStep === 5`, but the wizard only has 4 steps (`steps.length === 4`). The condition was never met, so `onboardingCompleted` was never set to `true` in the database. After finishing, `OnboardingRedirect` saw `isCompleted === false` and redirected back to `/dashboard/onboarding`.
+- **Fix:** Changed the condition from `currentStep === 5` to `currentStep === steps.length` so the completion API fires when the user reaches the last step (step 4 — Explore AI). This also means the feature card links on step 4 work immediately without needing to click "Go to Dashboard" first.
+
+**Bug 2 — Radix UI Hydration Mismatch:**
+- **Root cause:** `NotificationBell` and `UserProfile` components in the dashboard header use Radix UI `DropdownMenu` (which calls `useId()` internally), but were rendered with SSR. The existing `AccountSwitcher` was already wrapped with `dynamic({ ssr: false })`, but these two were not — creating an inconsistent `useId()` counter between server and client that cascaded to ALL downstream Radix components including the onboarding wizard's `Select` dropdowns.
+- **Fix:** Wrapped `NotificationBell` and `UserProfile` with `next/dynamic({ ssr: false })` in `dashboard-header.tsx`. Also added a `<Suspense>` boundary around `OnboardingWizard` in the onboarding page (required because it uses `useSearchParams()`).
+
+**Files changed:**
+- `src/components/onboarding/onboarding-wizard.tsx` (step condition fix: `5` → `steps.length`)
+- `src/components/dashboard/dashboard-header.tsx` (wrapped `NotificationBell` + `UserProfile` with `dynamic({ ssr: false })`)
+- `src/app/dashboard/onboarding/page.tsx` (added `<Suspense>` boundary)
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
 ## 2026-03-31: Dynamic Character Limits — Phase 8 Tests Fixed ✅
 
 **Summary:** Fixed all failing Vitest tests for Phase 8 of the X Dynamic Character Limits feature. All 147 tests now pass.

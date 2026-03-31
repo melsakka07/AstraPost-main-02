@@ -254,13 +254,17 @@ export function OnboardingWizard() {
     return d.toISOString();
   };
 
-  // Mark onboarding complete as soon as step 5 is reached so feature card
-  // links work without needing to click "Go to Dashboard" first.
+  // Mark onboarding complete as soon as the last step is reached so feature
+  // card links work without needing to click "Go to Dashboard" first.
+  // Surface a toast on failure so the user knows to retry rather than being
+  // silently bounced back to onboarding when they navigate away.
   useEffect(() => {
-    if (currentStep === 5) {
-      fetch("/api/user/onboarding-complete", { method: "POST" }).catch(
-        console.error
-      );
+    if (currentStep === steps.length) {
+      fetch("/api/user/onboarding-complete", { method: "POST" })
+        .then((res) => {
+          if (!res.ok) toast.error("Could not save onboarding status. Please try again.");
+        })
+        .catch(() => toast.error("Could not save onboarding status. Please try again."));
     }
   }, [currentStep]);
 

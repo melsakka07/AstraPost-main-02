@@ -22,6 +22,7 @@ import {
   checkImagePrediction,
   downloadImage,
   getDimensionsFromAspectRatio,
+  startImageGeneration,
   type AspectRatio,
   type ImageModel,
   type ImageStyle,
@@ -71,11 +72,77 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ status: prediction.status });
     }
 
-    // Terminal failure — remove key and surface the error.
+    // Terminal failure — classify, then decide whether to fall back to the
+    // other model or surface a structured error to the client.
+    // Credits are NEVER consumed on failure — aiGenerations is only written on
+    // "succeeded", so the user's image quota is always safe here.
     if (prediction.status === "failed" || prediction.status === "canceled") {
+      const rawError = prediction.error ?? `Prediction ${prediction.status}`;
+
+      // Permanent: prompt blocked by content-safety filters — no fallback.
+      const isContentBlocked =
+        /safety|content.?polic|blocked|violat|forbidden|HARM|E002/i.test(rawError);
+
+      // Automatic model fallback: if the primary model (nano-banana-2) fails for
+      // any non-content-blocked reason, silently retry with nano-banana-pro.
+      // The fallback is transparent to the user — no credit is charged for the
+      // failed attempt, and the new prediction ID is returned so the client can
+      // keep polling without interruption.
+      if (meta.model === "nano-banana-2" && !isContentBlocked) {
+        await redis.del(`ai:img:pred:${predictionId}`);
+
+        try {
+          const fallback = await startImageGeneration({
+            prompt: meta.finalPrompt,
+            aspectRatio: meta.aspectRatio,
+            model: "nano-banana-pro",
+            ...(meta.style !== null && { style: meta.style }),
+          });
+
+          // Cache fallback metadata under the new prediction ID.
+          const fallbackMeta: PredictionMeta = {
+            ...meta,
+            model: "nano-banana-pro",
+          };
+          await redis.setex(
+            `ai:img:pred:${fallback.predictionId}`,
+            1800,
+            JSON.stringify(fallbackMeta),
+          );
+
+          return NextResponse.json({
+            status: "fallback",
+            predictionId: fallback.predictionId,
+          });
+        } catch (fallbackErr) {
+          // If the fallback prediction itself fails to start, fall through to
+          // the normal error path so the user sees a meaningful message.
+          console.error("Fallback prediction start failed:", fallbackErr);
+        }
+      }
+
+      // Remove the key now that we know we won't fall back.
       await redis.del(`ai:img:pred:${predictionId}`);
+
+      // Transient: service overload / rate limit from the underlying model
+      const isTransient =
+        /high.?demand|unavailable|rate.?limit|E003|ModelRateLimit|capacity|try.?again|busy|503/i
+          .test(rawError);
+
       return NextResponse.json(
-        { error: prediction.error ?? `Prediction ${prediction.status}` },
+        {
+          error: isTransient
+            ? "The image service is temporarily busy due to high demand. Your credits were not used."
+            : isContentBlocked
+              ? "Your prompt was blocked by content safety filters. Try adjusting your description and generate again."
+              : rawError,
+          code: isTransient
+            ? "SERVICE_UNAVAILABLE"
+            : isContentBlocked
+              ? "CONTENT_BLOCKED"
+              : "GENERATION_FAILED",
+          retryable: isTransient,
+        },
         { status: 422 },
       );
     }
