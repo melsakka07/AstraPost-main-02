@@ -21,9 +21,15 @@ const serverEnvSchema = z.object({
   // Security
   TOKEN_ENCRYPTION_KEYS: z.string().min(32, "TOKEN_ENCRYPTION_KEYS is required"),
 
-  // AI
+  // AI - OpenRouter (text generation)
   OPENROUTER_API_KEY: z.string().optional(),
-  OPENROUTER_MODEL: z.string().default("openai/gpt-4o"),
+  OPENROUTER_MODEL: z.string().min(1, "OPENROUTER_MODEL is required"),
+
+  // AI - Replicate (image generation)
+  REPLICATE_API_TOKEN: z.string().optional(),
+  REPLICATE_MODEL_FAST: z.string().min(1, "REPLICATE_MODEL_FAST is required"),
+  REPLICATE_MODEL_PRO: z.string().min(1, "REPLICATE_MODEL_PRO is required"),
+  REPLICATE_MODEL_FALLBACK: z.string().min(1, "REPLICATE_MODEL_FALLBACK is required"),
 
   // Queue
   REDIS_URL: z.string().url().default("redis://localhost:6379"),

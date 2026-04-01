@@ -50,10 +50,9 @@ export async function GET() {
   const limit = limits.aiImagesPerMonth; // -1 means unlimited
   const remaining = limit === -1 ? -1 : Math.max(0, limit - used);
 
-  // Always return only nano-banana (backup model) as the available option
   return Response.json({
-    availableModels: ["nano-banana"],
-    preferredModel: "nano-banana",
+    availableModels: limits.availableImageModels,
+    preferredModel: limits.availableImageModels[0] ?? "nano-banana-2",
     remainingImages: remaining,
     limit,
     used,

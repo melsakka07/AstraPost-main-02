@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
     // 9. Generate AI response
     const openrouterProvider = createOpenRouter({ apiKey });
     const { text } = await generateText({
-      model: openrouterProvider(process.env.OPENROUTER_MODEL || "openai/gpt-4o"),
+      model: openrouterProvider(process.env.OPENROUTER_MODEL!),
       system: systemPrompt,
       prompt: userPrompt,
     });

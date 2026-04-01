@@ -1,5 +1,81 @@
 # Latest Updates
 
+## 2026-04-01: Enforcement — All AI Models Moved to Environment Variables ✅
+
+**Summary:** Completed a full audit and enforcement pass ensuring zero hardcoded AI model names exist anywhere in runtime logic. All AI model identifiers (text and image) are now exclusively controlled via `.env`.
+
+**Root Cause:** Several route files and utilities contained hardcoded fallback model strings (`|| "openai/gpt-4o"`, `|| "openai/gpt-5-mini"`) and the three Replicate image model identifiers were hardcoded in the mapping ternary. A bug in the quota endpoint also returned a hardcoded `["nano-banana"]` to all users regardless of their plan.
+
+**Changes Made:**
+
+1. **`src/lib/env.ts`**
+   - `OPENROUTER_MODEL`: Changed from `.default("openai/gpt-4o")` to `.min(1, "OPENROUTER_MODEL is required")` — app fails at startup if missing
+   - Added three new required Replicate model vars:
+     - `REPLICATE_MODEL_FAST` — fast/default image model (e.g. `google/nano-banana-2`)
+     - `REPLICATE_MODEL_PRO` — premium image model (e.g. `google/nano-banana-pro`)
+     - `REPLICATE_MODEL_FALLBACK` — auto-fallback model (e.g. `google/nano-banana`)
+
+2. **`src/lib/api/ai-preamble.ts`** — Removed `|| "openai/gpt-4o"` fallback
+
+3. **`src/app/api/chat/route.ts`** — Removed invalid `|| "openai/gpt-5-mini"` fallback (model doesn't exist)
+
+4. **`src/app/api/ai/inspire/route.ts`** — Removed `|| "openai/gpt-4o"` fallback
+
+5. **`src/app/api/ai/inspiration/route.ts`** — Removed `|| "openai/gpt-4o"` fallback
+
+6. **`src/app/api/analytics/competitor/route.ts`** — Removed `|| "openai/gpt-4o"` fallback
+
+7. **`src/app/api/user/voice-profile/route.ts`** — Removed `|| "openai/gpt-4o"` fallback
+
+8. **`src/lib/services/ai-image.ts`** — Replaced hardcoded Replicate identifiers in `startImageGeneration()` mapping ternary with `process.env.REPLICATE_MODEL_*!`
+
+9. **`src/app/api/ai/image/quota/route.ts`** — **Bug fixed:** Endpoint was returning hardcoded `["nano-banana"]` to all users, breaking plan-based model access. Now correctly returns `limits.availableImageModels` from the plan config — Pro users can now access `nano-banana-pro` in the composer.
+
+10. **`env.example`** — Documented all three new `REPLICATE_MODEL_*` vars with instructions.
+
+**New required `.env` vars:**
+```env
+REPLICATE_MODEL_FAST="google/nano-banana-2"
+REPLICATE_MODEL_PRO="google/nano-banana-pro"
+REPLICATE_MODEL_FALLBACK="google/nano-banana"
+```
+
+**What remains acceptable in code (not changed):**
+- Zod enum `["nano-banana-2", "nano-banana-pro", "nano-banana"]` in `image/route.ts` — internal logical API constants, not provider identifiers
+- Database column default `"nano-banana-2"` in `schema.ts` — standard DB default
+- UI fallback `"nano-banana-2"` in `composer.tsx` — only triggers if the quota API call fails entirely
+
+**Files changed:**
+- `src/lib/env.ts`
+- `src/lib/api/ai-preamble.ts`
+- `src/app/api/chat/route.ts`
+- `src/app/api/ai/inspire/route.ts`
+- `src/app/api/ai/inspiration/route.ts`
+- `src/app/api/analytics/competitor/route.ts`
+- `src/app/api/user/voice-profile/route.ts`
+- `src/lib/services/ai-image.ts`
+- `src/app/api/ai/image/quota/route.ts`
+- `env.example`
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
+## 2026-04-01: Lint Fix — ESLint Worktree & Import Order ✅
+
+**Summary:** Fixed `pnpm lint` producing 192 warnings/errors.
+
+1. **`.claude/worktrees/`** — Added `.claude/**` to `eslint.config.mjs` ignore list. ESLint was scanning Claude Code's internal worktree directory.
+2. **`src/app/dashboard/layout.tsx`** — Fixed import order: moved `next/headers` and `next/navigation` before `drizzle-orm` and `lucide-react` per the project's ESLint import group rules.
+
+**Files changed:**
+- `eslint.config.mjs`
+- `src/app/dashboard/layout.tsx`
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
 ## 2026-03-31: Feature — AI Image Generation Fallback Logic ✅
 
 **Summary:** Enhanced the AI Image Generation to support a robust fallback logic using the newly introduced `nano-banana` model. Also ensured `OPENROUTER_MODEL` environment variable usage is strictly enforced without hardcoded fallback values.

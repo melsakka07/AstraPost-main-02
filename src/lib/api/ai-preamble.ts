@@ -101,7 +101,7 @@ export async function aiPreamble(
   const openrouter = createOpenRouter({ apiKey });
   // Cast needed: OpenRouterChatLanguageModel satisfies LanguageModel at runtime but has
   // a minor type divergence in providerMetadata vs LanguageModelV2 interface.
-  const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o") as unknown as LanguageModel;
+  const model = openrouter(process.env.OPENROUTER_MODEL!) as unknown as LanguageModel;
 
   return {
     session,

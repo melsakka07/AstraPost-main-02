@@ -151,7 +151,7 @@ export async function POST(req: Request) {
       .join("\n");
 
     const openrouter = createOpenRouter({ apiKey });
-    const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
+    const model = openrouter(process.env.OPENROUTER_MODEL!);
 
     const prompt = `You are a social media strategist. Analyze the following ${twitterData.tweets.length} tweets from @${username} and provide a comprehensive competitor analysis.
 Output language: ${language === "ar" ? "Arabic" : "English"}.

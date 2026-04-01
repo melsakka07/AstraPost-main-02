@@ -209,7 +209,7 @@ TOKEN_ENCRYPTION_KEYS=base64key1=,base64key2=
 
 # AI via OpenRouter (primary AI provider)
 OPENROUTER_API_KEY=sk-or-v1-your-key
-OPENROUTER_MODEL=openai/gpt-4o  # any model from openrouter.ai/models
+OPENROUTER_MODEL=openai/gpt-4o  # REQUIRED — any model from openrouter.ai/models
 
 # Google Gemini AI (for chat & inspiration features)
 GEMINI_API_KEY=your-gemini-api-key
@@ -217,6 +217,10 @@ GOOGLE_AI_API_KEY=your-google-ai-api-key  # Alias for GEMINI_API_KEY
 
 # Replicate API (for AI image generation)
 REPLICATE_API_TOKEN=your-replicate-api-token
+# REQUIRED — Replicate model identifiers (override to swap models without code changes)
+REPLICATE_MODEL_FAST=google/nano-banana-2       # default/fast model (free + pro plans)
+REPLICATE_MODEL_PRO=google/nano-banana-pro      # premium quality model (pro plans only)
+REPLICATE_MODEL_FALLBACK=google/nano-banana     # auto-fallback on generation failure
 
 # Optional - for vector search only
 OPENAI_EMBEDDING_MODEL="text-embedding-3-large"
@@ -488,21 +492,29 @@ The project includes technical documentation in `docs/`:
    - Use `openrouter()` function, not `openai()`
    - Model names follow OpenRouter format: `provider/model-name`
 
-4. **Styling Guidelines**
+4. **NEVER hardcode AI model names in code** *(enforced 2026-04-01)*
+
+   - All AI model identifiers must come from environment variables — no hardcoded strings, no `|| "fallback-model"` patterns
+   - OpenRouter model: always `process.env.OPENROUTER_MODEL!` (required env var)
+   - Replicate image models: always `process.env.REPLICATE_MODEL_FAST!`, `REPLICATE_MODEL_PRO!`, `REPLICATE_MODEL_FALLBACK!`
+   - The mapping from internal logical names → provider identifiers lives exclusively in `src/lib/services/ai-image.ts` (`startImageGeneration()`)
+   - Adding a new AI model = add it to `.env` + `env.ts` + the mapping function — never as a literal string in a route
+
+5. **Styling Guidelines**
 
    - Stick to standard Tailwind CSS utility classes
    - Use shadcn/ui color tokens (e.g., `bg-background`, `text-foreground`)
    - Avoid custom colors unless explicitly requested
    - Support dark mode with appropriate Tailwind classes
 
-5. **Authentication**
+6. **Authentication**
 
    - Server-side: Import from `@/lib/auth` (Better Auth instance)
    - Client-side: Import hooks from `@/lib/auth-client`
    - Protected routes should check session in Server Components
    - Use existing auth components from `src/components/auth/`
 
-6. **Database Operations**
+7. **Database Operations**
 
    - Use Drizzle ORM (imported from `@/lib/db`)
    - Schema is defined in `@/lib/schema`
@@ -510,20 +522,20 @@ The project includes technical documentation in `docs/`:
    - PostgreSQL is the database (not SQLite, MySQL, etc.)
    - Key tables: `posts`, `tweets`, `x_accounts`, `job_runs`, `tweet_analytics`, `subscriptions`
 
-7. **Queue & Worker**
+8. **Queue & Worker**
 
    - BullMQ client is in `src/lib/queue/client.ts`
    - Job processors are in `src/lib/queue/processors.ts`
    - The worker runs as a separate process via `pnpm run worker`
    - Use `TWITTER_DRY_RUN=1` for testing without posting to real X
 
-8. **Security**
+9. **Security**
 
    - X OAuth tokens are encrypted at rest — never store them as plaintext
    - Encryption logic is in `src/lib/security/token-encryption.ts`
    - Use `TOKEN_ENCRYPTION_KEYS` for key management and rotation
 
-9. **File Storage**
+10. **File Storage**
 
    - Use the storage abstraction from `@/lib/storage`
    - Automatically uses local storage (dev) or Vercel Blob (production)
@@ -531,13 +543,13 @@ The project includes technical documentation in `docs/`:
    - Example: `const result = await upload(buffer, "avatar.png", "avatars")`
    - Storage switches based on `BLOB_READ_WRITE_TOKEN` environment variable
 
-10. **API Routes**
+11. **API Routes**
     - Follow Next.js 16 App Router conventions
     - Use Route Handlers (`route.ts` files)
     - Return `Response` objects
     - Attach correlation IDs on scheduling-related endpoints via `src/lib/correlation.ts`
 
-11. **AI Service Integration**
+12. **AI Service Integration**
     - **OpenRouter**: Use for most AI features (thread writer, translation, etc.)
       - Import from `@openrouter/ai-sdk-provider`
       - Model format: `provider/model-name` (e.g., `openai/gpt-4o`)
@@ -546,9 +558,11 @@ The project includes technical documentation in `docs/`:
       - Import from `@ai-sdk/google`
     - **Replicate**: Use for AI image generation
       - Requires `REPLICATE_API_TOKEN` environment variable
-      - Supports Flux models for high-quality images
+      - Requires `REPLICATE_MODEL_FAST`, `REPLICATE_MODEL_PRO`, `REPLICATE_MODEL_FALLBACK` env vars
+      - Model identifiers are fully controlled via `.env` — never hardcode them in code
+      - Model mapping lives in `startImageGeneration()` in `src/lib/services/ai-image.ts`
 
-12. **Twitter/X API Integration**
+13. **Twitter/X API Integration**
     - For OAuth: Use existing `x-api.ts` service with encrypted tokens
     - For public data: Use `TWITTER_BEARER_TOKEN` environment variable
     - Tweet importer service (`tweet-importer.ts`) handles:
@@ -557,13 +571,13 @@ The project includes technical documentation in `docs/`:
       - Redis caching (1-hour TTL)
       - Rate limit handling
 
-13. **Plan-Based Limits**
+14. **Plan-Based Limits**
     - Use `src/lib/plan-limits.ts` for feature restrictions
     - Free plan: Limited AI credits, 5 inspiration bookmarks
     - Pro/Agency: Unlimited features
     - Always check limits before resource-intensive operations
 
-14. **API Error Responses** *(architectural rule — do not bypass)*
+15. **API Error Responses** *(architectural rule — do not bypass)*
     - Always use `ApiError` from `@/lib/api/errors` for error responses in route handlers:
       ```typescript
       import { ApiError } from "@/lib/api/errors";
@@ -575,7 +589,7 @@ The project includes technical documentation in `docs/`:
     - Never write `NextResponse.json({ error: "..." }, { status: N })` inline
     - This ensures consistent error shape, status codes, and wording across all routes
 
-15. **Multi-Table Writes Must Use Transactions** *(data integrity rule)*
+16. **Multi-Table Writes Must Use Transactions** *(data integrity rule)*
     - Any route handler that writes to **more than one table** in a single request MUST wrap all writes in `db.transaction()`:
       ```typescript
       await db.transaction(async (tx) => {
@@ -587,13 +601,13 @@ The project includes technical documentation in `docs/`:
     - This prevents orphaned records if an insert fails partway through
     - Code review trigger: if you see two `db.insert()` / `db.delete()` calls in the same handler without a `db.transaction()` wrapper, it's a bug
 
-16. **`getPlanLimits()` in Route Handlers Is a Bug**
+17. **`getPlanLimits()` in Route Handlers Is a Bug**
     - Route handlers must NEVER call `getPlanLimits()` or `normalizePlan()` directly
     - All plan/quota enforcement must go through `require-plan.ts` helpers (`checkXFeatureDetailed`, `checkAiQuotaDetailed`, etc.)
     - If you need a new gate, add a `makeFeatureGate()` call in `require-plan.ts`
     - Direct use of `getPlanLimits` in a route file bypasses trial-period logic and standardised 402 responses
 
-17. **Shared Zod Schemas**
+18. **Shared Zod Schemas**
     - Route-specific schemas live in the route file
     - Schemas used by 2+ routes belong in `src/lib/schemas/common.ts`
     - Shared enums (language, tone) are in `src/lib/constants.ts` — import from there, never re-declare inline

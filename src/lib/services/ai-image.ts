@@ -484,8 +484,9 @@ export async function startImageGeneration(
   const model = params.model ?? "nano-banana-2";
   const prompt = buildStyledPrompt(params.prompt, params.style);
   const modelName =
-    model === "nano-banana-pro" ? "google/nano-banana-pro" :
-    model === "nano-banana" ? "google/nano-banana" : "google/nano-banana-2";
+    model === "nano-banana-pro" ? process.env.REPLICATE_MODEL_PRO! :
+    model === "nano-banana" ? process.env.REPLICATE_MODEL_FALLBACK! :
+    process.env.REPLICATE_MODEL_FAST!;
   const resolution = model === "nano-banana-pro" ? "2K" : "1K";
 
   // Use the model name endpoint — /v1/models/{model_owner}/{model_name}/predictions

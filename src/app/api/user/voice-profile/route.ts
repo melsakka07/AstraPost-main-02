@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     }
 
     const openrouter = createOpenRouter({ apiKey });
-    const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
+    const model = openrouter(process.env.OPENROUTER_MODEL!);
 
     const prompt = `
       You are an expert linguistic analyst.

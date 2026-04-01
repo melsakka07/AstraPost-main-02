@@ -92,7 +92,7 @@ export async function POST(req: Request) {
 
   try {
     const result = streamText({
-      model: openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-5-mini"),
+      model: openrouter(process.env.OPENROUTER_MODEL!),
       messages: convertToModelMessages(messages),
     });
 

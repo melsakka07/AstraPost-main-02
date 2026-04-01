@@ -48,7 +48,7 @@ export async function GET(req: Request) {
     }
 
     const openrouter = createOpenRouter({ apiKey });
-    const model = openrouter(process.env.OPENROUTER_MODEL || "openai/gpt-4o");
+    const model = openrouter(process.env.OPENROUTER_MODEL!);
 
     const prompt = `
       You are a social media trend analyst.
