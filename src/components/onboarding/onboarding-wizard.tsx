@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
@@ -213,6 +212,10 @@ export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
+  // Holds the in-flight onboarding-complete API promise so all step-4
+  // navigation can await it before doing a hard reload.
+  const onboardingCompleteRef = useRef<Promise<void> | null>(null);
+
   // Step 1 — Preferences
   const [prefLanguage, setPrefLanguage] = useState("ar");
   const [prefTimezone, setPrefTimezone] = useState("Asia/Riyadh");
@@ -254,19 +257,32 @@ export function OnboardingWizard() {
     return d.toISOString();
   };
 
-  // Mark onboarding complete as soon as the last step is reached so feature
-  // card links work without needing to click "Go to Dashboard" first.
-  // Surface a toast on failure so the user knows to retry rather than being
-  // silently bounced back to onboarding when they navigate away.
+  // Mark onboarding complete as soon as the last step is reached. Store the
+  // promise in a ref so navigateAfterOnboarding() can await it before doing
+  // a hard reload — this eliminates the race condition where the layout
+  // queries the DB before the API response is committed.
   useEffect(() => {
     if (currentStep === steps.length) {
-      fetch("/api/user/onboarding-complete", { method: "POST" })
+      onboardingCompleteRef.current = fetch("/api/user/onboarding-complete", { method: "POST" })
         .then((res) => {
-          if (!res.ok) toast.error("Could not save onboarding status. Please try again.");
+          if (!res.ok) { toast.error("Could not save onboarding status. Please try again."); }
         })
-        .catch(() => toast.error("Could not save onboarding status. Please try again."));
+        .catch(() => { toast.error("Could not save onboarding status. Please try again."); });
     }
   }, [currentStep]);
+
+  // All step-4 navigation must go through here.
+  // Awaiting the promise ensures onboardingCompleted is committed to the DB
+  // before the hard reload causes dashboard/layout.tsx to re-check it.
+  // Using window.location.href (hard nav) instead of <Link> is essential —
+  // client-side navigation is too fast and would hit the layout before the
+  // DB write completes.
+  const navigateAfterOnboarding = async (href: string) => {
+    if (onboardingCompleteRef.current) {
+      await onboardingCompleteRef.current;
+    }
+    window.location.href = href;
+  };
 
   const handleSkipSchedule = async () => {
     // O5 — skip step 3, stay as draft, go to step 4
@@ -358,7 +374,7 @@ export function OnboardingWizard() {
         setCurrentStep(4);
       } else if (currentStep === 4) {
         // Step 4 — Explore AI → go to dashboard
-        window.location.href = "/dashboard";
+        await navigateAfterOnboarding("/dashboard");
       }
     } catch (error) {
       console.error("Step error:", error);
@@ -602,13 +618,18 @@ export function OnboardingWizard() {
                 Your first post is scheduled. Head over to the dashboard to
                 track its performance or create more content with our AI tools.
               </p>
-              {/* O4 + O7 — 4 real linked feature cards */}
+              {/* O4 + O7 — 4 real linked feature cards.
+                  Must use navigateAfterOnboarding (hard reload) — not <Link>.
+                  Client-side nav is faster than the DB write, causing the
+                  dashboard layout to see onboardingCompleted=false and
+                  redirect back to the onboarding shell (missing sidebar). */}
               <div className="grid grid-cols-2 gap-3 text-left mt-4">
                 {FEATURE_CARDS.map((card) => (
-                  <Link
+                  <button
                     key={card.href}
-                    href={card.href}
-                    className="p-4 border rounded-md hover:bg-muted/50 hover:border-primary/30 transition-colors block"
+                    type="button"
+                    onClick={() => void navigateAfterOnboarding(card.href)}
+                    className="p-4 border rounded-md hover:bg-muted/50 hover:border-primary/30 transition-colors block text-left w-full"
                     aria-label={`Go to ${card.title}`}
                   >
                     <h3 className="font-semibold flex items-center gap-2">
@@ -618,7 +639,7 @@ export function OnboardingWizard() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {card.description}
                     </p>
-                  </Link>
+                  </button>
                 ))}
               </div>
             </div>
