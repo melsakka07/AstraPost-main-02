@@ -72,9 +72,9 @@ const sidebarSections: SidebarSection[] = [
     label: "Content",
     items: [
       { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
+      { icon: FileText, label: "Drafts", href: "/dashboard/drafts" },
       { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
       { icon: CalendarDays, label: "Calendar", href: "/dashboard/calendar" },
-      { icon: FileText, label: "Drafts", href: "/dashboard/drafts" },
     ],
   },
   {
@@ -87,7 +87,7 @@ const sidebarSections: SidebarSection[] = [
       { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio", isPro: true },
       { icon: History, label: "AI History", href: "/dashboard/ai/history" },
       { icon: Lightbulb, label: "Inspiration", href: "/dashboard/inspiration" },
-      { icon: ShoppingCart, label: "Affiliate", href: "/dashboard/affiliate" },
+      { icon: ShoppingCart, label: "AI Affiliate", href: "/dashboard/affiliate" },
     ],
   },
   {
@@ -100,11 +100,16 @@ const sidebarSections: SidebarSection[] = [
     ],
   },
   {
+    label: "Growth",
+    items: [
+      { icon: Trophy, label: "Achievements", href: "/dashboard/achievements" },
+      { icon: Share2, label: "Referrals", href: "/dashboard/referrals" },
+    ],
+  },
+  {
     label: "System",
     items: [
       { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs" },
-      { icon: Trophy, label: "Achievements", href: "/dashboard/achievements" },
-      { icon: Share2, label: "Referrals", href: "/dashboard/referrals" },
       { icon: Settings, label: "Settings", href: "/dashboard/settings" },
     ],
   },
@@ -148,8 +153,10 @@ function CollapsibleSection({
           "flex w-full items-center justify-between px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 transition-colors",
           isMobile && "hover:text-muted-foreground cursor-pointer"
         )}
-        aria-expanded={isMobile ? isOpen : undefined}
-        aria-controls={isMobile ? `section-${section.label}` : undefined}
+        {...(isMobile ? {
+          "aria-expanded": isOpen,
+          "aria-controls": `section-${section.label}`
+        } : {})}
         // Prevent keyboard interaction on desktop where the button is decorative
         tabIndex={isMobile ? 0 : -1}
       >

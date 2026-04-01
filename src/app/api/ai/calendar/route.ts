@@ -23,7 +23,7 @@ const calendarItemSchema = z.object({
 });
 
 const calendarSchema = z.object({
-  items: z.array(calendarItemSchema).max(60),
+  items: z.array(calendarItemSchema),
 });
 
 export async function POST(req: Request) {

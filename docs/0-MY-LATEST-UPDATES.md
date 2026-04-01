@@ -1,5 +1,52 @@
 # Latest Updates
 
+## 2026-04-01: Bug Fix — Accessibility and Style Linters ✅
+
+**Summary:** Fixed IDE warnings and diagnostic errors reported by the Microsoft Edge Tools extension (Axe and Webhint) regarding ARIA attributes and inline styles.
+
+**Changes Made:**
+
+1. **`src/components/dashboard/sidebar.tsx`**
+   - **ARIA Validation:** The static analyzer flagged `aria-expanded={isMobile ? isOpen : undefined}` as an invalid `{expression}`. Fixed by applying the ARIA attributes via object spread syntax `...()` so the static JSX linter parses them correctly while maintaining the exact same runtime React behavior.
+
+2. **`src/components/dashboard/bottom-nav.tsx`**
+   - **Inline Styles:** The linter warned against using inline CSS `style={{ paddingBottom: ... }}`. Moved the safe-area inset property into Tailwind CSS's JIT compiler using the `pb-[env(safe-area-inset-bottom,0px)]` arbitrary value class.
+
+**Files changed:**
+- `src/components/dashboard/sidebar.tsx`
+- `src/components/dashboard/bottom-nav.tsx`
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
+## 2026-04-01: Feature — UI/UX Navigation and Sidebar Grouping Improvements ✅
+
+**Summary:** Completed a comprehensive UX audit and reorganization of the app's main sidebars and mobile navigation to improve cognitive flow, correctly group related items, and adhere to mobile standards.
+
+**Changes Made:**
+
+1. **Dashboard Sidebar (`src/components/dashboard/sidebar.tsx`)**
+   - **Content Section:** Reordered logically to match standard workflow: `Compose` → `Drafts` → `Queue` → `Calendar`.
+   - **AI Tools Section:** Renamed `Affiliate` to `AI Affiliate` to correctly reflect its purpose as an AI generation tool.
+   - **New Section:** Created a new `Growth` section, migrating `Achievements` and `Referrals` out of the unrelated `System` block.
+
+2. **Admin Sidebar (`src/components/admin/sidebar.tsx`)**
+   - **Split Platform Section:** Separated product/communication elements (`Announcements`, `Roadmap`) into a new `Product` section.
+   - Kept technical DevOps tools (`Feature Flags`, `Jobs (BullMQ)`) isolated under `System` to prevent non-technical admin misclicks.
+
+3. **Mobile Bottom Navigation (`src/components/dashboard/bottom-nav.tsx`)**
+   - **Home Anchor Added:** Inserted `Dashboard` as the first icon on the bottom navigation bar. Users natively expect the far-left icon on mobile nav bars to be the "Home" route. 
+
+**Files changed:**
+- `src/components/dashboard/sidebar.tsx`
+- `src/components/admin/sidebar.tsx`
+- `src/components/dashboard/bottom-nav.tsx`
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
 ## 2026-04-01: Enforcement — All AI Models Moved to Environment Variables ✅
 
 **Summary:** Completed a full audit and enforcement pass ensuring zero hardcoded AI model names exist anywhere in runtime logic. All AI model identifiers (text and image) are now exclusively controlled via `.env`.

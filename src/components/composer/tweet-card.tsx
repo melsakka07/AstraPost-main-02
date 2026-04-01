@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { X, Image as ImageIcon, Loader2, Sparkles, Hash, Smile, Wand2, ChevronUp, ChevronDown, GripVertical } from "lucide-react";
+import { X, Image as ImageIcon, Loader2, Sparkles, Hash, Smile, Wand2, ChevronUp, ChevronDown, GripVertical, Eraser } from "lucide-react";
 import twitter from 'twitter-text';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -54,6 +54,7 @@ interface TweetCardProps {
   isFirst?: boolean;
   suggestedHashtags?: string[];
   onHashtagClick?: (tag: string) => void;
+  onClearTweet?: () => void;
   tier?: XSubscriptionTier | undefined;
 }
 
@@ -74,6 +75,7 @@ export function TweetCard({
   isFirst,
   suggestedHashtags,
   onHashtagClick,
+  onClearTweet,
   tier,
 }: TweetCardProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -375,6 +377,23 @@ export function TweetCard({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Generate Hashtags</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 gap-1.5 text-muted-foreground hover:text-destructive"
+                    onClick={onClearTweet}
+                    disabled={tweet.content === "" && tweet.media.length === 0}
+                    aria-label="Clear tweet content"
+                  >
+                    <Eraser className="h-4 w-4" />
+                    <span className="text-xs hidden sm:inline">Clear</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Clear tweet</TooltipContent>
               </Tooltip>
             </div>
           </TooltipProvider>

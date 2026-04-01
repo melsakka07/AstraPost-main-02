@@ -25,14 +25,14 @@ const requestSchema = z.object({
 });
 
 const analysisSchema = z.object({
-  topTopics: z.array(z.string()).max(10),
+  topTopics: z.array(z.string()),
   postingFrequency: z.string(),
-  preferredContentTypes: z.array(z.string()).max(6),
+  preferredContentTypes: z.array(z.string()),
   toneProfile: z.string(),
-  topHashtags: z.array(z.string()).max(10),
+  topHashtags: z.array(z.string()),
   bestPostingTimes: z.string(),
-  keyStrengths: z.array(z.string()).max(5),
-  differentiationOpportunities: z.array(z.string()).max(5),
+  keyStrengths: z.array(z.string()),
+  differentiationOpportunities: z.array(z.string()),
   summary: z.string(),
 });
 
@@ -48,11 +48,13 @@ interface TwitterApiTweet {
   };
 }
 
-async function fetchUserTweets(
-  username: string
-): Promise<{ tweets: TwitterApiTweet[]; user: { name: string; username: string; public_metrics?: { tweet_count: number; followers_count: number } } } | null> {
+type TwitterFetchResult =
+  | { ok: true; tweets: TwitterApiTweet[]; user: { name: string; username: string; public_metrics?: { tweet_count: number; followers_count: number } } }
+  | { ok: false; status: number; message: string };
+
+async function fetchUserTweets(username: string): Promise<TwitterFetchResult> {
   const bearerToken = process.env.TWITTER_BEARER_TOKEN;
-  if (!bearerToken) return null;
+  if (!bearerToken) return { ok: false, status: 503, message: "Twitter API not configured" };
 
   // Look up user ID first
   const userRes = await fetch(
@@ -63,9 +65,15 @@ async function fetchUserTweets(
     }
   );
 
-  if (!userRes.ok) return null;
+  if (!userRes.ok) {
+    if (userRes.status === 429) return { ok: false, status: 429, message: "Twitter API rate limit reached. Please wait a few minutes and try again." };
+    if (userRes.status === 401) return { ok: false, status: 503, message: "Twitter API authentication failed. Please check TWITTER_BEARER_TOKEN." };
+    if (userRes.status === 404) return { ok: false, status: 404, message: `Account @${username} not found. Please check the username.` };
+    return { ok: false, status: 422, message: `Could not look up @${username}. The account may be private or suspended.` };
+  }
+
   const userData = await userRes.json() as { data?: { id: string; name: string; username: string; public_metrics?: { tweet_count: number; followers_count: number } } };
-  if (!userData.data) return null;
+  if (!userData.data) return { ok: false, status: 404, message: `Account @${username} not found.` };
 
   const userId = userData.data.id;
 
@@ -78,13 +86,13 @@ async function fetchUserTweets(
     }
   );
 
-  if (!tweetsRes.ok) return null;
-  const tweetsData = await tweetsRes.json() as { data?: TwitterApiTweet[] };
+  if (!tweetsRes.ok) {
+    if (tweetsRes.status === 429) return { ok: false, status: 429, message: "Twitter API rate limit reached. Please wait a few minutes and try again." };
+    return { ok: false, status: 422, message: `Could not fetch tweets for @${username}.` };
+  }
 
-  return {
-    tweets: tweetsData.data ?? [],
-    user: userData.data,
-  };
+  const tweetsData = await tweetsRes.json() as { data?: TwitterApiTweet[] };
+  return { ok: true, tweets: tweetsData.data ?? [], user: userData.data };
 }
 
 export async function POST(req: Request) {
@@ -109,13 +117,6 @@ export async function POST(req: Request) {
     const aiQuota = await checkAiQuotaDetailed(session.user.id);
     if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
 
-    if (!process.env.TWITTER_BEARER_TOKEN) {
-      return new Response(
-        JSON.stringify({ error: "Twitter API not configured. TWITTER_BEARER_TOKEN is missing." }),
-        { status: 503 }
-      );
-    }
-
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
@@ -127,12 +128,13 @@ export async function POST(req: Request) {
     const { username, language } = result.data;
 
     const twitterData = await fetchUserTweets(username);
-    if (!twitterData || twitterData.tweets.length === 0) {
+    if (!twitterData.ok) {
+      return new Response(JSON.stringify({ error: twitterData.message }), { status: twitterData.status });
+    }
+    if (twitterData.tweets.length === 0) {
       return new Response(
-        JSON.stringify({
-          error: `Could not find public tweets for @${username}. The account may be private, suspended, or the username is incorrect.`,
-        }),
-        { status: 404 }
+        JSON.stringify({ error: `@${username} has no public tweets to analyze.` }),
+        { status: 422 }
       );
     }
 

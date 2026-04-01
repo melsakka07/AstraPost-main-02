@@ -17,12 +17,13 @@ interface SortableTweetProps {
   openAiTool: (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => void;
   openAiImage?: (tweetId: string) => void;
   onMove: (fromIndex: number, toIndex: number) => void;
+  onClearTweet?: () => void;
   suggestedHashtags?: string[];
   onHashtagClick?: (tag: string) => void;
   tier?: XSubscriptionTier | undefined;
 }
 
-export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage, onMove, suggestedHashtags, onHashtagClick, tier }: SortableTweetProps) {
+export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage, onMove, onClearTweet, suggestedHashtags, onHashtagClick, tier }: SortableTweetProps) {
   const isFirst = index === 0;
   const {
     attributes,
@@ -58,6 +59,7 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
             isFirst={isFirst}
             {...(index > 0 && { onMoveUp: () => onMove(index, index - 1) })}
             {...(index < totalTweets - 1 && { onMoveDown: () => onMove(index, index + 1) })}
+            {...(onClearTweet !== undefined && { onClearTweet })}
             {...(suggestedHashtags !== undefined && { suggestedHashtags })}
             {...(onHashtagClick !== undefined && { onHashtagClick })}
             {...(tier !== undefined && { tier })}

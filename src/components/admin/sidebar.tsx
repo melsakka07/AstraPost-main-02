@@ -40,11 +40,16 @@ const sidebarSections = [
     ],
   },
   {
-    label: "Platform",
+    label: "Product",
     items: [
-      { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
       { href: "/admin/announcement", label: "Announcement", icon: Megaphone },
       { href: "/admin/roadmap", label: "Roadmap", icon: Lightbulb },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
       { href: "/admin/jobs", label: "Jobs (BullMQ)", icon: Activity },
     ],
   },

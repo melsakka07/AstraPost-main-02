@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, PenSquare } from "lucide-react";
+import { ArrowRight, PenSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,9 +48,23 @@ export function QuickCompose() {
               onChange={(e) => setContent(e.target.value)}
               maxLength={MAX_LENGTH}
             />
-            <span className="absolute bottom-2.5 right-3 text-[11px] tabular-nums text-muted-foreground/60">
-              {charCount}/{MAX_LENGTH}
-            </span>
+            <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+              {hasContent && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  onClick={() => setContent("")}
+                  aria-label="Clear"
+                  title="Clear"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <span className="text-[11px] tabular-nums text-muted-foreground/60">
+                {charCount}/{MAX_LENGTH}
+              </span>
+            </div>
           </div>
           <Button
             className="w-full"

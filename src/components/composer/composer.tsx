@@ -519,6 +519,24 @@ export function Composer() {
     });
   };
 
+  const clearTweet = (id: string) => {
+    const previous = tweets.find((t) => t.id === id);
+    if (!previous || (previous.content === "" && previous.media.length === 0)) return;
+    setTweets((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, content: "", media: [] } : t))
+    );
+    setGeneratedHashtags([]);
+    toast("Tweet cleared", {
+      action: {
+        label: "Undo",
+        onClick: () =>
+          setTweets((prev) =>
+            prev.map((t) => (t.id === id ? previous : t))
+          ),
+      },
+    });
+  };
+
   const moveTweet = (fromIndex: number, toIndex: number) => {
     setTweets((items) => arrayMove(items, fromIndex, toIndex));
   };
@@ -1397,6 +1415,7 @@ export function Composer() {
                         openAiTool={openAiTool}
                         openAiImage={openAiImageDialog}
                         onMove={moveTweet}
+                        onClearTweet={() => clearTweet(tweet.id)}
                         tier={effectiveTier}
                         {...(tweet.id === aiTargetTweetId && generatedHashtags.length > 0 && {
                           suggestedHashtags: generatedHashtags,

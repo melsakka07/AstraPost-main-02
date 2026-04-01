@@ -5,8 +5,6 @@ import { z } from "zod";
 const FIELD_MAX = 200;
 const KEYWORD_MAX = 50;
 const RULE_MAX = 150;
-const KEYWORDS_COUNT_MAX = 10;
-const RULES_COUNT_MAX = 10;
 
 // ── No-newline refinement ──────────────────────────────────────────────────
 // Voice profile fields are single-line descriptors (tone, keywords, rules,
@@ -37,12 +35,12 @@ const noNewline = (name: string) =>
  */
 export const voiceProfileSchema = z.object({
   tone:              noNewline("tone").max(FIELD_MAX),
-  styleKeywords:     z.array(noNewline("styleKeywords item").max(KEYWORD_MAX)).max(KEYWORDS_COUNT_MAX),
+  styleKeywords:     z.array(noNewline("styleKeywords item").max(KEYWORD_MAX)),
   emojiUsage:        noNewline("emojiUsage").max(FIELD_MAX),
   sentenceStructure: noNewline("sentenceStructure").max(FIELD_MAX),
   vocabularyLevel:   noNewline("vocabularyLevel").max(FIELD_MAX),
   formattingHabits:  noNewline("formattingHabits").max(FIELD_MAX),
-  doAndDonts:        z.array(noNewline("doAndDonts item").max(RULE_MAX)).max(RULES_COUNT_MAX),
+  doAndDonts:        z.array(noNewline("doAndDonts item").max(RULE_MAX)),
 });
 
 export type VoiceProfile = z.infer<typeof voiceProfileSchema>;

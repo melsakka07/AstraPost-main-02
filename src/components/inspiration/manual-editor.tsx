@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Eraser } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,14 +103,28 @@ export function ManualEditor({
           <span className="text-sm text-muted-foreground">
             {charCount} / {maxChars} characters
           </span>
-          <span
-            className={cn(
-              "text-sm font-medium",
-              isOverLimit ? "text-destructive" : "text-muted-foreground"
-            )}
-          >
-            {maxChars - charCount} remaining
-          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
+              onClick={() => handleChange("")}
+              disabled={text === ""}
+              aria-label="Clear text"
+              title="Clear text"
+            >
+              <Eraser className="h-3.5 w-3.5" />
+              Clear
+            </Button>
+            <span
+              className={cn(
+                "text-sm font-medium",
+                isOverLimit ? "text-destructive" : "text-muted-foreground"
+              )}
+            >
+              {maxChars - charCount} remaining
+            </span>
+          </div>
         </div>
 
         {/* Text Area */}

@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, ListOrdered, Menu, PenSquare } from "lucide-react";
+import { Bot, LayoutDashboard, ListOrdered, Menu, PenSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_ITEMS = [
+  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
   { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
   { icon: Bot, label: "AI Tools", href: "/dashboard/ai" },
@@ -21,10 +22,9 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 md:hidden pb-[env(safe-area-inset-bottom,0px)]"
       aria-label="Mobile navigation"
       // Safe area inset keeps nav items above the device home indicator
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex h-14 items-stretch">
         {BOTTOM_NAV_ITEMS.map(({ icon: Icon, label, href }) => {
