@@ -17,7 +17,7 @@ const variantSchema = z.object({
       angle: z.enum(["emotional", "factual", "question", "story", "list"]),
       rationale: z.string().max(200),
     })
-  ).min(3).max(3),
+  ),
 });
 
 export async function POST(req: Request) {

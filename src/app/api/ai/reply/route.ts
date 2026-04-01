@@ -19,7 +19,7 @@ const repliesSchema = z.object({
       text: z.string().max(1100),
       style: z.string().max(100),
     })
-  ).min(3).max(5),
+  ),
 });
 
 const GOAL_LABELS: Record<string, string> = {

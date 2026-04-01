@@ -24,7 +24,7 @@ const bioSchema = z.object({
       goal: z.string(),
       rationale: z.string().max(300),
     })
-  ).min(3).max(3),
+  ),
 });
 
 const GOAL_LABELS: Record<string, string> = {
