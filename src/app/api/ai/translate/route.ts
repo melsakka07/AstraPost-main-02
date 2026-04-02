@@ -6,7 +6,7 @@ import { recordAiUsage } from "@/lib/services/ai-quota";
 
 
 const requestSchema = z.object({
-  tweets: z.array(z.string().min(1).max(280)).min(1).max(15),
+  tweets: z.array(z.string()).min(1).max(15),
   targetLanguage: LANGUAGE_ENUM,
 });
 
@@ -31,16 +31,24 @@ export async function POST(req: Request) {
 
     const { tweets, targetLanguage } = parsed.data;
 
+    const emptyTweets = tweets.filter((t) => !t.trim());
+    if (emptyTweets.length > 0) {
+      return new Response(
+        JSON.stringify({ error: "Cannot translate empty tweets. Please add content first." }),
+        { status: 400 }
+      );
+    }
+
     const prompt = `Translate this X thread into ${LANGUAGES.find(l => l.code === targetLanguage)?.label || 'English'}.
 
 Constraints:
-- Keep numbering prefixes like "1/5" if present.
+- Keep numbering prefixes like "1/5" if the original tweet already has them, but do NOT add any new numbering or bracket labels.
 - Keep each tweet under 280 characters.
 - Preserve meaning and style.
 - Output the same number of tweets.
 
 Thread:
-${tweets.map((t, i) => `[${i + 1}] ${t}`).join("\n")}`;
+${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${t}`).join("\n\n")}`;
 
     const { object } = await generateObject({
       model,
@@ -58,8 +66,10 @@ ${tweets.map((t, i) => `[${i + 1}] ${t}`).join("\n")}`;
     );
 
     return Response.json(object);
-  } catch {
-    return new Response(JSON.stringify({ error: "Translation failed" }), {
+  } catch (error) {
+    console.error("Translation error:", error);
+    const message = error instanceof Error ? error.message : "Translation failed";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
     });
   }

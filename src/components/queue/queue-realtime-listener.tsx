@@ -18,36 +18,67 @@ export function QueueRealtimeListener() {
   const router = useRouter();
   const [announcement, setAnnouncement] = useState("");
   const sinceRef = useRef(new Date().toISOString());
+  const abortRef = useRef<AbortController | null>(null);
+  const inFlightRef = useRef(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-
     async function poll() {
-      if (cancelled) return;
+      if (inFlightRef.current) return;
+      inFlightRef.current = true;
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // 8-second timeout — abort rather than holding a connection slot open.
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       try {
-        const res = await fetch(`/api/queue/sse?since=${encodeURIComponent(sinceRef.current)}`);
+        const res = await fetch(`/api/queue/sse?since=${encodeURIComponent(sinceRef.current)}`, {
+          signal: controller.signal,
+        });
         if (!res.ok) return;
         const { events, serverTime } = await res.json() as {
           events: { id: string; status: string; failReason: string | null }[];
           serverTime: string;
         };
 
+        if (!inFlightRef.current) return; // unmounted
+
         // Advance the cursor so the next poll only looks at new events
         sinceRef.current = serverTime;
 
+        let shouldRefresh = false;
         for (const e of events) {
           if (e.status === "published") {
             toast.success("Post published successfully");
             setAnnouncement("Post published successfully");
-            router.refresh();
+            shouldRefresh = true;
           } else if (e.status === "failed") {
             toast.error(`Post failed: ${e.failReason ?? "unknown error"}`);
             setAnnouncement(`Post failed: ${e.failReason ?? "unknown error"}`);
-            router.refresh();
+            shouldRefresh = true;
           }
         }
-      } catch {
+        if (shouldRefresh) {
+          if (refreshTimerRef.current) {
+            clearTimeout(refreshTimerRef.current);
+          }
+          refreshTimerRef.current = setTimeout(() => {
+            if (!inFlightRef.current) return; // unmounted
+            router.refresh();
+            refreshTimerRef.current = null;
+          }, 150);
+        }
+      } catch (error) {
+        // AbortError is expected on timeout or cleanup — not a real network error.
+        if ((error as Error)?.name === "AbortError") return;
         // network error — will retry on next interval
+      } finally {
+        clearTimeout(timeoutId);
+        inFlightRef.current = false;
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
       }
     }
 
@@ -56,8 +87,13 @@ export function QueueRealtimeListener() {
     void poll();
 
     return () => {
-      cancelled = true;
       clearInterval(id);
+      inFlightRef.current = false; // signals unmounted
+      // Do NOT abort the fetch on unmount to prevent net::ERR_ABORTED console noise.
+      // The server will timeout and close the connection in 7 seconds anyway.
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
     };
   }, [router]);
 

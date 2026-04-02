@@ -10,7 +10,6 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TokenWarningBanner } from "@/components/dashboard/token-warning-banner";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { TrialBanner } from "@/components/ui/trial-banner";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
 import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
@@ -21,94 +20,30 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  const isOnboardingRoute = pathname.startsWith("/dashboard/onboarding");
+  const ctx = await getTeamContext();
+  if (!ctx) {
     redirect("/login");
   }
+  const session = ctx.session;
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
   });
 
-  const ctx = await getTeamContext();
-  
-  // Fetch memberships
-  const memberships = await db.query.teamMembers.findMany({
-    where: eq(teamMembers.userId, session.user.id),
-    with: {
-      team: {
-        columns: {
-          id: true,
-          name: true,
-          image: true,
-        },
-      },
-    },
-  });
-
-  const formattedMemberships = memberships.map(m => ({
-    team: {
-      id: m.team.id,
-      name: m.team.name,
-      image: m.team.image,
-    },
-    role: m.role
-  }));
-
-  const oneDayAgo = new Date();
-  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-
-  // Failure banner should show failures for the current context (team or personal)
-  // If in team context, show failures for team posts.
-  const failedPost = await db.query.posts.findFirst({
-    where: and(
-        eq(posts.userId, session.user.id),
-        eq(posts.status, "failed"),
-        gte(posts.updatedAt, oneDayAgo)
-    ),
-    columns: { id: true }
-  });
-
-  const inactiveAccount = await db.query.xAccounts.findFirst({
-    where: and(
-      eq(xAccounts.userId, session.user.id),
-      eq(xAccounts.isActive, false)
-    ),
-    columns: { xUsername: true }
-  });
-
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
-
-  // Read the forwarded pathname set by proxy.ts so we can make routing
-  // decisions server-side without a client-side useEffect flash.
-  const headersList = await headers();
-  const pathname = headersList.get("x-pathname") ?? "";
-  const isOnboardingRoute = pathname.startsWith("/dashboard/onboarding");
-
-  // Server-side gate: redirect un-onboarded users to the wizard immediately.
-  // This replaces the old client-side <OnboardingRedirect> component and
-  // eliminates the "flash of dashboard" experienced by new users.
   if (!isOnboarded && !isOnboardingRoute) {
     redirect("/dashboard/onboarding");
   }
-
-  // Mirror gate: already-onboarded users who hit the onboarding URL directly
-  // (bookmarks, browser back button) are sent straight to the dashboard.
-  // Without this, they could re-run the wizard and create duplicate draft posts.
   if (isOnboarded && isOnboardingRoute) {
     redirect("/dashboard");
   }
 
-  // ── Onboarding shell ───────────────────────────────────────────────────────
-  // Render a focused, distraction-free layout (no sidebar, no header, no
-  // bottom nav) so the user can complete onboarding without being pulled away.
   if (isOnboardingRoute) {
     return (
       <div className="min-h-dvh bg-background flex flex-col">
-        {/* Minimal branded header — just enough identity, nothing clickable */}
         <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <Rocket className="h-5 w-5 text-primary" aria-hidden="true" />
           <span className="text-lg font-bold tracking-tight">AstraPost</span>
@@ -120,20 +55,50 @@ export default async function DashboardLayout({
     );
   }
 
-  // ── Full dashboard shell ───────────────────────────────────────────────────
+  const oneDayAgo = new Date();
+  oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-  // Fetch AI usage server-side so Sidebar renders without a client-side skeleton flash.
-  // Null fallback means Sidebar shows its skeleton state if the query fails.
-  let aiUsage: Awaited<ReturnType<typeof getMonthlyAiUsage>> | null = null;
-  try {
-    aiUsage = await getMonthlyAiUsage(session.user.id);
-  } catch {
-    // Non-fatal — sidebar gracefully falls back to skeleton
-  }
+  const [memberships, failedPost, inactiveAccount, aiUsage] = await Promise.all([
+    db.query.teamMembers.findMany({
+      where: eq(teamMembers.userId, session.user.id),
+      with: {
+        team: {
+          columns: {
+            id: true,
+            name: true,
+            image: true,
+          },
+        },
+      },
+    }),
+    db.query.posts.findFirst({
+      where: and(
+        eq(posts.userId, session.user.id),
+        eq(posts.status, "failed"),
+        gte(posts.updatedAt, oneDayAgo)
+      ),
+      columns: { id: true },
+    }),
+    db.query.xAccounts.findFirst({
+      where: and(
+        eq(xAccounts.userId, session.user.id),
+        eq(xAccounts.isActive, false)
+      ),
+      columns: { xUsername: true },
+    }),
+    getMonthlyAiUsage(session.user.id).catch(() => null),
+  ]);
+
+  const formattedMemberships = memberships.map((m) => ({
+    team: {
+      id: m.team.id,
+      name: m.team.name,
+      image: m.team.image,
+    },
+    role: m.role,
+  }));
 
   return (
-    // pb-safe adds env(safe-area-inset-bottom) padding so content never slides
-    // under the home indicator on notched iPhones / modern Android devices.
     <div data-dashboard-layout className="flex min-h-dvh bg-background pb-safe">
       <DashboardTour />
       <Sidebar
@@ -157,30 +122,14 @@ export default async function DashboardLayout({
           trialEndsAt={dbUser?.trialEndsAt ?? null}
           plan={dbUser?.plan ?? "free"}
         />
-        {/*
-          id="main-content" — target for the skip-to-main-content link added
-          in the root layout (Task 1.2). Without this id the skip link silently
-          does nothing.
-
-          tabIndex={-1} — allows the element to receive programmatic focus when
-          the skip link is activated. Required for Firefox; Chrome/Safari handle
-          it without this but it does no harm elsewhere.
-
-          outline-none — suppresses the browser's default focus ring on this
-          non-interactive container. The next Tab press after the skip link lands
-          the user on the first interactive element inside <main>, which will
-          show its own focus-visible ring as expected.
-        */}
         <main
           id="main-content"
           tabIndex={-1}
-          // pb-16 reserves room for the fixed BottomNav on mobile (M1)
           className="flex-1 p-page outline-none"
         >
           {children}
         </main>
       </div>
-      {/* M1 — bottom navigation bar (mobile only) */}
       <BottomNav />
     </div>
   );

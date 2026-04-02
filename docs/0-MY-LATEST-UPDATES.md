@@ -1,5 +1,234 @@
 # Latest Updates
 
+## 2026-04-02: UX Improvement — Consistent AI Tool Validation ✅
+
+**Summary:** Added consistent validation and visual hints across AI tools in the composer. Users now see disabled Generate buttons with helpful hints when content requirements aren't met, preventing errors before they happen.
+
+**Changes Made:**
+
+1. **`src/components/composer/composer.tsx`**
+   - **Translate tool**: Added disabled state + visual hint when no tweets have content
+   - **Rewrite tool**: Added placeholder text + visual hint when textarea is empty
+   - All tools now show italic hint text explaining why Generate is disabled
+
+**Validation Summary:**
+| Tool | Validation | Visual Hint |
+|------|------------|-------------|
+| Thread | Requires topic input | N/A (input field) |
+| Hook | Requires topic OR existing content | N/A |
+| CTA | Always enabled | N/A |
+| Rewrite | Requires text in textarea | ✅ Added |
+| Translate | Requires at least one non-empty tweet | ✅ Added |
+| Hashtags | Requires content in target tweet | Existing inline hint |
+
+**Files changed:**
+- `src/components/composer/composer.tsx`
+
+**Status:** `pnpm run lint && pnpm run typecheck` ✅
+
+---
+
+## 2026-04-02: Bug Fix (Round 6) — Translation API Empty Content Validation ✅
+
+**Summary:** Fixed translation API error handling when user attempts to translate empty tweets/posts. Improved UX by disabling the Generate button when there's no content to translate, preventing errors before they happen.
+
+**Changes Made:**
+
+1. **`src/components/composer/composer.tsx`**
+   - Added disabled state for translate tool when no tweets have content
+   - Added visual hint: "Add content to your tweet(s) to enable translation"
+   - Only sends non-empty tweets to the API
+   - Improved error handling to parse and display API error messages
+   - Fixed tweet mapping logic to correctly update only non-empty tweets with translations
+
+2. **`src/app/api/ai/translate/route.ts`**
+   - Relaxed Zod schema to allow empty strings (validation moved to explicit check)
+   - Added explicit empty content check with clear error message
+   - Improved catch block to log errors and return specific error messages
+
+**Files changed:**
+- `src/components/composer/composer.tsx`
+- `src/app/api/ai/translate/route.ts`
+
+**Status:** `pnpm run lint && pnpm run typecheck` ✅
+
+---
+
+## 2026-04-02: Bug Fix (Round 5) — Remove Unmount Aborts & Hydration Analysis ✅
+
+**Summary:** While the previous update stopped aborting requests on every tick, navigating between pages still triggered `net::ERR_ABORTED` in the console because `NotificationBell` and `QueueRealtimeListener` aborted their in-flight requests on component unmount. Users reported this as a bug. Additionally, analyzed the Trae IDE hydration mismatch on the Sidebar.
+
+**Changes Made:**
+
+1. **`src/components/dashboard/notification-bell.tsx` & `src/components/queue/queue-realtime-listener.tsx`**
+   - Removed `abortRef.current?.abort()` from the `useEffect` cleanup function.
+   - Now, instead of aborting the fetch, the components set `inFlightRef.current = false` on unmount to prevent React state updates on unmounted components.
+   - Since the backend API routes already enforce a strict 7-second timeout, the connection will close automatically without causing permanent connection leaks, and the browser will no longer log `ERR_ABORTED` on navigation.
+
+2. **Hydration Mismatch Analysis**
+   - **Hydration Mismatch:** The warning `A tree hydrated but some attributes of the server rendered HTML didn't match the client properties` showing `- data-trae-ref="e30"` is a harmless, development-only artifact caused by the Trae IDE preview environment. Trae injects `data-trae-ref` attributes into the SSR HTML for element selection, but these are stripped during Next.js client hydration (e.g. by `<Link>`), triggering the React warning. This does not affect production.
+   - **RSC Aborts (`?_rsc=`):** The `net::ERR_ABORTED` logs for URLs ending in `?_rsc=` are standard Next.js App Router behavior. Next.js automatically aborts obsolete React Server Component payload requests when a user navigates quickly or when `router.refresh()` supersedes an ongoing request. This is expected and ensures optimal performance.
+
+**Status:** `pnpm run lint && pnpm run typecheck` ✅
+
+---
+
+## 2026-04-02: Bug Fix (Round 4) — Reduce `ERR_ABORTED` Noise in Dashboard Pollers ✅
+
+**Summary:** After freeze resolution, browser console still showed frequent `net::ERR_ABORTED` entries (especially for `/api/notifications` and queue polling). These were mostly cancellation side effects, but the polling implementation was still intentionally aborting previous requests every cycle, creating noisy logs.
+
+**Root Cause:**
+- `NotificationBell` and `QueueRealtimeListener` aborted the previous in-flight request at the start of every poll tick.
+- This pattern is safe for connection control but generates repeated canceled-request noise in browser dev console/network.
+
+**Changes Made:**
+
+1. **`src/components/dashboard/notification-bell.tsx`**
+   - Replaced “abort previous every cycle” with single-flight polling (`inFlightRef`).
+   - Keeps timeout + unmount abort safety, but avoids intentional abort churn per tick.
+   - Added strict `PATCH` success checks (`res.ok`) for mark-one/mark-all read actions to avoid false optimistic UI when backend returns non-2xx.
+
+2. **`src/components/queue/queue-realtime-listener.tsx`**
+   - Replaced “abort previous every cycle” with single-flight polling (`inFlightRef`).
+   - Added short refresh scheduling (coalesced timer) to reduce navigation interference from immediate `router.refresh()` calls during rapid route transitions.
+   - Keeps timeout + unmount abort safety.
+
+**Important Note:**
+- `ERR_ABORTED` on `/_rsc` navigation requests can still appear in dev when Next.js cancels superseded navigations; this is expected behavior.
+
+**Files changed:**
+- `src/components/dashboard/notification-bell.tsx`
+- `src/components/queue/queue-realtime-listener.tsx`
+
+**Status:** `pnpm test` ✅ `pnpm run lint && pnpm run typecheck` ✅
+
+---
+
+## 2026-04-02: Bug Fix (Round 3) — Dashboard Render Path De-duplication + Parallelization ✅
+
+**Summary:** Continued freeze investigation showed dashboard requests still did redundant auth/session work and sequential server reads under frequent refresh/navigation. Applied render-path hardening to reduce request pressure and navigation stalls.
+
+**Changes Made:**
+
+1. **`src/app/dashboard/layout.tsx`**
+   - Removed redundant direct `auth.api.getSession()` call.
+   - Uses `ctx.session` from `getTeamContext()` as the single session source for the request.
+   - Moves onboarding-route early return before dashboard-only queries.
+   - Parallelized dashboard-only reads via `Promise.all`:
+     - memberships
+     - failed post probe
+     - inactive account probe
+     - AI usage lookup (with graceful null fallback)
+
+2. **`src/app/dashboard/queue/page.tsx`**
+   - Removed second redundant session call (`auth.api.getSession`).
+   - Uses `ctx.session.user.id` directly for `currentUserId`.
+
+3. **Validation / Runtime Checks**
+   - Browser console and network requests inspected in local dev.
+   - `/api/diagnostics` confirms DB/auth healthy (`overallStatus: "ok"`).
+   - Database verified directly in Docker Postgres (`select now(), count(*) from posts` returned successfully).
+
+**Files changed:**
+- `src/app/dashboard/layout.tsx`
+- `src/app/dashboard/queue/page.tsx`
+- `docs/technical/navigation-freeze-connection-leak-fix.md`
+
+**Status:** `pnpm test` ✅ `pnpm run lint && pnpm run typecheck` ✅
+
+**Next Step:**
+- Re-test with authenticated user flow and repeatedly navigate through dashboard subroutes (`/dashboard/queue`, `/dashboard/analytics`, `/dashboard/ai`, `/dashboard/settings`) while watching Network tab for pending requests that never resolve.
+
+---
+
+## 2026-04-02: Bug Fix (Round 2) — Dashboard Freeze Hardening ✅
+
+**Summary:** Applied a second hardening pass because local dashboard navigation could still intermittently hang after several route changes.
+
+**What was improved:**
+
+1. **`src/components/queue/queue-realtime-listener.tsx`**
+   - Coalesced queue refreshes to **one `router.refresh()` per poll cycle** instead of one refresh per event.
+   - Ensures bursty queue updates do not trigger refresh storms.
+
+2. **`src/app/api/queue/sse/route.ts`**
+   - Added a bounded timeout wrapper for team-context + DB query.
+   - Route now returns fast degraded payload (`events: []`) on timeout/error instead of hanging.
+   - Added `since` timestamp validation and structured warning logs.
+   - Uses a single captured `serverTime` cursor per request.
+
+3. **`src/app/api/notifications/route.ts`**
+   - Added bounded timeout wrapper for session lookup and DB reads/writes.
+   - GET now degrades to `[]` on timeout/error to avoid header polling stalls.
+   - PATCH now returns `503` when backend is temporarily unavailable.
+   - Replaced inline error responses with `ApiError` helpers and stricter `id`/`all` payload handling.
+
+4. **`src/lib/db.ts`**
+   - Kept `connect_timeout: 10`.
+   - Added environment-aware connection lifecycle settings:
+     - local dev: `idle_timeout: 20`, `max_lifetime: 60`
+     - production: `idle_timeout: 60`, `max_lifetime: 1800`
+
+**Files changed:**
+- `src/components/queue/queue-realtime-listener.tsx`
+- `src/app/api/queue/sse/route.ts`
+- `src/app/api/notifications/route.ts`
+- `src/lib/db.ts`
+- `docs/technical/navigation-freeze-connection-leak-fix.md`
+
+**Status:** `pnpm run lint && pnpm run typecheck` ✅
+
+**Next Step:**
+- Restart the dev server, reproduce the old navigation path (`/dashboard/queue` → multiple dashboard sublinks), and verify no requests remain pending indefinitely in the browser network tab.
+
+---
+
+## 2026-04-02: Bug Fix — Navigation Freeze (Connection Leak in Polling Components) ✅
+
+**Summary:** Fixed pages `/dashboard/jobs`, `/dashboard/analytics`, `/dashboard/ai`, and all other routes loading forever after visiting a few dashboard pages (especially after visiting `/dashboard/queue`).
+
+**Root Cause — Three compounding bugs:**
+
+1. **`NotificationBell` had no `AbortController` or timeout.**
+   The component polls `/api/notifications` every 30 seconds. Each request took 68–84 seconds to respond (see bug 3). Because there was no `AbortController`, a new poll fired every 30 seconds while the previous request was still in flight. After 2–3 cycles, multiple browser connections to `localhost:3000` were occupied by hung requests.
+
+2. **`QueueRealtimeListener` had no `AbortController` or timeout.**
+   The component polls `/api/queue/sse` every **10 seconds** — 3× more frequently than `NotificationBell`. It mounts on `/dashboard/queue`. On navigation away, `clearInterval` correctly stopped new polls, but any in-flight request was **never aborted** — it held a browser connection slot open until the server eventually responded. Visiting `/dashboard/queue` and then navigating elsewhere was enough to quickly saturate the browser's connection limit.
+
+3. **`postgres.js` had no `connect_timeout` or `idle_timeout`.**
+   With no timeout configured, a stale or broken socket in the connection pool would wait for the OS TCP timeout (30–60 s) before failing. This caused the very first `auth.api.getSession` + `findMany` in polling API routes to hang for 68 s whenever it picked up a stale connection.
+
+**Why production (`astrapost.vercel.app`) works fine:**
+Vercel uses **HTTP/2** (no per-origin connection limit) and **PgBouncer** connection pooling (no stale socket problem). The issue is specific to local dev with HTTP/1.1 and direct postgres.js connections.
+
+**Changes Made:**
+
+1. **`src/components/dashboard/notification-bell.tsx`**
+   - Added `abortRef = useRef<AbortController | null>(null)` — cancels the previous in-flight request before starting each new poll.
+   - Added an 8-second `setTimeout` abort — frees the browser connection slot if the server doesn't respond in time.
+   - Cleanup on unmount: `abortRef.current?.abort()`.
+
+2. **`src/components/queue/queue-realtime-listener.tsx`**
+   - Same fix: added `AbortController` + 8-second timeout + cleanup on unmount.
+   - Removed the old `cancelled` flag (superseded by `AbortController`).
+
+3. **`src/lib/db.ts`**
+   - Added `connect_timeout: 10` — fails fast on broken/stale sockets.
+   - Added `idle_timeout: 20` — recycles idle connections after 20 s.
+
+**Files changed:**
+- `src/components/dashboard/notification-bell.tsx`
+- `src/components/queue/queue-realtime-listener.tsx`
+- `src/lib/db.ts`
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+**Action required:**
+- Run `pnpm run db:migrate` to apply pending migrations 0032–0037 (already done ✅).
+- Restart `pnpm dev` to pick up all three fixes.
+
+---
+
 ## 2026-04-02: Configuration — Gitignore Logs Folder ✅
 
 **Summary:** Updated `.gitignore` to properly ignore the entire `logs` folder and its contents.

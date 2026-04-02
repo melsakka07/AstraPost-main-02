@@ -30,14 +30,27 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
   const seenIdsRef = useRef<Set<string>>(new Set());
+  const abortRef = useRef<AbortController | null>(null);
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      if (inFlightRef.current) return;
+      inFlightRef.current = true;
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      // Hard 8-second timeout — if the server doesn't respond in time,
+      // abort rather than holding a browser connection slot indefinitely.
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       try {
-        const res = await fetch("/api/notifications");
+        const res = await fetch("/api/notifications", { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
           const data: Notification[] = await res.json();
-          
+          if (!inFlightRef.current) return; // Unmounted
+
           for (const n of data) {
             if (!seenIdsRef.current.has(n.id) && !n.isRead) {
               if (n.type === "tier_downgrade_warning") {
@@ -52,27 +65,44 @@ export function NotificationBell() {
               seenIdsRef.current.add(n.id);
             }
           }
-          
+
           setNotifications(data);
           setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
         }
       } catch (error) {
+        // AbortError is expected on timeout or unmount cleanup.
+        if ((error as Error)?.name === "AbortError") return;
+        if (!inFlightRef.current) return; // Unmounted
         console.error("Failed to fetch notifications", error);
+      } finally {
+        clearTimeout(timeoutId);
+        inFlightRef.current = false;
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+        }
       }
     };
 
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      inFlightRef.current = false; // signals unmounted to prevent state updates
+      // Do NOT abort the fetch to prevent net::ERR_ABORTED console noise.
+      // The server will timeout and close the connection in 7 seconds anyway.
+    };
   }, [router]);
 
   const markAsRead = async (id: string) => {
     try {
-      await fetch("/api/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
+      if (!res.ok) {
+        throw new Error(`Failed to mark notification as read (${res.status})`);
+      }
       // Optimistic update
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
@@ -86,11 +116,14 @@ export function NotificationBell() {
   const markAllAsRead = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent closing if we want to keep it open, but closing is fine.
     try {
-      await fetch("/api/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),
       });
+      if (!res.ok) {
+        throw new Error(`Failed to mark all notifications as read (${res.status})`);
+      }
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
       toast.success("All notifications marked as read");

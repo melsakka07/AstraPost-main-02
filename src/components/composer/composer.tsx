@@ -48,6 +48,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -867,11 +868,17 @@ export function Composer() {
       }
 
       if (aiTool === "translate") {
+        const nonEmptyTweets = tweets.filter((t) => t.content.trim());
+        if (nonEmptyTweets.length === 0) {
+          toast.error("Please add some content to translate");
+          return;
+        }
+
         const res = await fetch("/api/ai/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tweets: tweets.map((t) => t.content),
+            tweets: nonEmptyTweets.map((t) => t.content),
             targetLanguage: aiTranslateTarget,
           }),
         });
@@ -880,13 +887,16 @@ export function Composer() {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
             return;
           }
-          throw new Error("Translation failed");
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || "Translation failed");
         }
         const data = await res.json();
-        const next = tweets.map((t, idx) => ({
-          ...t,
-          content: data.tweets?.[idx] ?? t.content,
-        }));
+        let translatedIdx = 0;
+        const next = tweets.map((t) => {
+          if (!t.content.trim()) return t;
+          const translated = data.tweets?.[translatedIdx++];
+          return translated ? { ...t, content: translated } : t;
+        });
         setTweets(next);
         setIsAiOpen(false);
         toast.success("Thread translated!");
@@ -1033,6 +1043,8 @@ export function Composer() {
     fileInputRef.current?.click();
   };
 
+  const hasContent = tweets.every((t) => t.content.trim().length > 0);
+
   const handleSubmit = async (action: "draft" | "schedule" | "publish_now") => {
     const isUploading = tweets.some((t) => t.media.some((m) => m.uploading));
     if (isUploading) {
@@ -1167,6 +1179,7 @@ export function Composer() {
     (aiTool === "thread" && !aiTopic) ||
     (aiTool === "hook" && !aiTopic && !(tweets[0]?.content || "").trim()) ||
     (aiTool === "rewrite" && !aiRewriteText.trim()) ||
+    (aiTool === "translate" && !tweets.some((t) => t.content.trim())) ||
     (aiTool === "hashtags" && !(tweets.find((t) => t.id === aiTargetTweetId)?.content ?? "").trim());
 
   const aiTabsGenerateContent = (
@@ -1189,7 +1202,13 @@ export function Composer() {
             value={aiRewriteText}
             onChange={(e) => setAiRewriteText(e.target.value)}
             className="min-h-[120px]"
+            placeholder="Enter or paste the tweet text you want to rewrite..."
           />
+          {!aiRewriteText.trim() && (
+            <p className="text-xs text-muted-foreground italic">
+              Enter text above to enable rewrite
+            </p>
+          )}
         </div>
       )}
 
@@ -1219,6 +1238,11 @@ export function Composer() {
               ))}
             </SelectContent>
           </Select>
+          {!tweets.some((t) => t.content.trim()) && (
+            <p className="text-xs text-muted-foreground italic">
+              Add content to your tweet(s) to enable translation
+            </p>
+          )}
         </div>
       )}
 
@@ -1695,18 +1719,40 @@ export function Composer() {
             </p>
 
             <div className="flex flex-col gap-2">
-              <Button
-                className="w-full h-11 text-base font-semibold"
-                onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-                {scheduledDate ? "Schedule Post" : "Post Now"}
-              </Button>
-              <Button variant="outline" className="w-full" onClick={() => handleSubmit("draft")} disabled={isSubmitting}>
-                <FileText className="mr-2 h-4 w-4" />
-                Save as Draft
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>
+                      <Button
+                        className="w-full h-11 text-base font-semibold"
+                        onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
+                        disabled={isSubmitting || !hasContent}
+                      >
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        Post to X
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!hasContent && (
+                    <TooltipContent>Add content to enable</TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>
+                      <Button variant="outline" className="w-full" onClick={() => handleSubmit("draft")} disabled={isSubmitting || !hasContent}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Save as Draft
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!hasContent && (
+                    <TooltipContent>Add content to enable</TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
               {/* P6: Template button elevated from ghost to visible outline */}
               <Button
                 variant="outline"

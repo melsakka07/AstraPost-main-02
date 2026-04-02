@@ -1,9 +1,7 @@
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq, and, asc, gte, sql, inArray } from "drizzle-orm";
 import { QueueContent } from "@/components/queue/queue-content";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getPlanLimits } from "@/lib/plan-limits";
 import { posts, user, xAccounts } from "@/lib/schema";
@@ -18,8 +16,6 @@ export default async function QueuePage({
 }) {
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login?callbackUrl=/dashboard/queue");
-
-  const session = await auth.api.getSession({ headers: await headers() });
 
   const resolvedParams = searchParams ? await searchParams : undefined;
   const pageParam = resolvedParams?.page;
@@ -121,7 +117,7 @@ export default async function QueuePage({
       awaitingApprovalPosts={awaitingApprovalPosts}
       isOwner={ctx.isOwner}
       role={ctx.role ?? ""}
-      currentUserId={session?.user.id ?? ""}
+      currentUserId={ctx.session.user.id}
     />
   );
 }
