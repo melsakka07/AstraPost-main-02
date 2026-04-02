@@ -16,8 +16,9 @@
 /playwright-report/
 /test-results/
 /.playwright-mcp
+
+# logs
 /logs/
-/logs/*
 
 # next.js
 /.next/

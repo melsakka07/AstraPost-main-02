@@ -1,5 +1,24 @@
 # Latest Updates
 
+## 2026-04-02: Configuration — Gitignore Logs Folder ✅
+
+**Summary:** Updated `.gitignore` to properly ignore the entire `logs` folder and its contents.
+
+**Changes Made:**
+1. **`.gitignore`**
+   - Cleaned up redundant log file ignore rules and consolidated them into a single `/logs/` entry. This ensures the entire folder and its contents are ignored by Git without needing individual file extensions.
+
+**Files changed:**
+- `.gitignore`
+
+**Status:** Configuration updated ✅
+
+**Next Steps:**
+- Run `git rm -r --cached logs/` in the terminal if the logs folder or any of its files were already tracked by Git. This will untrack them while keeping the files on your local machine.
+- Commit the changes to your repository.
+
+---
+
 ## 2026-04-01: Bug Fix — Accessibility and Style Linters ✅
 
 **Summary:** Fixed IDE warnings and diagnostic errors reported by the Microsoft Edge Tools extension (Axe and Webhint) regarding ARIA attributes and inline styles.
