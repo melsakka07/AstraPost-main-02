@@ -1,6 +1,7 @@
 import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
+import { logger } from "@/lib/logger";
 import {
   analyticsRefreshRuns,
   followerSnapshots,
@@ -48,6 +49,7 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
   }, {} as Record<string, typeof tweetsToUpdate>);
 
   for (const accountId of Object.keys(tweetsByAccount)) {
+    try {
     const accountTweets = tweetsByAccount[accountId] || [];
     const ids = accountTweets.map((t) => t.xTweetId!).filter(Boolean);
     if (ids.length === 0) continue;
@@ -166,6 +168,12 @@ export async function updateTweetMetrics(options?: { accountIds?: string[] }) {
         });
       }
     });
+    } catch (err) {
+      logger.warn("analytics_account_skipped", {
+        accountId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 }
 
