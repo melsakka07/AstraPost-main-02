@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 
 interface InspirationPanelProps {
-  onSelect: (topic: string) => void;
+  onSelect: (topic: string, hook: string) => void;
   language: string;
 }
 
@@ -88,7 +88,7 @@ export function InspirationPanel({ onSelect, language }: InspirationPanelProps) 
                 key={i} 
                 className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
                 onClick={() => {
-                  onSelect(t.topic);
+                  onSelect(t.topic, t.hook);
                   setIsOpen(false);
                 }}
               >

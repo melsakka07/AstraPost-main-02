@@ -11,7 +11,7 @@ const requestSchema = z.object({
 });
 
 const responseSchema = z.object({
-  tweets: z.array(z.string().max(280)),
+  tweets: z.array(z.string().max(1000)),
 });
 
 export async function POST(req: Request) {
@@ -42,10 +42,10 @@ export async function POST(req: Request) {
     const prompt = `Translate this X thread into ${LANGUAGES.find(l => l.code === targetLanguage)?.label || 'English'}.
 
 Constraints:
+- Keep each translated tweet under 280 characters. If a translation would exceed 280 characters, split it into multiple shorter tweets to stay within the limit.
+- Preserve meaning, tone, and style as closely as possible.
+- Output at least as many tweets as the input (more is OK when splitting long translations).
 - Keep numbering prefixes like "1/5" if the original tweet already has them, but do NOT add any new numbering or bracket labels.
-- Keep each tweet under 280 characters.
-- Preserve meaning and style.
-- Output the same number of tweets.
 
 Thread:
 ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${t}`).join("\n\n")}`;

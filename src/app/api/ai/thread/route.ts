@@ -22,6 +22,7 @@ const TIER_STALENESS_MS = 24 * 60 * 60 * 1_000;
 
 const threadRequestSchema = z.object({
   topic: z.string().min(1).max(500),
+  hook: z.string().max(1000).optional(),
   tone: z.enum(["professional", "casual", "educational", "inspirational", "humorous", "viral", "controversial"]).default("professional"),
   tweetCount: z.number().min(3).max(15).optional().default(5),
   language: LANGUAGE_ENUM.optional().default("en"),
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { topic, tone, tweetCount, language, mode, lengthOption, targetAccountId } = parsed.data;
+    const { topic, hook, tone, tweetCount, language, mode, lengthOption, targetAccountId } = parsed.data;
 
     // ── Tier validation for single-post mode ──────────────────────────────────
     if (mode === "single" && lengthOption !== "short" && targetAccountId) {
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
 
       prompt = `You are an expert social media content writer for X (Twitter).
 Write exactly ONE post about "${topic}".
-Tone: ${tone}.
+${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle, but adapt freely.\n` : ""}Tone: ${tone}.
 Language: ${langLabel}.
 ${voiceInstructions}
 
@@ -113,7 +114,7 @@ Requirements:
       // Thread mode (existing behavior)
       prompt = `You are an expert social media content writer for X (Twitter).
 Write exactly ${tweetCount} tweets about "${topic}".
-Tone: ${tone}.
+${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle of the first tweet, but adapt freely.\n` : ""}Tone: ${tone}.
 Language: ${langLabel}.
 ${voiceInstructions}
 

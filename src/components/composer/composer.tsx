@@ -156,6 +156,8 @@ export function Composer() {
   const [aiTool, setAiTool] = useState<"thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags">("thread");
   const [aiTargetTweetId, setAiTargetTweetId] = useState<string | null>(null);
   const [aiTopic, setAiTopic] = useState("");
+  const [aiHook, setAiHook] = useState("");
+  const pendingInspirationRef = useRef<{ topic: string; hook: string } | null>(null);
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
   const [aiTone, setAiTone] = useState("professional");
   const [aiCount, setAiCount] = useState([3]);
@@ -169,6 +171,7 @@ export function Composer() {
       setAiLanguage((session.user as any).language || "ar");
     }
   }, [session?.user]);
+
   const [aiAddNumbering, setAiAddNumbering] = useState(true);
   const [aiTranslateTarget, setAiTranslateTarget] = useState<string>("en");
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
@@ -699,23 +702,26 @@ export function Composer() {
     toast.success("Template applied!");
   };
 
-  const handleAiRun = async () => {
+  const handleAiRun = async (overrides?: { topic?: string; hook?: string }) => {
     setIsGenerating(true);
     try {
+      const runTopic = overrides?.topic ?? aiTopic;
+      const runHook = overrides?.hook ?? aiHook;
       if (aiTool === "thread") {
-        if (!aiTopic) throw new Error("Topic is required");
+        if (!runTopic) throw new Error("Topic is required");
         const isSinglePost = tweets.length === 1;
         const res = await fetch("/api/ai/thread", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            topic: aiTopic,
+            topic: runTopic,
             tone: aiTone,
             tweetCount: aiCount[0],
             language: aiLanguage,
             mode: isSinglePost ? "single" : "thread",
             ...(isSinglePost ? { lengthOption: aiLengthOption } : {}),
             ...(isSinglePost && targetAccountIds[0] ? { targetAccountId: targetAccountIds[0] } : {}),
+            ...(runHook ? { hook: runHook } : {}),
           }),
         });
         if (!res.ok) {
@@ -958,8 +964,19 @@ export function Composer() {
       toast.error(error instanceof Error ? error.message : "AI request failed");
     } finally {
       setIsGenerating(false);
+      setAiHook("");
     }
   };
+
+  // Auto-trigger AI generation when an inspiration idea is selected
+  useEffect(() => {
+    if (pendingInspirationRef.current && aiTool === "thread" && aiTopic) {
+      const { topic, hook } = pendingInspirationRef.current;
+      pendingInspirationRef.current = null;
+      handleAiRun({ topic, hook });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiTool, aiTopic, aiHook]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !activeTweetId) return;
@@ -1227,7 +1244,7 @@ export function Composer() {
 
       {aiTool === "translate" && (
         <div className="space-y-2">
-          <Label>Target Language</Label>
+          <Label>Translate to</Label>
           <Select value={aiTranslateTarget} onValueChange={setAiTranslateTarget}>
             <SelectTrigger>
               <SelectValue />
@@ -1238,6 +1255,9 @@ export function Composer() {
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            Source language is auto-detected
+          </p>
           {!tweets.some((t) => t.content.trim()) && (
             <p className="text-xs text-muted-foreground italic">
               Add content to your tweet(s) to enable translation
@@ -1264,6 +1284,7 @@ export function Composer() {
           </Select>
         </div>
 
+        {aiTool !== "translate" && (
         <div className="space-y-2">
           <Label>Language</Label>
           <Select value={aiLanguage} onValueChange={setAiLanguage}>
@@ -1277,6 +1298,7 @@ export function Composer() {
             </SelectContent>
           </Select>
         </div>
+        )}
       </div>
 
       {/* AI Length Selector — only for Thread tool in single-post mode (not thread) */}
@@ -1541,7 +1563,7 @@ export function Composer() {
                 {aiTabsGenerateContent}
                 <div className="flex justify-end gap-2 pt-3 border-t mt-2">
                   <Button variant="outline" size="sm" onClick={() => setIsAiOpen(false)}>Cancel</Button>
-                  <Button size="sm" onClick={handleAiRun} disabled={isAiGenerateDisabled}>
+                  <Button size="sm" onClick={() => handleAiRun()} disabled={isAiGenerateDisabled}>
                     {isGenerating && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                     Generate
                   </Button>
@@ -1565,8 +1587,10 @@ export function Composer() {
                 </Button>
                 <InspirationPanel
                   language={aiLanguage}
-                  onSelect={(topic) => {
+                  onSelect={(topic, hook) => {
+                    pendingInspirationRef.current = { topic, hook };
                     setAiTopic(topic);
+                    setAiHook(hook);
                     openAiTool("thread");
                   }}
                 />
@@ -1901,7 +1925,7 @@ export function Composer() {
               {aiTabsGenerateContent}
               <div className="flex justify-end gap-2 pt-4 shrink-0 border-t mt-2">
                 <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
-                <Button onClick={handleAiRun} disabled={isAiGenerateDisabled}>
+                <Button onClick={() => handleAiRun()} disabled={isAiGenerateDisabled}>
                   {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Generate
                 </Button>

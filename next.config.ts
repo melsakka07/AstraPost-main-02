@@ -51,20 +51,8 @@ const nextConfig: NextConfig = {
   // Enable compression
   compress: true,
 
-  // Webpack configuration to handle ioredis module resolution
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Fix ioredis module resolution issue with BullMQ
-      // BullMQ imports ioredis/built/utils and ioredis/built/classes which
-      // Next.js can't resolve properly when ioredis is in serverExternalPackages
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'ioredis/built/utils': 'ioredis/built/index.js',
-        'ioredis/built/classes': 'ioredis/built/index.js',
-      };
-    }
-    return config;
-  },
+  // External packages that should not be bundled by Turbopack
+  serverExternalPackages: ["ioredis"],
 
   // Security headers
   async headers() {

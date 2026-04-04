@@ -667,7 +667,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   xAccounts: many(xAccounts),
   linkedinAccounts: many(linkedinAccounts),
   instagramAccounts: many(instagramAccounts),
-  posts: many(posts),
+  posts: many(posts, { relationName: "user_posts" }),
   subscriptions: many(subscriptions),
   notifications: many(notifications),
   templates: many(templates),
@@ -737,7 +737,7 @@ export const xAccountRelations = relations(xAccounts, ({ one, many }) => ({
     fields: [xAccounts.userId],
     references: [user.id],
   }),
-  posts: many(posts),
+  posts: many(posts, { relationName: "user_posts" }),
   followerSnapshots: many(followerSnapshots),
   analyticsRefreshRuns: many(analyticsRefreshRuns),
 }));
@@ -747,7 +747,7 @@ export const linkedinAccountRelations = relations(linkedinAccounts, ({ one, many
     fields: [linkedinAccounts.userId],
     references: [user.id],
   }),
-  posts: many(posts),
+  posts: many(posts, { relationName: "user_posts" }),
 }));
 
 export const instagramAccountRelations = relations(instagramAccounts, ({ one, many }) => ({
@@ -755,13 +755,14 @@ export const instagramAccountRelations = relations(instagramAccounts, ({ one, ma
     fields: [instagramAccounts.userId],
     references: [user.id],
   }),
-  posts: many(posts),
+  posts: many(posts, { relationName: "user_posts" }),
 }));
 
 export const postRelations = relations(posts, ({ one, many }) => ({
   user: one(user, {
     fields: [posts.userId],
     references: [user.id],
+    relationName: "user_posts",
   }),
   xAccount: one(xAccounts, {
     fields: [posts.xAccountId],
@@ -778,6 +779,7 @@ export const postRelations = relations(posts, ({ one, many }) => ({
   approvedByUser: one(user, {
     fields: [posts.approvedBy],
     references: [user.id],
+    relationName: "approved_posts",
   }),
   tweets: many(tweets),
   media: many(media),
