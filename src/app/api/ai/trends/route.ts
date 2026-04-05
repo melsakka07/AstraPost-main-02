@@ -1,0 +1,137 @@
+import { openrouter } from "@openrouter/ai-sdk-provider";
+import { generateText } from "ai";
+import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
+import { checkAgenticPostingAccessDetailed } from "@/lib/middleware/require-plan";
+import { redis } from "@/lib/rate-limiter";
+import { trendCategoryEnum, trendItemSchema, type TrendCategory, type TrendItem } from "@/lib/schemas/common";
+import { recordAiUsage } from "@/lib/services/ai-quota";
+
+// NOTE: A web-search-capable model produces significantly better results here.
+// Configure OPENROUTER_MODEL_TRENDS to something like:
+//   perplexity/llama-3.1-sonar-large-128k-online
+// which has real-time internet access. Without it, the model uses training data
+// which may not reflect current trends.
+const TRENDS_CACHE_TTL_SECONDS = 1800; // 30 minutes
+
+function buildTrendsPrompt(category: TrendCategory): string {
+  const categoryLabel = category === "all" ? "all categories" : category;
+  return `You are a social media trends analyst. Research what is currently trending on X (Twitter) right now in the "${categoryLabel}" category.
+
+Return EXACTLY 5 trending topics as a JSON array. For each topic, include:
+- "title": the trending topic or hashtag name (as it appears on X)
+- "description": a one-sentence explanation of why it's trending (15-25 words max)
+- "postCount": estimated engagement level ("High", "Medium", or "Trending")
+- "category": "${category}"
+- "suggestedAngle": a one-sentence content angle a creator could use for a post about this trend
+
+Focus on topics that are genuinely trending RIGHT NOW on X/Twitter, not general evergreen topics. Prioritize topics with high engagement and conversation volume.
+
+Return ONLY valid JSON. No markdown, no explanation, no preamble.
+Format: [{ "title": "...", "description": "...", "postCount": "...", "category": "...", "suggestedAngle": "..." }]`;
+}
+
+export async function GET(req: Request) {
+  try {
+    const preamble = await aiPreamble({
+      featureGate: checkAgenticPostingAccessDetailed,
+      skipQuotaCheck: false,
+    });
+    if (preamble instanceof Response) return preamble;
+    const { session } = preamble;
+
+    // Parse & validate category query param
+    const { searchParams } = new URL(req.url);
+    const rawCategory = searchParams.get("category") ?? "all";
+    const categoryParsed = trendCategoryEnum.safeParse(rawCategory);
+    if (!categoryParsed.success) {
+      return ApiError.badRequest(`Invalid category. Must be one of: ${trendCategoryEnum.options.join(", ")}`);
+    }
+    const category = categoryParsed.data;
+
+    // ── Redis cache check ────────────────────────────────────────────────────
+    const cacheKey = `trends:${category}`;
+    let cachedAt: string | null = null;
+
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as { trends: TrendItem[]; cachedAt: string; expiresAt: string };
+        logger.info("trends_cache_hit", { category, userId: session.user.id });
+        return Response.json(parsed);
+      }
+    } catch (cacheErr) {
+      logger.warn("trends_cache_read_failed", {
+        error: cacheErr instanceof Error ? cacheErr.message : String(cacheErr),
+        category,
+      });
+    }
+
+    // ── AI call ──────────────────────────────────────────────────────────────
+    logger.info("trends_fetch_start", { category, userId: session.user.id });
+
+    const modelId = process.env.OPENROUTER_MODEL_TRENDS ?? process.env.OPENROUTER_MODEL_AGENTIC ?? process.env.OPENROUTER_MODEL!;
+    const model = openrouter(modelId);
+
+    const result = await generateText({
+      model,
+      prompt: buildTrendsPrompt(category),
+      maxOutputTokens: 800,
+      abortSignal: AbortSignal.timeout(30_000),
+    });
+
+    // ── Parse & validate response ────────────────────────────────────────────
+    let trends: TrendItem[] = [];
+    try {
+      const jsonMatch = result.text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? result.text.match(/(\[[\s\S]*\])/);
+      const raw = jsonMatch ? (jsonMatch[1] ?? jsonMatch[0]) : result.text;
+      const parsed = JSON.parse(raw.trim()) as unknown;
+      const validated = trendItemSchema.array().safeParse(parsed);
+      if (validated.success) {
+        trends = validated.data;
+      } else {
+        logger.warn("trends_validation_failed", { category, issues: validated.error.issues });
+      }
+    } catch (parseErr) {
+      logger.warn("trends_parse_failed", {
+        error: parseErr instanceof Error ? parseErr.message : String(parseErr),
+        category,
+        rawText: result.text.slice(0, 200),
+      });
+    }
+
+    // ── Record AI quota usage ─────────────────────────────────────────────────
+    try {
+      await recordAiUsage(session.user.id, "trends_discovery", 0, category, `Trending topics: ${category}`, "en");
+    } catch (quotaErr) {
+      logger.warn("trends_quota_record_failed", {
+        error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
+      });
+    }
+
+    // ── Cache result ──────────────────────────────────────────────────────────
+    cachedAt = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + TRENDS_CACHE_TTL_SECONDS * 1000).toISOString();
+    const responsePayload = { trends, category, cachedAt, expiresAt };
+
+    if (trends.length > 0) {
+      try {
+        await redis.setex(cacheKey, TRENDS_CACHE_TTL_SECONDS, JSON.stringify(responsePayload));
+      } catch (cacheWriteErr) {
+        logger.warn("trends_cache_write_failed", {
+          error: cacheWriteErr instanceof Error ? cacheWriteErr.message : String(cacheWriteErr),
+          category,
+        });
+      }
+    }
+
+    logger.info("trends_fetch_done", { category, count: trends.length, userId: session.user.id });
+    return Response.json(responsePayload);
+  } catch (err) {
+    logger.error("trends_route_error", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return ApiError.internal();
+  }
+}

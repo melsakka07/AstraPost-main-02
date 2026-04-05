@@ -24,6 +24,11 @@ const serverEnvSchema = z.object({
   // AI - OpenRouter (text generation)
   OPENROUTER_API_KEY: z.string().optional(),
   OPENROUTER_MODEL: z.string().min(1, "OPENROUTER_MODEL is required"),
+  // Optional: dedicated model for Agentic Posting pipeline. Falls back to OPENROUTER_MODEL if not set.
+  OPENROUTER_MODEL_AGENTIC: z.string().optional(),
+  // Optional: web-search-capable model for trends discovery (e.g. perplexity/llama-3.1-sonar-large-128k-online).
+  // Falls back through OPENROUTER_MODEL_AGENTIC → OPENROUTER_MODEL if not set.
+  OPENROUTER_MODEL_TRENDS: z.string().optional(),
 
   // AI - Replicate (image generation)
   REPLICATE_API_TOKEN: z.string().optional(),

@@ -27,6 +27,7 @@ export interface PlanLimits {
   canUseCompetitorAnalyzer: boolean;
   canUseReplyGenerator: boolean;
   canUseBioOptimizer: boolean;
+  canUseAgenticPosting: boolean;
 }
 
 export type PlanType = "free" | "pro_monthly" | "pro_annual" | "agency";
@@ -57,6 +58,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseCompetitorAnalyzer: false,
     canUseReplyGenerator: false,
     canUseBioOptimizer: false,
+    canUseAgenticPosting: false,
   },
   pro_monthly: {
     postsPerMonth: Infinity,
@@ -83,6 +85,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseCompetitorAnalyzer: true,
     canUseReplyGenerator: true,
     canUseBioOptimizer: true,
+    canUseAgenticPosting: true,
   },
   pro_annual: {
     postsPerMonth: Infinity,
@@ -109,6 +112,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseCompetitorAnalyzer: true,
     canUseReplyGenerator: true,
     canUseBioOptimizer: true,
+    canUseAgenticPosting: true,
   },
   agency: {
     postsPerMonth: Infinity,
@@ -135,6 +139,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseCompetitorAnalyzer: true,
     canUseReplyGenerator: true,
     canUseBioOptimizer: true,
+    canUseAgenticPosting: true,
   },
 };
 

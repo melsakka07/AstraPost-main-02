@@ -27,6 +27,7 @@ import {
   Trophy,
   Share2,
   ChevronDown,
+  Wand2,
 } from "lucide-react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -43,6 +44,7 @@ interface NavItem {
   label: string;
   href: string;
   isPro?: boolean;
+  isNew?: boolean;
 }
 
 interface SidebarSection {
@@ -81,6 +83,7 @@ const sidebarSections: SidebarSection[] = [
     label: "AI Tools",
     collapsible: true,
     items: [
+      { icon: Wand2, label: "Agentic Posting", href: "/dashboard/ai/agentic", isPro: true, isNew: true },
       { icon: Sparkles, label: "AI Tools", href: "/dashboard/ai" },
       { icon: CalendarRange, label: "Content Calendar", href: "/dashboard/ai/calendar", isPro: true },
       { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply", isPro: true },
@@ -199,7 +202,12 @@ function CollapsibleSection({
             >
               <item.icon className="h-4.5 w-4.5 shrink-0" />
               {item.label}
-              {item.isPro && (
+              {item.isNew && (
+                <Badge className="ms-auto text-[10px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-600 border-emerald-500/30 border">
+                  New
+                </Badge>
+              )}
+              {item.isPro && !item.isNew && (
                 <Badge variant="outline" className="ms-auto text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary">
                   Pro
                 </Badge>

@@ -50,6 +50,22 @@ export const paginationSchema = z.object({
 
 export type PaginationParams = z.infer<typeof paginationSchema>;
 
+// ─── Trending Topics ──────────────────────────────────────────────────────────
+
+export const trendCategoryEnum = z.enum([
+  "all", "technology", "business", "news", "lifestyle", "sports", "entertainment",
+]);
+export type TrendCategory = z.infer<typeof trendCategoryEnum>;
+
+export const trendItemSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  postCount: z.string(),
+  category: z.string(),
+  suggestedAngle: z.string(),
+});
+export type TrendItem = z.infer<typeof trendItemSchema>;
+
 // ─── Identifiers ──────────────────────────────────────────────────────────────
 
 /** A UUID string (v4 format). */

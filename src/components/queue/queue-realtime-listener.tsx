@@ -22,6 +22,13 @@ export function QueueRealtimeListener() {
   const inFlightRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Refresh on mount so navigating back to the queue always shows current state.
+  // Without this, Next.js may serve a cached RSC payload where a post that was
+  // just published still appears as "failed".
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
+
   useEffect(() => {
     async function poll() {
       if (inFlightRef.current) return;

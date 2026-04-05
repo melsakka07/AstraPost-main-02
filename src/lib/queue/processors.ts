@@ -163,30 +163,49 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
           lastErrorAt: new Date(),
         }).where(eq(posts.id, postId));
 
-        await db.insert(jobRuns).values({
-          id: crypto.randomUUID(),
-          userId: post.userId,
-          queueName: job.queueName,
-          jobId: String(job.id),
-          correlationId: correlationId || `${job.queueName}:${job.id}:${postId}`,
-          postId,
-          status: "failed",
-          attempts: job.opts?.attempts,
-          attemptsMade: job.attemptsMade,
-          startedAt: new Date(),
-          finishedAt: new Date(),
-          error: errorData.message,
-        });
+        // Best-effort DB writes — wrapped so a failing insert cannot prevent
+        // UnrecoverableError from being thrown (which would cause BullMQ retries).
+        try {
+          await db.insert(jobRuns).values({
+            id: crypto.randomUUID(),
+            userId: post.userId,
+            queueName: job.queueName,
+            jobId: String(job.id),
+            correlationId: correlationId || `${job.queueName}:${job.id}:${postId}`,
+            postId,
+            status: "failed",
+            attempts: job.opts?.attempts,
+            attemptsMade: job.attemptsMade,
+            startedAt: new Date(),
+            finishedAt: new Date(),
+            error: errorData.message,
+          });
+        } catch (insertErr) {
+          logger.warn("tier_limit_job_run_insert_failed", {
+            error: insertErr instanceof Error ? insertErr.message : String(insertErr),
+            jobId: String(job.id),
+            postId,
+            correlationId,
+          });
+        }
 
-        await db.insert(notifications).values({
-          id: crypto.randomUUID(),
-          userId: post.userId,
-          type: "post_failed",
-          title: "Post Too Long for X Account",
-          message: errorData.message,
-          metadata: errorData,
-          isRead: false,
-        });
+        try {
+          await db.insert(notifications).values({
+            id: crypto.randomUUID(),
+            userId: post.userId,
+            type: "post_failed",
+            title: "Post Too Long for X Account",
+            message: errorData.message,
+            metadata: errorData,
+            isRead: false,
+          });
+        } catch (notifErr) {
+          logger.warn("tier_limit_notification_insert_failed", {
+            error: notifErr instanceof Error ? notifErr.message : String(notifErr),
+            postId,
+            correlationId,
+          });
+        }
 
         throw new UnrecoverableError(errorData.message);
       }

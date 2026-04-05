@@ -267,6 +267,13 @@
       "when": 1774866072433,
       "tag": "0037_naive_dreaming_celestial",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1775393019910,
+      "tag": "0038_tiny_rocket_raccoon",
+      "breakpoints": true
     }
   ]
 }

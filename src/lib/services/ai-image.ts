@@ -1,3 +1,5 @@
+import { upload } from "@/lib/storage";
+
 /**
  * AI Image Generation Service (Replicate API - Nano Banana Models)
  * Provider-agnostic abstraction for AI image generation using Replicate
@@ -54,7 +56,8 @@ export type ImageStyle =
   | "minimalist"
   | "abstract"
   | "infographic"
-  | "meme";
+  | "meme"
+  | "editorial";
 
 export interface ImageGenParams {
   prompt: string;
@@ -122,6 +125,7 @@ export function buildStyledPrompt(
       ", abstract art, artistic interpretation, creative, non-representational",
     infographic: ", infographic style, clear typography, data visualization, educational",
     meme: ", meme format, humorous, bold text overlay, internet meme style",
+    editorial: ", professional editorial photography, high contrast, modern design, clean composition, sharp focus, commercial quality",
   };
 
   return basePrompt + (styleModifiers[style] || "");
@@ -572,4 +576,75 @@ export async function downloadImage(imageUrl: string): Promise<Buffer> {
 
   const arrayBuffer = await response.arrayBuffer();
   return Buffer.from(arrayBuffer);
+}
+
+/**
+ * High-level image generation wrapper for the Agentic Posting pipeline.
+ *
+ * Wraps the full lifecycle:
+ *   1. Enhances the prompt with a quality prefix
+ *   2. Starts a Replicate prediction via startImageGeneration()
+ *   3. Polls until complete (60s timeout, 2s interval)
+ *   4. Downloads the image buffer
+ *   5. Persists to storage via upload() (Vercel Blob in prod, local in dev)
+ *   6. Returns the stored URL
+ *
+ * Never throws — returns { error } on any failure so the pipeline can
+ * continue with the remaining tweets.
+ */
+export async function generateAgenticImage(params: {
+  prompt: string;
+  style?: "photorealistic" | "digital-art" | "infographic" | "editorial";
+  aspectRatio?: AspectRatio;
+}): Promise<{ url: string } | { error: string }> {
+  const aspectRatio = params.aspectRatio ?? "16:9";
+  const style: ImageStyle = params.style === "digital-art" ? "illustration" : (params.style ?? "editorial");
+
+  // Prepend quality prefix for editorial-grade output
+  const enhancedPrompt = `Professional social media image, high quality, modern design: ${params.prompt}`;
+
+  const MAX_POLL_MS = 60_000;
+  const POLL_INTERVAL_MS = 2_000;
+
+  try {
+    const { predictionId } = await startImageGeneration({
+      prompt: enhancedPrompt,
+      model: "nano-banana-2",
+      aspectRatio,
+      style,
+    });
+
+    // Poll until done
+    const deadline = Date.now() + MAX_POLL_MS;
+    let replicateUrl: string | null = null;
+
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      const result = await checkImagePrediction(predictionId);
+
+      if (result.status === "succeeded" && result.output) {
+        replicateUrl = Array.isArray(result.output)
+          ? (result.output[0] as string)
+          : (result.output as string);
+        break;
+      }
+
+      if (result.status === "failed" || result.status === "canceled") {
+        return { error: result.error ?? `Image generation ${result.status}` };
+      }
+    }
+
+    if (!replicateUrl) {
+      return { error: "Image generation timed out after 60s" };
+    }
+
+    // Download and persist to storage
+    const buffer = await downloadImage(replicateUrl);
+    const filename = `agentic-${Date.now()}.png`;
+    const stored = await upload(buffer, filename, "agentic-images");
+
+    return { url: stored.url };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Unknown image generation error" };
+  }
 }

@@ -1,0 +1,62 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { eq, and } from "drizzle-orm";
+import { Wand2 } from "lucide-react";
+import { AgenticPostingClient } from "@/components/ai/agentic-posting-client";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { xAccounts, user } from "@/lib/schema";
+import type { XSubscriptionTier } from "@/lib/schemas/common";
+
+export const metadata = {
+  title: "Agentic Posting — AstraPost",
+  description: "Drop a topic. AI handles the rest.",
+};
+
+export interface XAccountOption {
+  id: string;
+  username: string;
+  profileImageUrl: string | null;
+  subscriptionTier: XSubscriptionTier;
+}
+
+export default async function AgenticPostingPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) redirect("/login");
+
+  const accounts = await db
+    .select({
+      id: xAccounts.id,
+      username: xAccounts.xUsername,
+      profileImageUrl: xAccounts.xAvatarUrl,
+      subscriptionTier: xAccounts.xSubscriptionTier,
+    })
+    .from(xAccounts)
+    .where(and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)));
+
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { voiceProfile: true },
+  });
+
+  const typedAccounts: XAccountOption[] = accounts.map((a) => ({
+    id: a.id,
+    username: a.username ?? "",
+    profileImageUrl: a.profileImageUrl ?? null,
+    subscriptionTier: (a.subscriptionTier ?? "None") as XSubscriptionTier,
+  }));
+
+  return (
+    <DashboardPageWrapper
+      icon={Wand2}
+      title="Agentic Posting"
+      description="Drop a topic. AI handles the rest."
+    >
+      <AgenticPostingClient
+        xAccounts={typedAccounts}
+        hasVoiceProfile={!!dbUser?.voiceProfile}
+      />
+    </DashboardPageWrapper>
+  );
+}

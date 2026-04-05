@@ -1,6 +1,6 @@
 
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable, text, timestamp, boolean, integer, jsonb, decimal, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, boolean, integer, jsonb, decimal, index, uniqueIndex, varchar } from "drizzle-orm/pg-core";
 
 // ── Admin / Billing enums ────────────────────────────────────────────────────
 export const discountTypeEnum = pgEnum("discount_type", ["percentage", "fixed"]);
@@ -946,5 +946,48 @@ export const promoCodeRedemptionsRelations = relations(promoCodeRedemptions, ({ 
   user: one(user, {
     fields: [promoCodeRedemptions.userId],
     references: [user.id],
+  }),
+}));
+
+// ── Agentic Posts ────────────────────────────────────────────────────────────
+
+/**
+ * Stores full agentic generation sessions.
+ * Each row represents one pipeline run: research → strategy → write → images → review.
+ * The actual published content lives in the standard posts/tweets tables after approval.
+ */
+export const agenticPosts = pgTable("agentic_posts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  xAccountId: text("x_account_id").notNull().references(() => xAccounts.id, { onDelete: "cascade" }),
+  topic: text("topic").notNull(),
+  researchBrief: jsonb("research_brief"),
+  contentPlan: jsonb("content_plan"),
+  tweets: jsonb("tweets"),
+  qualityScore: integer("quality_score"),
+  summary: text("summary"),
+  status: varchar("status", { length: 30 }).default("generating").notNull(),
+  postId: text("post_id").references(() => posts.id),
+  correlationId: varchar("correlation_id", { length: 36 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
+}, (table) => [
+  index("agentic_posts_user_id_idx").on(table.userId),
+  index("agentic_posts_status_idx").on(table.status),
+  index("agentic_posts_x_account_id_idx").on(table.xAccountId),
+]);
+
+export const agenticPostsRelations = relations(agenticPosts, ({ one }) => ({
+  user: one(user, {
+    fields: [agenticPosts.userId],
+    references: [user.id],
+  }),
+  xAccount: one(xAccounts, {
+    fields: [agenticPosts.xAccountId],
+    references: [xAccounts.id],
+  }),
+  post: one(posts, {
+    fields: [agenticPosts.postId],
+    references: [posts.id],
   }),
 }));

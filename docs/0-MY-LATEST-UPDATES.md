@@ -1,5 +1,137 @@
 # Latest Updates
 
+## 2026-04-05: Agentic Posting — Phase 6: Vitest Tests ✅
+
+**Summary:** Full test coverage for the Agentic Posting feature — pipeline service, approve route, and type validation.
+
+**Files Created:**
+
+| File | Tests | What's covered |
+|------|-------|----------------|
+| `src/lib/services/agentic-pipeline.test.ts` | 5 | Happy path, too-broad detection, partial image failure, free-tier cap, progress event sequence |
+| `src/app/api/ai/agentic/[id]/approve/route.test.ts` | 7 | post_now, schedule, save_draft, 401, 404 ownership, 400 wrong status, 400 missing scheduledAt |
+| `src/lib/ai/agentic-types.test.ts` | 11 | ResearchBrief, ContentPlan, AgenticTweet, AgenticPost, PipelineProgressEvent shape validation |
+
+**Full suite result:** `pnpm test` → **317/317 passed** (31 test files, 8.33s)
+
+---
+
+## 2026-04-05: Agentic Posting — Phase 3: Image Generation Integration ✅
+
+**Summary:** Extended the image service with a high-level agentic wrapper that handles the full lifecycle: prompt enhancement → generation → download → persistent storage.
+
+**Changes Made:**
+
+| Item | Description | File(s) |
+|------|-------------|---------|
+| 3A | Added `"editorial"` to `ImageStyle` union + `buildStyledPrompt` modifier | `src/lib/services/ai-image.ts` |
+| 3A | Added `generateAgenticImage()` — prompt prefix, poll loop, download, `upload()` to storage, returns `{url}\|{error}` | `src/lib/services/ai-image.ts` |
+| 3B | Pipeline Step 4 now calls `generateAgenticImage({style:"editorial"})` — removed inline `pollImageUntilDone` | `src/lib/services/agentic-pipeline.ts` |
+| 3C | Review card image `alt` uses `imagePrompt` text; failed-image placeholder upgraded with icon + Retry | `src/components/ai/agentic-posting-client.tsx` |
+
+**Key design decisions:**
+- `generateAgenticImage` prepends `"Professional social media image, high quality, modern design: "` to every prompt
+- Images are persisted to `agentic-images/` folder via `upload()` — Vercel Blob in prod, `public/uploads/` in dev — so URLs survive Replicate's ephemeral CDN expiry
+- Returns `{ error: string }` (never throws) so a single failed image never aborts the rest of the pipeline
+
+**Status:** `pnpm run check` ✅ (0 errors, 0 warnings)
+
+---
+
+## 2026-04-05: Agentic Posting — Phase 5: AI Prompt Engineering ✅
+
+**Summary:** Extracted all pipeline AI prompts into a dedicated typed prompt library for maximum content quality.
+
+**Changes Made:**
+
+| Item | Description | File(s) |
+|------|-------------|---------|
+| New | `buildResearchPrompt` — viral angle analysis, broad-topic detection, MENA/Arabic cultural rules | `src/lib/ai/agentic-prompts.ts` |
+| New | `buildStrategyPrompt` — tier-aware format selection (computes Premium vs Free limits internally) | `src/lib/ai/agentic-prompts.ts` |
+| New | `buildWritingPrompt` — copywriting with voice profile injection, per-format char limits, Arabic guidance | `src/lib/ai/agentic-prompts.ts` |
+| New | `buildReviewPrompt` — 8-point editorial checklist, 1–10 scoring guide, `passed` logic | `src/lib/ai/agentic-prompts.ts` |
+| Update | Pipeline service wired to use all 4 functions; removed inline template strings and unused vars | `src/lib/services/agentic-pipeline.ts` |
+
+**Prompt quality highlights:**
+- Every prompt ends with "Return ONLY valid JSON. No markdown, no explanation, no preamble."
+- Arabic: instructs AI to write natively (not translate), use MENA cultural references, mix Arabic/English hashtags
+- Strategy: tier-aware format selection with engagement principles (threads for education, long posts for thought leadership)
+- Writing: separates hashtags from body text in the JSON schema; strict image-slot indexing; scroll-stopping hook rules
+- Review: 8-point checklist with per-tweet character compliance check; `passed: true` requires score ≥ 6 + no violations
+
+**Status:** `pnpm run check` ✅ (0 errors, 0 warnings)
+
+---
+
+## 2026-04-05: Agentic Posting — Phase 4: Edge Cases, Error Handling & Polish ✅
+
+**Summary:** Implemented Phase 4 — robustness, recovery, accessibility, and responsive design.
+
+**Changes Made:**
+
+| Item | Description | File(s) |
+|------|-------------|---------|
+| 4A | Too-broad topic detection: research step emits `needs_input` SSE + suggestion chips overlay | `agentic-types.ts`, `agentic-pipeline.ts`, `agentic-posting-client.tsx` |
+| 4B | Recovery on mount: GET `/api/ai/agentic` returns latest session; client auto-restores review/generating state | `agentic/route.ts`, `agentic-posting-client.tsx` |
+| 4C | 402 quota error: date-aware message with `reset_at` from plan gate response | `agentic-posting-client.tsx` |
+| 4D | Responsive layout: `lg:grid [1fr_320px]` on Review screen, sidebar Research Insights on desktop | `agentic-posting-client.tsx` |
+| 4E | Accessibility: `role="status" aria-live="polite"` on timeline, `role="article"` on tweet cards, `aria-label` on input/button/chips | `agentic-posting-client.tsx` |
+| 4F | Transitions: `animate-in fade-in duration-300` on all screen roots, spinner on Post Now while submitting | `agentic-posting-client.tsx` |
+
+**Status:** `pnpm run check` ✅ (0 errors, 0 warnings)
+
+---
+
+## 2026-04-05: Agentic Posting — Phase 2: Frontend Three-Screen Experience ✅
+
+**Summary:** Implemented Phase 2 of the Agentic Posting feature — the full UI at `/dashboard/ai/agentic`.
+
+**Changes Made:**
+
+| Item | Description | File(s) |
+|------|-------------|---------|
+| 2A | Server component page — fetches active X accounts + voice profile flag | `src/app/dashboard/ai/agentic/page.tsx` |
+| 2B | Sidebar entry — "Agentic Posting" as first item in AI Tools (isPro, Wand2 icon) | `src/components/dashboard/sidebar.tsx` |
+| 2C | Full 3-screen client component: Input → Processing → Review | `src/components/ai/agentic-posting-client.tsx` |
+
+**Three-Screen UX:**
+- **Screen 1 (Input):** Large topic input, suggestion chips (auto-submit on click), Generate button, Advanced options (tone/language/images/audience), account selector with XSubscriptionBadge
+- **Screen 2 (Processing):** Vertical timeline with step icons (✅/⏳/○/✕), per-step summaries, elapsed time, estimated remaining time, cancel with inline confirmation
+- **Screen 3 (Review):** Editable tweet cards with char counter, inline edit mode, Rewrite/Remove per tweet, AI-generated image preview with hover overlay, Research Insights collapsible, sticky action bar (Post Now / Schedule / Save Draft / Discard), success state with quick links
+
+**Status:** `pnpm run check` ✅ (0 errors, 0 warnings)
+
+---
+
+## 2026-04-05: Agentic Posting — Phase 1: Foundation ✅
+
+**Summary:** Implemented Phase 1 of the Agentic Posting feature (`docs/prompts/Agentic-Posting-Feature-Prompt.md`).
+
+**Changes Made:**
+
+| Item | Description | File(s) |
+|------|-------------|---------|
+| 1A | `agenticPosts` table added to Drizzle schema with 14 columns, 3 indexes, FK to user/xAccounts/posts | `src/lib/schema.ts` |
+| 1A | Migration `0038_tiny_rocket_raccoon.sql` generated and applied | `drizzle/0038_tiny_rocket_raccoon.sql` |
+| 1B | Pipeline service — 5-step sequential AI chain (Research → Strategy → Write → Images → Review) | `src/lib/services/agentic-pipeline.ts` |
+| Types | All pipeline types: `ResearchBrief`, `ContentPlan`, `AgenticTweet`, `AgenticPost`, `PipelineProgressEvent` | `src/lib/ai/agentic-types.ts` |
+| Plan gate | `canUseAgenticPosting` boolean added to all plan limits; Pro/Agency = true, Free = false | `src/lib/plan-limits.ts` |
+| Plan gate | `"agentic_posting"` added to `GatedFeature` union + `checkAgenticPostingAccessDetailed` gate function | `src/lib/middleware/require-plan.ts` |
+| 1C | `POST /api/ai/agentic` — SSE streaming orchestration endpoint | `src/app/api/ai/agentic/route.ts` |
+| 1D | `POST /api/ai/agentic/[id]/approve` — approve/schedule/draft endpoint | `src/app/api/ai/agentic/[id]/approve/route.ts` |
+| 1E | `POST /api/ai/agentic/[id]/regenerate` — single-tweet regeneration | `src/app/api/ai/agentic/[id]/regenerate/route.ts` |
+
+**Architecture:**
+- Pipeline reuses all existing infrastructure: OpenRouter AI, Replicate images, voice profile, AI quota, BullMQ publishing
+- SSE format: `data: {"step":"research","status":"in_progress"}` etc.
+- Image polling: 60s timeout, 2s interval, parallel via `Promise.allSettled()`
+- Approve creates standard `posts`/`tweets`/`media` rows in `db.transaction()` — same publishing pipeline as Composer
+- Plan gate: Pro/Agency only via `aiPreamble({ featureGate: checkAgenticPostingAccessDetailed })`
+
+**Status:** `pnpm run check` ✅ (0 errors, 0 warnings), migration applied ✅
+
+---
+
 ## 2026-04-05: Phase 2 — Compose Page Flow Optimization (P2-C, P2-D) ✅
 
 **Summary:** Implemented P2-C and P2-D from Phase 2 of `docs/ux-audits/compose-page-ux-recommendations.md`.

@@ -22,7 +22,8 @@ export type GatedFeature =
   | "bio_optimizer"
   | "inspiration_bookmarks"
   | "ai_image_model"
-  | "inspiration";
+  | "inspiration"
+  | "agentic_posting";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -369,6 +370,10 @@ export const checkBioOptimizerAccessDetailed = makeFeatureGate(
 
 export const checkInspirationAccessDetailed = makeFeatureGate(
   "inspiration", "canUseInspiration", "Inspiration feature is not available on your plan."
+);
+
+export const checkAgenticPostingAccessDetailed = makeFeatureGate(
+  "agentic_posting", "canUseAgenticPosting", "Agentic Posting is a Pro feature."
 );
 
 // ─── Image-specific gates ──────────────────────────────────────────────────────
