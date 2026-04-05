@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import {
   Wand2,
@@ -125,6 +125,56 @@ export function AiImageDialog({
   // Tracks auto-retry attempts so we retry transient errors once before surfacing to the user.
   const retryCountRef = useRef(0);
 
+  // P2-C: Progress tracking — estimated-time indicator for AI image generation.
+  const ESTIMATED_DURATION_MS = 15_000; // Progress bar fills over 15 s
+  const LONG_WAIT_THRESHOLD_MS = 25_000; // "Taking longer" message after 25 s
+  const [progressPercent, setProgressPercent] = useState(0);
+  const [isLongWait, setIsLongWait] = useState(false);
+  const generationStartRef = useRef<number | null>(null);
+  const progressRafRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
+
+  // Animate progress bar from 0→~90% over ESTIMATED_DURATION_MS using rAF.
+  const startProgressAnimation = useCallback(() => {
+    generationStartRef.current = Date.now();
+    setProgressPercent(0);
+    setIsLongWait(false);
+
+    const tick = () => {
+      if (!generationStartRef.current) return;
+      const elapsed = Date.now() - generationStartRef.current;
+      // Ease-out curve: fill quickly at first, slow down as we approach the estimate.
+      // Using a simple log curve that asymptotes toward 90%.
+      const ratio = Math.min(elapsed / ESTIMATED_DURATION_MS, 1);
+      const eased = 1 - Math.pow(1 - ratio, 2); // quadratic ease-out
+      const pct = Math.min(Math.round(eased * 90), 90); // cap at 90% — 100% reserved for completion
+      setProgressPercent(pct);
+
+      if (elapsed >= LONG_WAIT_THRESHOLD_MS) {
+        setIsLongWait(true);
+      }
+
+      if (elapsed < ESTIMATED_DURATION_MS * 3) {
+        // Keep animating for up to ~45 s, then stop updating
+        progressRafRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    progressRafRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  const stopProgressAnimation = useCallback(() => {
+    if (progressRafRef.current) {
+      cancelAnimationFrame(progressRafRef.current);
+      progressRafRef.current = null;
+    }
+    generationStartRef.current = null;
+  }, []);
+
+  // Clean up rAF on unmount
+  useEffect(() => {
+    return () => { stopProgressAnimation(); };
+  }, [stopProgressAnimation]);
+
   // Cancel any in-flight poll when the dialog closes.
   const cancelPolling = () => {
     if (pollTimerRef.current) {
@@ -132,6 +182,7 @@ export function AiImageDialog({
       pollTimerRef.current = null;
     }
     activePollingIdRef.current = null;
+    stopProgressAnimation();
   };
 
   // Reset state when dialog opens/closes
@@ -143,6 +194,8 @@ export function AiImageDialog({
       setImageHistory([]);
       setIsGenerating(false);
       setGenerationError(null);
+      setProgressPercent(0);
+      setIsLongWait(false);
       retryCountRef.current = 0;
     }
     onOpenChange(newOpen);
@@ -178,6 +231,7 @@ export function AiImageDialog({
           }
 
           // Exhausted retries or permanent failure — show inline error panel.
+          stopProgressAnimation();
           setGenerationError({
             message: data.error || "Image generation failed. Please try again.",
             retryable,
@@ -198,6 +252,8 @@ export function AiImageDialog({
           toast.info("Switching to backup model…", { duration: 3000 });
           pollForResult(newId);
         } else if (data.status === "succeeded") {
+          stopProgressAnimation();
+          setProgressPercent(100); // P2-C: jump to complete
           retryCountRef.current = 0;
           const generated: GeneratedImage = {
             imageUrl: data.imageUrl,
@@ -213,6 +269,7 @@ export function AiImageDialog({
           activePollingIdRef.current = null;
         }
       } catch {
+        stopProgressAnimation();
         setGenerationError({
           message: "Network error — could not check image status. Please try again.",
           retryable: true,
@@ -243,6 +300,7 @@ export function AiImageDialog({
     setGenerationError(null);
     retryCountRef.current = 0;
     setIsGenerating(true);
+    startProgressAnimation(); // P2-C: start estimated-time progress bar
 
     try {
       const requestBody: {
@@ -259,6 +317,7 @@ export function AiImageDialog({
         requestBody.tweetContent = tweetContent.trim();
       } else {
         toast.error("Please enter a prompt or write tweet content first.");
+        stopProgressAnimation();
         setIsGenerating(false);
         return;
       }
@@ -287,6 +346,7 @@ export function AiImageDialog({
         } else {
           toast.error(error.error || "Failed to start image generation");
         }
+        stopProgressAnimation();
         setIsGenerating(false);
         return;
       }
@@ -297,6 +357,7 @@ export function AiImageDialog({
       pollForResult(predictionId);
     } catch (error) {
       console.error("AI image generation error:", error);
+      stopProgressAnimation();
       toast.error("Failed to generate image. Please try again.");
       setIsGenerating(false);
     }
@@ -503,15 +564,37 @@ export function AiImageDialog({
             </div>
           )}
 
-          {/* Loading State */}
+          {/* P2-C: Loading State — estimated-time progress indicator */}
           {isGenerating && (
-            <div role="status" aria-label="Generating image" className="flex flex-col items-center justify-center py-8 space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">
-                Generating your image...
-              </p>
-              <p className="text-xs text-muted-foreground">
-                This may take 10–30 seconds
+            <div role="status" aria-label="Generating image" className="space-y-4 py-4">
+              {/* Progress bar */}
+              <div className="space-y-2">
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full rounded-full transition-all duration-300 ease-out",
+                      progressPercent >= 100
+                        ? "bg-green-500"
+                        : "bg-primary"
+                    )}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+                    {isLongWait
+                      ? "Taking longer than usual..."
+                      : "Generating your image..."}
+                  </span>
+                  <span>{progressPercent}%</span>
+                </div>
+              </div>
+              {/* Hint text */}
+              <p className="text-center text-xs text-muted-foreground/70">
+                {isLongWait
+                  ? "Still working — this sometimes happens with complex prompts."
+                  : "Usually takes 10–20 seconds."}
               </p>
             </div>
           )}

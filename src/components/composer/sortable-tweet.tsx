@@ -14,7 +14,6 @@ interface SortableTweetProps {
   removeTweet: (id: string) => void;
   removeTweetMedia: (id: string, url: string) => void;
   triggerFileUpload: (id: string) => void;
-  openAiTool: (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => void;
   openAiImage?: (tweetId: string) => void;
   onMove: (fromIndex: number, toIndex: number) => void;
   onClearTweet?: () => void;
@@ -23,7 +22,7 @@ interface SortableTweetProps {
   tier?: XSubscriptionTier | undefined;
 }
 
-export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiTool, openAiImage, onMove, onClearTweet, suggestedHashtags, onHashtagClick, tier }: SortableTweetProps) {
+export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiImage, onMove, onClearTweet, suggestedHashtags, onHashtagClick, tier }: SortableTweetProps) {
   const isFirst = index === 0;
   const {
     attributes,
@@ -43,7 +42,15 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+    // P4-F: role="group" + aria-label so screen readers announce "Tweet 2 of 5" etc.
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...(totalTweets > 1 && {
+        role: "group",
+        "aria-label": `Tweet ${index + 1} of ${totalTweets}`,
+      })}
+    >
         <TweetCard
             tweet={tweet}
             index={index}
@@ -53,7 +60,6 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
             removeTweet={removeTweet}
             removeTweetMedia={removeTweetMedia}
             triggerFileUpload={triggerFileUpload}
-            openAiTool={openAiTool}
             {...(openAiImage !== undefined && { openAiImage })}
             dragHandleProps={{...attributes, ...listeners}}
             isFirst={isFirst}

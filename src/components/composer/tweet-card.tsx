@@ -2,12 +2,13 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { X, Image as ImageIcon, Loader2, Sparkles, Hash, Smile, Wand2, ChevronUp, ChevronDown, GripVertical, Eraser } from "lucide-react";
+import { X, Image as ImageIcon, Loader2, Smile, Wand2, ChevronUp, ChevronDown, GripVertical, Eraser } from "lucide-react";
 import twitter from 'twitter-text';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { XSubscriptionBadge, XSubscriptionTier } from "@/components/ui/x-subscription-badge";
@@ -46,7 +47,6 @@ interface TweetCardProps {
   removeTweet: (id: string) => void;
   removeTweetMedia: (id: string, url: string) => void;
   triggerFileUpload: (id: string) => void;
-  openAiTool: (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => void;
   openAiImage?: (tweetId: string) => void;
   dragHandleProps?: any;
   onMoveUp?: () => void;
@@ -67,7 +67,6 @@ export function TweetCard({
   removeTweet,
   removeTweetMedia,
   triggerFileUpload,
-  openAiTool,
   openAiImage,
   dragHandleProps,
   onMoveUp,
@@ -79,6 +78,10 @@ export function TweetCard({
   tier,
 }: TweetCardProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [linkPreviewPending, setLinkPreviewPending] = useState(false);
+  // P4-B: Debounced char count for screen reader announcements — only announce every 10 chars
+  // to avoid flooding assistive technology on every keystroke.
+  const [announcedCharCount, setAnnouncedCharCount] = useState(0);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const getCharCount = (text: string) => twitter.parseTweet(text).weightedLength;
@@ -100,6 +103,14 @@ export function TweetCard({
     return "Long post";
   };
 
+  // P4-B: Only update the announced count when it crosses a 10-char boundary,
+  // or when the user is near the limit (within 20 chars) for timely warnings.
+  useEffect(() => {
+    const nearLimit = charCount > maxChars - 20;
+    const crossed10 = Math.floor(charCount / 10) !== Math.floor(announcedCharCount / 10);
+    if (nearLimit || crossed10) setAnnouncedCharCount(charCount);
+  }, [charCount, maxChars, announcedCharCount]);
+
   const onEmojiClick = (emojiData: EmojiClickData) => {
     updateTweet(tweet.id, tweet.content + emojiData.emoji);
     setShowEmojiPicker(false);
@@ -111,11 +122,18 @@ export function TweetCard({
     const firstUrl = urls[0];
 
     if (!firstUrl) {
+      setLinkPreviewPending(false);
       if (tweet.linkPreview) updateTweetPreview(tweet.id, null);
       return;
     }
 
-    if (tweet.linkPreview?.url === firstUrl) return;
+    if (tweet.linkPreview?.url === firstUrl) {
+      setLinkPreviewPending(false);
+      return;
+    }
+
+    // P2-B: signal pending immediately so skeleton appears during the 1s debounce
+    setLinkPreviewPending(true);
 
     const fetchPreview = async () => {
         try {
@@ -130,11 +148,16 @@ export function TweetCard({
             }
         } catch (e) {
             console.error(e);
+        } finally {
+            setLinkPreviewPending(false);
         }
     };
-    
+
     const timeout = setTimeout(fetchPreview, 1000);
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      setLinkPreviewPending(false);
+    };
   }, [tweet.content, tweet.id, updateTweetPreview, tweet.linkPreview]);
 
   return (
@@ -168,7 +191,7 @@ export function TweetCard({
           {tweet.media.length > 0 ? (
             <div className="mt-2 flex gap-2 flex-wrap">
               {tweet.media.map((m, i) => (
-                <div key={m.placeholderId ?? `${m.url}-${i}`} className="relative w-20 h-20 rounded-md overflow-hidden border">
+                <div key={m.placeholderId ?? `${m.url}-${i}`} className="relative w-20 h-20 rounded-md overflow-hidden border group/media">
                   {m.uploading ? (
                     <div className="w-full h-full flex items-center justify-center bg-muted">
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -181,7 +204,7 @@ export function TweetCard({
                   {!m.uploading && (
                     <button
                       type="button"
-                      className="absolute top-1 right-1 rounded-sm bg-background/80 p-0.5 hover:bg-background"
+                      className={cn("absolute top-1 right-1 rounded-sm bg-background/80 p-0.5 hover:bg-background transition-opacity", isDesktop ? "opacity-0 group-hover/media:opacity-100" : "opacity-100")}
                       onClick={() => removeTweetMedia(tweet.id, m.url)}
                       aria-label="Remove media"
                     >
@@ -205,13 +228,23 @@ export function TweetCard({
                  </div>
                  <button
                     type="button"
-                    className="absolute top-1 right-1 rounded-sm bg-background/80 p-0.5 hover:bg-background opacity-0 group-hover/preview:opacity-100 transition-opacity"
+                    className={cn("absolute top-1 right-1 rounded-sm bg-background/80 p-0.5 hover:bg-background transition-opacity", isDesktop ? "opacity-0 group-hover/preview:opacity-100" : "opacity-100")}
                     onClick={() => updateTweetPreview?.(tweet.id, null)}
                     aria-label="Dismiss link preview"
                  >
                     <X className="h-4 w-4" />
                  </button>
              </div>
+          ) : linkPreviewPending ? (
+            // P2-B: skeleton during the 1s debounce delay before link preview fetch
+            <div className="mt-2 border rounded-md overflow-hidden" aria-label="Loading link preview">
+              <Skeleton className="h-36 w-full rounded-none" />
+              <div className="p-3 space-y-2">
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-1/4" />
+              </div>
+            </div>
           ) : null}
 
           {/* H8: Inline hashtag chips — appear directly under the tweet being composed */}
@@ -235,9 +268,10 @@ export function TweetCard({
         <CardFooter className="flex justify-between items-center border-t pt-3">
           <TooltipProvider delayDuration={300}>
             <div className="flex gap-1">
-              {/* Mobile-only reorder buttons — desktop uses the drag handle */}
+              {/* P4-C: Reorder buttons visible on all screen sizes for keyboard accessibility.
+                  Desktop users can use these as a keyboard alternative to the drag handle. */}
               {totalTweets > 1 && (
-                <div className="flex md:hidden gap-0.5 me-1">
+                <div className="flex gap-0.5 me-1">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -304,6 +338,8 @@ export function TweetCard({
                           size="sm"
                           className="h-8 px-2 gap-1.5 text-primary"
                           aria-label="Add emoji"
+                          aria-haspopup="dialog"
+                          aria-expanded={showEmojiPicker}
                         >
                           <Smile className="h-4 w-4" />
                           <span className="text-xs hidden sm:inline">Emoji</span>
@@ -325,6 +361,8 @@ export function TweetCard({
                         size="sm"
                         className="h-8 px-2 gap-1.5 text-primary"
                         aria-label="Add emoji"
+                        aria-haspopup="dialog"
+                        aria-expanded={showEmojiPicker}
                         onClick={() => setShowEmojiPicker(true)}
                       >
                         <Smile className="h-4 w-4" />
@@ -352,38 +390,6 @@ export function TweetCard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 gap-1.5 text-primary"
-                    onClick={() => openAiTool("rewrite", tweet.id)}
-                    aria-label="Rewrite with AI"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    <span className="text-xs hidden sm:inline">Rewrite</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Rewrite with AI</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 gap-1.5 text-primary"
-                    onClick={() => openAiTool("hashtags", tweet.id)}
-                    aria-label="Generate hashtags"
-                  >
-                    <Hash className="h-4 w-4" />
-                    <span className="text-xs hidden sm:inline">Hashtags</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Generate Hashtags</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
                     className="h-8 px-2 gap-1.5 text-muted-foreground hover:text-destructive"
                     onClick={onClearTweet}
                     disabled={tweet.content === "" && tweet.media.length === 0}
@@ -401,19 +407,27 @@ export function TweetCard({
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end gap-0.5">
               <div className="flex items-center gap-2">
+                {/* P4-B: Visual counter — no aria-live (updates every keystroke, too noisy) */}
                 <span
-                  role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                  aria-label={`${charCount} of ${maxChars} characters used`}
+                  aria-hidden="true"
                   className={cn(
                     "text-sm font-medium tabular-nums",
                     isOverLimit(tweet.content) ? "text-destructive" :
-                    isOverStandardLimit(tweet.content) ? "text-amber-500" :
+                    // P4-G: amber-700/amber-400 passes WCAG AA contrast on both light and dark
+                    isOverStandardLimit(tweet.content) ? "text-amber-700 dark:text-amber-400" :
                     "text-muted-foreground"
                   )}
                 >
                   {charCount} / {maxChars.toLocaleString()}
+                </span>
+                {/* P4-B: Off-screen aria-live span — only updates every 10 chars or near limit */}
+                <span
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  className="sr-only"
+                >
+                  {announcedCharCount} of {maxChars} characters
                 </span>
                 {canPostLongContent(tier) && tier && !isThreadMode && (
                   <XSubscriptionBadge tier={tier} size="sm" />
@@ -426,17 +440,17 @@ export function TweetCard({
                   <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden relative">
                     <div
                       className={cn(
-                        "h-full rounded-full transition-all",
+                        "h-full rounded-full transition-all [width:var(--bar-width)]",
                         isOverLimit(tweet.content) ? "bg-destructive" :
-                        isOverStandardLimit(tweet.content) ? "bg-amber-500" :
+                        isOverStandardLimit(tweet.content) ? "bg-amber-600 dark:bg-amber-500" :
                         "bg-primary/40"
                       )}
-                      style={{ width: `${Math.min(100, (charCount / maxChars) * 100)}%` }}
+                      style={{ "--bar-width": `${Math.min(100, (charCount / maxChars) * 100)}%` } as React.CSSProperties}
                     />
                     {/* 280 milestone tick */}
                     <div
-                      className="absolute top-0 h-full w-px bg-muted-foreground/30"
-                      style={{ left: `${(280 / maxChars) * 100}%` }}
+                      className="absolute top-0 h-full w-px bg-muted-foreground/30 [left:var(--tick-left)]"
+                      style={{ "--tick-left": `${(280 / maxChars) * 100}%` } as React.CSSProperties}
                       title="Standard tweet length (280)"
                     />
                   </div>
@@ -445,9 +459,9 @@ export function TweetCard({
                   </span>
                 </div>
               )}
-              {/* Thread mode per-tweet warning */}
+              {/* Thread mode per-tweet warning — P4-G: amber-700/amber-400 for WCAG AA contrast */}
               {isThreadMode && isOverStandardLimit(tweet.content) && (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                <p className="text-[11px] text-amber-700 dark:text-amber-400" role="alert">
                   Exceeds 280 chars — threads use standard tweet length
                 </p>
               )}
@@ -457,7 +471,7 @@ export function TweetCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="touch-target text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                className={cn("touch-target text-destructive hover:bg-destructive/10 transition-opacity", isDesktop ? "opacity-0 group-hover:opacity-100" : "opacity-100")}
                 onClick={() => removeTweet(tweet.id)}
                 aria-label={`Remove tweet ${index + 1}`}
               >

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect, useId, lazy, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -28,29 +28,32 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AiImageDialog } from "@/components/composer/ai-image-dialog";
-import { AiLengthSelector } from "@/components/composer/ai-length-selector";
+import { AiToolsPanel } from "@/components/composer/ai-tools-panel";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
+import { ComposerOnboardingHint } from "@/components/composer/composer-onboarding-hint";
 import { InspirationPanel } from "@/components/composer/inspiration-panel";
 import { SortableTweet } from "@/components/composer/sortable-tweet";
 import { TargetAccountsSelect, SocialAccountLite } from "@/components/composer/target-accounts-select";
-import { TemplatesDialog } from "@/components/composer/templates-dialog";
+// P4-E: Lazy-load TemplatesDialog — it's 834 lines and only needed on user interaction
+const TemplatesDialog = lazy(() =>
+  import("@/components/composer/templates-dialog").then((m) => ({ default: m.TemplatesDialog }))
+);
 import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSession } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
@@ -93,22 +96,6 @@ interface PlanLimitPayload {
   trial_active?: boolean;
   reset_at?: string | null;
 }
-
-const TIME_SLOTS = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "30";
-  const value = `${String(h).padStart(2, "0")}:${m}`;
-  const period = h < 12 ? "AM" : "PM";
-  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return { value, label: `${displayH}:${m} ${period}`, hour: h };
-});
-
-const TIME_SLOT_GROUPS = [
-  { label: "Morning", slots: TIME_SLOTS.filter(s => s.hour >= 5 && s.hour < 12) },
-  { label: "Afternoon", slots: TIME_SLOTS.filter(s => s.hour >= 12 && s.hour < 17) },
-  { label: "Evening", slots: TIME_SLOTS.filter(s => s.hour >= 17 && s.hour < 21) },
-  { label: "Night", slots: TIME_SLOTS.filter(s => s.hour >= 21 || s.hour < 5) },
-];
 
 function formatTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -159,18 +146,48 @@ export function Composer() {
   const [aiHook, setAiHook] = useState("");
   const pendingInspirationRef = useRef<{ topic: string; hook: string } | null>(null);
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
-  const [aiTone, setAiTone] = useState("professional");
+  // P3-A: Restore AI tone + language from localStorage (session language takes priority once loaded)
+  const [aiTone, setAiTone] = useState<string>(() => {
+    if (typeof window === "undefined") return "professional";
+    try {
+      const saved = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
+      return saved.tone ?? "professional";
+    } catch {
+      return "professional";
+    }
+  });
   const [aiCount, setAiCount] = useState([3]);
-  const [aiLanguage, setAiLanguage] = useState("ar");
+  const [aiLanguage, setAiLanguage] = useState<string>(() => {
+    if (typeof window === "undefined") return "en";
+    try {
+      const saved = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
+      if (saved.language) return saved.language;
+    } catch {
+      // fall through to browser detection
+    }
+    const browserLang = navigator.language.split("-")[0] ?? "en";
+    const supported: string[] = LANGUAGES.map((l) => l.code);
+    return supported.includes(browserLang) ? browserLang : "en";
+  });
   const [aiLengthOption, setAiLengthOption] = useState<"short" | "medium" | "long">("short");
   const [aiRewriteText, setAiRewriteText] = useState("");
 
-  // Sync AI language with user's preferred language once session loads
+  // Sync AI language with user's preferred language once session loads (overrides localStorage)
   useEffect(() => {
-    if (session?.user && "language" in session.user) {
-      setAiLanguage((session.user as any).language || "ar");
+    if (session?.user && "language" in session.user && (session.user as any).language) {
+      setAiLanguage((session.user as any).language);
     }
   }, [session?.user]);
+
+  // P3-A: Persist AI tone + language preferences across sessions
+  useEffect(() => {
+    try {
+      const existing = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
+      localStorage.setItem("astra-ai-prefs", JSON.stringify({ ...existing, tone: aiTone, language: aiLanguage }));
+    } catch {
+      // localStorage unavailable — non-critical
+    }
+  }, [aiTone, aiLanguage]);
 
   const [aiAddNumbering, setAiAddNumbering] = useState(true);
   const [aiTranslateTarget, setAiTranslateTarget] = useState<string>("en");
@@ -184,12 +201,19 @@ export function Composer() {
   // Overwrite confirmation (C1)
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
   const [pendingTweets, setPendingTweets] = useState<TweetDraft[] | null>(null);
+  // P2-F: Save original tweets before streaming so we can revert on overwrite rejection
+  const preStreamTweetsRef = useRef<TweetDraft[] | null>(null);
+  // P2-F: Track streaming progress and pending AI stream confirmation
+  const [streamingTweetCount, setStreamingTweetCount] = useState(0);
+  const [pendingAiStreamGenerate, setPendingAiStreamGenerate] = useState(false);
 
   // Preview carousel index (H6)
   const [previewIndex, setPreviewIndex] = useState(0);
 
   // Auto-save timestamp (H5)
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  // P0-A: Delay showing the saved label by 5s to avoid "just now" appearing prematurely
+  const [showSavedLabel, setShowSavedLabel] = useState(false);
 
   // AI Image Dialog State
   const [isAiImageOpen, setIsAiImageOpen] = useState(false);
@@ -387,6 +411,27 @@ export function Composer() {
     return () => clearTimeout(timeout);
   }, [tweets]);
 
+  // P0-A: Only show the "Auto-saved" label after a 5s delay to avoid premature "just now"
+  useEffect(() => {
+    if (!lastSavedAt) { setShowSavedLabel(false); return; }
+    setShowSavedLabel(false);
+    const t = setTimeout(() => setShowSavedLabel(true), 5000);
+    return () => clearTimeout(t);
+  }, [lastSavedAt]);
+
+  // P0-E + P2-D: Warn user before closing tab with unsaved content OR active uploads
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const hasUnsavedContent = tweets.some((t) => t.content.trim().length > 0);
+      const hasUploadingMedia = tweets.some((t) => t.media.some((m) => m.uploading));
+      if (hasUnsavedContent || hasUploadingMedia) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [tweets]);
+
   // Load draft from database when ?draft=<id> is present in the URL
   useEffect(() => {
     if (!draftId) return;
@@ -500,10 +545,12 @@ export function Composer() {
   };
 
   const addTweet = () => {
-    setTweets([
+    // P3-B: When a thread reaches 3+ tweets and auto-numbering is on, apply 1/N prefixes
+    const nextTweets: typeof tweets = [
       ...tweets,
       { id: Math.random().toString(36).substr(2, 9), content: "", media: [] },
-    ]);
+    ];
+    setTweets(aiAddNumbering && nextTweets.length >= 3 ? applyNumbering(nextTweets) : nextTweets);
   };
 
   const removeTweet = (id: string) => {
@@ -572,6 +619,22 @@ export function Composer() {
     });
   };
 
+  const removeNumbering = (drafts: TweetDraft[]) =>
+    drafts.map((t) => ({ ...t, content: t.content.replace(/^\s*\d+\/\d+\s+/g, "") }));
+
+  // True when every non-empty tweet starts with the N/M prefix pattern
+  const isTweetsNumbered =
+    tweets.length > 1 && tweets.every((t) => /^\d+\/\d+\s/.test(t.content));
+
+  // P3-D: Detect dominant language of tweet content to suggest a smart translate target
+  const detectTranslateTarget = (content: string): string => {
+    const arabicChars = (content.match(/[\u0600-\u06FF]/g) ?? []).length;
+    const latinChars = (content.match(/[a-zA-Z]/g) ?? []).length;
+    if (arabicChars > latinChars) return "en"; // Arabic content → suggest English
+    if (arabicChars === 0 && latinChars > 0) return "ar"; // Latin content → suggest Arabic
+    return aiLanguage === "ar" ? "en" : "ar"; // fallback
+  };
+
   const openAiTool = (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => {
     setAiTool(tool);
     setGeneratedHashtags([]);
@@ -583,7 +646,13 @@ export function Composer() {
     } else {
       setAiTargetTweetId(null);
       setAiRewriteText("");
-      setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
+      if (tool === "translate") {
+        // P3-D: Smart default — infer best target language from first tweet's content
+        const firstContent = tweets.find((t) => t.id === (tweetId ?? activeTweetId ?? tweets[0]?.id))?.content ?? tweets[0]?.content ?? "";
+        setAiTranslateTarget(detectTranslateTarget(firstContent));
+      } else {
+        setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
+      }
       if (tool === "thread" && !aiTopic) {
         const existingContent = tweets[0]?.content?.trim();
         if (existingContent) {
@@ -691,8 +760,8 @@ export function Composer() {
     }));
     // Store AI meta so it can be embedded when saving as a template
     setLastTemplateAiMeta(aiMeta ?? null);
-    // C1: ask before overwriting existing content
-    if (tweets.some((t) => t.content.trim())) {
+    // C1: ask before overwriting existing content (threshold: 50+ chars)
+    if (tweets.some((t) => t.content.trim().length > 50)) {
       setPendingTweets(newTweets);
       setConfirmOverwrite(true);
       return;
@@ -702,7 +771,7 @@ export function Composer() {
     toast.success("Template applied!");
   };
 
-  const handleAiRun = async (overrides?: { topic?: string; hook?: string }) => {
+  const handleAiRun = async (overrides?: { topic?: string; hook?: string; skipOverwriteCheck?: boolean }) => {
     setIsGenerating(true);
     try {
       const runTopic = overrides?.topic ?? aiTopic;
@@ -710,6 +779,17 @@ export function Composer() {
       if (aiTool === "thread") {
         if (!runTopic) throw new Error("Topic is required");
         const isSinglePost = tweets.length === 1;
+
+        // P2-F: Pre-check overwrite guard BEFORE starting API call
+        // Show confirmation dialog if user has substantive content
+        if (!isSinglePost && !overrides?.skipOverwriteCheck && tweets.some((t) => t.content.trim().length > 50)) {
+          preStreamTweetsRef.current = [...tweets];
+          setPendingAiStreamGenerate(true);
+          setConfirmOverwrite(true);
+          setIsGenerating(false);
+          return;
+        }
+
         const res = await fetch("/api/ai/thread", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -738,7 +818,7 @@ export function Composer() {
         if (!res.body) throw new Error("No response body");
 
         if (isSinglePost) {
-          // Single-post mode: plain text response
+          // Single-post mode: plain text response (unchanged)
           const text = await res.text();
           if (!text || text.trim().length === 0) throw new Error("No content generated");
 
@@ -754,12 +834,16 @@ export function Composer() {
           return;
         }
 
-        // Thread mode: Read SSE stream — the endpoint returns text/event-stream, not JSON
+        // P2-F: Thread mode — stream each tweet directly into composer cards in real-time
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let sseBuffer = "";
         let streamDone = false;
-        const collectedTweets: string[] = [];
+
+        // Start with empty cards — streaming will populate them one by one
+        setTweets([]);
+        setPreviewIndex(0);
+        setStreamingTweetCount(0);
 
         while (!streamDone) {
           const { done, value } = await reader.read();
@@ -789,7 +873,17 @@ export function Composer() {
               }
               if (event.done) { streamDone = true; break; }
               if (typeof event.tweet === "string" && event.tweet.length > 0) {
-                collectedTweets.push(event.tweet);
+                // P2-F: Stream this tweet into composer immediately
+                const newDraft: TweetDraft = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  content: event.tweet,
+                  media: [],
+                };
+                setTweets((prev) => {
+                  const updated = [...prev, newDraft];
+                  return aiAddNumbering ? applyNumbering(updated) : updated;
+                });
+                setStreamingTweetCount((c) => c + 1);
               }
             } catch {
               // partial line — skip
@@ -797,25 +891,10 @@ export function Composer() {
           }
         }
 
-        if (collectedTweets.length === 0) throw new Error("No tweets generated");
-
-        let newTweets: TweetDraft[] = collectedTweets.map((content) => ({
-          id: Math.random().toString(36).substr(2, 9),
-          content,
-          media: [],
-        }));
-        if (aiAddNumbering) {
-          newTweets = applyNumbering(newTweets);
-        }
-        // C1: ask before overwriting existing content
-        if (tweets.some((t) => t.content.trim())) {
-          setPendingTweets(newTweets);
-          setConfirmOverwrite(true);
-          return;
-        }
-        setTweets(newTweets);
-        setPreviewIndex(0);
+        // Finalize — close panel after a brief delay so user sees the last card appear
+        await new Promise((r) => setTimeout(r, 400));
         setIsAiOpen(false);
+        preStreamTweetsRef.current = null;
         toast.success("Thread generated!");
         return;
       }
@@ -932,8 +1011,9 @@ export function Composer() {
         }
         const data = await res.json();
         setGeneratedHashtags(data.hashtags || []);
+        setIsAiOpen(false); // P2-A: close panel — hashtags appear as inline chips only
         toast.success("Hashtags generated!");
-        return; // Keep dialog open
+        return;
       }
 
       const targetId = aiTargetTweetId;
@@ -967,6 +1047,11 @@ export function Composer() {
       setAiHook("");
     }
   };
+
+  // NOTE: generatedHashtags is cleared at the start of every openAiTool() call.
+  // A useEffect that cleared them on panel close was removed here because it
+  // ran synchronously in the same render batch as setIsAiOpen(false) in the
+  // hashtags branch — wiping chips before they ever rendered.
 
   // Auto-trigger AI generation when an inspiration idea is selected
   useEffect(() => {
@@ -1177,20 +1262,6 @@ export function Composer() {
   const safePreviewIndex = Math.min(previewIndex, tweets.length - 1);
   const previewTweet = tweets[safePreviewIndex];
 
-  const aiDialogTitle =
-    aiTool === "thread" ? "AI Thread Writer" :
-    aiTool === "hook" ? "AI Hook Generator" :
-    aiTool === "cta" ? "AI CTA Generator" :
-    aiTool === "translate" ? "AI Translate Thread" :
-    aiTool === "hashtags" ? "AI Hashtag Generator" : "AI Rewrite";
-
-  const aiDialogDesc =
-    aiTool === "thread" ? "Generate a thread about any topic instantly." :
-    aiTool === "hook" ? "Generate a strong first tweet to start your thread." :
-    aiTool === "cta" ? "Generate a short call-to-action to end your thread." :
-    aiTool === "translate" ? "Translate the entire thread while keeping tweet limits." :
-    aiTool === "hashtags" ? "Generate trending hashtags for your tweet." : "Rewrite a tweet in a new tone.";
-
   const isAiGenerateDisabled =
     isGenerating ||
     (aiTool === "thread" && !aiTopic) ||
@@ -1199,173 +1270,34 @@ export function Composer() {
     (aiTool === "translate" && !tweets.some((t) => t.content.trim())) ||
     (aiTool === "hashtags" && !(tweets.find((t) => t.id === aiTargetTweetId)?.content ?? "").trim());
 
-  const aiTabsGenerateContent = (
-    <TabsContent value="generate" className="flex-1 overflow-y-auto py-4 space-y-4">
-      {(aiTool === "thread" || aiTool === "hook") && (
-        <div className="space-y-2">
-          <Label>Topic</Label>
-          <Input
-            placeholder="e.g. Productivity tips for developers"
-            value={aiTopic}
-            onChange={(e) => setAiTopic(e.target.value)}
-          />
-        </div>
-      )}
-
-      {aiTool === "rewrite" && (
-        <div className="space-y-2">
-          <Label>Tweet</Label>
-          <Textarea
-            value={aiRewriteText}
-            onChange={(e) => setAiRewriteText(e.target.value)}
-            className="min-h-[120px]"
-            placeholder="Enter or paste the tweet text you want to rewrite..."
-          />
-          {!aiRewriteText.trim() && (
-            <p className="text-xs text-muted-foreground italic">
-              Enter text above to enable rewrite
-            </p>
-          )}
-        </div>
-      )}
-
-      {aiTool === "hashtags" && (
-        <div className="space-y-2">
-          <Label>Tweet content</Label>
-          <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm min-h-[60px]">
-            {tweets.find((t) => t.id === aiTargetTweetId)?.content || (
-              <span className="text-xs italic text-muted-foreground">
-                No content yet — type something in the tweet editor first
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {aiTool === "translate" && (
-        <div className="space-y-2">
-          <Label>Translate to</Label>
-          <Select value={aiTranslateTarget} onValueChange={setAiTranslateTarget}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LANGUAGES.map(l => (
-                <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            Source language is auto-detected
-          </p>
-          {!tweets.some((t) => t.content.trim()) && (
-            <p className="text-xs text-muted-foreground italic">
-              Add content to your tweet(s) to enable translation
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Tone</Label>
-          <Select value={aiTone} onValueChange={setAiTone}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="professional">Professional</SelectItem>
-              <SelectItem value="casual">Casual</SelectItem>
-              <SelectItem value="humorous">Funny</SelectItem>
-              <SelectItem value="educational">Educational</SelectItem>
-              <SelectItem value="inspirational">Inspirational</SelectItem>
-              <SelectItem value="viral">Viral</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {aiTool !== "translate" && (
-        <div className="space-y-2">
-          <Label>Language</Label>
-          <Select value={aiLanguage} onValueChange={setAiLanguage}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LANGUAGES.map(l => (
-                <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        )}
-      </div>
-
-      {/* AI Length Selector — only for Thread tool in single-post mode (not thread) */}
-      {aiTool === "thread" && tweets.length === 1 && (
-        <AiLengthSelector
-          selectedLength={aiLengthOption}
-          onLengthChange={setAiLengthOption}
-          xSubscriptionTier={selectedTier}
-        />
-      )}
-
-      {aiTool === "thread" && tweets.length > 1 && (
-        <>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label>Length (Tweets)</Label>
-              <span className="text-sm text-muted-foreground">{aiCount[0]}</span>
-            </div>
-            <Slider
-              value={aiCount}
-              onValueChange={setAiCount}
-              min={3}
-              max={15}
-              step={1}
-            />
-          </div>
-
-          <div className="flex items-center justify-between rounded-md border px-3 py-2">
-            <span className="text-sm">Add numbering (1/N)</span>
-            <Button
-              type="button"
-              variant={aiAddNumbering ? "default" : "outline"}
-              size="sm"
-              onClick={() => setAiAddNumbering((v) => !v)}
-            >
-              {aiAddNumbering ? "On" : "Off"}
-            </Button>
-          </div>
-        </>
-      )}
-
-      {aiTool === "hashtags" && generatedHashtags.length > 0 && (
-        <div className="space-y-3">
-          <Label>Generated Hashtags (Click to add)</Label>
-          <div className="flex flex-wrap gap-2">
-            {generatedHashtags.map((tag) => (
-              <Button
-                key={tag}
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  if (aiTargetTweetId) {
-                    const t = tweets.find(x => x.id === aiTargetTweetId);
-                    if (t) updateTweet(aiTargetTweetId, `${t.content} ${tag}`.trim());
-                    toast.success(`Added ${tag}`);
-                  }
-                }}
-              >
-                {tag}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-    </TabsContent>
-  );
-
+  // P3-C: Global keyboard shortcuts — must be called after handleSubmit is declared
+  useKeyboardShortcuts([
+    {
+      key: "Enter",
+      metaOrCtrl: true,
+      label: "⌘↵ Publish",
+      handler: () => {
+        if (hasContent && !isSubmitting) handleSubmit(scheduledDate ? "schedule" : "publish_now");
+      },
+    },
+    {
+      key: "d",
+      metaOrCtrl: true,
+      label: "⌘D Draft",
+      handler: () => {
+        if (hasContent && !isSubmitting) handleSubmit("draft");
+      },
+    },
+    {
+      key: "k",
+      metaOrCtrl: true,
+      label: "⌘K AI",
+      handler: () => {
+        if (!isAiOpen) openAiTool("thread");
+        else setIsAiOpen(false);
+      },
+    },
+  ]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1382,6 +1314,8 @@ export function Composer() {
 
       {/* Editor Column */}
       <div className="lg:col-span-2 space-y-4">
+        {/* P3-E: First-time composer hint overlay */}
+        <ComposerOnboardingHint />
         {/* W4: Inspiration attribution banner */}
         {sourceAttribution && (
           <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-sm">
@@ -1458,7 +1392,6 @@ export function Composer() {
                         removeTweet={removeTweet}
                         removeTweetMedia={removeTweetMedia}
                         triggerFileUpload={triggerFileUpload}
-                        openAiTool={openAiTool}
                         openAiImage={openAiImageDialog}
                         onMove={moveTweet}
                         onClearTweet={() => clearTweet(tweet.id)}
@@ -1520,109 +1453,152 @@ export function Composer() {
           </div>
         )}
 
-        {lastSavedAt && (
+        {lastSavedAt && showSavedLabel && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground/60 justify-end px-1">
             <Clock className="h-3 w-3" />
             <span>Auto-saved · {formatTimeAgo(lastSavedAt)}</span>
           </div>
         )}
-        <Button
-          variant="outline"
-          className="w-full py-6 border-dashed"
-          onClick={addTweet}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {tweets.length === 1 ? "Convert to Thread" : "Add to Thread"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 py-6 border-dashed"
+            onClick={addTweet}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {tweets.length === 1 ? "Convert to Thread" : "Add to Thread"}
+          </Button>
+          {/* P3-B: Auto-numbering status chip — visible when thread has 3+ tweets */}
+          {tweets.length >= 3 && (
+            <Button
+              variant={aiAddNumbering ? "secondary" : "ghost"}
+              size="sm"
+              className="shrink-0 gap-1.5 text-xs"
+              onClick={() => {
+                const next = !aiAddNumbering;
+                setAiAddNumbering(next);
+                setTweets(next ? applyNumbering([...tweets]) : removeNumbering([...tweets]));
+              }}
+              title={aiAddNumbering ? "Auto-numbering on — click to disable" : "Auto-numbering off — click to enable"}
+            >
+              <ListOrdered className="h-3.5 w-3.5" />
+              {aiAddNumbering ? "1/N on" : "1/N off"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Sidebar Column */}
       <div className="space-y-4">
-        {/* C3: Desktop — inline AI panel replaces content tools card when open */}
-        {isAiOpen && isDesktop ? (
-          <Card>
-            <CardContent className="pt-4">
-              <Tabs defaultValue="generate" className="flex flex-col">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="min-w-0 pr-2">
-                    <h3 className="font-semibold text-sm truncate">{aiDialogTitle}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{aiDialogDesc}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => setIsAiOpen(false)}
-                      aria-label="Close AI panel"
-                    >
-                      <XIcon className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                {aiTabsGenerateContent}
-                <div className="flex justify-end gap-2 pt-3 border-t mt-2">
-                  <Button variant="outline" size="sm" onClick={() => setIsAiOpen(false)}>Cancel</Button>
-                  <Button size="sm" onClick={() => handleAiRun()} disabled={isAiGenerateDisabled}>
-                    {isGenerating && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
-                    Generate
-                  </Button>
-                </div>
-              </Tabs>
-            </CardContent>
-          </Card>
-        ) : (
-          /* Card 1: Content Tools (H1) */
-          <Card>
-            <CardContent className="pt-5 space-y-3">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Content Tools</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => openAiTool("thread")}
-                >
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  AI Writer
-                </Button>
-                <InspirationPanel
-                  language={aiLanguage}
-                  onSelect={(topic, hook) => {
-                    pendingInspirationRef.current = { topic, hook };
-                    setAiTopic(topic);
-                    setAiHook(hook);
-                    openAiTool("thread");
+        {/* Card 1: Content Tools — always visible; AI panel expands inline on desktop (P1-B) */}
+        <Card>
+          <CardContent className="pt-5 space-y-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Content Tools</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => openAiTool("thread")}
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+                AI Writer
+              </Button>
+              <InspirationPanel
+                language={aiLanguage}
+                onSelect={(topic, hook) => {
+                  pendingInspirationRef.current = { topic, hook };
+                  setAiTopic(topic);
+                  setAiHook(hook);
+                  openAiTool("thread");
+                }}
+              />
+            </div>
+            {/* P4-E: Suspense boundary — TemplatesDialog is lazy-loaded to reduce initial bundle */}
+            <Suspense fallback={
+              <Button variant="outline" size="sm" className="w-full gap-2 text-muted-foreground" disabled>
+                <FileText className="h-4 w-4" />Templates
+              </Button>
+            }>
+              <TemplatesDialog onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)} defaultLanguage={aiLanguage} />
+            </Suspense>
+            {/* H4: Secondary AI tools — 2×2 grid including Hashtags (D5) */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook")}>
+                <Zap className="h-3.5 w-3.5" />Hook
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("cta")}>
+                <Megaphone className="h-3.5 w-3.5" />CTA
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("translate")}>
+                <Globe className="h-3.5 w-3.5" />Translate
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}>
+                <Hash className="h-3.5 w-3.5" />Hashtags
+              </Button>
+            </div>
+            <Button
+              variant={isTweetsNumbered ? "secondary" : "ghost"}
+              size="sm"
+              className="w-full justify-start gap-2 text-muted-foreground text-xs"
+              onClick={() =>
+                setTweets(isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets]))
+              }
+            >
+              <ListOrdered className="h-3.5 w-3.5" />
+              {isTweetsNumbered ? "Remove numbering" : "Number tweets (1/N)"}
+            </Button>
+            {/* P1-E: Save as Template — moved from Publishing card */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 text-muted-foreground hover:text-foreground"
+              onClick={() => setIsSaveTemplateOpen(true)}
+              disabled={isSubmitting}
+            >
+              <BookmarkPlus className="h-4 w-4" />
+              Save as Template
+            </Button>
+            {/* P1-B/C: Inline AI panel expands here on desktop when open */}
+            {isAiOpen && isDesktop && (
+              <div className="pt-2 border-t">
+                <AiToolsPanel
+                  aiTool={aiTool}
+                  onToolChange={(tool) => {
+                    setAiTool(tool);
+                    setGeneratedHashtags([]);
+                    if (tool === "hashtags") {
+                      setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
+                    }
                   }}
+                  aiTopic={aiTopic}
+                  onTopicChange={setAiTopic}
+                  aiTone={aiTone}
+                  onToneChange={setAiTone}
+                  aiLanguage={aiLanguage}
+                  onLanguageChange={setAiLanguage}
+                  aiCount={aiCount}
+                  onCountChange={setAiCount}
+                  aiAddNumbering={aiAddNumbering}
+                  onAddNumberingChange={setAiAddNumbering}
+                  aiLengthOption={aiLengthOption}
+                  onLengthOptionChange={setAiLengthOption}
+                  selectedTier={selectedTier ?? null}
+                  tweets={tweets}
+                  aiRewriteText={aiRewriteText}
+                  onRewriteTextChange={setAiRewriteText}
+                  aiTranslateTarget={aiTranslateTarget}
+                  onTranslateTargetChange={setAiTranslateTarget}
+                  aiTargetTweetId={aiTargetTweetId}
+                  isGenerating={isGenerating}
+                  streamingTweetCount={streamingTweetCount}
+                  {...(typeof aiCount[0] === "number" && { totalTweetCount: aiCount[0] })}
+                  onGenerate={handleAiRun}
+                  onClose={() => setIsAiOpen(false)}
                 />
               </div>
-              <TemplatesDialog onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)} defaultLanguage={aiLanguage} />
-              {/* H4: Secondary AI tools — 2×2 grid including Hashtags (D5) */}
-              <div className="grid grid-cols-2 gap-1.5">
-                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook")}>
-                  <Zap className="h-3.5 w-3.5" />Hook
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("cta")}>
-                  <Megaphone className="h-3.5 w-3.5" />CTA
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("translate")}>
-                  <Globe className="h-3.5 w-3.5" />Translate
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}>
-                  <Hash className="h-3.5 w-3.5" />Hashtags
-                </Button>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start gap-2 text-muted-foreground text-xs"
-                onClick={() => setTweets(applyNumbering([...tweets]))}
-              >
-                <ListOrdered className="h-3.5 w-3.5" />
-                Number tweets (1/N)
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
 
         {/* Card 2: Publishing (H1 — split from content tools) */}
         <Card>
@@ -1641,45 +1617,19 @@ export function Composer() {
 
             <div className="space-y-2">
               <Label htmlFor="schedule-date">Schedule for</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <DatePicker
-                  id="schedule-date"
-                  value={scheduledDate ? scheduledDate.slice(0, 10) : ""}
-                  onChange={(newDate) => {
-                    if (!newDate) {
-                      setScheduledDate("");
-                      setRecurrencePattern("none");
-                      setRecurrenceEndDate("");
-                    } else {
-                      const existingTime = scheduledDate ? scheduledDate.slice(11, 16) : "12:00";
-                      setScheduledDate(`${newDate}T${existingTime}`);
-                    }
-                  }}
-                />
-                {/* P2: Time grouped by period */}
-                <Select
-                  value={scheduledDate ? scheduledDate.slice(11, 16) : ""}
-                  disabled={!scheduledDate}
-                  onValueChange={(newTime) => {
-                    const existingDate = scheduledDate ? scheduledDate.slice(0, 10) : "";
-                    if (existingDate) setScheduledDate(`${existingDate}T${newTime}`);
-                  }}
-                >
-                  <SelectTrigger aria-label="Schedule time">
-                    <SelectValue placeholder="Time" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_SLOT_GROUPS.map((group) => (
-                      <SelectGroup key={group.label}>
-                        <SelectLabel>{group.label}</SelectLabel>
-                        {group.slots.map((slot) => (
-                          <SelectItem key={slot.value} value={slot.value}>{slot.label}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <DateTimePicker
+                id="schedule-date"
+                value={scheduledDate}
+                onChange={(val) => {
+                  if (!val) {
+                    setScheduledDate("");
+                    setRecurrencePattern("none");
+                    setRecurrenceEndDate("");
+                  } else {
+                    setScheduledDate(val);
+                  }
+                }}
+              />
               {browserTimezone && (
                 <p className="text-xs text-muted-foreground">
                   Times are in{" "}
@@ -1777,17 +1727,6 @@ export function Composer() {
                   )}
                 </Tooltip>
               </TooltipProvider>
-              {/* P6: Template button elevated from ghost to visible outline */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 text-muted-foreground hover:text-foreground"
-                onClick={() => setIsSaveTemplateOpen(true)}
-                disabled={isSubmitting}
-              >
-                <BookmarkPlus className="h-4 w-4" />
-                Save as Template
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1913,24 +1852,58 @@ export function Composer() {
           </div>
         </div>
       </div>
-      {/* Mobile AI panel — Sheet (C3: desktop uses inline sidebar panel above) */}
+      {/* Mobile AI panel — Sheet (P1-B: desktop uses inline accordion above) */}
       {!isDesktop && (
         <Sheet open={isAiOpen} onOpenChange={setIsAiOpen}>
-          <SheetContent side="bottom" className="h-[90dvh] flex flex-col overflow-hidden pb-safe">
-            <Tabs defaultValue="generate" className="flex-1 flex flex-col overflow-hidden">
-              <SheetHeader className="shrink-0 pb-2">
-                <SheetTitle>{aiDialogTitle}</SheetTitle>
-                <SheetDescription>{aiDialogDesc}</SheetDescription>
-              </SheetHeader>
-              {aiTabsGenerateContent}
-              <div className="flex justify-end gap-2 pt-4 shrink-0 border-t mt-2">
-                <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
-                <Button onClick={() => handleAiRun()} disabled={isAiGenerateDisabled}>
-                  {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Generate
-                </Button>
-              </div>
-            </Tabs>
+          <SheetContent side="bottom" className="h-[60dvh] flex flex-col overflow-hidden pb-safe">
+            <SheetHeader className="shrink-0 pb-2">
+              <SheetTitle>AI Tools</SheetTitle>
+              <SheetDescription>Generate content with AI assistance</SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto py-2">
+              <AiToolsPanel
+                aiTool={aiTool}
+                onToolChange={(tool) => {
+                  setAiTool(tool);
+                  setGeneratedHashtags([]);
+                  if (tool === "hashtags") {
+                    setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
+                  }
+                }}
+                aiTopic={aiTopic}
+                onTopicChange={setAiTopic}
+                aiTone={aiTone}
+                onToneChange={setAiTone}
+                aiLanguage={aiLanguage}
+                onLanguageChange={setAiLanguage}
+                aiCount={aiCount}
+                onCountChange={setAiCount}
+                aiAddNumbering={aiAddNumbering}
+                onAddNumberingChange={setAiAddNumbering}
+                aiLengthOption={aiLengthOption}
+                onLengthOptionChange={setAiLengthOption}
+                selectedTier={selectedTier ?? null}
+                tweets={tweets}
+                aiRewriteText={aiRewriteText}
+                onRewriteTextChange={setAiRewriteText}
+                aiTranslateTarget={aiTranslateTarget}
+                onTranslateTargetChange={setAiTranslateTarget}
+                aiTargetTweetId={aiTargetTweetId}
+                isGenerating={isGenerating}
+                streamingTweetCount={streamingTweetCount}
+                {...(typeof aiCount[0] === "number" && { totalTweetCount: aiCount[0] })}
+                onGenerate={handleAiRun}
+                onClose={() => setIsAiOpen(false)}
+                hideActions
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4 shrink-0 border-t mt-2">
+              <Button variant="outline" onClick={() => setIsAiOpen(false)}>Cancel</Button>
+              <Button onClick={() => handleAiRun()} disabled={isAiGenerateDisabled}>
+                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Generate
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
       )}
@@ -1941,21 +1914,31 @@ export function Composer() {
           <AlertDialogHeader>
             <AlertDialogTitle>Replace existing content?</AlertDialogTitle>
             <AlertDialogDescription>
-              Generating a new thread will replace your current {tweets.filter(t => t.content.trim()).length} tweet(s) with AI-generated content. This cannot be undone.
+              Generating a new thread will replace your current {tweets.filter(t => t.content.trim()).length} tweet(s) with AI-generated content. Your draft was auto-saved and can be restored.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setConfirmOverwrite(false); setPendingTweets(null); }}>
+            <AlertDialogCancel onClick={() => {
+              setConfirmOverwrite(false);
+              setPendingTweets(null);
+              setPendingAiStreamGenerate(false);
+              preStreamTweetsRef.current = null;
+            }}>
               Keep editing
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (pendingTweets) {
+                  // Template application case
                   setTweets(pendingTweets);
                   setPreviewIndex(0);
                   setPendingTweets(null);
                   setIsAiOpen(false);
                   toast.success("Thread generated!");
+                } else if (pendingAiStreamGenerate) {
+                  // P2-F: AI streaming case — resume generation after confirmation
+                  setPendingAiStreamGenerate(false);
+                  void handleAiRun({ skipOverwriteCheck: true });
                 }
                 setConfirmOverwrite(false);
               }}
