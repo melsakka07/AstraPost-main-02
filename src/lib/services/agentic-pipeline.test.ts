@@ -1,4 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { generateText } from "ai";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildWritingPrompt } from "@/lib/ai/agentic-prompts";
+import type { PipelineProgressEvent } from "@/lib/ai/agentic-types";
+import { runAgenticPipeline } from "@/lib/services/agentic-pipeline";
+import { generateAgenticImage } from "@/lib/services/ai-image";
+import { canPostLongContent } from "@/lib/services/x-subscription";
 
 vi.mock("ai", () => ({ generateText: vi.fn() }));
 vi.mock("@openrouter/ai-sdk-provider", () => ({ openrouter: vi.fn(() => ({})) }));
@@ -18,13 +24,6 @@ vi.mock("@/lib/services/x-subscription", () => ({
 vi.mock("@/lib/logger", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
-
-import { generateText } from "ai";
-import { buildWritingPrompt } from "@/lib/ai/agentic-prompts";
-import type { PipelineProgressEvent } from "@/lib/ai/agentic-types";
-import { runAgenticPipeline } from "@/lib/services/agentic-pipeline";
-import { generateAgenticImage } from "@/lib/services/ai-image";
-import { canPostLongContent } from "@/lib/services/x-subscription";
 
 const mockGenerateText = vi.mocked(generateText);
 const mockGenerateAgenticImage = vi.mocked(generateAgenticImage);
@@ -116,9 +115,9 @@ describe("runAgenticPipeline", () => {
     // Quality score from review
     expect(result.qualityScore).toBe(8);
 
-    // onProgress called with step "done"
+    // onProgress called with review complete (pipeline does NOT emit "done" — the route handler does)
     const progressCalls = onProgress.mock.calls.map((c) => c[0] as PipelineProgressEvent);
-    expect(progressCalls.some((e) => e.step === "done")).toBe(true);
+    expect(progressCalls.some((e) => e.step === "review" && e.status === "complete")).toBe(true);
 
     // generateText called exactly 4 times
     expect(mockGenerateText).toHaveBeenCalledTimes(4);
@@ -277,7 +276,7 @@ describe("runAgenticPipeline", () => {
       { step: "images", status: "complete" },
       { step: "review", status: "in_progress" },
       { step: "review", status: "complete" },
-      { step: "done", status: "complete" },
+      // "done" is emitted by the route handler after DB update, not by the pipeline itself
     ];
 
     // Verify each expected event appears in the emitted events in the correct relative order
