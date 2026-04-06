@@ -206,7 +206,7 @@ export function PricingTable({ currentPlan, hasBillingProfile, isLoggedIn = fals
   };
 
   return (
-    <div className="flex flex-col items-center gap-8 py-8">
+    <div className="flex flex-col items-center gap-13 py-8">
       <div className="flex items-center gap-4">
         <Label htmlFor="billing-interval" className={!isAnnual ? "font-bold" : "text-muted-foreground"}>Monthly</Label>
         <Switch 

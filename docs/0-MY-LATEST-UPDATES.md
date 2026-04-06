@@ -1,5 +1,22 @@
 # Latest Updates
 
+## 2026-04-06: UI Fix — Disabled Instagram & LinkedIn Connection Buttons ✅
+
+**Summary:** Disabled "Connect Instagram Account" and "Connect LinkedIn Account" buttons on the Settings page since these features are not yet ready for production use.
+
+**Changes Made:**
+- Set `disabled={true}` on both connect buttons in their respective components
+- Removed unused `loading` state and `Loader2` import from both components
+- Buttons now appear grayed out and do not respond to clicks
+
+**Files changed:**
+- `src/components/settings/connected-instagram-accounts.tsx` — disabled connect button, removed loading state
+- `src/components/settings/connected-linkedin-accounts.tsx` — disabled connect button, removed loading state
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
 ## 2026-04-05: Agentic Posting — Phase 6: Vitest Tests ✅
 
 **Summary:** Full test coverage for the Agentic Posting feature — pipeline service, approve route, and type validation.

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { Instagram, Loader2, Plus, Trash2 } from "lucide-react";
+import { Instagram, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,10 +24,7 @@ export function ConnectedInstagramAccounts({
 }: {
   initialAccounts: InstagramAccount[];
 }) {
-  const [loading, setLoading] = useState(false);
-
   const handleConnect = () => {
-    setLoading(true);
     window.location.href = "/api/instagram/auth";
   };
 
@@ -96,9 +92,9 @@ export function ConnectedInstagramAccounts({
           variant="outline"
           className="w-full gap-2"
           onClick={handleConnect}
-          disabled={loading}
+          disabled
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          <Plus className="h-4 w-4" />
           Connect Instagram Account
         </Button>
       </CardContent>
