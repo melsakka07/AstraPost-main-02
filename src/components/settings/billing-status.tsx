@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { differenceInCalendarDays, format } from "date-fns";
 import { AlertTriangle, CalendarClock, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { toast } from "sonner";
 import { ManageSubscriptionButton } from "@/components/settings/manage-subscription-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface BillingStatusData {
   plan: string;
@@ -21,8 +24,39 @@ interface BillingStatusData {
  * Shown inside the Subscription card on the settings page.
  */
 export function BillingStatus() {
+  const router = useRouter();
   const [data, setData] = useState<BillingStatusData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [undoingCancellation, setUndoingCancellation] = useState(false);
+
+  const handleUndoCancellation = async () => {
+    if (!data?.plan) return;
+
+    setUndoingCancellation(true);
+    try {
+      // Call change-plan API with the current plan to reactivate
+      const res = await fetch("/api/billing/change-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: data.plan }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to undo cancellation");
+      }
+
+      const result = await res.json();
+      toast.success(result.message || "Cancellation undone successfully");
+
+      // Refresh to show updated status
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to undo cancellation");
+    } finally {
+      setUndoingCancellation(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/billing/status")
@@ -129,10 +163,20 @@ export function BillingStatus() {
       {/* Cancels at period end notice */}
       {cancelAtPeriodEnd && periodEnd && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-700 dark:text-amber-400">
-          Your subscription will be cancelled on{" "}
-          <span className="font-medium">{format(periodEnd, "MMM d, yyyy")}</span>.
-          You&apos;ll keep full access until then. You can reactivate anytime via
-          the billing portal.
+          <p className="mb-3">
+            Your subscription will be cancelled on{" "}
+            <span className="font-medium">{format(periodEnd, "MMM d, yyyy")}</span>.
+            You&apos;ll keep full access until then.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleUndoCancellation}
+            disabled={undoingCancellation}
+            className="border-amber-500/50 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+          >
+            {undoingCancellation ? "Reactivating..." : "Undo Cancellation"}
+          </Button>
         </div>
       )}
 

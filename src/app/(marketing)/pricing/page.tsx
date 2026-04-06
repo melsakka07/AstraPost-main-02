@@ -20,15 +20,13 @@ export default async function PricingPage() {
   });
 
   let currentPlan = "free";
-  let hasBillingProfile = false;
 
   if (session?.user?.id) {
     const dbUser = await db.query.user.findFirst({
       where: eq(user.id, session.user.id),
-      columns: { plan: true, stripeCustomerId: true },
+      columns: { plan: true },
     });
     currentPlan = dbUser?.plan || "free";
-    hasBillingProfile = !!dbUser?.stripeCustomerId;
   }
 
   return (
@@ -61,7 +59,6 @@ export default async function PricingPage() {
         <div className="flex justify-center">
           <PricingTable
             currentPlan={currentPlan}
-            hasBillingProfile={hasBillingProfile}
             isLoggedIn={!!session}
           />
         </div>

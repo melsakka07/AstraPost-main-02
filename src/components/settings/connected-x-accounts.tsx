@@ -83,6 +83,11 @@ interface AccountToRemove {
   xUsername: string;
 }
 
+interface AccountToDeactivate {
+  id: string;
+  xUsername: string;
+}
+
 function relativeTime(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return "just now";
@@ -116,6 +121,8 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
   const [tierRefreshState, setTierRefreshState] = useState<Record<string, TierRefreshState>>({});
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState<AccountToRemove | null>(null);
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState<AccountToDeactivate | null>(null);
+  const [deactivatingAccountId, setDeactivatingAccountId] = useState<string | null>(null);
   const tierFetchRef = useRef(false);
 
   // Calculate plan limit and active account count
@@ -292,6 +299,43 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
     }
   };
 
+  const handleDeactivateAccount = async () => {
+    if (!showDeactivateDialog) return;
+
+    // Prevent deactivating the last remaining account
+    if (accounts.length === 1) {
+      toast.error("Cannot deactivate the last connected account. Please add another account first.");
+      setShowDeactivateDialog(null);
+      return;
+    }
+
+    setDeactivatingAccountId(showDeactivateDialog.id);
+    try {
+      const res = await fetch(`/api/x/accounts/${showDeactivateDialog.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: false }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to deactivate account");
+      }
+
+      setAccounts((prev) =>
+        prev.map((a) =>
+          a.id === showDeactivateDialog.id ? { ...a, isActive: false, isDefault: false } : a
+        )
+      );
+      toast.success(`Account @${showDeactivateDialog.xUsername} deactivated successfully`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to deactivate account");
+    } finally {
+      setDeactivatingAccountId(null);
+      setShowDeactivateDialog(null);
+    }
+  };
+
   useEffect(() => {
     if (tierFetchRef.current) return;
     const accountsWithoutTier = accounts.filter((a) => !a.xSubscriptionTierUpdatedAt);
@@ -336,7 +380,7 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
               <p className="font-medium">Account limit exceeded</p>
               <p className="text-xs opacity-90 mt-0.5">
                 Your {planName} plan allows {planLimit} X account{planLimit !== 1 ? "s" : ""}. You have {activeCount} active account{activeCount !== 1 ? "s" : ""}.
-                Please remove {activeCount - planLimit} account{activeCount - planLimit !== 1 ? "s" : ""} or <Link href="/pricing" className="underline font-medium hover:text-amber-700 dark:hover:text-amber-300">upgrade</Link> your plan.
+                Please <strong>deactivate</strong> {activeCount - planLimit} account{activeCount - planLimit !== 1 ? "s" : ""} or <Link href="/pricing" className="underline font-medium hover:text-amber-700 dark:hover:text-amber-300">upgrade</Link> your plan.
               </p>
             </div>
           </div>
@@ -592,6 +636,34 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
                             Remove account
                           </TooltipContent>
                         </Tooltip>
+
+                        {/* Deactivate account - only show for active accounts */}
+                        {a.isActive && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={deactivatingAccountId === a.id || busy}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-amber-600"
+                                aria-label={`Deactivate account @${a.xUsername}`}
+                                onClick={() =>
+                                  setShowDeactivateDialog({ id: a.id, xUsername: a.xUsername })
+                                }
+                              >
+                                <XCircle
+                                  className={`h-4 w-4 ${
+                                    deactivatingAccountId === a.id ? "animate-pulse" : ""
+                                  }`}
+                                />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              Deactivate account
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -684,6 +756,32 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
                 disabled={deletingAccountId !== null}
               >
                 {deletingAccountId ? "Removing..." : "Remove"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Deactivate account confirmation dialog */}
+        <AlertDialog
+          open={showDeactivateDialog !== null}
+          onOpenChange={(open) => !open && setShowDeactivateDialog(null)}
+        >
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deactivate @{showDeactivateDialog?.xUsername}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This account will be deactivated and won't be able to post scheduled content. You can reactivate it anytime. Scheduled posts for this account will be cancelled.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deactivatingAccountId !== null}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="default"
+                onClick={handleDeactivateAccount}
+                disabled={deactivatingAccountId !== null}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                {deactivatingAccountId ? "Deactivating..." : "Deactivate"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

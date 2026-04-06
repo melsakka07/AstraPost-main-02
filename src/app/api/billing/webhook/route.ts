@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
-import { processedWebhookEvents, subscriptions, user, xAccounts } from "@/lib/schema";
+import { processedWebhookEvents, subscriptions, user, xAccounts, posts } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 import { stripe } from "@/lib/stripe";
@@ -358,6 +358,67 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
           }),
         "billing_accounts_over_limit"
       );
+    }
+
+    // ── 3.2.2 Scheduled posts cleanup on downgrade ─────────────────────
+    // When downgrading to a plan with lower postsPerMonth, move excess scheduled posts to draft
+    const oldPlan = existingRecord.plan ?? "free";
+    const oldPostsLimit = PLAN_LIMITS[oldPlan].postsPerMonth;
+    const newPostsLimit = PLAN_LIMITS[newPlan].postsPerMonth;
+
+    // Only check if new plan has a finite monthly limit AND it's lower than old plan
+    if (Number.isFinite(newPostsLimit) && newPostsLimit < oldPostsLimit) {
+      // Count currently scheduled posts for this user
+      const scheduledPosts = await db.query.posts.findMany({
+        where: and(
+          eq(posts.userId, existingRecord.userId),
+          eq(posts.status, "scheduled")
+        ),
+        columns: { id: true, scheduledAt: true },
+        orderBy: [posts.scheduledAt], // Process oldest posts first
+      });
+
+      const scheduledCount = scheduledPosts.length;
+
+      // If user has more scheduled posts than new plan allows
+      if (scheduledCount > newPostsLimit) {
+        const excessCount = scheduledCount - newPostsLimit;
+        const postsToMove = scheduledPosts.slice(0, excessCount); // Get oldest excess posts
+
+        // Move excess posts to draft status (batch update)
+        const postIdsToMove = postsToMove.map((p) => p.id);
+        await db.update(posts)
+          .set({ status: "draft" })
+          .where(inArray(posts.id, postIdsToMove));
+
+        // Notify user about posts moved to draft
+        await runSideEffect(
+          () =>
+            notifyBillingEvent({
+              userId: existingRecord.userId,
+              type: "billing_posts_moved_to_draft",
+              title: "Scheduled posts moved to draft",
+              message: `Due to your plan change, ${excessCount} scheduled ${excessCount === 1 ? 'post' : 'posts'} ${excessCount === 1 ? 'was' : 'were'} moved to draft. Please reschedule ${excessCount === 1 ? 'it' : 'them'} or upgrade to keep all scheduled posts active.`,
+              metadata: {
+                oldPlan,
+                newPlan,
+                newLimit: newPostsLimit,
+                movedCount: excessCount,
+                postIds: postsToMove.map((p) => p.id),
+              },
+            }),
+          "billing_posts_moved_to_draft"
+        );
+
+        console.warn("webhook_subscription_downgrade_posts_moved_to_draft", {
+          userId: existingRecord.userId,
+          oldPlan,
+          newPlan,
+          scheduledCount,
+          newLimit: newPostsLimit,
+          movedCount: excessCount,
+        });
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Sparkles } from "lucide-react";
 import { create } from "zustand";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ export const useUpgradeModal = create<UpgradeModalStore>((set) => ({
 
 export function UpgradeModal() {
   const { isOpen, context, close } = useUpgradeModal();
+  const router = useRouter();
   const featureLabel =
     context?.feature === "ai_writer" || context?.feature === "ai_quota"
       ? "AI generation"
@@ -132,10 +133,15 @@ export function UpgradeModal() {
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
-          <Button asChild className="w-full text-lg py-6" size="lg">
-            <Link href={ctaHref}>
-              {ctaPlanLabel}
-            </Link>
+          <Button
+            className="w-full text-lg py-6"
+            size="lg"
+            onClick={() => {
+              close();
+              router.push(ctaHref);
+            }}
+          >
+            {ctaPlanLabel}
           </Button>
           <Button variant="ghost" onClick={close} className="w-full">
             Maybe later

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { ChangePlanDialog } from "@/components/billing/change-plan-dialog";
 import { PricingCard, PricingPlan } from "@/components/billing/pricing-card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -22,7 +23,7 @@ const MONTHLY_PLANS: PricingPlan[] = [
       "Tweet Inspiration & Import",
       "14-day Pro Trial Included",
     ],
-    actionLabel: "Current Plan",
+    actionLabel: "Get Started",
     priceId: "free",
     popular: false,
   },
@@ -87,7 +88,7 @@ const ANNUAL_PLANS: PricingPlan[] = [
       "Tweet Inspiration & Import",
       "14-day Pro Trial Included",
     ],
-    actionLabel: "Current Plan",
+    actionLabel: "Get Started",
     priceId: "free",
     popular: false,
   },
@@ -114,7 +115,7 @@ const ANNUAL_PLANS: PricingPlan[] = [
       "Unlimited Bookmarks",
       "2 Months Free",
     ],
-    actionLabel: "Upgrade to Pro Annual",
+    actionLabel: "Upgrade to Pro",
     priceId: "pro_annual",
     popular: true,
     perMonthEquivalent: "~$24/mo",
@@ -135,7 +136,7 @@ const ANNUAL_PLANS: PricingPlan[] = [
       "White-label PDF Reports",
       "2 Months Free",
     ],
-    actionLabel: "Upgrade to Agency Annual",
+    actionLabel: "Upgrade to Agency",
     priceId: "agency_annual",
     popular: false,
     perMonthEquivalent: "~$83/mo",
@@ -145,34 +146,56 @@ const ANNUAL_PLANS: PricingPlan[] = [
 
 interface PricingTableProps {
   currentPlan?: string;
-  hasBillingProfile?: boolean;
   isLoggedIn?: boolean;
 }
 
-export function PricingTable({ currentPlan, hasBillingProfile, isLoggedIn = false }: PricingTableProps) {
+export function PricingTable({ currentPlan, isLoggedIn = false }: PricingTableProps) {
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [changePlanDialog, setChangePlanDialog] = useState<{ open: boolean; plan: string; planLabel: string; isUpgrade: boolean }>({
+    open: false,
+    plan: "",
+    planLabel: "",
+    isUpgrade: false,
+  });
 
   const plans = isAnnual ? ANNUAL_PLANS : MONTHLY_PLANS;
 
   const handleSelect = async (priceId: string) => {
+    // Not logged in → redirect to register with plan pre-selected
     if (!isLoggedIn) {
-        router.push(`/register?plan=${priceId}`);
-        return;
+      router.push(`/register?plan=${priceId}`);
+      return;
     }
 
-    if (priceId === "free") return; // Cannot downgrade automatically yet via this UI
+    // Get plan label for dialog
+    const selectedPlan = plans.find((p) => p.priceId === priceId);
+    const planLabel = selectedPlan?.name || priceId;
 
+    // Paid user with active subscription → show change plan dialog for in-app changes
+    // Free user clicking paid plan → go to checkout
+    if (currentPlan && currentPlan !== "free") {
+      // Determine if this is an upgrade or downgrade
+      const planOrder = ["free", "pro_monthly", "pro_annual", "agency_monthly", "agency_annual"];
+      const currentIndex = planOrder.indexOf(currentPlan);
+      const targetIndex = planOrder.indexOf(priceId);
+      const isUpgrade = targetIndex > currentIndex;
+
+      // Open dialog for all plan changes
+      setChangePlanDialog({
+        open: true,
+        plan: priceId,
+        planLabel,
+        isUpgrade,
+      });
+      return;
+    }
+
+    // Free user clicking a paid plan → create checkout session
     setIsLoading(priceId);
 
     try {
-      if (hasBillingProfile) {
-        // If they have billing profile, send them to portal usually, OR create checkout for upgrade
-        // The API logic handles "subscription already exists" by suggesting portal.
-        // Let's try creating checkout first. If error 409, we redirect to portal.
-      }
-
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -181,24 +204,15 @@ export function PricingTable({ currentPlan, hasBillingProfile, isLoggedIn = fals
 
       const data = await res.json();
 
-      if (res.status === 409 && data.code === "existing_subscription") {
-         toast.info("Redirecting to billing portal to manage subscription...");
-         // Redirect to portal
-         const portalRes = await fetch("/api/billing/portal", { method: "POST" });
-         const portalData = await portalRes.json();
-         if (portalData.url) window.location.href = portalData.url;
-         else throw new Error("Failed to get portal URL");
-         return;
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to start checkout");
       }
-
-      if (!res.ok) throw new Error(data.error || "Failed to start checkout");
 
       if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error("No checkout URL returned");
       }
-
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong");
       setIsLoading(null);
@@ -209,28 +223,35 @@ export function PricingTable({ currentPlan, hasBillingProfile, isLoggedIn = fals
     <div className="flex flex-col items-center gap-13 py-8">
       <div className="flex items-center gap-4">
         <Label htmlFor="billing-interval" className={!isAnnual ? "font-bold" : "text-muted-foreground"}>Monthly</Label>
-        <Switch 
-            id="billing-interval" 
-            checked={isAnnual} 
-            onCheckedChange={setIsAnnual} 
+        <Switch
+          id="billing-interval"
+          checked={isAnnual}
+          onCheckedChange={setIsAnnual}
         />
         <Label htmlFor="billing-interval" className={isAnnual ? "font-bold" : "text-muted-foreground"}>
-            Annual <span className="text-xs text-primary ml-1">(Save 17%)</span>
+          Annual <span className="text-xs text-primary ml-1">(Save 17%)</span>
         </Label>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl px-4">
         {plans.map((plan) => (
-            <PricingCard
-                key={plan.priceId}
-                plan={plan}
-                {...(currentPlan != null && { currentPlan })}
-                isLoading={isLoading === plan.priceId}
-                onSelect={handleSelect}
-                isAnnual={isAnnual}
-            />
+          <PricingCard
+            key={plan.priceId}
+            plan={plan}
+            {...(currentPlan != null && { currentPlan })}
+            isLoading={isLoading === plan.priceId}
+            onSelect={handleSelect}
+          />
         ))}
       </div>
+
+      <ChangePlanDialog
+        open={changePlanDialog.open}
+        onOpenChange={(open) => setChangePlanDialog((prev) => ({ ...prev, open }))}
+        plan={changePlanDialog.plan}
+        planLabel={changePlanDialog.planLabel}
+        isUpgrade={changePlanDialog.isUpgrade}
+      />
     </div>
   );
 }

@@ -23,19 +23,95 @@ interface PricingCardProps {
   currentPlan?: string;
   isLoading?: boolean;
   onSelect?: (priceId: string) => void;
-  isAnnual?: boolean;
 }
 
-export function PricingCard({ plan, currentPlan, isLoading, onSelect, isAnnual }: PricingCardProps) {
-  const isCurrent = currentPlan === plan.priceId || (isAnnual && currentPlan === plan.priceId.replace("_monthly", "_annual"));
-  // Simple check for "pro" vs "pro_monthly" if needed, but here we expect precise IDs or normalized
-  
-  // Actually, database stores "pro_monthly" or "agency".
-  // If user is on "pro_monthly", and views annual, we might want to show "Switch to Annual"
-  
+/**
+ * Tier order for determining upgrade/downgrade direction.
+ * free: 0, pro: 1, agency: 2
+ */
+const TIER_ORDER = { free: 0, pro: 1, agency: 2 } as const;
+
+type PlanTier = keyof typeof TIER_ORDER;
+
+/**
+ * Extracts the base tier from a plan identifier by removing the billing cycle suffix.
+ * e.g., "pro_monthly" → "pro", "agency_annual" → "agency", "free" → "free"
+ */
+function extractTier(plan: string): PlanTier {
+  const tier = plan.replace(/_(monthly|annual)$/, "") as PlanTier;
+  // Validate that the result is a known tier
+  if (tier in TIER_ORDER) return tier;
+  // Fallback for any unexpected values
+  return "free";
+}
+
+/**
+ * Determines the button state (label and disabled) for a pricing card based on
+ * the user's current plan and the card's priceId.
+ *
+ * Returns an object with:
+ * - label: The button text to display
+ * - disabled: Whether the button should be disabled
+ */
+function getButtonState(
+  currentPlan: string | undefined,
+  priceId: string,
+  defaultLabel: string
+): { label: string; disabled: boolean } {
+  // No current plan → show default label (upgrade action)
+  if (!currentPlan) {
+    return { label: defaultLabel, disabled: false };
+  }
+
+  const currentTier = extractTier(currentPlan);
+  const cardTier = extractTier(priceId);
+  const currentRank = TIER_ORDER[currentTier];
+  const cardRank = TIER_ORDER[cardTier];
+
+  // Same tier and same billing cycle → Current Plan (disabled)
+  if (currentPlan === priceId) {
+    return { label: "Current Plan", disabled: true };
+  }
+
+  // Same tier but different billing cycle → Switch action
+  if (currentTier === cardTier) {
+    // Pro monthly viewing annual, or vice versa
+    if (currentTier === "pro") {
+      const targetCycle = priceId.includes("_annual") ? "Annual" : "Monthly";
+      return { label: `Switch to ${targetCycle}`, disabled: false };
+    }
+    // Agency tier: DB stores "agency" without cycle, so both cards show "Manage Plan"
+    if (currentTier === "agency") {
+      return { label: "Manage Plan", disabled: false };
+    }
+  }
+
+  // Different tier → upgrade, downgrade, or portal manage
+  if (currentRank > cardRank) {
+    // Moving to a lower tier (e.g., Pro → Free, Agency → Pro)
+    return { label: "Downgrade", disabled: false };
+  }
+
+  if (currentRank < cardRank) {
+    // Moving to a higher tier (e.g., Free → Pro, Pro → Agency)
+    return { label: defaultLabel, disabled: false };
+  }
+
+  // Fallback: same tier but we couldn't determine the exact case
+  return { label: defaultLabel, disabled: false };
+}
+
+export function PricingCard({ plan, currentPlan, isLoading, onSelect }: PricingCardProps) {
+  // Compute button label and disabled state using the tier-aware logic
+  const { label: buttonLabel, disabled: isDisabled } = getButtonState(
+    currentPlan,
+    plan.priceId,
+    plan.actionLabel
+  );
+
   return (
     <Card className={cn(
-      "flex flex-col relative", 
+      "flex flex-col relative",
       plan.popular ? "border-primary shadow-lg scale-105 z-10" : "border-border",
       "transition-all duration-200 hover:shadow-md"
     )}>
@@ -75,13 +151,13 @@ export function PricingCard({ plan, currentPlan, isLoading, onSelect, isAnnual }
         </div>
       </CardContent>
       <CardFooter>
-        <Button 
-          className="w-full" 
+        <Button
+          className="w-full"
           variant={plan.popular ? "default" : "outline"}
-          disabled={isLoading || isCurrent}
+          disabled={isLoading || isDisabled}
           onClick={() => onSelect?.(plan.priceId)}
         >
-          {isCurrent ? "Current Plan" : plan.actionLabel}
+          {buttonLabel}
         </Button>
       </CardFooter>
     </Card>

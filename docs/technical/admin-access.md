@@ -82,6 +82,89 @@ The change takes effect on the next page load (session is re-validated on every 
 
 ---
 
+## Manual Plan Overrides (Admin Comped Accounts)
+
+For admins, partners, or special cases, you can grant Pro/Agency access **without requiring a real Stripe subscription** by setting the `plan` column directly on the `user` table.
+
+### How Plan Information Works in AstraPost
+
+There are **two sources** for plan information in the application:
+
+| Source | Purpose | When Used |
+|--------|---------|-----------|
+| **`user.plan` column** | Manual plan override field | Always takes priority; used for admin comped accounts, manual upgrades |
+| **`subscriptions` table** | Stripe billing records | Created when users pay via Stripe checkout; stores `stripeCustomerId`, `stripeSubscriptionId`, `status` |
+
+The application's plan enforcement logic reads from `user.plan` first:
+
+```typescript
+// src/lib/plan-limits.ts — effective plan resolution
+const effectivePlan = userRow.plan || subscriptionRow.plan || "free";
+```
+
+### Granting Manual Pro/Agency Access
+
+To grant a user Pro Monthly access without Stripe:
+
+```sql
+UPDATE "user"
+SET plan = 'pro_monthly'
+WHERE email = 'user@email.com';
+```
+
+Available plan values (from `planEnum`):
+- `free` — Default free tier
+- `pro_monthly` — Pro Monthly plan
+- `pro_annual` — Pro Annual plan
+- `agency` — Agency plan
+
+### Setting Plan Expiration (Optional)
+
+You can also set an expiration date for manual plans:
+
+```sql
+UPDATE "user"
+SET plan = 'pro_monthly',
+    plan_expires_at = '2026-12-31 23:59:59'::timestamp
+WHERE email = 'user@email.com';
+```
+
+When `plan_expires_at` is reached, the plan reverts to `free` automatically (handled by middleware).
+
+### Example: Admin Comped Account
+
+For the user `astravision.ai@gmail.com` (admin user, manually configured):
+
+| Field | Value |
+|-------|-------|
+| `user.plan` | `pro_monthly` ← What the app uses |
+| `user.plan_expires_at` | `null` (no expiration) |
+| `subscriptions` table | Empty (no Stripe subscription) |
+| `user.is_admin` | `true` |
+| Settings page shows | `PRO_MONTHLY` ✅ |
+
+This user has full Pro access without any Stripe billing record.
+
+### Revoking Manual Plan Access
+
+To revert a user to Free:
+
+```sql
+UPDATE "user"
+SET plan = 'free',
+    plan_expires_at = null
+WHERE email = 'user@email.com';
+```
+
+### Important Notes
+
+- **`user.plan` always wins** — Even if a user has a Stripe subscription in the `subscriptions` table, the `user.plan` column takes precedence for plan enforcement
+- **Settings page displays `user.plan`** — The `/dashboard/settings` page shows `user.plan`, not the subscription table
+- **For Stripe-paying users** — Leave `user.plan` as `null` or `free`; let the `subscriptions` table control their plan via webhooks
+- **Hybrid scenario** — If you set `user.plan = 'agency'` and the user also has a `pro_monthly` Stripe subscription, they get Agency features (the higher tier wins)
+
+---
+
 ## Security notes
 
 - The `proxy.ts` check is a **fast cookie check only** — it does not validate the session. Full validation (`requireAdmin()`) happens inside each admin page and API route.

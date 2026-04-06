@@ -56,11 +56,15 @@ export type PlanGateResult = PlanGateSuccess | PlanGateFailure;
 async function getPlanContext(userId: string): Promise<PlanContext> {
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, userId),
-    columns: { plan: true, trialEndsAt: true, createdAt: true },
+    columns: { plan: true, trialEndsAt: true, createdAt: true, planExpiresAt: true },
   });
 
   const plan = normalizePlan(dbUser?.plan);
   let trialEndsAt = dbUser?.trialEndsAt ?? null;
+
+  // Grace period enforcement: if planExpiresAt has passed, treat as free
+  const now = new Date();
+  const effectivePlanBase = dbUser?.planExpiresAt && dbUser.planExpiresAt < now ? "free" : plan;
 
   if (plan === "free" && !trialEndsAt && dbUser?.createdAt) {
     const inferredTrialEndsAt = new Date(dbUser.createdAt);
@@ -73,10 +77,10 @@ async function getPlanContext(userId: string): Promise<PlanContext> {
       .where(and(eq(user.id, userId), isNull(user.trialEndsAt)));
   }
 
-  const isTrialActive = plan === "free" && !!trialEndsAt && new Date() < trialEndsAt;
-  const effectivePlan = isTrialActive ? TRIAL_EFFECTIVE_PLAN : plan;
+  const isTrialActive = effectivePlanBase === "free" && !!trialEndsAt && now < trialEndsAt;
+  const effectivePlan = isTrialActive ? TRIAL_EFFECTIVE_PLAN : effectivePlanBase;
 
-  return { plan, effectivePlan, trialEndsAt, isTrialActive };
+  return { plan: effectivePlanBase, effectivePlan, trialEndsAt, isTrialActive };
 }
 
 function buildFailure(params: Omit<PlanGateFailure, "allowed">): PlanGateFailure {

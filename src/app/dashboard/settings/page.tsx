@@ -118,7 +118,12 @@ export default async function SettingsPage({
                 </div>
                 <div className="flex gap-2">
                   {hasStripeCustomerId ? (
-                    <ManageSubscriptionButton />
+                    <>
+                      <Button variant="outline" className="w-full sm:w-auto" asChild>
+                        <Link href="/pricing">Change Plan</Link>
+                      </Button>
+                      <ManageSubscriptionButton />
+                    </>
                   ) : isPaidPlan ? (
                     <Button variant="outline" className="w-full sm:w-auto" asChild>
                       <Link href="/pricing?billing=restore">Restore Billing</Link>

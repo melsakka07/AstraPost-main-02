@@ -649,6 +649,8 @@ The project includes technical documentation in `docs/`:
     - Free plan: Limited AI credits, 5 inspiration bookmarks
     - Pro/Agency: Unlimited features
     - Always check limits before resource-intensive operations
+    - **IMPORTANT:** Plan information comes from TWO sources — `user.plan` column (manual override, always wins) and `subscriptions` table (Stripe billing records)
+    - For admin comped accounts or manual upgrades, set `user.plan` directly in the database — see [docs/technical/admin-access.md](docs/technical/admin-access.md#manual-plan-overrides-admin-comped-accounts) for details
 
 15. **API Error Responses** *(architectural rule — do not bypass)*
     - Always use `ApiError` from `@/lib/api/errors` for error responses in route handlers:
