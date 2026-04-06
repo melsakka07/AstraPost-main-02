@@ -154,3 +154,6 @@ export function normalizePlan(plan: string | null | undefined): PlanType {
 export function getPlanLimits(plan: string | null | undefined): PlanLimits {
   return PLAN_LIMITS[normalizePlan(plan)];
 }
+
+/** During the 14-day free trial, users get Pro Monthly limits */
+export const TRIAL_EFFECTIVE_PLAN: PlanType = "pro_monthly";

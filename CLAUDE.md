@@ -393,6 +393,22 @@ AstraPost supports content generation in multiple languages:
 
 ## Recent Fixes & Known Issues
 
+### Fixed Issues (2026-04-06)
+
+1. **14-day Trial Unlimited Access Bug**
+   - **Root cause:** All gate functions in `require-plan.ts` had `if (context.isTrialActive) return { allowed: true }` which bypassed ALL limits including quotas, giving trial users unlimited Agency-tier access for 14 days
+   - **Fix:** Replaced blanket bypass with `effectivePlan` resolution — trial users now get Pro Monthly limits (100 AI text, 50 images, 3 accounts) instead of unlimited access. Added `TRIAL_EFFECTIVE_PLAN` constant in `plan-limits.ts` and `effectivePlan` field to `PlanContext` interface
+   - **Files:** `src/lib/middleware/require-plan.ts`, `src/lib/plan-limits.ts`
+
+2. **Pricing Page Misrepresentation**
+   - Removed Instagram claims (not implemented anywhere in codebase)
+   - Fixed "Multi-platform Support (X, LinkedIn, Instagram)" core feature to "X (Twitter) Scheduling"
+   - Expanded feature lists: Free (3→7 items), Pro (5→15 items), Agency (5→7 items) to surface 17+ hidden features
+   - Added 14-day trial banner on pricing page
+   - Fixed annual savings from "~20%" to "17%"
+   - Replaced "Priority Support for all plans" with "Community & Email Support"
+   - **Files:** `src/components/billing/pricing-table.tsx`, `src/app/(marketing)/pricing/page.tsx`
+
 ### Fixed Issues (2026-03-31)
 
 1. **Onboarding Infinite Loop**

@@ -1,20 +1,130 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   buildPlanLimitPayload,
   createPlanLimitResponse,
+  checkAccountLimitDetailed,
+  checkPostLimitDetailed,
+  checkAiQuotaDetailed,
+  checkAgenticPostingAccessDetailed,
+  checkLinkedinAccessDetailed,
+  checkAnalyticsExportLimitDetailed,
   type PlanGateFailure,
 } from "@/lib/middleware/require-plan";
+
+const { mockFindFirst, mockSelect } = vi.hoisted(() => ({
+  mockFindFirst: vi.fn(),
+  mockSelect: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
       user: {
-        findFirst: vi.fn(),
+        findFirst: mockFindFirst,
       },
     },
-    select: vi.fn(),
+    select: mockSelect,
+    update: vi.fn(() => ({ set: vi.fn(() => ({ where: vi.fn() })) })),
   },
 }));
+
+// Helper: future date (trial active)
+const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+// Helper: past date (trial expired)
+const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+// Selects that return 0 counts for quota checks
+function mockZeroCount() {
+  mockSelect.mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue([{ count: 0 }]),
+    }),
+  });
+}
+
+describe("Trial System", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockZeroCount();
+  });
+
+  it("trial user gets Pro feature access (agentic posting)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    const result = await checkAgenticPostingAccessDetailed("user-1");
+    expect(result.allowed).toBe(true);
+  });
+
+  it("trial user is capped at 3 X accounts (Pro limit)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    // Simulate already having 3 accounts
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 3 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(false);
+  });
+
+  it("trial user AI quota is capped at Pro limit (100)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    // Simulate 100 AI generations used
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 100 }]),
+      }),
+    });
+    const result = await checkAiQuotaDetailed("user-1");
+    expect(result.allowed).toBe(false);
+    if (!result.allowed) {
+      expect(result.limit).toBe(100);
+    }
+  });
+
+  it("trial user CANNOT access LinkedIn (Agency-only)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    const result = await checkLinkedinAccessDetailed("user-1");
+    expect(result.allowed).toBe(false);
+  });
+
+  it("trial user gets csv_pdf analytics export (not white_label_pdf)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    const result = await checkAnalyticsExportLimitDetailed("user-1");
+    expect(result.allowed).toBe(true); // csv_pdf is allowed (not "none")
+  });
+
+  it("expired trial user is blocked from Pro features", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: pastDate, createdAt: new Date() });
+    const result = await checkAgenticPostingAccessDetailed("user-1");
+    expect(result.allowed).toBe(false);
+  });
+
+  it("expired trial user is capped at Free post limit (20)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: pastDate, createdAt: new Date() });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 20 }]),
+      }),
+    });
+    const result = await checkPostLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(false);
+    if (!result.allowed) {
+      expect(result.limit).toBe(20);
+    }
+  });
+
+  it("paid Pro user can use agentic posting (unaffected by trial logic)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "pro_monthly", trialEndsAt: null, createdAt: new Date() });
+    const result = await checkAgenticPostingAccessDetailed("user-1");
+    expect(result.allowed).toBe(true);
+  });
+
+  it("paid Agency user can access LinkedIn (unaffected by trial logic)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "agency", trialEndsAt: null, createdAt: new Date() });
+    const result = await checkLinkedinAccessDetailed("user-1");
+    expect(result.allowed).toBe(true);
+  });
+});
 
 describe("require-plan 402 payload", () => {
   const resetAt = new Date("2026-03-01T00:00:00.000Z");

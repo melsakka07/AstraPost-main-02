@@ -50,6 +50,13 @@ export default async function PricingPage() {
           </p>
         </div>
 
+        {/* Trial Banner */}
+        <div className="mx-auto max-w-2xl text-center rounded-lg border border-primary/20 bg-primary/5 p-4 -mt-8">
+          <p className="text-sm font-medium text-primary">
+            🎉 Start your 14-day free trial — access all Pro features, no credit card required.
+          </p>
+        </div>
+
         {/* Pricing Table */}
         <div className="flex justify-center">
           <PricingTable
@@ -79,12 +86,12 @@ export default async function PricingPage() {
             </div>
             <div className="space-y-4">
               {[
-                "Smart Scheduling with drag-and-drop calendar",
-                "Multi-platform Support (X, LinkedIn, Instagram)",
+                "X (Twitter) Scheduling — post and schedule across X",
+                "Smart Scheduling with timezone support",
                 "AI Content Generation with multiple models",
                 "Detailed Analytics and performance tracking",
                 "Team Collaboration (Agency plan)",
-                "Priority Support for all plans"
+                "Community & Email Support for all users"
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
                   <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">

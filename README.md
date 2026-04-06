@@ -1,6 +1,6 @@
 # AstraPost
 
-> **AI-powered social media scheduling & content platform** — schedule tweets, threads, and posts across X (Twitter), LinkedIn, and Instagram. Publish reliably via a background worker, track analytics, and generate content with AI.
+> **AI-powered social media scheduling & content platform** — schedule tweets, threads, and posts on X (Twitter). LinkedIn available on Agency plan. Publish reliably via a background worker, track analytics, and generate content with AI.
 
 [![CI](https://github.com/your-org/astrapost/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/astrapost/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -39,7 +39,7 @@
 
 ## Overview
 
-**AstraPost** is a production-ready social media management platform built for X (Twitter), LinkedIn, and Instagram. It combines a polished Next.js 16 frontend with a Redis-backed BullMQ job queue for reliable publishing, encrypted credential storage, AI-assisted content writing (via OpenRouter + Google Gemini), AI image generation (via Replicate), and Stripe billing.
+**AstraPost** is a production-ready social media management platform built for X (Twitter), with LinkedIn available on the Agency plan. It combines a polished Next.js 16 frontend with a Redis-backed BullMQ job queue for reliable publishing, encrypted credential storage, AI-assisted content writing (via OpenRouter + Google Gemini), AI image generation (via Replicate), and Stripe billing.
 
 It targets Arabic-speaking content creators and social media managers in the MENA region — filling the gap left by English-first tools like Buffer and Hootsuite — while being fully extensible for English-language markets.
 
@@ -51,7 +51,7 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 |---|---|
 | **Scheduling** | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts |
 | **Thread Support** | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview |
-| **Multi-Platform** | Publish to X (Twitter), LinkedIn, and Instagram from a single dashboard |
+| **Multi-Platform** | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan |
 | **Background Worker** | BullMQ + Redis: reliable publishing, automatic retries (3 attempts, 5-min intervals) |
 | **Real-time Queue** | Server-Sent Events (SSE) for live queue status updates |
 | **Queue Management** | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips |
@@ -78,7 +78,7 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **Analytics** | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7/30/90-day aggregates; CSV/PDF export |
 | **Link Preview** | Automatic link preview cards fetched when URLs are added to tweets |
 | **URL Shortener** | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links |
-| **Multi-Account** | Connect and manage multiple X, LinkedIn, and Instagram accounts per user |
+| **Multi-Account** | Connect and manage multiple X accounts per user (1 Free, 3 Pro, 10 Agency) |
 | **X Account Management** | Per-account inline health checks, expired-token detection, confirm-before-disconnect |
 | **Team Collaboration** | Agency plan with team member invitations, role-based access, and post approval workflows |
 | **Admin Panel** | Admin dashboard with user management, job monitoring, and system metrics |
@@ -86,7 +86,7 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **Achievements** | Gamification milestones to reward consistent creators |
 | **Onboarding** | Multi-step wizard + interactive dashboard tour (driver.js) |
 | **Mobile Navigation** | Fixed bottom nav bar, swipe-to-close sidebar (vaul), collapsible nav sections |
-| **Billing** | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, webhook handling, invoice history |
+| **Billing** | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, 14-day Pro trial for new users, webhook handling, invoice history |
 | **Auth** | Email/Password + X OAuth 2.0 + 2FA via Better Auth |
 | **Security** | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes |
 | **Observability** | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration |
@@ -807,6 +807,22 @@ The build step uses minimal stub environment variables so no real secrets are ne
 ## Recent Changes
 
 This section summarises major development cycles. For full commit-level detail, see `docs/0-MY-LATEST-UPDATES.md`.
+
+### April 2026 — Pricing Audit & Trial System Fix
+
+**Trial system security fix**
+- Replaced blanket `if (isTrialActive) return { allowed: true }` bypass with `effectivePlan` resolution — trial users now get Pro Monthly limits (100 AI text, 50 images, 3 accounts) instead of unlimited Agency-tier access
+- Added `TRIAL_EFFECTIVE_PLAN` constant and `effectivePlan` field to `PlanContext` interface
+- Agency-only features (LinkedIn, teams) correctly blocked during trial
+- 9 new unit tests covering trial Pro access, quota caps, Agency blocking, expiry, and paid-plan passthrough
+
+**Pricing page overhaul**
+- Removed Instagram claims (not implemented)
+- Fixed "Multi-platform Support (X, LinkedIn, Instagram)" → "X (Twitter) Scheduling"
+- Expanded feature lists: Free (3→7), Pro (5→15), Agency (5→7) — surfaces 17+ previously hidden features
+- Added 14-day trial banner on pricing page
+- Fixed annual savings label from "~20%" to "17%"
+- Replaced "Priority Support for all plans" with "Community & Email Support"
 
 ### April 2026 — Agentic Posting & Compose Overhaul
 

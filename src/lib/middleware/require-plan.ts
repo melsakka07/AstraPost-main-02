@@ -1,6 +1,6 @@
 import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { getPlanLimits, normalizePlan, type ImageModel, type PlanLimits, type PlanType } from "@/lib/plan-limits";
+import { getPlanLimits, normalizePlan, TRIAL_EFFECTIVE_PLAN, type ImageModel, type PlanLimits, type PlanType } from "@/lib/plan-limits";
 import { aiGenerations, inspirationBookmarks, posts, user, xAccounts } from "@/lib/schema";
 import { getMonthWindow } from "@/lib/utils/time";
 
@@ -29,6 +29,7 @@ export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
 interface PlanContext {
   plan: PlanType;
+  effectivePlan: PlanType;
   trialEndsAt: Date | null;
   isTrialActive: boolean;
 }
@@ -73,8 +74,9 @@ async function getPlanContext(userId: string): Promise<PlanContext> {
   }
 
   const isTrialActive = plan === "free" && !!trialEndsAt && new Date() < trialEndsAt;
+  const effectivePlan = isTrialActive ? TRIAL_EFFECTIVE_PLAN : plan;
 
-  return { plan, trialEndsAt, isTrialActive };
+  return { plan, effectivePlan, trialEndsAt, isTrialActive };
 }
 
 function buildFailure(params: Omit<PlanGateFailure, "allowed">): PlanGateFailure {
@@ -133,8 +135,7 @@ function makeFeatureGate(
 ): (userId: string) => Promise<PlanGateResult> {
   return async function checkDetailed(userId: string): Promise<PlanGateResult> {
     const context = await getPlanContext(userId);
-    if (context.isTrialActive) return { allowed: true };
-    const limits = getPlanLimits(context.plan);
+    const limits = getPlanLimits(context.effectivePlan);
     if (limits[limitFlag]) return { allowed: true };
     return buildFailure({
       error: "upgrade_required",
@@ -154,9 +155,7 @@ function makeFeatureGate(
 
 export async function checkAccountLimitDetailed(userId: string, increment = 1): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
   if (limits.maxXAccounts === Infinity) return { allowed: true };
 
   const accountsCount = await db
@@ -187,9 +186,7 @@ export async function checkAccountLimit(userId: string) {
 
 export async function checkPostLimitDetailed(userId: string, count = 1): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
   if (limits.postsPerMonth === Infinity) return { allowed: true };
 
   const { start, end } = getMonthWindow();
@@ -221,9 +218,7 @@ export async function checkPostLimit(userId: string, count: number = 1) {
 
 export async function checkAiLimitDetailed(userId: string): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
   if (limits.canUseAi) return { allowed: true };
 
   return buildFailure({
@@ -246,9 +241,7 @@ export async function checkAiLimit(userId: string) {
 
 export async function checkAiQuotaDetailed(userId: string): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
   if (limits.aiGenerationsPerMonth === Infinity) return { allowed: true };
 
   const { start, end } = getMonthWindow();
@@ -275,9 +268,7 @@ export async function checkAiQuotaDetailed(userId: string): Promise<PlanGateResu
 
 export async function checkAnalyticsExportLimitDetailed(userId: string): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
   if (limits.analyticsExport !== "none") return { allowed: true };
 
   return buildFailure({
@@ -297,9 +288,7 @@ export async function checkAnalyticsExportLimitDetailed(userId: string): Promise
 
 export async function checkBookmarkLimitDetailed(userId: string): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
 
   // maxInspirationBookmarks === -1 means unlimited
   if (limits.maxInspirationBookmarks < 0) return { allowed: true };
@@ -388,8 +377,7 @@ export async function checkImageModelAccessDetailed(
   model: ImageModel
 ): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
   if (limits.availableImageModels.includes(model)) return { allowed: true };
   return buildFailure({
     error: "upgrade_required",
@@ -411,8 +399,7 @@ export async function checkImageModelAccessDetailed(
  */
 export async function checkAiImageQuotaDetailed(userId: string): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
-  if (context.isTrialActive) return { allowed: true };
-  const limits = getPlanLimits(context.plan);
+  const limits = getPlanLimits(context.effectivePlan);
   if (limits.aiImagesPerMonth === -1) return { allowed: true }; // unlimited
 
   const { start, end } = getMonthWindow();
