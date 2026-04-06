@@ -19,7 +19,7 @@ const approveSchema = z.object({
         text: z.string(),
         hashtags: z.array(z.string()),
         hasImage: z.boolean(),
-        imageUrl: z.string().optional(),
+        imageUrl: z.string().nullish(),
         charCount: z.number(),
       })
     )
@@ -97,7 +97,7 @@ export async function POST(
       // Insert media for tweets with imageUrl
       // media columns: fileUrl, fileType, fileSize (not url/mimeType/source)
       const mediaRows = editedTweets
-        .filter((t) => t.imageUrl !== undefined)
+        .filter((t) => t.imageUrl != null)
         .map((t, idx) => {
           const matchingTweetRow =
             tweetRows.find((tr) => tr.position === (t.position ?? idx + 1)) ??

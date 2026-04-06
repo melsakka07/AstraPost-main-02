@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   DndContext,
   closestCenter,
@@ -27,10 +28,21 @@ import {
 import { toast } from "sonner";
 import type { XAccountOption } from "@/app/dashboard/ai/agentic/page";
 import { AgenticTrendsPanel } from "@/components/ai/agentic-trends-panel";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
@@ -111,6 +123,8 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successAction, setSuccessAction] = useState<string | null>(null);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const selectedAccount = xAccounts.find((a) => a.id === selectedAccountId) ?? xAccounts[0];
 
@@ -321,7 +335,7 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        toast.error((err as { message?: string }).message ?? "Failed to approve post");
+        toast.error((err as { error?: string }).error ?? (err as { message?: string }).message ?? "Failed to approve post");
         return;
       }
 
@@ -460,41 +474,86 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
     />
   );
 
+  const doChangeTopic = async () => {
+    await fetch("/api/ai/agentic", { method: "DELETE" }).catch(() => void 0);
+    setScreen("input");
+  };
+
   return (
-    <ReviewScreen
-      agenticPost={agenticPost}
-      editedTweets={editedTweets}
-      editingIndex={editingIndex}
-      editText={editText}
-      setEditText={setEditText}
-      rewritingIndex={rewritingIndex}
-      showResearch={showResearch}
-      setShowResearch={setShowResearch}
-      scheduleDate={scheduleDate}
-      setScheduleDate={setScheduleDate}
-      showSchedulePicker={showSchedulePicker}
-      setShowSchedulePicker={setShowSchedulePicker}
-      isSubmitting={isSubmitting}
-      selectedAccount={selectedAccount}
-      onEditStart={(idx) => { setEditingIndex(idx); setEditText(editedTweets[idx]?.text ?? ""); }}
-      onEditSave={handleSaveEdit}
-      onEditCancel={() => { setEditingIndex(null); setEditText(""); }}
-      onRewrite={handleRewriteTweet}
-      onRemove={handleRemoveTweet}
-      onAddTweet={handleAddTweet}
-      onApprove={handleApprove}
-      onReorder={handleReorder}
-      onChangeTopic={async () => {
-        await fetch("/api/ai/agentic", { method: "DELETE" }).catch(() => void 0);
-        setScreen("input");
-      }}
-      onRegenerateAll={() => {
-        if (window.confirm("Regenerate the entire thread? Your edits will be lost.")) {
-          setScreen("input");
-          void startPipeline(topic);
-        }
-      }}
-    />
+    <>
+      <ReviewScreen
+        agenticPost={agenticPost}
+        editedTweets={editedTweets}
+        editingIndex={editingIndex}
+        editText={editText}
+        setEditText={setEditText}
+        rewritingIndex={rewritingIndex}
+        showResearch={showResearch}
+        setShowResearch={setShowResearch}
+        scheduleDate={scheduleDate}
+        setScheduleDate={setScheduleDate}
+        showSchedulePicker={showSchedulePicker}
+        setShowSchedulePicker={setShowSchedulePicker}
+        isSubmitting={isSubmitting}
+        selectedAccount={selectedAccount}
+        onEditStart={(idx) => { setEditingIndex(idx); setEditText(editedTweets[idx]?.text ?? ""); }}
+        onEditSave={handleSaveEdit}
+        onEditCancel={() => { setEditingIndex(null); setEditText(""); }}
+        onRewrite={handleRewriteTweet}
+        onRemove={handleRemoveTweet}
+        onAddTweet={handleAddTweet}
+        onApprove={handleApprove}
+        onReorder={handleReorder}
+        onChangeTopic={doChangeTopic}
+        onRegenerateAll={() => setShowRegenerateConfirm(true)}
+        onDiscard={() => setShowDiscardConfirm(true)}
+      />
+
+      {/* Regenerate confirmation */}
+      <AlertDialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Regenerate entire thread?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All your edits will be lost. The AI will rewrite the thread from scratch.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowRegenerateConfirm(false);
+                setScreen("input");
+                void startPipeline(topic);
+              }}
+            >
+              Regenerate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Discard confirmation */}
+      <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard this thread?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This thread will be deleted and you&apos;ll return to the input screen. This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { setShowDiscardConfirm(false); void doChangeTopic(); }}
+            >
+              Discard
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -541,22 +600,25 @@ function InputScreen({
   };
 
   return (
-    <div className="mx-auto max-w-2xl py-8 space-y-8 animate-in fade-in duration-300">
-      {/* Headline */}
-      <div className="text-center space-y-2">
-        <div className="flex items-center justify-center gap-2 mb-3">
+    <div className="w-full max-w-2xl mx-auto py-8 space-y-6 animate-in fade-in duration-300">
+
+      {/* ── Hero headline ──────────────────────────────────────────────────── */}
+      <div className="text-center">
+        <div className="flex items-center justify-center mb-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
             <Wand2 className="h-6 w-6 text-primary" />
           </div>
         </div>
-        <h2 className="text-2xl font-semibold tracking-tight">What should we post about?</h2>
-        <p className="text-muted-foreground text-sm">
-          AI will research, write, and create visuals — ready to post in seconds.
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+          What should we post about?
+        </h2>
+        <p className="text-base text-muted-foreground text-center mt-3 max-w-lg mx-auto">
+          AI will research, write, and create visuals — ready in seconds.
         </p>
       </div>
 
-      {/* Input */}
-      <div className="space-y-3">
+      {/* ── Topic input ────────────────────────────────────────────────────── */}
+      <div className="mt-8 sm:mt-10">
         <input
           ref={inputRef}
           type="text"
@@ -564,132 +626,139 @@ function InputScreen({
           onChange={(e) => setTopic(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="e.g., AI coding tools, sustainable fashion, Web3 gaming..."
-          className="w-full rounded-xl border border-input bg-background px-6 py-4 text-lg shadow-sm outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2 placeholder:text-muted-foreground/60 transition-shadow"
+          className="w-full rounded-xl border border-input bg-background px-5 py-4 text-lg shadow-sm outline-none placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-ring focus:border-transparent focus:shadow-md transition-shadow duration-200"
           maxLength={500}
           aria-label="Topic for your post"
         />
-
-        {/* Suggestion chips */}
-        <div className="flex flex-wrap gap-2" role="list">
-          {DEFAULT_SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              role="listitem"
-              onClick={() => { setTopic(s); onSubmit(s); }}
-              className="rounded-full border border-border bg-muted/50 px-3 py-1 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
       </div>
 
-      {/* Generate button */}
-      <div className="flex justify-center">
+      {/* ── Suggestion chips ───────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {DEFAULT_SUGGESTIONS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => { setTopic(s); onSubmit(s); }}
+            className="inline-flex items-center rounded-full border border-border bg-muted/50 px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors duration-150 select-none"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Generate button ────────────────────────────────────────────────── */}
+      <div className="flex justify-center mt-6">
         <Button
-          size="lg"
-          className="px-10 gap-2"
+          className="h-12 px-8 text-base font-medium rounded-xl gap-2 active:scale-[0.98] transition-transform"
           disabled={!canSubmit}
           onClick={() => onSubmit()}
           aria-label={`Generate AI post about ${topic || "your topic"}`}
         >
-          <Sparkles className="h-4 w-4" />
+          <Sparkles className="h-5 w-5" />
           Generate
         </Button>
       </div>
 
-      {/* Trending topics discovery panel */}
+      {/* ── Trending topics ────────────────────────────────────────────────── */}
       <AgenticTrendsPanel onSelectTrend={onSelectTrend} />
 
-      {/* Advanced options toggle */}
-      <div className="space-y-4">
+      {/* ── Advanced options ───────────────────────────────────────────────── */}
+      <div>
         <button
+          type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
         >
-          {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`}
+          />
           Advanced options
         </button>
 
         {showAdvanced && (
-          <Card>
-            <CardContent className="pt-5 space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Tone */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tone</Label>
-                  <Select value={tone} onValueChange={setTone}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">Auto (AI decides)</SelectItem>
-                      {TONE_ENUM.options.map((t) => (
-                        <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Language */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Language</Label>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map((l) => (
-                        <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Include images */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Include AI Images</p>
-                  <p className="text-xs text-muted-foreground">Generate visuals for key tweets</p>
-                </div>
-                <Switch checked={includeImages} onCheckedChange={setIncludeImages} />
-              </div>
-
-              {/* Audience hint */}
+          <div className="mt-4 p-5 rounded-xl border border-border bg-muted/30 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Tone */}
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Audience hint (optional)</Label>
-                <input
-                  type="text"
-                  value={audience}
-                  onChange={(e) => setAudience(e.target.value)}
-                  placeholder="e.g., developers, marketers, students"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  maxLength={100}
-                />
+                <Label htmlFor="agentic-tone" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tone</Label>
+                <Select value={tone} onValueChange={setTone}>
+                  <SelectTrigger id="agentic-tone" className="h-9 rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto (AI decides)</SelectItem>
+                    {TONE_ENUM.options.map((t) => (
+                      <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Language */}
+              <div className="space-y-1.5">
+                <Label htmlFor="agentic-language" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Language</Label>
+                <Select value={language} onValueChange={setLanguage}>
+                  <SelectTrigger id="agentic-language" className="h-9 rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((l) => (
+                      <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Include images */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Include AI Images</p>
+                <p className="text-xs text-muted-foreground">Generate visuals for key tweets</p>
+              </div>
+              <Switch id="agentic-images" checked={includeImages} onCheckedChange={setIncludeImages} />
+            </div>
+
+            {/* Audience hint */}
+            <div className="space-y-1.5">
+              <Label htmlFor="agentic-audience" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Audience hint <span className="normal-case">(optional)</span></Label>
+              <Input
+                id="agentic-audience"
+                value={audience}
+                onChange={(e) => setAudience(e.target.value)}
+                placeholder="e.g., developers, marketers, students"
+                maxLength={100}
+                className="rounded-lg"
+              />
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Account selector */}
+      {/* ── Account selector (bottom — secondary context) ──────────────────── */}
       {xAccounts.length > 0 && (
-        <div className="pt-2">
-          <p className="text-xs text-muted-foreground mb-2 text-center">Posting as</p>
+        <div className="flex justify-center mt-8 pb-4">
           {xAccounts.length === 1 ? (
-            <div className="flex items-center justify-center gap-2.5">
-              <Avatar className="h-7 w-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/30 px-4 py-2 text-sm text-muted-foreground">
+              <Avatar className="h-5 w-5">
                 <AvatarImage src={selectedAccount?.profileImageUrl ?? undefined} />
-                <AvatarFallback className="text-xs">{selectedAccount?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="text-[10px]">{selectedAccount?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium">@{selectedAccount?.username}</span>
+              <span>Posting as</span>
+              <span className="font-medium text-foreground">@{selectedAccount?.username}</span>
               <XSubscriptionBadge tier={selectedAccount?.subscriptionTier ?? "None"} size="sm" />
             </div>
           ) : (
             <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-              <SelectTrigger className="mx-auto max-w-xs">
-                <SelectValue />
+              <SelectTrigger className="inline-flex h-auto rounded-full border border-border bg-muted/30 px-4 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors gap-2 w-auto">
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={selectedAccount?.profileImageUrl ?? undefined} />
+                    <AvatarFallback className="text-[10px]">{selectedAccount?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <span>Posting as</span>
+                  <span className="font-medium text-foreground">@{selectedAccount?.username}</span>
+                </div>
               </SelectTrigger>
               <SelectContent>
                 {xAccounts.map((acc) => (
@@ -697,7 +766,7 @@ function InputScreen({
                     <div className="flex items-center gap-2">
                       <Avatar className="h-5 w-5">
                         <AvatarImage src={acc.profileImageUrl ?? undefined} />
-                        <AvatarFallback className="text-xs">{acc.username?.[0]?.toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="text-[10px]">{acc.username?.[0]?.toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <span>@{acc.username}</span>
                     </div>
@@ -743,12 +812,14 @@ function ProcessingScreen({ topic, steps, showCancelConfirm, setShowCancelConfir
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Generating for topic</p>
           <p className="font-medium truncate">{topic}</p>
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-destructive shrink-0 ml-4"
           onClick={() => setShowCancelConfirm(true)}
-          className="text-sm text-muted-foreground hover:text-destructive transition-colors shrink-0 ml-4"
         >
           Cancel
-        </button>
+        </Button>
       </div>
 
       {/* Cancel confirm */}
@@ -870,6 +941,7 @@ interface ReviewScreenProps {
   onReorder: (activeId: string, overId: string) => void;
   onChangeTopic: () => void;
   onRegenerateAll: () => void;
+  onDiscard: () => void;
 }
 
 function ReviewScreen({
@@ -878,7 +950,7 @@ function ReviewScreen({
   scheduleDate, setScheduleDate, showSchedulePicker, setShowSchedulePicker,
   isSubmitting, selectedAccount,
   onEditStart, onEditSave, onEditCancel, onRewrite, onRemove, onAddTweet,
-  onApprove, onReorder, onChangeTopic, onRegenerateAll,
+  onApprove, onReorder, onChangeTopic, onRegenerateAll, onDiscard,
 }: ReviewScreenProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -905,9 +977,16 @@ function ReviewScreen({
           <p className="text-muted-foreground text-sm">Your post is ready</p>
           <h2 className="font-semibold truncate">{agenticPost.summary}</h2>
         </div>
-        <div className="flex items-center gap-1 shrink-0 text-amber-500">
-          {"★".repeat(qualityStars)}{"☆".repeat(10 - qualityStars)}
-          <span className="text-xs text-muted-foreground ml-1">{agenticPost.qualityScore}/10</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex gap-0.5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 w-3 rounded-full ${i < qualityStars ? "bg-amber-400" : "bg-muted"}`}
+              />
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground tabular-nums">{agenticPost.qualityScore}/10</span>
         </div>
       </div>
 
@@ -1027,12 +1106,8 @@ function ReviewScreen({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-muted-foreground ml-auto"
-            onClick={() => {
-              if (window.confirm("Discard this thread? This can't be undone.")) {
-                onChangeTopic();
-              }
-            }}
+            className="gap-1.5 text-muted-foreground hover:text-destructive ml-auto"
+            onClick={onDiscard}
           >
             <Trash2 className="h-3.5 w-3.5" />
             Discard
@@ -1253,12 +1328,12 @@ function SuccessScreen({ action, scheduleDate, onCreateAnother }: { action: stri
           Create Another
         </Button>
         <div className="flex gap-4 text-sm">
-          <a href="/dashboard/queue" className="text-muted-foreground hover:text-foreground flex items-center gap-1">
+          <Link href="/dashboard/queue" className="text-muted-foreground hover:text-foreground flex items-center gap-1">
             <ListOrdered className="h-3.5 w-3.5" />View in Queue
-          </a>
-          <a href="/dashboard/calendar" className="text-muted-foreground hover:text-foreground flex items-center gap-1">
+          </Link>
+          <Link href="/dashboard/calendar" className="text-muted-foreground hover:text-foreground flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5" />Go to Calendar
-          </a>
+          </Link>
         </div>
       </div>
     </div>

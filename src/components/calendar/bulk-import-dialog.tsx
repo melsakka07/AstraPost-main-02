@@ -89,9 +89,9 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label>X Account</Label>
+            <Label htmlFor="bulk-import-account">X Account</Label>
             <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-              <SelectTrigger>
+              <SelectTrigger id="bulk-import-account">
                 <SelectValue placeholder="Select account" />
               </SelectTrigger>
               <SelectContent>
@@ -104,8 +104,8 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label>CSV File</Label>
-            <Input type="file" accept=".csv" onChange={handleFileChange} />
+            <Label htmlFor="bulk-import-csv">CSV File</Label>
+            <Input id="bulk-import-csv" type="file" accept=".csv" onChange={handleFileChange} />
           </div>
           <div className="text-xs text-muted-foreground">
             <p>Format example:</p>

@@ -189,9 +189,10 @@ export function VoiceProfileForm() {
             <div className="space-y-3">
               {samples.map((sample, i) => (
                 <div key={i} className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">Sample Tweet {i + 1}</Label>
-                  <Textarea 
-                    value={sample} 
+                  <Label htmlFor={`sample-tweet-${i}`} className="text-xs text-muted-foreground">Sample Tweet {i + 1}</Label>
+                  <Textarea
+                    id={`sample-tweet-${i}`}
+                    value={sample}
                     onChange={(e) => updateSample(i, e.target.value)}
                     placeholder="Paste one of your tweets here..."
                     className="min-h-[80px] resize-none"

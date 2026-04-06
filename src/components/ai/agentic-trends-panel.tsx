@@ -30,6 +30,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
   // On mobile (< sm), collapsed by default; on desktop always expanded.
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const hasFetched = useRef(false);
 
   const fetchTrends = useCallback(async (category: TrendCategory) => {
     abortRef.current?.abort();
@@ -61,6 +62,8 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
   }, []);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     void fetchTrends("all");
     return () => abortRef.current?.abort();
   }, [fetchTrends]);

@@ -1,7 +1,9 @@
+import { headers } from "next/headers";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
+import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { checkAgenticPostingAccessDetailed } from "@/lib/middleware/require-plan";
 import { redis } from "@/lib/rate-limiter";
@@ -34,14 +36,11 @@ Format: [{ "title": "...", "description": "...", "postCount": "...", "category":
 
 export async function GET(req: Request) {
   try {
-    const preamble = await aiPreamble({
-      featureGate: checkAgenticPostingAccessDetailed,
-      skipQuotaCheck: false,
-    });
-    if (preamble instanceof Response) return preamble;
-    const { session } = preamble;
+    // ── Auth only (no rate-limit yet) ────────────────────────────────────────
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return ApiError.unauthorized();
 
-    // Parse & validate category query param
+    // ── Parse & validate category query param ────────────────────────────────
     const { searchParams } = new URL(req.url);
     const rawCategory = searchParams.get("category") ?? "all";
     const categoryParsed = trendCategoryEnum.safeParse(rawCategory);
@@ -50,7 +49,8 @@ export async function GET(req: Request) {
     }
     const category = categoryParsed.data;
 
-    // ── Redis cache check ────────────────────────────────────────────────────
+    // ── Redis cache check (BEFORE rate-limit) ────────────────────────────────
+    // Cached responses skip the rate-limit entirely — they cost nothing.
     const cacheKey = `trends:${category}`;
     let cachedAt: string | null = null;
 
@@ -67,6 +67,13 @@ export async function GET(req: Request) {
         category,
       });
     }
+
+    // ── Rate-limit + feature gate (only on cache miss → real AI call) ────────
+    const preamble = await aiPreamble({
+      featureGate: checkAgenticPostingAccessDetailed,
+      skipQuotaCheck: false,
+    });
+    if (preamble instanceof Response) return preamble;
 
     // ── AI call ──────────────────────────────────────────────────────────────
     logger.info("trends_fetch_start", { category, userId: session.user.id });

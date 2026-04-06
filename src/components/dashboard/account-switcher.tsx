@@ -144,8 +144,9 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
         <div className="p-2">
             <div className="flex items-center border-b px-3 pb-2 mb-2">
                 <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                <Input 
-                    placeholder="Search team..." 
+                <Input
+                    aria-label="Search team"
+                    placeholder="Search team..."
                     className="flex h-6 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50 border-0 focus-visible:ring-0 px-0"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}

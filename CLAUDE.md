@@ -39,6 +39,9 @@ Please go check this file \docs\0-MY-LATEST-UPDATES.md to get the latest updates
 - `src/app/api/ai/affiliate/route.ts` — Amazon affiliate tweet generator
 - `src/app/api/ai/tools/route.ts` — General AI writing tools
 - `src/app/api/chat/route.ts` — General AI chat endpoint
+- `src/app/api/ai/agentic/route.ts` — Agentic Posting SSE streaming endpoint (Pro/Agency only)
+- `src/app/api/ai/agentic/[id]/approve/route.ts` — Approve/schedule/draft agentic post
+- `src/app/api/ai/agentic/[id]/regenerate/route.ts` — Single-tweet regeneration
 - Import: `import { openrouter } from "@openrouter/ai-sdk-provider"`
 
 **Google Gemini AI Integration**
@@ -74,7 +77,8 @@ src/
 │   │   ├── resources/            # Resources page
 │   │   └── legal/                # Privacy & Terms pages
 │   ├── api/
-│   │   ├── ai/                   # AI endpoints: thread, translate, affiliate, tools
+│   │   ├── ai/                   # AI endpoints: thread, translate, affiliate, tools, agentic
+│   │   │   └── agentic/          # Agentic Posting: SSE route + [id]/approve + [id]/regenerate
 │   │   │   ├── image/            # AI image generation via Replicate
 │   │   │   └── inspire/          # AI content inspiration via Gemini
 │   │   ├── analytics/            # Follower & tweet analytics endpoints
@@ -92,7 +96,8 @@ src/
 │   ├── chat/                     # AI chat interface (protected)
 │   ├── dashboard/                # Core app area (protected)
 │   │   ├── affiliate/            # Affiliate tweet generator page
-│   │   ├── ai/                   # AI writing tools page (Thread Writer, Hashtag Generator)
+│   │   ├── ai/                   # AI writing tools hub page
+│   │   │   └── agentic/          # Agentic Posting page (/dashboard/ai/agentic)
 │   │   ├── analytics/            # Analytics dashboard page
 │   │   │   └── viral/            # Viral Content Analyzer page
 │   │   ├── calendar/             # Scheduling calendar page
@@ -107,7 +112,8 @@ src/
 │   └── layout.tsx                # Root layout
 ├── components/
 │   ├── ai/                       # AI-powered components
-│   │   └── hashtag-generator.tsx # AI hashtag generator component
+│   │   ├── hashtag-generator.tsx # AI hashtag generator component
+│   │   └── agentic-posting-client.tsx # Agentic Posting 3-screen UI (Input/Processing/Review)
 │   ├── auth/                     # Authentication components
 │   │   ├── sign-in-button.tsx    # X OAuth sign-in button (simplified)
 │   │   ├── sign-out-button.tsx
@@ -117,10 +123,12 @@ src/
 │   ├── calendar/                 # Calendar components
 │   │   └── reschedule-post-form.tsx
 │   ├── composer/                 # Tweet/thread composer components
-│   │   ├── ai-image-dialog.tsx   # AI image generation dialog
+│   │   ├── ai-image-dialog.tsx   # AI image generation dialog (with progress bar)
+│   │   ├── ai-tools-panel.tsx    # AI tools panel (Write/Hook/CTA/Rewrite/Translate/#Tags tabs)
+│   │   ├── best-time-suggestions.tsx # Best time suggestions with loading skeleton
 │   │   ├── composer.tsx
 │   │   ├── sortable-tweet.tsx    # Draggable tweet card
-│   │   ├── tweet-card.tsx        # Tweet card component
+│   │   ├── tweet-card.tsx        # Tweet card component (with link preview skeleton)
 │   │   └── target-accounts-select.tsx
 │   ├── dashboard/                # Dashboard layout components
 │   │   └── sidebar.tsx
@@ -159,11 +167,17 @@ src/
 │   ├── site-footer.tsx           # Footer component
 │   └── theme-provider.tsx        # Dark mode provider
 └── lib/
+    ├── ai/                       # AI types and prompt libraries
+    │   ├── agentic-types.ts      # ResearchBrief, ContentPlan, AgenticTweet, PipelineProgressEvent
+    │   ├── agentic-types.test.ts # Type shape validation tests
+    │   └── agentic-prompts.ts    # Typed prompt builders for all 4 pipeline steps
     ├── queue/                    # BullMQ queue client and job processors
     │   ├── client.ts
     │   └── processors.ts
     ├── services/                 # External service integrations
-    │   ├── ai-image.ts           # AI image generation via Replicate
+    │   ├── agentic-pipeline.ts   # 5-step agentic pipeline service (Research→Strategy→Write→Images→Review)
+    │   ├── agentic-pipeline.test.ts # Pipeline unit tests (5 tests)
+    │   ├── ai-image.ts           # AI image generation via Replicate (+ generateAgenticImage)
     │   ├── analytics-engine.ts   # Analytics computation service
     │   ├── tweet-importer.ts     # Tweet import service with context
     │   ├── x-api.ts              # X (Twitter) API service
@@ -331,6 +345,27 @@ AstraPost includes several AI-powered features to help users create, analyze, an
   - Content type performance (questions, links, quotes, statistics, threads)
   - AI-generated actionable insights
 
+### 7. Agentic Posting *(Pro/Agency only)*
+- **Route**: `/dashboard/ai/agentic`
+- **Endpoints**: `POST /api/ai/agentic` (SSE), `POST /api/ai/agentic/[id]/approve`, `POST /api/ai/agentic/[id]/regenerate`
+- **Pipeline service**: `src/lib/services/agentic-pipeline.ts`
+- **Types**: `src/lib/ai/agentic-types.ts`
+- **Prompts**: `src/lib/ai/agentic-prompts.ts`
+- **UI component**: `src/components/ai/agentic-posting-client.tsx`
+- **Purpose**: Drop a topic — AI autonomously researches, plans, writes, generates images, and reviews a ready-to-publish post
+- **5-step pipeline** (streamed via SSE):
+  1. **Research** — viral angle analysis, MENA/Arabic cultural rules, broad-topic detection
+  2. **Strategy** — tier-aware format selection (thread vs single tweet vs long post)
+  3. **Write** — voice-profile-injected copywriting with per-format char limits
+  4. **Images** — `generateAgenticImage()` wraps Replicate; persisted to `agentic-images/` via `upload()`
+  5. **Review** — 8-point editorial checklist; `passed: true` requires score ≥ 6 + no violations
+- **Three-screen UX**: Input → Processing (vertical timeline) → Review (editable cards + sticky action bar)
+- **Approve actions**: Post Now / Schedule / Save Draft — creates standard `posts`/`tweets`/`media` rows via `db.transaction()`
+- **Database**: `agenticPosts` table (migration `0038_tiny_rocket_raccoon.sql`)
+- **Plan gate**: `checkAgenticPostingAccessDetailed` — Pro/Agency only, enforced via `aiPreamble`
+- **Recovery**: GET `/api/ai/agentic` returns latest session; client auto-restores review/generating state on mount
+- **Error handling**: Too-broad topic emits `needs_input` SSE + suggestion chips; 402 quota error shows date-aware reset message
+
 ## AI Tone & Style Options
 
 The AI writer supports multiple tones for different content strategies:
@@ -399,6 +434,28 @@ AstraPost supports content generation in multiple languages:
    - Created Viral Analyzer dashboard page (`src/app/dashboard/analytics/viral/page.tsx`)
    - Added to sidebar navigation
    - Multi-dimensional analysis: hashtags, keywords, length, timing, content types
+
+### New Feature Implementations (April 2026)
+
+1. **Agentic Posting** (`/dashboard/ai/agentic`) — Pro/Agency only
+   - 5-step autonomous pipeline: Research → Strategy → Write → Images → Review
+   - SSE streaming endpoint `POST /api/ai/agentic` emits step progress events
+   - Approve endpoint creates standard posts/tweets/media in a single transaction
+   - Three-screen UX: Input (topic + advanced options) → Processing (timeline) → Review (editable cards)
+   - Too-broad topic detection with suggestion chips; session recovery on page reload
+   - Full Vitest test suite: 23 tests across pipeline service, approve route, and type shapes
+   - New DB table `agenticPosts` (migration `0038_tiny_rocket_raccoon.sql`)
+   - New files: `src/lib/ai/agentic-types.ts`, `src/lib/ai/agentic-prompts.ts`, `src/lib/services/agentic-pipeline.ts`, `src/components/ai/agentic-posting-client.tsx`
+
+2. **Compose Page UX Overhaul** (Phases 0–2, 2026-04-04–05)
+   - **Phase 0**: 8 quick wins — auto-save label delay, char counter thresholds, etc.
+   - **Phase 1**: Extracted `AiToolsPanel` component; replaced card-swap with accordion expand; removed redundant toolbar AI buttons; moved "Save as Template" to Content Tools card
+   - **Phase 2-A**: Hashtag chips now inline only — panel closes after generation
+   - **Phase 2-B**: Link preview loading skeleton in `TweetCard`
+   - **Phase 2-C**: AI Image dialog replaced bare spinner with quadratic ease-out progress bar (0→90% over 15s, "Taking longer than usual…" after 25s)
+   - **Phase 2-D**: `beforeunload` guard extended to also warn during active media uploads
+   - **Phase 2-E**: Unified `DateTimePicker` component — date + time in one popover (replaces separate DatePicker + Select)
+   - New files: `src/components/composer/ai-tools-panel.tsx`, `src/components/ui/date-time-picker.tsx`
 
 ### Bug Fixes
 

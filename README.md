@@ -71,6 +71,8 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **Viral Content Analyzer** | Bar/hour charts: top hashtags, keywords, best hours/days, content types, tweet length |
 | **Competitor Analyzer** | Fetch any public account's recent tweets, generate a strategic AI analysis (Pro/Agency) |
 | **Best Time to Post** | Heatmap analysis showing optimal posting windows by day and hour (Pro/Agency) |
+| **Agentic Posting** | Drop a topic — AI autonomously researches, writes, generates images, and prepares a ready-to-publish post in 5 steps (Pro/Agency) |
+| **Trending Topics Discovery** | AI-powered X trending topics by category (Technology, Business, etc.) — no X API required (Pro/Agency) |
 | **Voice Profile** | Store your writing style to personalize AI-generated content |
 | **Templates** | Save and reuse tweet/thread templates with full media support |
 | **Analytics** | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7/30/90-day aggregates; CSV/PDF export |
@@ -147,7 +149,7 @@ astrapost/
 │   ├── features/               # Feature implementation documentation
 │   └── technical/              # AI, X API, react-markdown, BetterAuth docs
 │
-├── drizzle/                    # Generated SQL migration files (0000–0031+)
+├── drizzle/                    # Generated SQL migration files (0000–0038)
 │
 ├── scripts/                    # Operational scripts
 │   ├── worker.ts               # BullMQ worker entry point
@@ -174,7 +176,8 @@ astrapost/
     │   ├── api/
     │   │   ├── ai/             # AI endpoints: thread, translate, affiliate, tools,
     │   │   │   │               #   hashtags, score, image, inspire, bio, calendar,
-    │   │   │   │               #   summarize, variants, reply, history, quota
+    │   │   │   │               #   summarize, variants, reply, history, quota,
+    │   │   │   │               #   trends, agentic (SSE + approve + regenerate)
     │   │   ├── analytics/      # Follower analytics, best-time, competitor, viral,
     │   │   │   │               #   self-stats, export (PDF), refresh, runs
     │   │   ├── auth/           # Better Auth catch-all route
@@ -201,6 +204,7 @@ astrapost/
     │   │   ├── achievements/   # Gamification milestones page
     │   │   ├── affiliate/      # Amazon affiliate tweet generator page
     │   │   ├── ai/             # AI hub page
+    │   │   │   ├── agentic/    # Agentic Posting page — 3-screen AI pipeline (Pro/Agency)
     │   │   │   ├── writer/     # AI writer page (Thread / URL / Variants / Hashtags tabs)
     │   │   │   ├── bio/        # Bio optimizer page
     │   │   │   ├── calendar/   # Content calendar page
@@ -225,7 +229,7 @@ astrapost/
     ├── components/
     │   ├── admin/              # Admin sidebar and user management table
     │   ├── affiliate/          # Recent affiliate links component
-    │   ├── ai/                 # AI-powered components (hashtag generator)
+    │   ├── ai/                 # AI-powered components (hashtag generator, agentic-posting-client)
     │   ├── analytics/          # Charts, heatmaps, export, top tweets, drawers,
     │   │                       #   viral bar/hour charts, follower/impression charts
     │   ├── auth/               # Sign-in/up forms, user profile, sign-out
@@ -233,8 +237,9 @@ astrapost/
     │   ├── calendar/           # Calendar view, day cells, post items, reschedule form,
     │   │                       #   bulk import dialog
     │   ├── community/          # Contact form
-    │   ├── composer/           # Tweet/thread composer, AI image dialog, viral score badge,
-    │   │                       #   templates dialog, best-time suggestions, inspiration panel
+    │   ├── composer/           # Tweet/thread composer, AI tools panel, AI image dialog,
+    │   │                       #   viral score badge, templates dialog, best-time suggestions,
+    │   │                       #   inspiration panel, link preview skeleton
     │   ├── dashboard/          # Sidebar, header, bottom nav, notifications, quick compose,
     │   │                       #   failure banners, setup checklist, page toolbar,
     │   │                       #   onboarding redirect, account switcher
@@ -257,7 +262,7 @@ astrapost/
     │                           #   drawer, scroll area, sheet, tabs, tooltip, form
     │
     └── lib/
-        ├── ai/                 # AI utilities (voice-profile.ts)
+        ├── ai/                 # AI utilities (voice-profile.ts, agentic-types.ts, agentic-prompts.ts)
         ├── api/                # Shared API helpers
         │   ├── ai-preamble.ts  # Shared auth+rate-limit+plan+model pipeline for all AI routes
         │   └── errors.ts       # ApiError factory (401/400/403/404/409/500)
@@ -269,7 +274,8 @@ astrapost/
         │   └── common.ts       # paginationSchema, uuidSchema, isoDateSchema, dateRangeSchema
         ├── security/           # Token encryption (AES-256-GCM)
         ├── services/           # External service integrations
-        │   ├── ai-image.ts     # AI image generation via Replicate
+        │   ├── agentic-pipeline.ts # 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
+        │   ├── ai-image.ts     # AI image generation via Replicate (+ generateAgenticImage)
         │   ├── ai-quota.ts     # AI quota tracking and enforcement
         │   ├── analytics.ts    # Analytics computation service
         │   ├── analytics-engine.ts # Analytics computation helpers
@@ -801,6 +807,30 @@ The build step uses minimal stub environment variables so no real secrets are ne
 ## Recent Changes
 
 This section summarises major development cycles. For full commit-level detail, see `docs/0-MY-LATEST-UPDATES.md`.
+
+### April 2026 — Agentic Posting & Compose Overhaul
+
+**Agentic Posting** (`/dashboard/ai/agentic`) — Pro/Agency only
+- Drop a topic, AI autonomously runs a 5-step pipeline: Research → Strategy → Write → Images → Review
+- Streamed via SSE — each pipeline step updates a live progress timeline in the browser
+- Three-screen UX: Input (topic + advanced options + account selector) → Processing (timeline with elapsed/ETA) → Review (editable tweet cards + sticky action bar)
+- Too-broad topic detection emits `needs_input` with suggestion chips so users can refine
+- Session recovery on reload: GET `/api/ai/agentic` restores latest session state
+- Approve actions (Post Now / Schedule / Save Draft) write standard `posts`/`tweets`/`media` rows via `db.transaction()` — same publishing pipeline as the Composer
+- Images persisted to `agentic-images/` via Vercel Blob / local storage so URLs survive Replicate's ephemeral CDN
+- New DB table: `agenticPosts` (migration `0038_tiny_rocket_raccoon.sql`)
+- Plan gate: `checkAgenticPostingAccessDetailed` in `require-plan.ts`; `canUseAgenticPosting` in `plan-limits.ts`
+- Full Vitest suite: 23 tests across pipeline service, approve route, and type shapes (317/317 total)
+- New files: `src/lib/ai/agentic-types.ts`, `src/lib/ai/agentic-prompts.ts`, `src/lib/services/agentic-pipeline.ts`, `src/components/ai/agentic-posting-client.tsx`
+
+**Compose Page overhaul (Phases 0–2)**
+- Extracted `AiToolsPanel` component with 6-tool pill tab switcher (Write / Hook / CTA / Rewrite / Translate / #Tags)
+- AI panel now accordion-expands inline below Content Tools card — no card swap, compose area stays visible
+- Unified `DateTimePicker`: date + time in one popover, replaces separate DatePicker + Select
+- AI Image dialog: quadratic ease-out progress bar (0→90% over 15 s, "Taking longer than usual…" after 25 s)
+- `beforeunload` guard extended to fire during active media uploads
+- Hashtag chips inline only — panel closes immediately after generation
+- Link preview shows shimmer skeleton during the 1 s debounce window
 
 ### March 2026 — UX Audit & Polish (Phase 2–4E)
 
