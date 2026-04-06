@@ -29,6 +29,16 @@ export interface RefreshXTiersJobPayload {
 
 export const xTierRefreshQueue = new Queue<RefreshXTiersJobPayload>("x-tier-refresh-queue", { connection: connection as any });
 
+/** Job type name for the token health check job. */
+export const TOKEN_HEALTH_JOB = "token-health-check" as const;
+
+/** Payload carried by every job on the token health check queue. */
+export interface TokenHealthJobPayload {
+  correlationId?: string;
+}
+
+export const tokenHealthQueue = new Queue<TokenHealthJobPayload>("token-health-queue", { connection: connection as any });
+
 /**
  * Shared BullMQ job options for all publish-post jobs.
  *

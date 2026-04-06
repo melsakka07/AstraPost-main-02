@@ -177,7 +177,7 @@ export default async function SettingsPage({
                 <CardDescription>Manage your X accounts</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ConnectedXAccounts initialAccounts={connectedAccounts} />
+                <ConnectedXAccounts initialAccounts={connectedAccounts} userPlan={currentPlan} />
               </CardContent>
             </Card>
 

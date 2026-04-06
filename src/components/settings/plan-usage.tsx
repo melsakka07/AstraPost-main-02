@@ -80,6 +80,20 @@ export function PlanUsage() {
           </span>
         </div>
         <Progress value={accountPercentage} className="h-2" />
+        {limits.maxXAccounts !== null && (
+          <div className="text-xs">
+            {usage.accounts < limits.maxXAccounts ? (
+              <Link
+                href="/dashboard/settings#accounts"
+                className="text-primary cursor-pointer hover:underline"
+              >
+                {limits.maxXAccounts - usage.accounts} slot{limits.maxXAccounts - usage.accounts > 1 ? 's' : ''} available — add account
+              </Link>
+            ) : (
+              <span className="text-muted-foreground">Account limit reached</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">

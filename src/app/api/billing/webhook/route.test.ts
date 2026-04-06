@@ -25,6 +25,7 @@ const {
   mockDbQueryProcessedFindFirst,
   mockDbQuerySubscriptionsFindFirst,
   mockDbQueryUserFindFirst,
+  mockDbQueryXAccountsFindMany,
   mockDbInsertFn,
   mockDbUpdateFn,
   mockDbInsertValuesFn,
@@ -37,6 +38,7 @@ const {
   const mockDbQueryProcessedFindFirst = vi.fn();
   const mockDbQuerySubscriptionsFindFirst = vi.fn();
   const mockDbQueryUserFindFirst = vi.fn();
+  const mockDbQueryXAccountsFindMany = vi.fn();
 
   const mockDbUpdateSetFn = vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) }));
   const mockDbInsertValuesFn = vi.fn(() => ({
@@ -63,6 +65,7 @@ const {
     mockDbQueryProcessedFindFirst,
     mockDbQuerySubscriptionsFindFirst,
     mockDbQueryUserFindFirst,
+    mockDbQueryXAccountsFindMany,
     mockDbInsertFn,
     mockDbUpdateFn,
     mockDbInsertValuesFn,
@@ -100,6 +103,7 @@ vi.mock("@/lib/db", () => ({
       processedWebhookEvents: { findFirst: mockDbQueryProcessedFindFirst },
       subscriptions: { findFirst: mockDbQuerySubscriptionsFindFirst },
       user: { findFirst: mockDbQueryUserFindFirst },
+      xAccounts: { findMany: mockDbQueryXAccountsFindMany },
     },
     insert: mockDbInsertFn,
     update: mockDbUpdateFn,
@@ -185,6 +189,8 @@ describe("POST /api/billing/webhook", () => {
     mockDbQuerySubscriptionsFindFirst.mockResolvedValue(null);
     // Default: no user record
     mockDbQueryUserFindFirst.mockResolvedValue(null);
+    // Default: no active X accounts (so over-limit checks don't trigger)
+    mockDbQueryXAccountsFindMany.mockResolvedValue([]);
   });
 
   // ── Config / auth guards ─────────────────────────────────────────────────

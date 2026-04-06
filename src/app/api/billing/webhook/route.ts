@@ -1,7 +1,8 @@
 import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { processedWebhookEvents, subscriptions, user } from "@/lib/schema";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
+import { processedWebhookEvents, subscriptions, user, xAccounts } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 import { stripe } from "@/lib/stripe";
@@ -327,6 +328,37 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         }),
       "billing_plan_changed"
     );
+
+    // ── 3.2.1 Over-limit account detection ─────────────────────────────
+    // Check if the user has more active X accounts than their new plan allows
+    const newLimit = PLAN_LIMITS[newPlan].maxXAccounts;
+    const activeAccounts = await db.query.xAccounts.findMany({
+      where: and(
+        eq(xAccounts.userId, existingRecord.userId),
+        eq(xAccounts.isActive, true)
+      ),
+      columns: { id: true },
+    });
+    const activeCount = activeAccounts.length;
+
+    if (activeCount > newLimit) {
+      await runSideEffect(
+        () =>
+          notifyBillingEvent({
+            userId: existingRecord.userId,
+            type: "billing_accounts_over_limit",
+            title: "Account limit exceeded",
+            message: `Your ${newPlan.replace(/_/g, " ")} plan allows ${newLimit} X account${newLimit === 1 ? "" : "s"}. You have ${activeCount} active accounts. Please remove excess accounts in Settings to continue posting from all accounts.`,
+            metadata: {
+              newPlan,
+              newLimit,
+              activeCount,
+              oldPlan: existingRecord.plan,
+            },
+          }),
+        "billing_accounts_over_limit"
+      );
+    }
   }
 
   // ── 3.3 Cancellation / 3.5 Reactivation notifications ────────────────────
@@ -436,6 +468,39 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       planExpiresAt: null,
     }).where(eq(user.id, subRecord.userId));
   });
+
+  // ── Over-limit account detection on subscription deletion ─────────────
+  // When a subscription is deleted (canceled), the user is downgraded to "free"
+  // Check if they have more active X accounts than the Free plan allows (1)
+  const newPlan = "free";
+  const newLimit = PLAN_LIMITS[newPlan].maxXAccounts;
+  const activeAccounts = await db.query.xAccounts.findMany({
+    where: and(
+      eq(xAccounts.userId, subRecord.userId),
+      eq(xAccounts.isActive, true)
+    ),
+    columns: { id: true },
+  });
+  const activeCount = activeAccounts.length;
+
+  if (activeCount > newLimit) {
+    await runSideEffect(
+      () =>
+        notifyBillingEvent({
+          userId: subRecord.userId,
+          type: "billing_accounts_over_limit",
+          title: "Account limit exceeded",
+          message: `Your ${newPlan.replace(/_/g, " ")} plan allows ${newLimit} X account${newLimit === 1 ? "" : "s"}. You have ${activeCount} active account${activeCount === 1 ? "" : "s"}. Please remove excess accounts in Settings to continue posting from all accounts.`,
+          metadata: {
+            newPlan,
+            newLimit,
+            activeCount,
+            oldPlan: subRecord.plan,
+          },
+        }),
+      "billing_accounts_over_limit_deleted"
+    );
+  }
 
   await runSideEffect(
     () =>

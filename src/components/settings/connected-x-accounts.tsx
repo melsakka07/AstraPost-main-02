@@ -2,18 +2,31 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Activity,
   AlertTriangle,
   CheckCircle2,
   Info,
+  Plus,
   RefreshCw,
   Star,
+  Trash2,
   Twitter,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +38,7 @@ import {
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { signIn } from "@/lib/auth-client";
+import { getPlanLimits } from "@/lib/plan-limits";
 
 type XAccountItem = {
   id: string;
@@ -64,6 +78,11 @@ interface TierRefreshState {
   highlight: boolean;
 }
 
+interface AccountToRemove {
+  id: string;
+  xUsername: string;
+}
+
 function relativeTime(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return "just now";
@@ -80,7 +99,12 @@ function isTokenExpired(account: XAccountItem): boolean {
   return new Date(account.tokenExpiresAt) < new Date();
 }
 
-export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAccountItem[] }) {
+interface ConnectedXAccountsProps {
+  initialAccounts: XAccountItem[];
+  userPlan?: string;
+}
+
+export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: ConnectedXAccountsProps) {
   const params = useSearchParams();
   const { openWithContext } = useUpgradeModal();
   const shouldSync = params.get("sync") === "1";
@@ -90,7 +114,14 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
   const [checking, setChecking] = useState<string | null>(null);
   const [refreshingTier, setRefreshingTier] = useState<string | null>(null);
   const [tierRefreshState, setTierRefreshState] = useState<Record<string, TierRefreshState>>({});
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+  const [showRemoveDialog, setShowRemoveDialog] = useState<AccountToRemove | null>(null);
   const tierFetchRef = useRef(false);
+
+  // Calculate plan limit and active account count
+  const planLimit = getPlanLimits(userPlan).maxXAccounts;
+  const activeCount = accounts.filter((a) => a.isActive).length;
+  const isOverLimit = activeCount > planLimit;
 
   const syncNow = useCallback(async () => {
     setBusy(true);
@@ -168,6 +199,13 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
     });
   };
 
+  const handleAddAccount = async () => {
+    await signIn.social({
+      provider: "twitter",
+      callbackURL: "/dashboard/settings?sync=1",
+    });
+  };
+
   const handleRefreshTier = async (accountId: string, currentTier: XSubscriptionTier) => {
     setRefreshingTier(accountId);
     setTierRefreshState((prev) => ({
@@ -223,6 +261,37 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
     }
   };
 
+  const handleRemoveAccount = async () => {
+    if (!showRemoveDialog) return;
+
+    // Prevent removing the last remaining account
+    if (accounts.length === 1) {
+      toast.error("Cannot remove the last connected account. Please add another account first.");
+      setShowRemoveDialog(null);
+      return;
+    }
+
+    setDeletingAccountId(showRemoveDialog.id);
+    try {
+      const res = await fetch(`/api/x/accounts/${showRemoveDialog.id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to remove account");
+      }
+
+      setAccounts((prev) => prev.filter((a) => a.id !== showRemoveDialog.id));
+      toast.success(`Account @${showRemoveDialog.xUsername} removed successfully`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove account");
+    } finally {
+      setDeletingAccountId(null);
+      setShowRemoveDialog(null);
+    }
+  };
+
   useEffect(() => {
     if (tierFetchRef.current) return;
     const accountsWithoutTier = accounts.filter((a) => !a.xSubscriptionTierUpdatedAt);
@@ -253,16 +322,51 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
     refreshMissingTiers();
   }, [accounts]);
 
+  // Format plan name for display
+  const planName = userPlan === "free" ? "Free" : userPlan === "pro_monthly" || userPlan === "pro_annual" ? "Pro" : "Agency";
+
   return (
     <TooltipProvider>
       <div className="space-y-4">
+        {/* Over-limit warning banner */}
+        {isOverLimit && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <div>
+              <p className="font-medium">Account limit exceeded</p>
+              <p className="text-xs opacity-90 mt-0.5">
+                Your {planName} plan allows {planLimit} X account{planLimit !== 1 ? "s" : ""}. You have {activeCount} active account{activeCount !== 1 ? "s" : ""}.
+                Please remove {activeCount - planLimit} account{activeCount - planLimit !== 1 ? "s" : ""} or <Link href="/pricing" className="underline font-medium hover:text-amber-700 dark:hover:text-amber-300">upgrade</Link> your plan.
+              </p>
+            </div>
+          </div>
+        )}
+
         {accounts.length === 0 ? (
-          <div className="py-6 text-center text-sm text-muted-foreground">
-            No accounts connected.
+          <div className="py-6 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">No accounts connected yet.</p>
+            <Button onClick={handleAddAccount} disabled={busy}>
+              <Plus className="h-4 w-4 mr-2" />
+              Connect X Account
+            </Button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {accounts.map((a) => {
+          <div className="space-y-3">
+            <Button variant="outline" onClick={handleAddAccount} disabled={busy}>
+              <Plus className="h-4 w-4 mr-2" />
+              Connect X Account
+            </Button>
+            <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <div>
+                <p>
+                  Click <strong>Connect X Account</strong> to add another X account while logged in.
+                  Pro plan: up to 3 accounts · Agency: up to 10 accounts.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {accounts.map((a) => {
               const expired = isTokenExpired(a);
               const health = healthStatus[a.id];
               const isChecking = checking === a.id;
@@ -462,6 +566,32 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                             Refresh tier
                           </TooltipContent>
                         </Tooltip>
+
+                        {/* Remove account */}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              disabled={deletingAccountId === a.id || busy}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                              aria-label={`Remove account @${a.xUsername}`}
+                              onClick={() =>
+                                setShowRemoveDialog({ id: a.id, xUsername: a.xUsername })
+                              }
+                            >
+                              <Trash2
+                                className={`h-4 w-4 ${
+                                  deletingAccountId === a.id ? "animate-pulse" : ""
+                                }`}
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Remove account
+                          </TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   </div>
@@ -509,6 +639,7 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
                 </div>
               );
             })}
+            </div>
           </div>
         )}
 
@@ -532,6 +663,31 @@ export function ConnectedXAccounts({ initialAccounts }: { initialAccounts: XAcco
             {busy ? "Syncing..." : "Sync accounts"}
           </Button>
         </div>
+
+        {/* Remove account confirmation dialog */}
+        <AlertDialog
+          open={showRemoveDialog !== null}
+          onOpenChange={(open) => !open && setShowRemoveDialog(null)}
+        >
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove @{showRemoveDialog?.xUsername}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Scheduled posts for this account will be cancelled. You cannot undo this action.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deletingAccountId !== null}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={handleRemoveAccount}
+                disabled={deletingAccountId !== null}
+              >
+                {deletingAccountId ? "Removing..." : "Remove"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   );

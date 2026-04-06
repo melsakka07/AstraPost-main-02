@@ -161,7 +161,7 @@ export async function checkAccountLimitDetailed(userId: string, increment = 1): 
   const accountsCount = await db
     .select({ count: sql<number>`count(*)` })
     .from(xAccounts)
-    .where(and(eq(xAccounts.userId, userId), eq(xAccounts.isActive, true)));
+    .where(eq(xAccounts.userId, userId));
   const used = Number(accountsCount[0]?.count ?? 0);
 
   if (used + increment <= limits.maxXAccounts) return { allowed: true };

@@ -126,6 +126,93 @@ describe("Trial System", () => {
   });
 });
 
+describe("Multi-Account Limits", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockZeroCount();
+  });
+
+  it("Free user blocked at 2nd account (limit is 1)", async () => {
+    // Use a createdAt date more than 14 days ago to ensure trial is expired
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 20);
+    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: null, createdAt: oldDate });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 1 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(false);
+  });
+
+  it("Pro user allowed up to 3 accounts", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "pro_monthly", trialEndsAt: null, createdAt: new Date() });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 2 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(true);
+  });
+
+  it("Pro user blocked at 4th account (limit is 3)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "pro_monthly", trialEndsAt: null, createdAt: new Date() });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 3 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(false);
+  });
+
+  it("Agency user allowed up to 10 accounts", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "agency", trialEndsAt: null, createdAt: new Date() });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 9 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(true);
+  });
+
+  it("Agency user blocked at 11th account (limit is 10)", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "agency", trialEndsAt: null, createdAt: new Date() });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 10 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(false);
+  });
+
+  it("Pro Annual user has same 3-account limit as Pro Monthly", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "pro_annual", trialEndsAt: null, createdAt: new Date() });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 2 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(true);
+  });
+
+  it("Pro Annual user blocked at 4th account", async () => {
+    mockFindFirst.mockResolvedValue({ plan: "pro_annual", trialEndsAt: null, createdAt: new Date() });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 3 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(false);
+  });
+});
+
 describe("require-plan 402 payload", () => {
   const resetAt = new Date("2026-03-01T00:00:00.000Z");
   const failure: PlanGateFailure = {

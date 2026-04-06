@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChevronDown, Linkedin, Twitter, Instagram } from "lucide-react";
+import { ChevronDown, Linkedin, Twitter, Instagram, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,8 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { XSubscriptionBadge, XSubscriptionTier } from "@/components/ui/x-subscription-badge";
+
+function isTokenExpiringSoon(expiresAt: string | Date | null | undefined): boolean {
+  if (!expiresAt) return false;
+  const expiryDate = new Date(expiresAt);
+  const hoursUntilExpiry = (expiryDate.getTime() - Date.now()) / (1000 * 60 * 60);
+  return hoursUntilExpiry > 0 && hoursUntilExpiry <= 48;
+}
 
 export type SocialAccountLite = {
   id: string;
@@ -22,6 +29,7 @@ export type SocialAccountLite = {
   avatarUrl?: string | null;
   isDefault?: boolean | null;
   xSubscriptionTier?: XSubscriptionTier;
+  tokenExpiresAt?: string | Date | null;
 };
 
 export function TargetAccountsSelect({
@@ -67,7 +75,14 @@ export function TargetAccountsSelect({
           <DropdownMenuLabel>Post to</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {accounts.length === 0 ? (
-            <div className="px-2 py-2 text-sm text-muted-foreground">No accounts connected</div>
+            <div className="px-2 py-2">
+              <a
+                href="/dashboard/settings"
+                className="text-sm text-primary underline underline-offset-2 hover:text-primary/80"
+              >
+                Connect an X account to start posting →
+              </a>
+            </div>
           ) : (
             accounts.map((a) => (
               <DropdownMenuCheckboxItem
@@ -81,12 +96,20 @@ export function TargetAccountsSelect({
                 }}
               >
                 <div className="flex items-center gap-2">
-                  {a.platform === 'twitter' ? <Twitter className="h-3 w-3 text-sky-500" /> : 
+                  {a.platform === 'twitter' ? <Twitter className="h-3 w-3 text-sky-500" /> :
                    a.platform === 'linkedin' ? <Linkedin className="h-3 w-3 text-[#0077b5]" /> :
                    <Instagram className="h-3 w-3 text-pink-600" />}
                   <span className="truncate">{a.displayName || a.username}</span>
                   {a.platform === 'twitter' && a.xSubscriptionTier && (
                     <XSubscriptionBadge tier={a.xSubscriptionTier} size="sm" />
+                  )}
+                  {isTokenExpiringSoon(a.tokenExpiresAt) && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertTriangle className="h-3 w-3 text-amber-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>Token expires soon</TooltipContent>
+                    </Tooltip>
                   )}
                 </div>
               </DropdownMenuCheckboxItem>

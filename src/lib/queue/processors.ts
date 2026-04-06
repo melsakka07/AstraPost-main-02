@@ -6,7 +6,7 @@ import { type InferSelectModel, eq, and, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
-import { scheduleQueue, SCHEDULE_JOB_OPTIONS, type PublishPostPayload, type AnalyticsJobPayload, type RefreshXTiersJobPayload } from "@/lib/queue/client";
+import { scheduleQueue, SCHEDULE_JOB_OPTIONS, type PublishPostPayload, type AnalyticsJobPayload, type RefreshXTiersJobPayload, type TokenHealthJobPayload } from "@/lib/queue/client";
 import { posts, jobRuns, user, tweets, media, notifications, xAccounts } from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
@@ -742,6 +742,104 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
   } catch (err) {
     logger.error("x_tier_refresh_job_fatal", {
       correlationId,
+      error: err instanceof Error ? err.message : "Unknown",
+    });
+    throw err;
+  }
+};
+
+// ── Token Health Check Processor ─────────────────────────────────────────────────
+
+/**
+ * Checks X account token expiration dates and notifies users whose tokens
+ * expire within 48 hours. Runs daily at 2 AM UTC.
+ */
+export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
+  const { correlationId } = job.data;
+  const jobCorrelationId = correlationId || `token-health:${job.id}`;
+
+  logger.info("token_health_job_started", {
+    queue: job.queueName,
+    jobId: job.id,
+    correlationId: jobCorrelationId,
+  });
+
+  try {
+    // Find accounts with tokens expiring within 48 hours
+    const expiringSoon = await db.query.xAccounts.findMany({
+      where: and(
+        eq(xAccounts.isActive, true),
+        sql`x_accounts.token_expires_at IS NOT NULL`,
+        sql`x_accounts.token_expires_at < NOW() + INTERVAL '48 hours'`,
+      ),
+    });
+
+    if (expiringSoon.length === 0) {
+      logger.info("token_health_no_expiring_tokens", { correlationId: jobCorrelationId });
+      return;
+    }
+
+    logger.info("token_health_expiring_found", {
+      correlationId: jobCorrelationId,
+      count: expiringSoon.length,
+    });
+
+    let notificationsCreated = 0;
+    let notificationErrors = 0;
+
+    for (const account of expiringSoon) {
+      const expiresAt = account.tokenExpiresAt;
+      if (!expiresAt) continue;
+
+      const hoursUntilExpiry = Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60));
+
+      try {
+        await db.insert(notifications).values({
+          id: crypto.randomUUID(),
+          userId: account.userId,
+          type: "token_expiring_soon",
+          title: "X Account Token Expiring Soon",
+          message: `Your X account @${account.xUsername} token will expire in ${hoursUntilExpiry} hour${hoursUntilExpiry === 1 ? "" : "s"}. Please reconnect your account in Settings to avoid scheduling interruptions.`,
+          metadata: {
+            xAccountId: account.id,
+            xUsername: account.xUsername,
+            tokenExpiresAt: expiresAt.toISOString(),
+            hoursUntilExpiry,
+          },
+          isRead: false,
+        });
+        notificationsCreated++;
+
+        logger.info("token_health_notification_created", {
+          correlationId: jobCorrelationId,
+          userId: account.userId,
+          xUsername: account.xUsername,
+          hoursUntilExpiry,
+        });
+      } catch (notifErr) {
+        notificationErrors++;
+        logger.warn("token_health_notification_failed", {
+          correlationId: jobCorrelationId,
+          userId: account.userId,
+          xUsername: account.xUsername,
+          error: notifErr instanceof Error ? notifErr.message : "Unknown",
+        });
+      }
+    }
+
+    logger.info("token_health_job_completed", {
+      queue: job.queueName,
+      jobId: job.id,
+      correlationId: jobCorrelationId,
+      summary: {
+        totalChecked: expiringSoon.length,
+        notificationsCreated,
+        notificationErrors,
+      },
+    });
+  } catch (err) {
+    logger.error("token_health_job_fatal", {
+      correlationId: jobCorrelationId,
       error: err instanceof Error ? err.message : "Unknown",
     });
     throw err;

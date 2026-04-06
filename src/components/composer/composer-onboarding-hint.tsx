@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Keyboard, Sparkles, X } from "lucide-react";
+import { CalendarDays, Keyboard, Sparkles, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HINT_KEY = "astra-composer-hint-seen";
@@ -21,7 +21,7 @@ function hasSeenHint(): boolean {
  * visits the compose page. Dismissed state is persisted in localStorage so
  * it never appears again after the user clicks "Got it".
  */
-export function ComposerOnboardingHint() {
+export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: number }) {
   // Lazy initializer runs once on mount (client-side only) — no useEffect needed
   const [visible, setVisible] = useState(() => !hasSeenHint());
 
@@ -59,6 +59,14 @@ export function ComposerOnboardingHint() {
                 <kbd className="rounded bg-muted px-1 py-0.5 text-xs font-mono">⌘K</kbd> open AI.
               </span>
             </li>
+            {accountCount >= 2 && (
+              <li className="flex items-center gap-2">
+                <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  Posting to multiple accounts? Use the account selector above to choose which X accounts this post goes to.
+                </span>
+              </li>
+            )}
           </ul>
         </div>
         <Button
