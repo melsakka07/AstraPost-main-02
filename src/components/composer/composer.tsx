@@ -17,6 +17,7 @@ import {
   Globe,
   Hash,
   Info,
+  Lightbulb,
   ListOrdered,
   Loader2,
   Megaphone,
@@ -31,7 +32,7 @@ import { AiImageDialog } from "@/components/composer/ai-image-dialog";
 import { AiToolsPanel } from "@/components/composer/ai-tools-panel";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
 import { ComposerOnboardingHint } from "@/components/composer/composer-onboarding-hint";
-import { InspirationPanel } from "@/components/composer/inspiration-panel";
+// Phase 1: Removed InspirationPanel import - now using inline panel
 import { SortableTweet } from "@/components/composer/sortable-tweet";
 import { TargetAccountsSelect, SocialAccountLite } from "@/components/composer/target-accounts-select";
 // P4-E: Lazy-load TemplatesDialog — it's 834 lines and only needed on user interaction
@@ -55,6 +56,7 @@ import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { type OutputFormat, type TemplatePromptConfig } from "@/lib/ai/template-prompts";
 import { useSession } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
 import { canPostLongContent } from "@/lib/services/x-subscription";
@@ -140,11 +142,18 @@ export function Composer() {
   // AI State
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiTool, setAiTool] = useState<"thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags">("thread");
+  // Phase 1: Added "inspire" and "template" to tool type (template for Phase 2)
+  const [aiTool, setAiTool] = useState<"thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags">("thread");
   const [aiTargetTweetId, setAiTargetTweetId] = useState<string | null>(null);
   const [aiTopic, setAiTopic] = useState("");
   const [aiHook, setAiHook] = useState("");
-  const pendingInspirationRef = useRef<{ topic: string; hook: string } | null>(null);
+  // Phase 1: Inspiration state (moved from dialog to inline panel)
+  const [inspirationTopics, setInspirationTopics] = useState<Array<{ topic: string; hook: string }>>([]);
+  const [inspirationNiche, setInspirationNiche] = useState("Technology");
+  const [isLoadingInspiration, setIsLoadingInspiration] = useState(false);
+  // Phase 2: Template state (moved from dialog to inline panel)
+  const [templateConfig, setTemplateConfig] = useState<TemplatePromptConfig | null>(null);
+  const [templateFormat, setTemplateFormat] = useState<OutputFormat>("thread-short");
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
   // P3-A: Restore AI tone + language from localStorage (session language takes priority once loaded)
   const [aiTone, setAiTone] = useState<string>(() => {
@@ -206,6 +215,10 @@ export function Composer() {
   // P2-F: Track streaming progress and pending AI stream confirmation
   const [streamingTweetCount, setStreamingTweetCount] = useState(0);
   const [pendingAiStreamGenerate, setPendingAiStreamGenerate] = useState(false);
+  // Phase 0: Undo snapshot for destructive operations
+  const previousTweetsRef = useRef<TweetDraft[] | null>(null);
+  // Phase 0: Translate confirmation dialog
+  const [confirmTranslate, setConfirmTranslate] = useState(false);
 
   // Preview carousel index (H6)
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -635,10 +648,11 @@ export function Composer() {
     return aiLanguage === "ar" ? "en" : "ar"; // fallback
   };
 
-  const openAiTool = (tool: "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => {
+  const openAiTool = (tool: "thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => {
     setAiTool(tool);
     setGeneratedHashtags([]);
-    if ((tool === "rewrite" || tool === "hashtags") && tweetId) {
+    // Phase 0: Hook now targets active tweet (same as rewrite/hashtags)
+    if ((tool === "rewrite" || tool === "hashtags" || tool === "hook") && tweetId) {
       setAiTargetTweetId(tweetId);
       const t = tweets.find((x) => x.id === tweetId);
       setAiRewriteText(t?.content || "");
@@ -699,6 +713,48 @@ export function Composer() {
         return tweet;
       })
     );
+  };
+
+  // Phase 1: Inspiration handlers (moved from dialog to composer)
+  const handleFetchInspiration = async () => {
+    setIsLoadingInspiration(true);
+    try {
+      const res = await fetch(`/api/ai/inspiration?niche=${inspirationNiche}&language=${aiLanguage}`);
+      if (res.status === 402) {
+        openUpgradeModal({ feature: "ai_writer" });
+        return;
+      }
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setInspirationTopics(data.topics || []);
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to load inspiration topics");
+    } finally {
+      setIsLoadingInspiration(false);
+    }
+  };
+
+  const handleInspirationSelect = (topic: string, hook: string) => {
+    setAiTopic(topic);
+    setAiHook(hook);
+    setAiTool("thread"); // Switch to Write tab
+    // User manually clicks Generate - no auto-fire
+  };
+
+  // Phase 2: Template handlers (moved from dialog to inline panel)
+  const handleTemplateConfigSelect = (config: TemplatePromptConfig) => {
+    setTemplateConfig(config);
+    setAiTone(config.defaultTone);
+    setTemplateFormat(config.defaultFormat);
+    setAiTopic("");
+    setAiTool("template"); // Switch to Template tab
+    setIsAiOpen(true); // Ensure panel is open
+  };
+
+  const handleOpenTemplatesDialog = () => {
+    // This is a no-op for now - the TemplatesDialog button opens itself
+    // The dialog will call handleTemplateConfigSelect when a template is selected
   };
 
   const restoreHistory = (item: any) => {
@@ -771,7 +827,7 @@ export function Composer() {
     toast.success("Template applied!");
   };
 
-  const handleAiRun = async (overrides?: { topic?: string; hook?: string; skipOverwriteCheck?: boolean }) => {
+  const handleAiRun = async (overrides?: { topic?: string; hook?: string; skipOverwriteCheck?: boolean; skipTranslateCheck?: boolean }) => {
     setIsGenerating(true);
     try {
       const runTopic = overrides?.topic ?? aiTopic;
@@ -822,6 +878,9 @@ export function Composer() {
           const text = await res.text();
           if (!text || text.trim().length === 0) throw new Error("No content generated");
 
+          // Phase 0: Save previous state for undo
+          const previousTweets = structuredClone(tweets);
+
           const newTweet: TweetDraft = {
             id: tweets[0]?.id ?? Math.random().toString(36).substr(2, 9),
             content: text.trim(),
@@ -830,7 +889,17 @@ export function Composer() {
           setTweets([newTweet]);
           setPreviewIndex(0);
           setIsAiOpen(false);
-          toast.success("Post generated!");
+          // Phase 0: Undo toast for single post generation
+          toast.success("Post generated!", {
+            action: {
+              label: "Undo",
+              onClick: () => {
+                setTweets(previousTweets);
+                toast.info("Post restored");
+              },
+            },
+            duration: 5000,
+          });
           return;
         }
 
@@ -894,18 +963,168 @@ export function Composer() {
         // Finalize — close panel after a brief delay so user sees the last card appear
         await new Promise((r) => setTimeout(r, 400));
         setIsAiOpen(false);
+        const previousTweets = preStreamTweetsRef.current;
         preStreamTweetsRef.current = null;
-        toast.success("Thread generated!");
+        // Phase 3: Standardized toast messages
+        toast.success("AI Writer: Thread generated!", {
+          action: previousTweets ? {
+            label: "Undo",
+            onClick: () => {
+              setTweets(previousTweets);
+              toast.info("Thread restored");
+            },
+          } : undefined,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Phase 2: Template generation — uses same SSE streaming pattern as thread
+      if (aiTool === "template") {
+        if (!templateConfig) {
+          toast.error("Please select a template first");
+          return;
+        }
+        if (!aiTopic || aiTopic.trim().length < 3) {
+          toast.error("Topic must be at least 3 characters");
+          return;
+        }
+
+        // Pre-check overwrite guard
+        if (!overrides?.skipOverwriteCheck && tweets.some((t) => t.content.trim().length > 50)) {
+          preStreamTweetsRef.current = [...tweets];
+          setPendingAiStreamGenerate(true);
+          setConfirmOverwrite(true);
+          setIsGenerating(false);
+          return;
+        }
+
+        const res = await fetch("/api/ai/template-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            templateId: templateConfig.id,
+            topic: aiTopic.trim(),
+            tone: aiTone,
+            language: aiLanguage,
+            outputFormat: templateFormat,
+          }),
+        });
+
+        if (!res.ok) {
+          if (res.status === 402) {
+            await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
+            return;
+          } else if (res.status === 429) {
+            const body = await res.json().catch(() => ({})) as { retryAfter?: number };
+            const wait = body.retryAfter ? ` Try again in ${body.retryAfter}s.` : "";
+            toast.error(`Rate limit reached.${wait}`);
+            return;
+          }
+          throw new Error("Template generation failed");
+        }
+
+        if (!res.body) throw new Error("No response body");
+
+        // Stream tweets using same pattern as thread
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let sseBuffer = "";
+        let streamDone = false;
+
+        setTweets([]);
+        setPreviewIndex(0);
+        setStreamingTweetCount(0);
+
+        while (!streamDone) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          sseBuffer += decoder.decode(value, { stream: true });
+          const lines = sseBuffer.split("\n");
+          sseBuffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data: ")) continue;
+            const jsonStr = trimmed.slice(6);
+            if (!jsonStr) continue;
+
+            try {
+              const event = JSON.parse(jsonStr) as {
+                done?: boolean;
+                error?: string;
+                index?: number;
+                tweet?: string;
+              };
+              if (event.error) {
+                toast.error("Generation failed. Please try again.");
+                streamDone = true;
+                break;
+              }
+              if (event.done) { streamDone = true; break; }
+              if (typeof event.tweet === "string" && event.tweet.length > 0) {
+                const newDraft: TweetDraft = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  content: event.tweet,
+                  media: [],
+                };
+                setTweets((prev) => {
+                  const updated = [...prev, newDraft];
+                  return aiAddNumbering ? applyNumbering(updated) : updated;
+                });
+                setStreamingTweetCount((c) => c + 1);
+              }
+            } catch {
+              // partial line — skip
+            }
+          }
+        }
+
+        await new Promise((r) => setTimeout(r, 400));
+        setIsAiOpen(false);
+        const previousTweets = preStreamTweetsRef.current;
+        preStreamTweetsRef.current = null;
+
+        // Store AI meta for saving as template later
+        const templateAiMeta: TemplateAiMeta = {
+          templateId: templateConfig.id,
+          tone: aiTone,
+          language: aiLanguage,
+          outputFormat: templateFormat,
+        };
+        setLastTemplateAiMeta(templateAiMeta);
+
+        // Phase 3: Standardized toast messages
+        toast.success("Template: Content generated!", {
+          action: previousTweets ? {
+            label: "Undo",
+            onClick: () => {
+              setTweets(previousTweets);
+              toast.info("Content restored");
+            },
+          } : undefined,
+          duration: 5000,
+        });
         return;
       }
 
       if (aiTool === "hook") {
+        // Phase 0: Hook targets active tweet, not always tweet[0]
+        const targetTweet = aiTargetTweetId ? tweets.find((t) => t.id === aiTargetTweetId) : tweets[0];
+        if (!targetTweet) throw new Error("No tweet to update");
+
+        // Phase 0: Overwrite guard for Hook
+        if (targetTweet.content.trim().length > 50) {
+          previousTweetsRef.current = structuredClone(tweets);
+        }
+
         const res = await fetch("/api/ai/tools", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             tool: "hook",
-            topic: aiTopic || tweets[0]?.content || "",
+            topic: aiTopic || targetTweet.content || "",
             tone: aiTone,
             language: aiLanguage,
           }),
@@ -918,15 +1137,28 @@ export function Composer() {
           throw new Error("Hook generation failed");
         }
         const data = await res.json();
-        const first = tweets[0];
-        if (!first) throw new Error("No tweet to update");
-        updateTweet(first.id, data.text);
+        updateTweet(targetTweet.id, data.text);
         setIsAiOpen(false);
-        toast.success("Hook generated!");
+        // Phase 3: Standardized toast messages
+        toast.success("Hook: Opening line generated!", {
+          action: previousTweetsRef.current ? {
+            label: "Undo",
+            onClick: () => {
+              if (previousTweetsRef.current) {
+                setTweets(previousTweetsRef.current);
+                previousTweetsRef.current = null;
+                toast.info("Changes undone");
+              }
+            },
+          } : undefined,
+          duration: 5000,
+        });
         return;
       }
 
       if (aiTool === "cta") {
+        // Phase 2: CTA now has access to thread context for better relevance
+        const threadContext = tweets.map((t) => t.content).filter(Boolean).join(" ").slice(0, 500);
         const res = await fetch("/api/ai/tools", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -934,6 +1166,7 @@ export function Composer() {
             tool: "cta",
             tone: aiTone,
             language: aiLanguage,
+            context: threadContext || undefined,
           }),
         });
         if (!res.ok) {
@@ -948,7 +1181,8 @@ export function Composer() {
         if (!last) throw new Error("No tweet to update");
         updateTweet(last.id, `${last.content}\n\n${data.text}`.trim());
         setIsAiOpen(false);
-        toast.success("CTA added!");
+        // Phase 3: Standardized toast messages
+        toast.success("CTA: Call-to-action added!");
         return;
       }
 
@@ -958,6 +1192,16 @@ export function Composer() {
           toast.error("Please add some content to translate");
           return;
         }
+
+        // Phase 0: Show confirmation dialog before translating
+        if (!overrides?.skipTranslateCheck) {
+          setConfirmTranslate(true);
+          setIsGenerating(false);
+          return;
+        }
+
+        // Phase 0: Save state for undo before translating
+        previousTweetsRef.current = structuredClone(tweets);
 
         const res = await fetch("/api/ai/translate", {
           method: "POST",
@@ -984,7 +1228,21 @@ export function Composer() {
         });
         setTweets(next);
         setIsAiOpen(false);
-        toast.success("Thread translated!");
+        // Phase 3: Standardized toast messages
+        const translatedCount = nonEmptyTweets.length;
+        toast.success(`Translate: ${translatedCount} tweet${translatedCount !== 1 ? "s" : ""} translated!`, {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              if (previousTweetsRef.current) {
+                setTweets(previousTweetsRef.current);
+                previousTweetsRef.current = null;
+                toast.info("Translation undone");
+              }
+            },
+          },
+          duration: 5000,
+        });
         return;
       }
 
@@ -1011,13 +1269,21 @@ export function Composer() {
         }
         const data = await res.json();
         setGeneratedHashtags(data.hashtags || []);
-        setIsAiOpen(false); // P2-A: close panel — hashtags appear as inline chips only
-        toast.success("Hashtags generated!");
+        // Phase 3: Keep panel open - hashtags appear as inline chips in panel
+        toast.success(`Hashtags: ${data.hashtags?.length || 0} tags generated -- click to add`);
         return;
       }
 
+      // Phase 0: Rewrite branch (note: this is the "rewrite" tool, distinct from hook/cta)
       const targetId = aiTargetTweetId;
       if (!targetId) throw new Error("No tweet selected");
+
+      // Phase 0: Save previous content for undo
+      const targetTweet = tweets.find((t) => t.id === targetId);
+      if (targetTweet?.content) {
+        previousTweetsRef.current = structuredClone(tweets);
+      }
+
       const res = await fetch("/api/ai/tools", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1038,7 +1304,20 @@ export function Composer() {
       const data = await res.json();
       updateTweet(targetId, data.text);
       setIsAiOpen(false);
-      toast.success("Tweet rewritten!");
+      // Phase 3: Standardized toast messages
+      toast.success("Rewrite: Tweet rewritten!", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            if (previousTweetsRef.current) {
+              setTweets(previousTweetsRef.current);
+              previousTweetsRef.current = null;
+              toast.info("Rewrite undone");
+            }
+          },
+        },
+        duration: 5000,
+      });
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : "AI request failed");
@@ -1053,15 +1332,7 @@ export function Composer() {
   // ran synchronously in the same render batch as setIsAiOpen(false) in the
   // hashtags branch — wiping chips before they ever rendered.
 
-  // Auto-trigger AI generation when an inspiration idea is selected
-  useEffect(() => {
-    if (pendingInspirationRef.current && aiTool === "thread" && aiTopic) {
-      const { topic, hook } = pendingInspirationRef.current;
-      pendingInspirationRef.current = null;
-      handleAiRun({ topic, hook });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiTool, aiTopic, aiHook]);
+  // Phase 1: Removed auto-fire useEffect - Inspiration now pre-fills topic but user clicks Generate manually
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !activeTweetId) return;
@@ -1297,6 +1568,43 @@ export function Composer() {
         else setIsAiOpen(false);
       },
     },
+    // Phase 4: Keyboard shortcuts for AI tools
+    {
+      key: "w",
+      metaOrCtrl: true,
+      shift: true,
+      label: "⌘⇧W Write",
+      handler: () => {
+        openAiTool("thread");
+      },
+    },
+    {
+      key: "i",
+      metaOrCtrl: true,
+      shift: true,
+      label: "⌘⇧I Inspire",
+      handler: () => {
+        openAiTool("inspire");
+      },
+    },
+    {
+      key: "t",
+      metaOrCtrl: true,
+      shift: true,
+      label: "⌘⇧T Translate",
+      handler: () => {
+        openAiTool("translate");
+      },
+    },
+    {
+      key: "h",
+      metaOrCtrl: true,
+      shift: true,
+      label: "⌘⇧H Hashtags",
+      handler: () => {
+        openAiTool("hashtags");
+      },
+    },
   ]);
 
   return (
@@ -1376,11 +1684,22 @@ export function Composer() {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
         >
-            <SortableContext 
+            <SortableContext
                 items={tweets.map(t => t.id)}
                 strategy={verticalListSortingStrategy}
             >
-                {tweets.map((tweet, index) => (
+                {tweets.map((tweet, index) => {
+                  // Phase 3: Compute isAiTarget based on aiTool
+                  const isAiTarget = (() => {
+                    if (!isAiOpen) return false;
+                    if (aiTool === "thread" || aiTool === "inspire" || aiTool === "template") return true;
+                    if (aiTool === "hook" || aiTool === "rewrite" || aiTool === "hashtags") return tweet.id === aiTargetTweetId;
+                    if (aiTool === "cta") return index === tweets.length - 1;
+                    if (aiTool === "translate") return tweet.content.trim().length > 0;
+                    return false;
+                  })();
+
+                  return (
                     <SortableTweet
                         key={tweet.id}
                         id={tweet.id}
@@ -1396,6 +1715,7 @@ export function Composer() {
                         onMove={moveTweet}
                         onClearTweet={() => clearTweet(tweet.id)}
                         tier={effectiveTier}
+                        isAiTarget={isAiTarget}
                         {...(tweet.id === aiTargetTweetId && generatedHashtags.length > 0 && {
                           suggestedHashtags: generatedHashtags,
                           onHashtagClick: (tag: string) => {
@@ -1404,7 +1724,8 @@ export function Composer() {
                           },
                         })}
                     />
-                ))}
+                  );
+                })}
             </SortableContext>
         </DndContext>
 
@@ -1503,15 +1824,14 @@ export function Composer() {
                 <Sparkles className="h-4 w-4 text-primary" />
                 AI Writer
               </Button>
-              <InspirationPanel
-                language={aiLanguage}
-                onSelect={(topic, hook) => {
-                  pendingInspirationRef.current = { topic, hook };
-                  setAiTopic(topic);
-                  setAiHook(hook);
-                  openAiTool("thread");
-                }}
-              />
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => openAiTool("inspire")}
+              >
+                <Lightbulb className="h-4 w-4 text-yellow-500" />
+                Inspiration
+              </Button>
             </div>
             {/* P4-E: Suspense boundary — TemplatesDialog is lazy-loaded to reduce initial bundle */}
             <Suspense fallback={
@@ -1519,11 +1839,14 @@ export function Composer() {
                 <FileText className="h-4 w-4" />Templates
               </Button>
             }>
-              <TemplatesDialog onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)} defaultLanguage={aiLanguage} />
+              <TemplatesDialog
+                onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)}
+                onTemplateSelect={handleTemplateConfigSelect}
+              />
             </Suspense>
             {/* H4: Secondary AI tools — 2×2 grid including Hashtags (D5) */}
             <div className="grid grid-cols-2 gap-1.5">
-              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook")}>
+              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook", activeTweetId ?? tweets[0]?.id)}>
                 <Zap className="h-3.5 w-3.5" />Hook
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("cta")}>
@@ -1594,6 +1917,32 @@ export function Composer() {
                   {...(typeof aiCount[0] === "number" && { totalTweetCount: aiCount[0] })}
                   onGenerate={handleAiRun}
                   onClose={() => setIsAiOpen(false)}
+                  // Phase 1: Inspiration props
+                  inspirationTopics={inspirationTopics}
+                  inspirationNiche={inspirationNiche}
+                  isLoadingInspiration={isLoadingInspiration}
+                  onInspirationNicheChange={setInspirationNiche}
+                  onFetchInspiration={handleFetchInspiration}
+                  onInspirationSelect={handleInspirationSelect}
+                  // Phase 2: Template props
+                  templateConfig={templateConfig}
+                  templateFormat={templateFormat}
+                  onTemplateFormatChange={setTemplateFormat}
+                  onOpenTemplatesDialog={handleOpenTemplatesDialog}
+                  // Phase 3: Hashtag chips props
+                  generatedHashtags={generatedHashtags}
+                  onHashtagClick={(tag) => {
+                    const targetId = aiTargetTweetId ?? activeTweetId ?? tweets[0]?.id;
+                    if (targetId) {
+                      const tweet = tweets.find(t => t.id === targetId);
+                      if (tweet) {
+                        updateTweet(targetId, `${tweet.content} ${tag}`.trim());
+                        setGeneratedHashtags(prev => prev.filter(t => t !== tag));
+                      }
+                    }
+                  }}
+                  onHashtagsDone={() => setGeneratedHashtags([])}
+                  isAiOpen={isAiOpen}
                 />
               </div>
             )}
@@ -1895,6 +2244,32 @@ export function Composer() {
                 onGenerate={handleAiRun}
                 onClose={() => setIsAiOpen(false)}
                 hideActions
+                // Phase 1: Inspiration props
+                inspirationTopics={inspirationTopics}
+                inspirationNiche={inspirationNiche}
+                isLoadingInspiration={isLoadingInspiration}
+                onInspirationNicheChange={setInspirationNiche}
+                onFetchInspiration={handleFetchInspiration}
+                onInspirationSelect={handleInspirationSelect}
+                // Phase 2: Template props
+                templateConfig={templateConfig}
+                templateFormat={templateFormat}
+                onTemplateFormatChange={setTemplateFormat}
+                onOpenTemplatesDialog={handleOpenTemplatesDialog}
+                // Phase 3: Hashtag chips props
+                generatedHashtags={generatedHashtags}
+                onHashtagClick={(tag) => {
+                  const targetId = aiTargetTweetId ?? activeTweetId ?? tweets[0]?.id;
+                  if (targetId) {
+                    const tweet = tweets.find(t => t.id === targetId);
+                    if (tweet) {
+                      updateTweet(targetId, `${tweet.content} ${tag}`.trim());
+                      setGeneratedHashtags(prev => prev.filter(t => t !== tag));
+                    }
+                  }
+                }}
+                onHashtagsDone={() => setGeneratedHashtags([])}
+                isAiOpen={isAiOpen}
               />
             </div>
             <div className="flex justify-end gap-2 pt-4 shrink-0 border-t mt-2">
@@ -1944,6 +2319,29 @@ export function Composer() {
               }}
             >
               Replace &amp; Generate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Phase 0: Confirm before translating all tweets */}
+      <AlertDialog open={confirmTranslate} onOpenChange={setConfirmTranslate}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Translate tweets?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will translate {tweets.filter((t) => t.content.trim()).length} tweet(s) to {LANGUAGES.find((l) => l.code === aiTranslateTarget)?.label || aiTranslateTarget}. Your draft was auto-saved and can be restored.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmTranslate(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setConfirmTranslate(false);
+              void handleAiRun({ skipTranslateCheck: true });
+            }}>
+              Translate
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

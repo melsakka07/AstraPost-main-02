@@ -56,6 +56,8 @@ interface TweetCardProps {
   onHashtagClick?: (tag: string) => void;
   onClearTweet?: () => void;
   tier?: XSubscriptionTier | undefined;
+  // Phase 3: Highlight target tweets when AI panel is open
+  isAiTarget?: boolean;
 }
 
 export function TweetCard({
@@ -76,6 +78,7 @@ export function TweetCard({
   onHashtagClick,
   onClearTweet,
   tier,
+  isAiTarget = false,
 }: TweetCardProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [linkPreviewPending, setLinkPreviewPending] = useState(false);
@@ -175,7 +178,9 @@ export function TweetCard({
       
       <Card className={cn(
         "border-l-4",
-        isOverLimit(tweet.content) ? "border-l-destructive" : "border-l-primary"
+        isOverLimit(tweet.content) ? "border-l-destructive" : "border-l-primary",
+        // Phase 3: Highlight target tweets when AI panel is open
+        isAiTarget && "ring-2 ring-primary/20 transition-all"
       )}>
         <CardContent className="pt-4">
           <Textarea

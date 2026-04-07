@@ -1,6 +1,7 @@
 "use client";
 
-import { Globe, Hash, Loader2, Megaphone, Sparkles, Wand2, Zap } from "lucide-react";
+import { useEffect } from "react";
+import { FileText, Globe, Hash, LayoutTemplate, Lightbulb, Loader2, Megaphone, RefreshCw, Sparkles, Target, Wand2, Zap } from "lucide-react";
 import { AiLengthSelector } from "@/components/composer/ai-length-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,17 +11,32 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { XSubscriptionTier } from "@/components/ui/x-subscription-badge";
+import type { OutputFormat, TemplatePromptConfig } from "@/lib/ai/template-prompts";
 import { LANGUAGES } from "@/lib/constants";
 
-export type AiToolType = "thread" | "hook" | "cta" | "rewrite" | "translate" | "hashtags";
+// Phase 2: Format options for template generation
+const FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
+  { value: "single", label: "Single Tweet" },
+  { value: "thread-short", label: "Thread (3–5)" },
+  { value: "thread-long", label: "Thread (5–10)" },
+];
+
+export type AiToolType = "thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags";
 
 interface TweetLike {
   id: string;
   content: string;
 }
 
+const NICHES = [
+  "Technology", "Business", "Marketing", "Lifestyle", "Health & Fitness",
+  "Education", "Finance", "Entertainment", "Productivity", "Self Improvement"
+];
+
 const TOOLS: { id: AiToolType; label: string; Icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "thread", label: "Write", Icon: Sparkles },
+  { id: "inspire", label: "Inspire", Icon: Lightbulb },
+  { id: "template", label: "Template", Icon: FileText },
   { id: "hook", label: "Hook", Icon: Zap },
   { id: "cta", label: "CTA", Icon: Megaphone },
   { id: "rewrite", label: "Rewrite", Icon: Wand2 },
@@ -56,6 +72,23 @@ interface AiToolsPanelProps {
   onGenerate: () => void;
   onClose: () => void;
   hideActions?: boolean;
+  // Phase 1: Inspiration props
+  inspirationTopics: Array<{ topic: string; hook: string }>;
+  inspirationNiche: string;
+  isLoadingInspiration: boolean;
+  onInspirationNicheChange: (v: string) => void;
+  onFetchInspiration: () => void;
+  onInspirationSelect: (topic: string, hook: string) => void;
+  // Phase 2: Template props
+  templateConfig: TemplatePromptConfig | null;
+  templateFormat: OutputFormat;
+  onTemplateFormatChange: (v: OutputFormat) => void;
+  onOpenTemplatesDialog: () => void;
+  // Phase 3: Hashtag chips props
+  generatedHashtags: string[];
+  onHashtagClick: (tag: string) => void;
+  onHashtagsDone: () => void;
+  isAiOpen: boolean;
 }
 
 export function AiToolsPanel({
@@ -86,11 +119,69 @@ export function AiToolsPanel({
   onGenerate,
   onClose,
   hideActions,
+  // Phase 1: Inspiration props
+  inspirationTopics,
+  inspirationNiche,
+  isLoadingInspiration,
+  onInspirationNicheChange,
+  onFetchInspiration,
+  onInspirationSelect,
+  // Phase 2: Template props
+  templateConfig,
+  templateFormat,
+  onTemplateFormatChange,
+  onOpenTemplatesDialog,
+  // Phase 3: Hashtag chips props
+  generatedHashtags,
+  onHashtagClick,
+  onHashtagsDone,
+  isAiOpen,
 }: AiToolsPanelProps) {
   const isStreamingThread = isGenerating && aiTool === "thread" && typeof streamingTweetCount === "number";
+
+  // Phase 4: Per-tool tone memory using localStorage
+  useEffect(() => {
+    const STORAGE_KEY = "astra-ai-tone-prefs";
+    const loadToneForTool = (tool: AiToolType): string => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const prefs = JSON.parse(stored) as Record<string, string>;
+          return prefs[tool] || "professional"; // Default fallback
+        }
+      } catch {
+        // Ignore errors
+      }
+      return "professional";
+    };
+
+    // Load saved tone when tool changes
+    const savedTone = loadToneForTool(aiTool);
+    if (savedTone !== aiTone) {
+      onToneChange(savedTone);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run when tool changes, not when tone/onToneChange changes
+  }, [aiTool]);
+
+  // Save tone preference when it changes
+  useEffect(() => {
+    const STORAGE_KEY = "astra-ai-tone-prefs";
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const prefs = stored ? JSON.parse(stored) : {};
+      prefs[aiTool] = aiTone;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    } catch {
+      // Ignore errors
+    }
+  }, [aiTone, aiTool, onToneChange]);
+
   const isGenerateDisabled =
+    aiTool === "inspire" ||
     isGenerating ||
     (aiTool === "thread" && !aiTopic) ||
+    (aiTool === "template" && templateConfig && !aiTopic) ||
+    (aiTool === "template" && !templateConfig) ||
     (aiTool === "hook" && !aiTopic && !(tweets[0]?.content || "").trim()) ||
     (aiTool === "rewrite" && !aiRewriteText.trim()) ||
     (aiTool === "translate" && !tweets.some((t) => t.content.trim())) ||
@@ -116,6 +207,30 @@ export function AiToolsPanel({
           </Button>
         ))}
       </div>
+
+      {/* Phase 3: Scope indicator - shows which tweets are affected */}
+      {isAiOpen && !isGenerating && (
+        <div className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
+          <Target className="h-3 w-3" />
+          {(() => {
+            const nonEmptyCount = tweets.filter(t => t.content.trim()).length;
+            if (aiTool === "thread" || aiTool === "inspire" || aiTool === "template") {
+              return `Affects: All ${tweets.length} tweet${tweets.length !== 1 ? "s" : ""}`;
+            }
+            if (aiTool === "hook" || aiTool === "rewrite" || aiTool === "hashtags") {
+              const targetIndex = tweets.findIndex(t => t.id === aiTargetTweetId);
+              return targetIndex >= 0 ? `Affects: Tweet #${targetIndex + 1}` : "Affects: No tweet selected";
+            }
+            if (aiTool === "cta") {
+              return "Appends to: Last tweet";
+            }
+            if (aiTool === "translate") {
+              return `Affects: ${nonEmptyCount} non-empty tweet${nonEmptyCount !== 1 ? "s" : ""}`;
+            }
+            return null;
+          })()}
+        </div>
+      )}
 
       {/* P2-F / P4-A: Streaming progress state — shown during thread generation */}
       {isStreamingThread && (
@@ -183,7 +298,7 @@ export function AiToolsPanel({
       )}
 
       {aiTool === "hashtags" && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Label>Tweet content</Label>
           <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm min-h-[60px]">
             {tweets.find((t) => t.id === aiTargetTweetId)?.content || (
@@ -192,6 +307,37 @@ export function AiToolsPanel({
               </span>
             )}
           </div>
+
+          {/* Phase 3: Show hashtag chips inline in panel */}
+          {generatedHashtags.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Generated hashtags (click to add):</Label>
+                <span className="text-xs text-muted-foreground">{generatedHashtags.length} remaining</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {generatedHashtags.map((tag) => (
+                  <Button
+                    key={tag}
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => onHashtagClick(tag)}
+                  >
+                    {tag}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full"
+                onClick={onHashtagsDone}
+              >
+                Done
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -217,6 +363,116 @@ export function AiToolsPanel({
         </div>
       )}
 
+      {aiTool === "inspire" && (
+        <div className="space-y-3">
+          <div className="flex items-end gap-2">
+            <div className="space-y-2 flex-1">
+              <Label>Niche</Label>
+              <Select value={inspirationNiche} onValueChange={onInspirationNicheChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {NICHES.map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={onFetchInspiration} disabled={isLoadingInspiration} size="sm">
+              {isLoadingInspiration ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              {inspirationTopics.length > 0 ? "Refresh" : "Get Ideas"}
+            </Button>
+          </div>
+
+          {inspirationTopics.length > 0 && (
+            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+              {inspirationTopics.map((t, i) => (
+                <div
+                  key={i}
+                  className="p-2.5 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                  onClick={() => onInspirationSelect(t.topic, t.hook)}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <h4 className="font-semibold text-sm">{t.topic}</h4>
+                    <Sparkles className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </div>
+                  <p className="text-xs text-muted-foreground italic mt-1">"{t.hook}"</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {inspirationTopics.length === 0 && !isLoadingInspiration && (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              Select a niche and click "Get Ideas" to start.
+            </p>
+          )}
+        </div>
+      )}
+
+      {aiTool === "template" && (
+        <div className="space-y-3">
+          {templateConfig ? (
+            <>
+              {/* Template info header */}
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                  <LayoutTemplate className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold leading-tight">{templateConfig.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{templateConfig.description}</p>
+                </div>
+              </div>
+
+              {/* Topic input */}
+              <div className="space-y-2">
+                <Label>Topic</Label>
+                <Input
+                  placeholder={templateConfig.placeholderTopic}
+                  value={aiTopic}
+                  onChange={(e) => onTopicChange(e.target.value)}
+                />
+                {!aiTopic.trim() && (
+                  <p className="text-xs text-muted-foreground italic">Enter a topic to enable generation</p>
+                )}
+              </div>
+
+              {/* Format select */}
+              <div className="space-y-2">
+                <Label>Format</Label>
+                <Select value={templateFormat} onValueChange={onTemplateFormatChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FORMAT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          ) : (
+            /* No template selected */
+            <div className="text-center py-6">
+              <LayoutTemplate className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">Pick a template to get started</p>
+              <Button variant="outline" size="sm" onClick={onOpenTemplatesDialog} className="gap-2">
+                <LayoutTemplate className="h-4 w-4" />
+                Browse Templates
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {aiTool !== "inspire" && aiTool !== "template" && (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Tone</Label>
@@ -251,8 +507,9 @@ export function AiToolsPanel({
           </div>
         )}
       </div>
+      )}
 
-      {aiTool === "thread" && tweets.length === 1 && (
+      {aiTool !== "inspire" && aiTool !== "template" && aiTool === "thread" && tweets.length === 1 && (
         <AiLengthSelector
           selectedLength={aiLengthOption}
           onLengthChange={onLengthOptionChange}
@@ -260,7 +517,7 @@ export function AiToolsPanel({
         />
       )}
 
-      {aiTool === "thread" && tweets.length > 1 && (
+      {aiTool !== "inspire" && aiTool !== "template" && aiTool === "thread" && tweets.length > 1 && (
         <>
           <div className="space-y-2">
             <div className="flex justify-between">
@@ -276,7 +533,7 @@ export function AiToolsPanel({
         </>
       )}
 
-      {!hideActions && (
+      {!hideActions && aiTool !== "inspire" && aiTool !== "template" && (
         <div className="flex justify-end gap-2 pt-3 border-t">
           <Button variant="outline" size="sm" onClick={onClose} disabled={isGenerating}>Cancel</Button>
           <Button size="sm" onClick={onGenerate} disabled={isGenerateDisabled}>

@@ -11,6 +11,8 @@ const requestSchema = z.object({
   tone: TONE_ENUM.default("professional"),
   topic: z.string().max(500).optional(),
   input: z.string().max(25000).optional(),
+  // Phase 2: CTA context for better relevance
+  context: z.string().max(500).optional(),
 });
 
 // Keep the schema constraint generous — the AI sometimes exceeds the prompt's
@@ -36,7 +38,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { tool, language, tone, topic, input } = parsed.data;
+    const { tool, language, tone, topic, input, context } = parsed.data;
 
     const langLabel = LANGUAGES.find(l => l.code === language)?.label || 'English';
 
@@ -61,10 +63,14 @@ Constraints:
       }
 
       if (tool === "cta") {
+        const contextPrompt = context
+          ? `\n\nThread context for relevance:\n${context}`
+          : "";
         return `Write a short call-to-action for the END of an X thread.
 Tone: ${tone}.
 Language: ${langLabel}.
 ${voiceInstructions}
+${contextPrompt}
 
 Constraints:
 - Max 120 characters.
