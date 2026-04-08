@@ -1814,7 +1814,7 @@ export function Composer() {
         {/* Card 1: Content Tools — always visible; AI panel expands inline on desktop (P1-B) */}
         <Card>
           <CardContent className="pt-5 space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Content Tools</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Content Tools (start here)</p>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
