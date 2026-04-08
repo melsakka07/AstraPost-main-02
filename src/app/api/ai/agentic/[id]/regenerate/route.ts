@@ -11,9 +11,9 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import type { ImageModel } from "@/lib/plan-limits";
-import { recordAiUsage } from "@/lib/services/ai-quota";
 import { agenticPosts } from "@/lib/schema";
 import { startImageGeneration, checkImagePrediction } from "@/lib/services/ai-image";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const regenerateSchema = z.object({
   tweetIndex: z.number().int().min(0),

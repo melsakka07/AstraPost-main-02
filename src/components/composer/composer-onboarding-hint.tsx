@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { CalendarDays, Keyboard, Sparkles, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -10,8 +10,17 @@ function hasSeenHint(): boolean {
   try {
     return !!localStorage.getItem(HINT_KEY);
   } catch {
-    return true; // treat as seen if storage is unavailable
+    return true;
   }
+}
+
+function subscribeToHint(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+function getHintServerSnapshot() {
+  return true;
 }
 
 /**
@@ -22,8 +31,13 @@ function hasSeenHint(): boolean {
  * it never appears again after the user clicks "Got it".
  */
 export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: number }) {
-  // Lazy initializer runs once on mount (client-side only) — no useEffect needed
-  const [visible, setVisible] = useState(() => !hasSeenHint());
+  const [dismissed, setDismissed] = useState(false);
+  const seenHint = useSyncExternalStore(
+    subscribeToHint,
+    hasSeenHint,
+    getHintServerSnapshot
+  );
+  const visible = !seenHint && !dismissed;
 
   const dismiss = () => {
     try {
@@ -31,7 +45,7 @@ export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: nu
     } catch {
       // ignore
     }
-    setVisible(false);
+    setDismissed(true);
   };
 
   if (!visible) return null;

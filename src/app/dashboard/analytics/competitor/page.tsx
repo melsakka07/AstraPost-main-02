@@ -344,6 +344,7 @@ export default function CompetitorAnalyzerPage() {
               onClick={() => setCompareOpen((v) => !v)}
               className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
               aria-expanded={compareOpen}
+              aria-controls="competitor-compare-panel"
             >
               <span className="text-sm font-semibold flex items-center gap-2">
                 <ArrowLeftRight className="h-4 w-4 text-primary" />
@@ -352,7 +353,7 @@ export default function CompetitorAnalyzerPage() {
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${compareOpen ? "" : "-rotate-90"}`} />
             </button>
             {compareOpen && (
-              <CardContent className="pt-0 pb-5 px-5">
+              <CardContent id="competitor-compare-panel" className="pt-0 pb-5 px-5">
                 {selfStats === null ? (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
@@ -547,6 +548,7 @@ export default function CompetitorAnalyzerPage() {
               onClick={() => setChartsOpen((v) => !v)}
               className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
               aria-expanded={chartsOpen}
+              aria-controls="competitor-charts-panel"
             >
               <span className="text-sm font-semibold flex items-center gap-2">
                 <LayoutGrid className="h-4 w-4 text-primary" />
@@ -555,7 +557,7 @@ export default function CompetitorAnalyzerPage() {
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${chartsOpen ? "" : "-rotate-90"}`} />
             </button>
             {chartsOpen && (
-              <CardContent className="pt-0 pb-4 px-5">
+              <CardContent id="competitor-charts-panel" className="pt-0 pb-4 px-5">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
@@ -593,6 +595,7 @@ export default function CompetitorAnalyzerPage() {
               onClick={() => setSummaryOpen((v) => !v)}
               className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
               aria-expanded={summaryOpen}
+              aria-controls="competitor-summary-panel"
             >
               <span className="text-sm font-semibold flex items-center gap-2">
                 <MessageSquare className="h-4 w-4 text-primary" />
@@ -601,7 +604,7 @@ export default function CompetitorAnalyzerPage() {
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${summaryOpen ? "" : "-rotate-90"}`} />
             </button>
             {summaryOpen && (
-              <CardContent className="pt-0 pb-4 px-5">
+              <CardContent id="competitor-summary-panel" className="pt-0 pb-4 px-5">
                 <p className="text-sm leading-relaxed">{result.analysis.summary}</p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1 rounded-md border px-2 py-1">
@@ -622,6 +625,7 @@ export default function CompetitorAnalyzerPage() {
               onClick={() => setInsightsOpen((v) => !v)}
               className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
               aria-expanded={insightsOpen}
+              aria-controls="competitor-insights-panel"
             >
               <span className="text-sm font-semibold flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
@@ -630,7 +634,7 @@ export default function CompetitorAnalyzerPage() {
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${insightsOpen ? "" : "-rotate-90"}`} />
             </button>
             {insightsOpen && (
-              <CardContent className="pt-0 pb-4 px-5">
+              <CardContent id="competitor-insights-panel" className="pt-0 pb-4 px-5">
                 <div className="grid gap-4 md:grid-cols-2">
                   {/* Topics */}
                   <div>
@@ -695,12 +699,13 @@ export default function CompetitorAnalyzerPage() {
               onClick={() => setToneOpen((v) => !v)}
               className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
               aria-expanded={toneOpen}
+              aria-controls="competitor-tone-panel"
             >
               <span className="text-sm font-semibold">Tone Profile</span>
               <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${toneOpen ? "" : "-rotate-90"}`} />
             </button>
             {toneOpen && (
-              <CardContent className="pt-0 pb-4 px-5">
+              <CardContent id="competitor-tone-panel" className="pt-0 pb-4 px-5">
                 <p className="text-sm leading-relaxed text-muted-foreground">{result.analysis.toneProfile}</p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {result.analysis.preferredContentTypes.map((t, i) => (

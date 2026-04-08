@@ -4,8 +4,8 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { recordAiUsage } from "@/lib/services/ai-quota";
 import { redis } from "@/lib/rate-limiter";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const CACHE_TTL = 6 * 60 * 60; // 6 hours
 

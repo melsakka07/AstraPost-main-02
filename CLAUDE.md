@@ -1,5 +1,42 @@
 # AstraPost - AI Assistant Guidelines
 
+## Agent Orchestration
+
+When working on tasks that involve multiple files, systems, or concerns, always spin up
+parallel sub-agents (via Task tool) to maximize throughput and reduce wall-clock time.
+
+### When to spawn sub-agents
+
+- **Multi-file changes**: If a task touches 3+ files, split the work across agents by
+  concern (e.g., one for backend, one for frontend, one for tests).
+- **Independent subtasks**: Any subtasks that have no data dependency on each other MUST
+  run in parallel, not sequentially.
+- **Research + Implementation**: Spawn one agent to research/read files while another
+  scaffolds boilerplate or writes tests.
+- **Lint / Typecheck / Test**: After making changes, spawn parallel agents for
+  `lint`, `typecheck`, and `test` rather than running them one after another.
+
+### How to split work
+
+1. **Analyze the task** — identify independent subtasks and their dependency graph.
+2. **Group by dependency** — tasks that depend on each other run in the same agent
+   sequentially; independent groups run in separate agents in parallel.
+3. **Define clear boundaries** — each sub-agent gets a specific, scoped instruction
+   with the exact files to read/write so agents don't conflict on the same file.
+4. **Aggregate results** — after all agents complete, review their outputs together
+   before reporting back.
+
+### Rules
+
+- Never run independent work sequentially when it can be parallelized.
+- Each sub-agent should have a single, clear responsibility.
+- If a sub-agent's output is needed by another, wait for it to finish before
+  spawning the dependent agent — do NOT use placeholder values or guess.
+- Always run verification agents (lint, typecheck, tests) in parallel as the
+  final step after all code changes are complete.
+- When fixing errors, spawn one agent per distinct error/file rather than fixing
+  them one at a time in a single thread.
+
 ## Project Overview
 
 AstraPost is a production-ready AI-powered social media management platform for X (Twitter). It enables users to schedule tweets and threads, publish reliably via a background worker, track analytics, and generate content using AI — targeting Arabic-speaking content creators in the MENA region.

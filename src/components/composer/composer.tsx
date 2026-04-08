@@ -1961,11 +1961,11 @@ export function Composer() {
                 <Hash className="h-3.5 w-3.5" />#Tags
               </Button>
             </div>
-            <div className="flex items-center justify-between pt-2 border-t mt-2">
+            <div className="mt-2 flex flex-wrap gap-2 border-t pt-2">
               <Button
                 variant={isTweetsNumbered ? "secondary" : "ghost"}
                 size="sm"
-                className="gap-1.5 text-xs text-muted-foreground h-7"
+                className="h-7 flex-1 justify-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground"
                 onClick={() =>
                   setTweets(isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets]))
                 }
@@ -1976,7 +1976,7 @@ export function Composer() {
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-7"
+                className="h-7 flex-1 justify-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => setIsSaveTemplateOpen(true)}
                 disabled={isSubmitting}
               >

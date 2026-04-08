@@ -1,5 +1,45 @@
 # Latest Updates
 
+## 2026-04-08: UI Fix — Compose Mobile Button Overflow ✅
+
+**Summary:** Fixed a layout issue in the Composer where the `Save as Template` action could overflow outside the bordered content-tools area on certain screen sizes (like the `lg` grid column).
+
+**Fix:** Updated the footer action row in `src/components/composer/composer.tsx` to use a fluid `flex-wrap` and `flex-1` layout instead of hardcoded `sm:` breakpoints. This guarantees the buttons split the row 50/50 when there's space, and gracefully stack to 100% width when the container is too narrow.
+
+**Files changed:**
+- `src/components/composer/composer.tsx` — made the numbering/template action row fluidly responsive
+
+**Status:** pending re-run of `pnpm run lint && pnpm run typecheck` after applying the diff
+
+---
+
+## 2026-04-08: Bug Fix — Compose Page Hydration Mismatch ✅
+
+**Summary:** Fixed a React hydration mismatch on `/dashboard/compose` caused by `ComposerOnboardingHint` reading `localStorage` during the initial render. The server rendered the hint as hidden while the client sometimes rendered it as visible, so React regenerated the tree on the client.
+
+**Fix:** Changed `src/components/composer/composer-onboarding-hint.tsx` to use `useSyncExternalStore()` with a server snapshot of `true` and a client snapshot based on `localStorage`, avoiding both the hydration mismatch and the `react-hooks/set-state-in-effect` lint error.
+
+**Files changed:**
+- `src/components/composer/composer-onboarding-hint.tsx` — moved first-render visibility logic to an external-store snapshot pattern
+
+**Status:** pending re-run of `pnpm run lint && pnpm run typecheck` after applying the diff
+
+---
+
+## 2026-04-08: Chore — Import Order Cleanup for API Routes ✅
+
+**Summary:** Fixed ESLint `import/order` warnings in four API routes by reordering existing imports only. No runtime logic changed.
+
+**Files changed:**
+- `src/app/api/ai/agentic/[id]/regenerate/route.ts` — moved `recordAiUsage` after schema and image-service imports
+- `src/app/api/ai/inspiration/route.ts` — moved `redis` before `recordAiUsage`
+- `src/app/api/chat/route.ts` — moved `recordAiUsage` after `schema` import
+- `src/app/api/user/voice-profile/route.ts` — moved `user` before `recordAiUsage`
+
+**Status:** pending re-run of `pnpm run lint && pnpm run typecheck` after applying the diff
+
+---
+
 ## 2026-04-08: Bug Fix — AI Usage Double-Counting & Untracked Endpoints ✅
 
 **Summary:** Fixed two AI quota tracking bugs: (1) image generations were double-counted in the billing usage API, and (2) four AI endpoints called AI models but never recorded usage or checked monthly quotas.

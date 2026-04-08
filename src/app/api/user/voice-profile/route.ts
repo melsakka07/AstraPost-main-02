@@ -7,8 +7,8 @@ import { voiceProfileSchema as vpSchema } from "@/lib/ai/voice-profile";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { recordAiUsage } from "@/lib/services/ai-quota";
 import { user } from "@/lib/schema";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const analyzeRequestSchema = z.object({
   // Cap each tweet sample to prevent prompt-stuffing via the analysis endpoint.
