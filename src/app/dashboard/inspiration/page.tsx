@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight, Download, ExternalLink, RefreshCw } from "lucide-react";
+import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight, Download, ExternalLink, RefreshCw, X } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
 import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
@@ -58,7 +59,16 @@ interface HistoryItem {
 }
 
 export default function InspirationPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>}>
+      <InspirationContent />
+    </Suspense>
+  );
+}
+
+function InspirationContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tweetUrl, setTweetUrl] = useState("");
   const [isValidUrl, setIsValidUrl] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,6 +117,53 @@ export default function InspirationPage() {
     setIsValidUrl(validateUrl(value));
     setError(null);
   }, [validateUrl]);
+
+  // Initialize from URL search params or sessionStorage
+  useEffect(() => {
+    // 1. Check URL parameters (e.g., ?url=https://x.com/...)
+    const urlParam = searchParams.get("url");
+    if (urlParam && validateUrl(urlParam)) {
+      setTweetUrl(urlParam);
+      setIsValidUrl(true);
+      return;
+    }
+
+    // 2. Fallback to session storage to persist across reloads
+    try {
+      const storedUrl = sessionStorage.getItem("inspiration_current_url");
+      if (storedUrl && validateUrl(storedUrl)) {
+        setTweetUrl(storedUrl);
+        setIsValidUrl(true);
+        
+        // Also try to restore the imported data to avoid refetching on every reload
+        const storedData = sessionStorage.getItem("inspiration_current_data");
+        if (storedData) {
+          setImportedData(JSON.parse(storedData));
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }, [searchParams, validateUrl]);
+
+  // Save current url/data to sessionStorage whenever they change
+  useEffect(() => {
+    try {
+      if (tweetUrl) {
+        sessionStorage.setItem("inspiration_current_url", tweetUrl);
+      } else {
+        sessionStorage.removeItem("inspiration_current_url");
+      }
+      
+      if (importedData) {
+        sessionStorage.setItem("inspiration_current_data", JSON.stringify(importedData));
+      } else {
+        sessionStorage.removeItem("inspiration_current_data");
+      }
+    } catch {
+      // Ignore
+    }
+  }, [tweetUrl, importedData]);
 
   // Import tweet
   const handleImport = useCallback(async () => {
@@ -208,6 +265,24 @@ export default function InspirationPage() {
       setIsBookmarking(false);
     }
   }, [importedData, tweetUrl]);
+
+  // Clear imported tweet and URL
+  const handleClear = useCallback(() => {
+    setTweetUrl("");
+    setIsValidUrl(false);
+    setImportedData(null);
+    setShowThreadContext(false);
+    setError(null);
+    setSuccessMessage(null);
+
+    // Clear sessionStorage
+    try {
+      sessionStorage.removeItem("inspiration_current_url");
+      sessionStorage.removeItem("inspiration_current_data");
+    } catch {
+      // Ignore
+    }
+  }, []);
 
   // Load bookmarks on mount
   useEffect(() => {
@@ -386,17 +461,32 @@ export default function InspirationPage() {
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Left: Imported Tweet */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Imported Tweet</h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBookmark}
-                    disabled={isBookmarking}
-                  >
-                    <Bookmark className="h-4 w-4 me-2" />
-                    {isBookmarking ? "Saving..." : "Bookmark"}
-                  </Button>
+                <div className="flex items-start justify-between gap-2 sm:items-center">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-semibold">Imported Tweet</h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground">Original content from X/Twitter</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleBookmark}
+                      disabled={isBookmarking}
+                      title={isBookmarking ? "Saving..." : "Bookmark"}
+                      className="h-8 w-8 sm:h-10 sm:w-10"
+                    >
+                      <Bookmark className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleClear}
+                      title="Clear"
+                      className="h-8 w-8 sm:h-10 sm:w-10"
+                    >
+                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <ImportedTweetCard
                   tweet={importedData.originalTweet}
@@ -409,8 +499,11 @@ export default function InspirationPage() {
               </div>
 
               {/* Right: Adaptation Panel */}
-              <div>
-                <h2 className="text-lg font-semibold mb-4">Adapt Content</h2>
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Adapt Content</h2>
+                  <p className="text-sm text-muted-foreground">Use AI or manually adapt the tweet to your style</p>
+                </div>
                 <AdaptationPanel
                   sourceTweet={importedData.originalTweet}
                   threadContext={[
@@ -426,12 +519,12 @@ export default function InspirationPage() {
           {/* Empty State */}
           {!importedData && !isLoading && !error && (
             <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-6 border border-primary/10">
-                  <Lightbulb className="h-10 w-10 text-primary" />
+              <CardContent className="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-4">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4 sm:mb-6 border border-primary/10">
+                  <Lightbulb className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-3">No tweet imported yet</h3>
-                <p className="text-muted-foreground max-w-md">
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">No tweet imported yet</h3>
+                <p className="text-sm sm:text-base text-muted-foreground max-w-md">
                   Paste a X/Twitter URL above to import a tweet and adapt it with AI assistance.
                 </p>
               </CardContent>

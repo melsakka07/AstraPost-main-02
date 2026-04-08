@@ -152,9 +152,9 @@ export function TemplatesDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full justify-start gap-2">
-          <LayoutTemplate className="h-4 w-4" />
-          Templates
+        <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center">
+          <LayoutTemplate className="h-3.5 w-3.5 shrink-0" />
+          <span>Templates</span>
         </Button>
       </DialogTrigger>
 

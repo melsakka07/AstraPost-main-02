@@ -94,13 +94,13 @@ export function ManualEditor({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Manual Editor</CardTitle>
+      <CardHeader className="p-3 sm:p-6">
+        <CardTitle className="text-base sm:text-lg">Manual Editor</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0 sm:pt-0">
         {/* Character Counter */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <span className="text-xs sm:text-sm text-muted-foreground">
             {charCount} / {maxChars} characters
           </span>
           <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ export function ManualEditor({
             </Button>
             <span
               className={cn(
-                "text-sm font-medium",
+                "text-xs sm:text-sm font-medium",
                 isOverLimit ? "text-destructive" : "text-muted-foreground"
               )}
             >
@@ -132,7 +132,7 @@ export function ManualEditor({
           value={text}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Edit the tweet to make it your own..."
-          className="min-h-[150px] resize-none"
+          className="min-h-[120px] sm:min-h-[150px] resize-none text-sm"
         />
 
         {/* Similarity Warning */}
@@ -146,11 +146,11 @@ export function ManualEditor({
             )}
           >
             {isTooSimilar ? (
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             ) : (
-              <CheckCircle2 className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+              <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-600 dark:text-yellow-500" />
             )}
-            <AlertDescription>
+            <AlertDescription className="text-xs sm:text-sm">
               {isTooSimilar ? (
                 <>
                   <strong>Too similar!</strong> This content is {similarity.toFixed(0)}% similar to the
@@ -165,13 +165,14 @@ export function ManualEditor({
           </Alert>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between items-center">
-        <span className="text-xs text-muted-foreground">
+      <CardFooter className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-6 pt-0 sm:pt-0">
+        <span className="text-[10px] sm:text-xs text-muted-foreground text-center">
           Make substantial changes to create original content
         </span>
         <Button
           onClick={handleSendToComposer}
           disabled={isOverLimit || isTooSimilar || text.trim().length === 0}
+          className="h-9 sm:h-10 text-sm"
         >
           Send to Composer
         </Button>

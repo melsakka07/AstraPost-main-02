@@ -110,7 +110,7 @@ function getXApiToken(): string {
  */
 async function fetchTweet(tweetId: string): Promise<Tweet | null> {
   const token = getXApiToken();
-  const url = `https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,public_metrics,conversation_id,entities,attachments,author_id&expansions=author_id,attachments.media_keys,referenced_tweets.id&user.fields=verified,profile_image_url&media.fields=url,width,height,preview_image_url,type`;
+  const url = `https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,public_metrics,conversation_id,entities,attachments,author_id&expansions=author_id,attachments.media_keys,referenced_tweets.id&user.fields=verified,profile_image_url&media.fields=url,width,height,preview_image_url,type,variants`;
 
   const response = await fetch(url, {
     headers: {
@@ -159,9 +159,21 @@ function parseTweetResponse(data: any): Tweet | null {
     for (const mediaKey of tweetData.attachments.media_keys) {
       const mediaData = media.find((m: any) => m.media_key === mediaKey);
       if (mediaData) {
+        let bestUrl = mediaData.url || mediaData.preview_image_url;
+
+        // For videos/gifs, try to find the best mp4 variant
+        if ((mediaData.type === "video" || mediaData.type === "animated_gif") && mediaData.variants) {
+          const mp4Variants = mediaData.variants.filter((v: any) => v.content_type === "video/mp4");
+          if (mp4Variants.length > 0) {
+            // Sort by highest bitrate first
+            mp4Variants.sort((a: any, b: any) => (b.bit_rate || 0) - (a.bit_rate || 0));
+            bestUrl = mp4Variants[0].url;
+          }
+        }
+
         tweetMedia.push({
           type: mediaData.type,
-          url: mediaData.url || mediaData.preview_image_url,
+          url: bestUrl,
           thumbnailUrl: mediaData.preview_image_url,
           width: mediaData.width,
           height: mediaData.height,

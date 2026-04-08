@@ -190,28 +190,27 @@ export function AiToolsPanel({
   return (
     <div className="space-y-4">
       {/* P1-C / P4-D: Tool tab switcher — pill buttons with ARIA tab semantics */}
-      <div role="tablist" aria-label="AI tool" className="flex flex-wrap gap-1">
+      <div role="tablist" aria-label="AI tool" className="flex flex-wrap gap-1.5 sm:gap-2">
         {TOOLS.map(({ id, label, Icon }) => (
-          <Button
+          <button
             key={id}
             role="tab"
             aria-selected={aiTool === id}
-            variant={aiTool === id ? "default" : "ghost"}
-            size="sm"
-            className="gap-1.5 text-xs h-7 px-2.5"
-            onClick={() => onToolChange(id)}
+            type="button"
             disabled={isGenerating}
+            onClick={() => onToolChange(id)}
+            className="inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 rounded-md gap-1.5 sm:gap-2 text-xs sm:text-sm h-9 sm:h-8 px-2.5 sm:px-3 min-w-[44px] sm:min-w-0 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary/90 bg-background hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50"
           >
-            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-            {label}
-          </Button>
+            <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+            <span className="hidden xs:inline">{label}</span>
+          </button>
         ))}
       </div>
 
       {/* Phase 3: Scope indicator - shows which tweets are affected */}
       {isAiOpen && !isGenerating && (
-        <div className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
-          <Target className="h-3 w-3" />
+        <div className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1.5 sm:gap-2 px-1">
+          <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           {(() => {
             const nonEmptyCount = tweets.filter(t => t.content.trim()).length;
             if (aiTool === "thread" || aiTool === "inspire" || aiTool === "template") {
@@ -234,10 +233,10 @@ export function AiToolsPanel({
 
       {/* P2-F / P4-A: Streaming progress state — shown during thread generation */}
       {isStreamingThread && (
-        <div className="space-y-3 py-1">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="space-y-3 sm:space-y-4 py-2">
+          <div className="flex items-center gap-2 sm:gap-3 text-sm sm:text-base text-muted-foreground">
             {/* P4-A: aria-hidden spinner — status text below is the announcement */}
-            <Loader2 className="h-4 w-4 animate-spin shrink-0 text-primary" aria-hidden="true" />
+            <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin shrink-0 text-primary" aria-hidden="true" />
             {/* P4-A: aria-live="polite" + role="status" announces streaming progress to screen readers */}
             <span role="status" aria-live="polite" aria-atomic="true">
               {streamingTweetCount === 0
@@ -246,22 +245,21 @@ export function AiToolsPanel({
             </span>
           </div>
           {typeof totalTweetCount === "number" && totalTweetCount > 0 && (
-            // P4-A: role="progressbar" with aria-value* for screen reader progress
             <div
               role="progressbar"
-              aria-valuenow={streamingTweetCount}
+              aria-valuenow={streamingTweetCount ?? 0}
               aria-valuemin={0}
               aria-valuemax={totalTweetCount}
               aria-label={`Thread generation progress: ${streamingTweetCount} of ${totalTweetCount} tweets`}
-              className="h-1.5 bg-muted rounded-full overflow-hidden"
+              className="h-2 sm:h-2.5 bg-muted rounded-full overflow-hidden"
             >
               <div
                 className="h-full bg-primary rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((streamingTweetCount! / totalTweetCount) * 100, 100)}%` }}
+                style={{ width: `${Math.min(((streamingTweetCount ?? 0) / totalTweetCount) * 100, 100)}%` }}
               />
             </div>
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Tweets are streaming into the composer below.
           </p>
         </div>
@@ -273,36 +271,37 @@ export function AiToolsPanel({
       {/* Form fields */}
       {(aiTool === "thread" || aiTool === "hook") && (
         <div className="space-y-2">
-          <Label>Topic</Label>
+          <Label className="text-sm">Topic</Label>
           <Input
             placeholder="e.g. Productivity tips for developers"
             value={aiTopic}
             onChange={(e) => onTopicChange(e.target.value)}
+            className="h-11 sm:h-10 text-sm"
           />
         </div>
       )}
 
       {aiTool === "rewrite" && (
         <div className="space-y-2">
-          <Label>Tweet</Label>
+          <Label className="text-sm">Tweet</Label>
           <Textarea
             value={aiRewriteText}
             onChange={(e) => onRewriteTextChange(e.target.value)}
-            className="min-h-[120px]"
+            className="min-h-[120px] sm:min-h-[140px] text-sm"
             placeholder="Enter or paste the tweet text you want to rewrite..."
           />
           {!aiRewriteText.trim() && (
-            <p className="text-xs text-muted-foreground italic">Enter text above to enable rewrite</p>
+            <p className="text-xs sm:text-sm text-muted-foreground italic">Enter text above to enable rewrite</p>
           )}
         </div>
       )}
 
       {aiTool === "hashtags" && (
-        <div className="space-y-3">
-          <Label>Tweet content</Label>
+        <div className="space-y-3 sm:space-y-4">
+          <Label className="text-sm">Tweet content</Label>
           <div className="rounded-md border bg-muted/30 px-3 py-2.5 text-sm min-h-[60px]">
             {tweets.find((t) => t.id === aiTargetTweetId)?.content || (
-              <span className="text-xs italic text-muted-foreground">
+              <span className="text-xs sm:text-sm italic text-muted-foreground">
                 No content yet — type something in the tweet editor first
               </span>
             )}
@@ -310,18 +309,18 @@ export function AiToolsPanel({
 
           {/* Phase 3: Show hashtag chips inline in panel */}
           {generatedHashtags.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 sm:space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-xs">Generated hashtags (click to add):</Label>
+                <Label className="text-xs sm:text-sm">Generated hashtags (click to add):</Label>
                 <span className="text-xs text-muted-foreground">{generatedHashtags.length} remaining</span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {generatedHashtags.map((tag) => (
                   <Button
                     key={tag}
                     variant="outline"
                     size="sm"
-                    className="h-6 text-xs"
+                    className="h-8 sm:h-7 text-xs px-3 sm:px-2.5 min-w-[44px] sm:min-w-0"
                     onClick={() => onHashtagClick(tag)}
                   >
                     {tag}
@@ -331,7 +330,7 @@ export function AiToolsPanel({
               <Button
                 variant="secondary"
                 size="sm"
-                className="w-full"
+                className="w-full h-10 sm:h-9 text-sm"
                 onClick={onHashtagsDone}
               >
                 Done
@@ -343,9 +342,9 @@ export function AiToolsPanel({
 
       {aiTool === "translate" && (
         <div className="space-y-2">
-          <Label>Translate to</Label>
+          <Label className="text-sm">Translate to</Label>
           <Select value={aiTranslateTarget} onValueChange={onTranslateTargetChange}>
-            <SelectTrigger>
+            <SelectTrigger className="h-11 sm:h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -354,9 +353,9 @@ export function AiToolsPanel({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground">Source language is auto-detected</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">Source language is auto-detected</p>
           {!tweets.some((t) => t.content.trim()) && (
-            <p className="text-xs text-muted-foreground italic">
+            <p className="text-xs sm:text-sm text-muted-foreground italic">
               Add content to your tweet(s) to enable translation
             </p>
           )}
@@ -364,12 +363,12 @@ export function AiToolsPanel({
       )}
 
       {aiTool === "inspire" && (
-        <div className="space-y-3">
-          <div className="flex items-end gap-2">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex items-end gap-2 sm:gap-3">
             <div className="space-y-2 flex-1">
-              <Label>Niche</Label>
+              <Label className="text-sm">Niche</Label>
               <Select value={inspirationNiche} onValueChange={onInspirationNicheChange}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 sm:h-10 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -379,36 +378,37 @@ export function AiToolsPanel({
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={onFetchInspiration} disabled={isLoadingInspiration} size="sm">
+            <Button onClick={onFetchInspiration} disabled={isLoadingInspiration} size="sm" className="h-11 sm:h-10 text-sm px-3 sm:px-4 min-w-[44px] sm:min-w-0">
               {isLoadingInspiration ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:w-4 sm:h-4 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4 sm:w-4 sm:h-4" />
               )}
-              {inspirationTopics.length > 0 ? "Refresh" : "Get Ideas"}
+              <span className="hidden sm:inline">{inspirationTopics.length > 0 ? "Refresh" : "Get Ideas"}</span>
+              <span className="sm:hidden">{inspirationTopics.length > 0 ? "Refresh" : "Get"}</span>
             </Button>
           </div>
 
           {inspirationTopics.length > 0 && (
-            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+            <div className="space-y-2 sm:space-y-3 max-h-[200px] sm:max-h-[220px] overflow-y-auto pr-1">
               {inspirationTopics.map((t, i) => (
                 <div
                   key={i}
-                  className="p-2.5 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
+                  className="p-3 sm:p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors group"
                   onClick={() => onInspirationSelect(t.topic, t.hook)}
                 >
-                  <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-semibold text-sm">{t.topic}</h4>
-                    <Sparkles className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  <div className="flex justify-between items-start gap-2 sm:gap-3">
+                    <h4 className="font-semibold text-sm sm:text-base">{t.topic}</h4>
+                    <Sparkles className="w-4 h-4 sm:w-4 sm:h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </div>
-                  <p className="text-xs text-muted-foreground italic mt-1">"{t.hook}"</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground italic mt-1 sm:mt-1.5">"{t.hook}"</p>
                 </div>
               ))}
             </div>
           )}
 
           {inspirationTopics.length === 0 && !isLoadingInspiration && (
-            <p className="text-xs text-muted-foreground text-center py-2">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center py-2 sm:py-3">
               Select a niche and click "Get Ideas" to start.
             </p>
           )}
@@ -416,38 +416,39 @@ export function AiToolsPanel({
       )}
 
       {aiTool === "template" && (
-        <div className="space-y-3">
+        <div className="space-y-3 sm:space-y-4">
           {templateConfig ? (
             <>
               {/* Template info header */}
               <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
                   <LayoutTemplate className="h-4 w-4 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold leading-tight">{templateConfig.name}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{templateConfig.description}</p>
+                  <h3 className="text-sm sm:text-base font-semibold leading-tight">{templateConfig.name}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">{templateConfig.description}</p>
                 </div>
               </div>
 
               {/* Topic input */}
               <div className="space-y-2">
-                <Label>Topic</Label>
+                <Label className="text-sm">Topic</Label>
                 <Input
                   placeholder={templateConfig.placeholderTopic}
                   value={aiTopic}
                   onChange={(e) => onTopicChange(e.target.value)}
+                  className="h-11 sm:h-10 text-sm"
                 />
                 {!aiTopic.trim() && (
-                  <p className="text-xs text-muted-foreground italic">Enter a topic to enable generation</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground italic">Enter a topic to enable generation</p>
                 )}
               </div>
 
               {/* Format select */}
               <div className="space-y-2">
-                <Label>Format</Label>
+                <Label className="text-sm">Format</Label>
                 <Select value={templateFormat} onValueChange={onTemplateFormatChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 sm:h-10 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -460,10 +461,10 @@ export function AiToolsPanel({
             </>
           ) : (
             /* No template selected */
-            <div className="text-center py-6">
-              <LayoutTemplate className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-              <p className="text-sm text-muted-foreground mb-3">Pick a template to get started</p>
-              <Button variant="outline" size="sm" onClick={onOpenTemplatesDialog} className="gap-2">
+            <div className="text-center py-6 sm:py-8">
+              <LayoutTemplate className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-muted-foreground/50 mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">Pick a template to get started</p>
+              <Button variant="outline" size="sm" onClick={onOpenTemplatesDialog} className="gap-2 h-10 sm:h-9 text-sm min-w-[44px] sm:min-w-0">
                 <LayoutTemplate className="h-4 w-4" />
                 Browse Templates
               </Button>
@@ -473,11 +474,11 @@ export function AiToolsPanel({
       )}
 
       {aiTool !== "inspire" && aiTool !== "template" && (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="space-y-2">
-          <Label>Tone</Label>
+          <Label className="text-sm">Tone</Label>
           <Select value={aiTone} onValueChange={onToneChange}>
-            <SelectTrigger>
+            <SelectTrigger className="h-11 sm:h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -493,9 +494,9 @@ export function AiToolsPanel({
 
         {aiTool !== "translate" && (
           <div className="space-y-2">
-            <Label>Language</Label>
+            <Label className="text-sm">Language</Label>
             <Select value={aiLanguage} onValueChange={onLanguageChange}>
-              <SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -521,12 +522,12 @@ export function AiToolsPanel({
         <>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label>Length (Tweets)</Label>
+              <Label className="text-sm">Length (Tweets)</Label>
               <span className="text-sm text-muted-foreground">{aiCount[0]}</span>
             </div>
-            <Slider value={aiCount} onValueChange={onCountChange} min={3} max={15} step={1} />
+            <Slider value={aiCount} onValueChange={onCountChange} min={3} max={15} step={1} className="py-2" />
           </div>
-          <div className="flex items-center justify-between rounded-md border px-3 py-2">
+          <div className="flex items-center justify-between rounded-md border px-3 py-2.5">
             <Label htmlFor="ai-numbering-panel" className="text-sm cursor-pointer">Add numbering (1/N)</Label>
             <Switch id="ai-numbering-panel" checked={aiAddNumbering} onCheckedChange={onAddNumberingChange} />
           </div>
@@ -534,10 +535,10 @@ export function AiToolsPanel({
       )}
 
       {!hideActions && aiTool !== "inspire" && aiTool !== "template" && (
-        <div className="flex justify-end gap-2 pt-3 border-t">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={isGenerating}>Cancel</Button>
-          <Button size="sm" onClick={onGenerate} disabled={isGenerateDisabled}>
-            {isGenerating && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+        <div className="flex justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={isGenerating} className="h-10 sm:h-9 text-sm min-w-[44px] sm:min-w-0">Cancel</Button>
+          <Button size="sm" onClick={onGenerate} disabled={isGenerateDisabled} className="h-10 sm:h-9 text-sm min-w-[44px] sm:min-w-0">
+            {isGenerating && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
             Generate
           </Button>
         </div>

@@ -35,9 +35,9 @@ export function AiLengthSelector({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
         <span className="text-sm font-medium">Post Length</span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground truncate">
           {AI_LENGTH_OPTIONS[selectedLength].description}
         </span>
       </div>

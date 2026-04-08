@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Loader2, Sparkles, RefreshCw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -120,22 +120,18 @@ export function AdaptationPanel({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Adapt Content</CardTitle>
-        <CardDescription>Use AI or manually adapt the tweet to your style</CardDescription>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "manual" | "ai")}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="manual">Manual</TabsTrigger>
-            <TabsTrigger value="ai">
-              <Sparkles className="h-4 w-4 mr-1" />
+          <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
+            <TabsTrigger value="manual" className="text-xs sm:text-sm">Manual</TabsTrigger>
+            <TabsTrigger value="ai" className="text-xs sm:text-sm">
+              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
               AI Assist
             </TabsTrigger>
           </TabsList>
 
           {/* Manual Tab */}
-          <TabsContent value="manual" className="space-y-4">
+          <TabsContent value="manual" className="space-y-4 mt-4">
             <ManualEditor
               initialText={sourceTweet.text}
               sourceText={sourceTweet.text}
@@ -144,35 +140,35 @@ export function AdaptationPanel({
           </TabsContent>
 
           {/* AI Tab */}
-          <TabsContent value="ai" className="space-y-4">
+          <TabsContent value="ai" className="space-y-3 sm:space-y-4 mt-4">
             {/* Action Selector */}
-            <div className="space-y-2">
-              <Label>What would you like to do?</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">What would you like to do?</Label>
               <Select value={aiAction} onValueChange={setAiAction}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {AI_ACTIONS.map((action) => (
                     <SelectItem key={action.value} value={action.value}>
                       <div className="flex flex-col">
-                        <span>{action.label}</span>
-                        <span className="text-xs text-muted-foreground">{action.description}</span>
+                        <span className="text-xs sm:text-sm">{action.label}</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground">{action.description}</span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {selectedAction && (
-                <p className="text-xs text-muted-foreground">{selectedAction.description}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{selectedAction.description}</p>
               )}
             </div>
 
             {/* Tone Selector */}
-            <div className="space-y-2">
-              <Label>Tone (optional)</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">Tone (optional)</Label>
               <Select value={aiTone} onValueChange={setAiTone}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10">
                   <SelectValue placeholder="Select tone" />
                 </SelectTrigger>
                 <SelectContent>
@@ -186,10 +182,10 @@ export function AdaptationPanel({
             </div>
 
             {/* Language Toggle */}
-            <div className="space-y-2">
-              <Label>Language</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">Language</Label>
               <Select value={aiLanguage} onValueChange={(v) => setAiLanguage(v as "ar" | "en")}>
-                <SelectTrigger>
+                <SelectTrigger className="h-9 sm:h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -203,16 +199,16 @@ export function AdaptationPanel({
             </div>
 
             {/* User Context (optional) */}
-            <div className="space-y-2">
-              <Label>Your perspective (optional)</Label>
+            <div className="space-y-1.5 sm:space-y-2">
+              <Label className="text-xs sm:text-sm">Your perspective (optional)</Label>
               <Textarea
                 value={userContext}
                 onChange={(e) => setUserContext(e.target.value)}
                 placeholder="Add your unique angle, expertise, or opinion..."
-                className="min-h-[80px] resize-none"
+                className="min-h-[60px] sm:min-h-[80px] resize-none text-sm"
                 maxLength={1000}
               />
-              <p className="text-xs text-muted-foreground">{userContext.length} / 1000</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{userContext.length} / 1000</p>
             </div>
 
             {/* Generate Button */}
