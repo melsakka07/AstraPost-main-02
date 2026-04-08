@@ -808,6 +808,19 @@ The build step uses minimal stub environment variables so no real secrets are ne
 
 This section summarises major development cycles. For full commit-level detail, see `docs/0-MY-LATEST-UPDATES.md`.
 
+### April 2026 — AI Quota Tracking Fixes
+
+**Billing usage double-count bug**
+- `GET /api/billing/usage` counted image generations in both `usage.ai` and `usage.aiImages` — causing Pro users to see "102 / 100" in the Settings UI
+- Fixed by excluding images from the text quota count (`ne(aiGenerations.type, "image")`)
+
+**4 untracked AI endpoints fixed**
+- `/api/ai/inspiration` — added `recordAiUsage(..., "inspiration", ...)` after AI generation (cached responses skipped)
+- `/api/user/voice-profile` — added `recordAiUsage(..., "voice_profile", ...)`
+- `/api/ai/agentic/[id]/regenerate` — added quota gates + `recordAiUsage` for text (`"agentic_regenerate"`) and image (`"image"`) regenerations
+- `/api/chat` — added `onFinish` callback on `streamText` to record usage (`"chat"`) after stream completes
+- These endpoints were burning AI capacity without decrementing the monthly quota
+
 ### April 2026 — Pricing Audit & Trial System Fix
 
 **Trial system security fix**

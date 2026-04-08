@@ -22,9 +22,11 @@ interface SortableTweetProps {
   tier?: XSubscriptionTier | undefined;
   // Phase 3: Highlight target tweets when AI panel is open
   isAiTarget?: boolean;
+  onConvertToThread?: () => void;
+  selectedTier?: XSubscriptionTier | undefined;
 }
 
-export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiImage, onMove, onClearTweet, suggestedHashtags, onHashtagClick, tier, isAiTarget = false }: SortableTweetProps) {
+export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiImage, onMove, onClearTweet, suggestedHashtags, onHashtagClick, tier, isAiTarget = false, onConvertToThread, selectedTier }: SortableTweetProps) {
   const isFirst = index === 0;
   const {
     attributes,
@@ -72,6 +74,8 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
             {...(onHashtagClick !== undefined && { onHashtagClick })}
             {...(tier !== undefined && { tier })}
             isAiTarget={isAiTarget}
+            {...(onConvertToThread !== undefined && { onConvertToThread })}
+            {...(selectedTier !== undefined && { selectedTier })}
         />
     </div>
   );

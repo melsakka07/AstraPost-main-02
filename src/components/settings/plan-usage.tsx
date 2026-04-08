@@ -12,11 +12,13 @@ interface UsageData {
     postsPerMonth: number | null;
     maxXAccounts: number | null;
     aiGenerationsPerMonth: number | null;
+    aiImagesPerMonth: number | null;
   };
   usage: {
     posts: number;
     accounts: number;
     ai: number;
+    aiImages: number;
   };
 }
 
@@ -48,6 +50,7 @@ export function PlanUsage() {
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-full" />
     </div>;
   }
 
@@ -57,7 +60,8 @@ export function PlanUsage() {
   const postPercentage = getPercentage(usage.posts, limits.postsPerMonth);
   const accountPercentage = getPercentage(usage.accounts, limits.maxXAccounts);
   const aiPercentage = getPercentage(usage.ai, limits.aiGenerationsPerMonth);
-  const highestPercentage = Math.max(postPercentage, accountPercentage, aiPercentage);
+  const imagePercentage = getPercentage(usage.aiImages, limits.aiImagesPerMonth);
+  const highestPercentage = Math.max(postPercentage, accountPercentage, aiPercentage, imagePercentage);
   const showUpgradeCta = highestPercentage >= 70 && plan !== "agency";
 
   return (
@@ -104,6 +108,16 @@ export function PlanUsage() {
           </span>
         </div>
         <Progress value={aiPercentage} className="h-2" />
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span>AI images this month</span>
+          <span className="text-muted-foreground">
+            {usage.aiImages} / {limits.aiImagesPerMonth === null ? "Unlimited" : limits.aiImagesPerMonth}
+          </span>
+        </div>
+        <Progress value={imagePercentage} className="h-2" />
       </div>
 
       {showUpgradeCta && (

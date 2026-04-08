@@ -1,4 +1,4 @@
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { getPlanLimits } from "@/lib/plan-limits";
 import { aiGenerations, user } from "@/lib/schema";
@@ -22,11 +22,41 @@ export async function getMonthlyAiUsage(userId: string): Promise<MonthlyAiUsage>
   const usage = await db
     .select({ count: sql<number>`count(*)` })
     .from(aiGenerations)
-    .where(and(eq(aiGenerations.userId, userId), gte(aiGenerations.createdAt, start)));
+    .where(and(eq(aiGenerations.userId, userId), ne(aiGenerations.type, "image"), gte(aiGenerations.createdAt, start)));
 
   const used = Number(usage[0]?.count ?? 0);
   const limit =
     limits.aiGenerationsPerMonth === Infinity ? null : limits.aiGenerationsPerMonth;
+
+  return {
+    used,
+    limit,
+    resetDate: end.toISOString(),
+  };
+}
+
+export async function getMonthlyImageUsage(userId: string): Promise<MonthlyAiUsage> {
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { plan: true },
+  });
+
+  const limits = getPlanLimits(dbUser?.plan);
+  const { start, end } = getMonthWindow();
+
+  const usage = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(aiGenerations)
+    .where(
+      and(
+        eq(aiGenerations.userId, userId),
+        eq(aiGenerations.type, "image"),
+        gte(aiGenerations.createdAt, start),
+      ),
+    );
+
+  const used = Number(usage[0]?.count ?? 0);
+  const limit = limits.aiImagesPerMonth === -1 ? null : limits.aiImagesPerMonth;
 
   return {
     used,

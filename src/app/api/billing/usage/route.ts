@@ -28,7 +28,7 @@ export async function GET() {
   const limits = getPlanLimits(plan);
   const { start: startOfMonth } = getMonthWindow();
 
-  const [postsCount, accountsCount, aiCount] = await Promise.all([
+  const [postsCount, accountsCount, aiCount, aiImagesCount] = await Promise.all([
     // Monthly posts
     db.select({ count: sql<number>`count(*)` })
       .from(posts)
@@ -37,31 +37,43 @@ export async function GET() {
         ne(posts.status, "draft"),
         gte(posts.createdAt, startOfMonth)
       )),
-    
+
     // Connected accounts
     db.select({ count: sql<number>`count(*)` })
       .from(xAccounts)
       .where(and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true))),
 
-    // Monthly AI generations
+    // Monthly AI text generations (excluding images — images tracked separately)
     db.select({ count: sql<number>`count(*)` })
       .from(aiGenerations)
       .where(and(
         eq(aiGenerations.userId, session.user.id),
+        ne(aiGenerations.type, "image"),
         gte(aiGenerations.createdAt, startOfMonth)
-      ))
+      )),
+
+    // Monthly AI image generations
+    db.select({ count: sql<number>`count(*)::int` })
+      .from(aiGenerations)
+      .where(and(
+        eq(aiGenerations.userId, session.user.id),
+        eq(aiGenerations.type, "image"),
+        gte(aiGenerations.createdAt, startOfMonth),
+      )),
   ]);
 
   const usage = {
     posts: Number(postsCount[0]?.count ?? 0),
     accounts: Number(accountsCount[0]?.count ?? 0),
     ai: Number(aiCount[0]?.count ?? 0),
+    aiImages: Number(aiImagesCount[0]?.count ?? 0),
   };
 
   const serializableLimits = {
     postsPerMonth: Number.isFinite(limits.postsPerMonth) ? limits.postsPerMonth : null,
     maxXAccounts: Number.isFinite(limits.maxXAccounts) ? limits.maxXAccounts : null,
     aiGenerationsPerMonth: Number.isFinite(limits.aiGenerationsPerMonth) ? limits.aiGenerationsPerMonth : null,
+    aiImagesPerMonth: limits.aiImagesPerMonth === -1 ? null : limits.aiImagesPerMonth,
   };
 
   return NextResponse.json({

@@ -393,6 +393,22 @@ AstraPost supports content generation in multiple languages:
 
 ## Recent Fixes & Known Issues
 
+### Fixed Issues (2026-04-08)
+
+1. **AI Usage Double-Counting in Billing API**
+   - **Root cause:** `GET /api/billing/usage` counted ALL `ai_generations` rows (including images) for `usage.ai`, while images were also tracked separately in `usage.aiImages` — double-counting images
+   - **Fix:** Added `ne(aiGenerations.type, "image")` to the text-only AI count query
+   - **Files:** `src/app/api/billing/usage/route.ts`
+
+2. **4 Untracked AI Endpoints (No Quota Recording)**
+   - **Root cause:** 4 endpoints called AI models but never called `recordAiUsage()`, making their consumption invisible to the billing system
+   - **Endpoints fixed:**
+     - `/api/ai/inspiration` — added `recordAiUsage(..., "inspiration", ...)` (only for non-cached responses)
+     - `/api/user/voice-profile` — added `recordAiUsage(..., "voice_profile", ...)`
+     - `/api/ai/agentic/[id]/regenerate` — added quota checks (`checkAiLimitDetailed` + `checkAiQuotaDetailed`) + `recordAiUsage` for both text (`"agentic_regenerate"`) and image (`"image"`) generations
+     - `/api/chat` — added `onFinish` callback on `streamText` to `recordAiUsage(..., "chat", ...)` after stream completes
+   - **Files:** `src/app/api/ai/inspiration/route.ts`, `src/app/api/user/voice-profile/route.ts`, `src/app/api/ai/agentic/[id]/regenerate/route.ts`, `src/app/api/chat/route.ts`
+
 ### Fixed Issues (2026-04-06)
 
 1. **14-day Trial Unlimited Access Bug**

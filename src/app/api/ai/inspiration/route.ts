@@ -4,6 +4,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 import { redis } from "@/lib/rate-limiter";
 
 const CACHE_TTL = 6 * 60 * 60; // 6 hours
@@ -75,6 +76,16 @@ export async function GET(req: Request) {
     } catch (e) {
         console.error("Redis set error:", e);
     }
+
+    // Record AI usage (only for fresh generations, not cached responses)
+    await recordAiUsage(
+      session.user.id,
+      "inspiration",
+      0,
+      `inspiration:${niche}:${language}`,
+      object,
+      language
+    );
 
     return Response.json(object);
   } catch (error) {

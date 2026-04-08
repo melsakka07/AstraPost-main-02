@@ -7,6 +7,7 @@ import { voiceProfileSchema as vpSchema } from "@/lib/ai/voice-profile";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 import { user } from "@/lib/schema";
 
 const analyzeRequestSchema = z.object({
@@ -105,6 +106,16 @@ export async function POST(req: Request) {
     await db.update(user)
       .set({ voiceProfile: validated.data })
       .where(eq(user.id, session.user.id));
+
+    // Record AI usage
+    await recordAiUsage(
+      session.user.id,
+      "voice_profile",
+      0,
+      `voice-profile:${tweets.length}-tweets`,
+      validated.data,
+      "en"
+    );
 
     return Response.json(object);
   } catch (error) {

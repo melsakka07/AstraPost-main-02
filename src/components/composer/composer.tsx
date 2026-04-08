@@ -10,8 +10,6 @@ import {
   BookmarkPlus,
   CalendarDays,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   FileText,
   Globe,
@@ -61,6 +59,7 @@ import { useSession } from "@/lib/auth-client";
 import { LANGUAGES } from "@/lib/constants";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
+import { cn } from "@/lib/utils";
 
 interface LinkPreview {
   url: string;
@@ -1716,6 +1715,8 @@ export function Composer() {
                         onClearTweet={() => clearTweet(tweet.id)}
                         tier={effectiveTier}
                         isAiTarget={isAiTarget}
+                        selectedTier={effectiveTier}
+                        {...(index === 0 && { onConvertToThread: addTweet })}
                         {...(tweet.id === aiTargetTweetId && generatedHashtags.length > 0 && {
                           suggestedHashtags: generatedHashtags,
                           onHashtagClick: (tag: string) => {
@@ -1811,76 +1812,178 @@ export function Composer() {
 
       {/* Sidebar Column */}
       <div className="space-y-4">
+        {/* B1: Preview section moved to top of sidebar */}
+        <Card>
+          <CardContent className="pt-5 space-y-3">
+            <div className="flex justify-between items-center mb-2">
+              <p className="text-xs font-medium text-muted-foreground/70">Preview</p>
+              <div className="flex items-center gap-1">
+                {tweets.length > 1 && (
+                  <ViralScoreBadge content={tweets[0]?.content || ""} />
+                )}
+                {tweets.length <= 1 && (
+                  <ViralScoreBadge content={previewTweet?.content || ""} />
+                )}
+              </div>
+            </div>
+            <div className={cn(
+              "bg-background border rounded-md p-4",
+              tweets.length > 1 && "max-h-[400px] overflow-y-auto"
+            )}>
+              {tweets.length <= 1 ? (
+                /* Single tweet preview */
+                <div className="flex gap-3">
+                  <div className="w-10 h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
+                    {userImage ? (
+                      <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
+                        {userName[0]?.toUpperCase() || "U"}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-1 w-full">
+                    <div className="flex items-center gap-1 text-sm">
+                      <span className="font-bold">{userName}</span>
+                      <span className="text-muted-foreground">{userHandle}</span>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{previewTweet?.content || "Preview text will appear here..."}</p>
+                    {(previewTweet?.media?.length || 0) > 0 && previewTweet?.media?.[0]?.url && (
+                      <div className="mt-2 rounded-lg overflow-hidden border">
+                        {previewTweet?.media?.[0]?.fileType === "video" ? (
+                          <video src={previewTweet.media[0].url} className="w-full h-auto" controls />
+                        ) : (
+                          <Image src={previewTweet.media[0].url} alt="Preview" width={600} height={400} className="w-full h-auto" />
+                        )}
+                      </div>
+                    )}
+                    {previewTweet?.linkPreview && !previewTweet.media.length && (
+                      <div className="mt-2 border rounded-md overflow-hidden">
+                        {previewTweet.linkPreview.images?.[0] && (
+                          <div className="relative h-48 w-full">
+                            <Image src={previewTweet.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
+                          </div>
+                        )}
+                        <div className="p-3 bg-muted/20">
+                          <h4 className="font-medium text-sm line-clamp-1">{previewTweet.linkPreview.title}</h4>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{previewTweet.linkPreview.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1 lowercase">{new URL(previewTweet.linkPreview.url).hostname}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Thread preview — all tweets stacked with connecting lines */
+                tweets.map((t, i) => (
+                  <div key={t.id}>
+                    {i > 0 && (
+                      <div className="w-0.5 h-4 bg-muted-foreground/30 mx-auto" />
+                    )}
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
+                        {userImage ? (
+                          <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
+                            {userName[0]?.toUpperCase() || "U"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1 w-full">
+                        <div className="flex items-center gap-1 text-sm">
+                          <span className="font-bold">{userName}</span>
+                          <span className="text-muted-foreground">{userHandle}</span>
+                          {tweets.length > 1 && (
+                            <span className="text-xs text-muted-foreground/60 ml-1">{i + 1}/{tweets.length}</span>
+                          )}
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{t.content || "..."}</p>
+                        {t.media?.length > 0 && t.media?.[0]?.url && (
+                          <div className="mt-2 rounded-lg overflow-hidden border">
+                            {t.media[0].fileType === "video" ? (
+                              <video src={t.media[0].url} className="w-full h-auto" controls />
+                            ) : (
+                              <Image src={t.media[0].url} alt="Preview" width={600} height={400} className="w-full h-auto" />
+                            )}
+                          </div>
+                        )}
+                        {t.linkPreview && !t.media?.length && (
+                          <div className="mt-2 border rounded-md overflow-hidden">
+                            {t.linkPreview.images?.[0] && (
+                              <div className="relative h-48 w-full">
+                                <Image src={t.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
+                              </div>
+                            )}
+                            <div className="p-3 bg-muted/20">
+                              <h4 className="font-medium text-sm line-clamp-1">{t.linkPreview.title}</h4>
+                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{t.linkPreview.description}</p>
+                              <p className="text-xs text-muted-foreground mt-1 lowercase">{new URL(t.linkPreview.url).hostname}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Card 1: Content Tools — always visible; AI panel expands inline on desktop (P1-B) */}
         <Card>
           <CardContent className="pt-5 space-y-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Content Tools (start here)</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={() => openAiTool("thread")}
-              >
-                <Sparkles className="h-4 w-4 text-primary" />
-                AI Writer
+            <p className="text-xs font-medium text-muted-foreground/70">Content Tools</p>
+            <div className="flex flex-wrap gap-1.5">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => openAiTool("thread")}>
+                <Sparkles className="h-3.5 w-3.5 text-primary" />Writer
               </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={() => openAiTool("inspire")}
-              >
-                <Lightbulb className="h-4 w-4 text-yellow-500" />
-                Inspiration
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => openAiTool("inspire")}>
+                <Lightbulb className="h-3.5 w-3.5 text-yellow-500" />Inspire
               </Button>
-            </div>
-            {/* P4-E: Suspense boundary — TemplatesDialog is lazy-loaded to reduce initial bundle */}
-            <Suspense fallback={
-              <Button variant="outline" size="sm" className="w-full gap-2 text-muted-foreground" disabled>
-                <FileText className="h-4 w-4" />Templates
-              </Button>
-            }>
-              <TemplatesDialog
-                onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)}
-                onTemplateSelect={handleTemplateConfigSelect}
-              />
-            </Suspense>
-            {/* H4: Secondary AI tools — 2×2 grid including Hashtags (D5) */}
-            <div className="grid grid-cols-2 gap-1.5">
-              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hook", activeTweetId ?? tweets[0]?.id)}>
+              <Suspense fallback={<Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" disabled>Templates</Button>}>
+                <TemplatesDialog
+                  onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)}
+                  onTemplateSelect={handleTemplateConfigSelect}
+                />
+              </Suspense>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => openAiTool("hook", activeTweetId ?? tweets[0]?.id)}>
                 <Zap className="h-3.5 w-3.5" />Hook
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("cta")}>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => openAiTool("cta")}>
                 <Megaphone className="h-3.5 w-3.5" />CTA
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("translate")}>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => openAiTool("translate")}>
                 <Globe className="h-3.5 w-3.5" />Translate
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-center gap-1 text-xs" onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}>
-                <Hash className="h-3.5 w-3.5" />Hashtags
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}>
+                <Hash className="h-3.5 w-3.5" />#Tags
               </Button>
             </div>
-            <Button
-              variant={isTweetsNumbered ? "secondary" : "ghost"}
-              size="sm"
-              className="w-full justify-start gap-2 text-muted-foreground text-xs"
-              onClick={() =>
-                setTweets(isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets]))
-              }
-            >
-              <ListOrdered className="h-3.5 w-3.5" />
-              {isTweetsNumbered ? "Remove numbering" : "Number tweets (1/N)"}
-            </Button>
-            {/* P1-E: Save as Template — moved from Publishing card */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setIsSaveTemplateOpen(true)}
-              disabled={isSubmitting}
-            >
-              <BookmarkPlus className="h-4 w-4" />
-              Save as Template
-            </Button>
+            <div className="flex items-center justify-between pt-2 border-t mt-2">
+              <Button
+                variant={isTweetsNumbered ? "secondary" : "ghost"}
+                size="sm"
+                className="gap-1.5 text-xs text-muted-foreground h-7"
+                onClick={() =>
+                  setTweets(isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets]))
+                }
+              >
+                <ListOrdered className="h-3.5 w-3.5" />
+                {isTweetsNumbered ? "Remove numbering" : "Number tweets (1/N)"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-7"
+                onClick={() => setIsSaveTemplateOpen(true)}
+                disabled={isSubmitting}
+              >
+                <BookmarkPlus className="h-3.5 w-3.5" />
+                Save as Template
+              </Button>
+            </div>
             {/* P1-B/C: Inline AI panel expands here on desktop when open */}
             {isAiOpen && isDesktop && (
               <div className="pt-2 border-t">
@@ -1952,7 +2055,7 @@ export function Composer() {
         {/* Card 2: Publishing (H1 — split from content tools) */}
         <Card>
           <CardContent className="pt-5 space-y-4">
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">Publishing</p>
+            <p className="text-xs font-medium text-muted-foreground/70">Publishing</p>
 
             <div className="space-y-2">
               <Label htmlFor="post-accounts">Post to accounts</Label>
@@ -1966,21 +2069,24 @@ export function Composer() {
 
             <div className="space-y-2">
               <Label htmlFor="schedule-date">Schedule for</Label>
-              <DateTimePicker
-                id="schedule-date"
-                value={scheduledDate}
-                onChange={(val) => {
-                  if (!val) {
-                    setScheduledDate("");
-                    setRecurrencePattern("none");
-                    setRecurrenceEndDate("");
-                  } else {
-                    setScheduledDate(val);
-                  }
-                }}
-              />
+              <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                <DateTimePicker
+                  id="schedule-date"
+                  value={scheduledDate}
+                  onChange={(val) => {
+                    if (!val) {
+                      setScheduledDate("");
+                      setRecurrencePattern("none");
+                      setRecurrenceEndDate("");
+                    } else {
+                      setScheduledDate(val);
+                    }
+                  }}
+                />
+                <BestTimeSuggestions onSelect={setScheduledDate} hideHeader />
+              </div>
               {browserTimezone && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground/60">
                   Times are in{" "}
                   <span className="font-medium text-foreground">{browserTimezone}</span>
                   {" "}
@@ -1994,7 +2100,6 @@ export function Composer() {
                   </span>
                 </p>
               )}
-              <BestTimeSuggestions onSelect={setScheduledDate} />
 
               {scheduledDate && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
@@ -2133,73 +2238,6 @@ export function Composer() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* H6: Preview carousel — cycles through all tweets */}
-        <div className="bg-muted/50 rounded-lg p-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase">
-              {tweets.length > 1 ? `Preview · ${safePreviewIndex + 1} / ${tweets.length}` : "Preview"}
-            </h3>
-            <div className="flex items-center gap-1">
-              {tweets.length > 1 && (
-                <>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled={safePreviewIndex === 0}
-                    onClick={() => setPreviewIndex(i => Math.max(0, i - 1))} aria-label="Previous tweet">
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6" disabled={safePreviewIndex === tweets.length - 1}
-                    onClick={() => setPreviewIndex(i => Math.min(tweets.length - 1, i + 1))} aria-label="Next tweet">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-              <ViralScoreBadge content={previewTweet?.content || ""} />
-            </div>
-          </div>
-          <div className="bg-background border rounded-md p-4">
-            <div className="flex gap-3">
-              <div className="w-10 h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
-                {userImage ? (
-                  <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
-                    {userName[0]?.toUpperCase() || "U"}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-1 w-full">
-                <div className="flex items-center gap-1 text-sm">
-                  <span className="font-bold">{userName}</span>
-                  <span className="text-muted-foreground">{userHandle}</span>
-                </div>
-                <p className="text-sm whitespace-pre-wrap">{previewTweet?.content || "Preview text will appear here..."}</p>
-                {(previewTweet?.media?.length || 0) > 0 && previewTweet?.media?.[0]?.url && (
-                  <div className="mt-2 rounded-lg overflow-hidden border">
-                    {previewTweet?.media?.[0]?.fileType === "video" ? (
-                      <video src={previewTweet.media[0].url} className="w-full h-auto" controls />
-                    ) : (
-                      <Image src={previewTweet.media[0].url} alt="Preview" width={600} height={400} className="w-full h-auto" />
-                    )}
-                  </div>
-                )}
-                {previewTweet?.linkPreview && !previewTweet.media.length && (
-                  <div className="mt-2 border rounded-md overflow-hidden">
-                    {previewTweet.linkPreview.images?.[0] && (
-                      <div className="relative h-48 w-full">
-                        <Image src={previewTweet.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
-                      </div>
-                    )}
-                    <div className="p-3 bg-muted/20">
-                      <h4 className="font-medium text-sm line-clamp-1">{previewTweet.linkPreview.title}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{previewTweet.linkPreview.description}</p>
-                      <p className="text-xs text-muted-foreground mt-1 lowercase">{new URL(previewTweet.linkPreview.url).hostname}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
       {/* Mobile AI panel — Sheet (P1-B: desktop uses inline accordion above) */}
       {!isDesktop && (

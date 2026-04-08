@@ -6,6 +6,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 
@@ -94,6 +95,19 @@ export async function POST(req: Request) {
     const result = streamText({
       model: openrouter(process.env.OPENROUTER_MODEL!),
       messages: convertToModelMessages(messages),
+      onFinish: async ({ usage }) => {
+        // Record AI usage after stream completes (fire-and-forget)
+        recordAiUsage(
+          session.user.id,
+          "chat",
+          usage?.totalTokens ?? 0,
+          `chat:${messages.length}-messages`,
+          null,
+          "en"
+        ).catch((err) => {
+          console.error("[chat] recordAiUsage error:", err);
+        });
+      },
     });
 
     return (

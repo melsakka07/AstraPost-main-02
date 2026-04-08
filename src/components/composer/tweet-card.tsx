@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { X, Image as ImageIcon, Loader2, Smile, Wand2, ChevronUp, ChevronDown, GripVertical, Eraser } from "lucide-react";
+import { X, Image as ImageIcon, Loader2, Smile, Wand2, ChevronUp, ChevronDown, GripVertical, Eraser, AlertCircle } from "lucide-react";
 import twitter from 'twitter-text';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -58,6 +58,8 @@ interface TweetCardProps {
   tier?: XSubscriptionTier | undefined;
   // Phase 3: Highlight target tweets when AI panel is open
   isAiTarget?: boolean;
+  onConvertToThread?: () => void;
+  selectedTier?: XSubscriptionTier | undefined;
 }
 
 export function TweetCard({
@@ -79,6 +81,8 @@ export function TweetCard({
   onClearTweet,
   tier,
   isAiTarget = false,
+  onConvertToThread,
+  selectedTier,
 }: TweetCardProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [linkPreviewPending, setLinkPreviewPending] = useState(false);
@@ -186,12 +190,29 @@ export function TweetCard({
           <Textarea
             value={tweet.content}
             onChange={(e) => updateTweet(tweet.id, e.target.value)}
-            placeholder="Start writing..."
+            placeholder="What's on your mind?"
             dir="auto"
             autoFocus={isFirst}
-            className="min-h-[120px] resize-none border-none focus-visible:ring-0 text-lg p-0"
+            className="min-h-[160px] resize-none border-none focus-visible:ring-0 text-lg p-0"
           />
-          
+
+          {/* A5: Auto-suggest thread conversion when single tweet exceeds 280 chars */}
+          {totalTweets === 1 && isOverStandardLimit(tweet.content) && !canPostLongContent(selectedTier) && (
+            <div className="mt-1.5 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>This exceeds 280 characters.</span>
+              {onConvertToThread && (
+                <button
+                  type="button"
+                  className="font-medium text-primary hover:underline"
+                  onClick={onConvertToThread}
+                >
+                  Convert to thread?
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Media Preview */}
           {tweet.media.length > 0 ? (
             <div className="mt-2 flex gap-2 flex-wrap">

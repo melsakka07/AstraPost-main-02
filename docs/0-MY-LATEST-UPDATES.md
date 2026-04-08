@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-04-08: Bug Fix — AI Usage Double-Counting & Untracked Endpoints ✅
+
+**Summary:** Fixed two AI quota tracking bugs: (1) image generations were double-counted in the billing usage API, and (2) four AI endpoints called AI models but never recorded usage or checked monthly quotas.
+
+### Bug 1: Image Double-Counting in Usage API
+
+**Root cause:** `GET /api/billing/usage` counted ALL `ai_generations` rows (including images) for `usage.ai`, while images were also counted separately in `usage.aiImages`. This caused astravision.ai@gmail.com to see "102 / 100" in the UI — 96 text + 6 images counted twice.
+
+**Fix:** Added `ne(aiGenerations.type, "image")` filter to the `usage.ai` query in `src/app/api/billing/usage/route.ts` so text and image quotas are tracked independently.
+
+### Bug 2: Four Untracked AI Endpoints
+
+| Endpoint | What was missing | Fix applied |
+|---|---|---|
+| `GET /api/ai/inspiration` | No `recordAiUsage` | Added `recordAiUsage(..., "inspiration", ...)` after `generateObject` (only for fresh, non-cached generations) |
+| `POST /api/user/voice-profile` | No `recordAiUsage` | Added `recordAiUsage(..., "voice_profile", ...)` after DB save |
+| `POST /api/ai/agentic/[id]/regenerate` | No quota check AND no `recordAiUsage` | Added `checkAiLimitDetailed` + `checkAiQuotaDetailed` gates; added `recordAiUsage(..., "agentic_regenerate", ...)` for text and `recordAiUsage(..., "image", ...)` for image regeneration |
+| `POST /api/chat` | No `recordAiUsage` (quota was checked but never decremented) | Added `onFinish` callback on `streamText` to call `recordAiUsage(..., "chat", ...)` after stream completes |
+
+**Files changed:**
+- `src/app/api/billing/usage/route.ts` — excluded images from `usage.ai` count
+- `src/app/api/ai/inspiration/route.ts` — added `recordAiUsage` import + call
+- `src/app/api/user/voice-profile/route.ts` — added `recordAiUsage` import + call
+- `src/app/api/ai/agentic/[id]/regenerate/route.ts` — added quota checks + `recordAiUsage` for text and images
+- `src/app/api/chat/route.ts` — added `recordAiUsage` import + `onFinish` callback
+
+**Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
+
+---
+
 ## 2026-04-06: UI Fix — Disabled Instagram & LinkedIn Connection Buttons ✅
 
 **Summary:** Disabled "Connect Instagram Account" and "Connect LinkedIn Account" buttons on the Settings page since these features are not yet ready for production use.

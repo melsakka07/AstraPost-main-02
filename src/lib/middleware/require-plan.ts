@@ -252,7 +252,7 @@ export async function checkAiQuotaDetailed(userId: string): Promise<PlanGateResu
   const aiCount = await db
     .select({ count: sql<number>`count(*)` })
     .from(aiGenerations)
-    .where(and(eq(aiGenerations.userId, userId), gte(aiGenerations.createdAt, start)));
+    .where(and(eq(aiGenerations.userId, userId), ne(aiGenerations.type, "image"), gte(aiGenerations.createdAt, start)));
   const used = Number(aiCount[0]?.count ?? 0);
 
   if (used < limits.aiGenerationsPerMonth) return { allowed: true };

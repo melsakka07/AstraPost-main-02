@@ -9,7 +9,9 @@ import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import type { ImageModel } from "@/lib/plan-limits";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 import { agenticPosts } from "@/lib/schema";
 import { startImageGeneration, checkImagePrediction } from "@/lib/services/ai-image";
 
@@ -50,6 +52,12 @@ export async function POST(
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return ApiError.unauthorized();
+
+    // Quota checks — regeneration burns the same quota as a fresh generation
+    const aiAccess = await checkAiLimitDetailed(session.user.id);
+    if (!aiAccess.allowed) return createPlanLimitResponse(aiAccess);
+    const aiQuota = await checkAiQuotaDetailed(session.user.id);
+    if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
 
     const json = await req.json() as unknown;
     const parsed = regenerateSchema.safeParse(json);
@@ -97,6 +105,16 @@ Return ONLY a valid JSON object (no markdown):
 
     const result = await generateText({ model, prompt });
 
+    // Record text generation usage
+    await recordAiUsage(
+      session.user.id,
+      "agentic_regenerate",
+      0,
+      `regenerate:tweet-${tweetIndex}`,
+      { tweetIndex, tweetText: result.text.slice(0, 100) },
+      "en"
+    );
+
     let newTweet: Partial<AgenticTweet> = {};
     try {
       const jsonMatch = result.text.match(/\{[\s\S]*\}/);
@@ -127,7 +145,18 @@ Return ONLY a valid JSON object (no markdown):
           aspectRatio: "16:9",
         });
         const imageUrl = await pollImage(prediction.predictionId);
-        if (imageUrl) updatedTweet.imageUrl = imageUrl;
+        if (imageUrl) {
+          updatedTweet.imageUrl = imageUrl;
+          // Record image generation usage
+          await recordAiUsage(
+            session.user.id,
+            "image",
+            0,
+            `agentic-regen-image:tweet-${tweetIndex}`,
+            { tweetIndex, imagePrompt: updatedTweet.imagePrompt },
+            "en"
+          );
+        }
       } catch (err) {
         logger.warn("agentic_regen_image_failed", {
           error: err instanceof Error ? err.message : String(err),

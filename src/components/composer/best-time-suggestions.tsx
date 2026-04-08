@@ -14,11 +14,13 @@ interface TimeSlot {
 
 interface BestTimeSuggestionsProps {
   onSelect: (date: string) => void;
+  /** When true, hides the "Best times to post" header (used when embedded inside a container) */
+  hideHeader?: boolean;
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export function BestTimeSuggestions({ onSelect }: BestTimeSuggestionsProps) {
+export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSuggestionsProps) {
   const [times, setTimes] = useState<TimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRestricted, setIsRestricted] = useState(false);
@@ -80,10 +82,12 @@ export function BestTimeSuggestions({ onSelect }: BestTimeSuggestionsProps) {
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <CalendarClock className="w-4 h-4" />
-          Best times to post
-        </div>
+        {!hideHeader && (
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <CalendarClock className="w-4 h-4" />
+            Best times to post
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-7 w-16 rounded-md bg-muted animate-pulse" />
@@ -104,10 +108,12 @@ export function BestTimeSuggestions({ onSelect }: BestTimeSuggestionsProps) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <CalendarClock className="w-4 h-4" />
-        Best times to post
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <CalendarClock className="w-4 h-4" />
+          Best times to post
+        </div>
+      )}
 
       {isRestricted ? (
         <Button 
