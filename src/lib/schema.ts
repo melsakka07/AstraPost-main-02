@@ -134,7 +134,7 @@ export const user = pgTable(
     bannedAt: timestamp("banned_at"), // set when admin bans; null = not banned
     deletedAt: timestamp("deleted_at"), // soft-delete; null = active account
   },
-  (table) => [index("user_referral_code_idx").on(table.referralCode)]
+  (table) => [index("user_referred_by_idx").on(table.referredBy)]
 );
 
 export const session = pgTable(

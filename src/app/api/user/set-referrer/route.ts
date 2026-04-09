@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { validateReferralCode } from "@/lib/referral/utils";
+import { validateReferralCode, REFERRAL_TRIAL_DAYS } from "@/lib/referral/utils";
 import { user } from "@/lib/schema";
 
 export async function POST(req: Request) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
     if (currentUser?.trialEndsAt && new Date(currentUser.trialEndsAt) > new Date()) {
       const extendedTrial = new Date();
-      extendedTrial.setDate(extendedTrial.getDate() + 21);
+      extendedTrial.setDate(extendedTrial.getDate() + REFERRAL_TRIAL_DAYS);
       updates.trialEndsAt = extendedTrial;
     }
 

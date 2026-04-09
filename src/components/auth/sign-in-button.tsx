@@ -44,7 +44,8 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
 
     try {
       if (referralCode) {
-        document.cookie = `astrapost_ref=${encodeURIComponent(referralCode)};path=/;max-age=604800;SameSite=Lax`;
+        const isSecure = window.location.protocol === "https:";
+        document.cookie = `astrapost_ref=${encodeURIComponent(referralCode)};path=/;max-age=604800;SameSite=Lax${isSecure ? ";Secure" : ""}`;
       }
       await signIn.social({
         provider: "twitter",

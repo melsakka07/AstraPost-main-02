@@ -10,15 +10,18 @@ export function ReferralCookieProcessor() {
     const code = decodeURIComponent(match[1]);
     if (!code) return;
 
-    // Clear cookie immediately to prevent duplicate calls
-    document.cookie = "astrapost_ref=;path=/;max-age=0;SameSite=Lax";
-
-    // Call set-referrer API in the background
     fetch("/api/user/set-referrer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ referralCode: code }),
-    }).catch((err) => console.error("Failed to process referral cookie:", err));
+    })
+      .then((res) => {
+        if (res.ok) {
+          // Only clear cookie after successful API response
+          document.cookie = "astrapost_ref=;path=/;max-age=0;SameSite=Lax";
+        }
+      })
+      .catch((err) => console.error("Failed to process referral cookie:", err));
   }, []);
 
   return null;

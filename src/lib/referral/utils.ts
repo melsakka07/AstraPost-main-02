@@ -5,8 +5,13 @@ import { user } from "@/lib/schema";
 
 const nanoid = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
 
+/** Credit amount awarded to the referrer when a referred user subscribes (in dollars). */
+export const REFERRAL_CREDIT_AMOUNT = 5;
+
+/** Trial extension in days for users who sign up with a referral code. */
+export const REFERRAL_TRIAL_DAYS = 21;
+
 export async function generateReferralCode(name: string): Promise<string> {
-  // Base code on name (e.g. ALEX)
   const firstName = (name || "USER").split(" ")[0] ?? "USER";
   const base = firstName
     .toUpperCase()
@@ -14,7 +19,6 @@ export async function generateReferralCode(name: string): Promise<string> {
     .substring(0, 4);
   let code = `${base}${nanoid(4)}`;
 
-  // Ensure uniqueness
   let exists = await db.query.user.findFirst({
     where: eq(user.referralCode, code),
   });
@@ -32,10 +36,7 @@ export async function generateReferralCode(name: string): Promise<string> {
 export async function validateReferralCode(code: string) {
   const referrer = await db.query.user.findFirst({
     where: eq(user.referralCode, code),
-    columns: {
-      id: true,
-      name: true,
-    },
+    columns: { id: true, name: true },
   });
 
   return referrer;
@@ -44,26 +45,31 @@ export async function validateReferralCode(code: string) {
 export async function awardReferralCredit(
   userId: string
 ): Promise<{ credited: boolean; amount: number }> {
-  // 1. Fetch user's referredBy and referralCreditedAt
-  const referredUser = await db.query.user.findFirst({
-    where: eq(user.id, userId),
-    columns: { referredBy: true, referralCreditedAt: true },
-  });
+  // Perform the entire check + write inside a single transaction to prevent
+  // double-credit on concurrent webhook retries.
+  const result = await db.transaction(async (tx) => {
+    // Lock the referred user row for the duration of the transaction
+    const [referredUser] = await tx
+      .select({ referredBy: user.referredBy, referralCreditedAt: user.referralCreditedAt })
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1);
 
-  // 2. Guard: no referrer or already credited
-  if (!referredUser?.referredBy || referredUser.referralCreditedAt) {
-    return { credited: false, amount: 0 };
-  }
+    if (!referredUser?.referredBy || referredUser.referralCreditedAt) {
+      return { credited: false, amount: 0 };
+    }
 
-  // 3. Atomically increment referrer's credits and mark as credited
-  await db.transaction(async (tx) => {
+    // Atomically increment referrer's credits
     await tx
       .update(user)
-      .set({ referralCredits: sql`referral_credits + 5` })
-      .where(eq(user.id, referredUser.referredBy!));
+      .set({ referralCredits: sql`referral_credits + ${REFERRAL_CREDIT_AMOUNT}` })
+      .where(eq(user.id, referredUser.referredBy));
 
+    // Mark as credited to prevent double-award
     await tx.update(user).set({ referralCreditedAt: new Date() }).where(eq(user.id, userId));
+
+    return { credited: true, amount: REFERRAL_CREDIT_AMOUNT };
   });
 
-  return { credited: true, amount: 5 };
+  return result;
 }

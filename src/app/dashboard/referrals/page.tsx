@@ -1,7 +1,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { Users } from "lucide-react";
 import { Metadata } from "next";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
@@ -47,11 +49,11 @@ export default async function ReferralsPage() {
   const referralCount = currentUser.referrals.length;
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Referrals</h1>
-      </div>
-
+    <DashboardPageWrapper
+      icon={Users}
+      title="Referrals"
+      description="Invite friends and earn rewards"
+    >
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -150,6 +152,6 @@ export default async function ReferralsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </DashboardPageWrapper>
   );
 }

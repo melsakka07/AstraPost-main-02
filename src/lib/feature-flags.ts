@@ -64,7 +64,7 @@ export const DEFAULT_FLAGS: Array<{ key: string; description: string; enabled: b
   {
     key: "referral_program",
     description: "User referral program with reward credits",
-    enabled: false,
+    enabled: true,
   },
   {
     key: "team_collaboration",

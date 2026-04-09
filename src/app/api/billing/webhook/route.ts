@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { eq, and, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
-import { awardReferralCredit } from "@/lib/referral/utils";
+import { awardReferralCredit, REFERRAL_CREDIT_AMOUNT } from "@/lib/referral/utils";
 import { processedWebhookEvents, subscriptions, user, xAccounts, posts } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
@@ -241,17 +241,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       userId: referrer.id,
       type: "referral_credit_earned",
       title: "Referral reward earned!",
-      message: "Someone you referred just subscribed to Pro. You earned $5 credit!",
-      metadata: { referredUserId: userId, amount: 5 },
+      message: `Someone you referred just subscribed to Pro. You earned $${REFERRAL_CREDIT_AMOUNT} credit!`,
+      metadata: { referredUserId: userId, amount: REFERRAL_CREDIT_AMOUNT },
     });
 
     // Apply $5 as Stripe customer balance
     if (referrer.stripeCustomerId && stripe) {
       try {
         await stripe.customers.createBalanceTransaction(referrer.stripeCustomerId, {
-          amount: -500, // negative = credit
+          amount: -REFERRAL_CREDIT_AMOUNT * 100, // negative = credit
           currency: "usd",
-          description: "Referral reward: $5 credit",
+          description: `Referral reward: $${REFERRAL_CREDIT_AMOUNT} credit`,
         });
       } catch (err) {
         console.error("webhook_referral_stripe_balance_failed", {
