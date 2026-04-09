@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { eq, and, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
+import { awardReferralCredit } from "@/lib/referral/utils";
 import { processedWebhookEvents, subscriptions, user, xAccounts, posts } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
@@ -217,6 +218,49 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       }),
     "billing_checkout_completed"
   );
+
+  // Award referral credit if this user was referred
+  await runSideEffect(async () => {
+    const result = await awardReferralCredit(userId);
+    if (!result.credited) return;
+
+    // Notify the referrer
+    const referredUser = await db.query.user.findFirst({
+      where: eq(user.id, userId),
+      columns: { referredBy: true },
+    });
+    if (!referredUser?.referredBy) return;
+
+    const referrer = await db.query.user.findFirst({
+      where: eq(user.id, referredUser.referredBy),
+      columns: { id: true, stripeCustomerId: true, name: true },
+    });
+    if (!referrer) return;
+
+    await notifyBillingEvent({
+      userId: referrer.id,
+      type: "referral_credit_earned",
+      title: "Referral reward earned!",
+      message: "Someone you referred just subscribed to Pro. You earned $5 credit!",
+      metadata: { referredUserId: userId, amount: 5 },
+    });
+
+    // Apply $5 as Stripe customer balance
+    if (referrer.stripeCustomerId && stripe) {
+      try {
+        await stripe.customers.createBalanceTransaction(referrer.stripeCustomerId, {
+          amount: -500, // negative = credit
+          currency: "usd",
+          description: "Referral reward: $5 credit",
+        });
+      } catch (err) {
+        console.error("webhook_referral_stripe_balance_failed", {
+          referrerId: referrer.id,
+          error: err,
+        });
+      }
+    }
+  }, "referral_credit_award");
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {

@@ -7,6 +7,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 import { user } from "@/lib/schema";
 
 export const metadata: Metadata = {
@@ -22,6 +23,9 @@ export default async function ReferralsPage() {
   if (!session) {
     redirect("/login");
   }
+
+  const referralsEnabled = await isFeatureEnabled("referral_program");
+  if (!referralsEnabled) redirect("/dashboard");
 
   // Fetch fresh user data including referral code
   const currentUser = await db.query.user.findFirst({
@@ -140,8 +144,8 @@ export default async function ReferralsPage() {
           <CardContent>
             <ul className="text-muted-foreground list-disc space-y-2 pl-4 text-sm">
               <li>Share your unique referral link or code.</li>
-              <li>Friends sign up and get a 14-day extended trial.</li>
-              <li>You get $10 credit for every friend who subscribes to Pro.</li>
+              <li>Friends sign up and get a 21-day extended trial.</li>
+              <li>You get $5 credit for every friend who subscribes to Pro.</li>
             </ul>
           </CardContent>
         </Card>

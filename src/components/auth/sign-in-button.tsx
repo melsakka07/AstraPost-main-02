@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn, useSession } from "@/lib/auth-client";
 
-export function SignInButton() {
+export function SignInButton({ referralCode }: { referralCode?: string }) {
   const { data: session, isPending: sessionPending } = useSession();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +43,9 @@ export function SignInButton() {
     setError(null);
 
     try {
+      if (referralCode) {
+        document.cookie = `astrapost_ref=${encodeURIComponent(referralCode)};path=/;max-age=604800;SameSite=Lax`;
+      }
       await signIn.social({
         provider: "twitter",
         callbackURL: "/dashboard",

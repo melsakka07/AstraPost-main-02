@@ -776,9 +776,9 @@ function InputScreen({
           onChange={(e) => setTopic(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="e.g., AI coding tools, sustainable fashion, Web3 gaming..."
-          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring max-h-[10rem] min-h-[3.5rem] w-full resize-none overflow-y-auto rounded-xl border px-5 py-4 text-[15px] leading-relaxed shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2 sm:max-h-[12rem]"
+          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring max-h-[10rem] min-h-[8rem] w-full resize-none overflow-y-auto rounded-xl border px-5 py-4 text-[15px] leading-relaxed shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2 sm:max-h-[12rem]"
           maxLength={500}
-          rows={1}
+          rows={4}
           aria-label="Topic for your post"
         />
       </div>
@@ -1457,13 +1457,12 @@ function SortableTweetCard({ id, ...props }: { id: string } & AgenticTweetCardPr
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
-  const style = {
+  const dndStyle = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
   return (
-    <div ref={setNodeRef} style={style}>
+    <div ref={setNodeRef} style={dndStyle} className={isDragging ? "opacity-50" : ""}>
       <AgenticTweetCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
     </div>
   );

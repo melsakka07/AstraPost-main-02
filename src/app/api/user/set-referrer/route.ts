@@ -1,49 +1,49 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { validateReferralCode } from "@/lib/referral/utils";
 import { user } from "@/lib/schema";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return ApiError.unauthorized();
 
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const body = await req.json();
+    const { referralCode } = body as { referralCode?: string };
 
-    const { referrerId } = await req.json();
+    if (!referralCode) return ApiError.badRequest("Referral code is required");
 
-    if (!referrerId) {
-      return NextResponse.json({ error: "Referrer ID is required" }, { status: 400 });
-    }
+    const referrer = await validateReferralCode(referralCode);
+    if (!referrer) return ApiError.badRequest("Invalid referral code");
 
-    if (session.user.id === referrerId) {
-      return NextResponse.json({ error: "Cannot refer yourself" }, { status: 400 });
-    }
+    if (session.user.id === referrer.id) return ApiError.badRequest("Cannot refer yourself");
 
     // Only set if not already set
     const currentUser = await db.query.user.findFirst({
       where: eq(user.id, session.user.id),
-      columns: { referredBy: true },
+      columns: { referredBy: true, trialEndsAt: true },
     });
 
-    if (currentUser?.referredBy) {
-      return NextResponse.json({ error: "Referrer already set" }, { status: 400 });
+    if (currentUser?.referredBy) return ApiError.badRequest("Referrer already set");
+
+    // Set referrer and optionally extend trial to 21 days
+    const updates: Record<string, unknown> = { referredBy: referrer.id };
+
+    if (currentUser?.trialEndsAt && new Date(currentUser.trialEndsAt) > new Date()) {
+      const extendedTrial = new Date();
+      extendedTrial.setDate(extendedTrial.getDate() + 21);
+      updates.trialEndsAt = extendedTrial;
     }
 
-    // Update user
-    await db.update(user).set({ referredBy: referrerId }).where(eq(user.id, session.user.id));
+    await db.update(user).set(updates).where(eq(user.id, session.user.id));
 
-    // Optional: Add credits to referrer here or via a separate event listener
-    // For now, just link them.
-
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Set referrer error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return ApiError.internal();
   }
 }

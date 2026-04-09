@@ -7,7 +7,7 @@ import { auth } from "@/lib/auth";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; error_description?: string }>;
+  searchParams: Promise<{ error?: string; error_description?: string; ref?: string }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
 
@@ -15,7 +15,7 @@ export default async function LoginPage({
     redirect("/dashboard");
   }
 
-  const { error, error_description } = await searchParams;
+  const { error, error_description, ref } = await searchParams;
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
@@ -36,7 +36,7 @@ export default async function LoginPage({
           ))}
         </div>
 
-        <SignInButton />
+        <SignInButton {...(ref !== undefined && { referralCode: ref })} />
 
         {error && (
           <p role="alert" className="text-destructive text-center text-sm">

@@ -9,8 +9,10 @@ import { FailureBanner } from "@/components/dashboard/failure-banner";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { TokenWarningBanner } from "@/components/dashboard/token-warning-banner";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
+import { ReferralCookieProcessor } from "@/components/referral/referral-cookie-processor";
 import { TrialBanner } from "@/components/ui/trial-banner";
 import { db } from "@/lib/db";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
 import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
 import { getTeamContext } from "@/lib/team-context";
@@ -28,6 +30,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
   });
+
+  const referralsEnabled = await isFeatureEnabled("referral_program");
 
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
   if (!isOnboarded && !isOnboardingRoute) {
@@ -92,9 +96,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div data-dashboard-layout className="bg-background pb-safe flex min-h-dvh">
       <DashboardTour />
+      <ReferralCookieProcessor />
       <Sidebar
         aiUsage={aiUsage}
         user={{ name: session.user.name, image: session.user.image || null }}
+        referralsEnabled={referralsEnabled}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader

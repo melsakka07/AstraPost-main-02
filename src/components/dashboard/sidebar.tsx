@@ -247,7 +247,8 @@ function SidebarContent({
   aiUsage,
   isMobile = false,
   user,
-}: SidebarContentProps) {
+  referralsEnabled = true,
+}: SidebarContentProps & { referralsEnabled?: boolean }) {
   const aiProgress =
     aiUsage && typeof aiUsage.limit === "number" && aiUsage.limit > 0
       ? Math.min(100, Math.round((aiUsage.used / aiUsage.limit) * 100))
@@ -265,6 +266,19 @@ function SidebarContent({
         },
       },
     });
+
+  // Filter sidebar sections based on feature flags
+  const filteredSections = sidebarSections
+    .map((section) => {
+      if (section.label === "Growth" && !referralsEnabled) {
+        return {
+          ...section,
+          items: section.items.filter((item) => item.label !== "Referrals"),
+        };
+      }
+      return section;
+    })
+    .filter((section) => section.items.length > 0);
 
   return (
     <div className="flex h-full flex-col">
@@ -299,7 +313,7 @@ function SidebarContent({
 
       {/* Navigation sections */}
       <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Dashboard navigation">
-        {sidebarSections.map((section, idx) => (
+        {filteredSections.map((section, idx) => (
           <div key={section.label} className={cn(idx > 0 && "mt-6")}>
             {idx === 0 ? (
               // Overview — no label, always visible, no collapse
@@ -445,9 +459,10 @@ interface SidebarProps {
   aiUsage: MonthlyAiUsage | null;
   /** M7 — user info for mobile Drawer header */
   user?: { name: string; image: string | null };
+  referralsEnabled?: boolean;
 }
 
-export function Sidebar({ aiUsage, user }: SidebarProps) {
+export function Sidebar({ aiUsage, user, referralsEnabled = true }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [sheetSide, setSheetSide] = useState<"left" | "right">("left");
@@ -475,7 +490,12 @@ export function Sidebar({ aiUsage, user }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <div className="bg-card border-border hidden flex-col border-r md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0">
-        <SidebarContent pathname={pathname} aiUsage={aiUsage} isMobile={false} />
+        <SidebarContent
+          pathname={pathname}
+          aiUsage={aiUsage}
+          isMobile={false}
+          referralsEnabled={referralsEnabled}
+        />
       </div>
 
       {/* Mobile Sidebar Drawer (vaul) — M4 swipe-to-close, M7 user header */}
@@ -499,6 +519,7 @@ export function Sidebar({ aiUsage, user }: SidebarProps) {
               onNavigate={() => setOpen(false)}
               aiUsage={aiUsage}
               isMobile={true}
+              referralsEnabled={referralsEnabled}
               {...(user !== undefined && { user })}
             />
           </DrawerPrimitive.Content>

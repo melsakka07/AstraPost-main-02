@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
@@ -39,4 +39,31 @@ export async function validateReferralCode(code: string) {
   });
 
   return referrer;
+}
+
+export async function awardReferralCredit(
+  userId: string
+): Promise<{ credited: boolean; amount: number }> {
+  // 1. Fetch user's referredBy and referralCreditedAt
+  const referredUser = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { referredBy: true, referralCreditedAt: true },
+  });
+
+  // 2. Guard: no referrer or already credited
+  if (!referredUser?.referredBy || referredUser.referralCreditedAt) {
+    return { credited: false, amount: 0 };
+  }
+
+  // 3. Atomically increment referrer's credits and mark as credited
+  await db.transaction(async (tx) => {
+    await tx
+      .update(user)
+      .set({ referralCredits: sql`referral_credits + 5` })
+      .where(eq(user.id, referredUser.referredBy!));
+
+    await tx.update(user).set({ referralCreditedAt: new Date() }).where(eq(user.id, userId));
+  });
+
+  return { credited: true, amount: 5 };
 }

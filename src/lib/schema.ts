@@ -120,6 +120,7 @@ export const user = pgTable(
     referralCode: text("referral_code").unique(),
     referredBy: text("referred_by"), // ID of the user who referred this user
     referralCredits: integer("referral_credits").default(0),
+    referralCreditedAt: timestamp("referral_credited_at"),
 
     // 2FA
     twoFactorEnabled: boolean("two_factor_enabled").default(false),
