@@ -1,13 +1,13 @@
 import { headers } from "next/headers";
 import Link from "next/link";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { Check, ArrowRight } from "lucide-react";
 import { PricingTable } from "@/components/billing/pricing-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { user } from "@/lib/schema";
+import { user, subscriptions } from "@/lib/schema";
 
 export const metadata = {
   title: "Pricing | AstraPost",
@@ -20,6 +20,7 @@ export default async function PricingPage() {
   });
 
   let currentPlan = "free";
+  let currentBillingCycle: "monthly" | "annual" | null = null;
 
   if (session?.user?.id) {
     const dbUser = await db.query.user.findFirst({
@@ -27,6 +28,26 @@ export default async function PricingPage() {
       columns: { plan: true },
     });
     currentPlan = dbUser?.plan || "free";
+
+    // Fetch current subscription price ID for billing cycle detection
+    if (dbUser?.plan && dbUser.plan !== "free") {
+      const sub = await db.query.subscriptions.findFirst({
+        where: eq(subscriptions.userId, session.user.id),
+        columns: { stripePriceId: true },
+        orderBy: desc(subscriptions.createdAt),
+      });
+
+      // Resolve the price ID to a billing cycle for agency tier
+      if (dbUser.plan === "agency" && sub?.stripePriceId) {
+        const monthlyPriceId = process.env.STRIPE_PRICE_ID_AGENCY_MONTHLY;
+        const annualPriceId = process.env.STRIPE_PRICE_ID_AGENCY_ANNUAL;
+        if (sub.stripePriceId === monthlyPriceId) {
+          currentBillingCycle = "monthly";
+        } else if (sub.stripePriceId === annualPriceId) {
+          currentBillingCycle = "annual";
+        }
+      }
+    }
   }
 
   return (
@@ -59,7 +80,11 @@ export default async function PricingPage() {
 
         {/* Pricing Table */}
         <div className="flex justify-center">
-          <PricingTable currentPlan={currentPlan} isLoggedIn={!!session} />
+          <PricingTable
+            currentPlan={currentPlan}
+            isLoggedIn={!!session}
+            {...(currentBillingCycle != null && { currentBillingCycle })}
+          />
         </div>
 
         {/* Features Section */}

@@ -147,9 +147,14 @@ const ANNUAL_PLANS: PricingPlan[] = [
 interface PricingTableProps {
   currentPlan?: string;
   isLoggedIn?: boolean;
+  currentBillingCycle?: "monthly" | "annual";
 }
 
-export function PricingTable({ currentPlan, isLoggedIn = false }: PricingTableProps) {
+export function PricingTable({
+  currentPlan,
+  isLoggedIn = false,
+  currentBillingCycle,
+}: PricingTableProps) {
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -181,11 +186,13 @@ export function PricingTable({ currentPlan, isLoggedIn = false }: PricingTablePr
     // Paid user with active subscription → show change plan dialog for in-app changes
     // Free user clicking paid plan → go to checkout
     if (currentPlan && currentPlan !== "free") {
-      // Determine if this is an upgrade or downgrade
-      const planOrder = ["free", "pro_monthly", "pro_annual", "agency_monthly", "agency_annual"];
-      const currentIndex = planOrder.indexOf(currentPlan);
-      const targetIndex = planOrder.indexOf(priceId);
-      const isUpgrade = targetIndex > currentIndex;
+      // Determine if this is an upgrade or downgrade using tier-only comparison
+      // This prevents billing cycle switches from being misclassified as upgrades
+      const tierRanks: Record<string, number> = { free: 0, pro: 1, agency: 2 };
+      const getTier = (plan: string) => plan.replace(/_(monthly|annual)$/, "");
+      const currentRank = tierRanks[getTier(currentPlan)] ?? 0;
+      const targetRank = tierRanks[getTier(priceId)] ?? 0;
+      const isUpgrade = targetRank > currentRank;
 
       // Open dialog for all plan changes
       setChangePlanDialog({
@@ -248,6 +255,7 @@ export function PricingTable({ currentPlan, isLoggedIn = false }: PricingTablePr
             key={plan.priceId}
             plan={plan}
             {...(currentPlan != null && { currentPlan })}
+            {...(currentBillingCycle != null && { currentBillingCycle })}
             isLoading={isLoading === plan.priceId}
             onSelect={handleSelect}
           />

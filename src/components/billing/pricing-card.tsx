@@ -28,6 +28,7 @@ export interface PricingPlan {
 interface PricingCardProps {
   plan: PricingPlan;
   currentPlan?: string;
+  currentBillingCycle?: "monthly" | "annual";
   isLoading?: boolean;
   onSelect?: (priceId: string) => void;
 }
@@ -63,7 +64,8 @@ function extractTier(plan: string): PlanTier {
 function getButtonState(
   currentPlan: string | undefined,
   priceId: string,
-  defaultLabel: string
+  defaultLabel: string,
+  currentBillingCycle?: "monthly" | "annual"
 ): { label: string; disabled: boolean } {
   // No current plan → show default label (upgrade action)
   if (!currentPlan) {
@@ -87,9 +89,17 @@ function getButtonState(
       const targetCycle = priceId.includes("_annual") ? "Annual" : "Monthly";
       return { label: `Switch to ${targetCycle}`, disabled: false };
     }
-    // Agency tier: DB stores "agency" without cycle, so both cards show "Manage Plan"
+    // Agency tier: use currentBillingCycle prop to determine current plan
     if (currentTier === "agency") {
-      return { label: "Manage Plan", disabled: false };
+      // Determine the card's billing cycle from its priceId
+      const cardCycle = priceId.includes("_annual") ? "annual" : "monthly";
+      const isCurrentCycle = currentBillingCycle === cardCycle;
+
+      if (isCurrentCycle) {
+        return { label: "Current Plan", disabled: true };
+      }
+      const targetCycle = cardCycle === "annual" ? "Annual" : "Monthly";
+      return { label: `Switch to ${targetCycle}`, disabled: false };
     }
   }
 
@@ -108,12 +118,19 @@ function getButtonState(
   return { label: defaultLabel, disabled: false };
 }
 
-export function PricingCard({ plan, currentPlan, isLoading, onSelect }: PricingCardProps) {
+export function PricingCard({
+  plan,
+  currentPlan,
+  currentBillingCycle,
+  isLoading,
+  onSelect,
+}: PricingCardProps) {
   // Compute button label and disabled state using the tier-aware logic
   const { label: buttonLabel, disabled: isDisabled } = getButtonState(
     currentPlan,
     plan.priceId,
-    plan.actionLabel
+    plan.actionLabel,
+    currentBillingCycle
   );
 
   return (

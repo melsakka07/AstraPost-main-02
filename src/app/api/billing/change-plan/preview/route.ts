@@ -4,7 +4,7 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { getPlanLimits, normalizePlan, type PlanType } from "@/lib/plan-limits";
 import { posts, user, xAccounts } from "@/lib/schema";
 
 const CHANGE_PLAN_OPTIONS = [
@@ -65,14 +65,15 @@ export async function POST(req: Request) {
     return ApiError.conflict("Please use the checkout flow to start a subscription.");
   }
 
-  // Normalized plan for comparison (agency_monthly/agency_annual both map to "agency" for limits)
-  const normalizedTargetPlan = targetPlan.startsWith("agency")
-    ? "agency"
-    : targetPlan.replace("_annual", "_monthly").replace("_monthly", "");
-  const normalizedCurrentPlan = currentPlan.startsWith("agency") ? "agency" : currentPlan;
+  // Normalize plan names for limit lookups
+  // agency_monthly/agency_annual both map to "agency" in PLAN_LIMITS
+  const normalizedForLimits = (plan: string): PlanType => {
+    if (plan.startsWith("agency")) return "agency";
+    return normalizePlan(plan);
+  };
 
-  const currentLimits = getPlanLimits(currentPlan);
-  const targetLimits = getPlanLimits(normalizedTargetPlan as any);
+  const currentLimits = getPlanLimits(normalizedForLimits(currentPlan));
+  const targetLimits = getPlanLimits(normalizedForLimits(targetPlan));
 
   // ── Count current usage ──────────────────────────────────────────────────────
 
@@ -207,8 +208,8 @@ export async function POST(req: Request) {
   };
 
   return Response.json({
-    currentPlan: normalizedCurrentPlan,
-    targetPlan: normalizedTargetPlan,
+    currentPlan: currentPlan,
+    targetPlan: targetPlan.startsWith("agency") ? "agency" : targetPlan,
     effectiveDate,
     proratedCredit: null, // Only available after actual change
     newMonthlyPrice: monthlyPrices[targetPlan] || null,

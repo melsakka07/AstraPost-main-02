@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { planToPrice } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
-import { subscriptions, user } from "@/lib/schema";
+import { subscriptions } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
 // Extend VALID_CHECKOUT_PLANS to include "free" for cancellations
@@ -37,19 +37,26 @@ export async function POST(req: Request) {
 
   const { plan } = result.data;
 
-  // Load user to verify they have an active subscription
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { stripeCustomerId: true, plan: true },
+  // Load user's active subscription from database
+  const activeSubscription = await db.query.subscriptions.findFirst({
+    where: eq(subscriptions.userId, session.user.id),
   });
 
-  if (!dbUser?.stripeCustomerId) {
+  // Check for active or trialing subscription
+  if (
+    !activeSubscription ||
+    !activeSubscription.status ||
+    !["active", "trialing"].includes(activeSubscription.status)
+  ) {
     return ApiError.conflict("No active subscription found. Please start a subscription first.");
   }
 
   try {
-    // Fetch the current subscription from Stripe
-    const subscription: any = await stripe.subscriptions.retrieve(dbUser.stripeCustomerId);
+    // Fetch the current subscription from Stripe using the subscription ID
+    // activeSubscription is guaranteed to have stripeSubscriptionId since we filtered for active/trialing status
+    const subscription: any = await stripe.subscriptions.retrieve(
+      activeSubscription.stripeSubscriptionId!
+    );
 
     // ── Handle cancellation (downgrade to free) ────────────────────────────────
     if (plan === "free") {
@@ -103,21 +110,24 @@ export async function POST(req: Request) {
     // Calculate proration amount from the latest invoice
     let proratedCredit: string | null = null;
     try {
-      if (updatedSubscription.latest_invoice) {
-        const latestInvoice = await stripe.invoices.retrieve(
-          updatedSubscription.latest_invoice as string
-        );
-        if (latestInvoice) {
-          // Sum up all proration line items
-          const prorations = latestInvoice.lines.data.filter(
-            (line) =>
-              line.description?.toLowerCase().includes("proration") ||
-              line.period.start !== line.period.end
-          );
-          const totalProration = prorations.reduce((sum, line) => sum + (line.amount || 0), 0);
-          // Format as dollars (Stripe amounts are in cents)
-          proratedCredit =
-            totalProration < 0 ? `$${Math.abs(totalProration / 100).toFixed(2)}` : null;
+      const latestInvoice = updatedSubscription.latest_invoice;
+      if (latestInvoice) {
+        const invoiceId =
+          typeof latestInvoice === "string" ? latestInvoice : (latestInvoice as any).id;
+        if (invoiceId) {
+          const invoice = await stripe.invoices.retrieve(invoiceId);
+          if (invoice) {
+            // Sum up all proration line items
+            const prorations = invoice.lines.data.filter(
+              (line) =>
+                line.description?.toLowerCase().includes("proration") ||
+                line.period.start !== line.period.end
+            );
+            const totalProration = prorations.reduce((sum, line) => sum + (line.amount || 0), 0);
+            // Format as dollars (Stripe amounts are in cents)
+            proratedCredit =
+              totalProration < 0 ? `$${Math.abs(totalProration / 100).toFixed(2)}` : null;
+          }
         }
       }
     } catch {
@@ -142,7 +152,8 @@ export async function POST(req: Request) {
       message: `Your plan has been changed to ${plan.replace("_", " ").toUpperCase()}.${proratedCredit ? ` Prorated credit: ${proratedCredit}` : ""}`,
     });
   } catch (error) {
-    if (error instanceof TypeError && error.message.includes("Stripe API error")) {
+    const isStripeError = error && typeof error === "object" && "type" in error;
+    if (isStripeError) {
       console.error("[billing] change-plan Stripe API error:", error);
       return ApiError.internal(
         "Failed to update subscription. Please try again or contact support."
