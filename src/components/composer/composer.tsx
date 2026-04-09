@@ -24,18 +24,13 @@ import {
   CheckCircle2,
   Clock,
   FileText,
-  Globe,
-  Hash,
   Info,
-  Lightbulb,
   ListOrdered,
   Loader2,
-  Megaphone,
   Plus,
   Send,
   Sparkles,
   X as XIcon,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AiImageDialog } from "@/components/composer/ai-image-dialog";
@@ -200,6 +195,7 @@ export function Composer() {
   const [isLoadingInspiration, setIsLoadingInspiration] = useState(false);
   // Phase 2: Template state (moved from dialog to inline panel)
   const [templateConfig, setTemplateConfig] = useState<TemplatePromptConfig | null>(null);
+  const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
   const [templateFormat, setTemplateFormat] = useState<OutputFormat>("thread-short");
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
   // P3-A: Restore AI tone + language from localStorage (session language takes priority once loaded)
@@ -735,11 +731,8 @@ export function Composer() {
       } else {
         setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
       }
-      if (tool === "thread" && !aiTopic) {
-        const existingContent = tweets[0]?.content?.trim();
-        if (existingContent) {
-          setAiTopic(existingContent.slice(0, 500));
-        }
+      if (tool === "thread") {
+        setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
       }
     }
     setIsAiOpen(true);
@@ -819,11 +812,6 @@ export function Composer() {
     setAiTopic("");
     setAiTool("template"); // Switch to Template tab
     setIsAiOpen(true); // Ensure panel is open
-  };
-
-  const handleOpenTemplatesDialog = () => {
-    // This is a no-op for now - the TemplatesDialog button opens itself
-    // The dialog will call handleTemplateConfigSelect when a template is selected
   };
 
   const restoreHistory = (item: any) => {
@@ -1862,6 +1850,12 @@ export function Composer() {
                   onClearTweet={() => clearTweet(tweet.id)}
                   tier={effectiveTier}
                   isAiTarget={isAiTarget}
+                  isTweetsNumbered={isTweetsNumbered}
+                  onToggleNumbering={() =>
+                    setTweets(
+                      isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets])
+                    )
+                  }
                   selectedTier={effectiveTier}
                   {...(index === 0 && { onConvertToThread: addTweet })}
                   {...(tweet.id === aiTargetTweetId &&
@@ -2177,108 +2171,66 @@ export function Composer() {
           </CardContent>
         </Card>
 
-        {/* Card 1: Content Tools — always visible; AI panel expands inline on desktop (P1-B) */}
+        {/* Card 1: AI Tools — single entry point; tool switching via tabs inside panel */}
         <Card>
           <CardContent className="space-y-2 px-3 pt-3 sm:space-y-3 sm:px-6 sm:pt-5">
-            <p className="text-muted-foreground/70 text-xs font-medium">Content Tools</p>
-            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-2 xl:grid-cols-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
-                onClick={() => openAiTool("thread")}
-              >
-                <Sparkles className="text-primary h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">Writer</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
-                onClick={() => openAiTool("inspire")}
-              >
-                <Lightbulb className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
-                <span className="truncate">Inspire</span>
-              </Button>
-              <Suspense
-                fallback={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
-                    disabled
-                  >
-                    <span className="truncate">Templates</span>
-                  </Button>
-                }
-              >
-                <TemplatesDialog
-                  onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)}
-                  onTemplateSelect={handleTemplateConfigSelect}
-                />
-              </Suspense>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
-                onClick={() => openAiTool("hook", activeTweetId ?? tweets[0]?.id)}
-              >
-                <Zap className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">Hook</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
-                onClick={() => openAiTool("cta")}
-              >
-                <Megaphone className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">CTA</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
-                onClick={() => openAiTool("translate")}
-              >
-                <Globe className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">Translate</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="col-span-2 h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5 lg:col-span-2 xl:col-span-1"
-                onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}
-              >
-                <Hash className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">#Tags</span>
-              </Button>
+            <div className="flex items-center justify-between">
+              <p className="text-muted-foreground/70 text-xs font-medium">AI Tools</p>
+              {isAiOpen && (
+                <p className="text-muted-foreground/50 text-[10px] sm:text-xs">
+                  {aiTool === "thread" && "Writer"}
+                  {aiTool === "inspire" && "Inspire"}
+                  {aiTool === "template" && "Template"}
+                  {aiTool === "hook" && "Hook"}
+                  {aiTool === "cta" && "CTA"}
+                  {aiTool === "rewrite" && "Rewrite"}
+                  {aiTool === "translate" && "Translate"}
+                  {aiTool === "hashtags" && "#Tags"}
+                </p>
+              )}
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-1.5 border-t pt-2 sm:mt-2 sm:gap-2 sm:pt-2">
-              <Button
-                variant={isTweetsNumbered ? "secondary" : "ghost"}
-                size="sm"
-                className="text-muted-foreground h-9 w-full justify-center gap-1 text-xs whitespace-nowrap sm:h-9 sm:gap-1.5"
-                onClick={() =>
-                  setTweets(
-                    isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets])
-                  )
+            <Suspense
+              fallback={
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-10 w-full justify-center gap-2 text-sm sm:h-11"
+                  disabled
+                >
+                  <Sparkles className="text-primary h-4 w-4 shrink-0" />
+                  <span>AI Tools</span>
+                </Button>
+              }
+            >
+              <TemplatesDialog
+                open={templatesDialogOpen}
+                onOpenChange={setTemplatesDialogOpen}
+                onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)}
+                onTemplateSelect={handleTemplateConfigSelect}
+              />
+            </Suspense>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10 w-full justify-center gap-2 text-sm sm:h-11 sm:text-sm"
+              onClick={() => {
+                if (isAiOpen) {
+                  setIsAiOpen(false);
+                } else {
+                  openAiTool(aiTool || "thread");
                 }
-              >
-                <ListOrdered className="h-3.5 w-3.5 shrink-0" />
-                <span>{isTweetsNumbered ? "Remove 1/N" : "Number 1/N"}</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground h-9 w-full justify-center gap-1 text-xs whitespace-nowrap sm:h-9 sm:gap-1.5"
-                onClick={() => setIsSaveTemplateOpen(true)}
-                disabled={isSubmitting}
-              >
-                <BookmarkPlus className="h-3.5 w-3.5 shrink-0" />
-                <span>Save Template</span>
-              </Button>
-            </div>
+              }}
+            >
+              <Sparkles className="text-primary h-4 w-4 shrink-0 sm:h-4.5 sm:w-4.5" />
+              {isAiOpen ? (
+                <>
+                  <span>Close</span>
+                  <XIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </>
+              ) : (
+                <span>AI Tools</span>
+              )}
+            </Button>
             {/* P1-B/C: Inline AI panel expands here on desktop when open */}
             {isAiOpen && isDesktop && (
               <div className="border-t pt-2">
@@ -2289,6 +2241,12 @@ export function Composer() {
                     setGeneratedHashtags([]);
                     if (tool === "hashtags") {
                       setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
+                    }
+                    if (tool === "template" && !templateConfig) {
+                      setTemplatesDialogOpen(true);
+                    }
+                    if (tool === "thread") {
+                      setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
                     }
                   }}
                   aiTopic={aiTopic}
@@ -2326,7 +2284,7 @@ export function Composer() {
                   templateConfig={templateConfig}
                   templateFormat={templateFormat}
                   onTemplateFormatChange={setTemplateFormat}
-                  onOpenTemplatesDialog={handleOpenTemplatesDialog}
+                  onClearTemplate={() => setTemplateConfig(null)}
                   // Phase 3: Hashtag chips props
                   generatedHashtags={generatedHashtags}
                   onHashtagClick={(tag) => {
@@ -2501,6 +2459,36 @@ export function Composer() {
                   {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
                 </Tooltip>
               </TooltipProvider>
+              <div className="relative">
+                <div className="absolute inset-x-0 top-0 flex justify-center">
+                  <div className="bg-card relative px-2">
+                    <span className="text-muted-foreground/60 text-[10px] tracking-wider uppercase">
+                      or
+                    </span>
+                  </div>
+                  <div className="absolute inset-x-0 top-1/2 border-t" />
+                </div>
+                <div className="pt-4">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0}>
+                          <Button
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-foreground h-9 w-full text-xs sm:h-9 sm:text-sm"
+                            onClick={() => setIsSaveTemplateOpen(true)}
+                            disabled={isSubmitting || !hasContent}
+                          >
+                            <BookmarkPlus className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                            Save as Template
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -2616,6 +2604,12 @@ export function Composer() {
                   if (tool === "hashtags") {
                     setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
                   }
+                  if (tool === "template" && !templateConfig) {
+                    setTemplatesDialogOpen(true);
+                  }
+                  if (tool === "thread") {
+                    setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
+                  }
                 }}
                 aiTopic={aiTopic}
                 onTopicChange={setAiTopic}
@@ -2653,7 +2647,7 @@ export function Composer() {
                 templateConfig={templateConfig}
                 templateFormat={templateFormat}
                 onTemplateFormatChange={setTemplateFormat}
-                onOpenTemplatesDialog={handleOpenTemplatesDialog}
+                onClearTemplate={() => setTemplateConfig(null)}
                 // Phase 3: Hashtag chips props
                 generatedHashtags={generatedHashtags}
                 onHashtagClick={(tag) => {

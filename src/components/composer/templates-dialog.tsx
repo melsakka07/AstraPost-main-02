@@ -19,7 +19,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getTemplatePrompt } from "@/lib/ai/template-prompts";
@@ -39,14 +38,24 @@ const SYSTEM_CATEGORIES = ["All", "Educational", "Promotional", "Personal", "Eng
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface TemplatesDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSelect: (tweets: string[], aiMeta?: TemplateAiMeta) => void;
   onTemplateSelect: (config: TemplatePromptConfig) => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function TemplatesDialog({ onSelect, onTemplateSelect }: TemplatesDialogProps) {
-  const [open, setOpen] = useState(false);
+export function TemplatesDialog({
+  open: controlledOpen,
+  onOpenChange: controlledSetOpen,
+  onSelect,
+  onTemplateSelect,
+}: TemplatesDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = controlledSetOpen ?? setInternalOpen;
 
   // User templates state
   const [userTemplates, setUserTemplates] = useState<Template[]>([]);
@@ -143,17 +152,6 @@ export function TemplatesDialog({ onSelect, onTemplateSelect }: TemplatesDialogP
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
-        >
-          <LayoutTemplate className="h-3.5 w-3.5 shrink-0" />
-          <span>Templates</span>
-        </Button>
-      </DialogTrigger>
-
       {/* Consistent sizing with other composer dialogs */}
       <DialogContent className="flex max-h-[90dvh] w-full max-w-2xl flex-col gap-0 p-0">
         {/* Phase 2: Generate view removed - generation now happens in composer's inline panel */}

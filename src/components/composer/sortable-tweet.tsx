@@ -21,6 +21,8 @@ interface SortableTweetProps {
   tier?: XSubscriptionTier | undefined;
   // Phase 3: Highlight target tweets when AI panel is open
   isAiTarget?: boolean;
+  isTweetsNumbered?: boolean;
+  onToggleNumbering?: () => void;
   onConvertToThread?: () => void;
   selectedTier?: XSubscriptionTier | undefined;
 }
@@ -42,6 +44,8 @@ export function SortableTweet({
   onHashtagClick,
   tier,
   isAiTarget = false,
+  isTweetsNumbered,
+  onToggleNumbering,
   onConvertToThread,
   selectedTier,
 }: SortableTweetProps) {
@@ -87,6 +91,8 @@ export function SortableTweet({
         {...(onHashtagClick !== undefined && { onHashtagClick })}
         {...(tier !== undefined && { tier })}
         isAiTarget={isAiTarget}
+        {...(isTweetsNumbered !== undefined && { isTweetsNumbered })}
+        {...(onToggleNumbering !== undefined && { onToggleNumbering })}
         {...(onConvertToThread !== undefined && { onConvertToThread })}
         {...(selectedTier !== undefined && { selectedTier })}
       />

@@ -11,6 +11,7 @@ import {
   ChevronDown,
   GripVertical,
   Eraser,
+  ListOrdered,
   AlertCircle,
 } from "lucide-react";
 import twitter from "twitter-text";
@@ -68,6 +69,8 @@ interface TweetCardProps {
   tier?: XSubscriptionTier | undefined;
   // Phase 3: Highlight target tweets when AI panel is open
   isAiTarget?: boolean;
+  isTweetsNumbered?: boolean;
+  onToggleNumbering?: () => void;
   onConvertToThread?: () => void;
   selectedTier?: XSubscriptionTier | undefined;
 }
@@ -91,6 +94,8 @@ export function TweetCard({
   onClearTweet,
   tier,
   isAiTarget = false,
+  isTweetsNumbered,
+  onToggleNumbering,
   onConvertToThread,
   selectedTier,
 }: TweetCardProps) {
@@ -480,6 +485,28 @@ export function TweetCard({
                 </TooltipTrigger>
                 <TooltipContent>Clear tweet</TooltipContent>
               </Tooltip>
+
+              {totalTweets > 1 && onToggleNumbering && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={isTweetsNumbered ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 gap-1 px-1.5 sm:h-8 sm:gap-1.5 sm:px-2"
+                      onClick={onToggleNumbering}
+                      aria-label={isTweetsNumbered ? "Remove numbering" : "Number tweets"}
+                    >
+                      <ListOrdered className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <span className="hidden text-[10px] sm:inline sm:text-xs">
+                        {isTweetsNumbered ? "1/N on" : "1/N"}
+                      </span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isTweetsNumbered ? "Remove numbering" : "Number tweets 1/N"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </TooltipProvider>
 

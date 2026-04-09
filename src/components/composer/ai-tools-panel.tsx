@@ -13,6 +13,7 @@ import {
   Sparkles,
   Target,
   Wand2,
+  X,
   Zap,
 } from "lucide-react";
 import { AiLengthSelector } from "@/components/composer/ai-length-selector";
@@ -122,7 +123,7 @@ interface AiToolsPanelProps {
   templateConfig: TemplatePromptConfig | null;
   templateFormat: OutputFormat;
   onTemplateFormatChange: (v: OutputFormat) => void;
-  onOpenTemplatesDialog: () => void;
+  onClearTemplate: () => void;
   // Phase 3: Hashtag chips props
   generatedHashtags: string[];
   onHashtagClick: (tag: string) => void;
@@ -169,7 +170,7 @@ export function AiToolsPanel({
   templateConfig,
   templateFormat,
   onTemplateFormatChange,
-  onOpenTemplatesDialog,
+  onClearTemplate,
   // Phase 3: Hashtag chips props
   generatedHashtags,
   onHashtagClick,
@@ -484,76 +485,64 @@ export function AiToolsPanel({
             </div>
           )}
 
-          {aiTool === "template" && (
+          {aiTool === "template" && templateConfig && (
             <div className="space-y-3 sm:space-y-4">
-              {templateConfig ? (
-                <>
-                  {/* Template info header */}
-                  <div className="bg-muted/30 flex items-start gap-3 rounded-lg p-3">
-                    <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
-                      <LayoutTemplate className="text-primary h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="text-sm leading-tight font-semibold sm:text-base">
-                        {templateConfig.name}
-                      </h3>
-                      <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-                        {templateConfig.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Topic input */}
-                  <div className="space-y-2">
-                    <Label className="text-sm">Topic</Label>
-                    <Input
-                      placeholder={templateConfig.placeholderTopic}
-                      value={aiTopic}
-                      onChange={(e) => onTopicChange(e.target.value)}
-                      className="h-11 text-sm sm:h-10"
-                    />
-                    {!aiTopic.trim() && (
-                      <p className="text-muted-foreground text-xs italic sm:text-sm">
-                        Enter a topic to enable generation
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Format select */}
-                  <div className="space-y-2">
-                    <Label className="text-sm">Format</Label>
-                    <Select value={templateFormat} onValueChange={onTemplateFormatChange}>
-                      <SelectTrigger className="h-11 text-sm sm:h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FORMAT_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              ) : (
-                /* No template selected */
-                <div className="py-6 text-center sm:py-8">
-                  <LayoutTemplate className="text-muted-foreground/50 mx-auto mb-3 h-10 w-10 sm:mb-4 sm:h-12 sm:w-12" />
-                  <p className="text-muted-foreground mb-3 text-sm sm:mb-4 sm:text-base">
-                    Pick a template to get started
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onOpenTemplatesDialog}
-                    className="h-10 min-w-[44px] gap-2 text-sm sm:h-9 sm:min-w-0"
-                  >
-                    <LayoutTemplate className="h-4 w-4" />
-                    Browse Templates
-                  </Button>
+              {/* Template info header */}
+              <div className="bg-muted/30 relative flex items-start gap-3 rounded-lg p-3">
+                <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
+                  <LayoutTemplate className="text-primary h-4 w-4" />
                 </div>
-              )}
+                <div className="min-w-0 pr-6">
+                  <h3 className="text-sm leading-tight font-semibold sm:text-base">
+                    {templateConfig.name}
+                  </h3>
+                  <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+                    {templateConfig.description}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground absolute top-2 right-2 h-7 w-7"
+                  onClick={onClearTemplate}
+                  aria-label="Remove template"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Topic input */}
+              <div className="space-y-2">
+                <Label className="text-sm">Topic</Label>
+                <Input
+                  placeholder={templateConfig.placeholderTopic}
+                  value={aiTopic}
+                  onChange={(e) => onTopicChange(e.target.value)}
+                  className="h-11 text-sm sm:h-10"
+                />
+                {!aiTopic.trim() && (
+                  <p className="text-muted-foreground text-xs italic sm:text-sm">
+                    Enter a topic to enable generation
+                  </p>
+                )}
+              </div>
+
+              {/* Format select */}
+              <div className="space-y-2">
+                <Label className="text-sm">Format</Label>
+                <Select value={templateFormat} onValueChange={onTemplateFormatChange}>
+                  <SelectTrigger className="h-11 text-sm sm:h-10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FORMAT_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 
@@ -639,7 +628,7 @@ export function AiToolsPanel({
               </>
             )}
 
-          {!hideActions && aiTool !== "inspire" && aiTool !== "template" && (
+          {!hideActions && aiTool !== "inspire" && (
             <div className="flex justify-end gap-2 border-t pt-3 sm:gap-3 sm:pt-4">
               <Button
                 variant="outline"
