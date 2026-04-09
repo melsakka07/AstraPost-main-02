@@ -131,6 +131,8 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
   const [language, setLanguage] = useState("en");
   const [includeImages, setIncludeImages] = useState(true);
   const [audience, setAudience] = useState("");
+  const [isEnhancing, setIsEnhancing] = useState(false);
+  const enhanceAbortRef = useRef<AbortController | null>(null);
 
   // ── Processing screen state ──
   const [steps, setSteps] = useState<Record<PipelineStep, StepProgress>>(
@@ -313,6 +315,40 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
     setScreen("input");
     setShowCancelConfirm(false);
   }, []);
+
+  // ── Enhance topic ──────────────────────────────────────────────────────────
+  const handleEnhanceTopic = useCallback(async () => {
+    const t = topic.trim();
+    if (t.length < 3) return;
+
+    enhanceAbortRef.current?.abort();
+    const abort = new AbortController();
+    enhanceAbortRef.current = abort;
+    setIsEnhancing(true);
+
+    try {
+      const res = await fetch("/api/ai/enhance-topic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: t }),
+        signal: abort.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Enhancement failed" }));
+        toast.error((err as { error?: string }).error ?? "Enhancement failed");
+        return;
+      }
+
+      const { enhanced } = (await res.json()) as { enhanced: string };
+      setTopic(enhanced);
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return;
+      toast.error("Enhancement failed. Please try again.");
+    } finally {
+      setIsEnhancing(false);
+    }
+  }, [topic]);
 
   // ── Recovery on mount — check for in-progress sessions ───────────────────
   useEffect(() => {
@@ -526,6 +562,8 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
         setIncludeImages={setIncludeImages}
         audience={audience}
         setAudience={setAudience}
+        isEnhancing={isEnhancing}
+        onEnhanceTopic={handleEnhanceTopic}
       />
     );
 
@@ -676,6 +714,8 @@ interface InputScreenProps {
   setIncludeImages: (v: boolean) => void;
   audience: string;
   setAudience: (v: string) => void;
+  isEnhancing: boolean;
+  onEnhanceTopic: () => void;
 }
 
 function InputScreen({
@@ -697,6 +737,8 @@ function InputScreen({
   setIncludeImages,
   audience,
   setAudience,
+  isEnhancing,
+  onEnhanceTopic,
 }: InputScreenProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -770,8 +812,18 @@ function InputScreen({
           Clear
         </Button>
         <Button
+          variant="secondary"
+          className="h-12 gap-2 rounded-xl px-6 text-base font-medium transition-transform active:scale-[0.98]"
+          disabled={!topic.trim() || isEnhancing}
+          onClick={() => void onEnhanceTopic()}
+          aria-label="Enhance topic with AI"
+        >
+          <Wand2 className={`h-4 w-4 ${isEnhancing ? "animate-spin" : ""}`} />
+          {isEnhancing ? "Enhancing\u2026" : "Enhance"}
+        </Button>
+        <Button
           className="h-12 gap-2 rounded-xl px-8 text-base font-medium transition-transform active:scale-[0.98]"
-          disabled={!canSubmit}
+          disabled={!canSubmit || isEnhancing}
           onClick={() => onSubmit()}
           aria-label={`Generate AI post about ${topic || "your topic"}`}
         >
