@@ -1,0 +1,1 @@
+CREATE INDEX "user_referral_credited_at_idx" ON "user" USING btree ("referral_credited_at");

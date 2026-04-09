@@ -68,6 +68,25 @@ export async function POST(req: Request) {
 
     // Persist the new customer ID immediately so retries reuse it.
     await db.update(user).set({ stripeCustomerId }).where(eq(user.id, session.user.id));
+
+    // If user has pending referral credits, flush them to Stripe customer balance
+    const [creditRow] = await db
+      .select({ value: user.referralCredits })
+      .from(user)
+      .where(eq(user.id, session.user.id))
+      .limit(1);
+    const pendingCredits = creditRow?.value ?? 0;
+    if (pendingCredits > 0) {
+      try {
+        await stripe.customers.createBalanceTransaction(stripeCustomerId, {
+          amount: -pendingCredits * 100,
+          currency: "usd",
+          description: `Referral credits: $${pendingCredits}`,
+        });
+      } catch (err) {
+        console.error("[billing] failed to apply referral credits to Stripe balance", err);
+      }
+    }
   }
 
   // ── Trial eligibility ───────────────────────────────────────────────────────

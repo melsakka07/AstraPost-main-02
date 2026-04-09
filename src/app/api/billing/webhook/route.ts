@@ -219,8 +219,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     "billing_checkout_completed"
   );
 
-  // Award referral credit if this user was referred
+  // Award referral credit if this user was referred (paid plans only)
   await runSideEffect(async () => {
+    if (plan === "free") return;
+
     const result = await awardReferralCredit(userId);
     if (!result.credited) return;
 
@@ -245,7 +247,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       metadata: { referredUserId: userId, amount: REFERRAL_CREDIT_AMOUNT },
     });
 
-    // Apply $5 as Stripe customer balance
+    // Apply credit as Stripe customer balance (only if referrer has a Stripe customer)
     if (referrer.stripeCustomerId && stripe) {
       try {
         await stripe.customers.createBalanceTransaction(referrer.stripeCustomerId, {
@@ -254,11 +256,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           description: `Referral reward: $${REFERRAL_CREDIT_AMOUNT} credit`,
         });
       } catch (err) {
+        // Credit is recorded in DB but failed in Stripe — log for admin reconciliation
         console.error("webhook_referral_stripe_balance_failed", {
           referrerId: referrer.id,
+          referrerStripeCustomerId: referrer.stripeCustomerId,
+          creditAmount: REFERRAL_CREDIT_AMOUNT,
           error: err,
         });
       }
+    } else if (!referrer.stripeCustomerId) {
+      // Referrer hasn't subscribed yet — credit recorded in DB, will be applied
+      // to Stripe when they create their first checkout session.
+      console.warn("webhook_referral_no_stripe_customer", {
+        referrerId: referrer.id,
+        message:
+          "Credit recorded in DB but no Stripe customer to apply balance. Will apply on first checkout.",
+      });
     }
   }, "referral_credit_award");
 }

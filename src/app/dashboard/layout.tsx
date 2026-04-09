@@ -48,6 +48,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Rocket className="text-primary h-5 w-5" aria-hidden="true" />
           <span className="text-lg font-bold tracking-tight">AstraPost</span>
         </header>
+        <ReferralCookieProcessor />
         <main className="flex-1">{children}</main>
       </div>
     );

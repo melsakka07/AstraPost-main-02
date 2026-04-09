@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, isNull } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
@@ -35,7 +35,7 @@ export async function generateReferralCode(name: string): Promise<string> {
 
 export async function validateReferralCode(code: string) {
   const referrer = await db.query.user.findFirst({
-    where: eq(user.referralCode, code),
+    where: and(eq(user.referralCode, code), isNull(user.deletedAt)),
     columns: { id: true, name: true },
   });
 

@@ -45,7 +45,7 @@ export default async function ReferralsPage() {
     redirect("/login");
   }
 
-  const referralLink = `${process.env.NEXT_PUBLIC_APP_URL}/register?ref=${currentUser.referralCode}`;
+  const referralLink = `${process.env.NEXT_PUBLIC_APP_URL}/login?ref=${currentUser.referralCode}`;
   const referralCount = currentUser.referrals.length;
 
   return (
@@ -131,7 +131,8 @@ export default async function ReferralsPage() {
                   className="flex-1"
                 />
                 <CopyButton
-                  value={currentUser.referralCode || ""}
+                  value={currentUser.referralCode ?? ""}
+                  disabled={!currentUser.referralCode}
                   className="text-primary hover:text-primary-foreground"
                 />
               </div>
