@@ -13,7 +13,6 @@ import {
   type TrendCategory,
   type TrendItem,
 } from "@/lib/schemas/common";
-import { recordAiUsage } from "@/lib/services/ai-quota";
 
 // NOTE: A web-search-capable model produces significantly better results here.
 // Configure OPENROUTER_MODEL_TRENDS to something like:
@@ -82,7 +81,7 @@ export async function GET(req: Request) {
     // ── Rate-limit + feature gate (only on cache miss → real AI call) ────────
     const preamble = await aiPreamble({
       featureGate: checkAgenticPostingAccessDetailed,
-      skipQuotaCheck: false,
+      skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
 
@@ -91,6 +90,7 @@ export async function GET(req: Request) {
 
     const modelId =
       process.env.OPENROUTER_MODEL_TRENDS ??
+      process.env.OPENROUTER_MODEL_FREE ??
       process.env.OPENROUTER_MODEL_AGENTIC ??
       process.env.OPENROUTER_MODEL!;
     const model = openrouter(modelId);
@@ -99,7 +99,7 @@ export async function GET(req: Request) {
       model,
       prompt: buildTrendsPrompt(category),
       maxOutputTokens: 800,
-      abortSignal: AbortSignal.timeout(30_000),
+      abortSignal: AbortSignal.timeout(60_000),
     });
 
     // ── Parse & validate response ────────────────────────────────────────────
@@ -120,22 +120,6 @@ export async function GET(req: Request) {
         error: parseErr instanceof Error ? parseErr.message : String(parseErr),
         category,
         rawText: result.text.slice(0, 200),
-      });
-    }
-
-    // ── Record AI quota usage ─────────────────────────────────────────────────
-    try {
-      await recordAiUsage(
-        session.user.id,
-        "trends_discovery",
-        0,
-        category,
-        `Trending topics: ${category}`,
-        "en"
-      );
-    } catch (quotaErr) {
-      logger.warn("trends_quota_record_failed", {
-        error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
       });
     }
 

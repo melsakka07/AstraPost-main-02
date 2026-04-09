@@ -10,6 +10,7 @@
 - `TOKEN_ENCRYPTION_KEYS` — Comma-separated 32-byte base64 keys
 - `OPENROUTER_API_KEY` — OpenRouter API key
 - `OPENROUTER_MODEL` — Model identifier (e.g., `openai/gpt-4o`)
+- `OPENROUTER_MODEL_FREE` — Cheap/free model for quota-free endpoints (e.g. `deepseek/deepseek-v3.2`)
 - `GEMINI_API_KEY` / `GOOGLE_AI_API_KEY` — Google Gemini
 - `REPLICATE_API_TOKEN` — Replicate API
 - `REPLICATE_MODEL_FAST` / `REPLICATE_MODEL_PRO` / `REPLICATE_MODEL_FALLBACK` — Image model identifiers

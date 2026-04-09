@@ -2589,7 +2589,7 @@ export function Composer() {
         <Sheet open={isAiOpen} onOpenChange={setIsAiOpen}>
           <SheetContent
             side="bottom"
-            className="pb-safe flex h-[80dvh] flex-col gap-0 overflow-hidden px-0 sm:h-[60dvh]"
+            className="pb-safe mx-2 flex h-[80dvh] flex-col gap-0 overflow-hidden rounded-t-2xl px-0 sm:mx-0 sm:h-[60dvh]"
           >
             <SheetHeader className="shrink-0 px-4 pb-2 sm:px-6">
               <SheetTitle>AI Tools</SheetTitle>

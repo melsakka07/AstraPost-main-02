@@ -170,7 +170,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
                 key={i}
                 role="listitem"
                 className="group border-border hover:bg-muted/30 flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-3.5 transition-colors"
-                onClick={() => onSelectTrend(trend.title)}
+                onClick={() => onSelectTrend(`${trend.title} ${trend.description}`)}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">

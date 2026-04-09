@@ -40,6 +40,7 @@ import {
   ArrowLeft,
   ListOrdered,
   GripVertical,
+  Eraser,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { XAccountOption } from "@/app/dashboard/ai/agentic/page";
@@ -510,7 +511,6 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
         onSubmit={startPipeline}
         onSelectTrend={(t) => {
           setTopic(t);
-          void startPipeline(t);
         }}
         selectedAccount={selectedAccount}
         xAccounts={xAccounts}
@@ -749,7 +749,6 @@ function InputScreen({
             type="button"
             onClick={() => {
               setTopic(s);
-              onSubmit(s);
             }}
             className="border-border bg-muted/50 text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors duration-150 select-none"
           >
@@ -759,7 +758,17 @@ function InputScreen({
       </div>
 
       {/* ── Generate button ────────────────────────────────────────────────── */}
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-center gap-3">
+        <Button
+          variant="outline"
+          className="h-12 gap-2 rounded-xl px-6 text-base font-medium transition-transform active:scale-[0.98]"
+          disabled={!topic.trim()}
+          onClick={() => setTopic("")}
+          aria-label="Clear topic"
+        >
+          <Eraser className="h-4 w-4" />
+          Clear
+        </Button>
         <Button
           className="h-12 gap-2 rounded-xl px-8 text-base font-medium transition-transform active:scale-[0.98]"
           disabled={!canSubmit}
