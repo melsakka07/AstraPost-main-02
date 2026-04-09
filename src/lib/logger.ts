@@ -27,4 +27,3 @@ export const logger = {
   warn: (message: string, fields?: LogFields) => write("warn", message, fields),
   error: (message: string, fields?: LogFields) => write("error", message, fields),
 };
-

@@ -88,7 +88,8 @@ export async function GET(req: Request) {
       schemaApplied = false;
 
       // Provide user-friendly error messages
-      dbError = "Database not connected. Please start your PostgreSQL database and verify your POSTGRES_URL in .env";
+      dbError =
+        "Database not connected. Please start your PostgreSQL database and verify your POSTGRES_URL in .env";
     }
   } else {
     dbConnected = false;

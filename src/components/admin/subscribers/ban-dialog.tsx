@@ -44,7 +44,9 @@ export function BanDialog({
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
         throw new Error(error);
       }
-      toast.success(isBanned ? `${subscriberName} has been unbanned` : `${subscriberName} has been banned`);
+      toast.success(
+        isBanned ? `${subscriberName} has been unbanned` : `${subscriberName} has been banned`
+      );
       onSuccess();
       onOpenChange(false);
     } catch (err) {
@@ -58,9 +60,7 @@ export function BanDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isBanned ? "Unban subscriber?" : "Ban subscriber?"}
-          </AlertDialogTitle>
+          <AlertDialogTitle>{isBanned ? "Unban subscriber?" : "Ban subscriber?"}</AlertDialogTitle>
           <AlertDialogDescription>
             {isBanned
               ? `This will restore ${subscriberName}'s access and allow them to log in again.`
@@ -72,7 +72,9 @@ export function BanDialog({
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={loading}
-            className={isBanned ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"}
+            className={
+              isBanned ? "" : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            }
           >
             {loading ? "Processing…" : isBanned ? "Unban" : "Ban subscriber"}
           </AlertDialogAction>

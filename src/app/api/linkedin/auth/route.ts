@@ -26,9 +26,9 @@ export async function GET() {
   response.cookies.set("linkedin_oauth_state", state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",          // Required: allows cookie on top-level cross-site GET
+    sameSite: "lax", // Required: allows cookie on top-level cross-site GET
     path: "/api/linkedin/callback", // Scope to callback only
-    maxAge: 600,              // 10 minutes — more than enough for the OAuth round-trip
+    maxAge: 600, // 10 minutes — more than enough for the OAuth round-trip
   });
   return response;
 }

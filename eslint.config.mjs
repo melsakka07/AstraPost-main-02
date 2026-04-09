@@ -30,14 +30,7 @@ const config = [
       "import/order": [
         "warn",
         {
-          groups: [
-            "builtin",
-            "external",
-            "internal",
-            ["parent", "sibling"],
-            "index",
-            "type",
-          ],
+          groups: ["builtin", "external", "internal", ["parent", "sibling"], "index", "type"],
           pathGroups: [
             {
               pattern: "react",

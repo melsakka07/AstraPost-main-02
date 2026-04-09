@@ -29,12 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { signIn } from "@/lib/auth-client";
@@ -109,7 +104,10 @@ interface ConnectedXAccountsProps {
   userPlan?: string;
 }
 
-export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: ConnectedXAccountsProps) {
+export function ConnectedXAccounts({
+  initialAccounts,
+  userPlan = "free",
+}: ConnectedXAccountsProps) {
   const params = useSearchParams();
   const { openWithContext } = useUpgradeModal();
   const shouldSync = params.get("sync") === "1";
@@ -121,7 +119,9 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
   const [tierRefreshState, setTierRefreshState] = useState<Record<string, TierRefreshState>>({});
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [showRemoveDialog, setShowRemoveDialog] = useState<AccountToRemove | null>(null);
-  const [showDeactivateDialog, setShowDeactivateDialog] = useState<AccountToDeactivate | null>(null);
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState<AccountToDeactivate | null>(
+    null
+  );
   const [deactivatingAccountId, setDeactivatingAccountId] = useState<string | null>(null);
   const tierFetchRef = useRef(false);
 
@@ -139,8 +139,7 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
           let payload: PlanLimitPayload | null = null;
           try {
             payload = (await res.json()) as PlanLimitPayload;
-          } catch {
-          }
+          } catch {}
           openWithContext({
             error: payload?.error,
             code: payload?.code,
@@ -162,7 +161,9 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
       const listRes = await fetch("/api/x/accounts", { method: "GET" });
       const data = await listRes.json();
       setAccounts(data.accounts || []);
-      toast.success("Accounts synced. Paused posts have been automatically re-queued and will publish shortly.");
+      toast.success(
+        "Accounts synced. Paused posts have been automatically re-queued and will publish shortly."
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Sync failed");
     } finally {
@@ -250,7 +251,10 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
           setTimeout(() => {
             setTierRefreshState((prev) => ({
               ...prev,
-              [accountId]: { ...(prev[accountId] || { previousTier: null, highlight: false }), highlight: false },
+              [accountId]: {
+                ...(prev[accountId] || { previousTier: null, highlight: false }),
+                highlight: false,
+              },
             }));
           }, 300);
         }
@@ -304,7 +308,9 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
 
     // Prevent deactivating the last remaining account
     if (accounts.length === 1) {
-      toast.error("Cannot deactivate the last connected account. Please add another account first.");
+      toast.error(
+        "Cannot deactivate the last connected account. Please add another account first."
+      );
       setShowDeactivateDialog(null);
       return;
     }
@@ -352,7 +358,9 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
         });
         const data = await res.json();
         if (res.ok && data.results) {
-          const updates = new Map(data.results.map((r: { accountId: string; tier: string }) => [r.accountId, r.tier]));
+          const updates = new Map(
+            data.results.map((r: { accountId: string; tier: string }) => [r.accountId, r.tier])
+          );
           setAccounts((prev) =>
             prev.map((a) => {
               const tier = updates.get(a.id);
@@ -360,14 +368,18 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
             })
           );
         }
-      } catch {
-      }
+      } catch {}
     };
     refreshMissingTiers();
   }, [accounts]);
 
   // Format plan name for display
-  const planName = userPlan === "free" ? "Free" : userPlan === "pro_monthly" || userPlan === "pro_annual" ? "Pro" : "Agency";
+  const planName =
+    userPlan === "free"
+      ? "Free"
+      : userPlan === "pro_monthly" || userPlan === "pro_annual"
+        ? "Pro"
+        : "Agency";
 
   return (
     <TooltipProvider>
@@ -378,29 +390,38 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <div>
               <p className="font-medium">Account limit exceeded</p>
-              <p className="text-xs opacity-90 mt-0.5">
-                Your {planName} plan allows {planLimit} X account{planLimit !== 1 ? "s" : ""}. You have {activeCount} active account{activeCount !== 1 ? "s" : ""}.
-                Please <strong>deactivate</strong> {activeCount - planLimit} account{activeCount - planLimit !== 1 ? "s" : ""} or <Link href="/pricing" className="underline font-medium hover:text-amber-700 dark:hover:text-amber-300">upgrade</Link> your plan.
+              <p className="mt-0.5 text-xs opacity-90">
+                Your {planName} plan allows {planLimit} X account{planLimit !== 1 ? "s" : ""}. You
+                have {activeCount} active account{activeCount !== 1 ? "s" : ""}. Please{" "}
+                <strong>deactivate</strong> {activeCount - planLimit} account
+                {activeCount - planLimit !== 1 ? "s" : ""} or{" "}
+                <Link
+                  href="/pricing"
+                  className="font-medium underline hover:text-amber-700 dark:hover:text-amber-300"
+                >
+                  upgrade
+                </Link>{" "}
+                your plan.
               </p>
             </div>
           </div>
         )}
 
         {accounts.length === 0 ? (
-          <div className="py-6 text-center space-y-3">
-            <p className="text-sm text-muted-foreground">No accounts connected yet.</p>
+          <div className="space-y-3 py-6 text-center">
+            <p className="text-muted-foreground text-sm">No accounts connected yet.</p>
             <Button onClick={handleAddAccount} disabled={busy}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Connect X Account
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
             <Button variant="outline" onClick={handleAddAccount} disabled={busy}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Connect X Account
             </Button>
-            <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <div className="border-border/50 bg-muted/30 text-muted-foreground flex items-start gap-2 rounded-md border px-3 py-2 text-xs">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <div>
                 <p>
@@ -411,323 +432,311 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
             </div>
             <div className="space-y-2">
               {accounts.map((a) => {
-              const expired = isTokenExpired(a);
-              const health = healthStatus[a.id];
-              const isChecking = checking === a.id;
-              const tierState = tierRefreshState[a.id];
-              const tierUpdatedAt = a.xSubscriptionTierUpdatedAt
-                ? new Date(a.xSubscriptionTierUpdatedAt)
-                : null;
-              const isTierUnknown = !a.xSubscriptionTierUpdatedAt;
+                const expired = isTokenExpired(a);
+                const health = healthStatus[a.id];
+                const isChecking = checking === a.id;
+                const tierState = tierRefreshState[a.id];
+                const tierUpdatedAt = a.xSubscriptionTierUpdatedAt
+                  ? new Date(a.xSubscriptionTierUpdatedAt)
+                  : null;
+                const isTierUnknown = !a.xSubscriptionTierUpdatedAt;
 
-              return (
-                <div key={a.id} className="space-y-1.5">
-                  {/* Account row */}
-                  <div
-                    className={`rounded-lg border p-3 transition-colors ${
-                      expired
-                        ? "border-destructive/40 bg-destructive/5"
-                        : "bg-card"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Avatar */}
-                      <div className="relative mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full bg-muted sm:h-10 sm:w-10">
-                        {a.xAvatarUrl ? (
-                          <Image
-                            src={a.xAvatarUrl}
-                            alt={a.xDisplayName || a.xUsername}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Twitter className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Identity */}
-                      <div className="min-w-0 flex-1">
-                        {/* Name + tier badge */}
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate font-semibold leading-snug">
-                            {a.xDisplayName || a.xUsername}
-                          </span>
-                          <span
-                            className={`transition-all duration-300 ${
-                              tierState?.highlight
-                                ? "rounded-full p-0.5 ring-2 ring-primary"
-                                : ""
-                            }`}
-                          >
-                            <XSubscriptionBadge
-                              tier={(a.xSubscriptionTier as XSubscriptionTier) ?? null}
-                              size="sm"
-                              loading={refreshingTier === a.id}
-                              showUnknown={isTierUnknown}
+                return (
+                  <div key={a.id} className="space-y-1.5">
+                    {/* Account row */}
+                    <div
+                      className={`rounded-lg border p-3 transition-colors ${
+                        expired ? "border-destructive/40 bg-destructive/5" : "bg-card"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Avatar */}
+                        <div className="bg-muted relative mt-0.5 h-9 w-9 shrink-0 overflow-hidden rounded-full sm:h-10 sm:w-10">
+                          {a.xAvatarUrl ? (
+                            <Image
+                              src={a.xAvatarUrl}
+                              alt={a.xDisplayName || a.xUsername}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
                             />
-                          </span>
-                        </div>
-
-                        {/* Username + status badge + tier timestamp */}
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                          <span className="text-sm text-muted-foreground">
-                            @{a.xUsername}
-                          </span>
-                          {expired ? (
-                            <Badge
-                              variant="destructive"
-                              className="h-4 gap-1 px-1.5 py-0 text-[10px]"
-                            >
-                              <AlertTriangle className="h-2.5 w-2.5" />
-                              Expired
-                            </Badge>
                           ) : (
-                            <Badge
-                              variant={a.isActive ? "default" : "secondary"}
-                              className="h-4 px-1.5 py-0 text-[10px]"
-                            >
-                              {a.isActive ? "Active" : "Inactive"}
-                            </Badge>
-                          )}
-                          {tierUpdatedAt && (
-                            <span className="text-xs text-muted-foreground/60">
-                              · {relativeTime(tierUpdatedAt)}
-                            </span>
+                            <div className="flex h-full w-full items-center justify-center">
+                              <Twitter className="text-muted-foreground h-4 w-4" />
+                            </div>
                           )}
                         </div>
-                      </div>
 
-                      {/* Action buttons — 3 compact icon buttons */}
-                      <div className="flex shrink-0 items-center">
-                        {/* Default toggle */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={busy}
-                              className={
-                                a.isDefault
-                                  ? "h-8 w-8 p-0 text-primary hover:text-primary"
-                                  : "h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              }
-                              aria-label={
-                                a.isDefault ? "Default account" : "Set as default"
-                              }
-                              onClick={async () => {
-                                setBusy(true);
-                                try {
-                                  const res = await fetch("/api/x/accounts/default", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({
-                                      xAccountId: a.id,
-                                      isDefault: !a.isDefault,
-                                    }),
-                                  });
-                                  if (!res.ok) throw new Error("Failed to update default");
-                                  setAccounts((prev) =>
-                                    prev.map((x) =>
-                                      x.id === a.id
-                                        ? { ...x, isDefault: !a.isDefault }
-                                        : x
-                                    )
-                                  );
-                                } catch (e) {
-                                  toast.error(
-                                    e instanceof Error ? e.message : "Failed to update default"
-                                  );
-                                } finally {
-                                  setBusy(false);
-                                }
-                              }}
+                        {/* Identity */}
+                        <div className="min-w-0 flex-1">
+                          {/* Name + tier badge */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate leading-snug font-semibold">
+                              {a.xDisplayName || a.xUsername}
+                            </span>
+                            <span
+                              className={`transition-all duration-300 ${
+                                tierState?.highlight ? "ring-primary rounded-full p-0.5 ring-2" : ""
+                              }`}
                             >
-                              <Star
-                                className={`h-4 w-4 transition-all ${
-                                  a.isDefault ? "fill-current" : ""
-                                }`}
+                              <XSubscriptionBadge
+                                tier={(a.xSubscriptionTier as XSubscriptionTier) ?? null}
+                                size="sm"
+                                loading={refreshingTier === a.id}
+                                showUnknown={isTierUnknown}
                               />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="text-xs">
-                            {a.isDefault ? "Default account" : "Set as default"}
-                          </TooltipContent>
-                        </Tooltip>
+                            </span>
+                          </div>
 
-                        {/* Test connection */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={isChecking || busy}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              aria-label={`Test connection for @${a.xUsername}`}
-                              onClick={() => handleHealthCheck(a.id)}
-                            >
-                              <Activity
-                                className={`h-4 w-4 ${
-                                  isChecking ? "animate-pulse text-primary" : ""
-                                }`}
-                              />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="text-xs">
-                            Test connection
-                          </TooltipContent>
-                        </Tooltip>
+                          {/* Username + status badge + tier timestamp */}
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                            <span className="text-muted-foreground text-sm">@{a.xUsername}</span>
+                            {expired ? (
+                              <Badge
+                                variant="destructive"
+                                className="h-4 gap-1 px-1.5 py-0 text-[10px]"
+                              >
+                                <AlertTriangle className="h-2.5 w-2.5" />
+                                Expired
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant={a.isActive ? "default" : "secondary"}
+                                className="h-4 px-1.5 py-0 text-[10px]"
+                              >
+                                {a.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            )}
+                            {tierUpdatedAt && (
+                              <span className="text-muted-foreground/60 text-xs">
+                                · {relativeTime(tierUpdatedAt)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                        {/* Refresh subscription tier */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={refreshingTier === a.id || busy}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              aria-label={`Refresh subscription tier for @${a.xUsername}`}
-                              onClick={() =>
-                                handleRefreshTier(
-                                  a.id,
-                                  (a.xSubscriptionTier as XSubscriptionTier) ?? null
-                                )
-                              }
-                            >
-                              <RefreshCw
-                                className={`h-4 w-4 ${
-                                  refreshingTier === a.id ? "animate-spin" : ""
-                                }`}
-                              />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="text-xs">
-                            Refresh tier
-                          </TooltipContent>
-                        </Tooltip>
-
-                        {/* Remove account */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={deletingAccountId === a.id || busy}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                              aria-label={`Remove account @${a.xUsername}`}
-                              onClick={() =>
-                                setShowRemoveDialog({ id: a.id, xUsername: a.xUsername })
-                              }
-                            >
-                              <Trash2
-                                className={`h-4 w-4 ${
-                                  deletingAccountId === a.id ? "animate-pulse" : ""
-                                }`}
-                              />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="text-xs">
-                            Remove account
-                          </TooltipContent>
-                        </Tooltip>
-
-                        {/* Deactivate account - only show for active accounts */}
-                        {a.isActive && (
+                        {/* Action buttons — 3 compact icon buttons */}
+                        <div className="flex shrink-0 items-center">
+                          {/* Default toggle */}
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                disabled={deactivatingAccountId === a.id || busy}
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-amber-600"
-                                aria-label={`Deactivate account @${a.xUsername}`}
-                                onClick={() =>
-                                  setShowDeactivateDialog({ id: a.id, xUsername: a.xUsername })
+                                disabled={busy}
+                                className={
+                                  a.isDefault
+                                    ? "text-primary hover:text-primary h-8 w-8 p-0"
+                                    : "text-muted-foreground hover:text-foreground h-8 w-8 p-0"
                                 }
+                                aria-label={a.isDefault ? "Default account" : "Set as default"}
+                                onClick={async () => {
+                                  setBusy(true);
+                                  try {
+                                    const res = await fetch("/api/x/accounts/default", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        xAccountId: a.id,
+                                        isDefault: !a.isDefault,
+                                      }),
+                                    });
+                                    if (!res.ok) throw new Error("Failed to update default");
+                                    setAccounts((prev) =>
+                                      prev.map((x) =>
+                                        x.id === a.id ? { ...x, isDefault: !a.isDefault } : x
+                                      )
+                                    );
+                                  } catch (e) {
+                                    toast.error(
+                                      e instanceof Error ? e.message : "Failed to update default"
+                                    );
+                                  } finally {
+                                    setBusy(false);
+                                  }
+                                }}
                               >
-                                <XCircle
-                                  className={`h-4 w-4 ${
-                                    deactivatingAccountId === a.id ? "animate-pulse" : ""
+                                <Star
+                                  className={`h-4 w-4 transition-all ${
+                                    a.isDefault ? "fill-current" : ""
                                   }`}
                                 />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
-                              Deactivate account
+                              {a.isDefault ? "Default account" : "Set as default"}
                             </TooltipContent>
                           </Tooltip>
-                        )}
+
+                          {/* Test connection */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={isChecking || busy}
+                                className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+                                aria-label={`Test connection for @${a.xUsername}`}
+                                onClick={() => handleHealthCheck(a.id)}
+                              >
+                                <Activity
+                                  className={`h-4 w-4 ${
+                                    isChecking ? "text-primary animate-pulse" : ""
+                                  }`}
+                                />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              Test connection
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {/* Refresh subscription tier */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={refreshingTier === a.id || busy}
+                                className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+                                aria-label={`Refresh subscription tier for @${a.xUsername}`}
+                                onClick={() =>
+                                  handleRefreshTier(
+                                    a.id,
+                                    (a.xSubscriptionTier as XSubscriptionTier) ?? null
+                                  )
+                                }
+                              >
+                                <RefreshCw
+                                  className={`h-4 w-4 ${
+                                    refreshingTier === a.id ? "animate-spin" : ""
+                                  }`}
+                                />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              Refresh tier
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {/* Remove account */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={deletingAccountId === a.id || busy}
+                                className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
+                                aria-label={`Remove account @${a.xUsername}`}
+                                onClick={() =>
+                                  setShowRemoveDialog({ id: a.id, xUsername: a.xUsername })
+                                }
+                              >
+                                <Trash2
+                                  className={`h-4 w-4 ${
+                                    deletingAccountId === a.id ? "animate-pulse" : ""
+                                  }`}
+                                />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" className="text-xs">
+                              Remove account
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {/* Deactivate account - only show for active accounts */}
+                          {a.isActive && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={deactivatingAccountId === a.id || busy}
+                                  className="text-muted-foreground h-8 w-8 p-0 hover:text-amber-600"
+                                  aria-label={`Deactivate account @${a.xUsername}`}
+                                  onClick={() =>
+                                    setShowDeactivateDialog({ id: a.id, xUsername: a.xUsername })
+                                  }
+                                >
+                                  <XCircle
+                                    className={`h-4 w-4 ${
+                                      deactivatingAccountId === a.id ? "animate-pulse" : ""
+                                    }`}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="bottom" className="text-xs">
+                                Deactivate account
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Expired token warning */}
-                  {expired && (
-                    <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm">
-                      <div className="flex items-center gap-2 text-destructive">
-                        <AlertTriangle className="h-4 w-4 shrink-0" />
-                        <span>
-                          Token expired — posts will fail until you reconnect.
+                    {/* Expired token warning */}
+                    {expired && (
+                      <div className="border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                        <div className="text-destructive flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4 shrink-0" />
+                          <span>Token expired — posts will fail until you reconnect.</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
+                          onClick={handleReconnect}
+                        >
+                          Reconnect
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Health check result */}
+                    {health && (
+                      <div
+                        className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
+                          health.ok
+                            ? "border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                            : "border-destructive/30 bg-destructive/5 text-destructive border"
+                        }`}
+                      >
+                        {health.ok ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        ) : (
+                          <XCircle className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                        <span className="flex-1 truncate">{health.detail}</span>
+                        <span className="text-muted-foreground shrink-0">
+                          {relativeTime(health.checkedAt)}
                         </span>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={handleReconnect}
-                      >
-                        Reconnect
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Health check result */}
-                  {health && (
-                    <div
-                      className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
-                        health.ok
-                          ? "border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
-                          : "border border-destructive/30 bg-destructive/5 text-destructive"
-                      }`}
-                    >
-                      {health.ok ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                      ) : (
-                        <XCircle className="h-3.5 w-3.5 shrink-0" />
-                      )}
-                      <span className="flex-1 truncate">{health.detail}</span>
-                      <span className="shrink-0 text-muted-foreground">
-                        {relativeTime(health.checkedAt)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Footer: info box + sync button */}
         <div className="space-y-2">
-          <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <div className="border-border/50 bg-muted/30 text-muted-foreground flex items-start gap-2 rounded-md border px-3 py-2 text-xs">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <div className="space-y-0.5">
               <p>
-                <span className="font-medium text-foreground">Character limits:</span>{" "}
-                Free X accounts can post up to 280 characters. X Premium subscribers
-                can post up to 2,000 characters per post.
+                <span className="text-foreground font-medium">Character limits:</span> Free X
+                accounts can post up to 280 characters. X Premium subscribers can post up to 2,000
+                characters per post.
               </p>
               <p>
-                The colored dot next to each account shows its subscription tier.
-                Use the refresh icon to update tier status.
+                The colored dot next to each account shows its subscription tier. Use the refresh
+                icon to update tier status.
               </p>
             </div>
           </div>
@@ -770,16 +779,19 @@ export function ConnectedXAccounts({ initialAccounts, userPlan = "free" }: Conne
             <AlertDialogHeader>
               <AlertDialogTitle>Deactivate @{showDeactivateDialog?.xUsername}?</AlertDialogTitle>
               <AlertDialogDescription>
-                This account will be deactivated and won't be able to post scheduled content. You can reactivate it anytime. Scheduled posts for this account will be cancelled.
+                This account will be deactivated and won't be able to post scheduled content. You
+                can reactivate it anytime. Scheduled posts for this account will be cancelled.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={deactivatingAccountId !== null}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={deactivatingAccountId !== null}>
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 variant="default"
                 onClick={handleDeactivateAccount}
                 disabled={deactivatingAccountId !== null}
-                className="bg-amber-600 hover:bg-amber-700 text-white"
+                className="bg-amber-600 text-white hover:bg-amber-700"
               >
                 {deactivatingAccountId ? "Deactivating..." : "Deactivate"}
               </AlertDialogAction>

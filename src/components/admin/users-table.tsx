@@ -30,10 +30,8 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
 
       if (!response.ok) throw new Error("Failed to update status");
 
-      setUsers(users.map(u => 
-        u.id === userId ? { ...u, isSuspended: !currentStatus } : u
-      ));
-      
+      setUsers(users.map((u) => (u.id === userId ? { ...u, isSuspended: !currentStatus } : u)));
+
       toast.success(currentStatus ? "User activated" : "User suspended");
     } catch (error) {
       toast.error("Operation failed");
@@ -56,7 +54,7 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
   };
 
   return (
-    <div className="rounded-md border bg-card">
+    <div className="bg-card rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -73,11 +71,15 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
               <TableCell className="font-medium">
                 <div className="flex flex-col">
                   <span>{user.name}</span>
-                  <span className="text-xs text-muted-foreground">{user.email}</span>
+                  <span className="text-muted-foreground text-xs">{user.email}</span>
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant={user.plan?.startsWith("pro") || user.plan === "agency" ? "default" : "secondary"}>
+                <Badge
+                  variant={
+                    user.plan?.startsWith("pro") || user.plan === "agency" ? "default" : "secondary"
+                  }
+                >
                   {user.plan || "free"}
                 </Badge>
               </TableCell>
@@ -89,18 +91,14 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
               <TableCell>{format(new Date(user.createdAt), "PP")}</TableCell>
               <TableCell>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => handleSuspend(user.id, user.isSuspended)}
                   >
                     {user.isSuspended ? "Activate" : "Suspend"}
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => handleImpersonate(user.id)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => handleImpersonate(user.id)}>
                     Impersonate
                   </Button>
                 </div>

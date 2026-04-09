@@ -1,4 +1,3 @@
-
 import { headers } from "next/headers";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
@@ -16,13 +15,13 @@ export async function POST() {
     return createPlanLimitResponse(accountLimit);
   }
 
-  // This route is actually for LISTING accounts. 
+  // This route is actually for LISTING accounts.
   // The actual connection happens via BetterAuth OAuth callback which we can't easily intercept here.
   // Wait, `src/app/api/posts/route.ts` creates xAccounts on the fly from linked accounts.
   // We need to enforce this limit where accounts are created or synced.
   // BetterAuth handles OAuth, but we sync to `xAccounts` table in `api/posts` or via a sync endpoint.
   // Let's check `api/x/accounts/sync/route.ts` if it exists.
-  
+
   return new Response("Not Implemented", { status: 501 });
 }
 

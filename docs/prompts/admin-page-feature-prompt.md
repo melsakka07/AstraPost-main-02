@@ -167,6 +167,7 @@ Implement this feature in **4 phases**. At the start of the project, create a pr
 **Goal:** Database schema, admin auth helpers, subscriber CRUD API routes.
 
 Tasks:
+
 - Create `requireAdmin()` helper in `src/lib/admin.ts` (or enhance the existing file).
 - Add new tables to `src/lib/schema.ts`: `promo_codes`, `promo_code_redemptions`, `feature_flags`. Add `banned_at` and `deleted_at` columns to the `user` table if they don't exist.
 - Generate and apply database migration.
@@ -178,6 +179,7 @@ Tasks:
 **Goal:** Admin subscriber pages and components.
 
 Tasks:
+
 - Build the subscriber list page with search, filter, sort, and pagination.
 - Build the subscriber detail page/panel.
 - Build the add/edit subscriber forms (React Hook Form + Zod).
@@ -190,6 +192,7 @@ Tasks:
 **Goal:** Billing overview, promo code system (full stack).
 
 Tasks:
+
 - Build billing overview API route and dashboard cards (MRR, active subs, churn, conversion).
 - Build promo code CRUD: schema already created in Phase 1, now build API routes + frontend.
 - Build the promo code creation/edit form.
@@ -203,6 +206,7 @@ Tasks:
 **Goal:** Feature flags, platform stats, announcement banner, and final polish.
 
 Tasks:
+
 - Build feature flag API routes and admin toggle UI.
 - Create the `isFeatureEnabled()` helper with in-memory caching.
 - Seed default feature flags via migration or a seed script.
@@ -224,32 +228,37 @@ At the very start of implementation, create the file `docs/features/admin-dashbo
 ## Status: In Progress
 
 ## Phase 1 — Foundation & Subscriber Management (Backend)
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 2 — Subscriber Management (Frontend)
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 3 — Billing Management
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 4 — Feature Management & Polish
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Changelog
+
 | Date | Phase | Change |
-|------|-------|--------|
+| ---- | ----- | ------ |
 ```
 
 Update this document after each phase is completed. Change each phase status to "Complete" and fill in the files and decisions. Add a row to the changelog table for each update.

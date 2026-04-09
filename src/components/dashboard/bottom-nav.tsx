@@ -22,7 +22,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 md:hidden pb-[env(safe-area-inset-bottom,0px)]"
+      className="bg-background/95 supports-[backdrop-filter]:bg-background/60 fixed right-0 bottom-0 left-0 z-50 border-t pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-sm md:hidden"
       aria-label="Mobile navigation"
       // Safe area inset keeps nav items above the device home indicator
     >
@@ -30,8 +30,7 @@ export function BottomNav() {
         {BOTTOM_NAV_ITEMS.map(({ icon: Icon, label, href }) => {
           // Mark the item active if on its route or any child route,
           // but avoid matching /dashboard/ai/... for the Queue item etc.
-          const isActive =
-            pathname === href || pathname.startsWith(`${href}/`);
+          const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
           return (
             <Link
@@ -41,9 +40,7 @@ export function BottomNav() {
               aria-label={label}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className="h-5 w-5 shrink-0" />
@@ -56,10 +53,8 @@ export function BottomNav() {
         <button
           type="button"
           aria-label="Open full navigation menu"
-          className="flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-muted-foreground transition-colors hover:text-foreground"
-          onClick={() =>
-            document.dispatchEvent(new CustomEvent("sidebar:open"))
-          }
+          className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors"
+          onClick={() => document.dispatchEvent(new CustomEvent("sidebar:open"))}
         >
           <Menu className="h-5 w-5 shrink-0" />
           More

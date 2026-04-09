@@ -12,13 +12,15 @@ if (!connectionString) {
   throw new Error("POSTGRES_URL environment variable is not set");
 }
 
-const client = globalThis._postgresClient || postgres(connectionString, {
-  // Fail fast if a new connection can't be established (default is no timeout).
-  // Prevents hung requests when the DB container is slow or a connection is stale.
-  connect_timeout: 10,
-  idle_timeout: process.env.NODE_ENV === "production" ? 60 : 20,
-  max_lifetime: process.env.NODE_ENV === "production" ? 1800 : 60,
-});
+const client =
+  globalThis._postgresClient ||
+  postgres(connectionString, {
+    // Fail fast if a new connection can't be established (default is no timeout).
+    // Prevents hung requests when the DB container is slow or a connection is stale.
+    connect_timeout: 10,
+    idle_timeout: process.env.NODE_ENV === "production" ? 60 : 20,
+    max_lifetime: process.env.NODE_ENV === "production" ? 1800 : 60,
+  });
 if (process.env.NODE_ENV !== "production") {
   globalThis._postgresClient = client;
 }

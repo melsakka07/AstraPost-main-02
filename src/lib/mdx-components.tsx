@@ -66,14 +66,18 @@ export function Callout({
   const Icon = style.icon;
 
   return (
-    <div className={`my-8 p-6 rounded-xl border ${style.border} bg-gradient-to-br ${style.gradient} relative overflow-hidden`}>
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
-      <div className="flex items-start gap-4 relative">
-        <div className={`w-10 h-10 rounded-lg ${style.iconBg} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-          <Icon className="w-5 h-5 text-white" />
+    <div
+      className={`my-8 rounded-xl border p-6 ${style.border} bg-gradient-to-br ${style.gradient} relative overflow-hidden`}
+    >
+      <div className="absolute top-0 right-0 h-32 w-32 translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-white/5 to-transparent" />
+      <div className="relative flex items-start gap-4">
+        <div
+          className={`h-10 w-10 rounded-lg ${style.iconBg} flex flex-shrink-0 items-center justify-center shadow-lg`}
+        >
+          <Icon className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1">
-          <h4 className={`font-semibold mb-2 ${style.textColor}`}>{style.title}</h4>
+          <h4 className={`mb-2 font-semibold ${style.textColor}`}>{style.title}</h4>
           <div className="text-foreground/90 leading-relaxed">{children}</div>
         </div>
       </div>
@@ -90,7 +94,7 @@ export function Steps({ children }: { children: React.ReactNode }) {
           return (
             <div className="flex gap-4">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
+                <div className="from-primary flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-sm font-bold text-white shadow-md">
                   {index + 1}
                 </div>
               </div>
@@ -115,16 +119,16 @@ export function FeatureHighlight({
   icon?: any;
 }) {
   return (
-    <div className="my-6 p-6 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 hover:border-primary/30 transition-colors">
+    <div className="from-muted/50 to-muted/20 border-border/50 hover:border-primary/30 my-6 rounded-xl border bg-gradient-to-br p-6 transition-colors">
       <div className="flex items-start gap-4">
         {Icon && (
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center flex-shrink-0">
-            <Icon className="w-6 h-6 text-primary" />
+          <div className="from-primary/10 to-primary/5 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br">
+            <Icon className="text-primary h-6 w-6" />
           </div>
         )}
         <div className="flex-1">
-          <h4 className="font-semibold mb-1">{title}</h4>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <h4 className="mb-1 font-semibold">{title}</h4>
+          <p className="text-muted-foreground text-sm">{description}</p>
         </div>
       </div>
     </div>
@@ -148,13 +152,13 @@ export function StatCard({
   };
 
   return (
-    <div className="p-6 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 text-center">
-      <div className="text-3xl font-bold bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+    <div className="from-muted/50 to-muted/20 border-border/50 rounded-xl border bg-gradient-to-br p-6 text-center">
+      <div className="from-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-3xl font-bold text-transparent">
         {value}
       </div>
-      <div className="text-sm text-muted-foreground mt-1">{label}</div>
+      <div className="text-muted-foreground mt-1 text-sm">{label}</div>
       {trend && (
-        <div className={`text-xs font-medium mt-2 ${trendStyles[trend]}`}>
+        <div className={`mt-2 text-xs font-medium ${trendStyles[trend]}`}>
           {trend === "up" ? "↑" : trend === "down" ? "↓" : "→"} Trending
         </div>
       )}
@@ -179,29 +183,29 @@ export function TweetEmbed({
   retweets?: number;
 }) {
   return (
-    <div className="my-8 max-w-lg mx-auto rounded-2xl border border-border/50 overflow-hidden bg-card shadow-lg">
+    <div className="border-border/50 bg-card mx-auto my-8 max-w-lg overflow-hidden rounded-2xl border shadow-lg">
       <div className="p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-bold">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="from-primary flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 font-bold text-white">
             {author.charAt(0)}
           </div>
           <div className="flex-1">
             <div className="font-semibold">{author}</div>
-            <div className="text-sm text-muted-foreground">@{username}</div>
+            <div className="text-muted-foreground text-sm">@{username}</div>
           </div>
         </div>
         <p className="text-base leading-relaxed">{content}</p>
-        <div className="text-sm text-muted-foreground mt-3">{date}</div>
+        <div className="text-muted-foreground mt-3 text-sm">{date}</div>
         {(likes || retweets) && (
-          <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border/50">
+          <div className="border-border/50 mt-4 flex items-center gap-6 border-t pt-4">
             {likes && (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <span>♥</span>
                 <span>{likes.toLocaleString()}</span>
               </div>
             )}
             {retweets && (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <span>🔄</span>
                 <span>{retweets.toLocaleString()}</span>
               </div>
@@ -225,30 +229,29 @@ export function ComparisonTable({
 }) {
   return (
     <div className="my-8 overflow-x-auto">
-      <table className="w-full border-collapse rounded-xl overflow-hidden">
+      <table className="w-full border-collapse overflow-hidden rounded-xl">
         <thead>
           <tr className="bg-muted/50">
             <th className="px-6 py-4 text-left font-semibold">Feature</th>
             {betterThan && <th className="px-6 py-4 text-center font-semibold">{betterThan}</th>}
-            <th className="px-6 py-4 text-center font-semibold bg-primary/10">AstraPost</th>
+            <th className="bg-primary/10 px-6 py-4 text-center font-semibold">AstraPost</th>
             {worseThan && <th className="px-6 py-4 text-center font-semibold">{worseThan}</th>}
           </tr>
         </thead>
         <tbody>
           {features.map((feature, index) => (
-            <tr key={index} className="border-t border-border/50 hover:bg-muted/30 transition-colors">
+            <tr
+              key={index}
+              className="border-border/50 hover:bg-muted/30 border-t transition-colors"
+            >
               <td className="px-6 py-4 font-medium">{feature}</td>
-              {betterThan && (
-                <td className="px-6 py-4 text-center text-muted-foreground">—</td>
-              )}
+              {betterThan && <td className="text-muted-foreground px-6 py-4 text-center">—</td>}
               <td className="px-6 py-4 text-center">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500 text-white text-xs">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-500 text-xs text-white">
                   ✓
                 </span>
               </td>
-              {worseThan && (
-                <td className="px-6 py-4 text-center text-muted-foreground">—</td>
-              )}
+              {worseThan && <td className="text-muted-foreground px-6 py-4 text-center">—</td>}
             </tr>
           ))}
         </tbody>
@@ -260,7 +263,7 @@ export function ComparisonTable({
 // Inline highlight
 export function InlineHighlight({ children }: { children: React.ReactNode }) {
   return (
-    <span className="px-2 py-1 rounded-md bg-gradient-to-r from-primary/10 to-purple-500/10 border border-primary/20 text-foreground font-medium">
+    <span className="from-primary/10 border-primary/20 text-foreground rounded-md border bg-gradient-to-r to-purple-500/10 px-2 py-1 font-medium">
       {children}
     </span>
   );
@@ -270,11 +273,9 @@ export function InlineHighlight({ children }: { children: React.ReactNode }) {
 export function SectionDivider({ label }: { label?: string }) {
   return (
     <div className="my-12 flex items-center gap-4">
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-      {label && (
-        <span className="text-sm font-medium text-muted-foreground px-4">{label}</span>
-      )}
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+      <div className="via-border h-px flex-1 bg-gradient-to-r from-transparent to-transparent" />
+      {label && <span className="text-muted-foreground px-4 text-sm font-medium">{label}</span>}
+      <div className="via-border h-px flex-1 bg-gradient-to-r from-transparent to-transparent" />
     </div>
   );
 }
@@ -282,9 +283,7 @@ export function SectionDivider({ label }: { label?: string }) {
 // Grid of cards
 export function CardGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="my-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {children}
-    </div>
+    <div className="my-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">{children}</div>
   );
 }
 
@@ -301,16 +300,16 @@ export function InfoCard({
   link?: string;
 }) {
   const content = (
-    <div className="p-6 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 hover:border-primary/30 transition-all hover:shadow-lg group cursor-pointer h-full">
+    <div className="from-muted/50 to-muted/20 border-border/50 hover:border-primary/30 group h-full cursor-pointer rounded-xl border bg-gradient-to-br p-6 transition-all hover:shadow-lg">
       {Icon && (
-        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-          <Icon className="w-6 h-6 text-primary" />
+        <div className="from-primary/10 to-primary/5 mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br transition-transform group-hover:scale-110">
+          <Icon className="text-primary h-6 w-6" />
         </div>
       )}
-      <h4 className="font-semibold mb-2">{title}</h4>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <h4 className="mb-2 font-semibold">{title}</h4>
+      <p className="text-muted-foreground text-sm">{description}</p>
       {link && (
-        <div className="text-sm text-primary mt-4 font-medium group-hover:underline">
+        <div className="text-primary mt-4 text-sm font-medium group-hover:underline">
           Learn more →
         </div>
       )}

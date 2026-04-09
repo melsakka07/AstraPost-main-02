@@ -1,6 +1,7 @@
 # AstraPost Project Memory
 
 ## Key Architecture
+
 - Next.js 16 + React 19 + TypeScript, App Router
 - BullMQ + Redis for job queue; workers in `src/lib/queue/processors.ts`
 - Drizzle ORM + PostgreSQL 18; schema in `src/lib/schema.ts`
@@ -10,14 +11,17 @@
 - `src/proxy.ts` is the Next.js 16 middleware (not `src/middleware.ts`)
 
 ## Known Issues (from 2026-03-16 full audit)
+
 Full audit: `docs/audit/full-stack-code-review-2026-03-16.md`
 
 ### Critical (Open)
+
 - ✅ FIXED (2026-03-16): SSRF via `POST /api/link-preview` — added session auth + SSRF IP blocklist + protocol allowlist + fixed 200→400 error status
 - ✅ FIXED (2026-03-16): OAuth CSRF on LinkedIn + Instagram — HttpOnly SameSite=lax state cookie in auth routes; validated + cleared on all exit paths in callbacks
 - ✅ FIXED (2026-03-16): Media upload now uses `upload()` from `@/lib/storage` (Vercel Blob in prod / local in dev); `.mp4` added to `storage.ts` ALLOWED_EXTENSIONS
 
 ### High (Open)
+
 - ✅ FIXED (2026-03-16): `handleSubscriptionUpdated` now syncs `user.plan` + `subscriptions.plan/stripePriceId` on upgrade/downgrade; pre-update record fetch for change detection; clears `planExpiresAt`; fires `billing_plan_changed` notification
 - ✅ FIXED (2026-03-16): `GET /api/feedback` now requires session (401 guard); votes filter always scoped to session user
 - ✅ FIXED (2026-03-16): Feedback POST has Zod schema (title≤100, description≤2000, category enum); structured 400 errors; removed redundant upvotes update
@@ -28,6 +32,7 @@ Full audit: `docs/audit/full-stack-code-review-2026-03-16.md`
 - ✅ FIXED (2026-03-16): Cairo font added for Arabic — `next/font/google`, `:lang(ar)` in globals.css
 
 ### Medium (Open)
+
 - `handleSubscriptionUpdated` → plan divergence on upgrades — see High above (FIXED)
 - ✅ FIXED (2026-03-16): Webhook idempotency — `processedWebhookEvents` table; guard + insert in POST handler; migration `0029_rainy_scrambler.sql`
 - ✅ FIXED (2026-03-16): All 6 synchronous blocking symbols in `ai-image.ts` annotated `@deprecated` with banner; `createPrediction` any-type tightened
@@ -44,6 +49,7 @@ Full audit: `docs/audit/full-stack-code-review-2026-03-16.md`
 - Duplicate index on `user.email` (unique constraint + explicit index)
 
 ### Previously Fixed (2026-03-15 review)
+
 - Rate limiter fails closed on AI/cost endpoints ✅
 - BetterAuth tokens encrypted in account table ✅
 - N+1 post creation replaced with bulk transaction ✅
@@ -55,4 +61,5 @@ Full audit: `docs/audit/full-stack-code-review-2026-03-16.md`
 - Two Redis clients consolidated ✅
 
 ## User Preferences
+
 - Review output saved to `docs/audit/` directory (updated from `docs/review/`)

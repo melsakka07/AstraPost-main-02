@@ -27,7 +27,10 @@ import { Textarea } from "@/components/ui/textarea";
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or fewer"),
-  description: z.string().min(1, "Description is required").max(2000, "Description must be 2000 characters or fewer"),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(2000, "Description must be 2000 characters or fewer"),
   category: z.enum(["feature", "bug", "other"]),
 });
 
@@ -72,7 +75,9 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
         return;
       }
 
-      toast.success("Thank you for your feedback! Our development team will review your submission.");
+      toast.success(
+        "Thank you for your feedback! Our development team will review your submission."
+      );
       form.reset();
       setShowSuccess(true);
     } catch (error) {
@@ -84,8 +89,8 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
 
   if (!isLoggedIn) {
     return (
-      <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-muted/50 to-muted/20 p-8 text-center">
-        <div className="max-w-md mx-auto space-y-4">
+      <div className="border-border/50 from-muted/50 to-muted/20 rounded-2xl border bg-gradient-to-br p-8 text-center">
+        <div className="mx-auto max-w-md space-y-4">
           <h3 className="text-xl font-semibold">Sign in to Submit Feedback</h3>
           <p className="text-muted-foreground">
             Please sign in to share your ideas and help us improve AstraPost.
@@ -99,15 +104,16 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-border/50 bg-gradient-to-br from-muted/50 to-muted/20 p-8">
+    <div className="border-border/50 from-muted/50 to-muted/20 rounded-2xl border bg-gradient-to-br p-8">
       {showSuccess ? (
-        <div className="text-center py-8 space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+        <div className="space-y-4 py-8 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
             <Lightbulb className="h-8 w-8 text-green-600 dark:text-green-400" />
           </div>
           <h3 className="text-xl font-semibold">Thank You!</h3>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            Your feedback has been submitted successfully. Our development team will review your submission and get back to you if needed.
+          <p className="text-muted-foreground mx-auto max-w-md">
+            Your feedback has been submitted successfully. Our development team will review your
+            submission and get back to you if needed.
           </p>
           <Button variant="outline" onClick={() => setShowSuccess(false)}>
             Submit Another Idea
@@ -118,7 +124,7 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <h3 className="text-lg font-semibold">Share Your Ideas</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Help us build the features you need. Submit your ideas and suggestions below.
               </p>
             </div>

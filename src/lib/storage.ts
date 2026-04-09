@@ -194,9 +194,9 @@ export async function upload(
 
 /**
  * Deletes a file from storage
- * 
+ *
  * @param url - The URL of the file to delete
- * 
+ *
  * @example
  * ```ts
  * await deleteFile("https://blob.vercel.io/...");
@@ -223,8 +223,3 @@ export async function deleteFile(url: string): Promise<void> {
     }
   }
 }
-
-
-
-
-

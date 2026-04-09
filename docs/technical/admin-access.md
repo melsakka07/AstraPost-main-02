@@ -32,6 +32,7 @@ WHERE email = 'your@email.com';
 ```
 
 **Local dev** (with `pnpm run db:studio` — Drizzle Studio):
+
 1. Run `pnpm run db:studio` in your terminal.
 2. Open the Drizzle Studio URL shown (usually `http://localhost:4983`).
 3. Navigate to the `user` table.
@@ -39,6 +40,7 @@ WHERE email = 'your@email.com';
 5. Save.
 
 **Production (Neon / Vercel Postgres)**:
+
 - Open your database console in the Neon dashboard or run the SQL above via `psql` / any DB client pointed at `POSTGRES_URL`.
 
 ### Step 3 — Log in
@@ -57,16 +59,16 @@ You will be redirected to `/admin/metrics` — the admin dashboard home.
 
 ## Admin sidebar pages
 
-| URL | Purpose |
-|-----|---------|
-| `/admin/metrics` | Signups chart, MRR estimate, jobs count |
-| `/admin/stats` | Platform stats — users, posts, AI usage, queue health |
-| `/admin/subscribers` | View, search, edit, ban, or delete all users |
-| `/admin/billing` | MRR cards, plan distribution, recent subscription events |
-| `/admin/billing/promo-codes` | Create and manage discount codes |
-| `/admin/feature-flags` | Toggle platform features on/off |
-| `/admin/announcement` | Configure the global dashboard banner |
-| `/admin/jobs` | BullMQ job monitor |
+| URL                          | Purpose                                                  |
+| ---------------------------- | -------------------------------------------------------- |
+| `/admin/metrics`             | Signups chart, MRR estimate, jobs count                  |
+| `/admin/stats`               | Platform stats — users, posts, AI usage, queue health    |
+| `/admin/subscribers`         | View, search, edit, ban, or delete all users             |
+| `/admin/billing`             | MRR cards, plan distribution, recent subscription events |
+| `/admin/billing/promo-codes` | Create and manage discount codes                         |
+| `/admin/feature-flags`       | Toggle platform features on/off                          |
+| `/admin/announcement`        | Configure the global dashboard banner                    |
+| `/admin/jobs`                | BullMQ job monitor                                       |
 
 ---
 
@@ -90,10 +92,10 @@ For admins, partners, or special cases, you can grant Pro/Agency access **withou
 
 There are **two sources** for plan information in the application:
 
-| Source | Purpose | When Used |
-|--------|---------|-----------|
-| **`user.plan` column** | Manual plan override field | Always takes priority; used for admin comped accounts, manual upgrades |
-| **`subscriptions` table** | Stripe billing records | Created when users pay via Stripe checkout; stores `stripeCustomerId`, `stripeSubscriptionId`, `status` |
+| Source                    | Purpose                    | When Used                                                                                               |
+| ------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **`user.plan` column**    | Manual plan override field | Always takes priority; used for admin comped accounts, manual upgrades                                  |
+| **`subscriptions` table** | Stripe billing records     | Created when users pay via Stripe checkout; stores `stripeCustomerId`, `stripeSubscriptionId`, `status` |
 
 The application's plan enforcement logic reads from `user.plan` first:
 
@@ -113,6 +115,7 @@ WHERE email = 'user@email.com';
 ```
 
 Available plan values (from `planEnum`):
+
 - `free` — Default free tier
 - `pro_monthly` — Pro Monthly plan
 - `pro_annual` — Pro Annual plan
@@ -135,13 +138,13 @@ When `plan_expires_at` is reached, the plan reverts to `free` automatically (han
 
 For the user `astravision.ai@gmail.com` (admin user, manually configured):
 
-| Field | Value |
-|-------|-------|
-| `user.plan` | `pro_monthly` ← What the app uses |
-| `user.plan_expires_at` | `null` (no expiration) |
-| `subscriptions` table | Empty (no Stripe subscription) |
-| `user.is_admin` | `true` |
-| Settings page shows | `PRO_MONTHLY` ✅ |
+| Field                  | Value                             |
+| ---------------------- | --------------------------------- |
+| `user.plan`            | `pro_monthly` ← What the app uses |
+| `user.plan_expires_at` | `null` (no expiration)            |
+| `subscriptions` table  | Empty (no Stripe subscription)    |
+| `user.is_admin`        | `true`                            |
+| Settings page shows    | `PRO_MONTHLY` ✅                  |
 
 This user has full Pro access without any Stripe billing record.
 

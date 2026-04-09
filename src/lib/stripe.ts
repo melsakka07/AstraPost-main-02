@@ -1,9 +1,7 @@
 import Stripe from "stripe";
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn(
-    "[billing] STRIPE_SECRET_KEY is not set — all billing features are disabled."
-  );
+  console.warn("[billing] STRIPE_SECRET_KEY is not set — all billing features are disabled.");
 }
 
 /**

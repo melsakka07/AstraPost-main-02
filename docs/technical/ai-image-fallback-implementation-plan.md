@@ -10,18 +10,18 @@ The majority of the requirements are **already correctly implemented** in the co
 
 ## Requirements vs Implementation Matrix
 
-| Requirement | Status | File | Lines |
-|------------|--------|------|-------|
-| Primary model: `google/nano-banana-2` (1K) | ✅ | `ai-image.ts` | 452-453 |
-| Secondary model: `google/nano-banana-pro` (2K) | ✅ | `ai-image.ts` | 452-453 |
-| Backup model: `google/nano-banana` | ✅ | `ai-image.ts` | 452 |
-| LLM uses `OPENROUTER_MODEL` from .env | ✅ | `route.ts` | 64-69 |
-| No hardcoded `OPENROUTER_MODEL` fallback | ✅ | `route.ts` | 64-66 |
-| Credit protection (no charge on failure) | ✅ | `status/route.ts` | 183 |
-| Content safety checks (no fallback) | ✅ | `status/route.ts` | 82-84 |
-| Auto-fallback: primary → backup | ✅ | `status/route.ts` | 91-122 |
-| Auto-fallback: secondary → backup | ✅ | `status/route.ts` | 91-122 |
-| Transient errors: `retryable: true` | ✅ | `status/route.ts` | 128-147 |
+| Requirement                                    | Status | File              | Lines   |
+| ---------------------------------------------- | ------ | ----------------- | ------- |
+| Primary model: `google/nano-banana-2` (1K)     | ✅     | `ai-image.ts`     | 452-453 |
+| Secondary model: `google/nano-banana-pro` (2K) | ✅     | `ai-image.ts`     | 452-453 |
+| Backup model: `google/nano-banana`             | ✅     | `ai-image.ts`     | 452     |
+| LLM uses `OPENROUTER_MODEL` from .env          | ✅     | `route.ts`        | 64-69   |
+| No hardcoded `OPENROUTER_MODEL` fallback       | ✅     | `route.ts`        | 64-66   |
+| Credit protection (no charge on failure)       | ✅     | `status/route.ts` | 183     |
+| Content safety checks (no fallback)            | ✅     | `status/route.ts` | 82-84   |
+| Auto-fallback: primary → backup                | ✅     | `status/route.ts` | 91-122  |
+| Auto-fallback: secondary → backup              | ✅     | `status/route.ts` | 91-122  |
+| Transient errors: `retryable: true`            | ✅     | `status/route.ts` | 128-147 |
 
 ---
 
@@ -110,12 +110,14 @@ Generate images via Replicate using Google's Nano Banana models:
 - **Backup**: `google/nano-banana` - Automatic fallback for reliability
 
 **Fallback Logic:**
+
 - If primary or secondary model fails, automatically retries with backup model
 - Content safety violations are not retried (adjust prompt and try again)
 - Credits are only consumed on successful generation
 - Transient errors (rate limits, high demand) can be retried
 
 **Auto-Prompt Generation:**
+
 - Leave the prompt empty and the AI will generate one from your tweet content
 - Requires `OPENROUTER_MODEL` to be set in your `.env` file
 ```
@@ -133,6 +135,7 @@ Generate images via Replicate using Google's Nano Banana models:
 - [ ] `nano-banana` maps to `google/nano-banana` at 1K resolution
 
 **Test Command**:
+
 ```bash
 # Run AI image service tests
 pnpm test src/lib/services/__tests__/ai-image.test.ts
@@ -195,7 +198,8 @@ Extract error detection patterns to constants:
 ```typescript
 // At the top of the file
 const CONTENT_BLOCKED_PATTERNS = /safety|content.?polic|blocked|violat|forbidden|HARM|E002/i;
-const TRANSIENT_ERROR_PATTERNS = /high.?demand|unavailable|rate.?limit|E003|ModelRateLimit|capacity|try.?again|busy|503/i;
+const TRANSIENT_ERROR_PATTERNS =
+  /high.?demand|unavailable|rate.?limit|E003|ModelRateLimit|capacity|try.?again|busy|503/i;
 ```
 
 ### 3.2 Add Unit Tests
@@ -203,48 +207,44 @@ const TRANSIENT_ERROR_PATTERNS = /high.?demand|unavailable|rate.?limit|E003|Mode
 **New File**: `src/app/api/ai/image/status/__tests__/fallback-logic.test.ts`
 
 ```typescript
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('AI Image Fallback Logic', () => {
-  describe('Content Safety Detection', () => {
-    it('should detect content blocked errors', () => {
+describe("AI Image Fallback Logic", () => {
+  describe("Content Safety Detection", () => {
+    it("should detect content blocked errors", () => {
       const errors = [
-        'Content policy violation',
-        'Safety filter triggered',
-        'forbidden content detected',
-        'HARM: This violates safety guidelines',
-        'E002: Content not allowed'
+        "Content policy violation",
+        "Safety filter triggered",
+        "forbidden content detected",
+        "HARM: This violates safety guidelines",
+        "E002: Content not allowed",
       ];
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         expect(CONTENT_BLOCKED_PATTERNS.test(error)).toBe(true);
       });
     });
 
-    it('should not detect non-safety errors as content blocked', () => {
-      const errors = [
-        'Network timeout',
-        'Rate limit exceeded',
-        'Model capacity full'
-      ];
+    it("should not detect non-safety errors as content blocked", () => {
+      const errors = ["Network timeout", "Rate limit exceeded", "Model capacity full"];
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         expect(CONTENT_BLOCKED_PATTERNS.test(error)).toBe(false);
       });
     });
   });
 
-  describe('Transient Error Detection', () => {
-    it('should detect transient errors', () => {
+  describe("Transient Error Detection", () => {
+    it("should detect transient errors", () => {
       const errors = [
-        'High demand, please try again',
-        'Service temporarily unavailable',
-        'Rate limit: too many requests',
-        'E003: Model overloaded',
-        '503 Service Unavailable'
+        "High demand, please try again",
+        "Service temporarily unavailable",
+        "Rate limit: too many requests",
+        "E003: Model overloaded",
+        "503 Service Unavailable",
       ];
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         expect(TRANSIENT_ERROR_PATTERNS.test(error)).toBe(true);
       });
     });
@@ -259,6 +259,7 @@ describe('AI Image Fallback Logic', () => {
 ### 4.1 Verify .env Configuration
 
 **Required Variables**:
+
 ```bash
 # Required for AI image generation
 REPLICATE_API_TOKEN=r8_...  # For Replicate API calls
@@ -291,12 +292,14 @@ OPENROUTER_MODEL="anthropic/claude-sonnet-4.6"  # NEVER hardcode this
 ### 5.2 Monitoring
 
 **Key Metrics to Track**:
+
 1. **Fallback Rate**: Percentage of generations that fallback to `nano-banana`
 2. **Content Safety Rejection Rate**: Percentage blocked by safety filters
 3. **Success Rate by Model**: Compare success rates across all three models
 4. **Average Generation Time**: Track for each model tier
 
 **Implementation**:
+
 ```typescript
 // In src/lib/services/ai-image.ts
 export async function startImageGeneration(params: ImageGenParams) {

@@ -84,10 +84,9 @@ export async function GET() {
 
     if (!isCached) {
       try {
-        const stripeSub = await stripe.subscriptions.retrieve(
-          latestSub.stripeSubscriptionId,
-          { expand: ["items"] }
-        );
+        const stripeSub = await stripe.subscriptions.retrieve(latestSub.stripeSubscriptionId, {
+          expand: ["items"],
+        });
 
         const stripeStatus = stripeStatusToDb(stripeSub.status);
         const newCancelAtPeriodEnd = stripeSub.cancel_at_period_end;
@@ -96,8 +95,7 @@ export async function GET() {
 
         const statusMismatch = stripeStatus !== latestSub.status;
         const cancelMismatch = newCancelAtPeriodEnd !== (latestSub.cancelAtPeriodEnd ?? false);
-        const planMismatch =
-          newPlan && newPlan !== "free" && newPlan !== latestSub.plan;
+        const planMismatch = newPlan && newPlan !== "free" && newPlan !== latestSub.plan;
 
         if (statusMismatch || cancelMismatch || planMismatch) {
           console.warn("[billing] sync-failsafe: DB drifted from Stripe, reconciling", {
@@ -125,9 +123,7 @@ export async function GET() {
                     }
                   : {}),
               })
-              .where(
-                eq(subscriptions.stripeSubscriptionId, latestSub.stripeSubscriptionId)
-              );
+              .where(eq(subscriptions.stripeSubscriptionId, latestSub.stripeSubscriptionId));
 
             // Reconcile user.plan when the subscription was cancelled or plan changed.
             if (stripeStatus === "cancelled" && latestSub.status !== "cancelled") {
@@ -153,10 +149,7 @@ export async function GET() {
           latestSub.cancelAtPeriodEnd = newCancelAtPeriodEnd;
         }
       } catch (syncErr) {
-        console.error(
-          "[billing] sync-failsafe failed — returning cached DB state",
-          syncErr
-        );
+        console.error("[billing] sync-failsafe failed — returning cached DB state", syncErr);
       }
 
       // Cache the check for 1 hour regardless of whether a reconciliation was
@@ -186,16 +179,10 @@ export async function GET() {
     plan,
     status,
     trialEndsAt: dbUser.trialEndsAt ? dbUser.trialEndsAt.toISOString() : null,
-    planExpiresAt: dbUser.planExpiresAt
-      ? dbUser.planExpiresAt.toISOString()
-      : null,
-    currentPeriodEnd: latestSub?.currentPeriodEnd
-      ? latestSub.currentPeriodEnd.toISOString()
-      : null,
+    planExpiresAt: dbUser.planExpiresAt ? dbUser.planExpiresAt.toISOString() : null,
+    currentPeriodEnd: latestSub?.currentPeriodEnd ? latestSub.currentPeriodEnd.toISOString() : null,
     cancelAtPeriodEnd: latestSub?.cancelAtPeriodEnd ?? false,
-    cancelledAt: latestSub?.cancelledAt
-      ? latestSub.cancelledAt.toISOString()
-      : null,
+    cancelledAt: latestSub?.cancelledAt ? latestSub.cancelledAt.toISOString() : null,
     stripeCustomerId: dbUser.stripeCustomerId ?? null,
   });
 }

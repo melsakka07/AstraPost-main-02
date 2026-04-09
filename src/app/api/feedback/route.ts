@@ -8,7 +8,10 @@ import { feedback, feedbackVotes } from "@/lib/schema";
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or fewer"),
-  description: z.string().min(1, "Description is required").max(2000, "Description must be 2000 characters or fewer"),
+  description: z
+    .string()
+    .min(1, "Description is required")
+    .max(2000, "Description must be 2000 characters or fewer"),
   category: z.enum(["feature", "bug", "other"]).optional().default("feature"),
 });
 
@@ -84,15 +87,12 @@ export async function POST(req: Request) {
     const userSubmissionsToday = await db
       .select({ count: count() })
       .from(feedback)
-      .where(
-        and(
-          eq(feedback.userId, session.user.id),
-          gte(feedback.createdAt, oneDayAgo)
-        )
-      );
+      .where(and(eq(feedback.userId, session.user.id), gte(feedback.createdAt, oneDayAgo)));
 
     if ((userSubmissionsToday[0]?.count ?? 0) >= 3) {
-      return ApiError.badRequest("You can only submit a maximum of 3 feedback items per day. Please try again tomorrow.");
+      return ApiError.badRequest(
+        "You can only submit a maximum of 3 feedback items per day. Please try again tomorrow."
+      );
     }
 
     const newFeedback = await db

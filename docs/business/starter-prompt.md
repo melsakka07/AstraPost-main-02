@@ -5,6 +5,7 @@ I'm working on **AstraPost**, a production-ready AI-powered social media managem
 ## What AstraPost Does
 
 AstraPost lets users:
+
 - Schedule tweets and multi-tweet threads with a calendar UI
 - Publish content reliably via a BullMQ background worker with automatic retries
 - Generate content using AI (thread writer, tweet improver, affiliate tweet generator, translation)

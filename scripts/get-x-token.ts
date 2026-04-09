@@ -9,7 +9,7 @@ async function main() {
   try {
     const accounts = await db.query.xAccounts.findMany({
       where: (xAccounts, { eq }) => eq(xAccounts.isActive, true),
-      limit: 1
+      limit: 1,
     });
 
     if (accounts.length > 0 && accounts[0]) {
@@ -23,13 +23,9 @@ async function main() {
       console.log("Token Expires At:", acc.tokenExpiresAt);
       console.log("");
 
-      let accessToken = acc.accessToken
-        ? decryptToken(acc.accessToken)
-        : "(check accessTokenEnc)";
+      let accessToken = acc.accessToken ? decryptToken(acc.accessToken) : "(check accessTokenEnc)";
 
-      let refreshToken = acc.refreshTokenEnc
-        ? decryptToken(acc.refreshTokenEnc)
-        : "";
+      let refreshToken = acc.refreshTokenEnc ? decryptToken(acc.refreshTokenEnc) : "";
 
       console.log("\n=== Add these to your .env ===");
       console.log("TWITTER_TEST_ACCESS_TOKEN=" + accessToken);

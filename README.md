@@ -47,91 +47,91 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ## Features
 
-| Category | Capability |
-|---|---|
-| **Scheduling** | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts |
-| **Thread Support** | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview |
-| **Multi-Platform** | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan |
-| **Background Worker** | BullMQ + Redis: reliable publishing, automatic retries (3 attempts, 5-min intervals) |
-| **Real-time Queue** | Server-Sent Events (SSE) for live queue status updates |
-| **Queue Management** | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips |
-| **Draft Management** | Auto-save every 30 seconds, searchable + sortable draft library, media badge, schedule shortcut |
-| **AI Thread Writer** | Streaming thread generation (tweets appear one by one), 7 tones, 10 languages — via OpenRouter |
-| **AI Content Calendar** | Generate weekly/monthly content plans with topics, times, tones, and briefs (Pro/Agency) |
-| **URL → Thread Converter** | Paste any article URL; AI scrapes and converts it to a Twitter thread (Pro/Agency) |
-| **A/B Variant Generator** | Generate 3 tweet angle variants (emotional/factual/question) for A/B testing (Pro/Agency) |
-| **Reply Suggester** | Paste a tweet URL; get 5 contextually-relevant reply options with tone control (Pro/Agency) |
-| **Bio Optimizer** | Generate 3 X bio variants under 160 chars optimized for a chosen goal (Pro/Agency) |
-| **AI Image Generation** | Generate images via Replicate (Flux models) directly from the composer |
-| **AI Hashtag Generator** | Language-aware, region-aware hashtag suggestions with inline chip UX (MENA priority) |
-| **AI Inspiration** | Content ideas and rephrase suggestions powered by Google Gemini |
-| **Tweet Inspiration** | Import public tweets from X, adapt with AI or manually, bookmark for later |
-| **AI Generation History** | Browse and reuse past AI-generated content |
-| **Viral Score** | Real-time viral potential scoring for tweets as you compose |
-| **Viral Content Analyzer** | Bar/hour charts: top hashtags, keywords, best hours/days, content types, tweet length |
-| **Competitor Analyzer** | Fetch any public account's recent tweets, generate a strategic AI analysis (Pro/Agency) |
-| **Best Time to Post** | Heatmap analysis showing optimal posting windows by day and hour (Pro/Agency) |
-| **Agentic Posting** | Drop a topic — AI autonomously researches, writes, generates images, and prepares a ready-to-publish post in 5 steps (Pro/Agency) |
-| **Trending Topics Discovery** | AI-powered X trending topics by category (Technology, Business, etc.) — no X API required (Pro/Agency) |
-| **Voice Profile** | Store your writing style to personalize AI-generated content |
-| **Templates** | Save and reuse tweet/thread templates with full media support |
-| **Analytics** | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7/30/90-day aggregates; CSV/PDF export |
-| **Link Preview** | Automatic link preview cards fetched when URLs are added to tweets |
-| **URL Shortener** | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links |
-| **Multi-Account** | Connect and manage multiple X accounts per user (1 Free, 3 Pro, 10 Agency) |
-| **X Account Management** | Per-account inline health checks, expired-token detection, confirm-before-disconnect |
-| **Team Collaboration** | Agency plan with team member invitations, role-based access, and post approval workflows |
-| **Admin Panel** | Admin dashboard with user management, job monitoring, and system metrics |
-| **Referral System** | Built-in referral program with credit tracking |
-| **Achievements** | Gamification milestones to reward consistent creators |
-| **Onboarding** | Multi-step wizard + interactive dashboard tour (driver.js) |
-| **Mobile Navigation** | Fixed bottom nav bar, swipe-to-close sidebar (vaul), collapsible nav sections |
-| **Billing** | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, 14-day Pro trial for new users, webhook handling, invoice history |
-| **Auth** | Email/Password + X OAuth 2.0 + 2FA via Better Auth |
-| **Security** | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes |
-| **Observability** | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration |
-| **Media Uploads** | Images (4×, 5 MB each), video (512 MB), GIF (15 MB); upload progress indicators |
-| **Notifications** | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts) |
-| **PWA** | Installable progressive web app with offline support |
-| **Blog / MDX** | Built-in MDX blog with syntax highlighting |
-| **Roadmap** | Public feedback and voting system |
+| Category                      | Capability                                                                                                                        |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Scheduling**                | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts                                   |
+| **Thread Support**            | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview                                             |
+| **Multi-Platform**            | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan                                                            |
+| **Background Worker**         | BullMQ + Redis: reliable publishing, automatic retries (3 attempts, 5-min intervals)                                              |
+| **Real-time Queue**           | Server-Sent Events (SSE) for live queue status updates                                                                            |
+| **Queue Management**          | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips                                        |
+| **Draft Management**          | Auto-save every 30 seconds, searchable + sortable draft library, media badge, schedule shortcut                                   |
+| **AI Thread Writer**          | Streaming thread generation (tweets appear one by one), 7 tones, 10 languages — via OpenRouter                                    |
+| **AI Content Calendar**       | Generate weekly/monthly content plans with topics, times, tones, and briefs (Pro/Agency)                                          |
+| **URL → Thread Converter**    | Paste any article URL; AI scrapes and converts it to a Twitter thread (Pro/Agency)                                                |
+| **A/B Variant Generator**     | Generate 3 tweet angle variants (emotional/factual/question) for A/B testing (Pro/Agency)                                         |
+| **Reply Suggester**           | Paste a tweet URL; get 5 contextually-relevant reply options with tone control (Pro/Agency)                                       |
+| **Bio Optimizer**             | Generate 3 X bio variants under 160 chars optimized for a chosen goal (Pro/Agency)                                                |
+| **AI Image Generation**       | Generate images via Replicate (Flux models) directly from the composer                                                            |
+| **AI Hashtag Generator**      | Language-aware, region-aware hashtag suggestions with inline chip UX (MENA priority)                                              |
+| **AI Inspiration**            | Content ideas and rephrase suggestions powered by Google Gemini                                                                   |
+| **Tweet Inspiration**         | Import public tweets from X, adapt with AI or manually, bookmark for later                                                        |
+| **AI Generation History**     | Browse and reuse past AI-generated content                                                                                        |
+| **Viral Score**               | Real-time viral potential scoring for tweets as you compose                                                                       |
+| **Viral Content Analyzer**    | Bar/hour charts: top hashtags, keywords, best hours/days, content types, tweet length                                             |
+| **Competitor Analyzer**       | Fetch any public account's recent tweets, generate a strategic AI analysis (Pro/Agency)                                           |
+| **Best Time to Post**         | Heatmap analysis showing optimal posting windows by day and hour (Pro/Agency)                                                     |
+| **Agentic Posting**           | Drop a topic — AI autonomously researches, writes, generates images, and prepares a ready-to-publish post in 5 steps (Pro/Agency) |
+| **Trending Topics Discovery** | AI-powered X trending topics by category (Technology, Business, etc.) — no X API required (Pro/Agency)                            |
+| **Voice Profile**             | Store your writing style to personalize AI-generated content                                                                      |
+| **Templates**                 | Save and reuse tweet/thread templates with full media support                                                                     |
+| **Analytics**                 | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7/30/90-day aggregates; CSV/PDF export             |
+| **Link Preview**              | Automatic link preview cards fetched when URLs are added to tweets                                                                |
+| **URL Shortener**             | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links                                                |
+| **Multi-Account**             | Connect and manage multiple X accounts per user (1 Free, 3 Pro, 10 Agency)                                                        |
+| **X Account Management**      | Per-account inline health checks, expired-token detection, confirm-before-disconnect                                              |
+| **Team Collaboration**        | Agency plan with team member invitations, role-based access, and post approval workflows                                          |
+| **Admin Panel**               | Admin dashboard with user management, job monitoring, and system metrics                                                          |
+| **Referral System**           | Built-in referral program with credit tracking                                                                                    |
+| **Achievements**              | Gamification milestones to reward consistent creators                                                                             |
+| **Onboarding**                | Multi-step wizard + interactive dashboard tour (driver.js)                                                                        |
+| **Mobile Navigation**         | Fixed bottom nav bar, swipe-to-close sidebar (vaul), collapsible nav sections                                                     |
+| **Billing**                   | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, 14-day Pro trial for new users, webhook handling, invoice history    |
+| **Auth**                      | Email/Password + X OAuth 2.0 + 2FA via Better Auth                                                                                |
+| **Security**                  | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes                                        |
+| **Observability**             | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration                                           |
+| **Media Uploads**             | Images (4×, 5 MB each), video (512 MB), GIF (15 MB); upload progress indicators                                                   |
+| **Notifications**             | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts)                                           |
+| **PWA**                       | Installable progressive web app with offline support                                                                              |
+| **Blog / MDX**                | Built-in MDX blog with syntax highlighting                                                                                        |
+| **Roadmap**                   | Public feedback and voting system                                                                                                 |
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Framework** | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + [React 19](https://react.dev/) |
-| **Language** | [TypeScript 5](https://www.typescriptlang.org/) (strict mode, `exactOptionalPropertyTypes`) |
-| **Database** | [PostgreSQL 18](https://www.postgresql.org/) (`pgvector` image) |
-| **ORM** | [Drizzle ORM](https://orm.drizzle.team/) |
-| **Auth** | [Better Auth](https://www.better-auth.com/) — Email/Password + X OAuth 2.0 + 2FA |
-| **Queue** | [BullMQ](https://bullmq.io/) + [Redis](https://redis.io/) (Alpine) |
-| **Queue UI** | [Bull Board](https://github.com/felixmosh/bull-board) — web-based queue monitoring |
-| **AI (Primary)** | [OpenRouter](https://openrouter.ai/) via [`@openrouter/ai-sdk-provider`](https://www.npmjs.com/package/@openrouter/ai-sdk-provider) + [Vercel AI SDK 5](https://sdk.vercel.ai/) |
-| **AI (Chat/Inspiration)** | [Google Gemini](https://ai.google.dev/) via `@google/genai` |
-| **AI Image Generation** | [Replicate](https://replicate.com/) — Flux / Nano Banana models |
-| **UI** | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Radix UI) |
-| **Charts** | [Recharts](https://recharts.org/) |
-| **Forms** | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) |
-| **Date Picker** | [react-day-picker v9](https://daypicker.dev/) + [date-fns v4](https://date-fns.org/) |
-| **Drag & Drop** | [@dnd-kit/core](https://dndkit.com/) |
-| **Mobile Gestures** | [vaul](https://vaul.emilkowal.ski/) (swipe-to-close drawer) |
-| **Onboarding Tour** | [driver.js](https://driverjs.com/) |
-| **State** | [Zustand](https://zustand-demo.pmnd.rs/) |
-| **Billing** | [Stripe](https://stripe.com/) |
-| **Email** | [Resend](https://resend.com/) + [React Email](https://react.email/) |
-| **Error Monitoring** | [Sentry](https://sentry.io/) (`@sentry/nextjs`) |
-| **Storage** | Local filesystem (dev) / [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (production) |
-| **PDF Export** | [@react-pdf/renderer](https://react-pdf.org/) |
-| **MDX Blog** | [next-mdx-remote](https://github.com/hashicorp/next-mdx-remote) |
-| **Emoji Picker** | [emoji-picker-react](https://github.com/ealush/emoji-picker-react) |
-| **CSV Parsing** | [papaparse](https://www.papaparse.com/) |
-| **PWA** | [@ducanh2912/next-pwa](https://github.com/DuCanhGH/next-pwa) |
-| **Testing** | [Vitest](https://vitest.dev/) + [Playwright](https://playwright.dev/) |
-| **Package Manager** | [pnpm](https://pnpm.io/) |
-| **Containerisation** | [Docker Compose](https://docs.docker.com/compose/) |
+| Layer                     | Technology                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Framework**             | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + [React 19](https://react.dev/)                                                                                      |
+| **Language**              | [TypeScript 5](https://www.typescriptlang.org/) (strict mode, `exactOptionalPropertyTypes`)                                                                                     |
+| **Database**              | [PostgreSQL 18](https://www.postgresql.org/) (`pgvector` image)                                                                                                                 |
+| **ORM**                   | [Drizzle ORM](https://orm.drizzle.team/)                                                                                                                                        |
+| **Auth**                  | [Better Auth](https://www.better-auth.com/) — Email/Password + X OAuth 2.0 + 2FA                                                                                                |
+| **Queue**                 | [BullMQ](https://bullmq.io/) + [Redis](https://redis.io/) (Alpine)                                                                                                              |
+| **Queue UI**              | [Bull Board](https://github.com/felixmosh/bull-board) — web-based queue monitoring                                                                                              |
+| **AI (Primary)**          | [OpenRouter](https://openrouter.ai/) via [`@openrouter/ai-sdk-provider`](https://www.npmjs.com/package/@openrouter/ai-sdk-provider) + [Vercel AI SDK 5](https://sdk.vercel.ai/) |
+| **AI (Chat/Inspiration)** | [Google Gemini](https://ai.google.dev/) via `@google/genai`                                                                                                                     |
+| **AI Image Generation**   | [Replicate](https://replicate.com/) — Flux / Nano Banana models                                                                                                                 |
+| **UI**                    | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Radix UI)                                                                                     |
+| **Charts**                | [Recharts](https://recharts.org/)                                                                                                                                               |
+| **Forms**                 | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)                                                                                                       |
+| **Date Picker**           | [react-day-picker v9](https://daypicker.dev/) + [date-fns v4](https://date-fns.org/)                                                                                            |
+| **Drag & Drop**           | [@dnd-kit/core](https://dndkit.com/)                                                                                                                                            |
+| **Mobile Gestures**       | [vaul](https://vaul.emilkowal.ski/) (swipe-to-close drawer)                                                                                                                     |
+| **Onboarding Tour**       | [driver.js](https://driverjs.com/)                                                                                                                                              |
+| **State**                 | [Zustand](https://zustand-demo.pmnd.rs/)                                                                                                                                        |
+| **Billing**               | [Stripe](https://stripe.com/)                                                                                                                                                   |
+| **Email**                 | [Resend](https://resend.com/) + [React Email](https://react.email/)                                                                                                             |
+| **Error Monitoring**      | [Sentry](https://sentry.io/) (`@sentry/nextjs`)                                                                                                                                 |
+| **Storage**               | Local filesystem (dev) / [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (production)                                                                                |
+| **PDF Export**            | [@react-pdf/renderer](https://react-pdf.org/)                                                                                                                                   |
+| **MDX Blog**              | [next-mdx-remote](https://github.com/hashicorp/next-mdx-remote)                                                                                                                 |
+| **Emoji Picker**          | [emoji-picker-react](https://github.com/ealush/emoji-picker-react)                                                                                                              |
+| **CSV Parsing**           | [papaparse](https://www.papaparse.com/)                                                                                                                                         |
+| **PWA**                   | [@ducanh2912/next-pwa](https://github.com/DuCanhGH/next-pwa)                                                                                                                    |
+| **Testing**               | [Vitest](https://vitest.dev/) + [Playwright](https://playwright.dev/)                                                                                                           |
+| **Package Manager**       | [pnpm](https://pnpm.io/)                                                                                                                                                        |
+| **Containerisation**      | [Docker Compose](https://docs.docker.com/compose/)                                                                                                                              |
 
 ---
 
@@ -315,10 +315,10 @@ astrapost/
 
 ### Prerequisites
 
-| Requirement | Version | Notes |
-|---|---|---|
-| [Node.js](https://nodejs.org/) | ≥ 20 | See `.nvmrc` for exact version |
-| [pnpm](https://pnpm.io/) | ≥ 9 | `npm install -g pnpm` |
+| Requirement                       | Version    | Notes                               |
+| --------------------------------- | ---------- | ----------------------------------- |
+| [Node.js](https://nodejs.org/)    | ≥ 20       | See `.nvmrc` for exact version      |
+| [pnpm](https://pnpm.io/)          | ≥ 9        | `npm install -g pnpm`               |
 | [Docker](https://www.docker.com/) | any recent | Required for local Postgres + Redis |
 
 ---
@@ -355,6 +355,7 @@ docker compose up -d postgres redis
 ```
 
 This spins up:
+
 - **PostgreSQL 18** (`pgvector` image) on **host port `5499`** (container port 5432)
 - **Redis** (Alpine) on port `6379`
 
@@ -393,31 +394,31 @@ Open **http://localhost:3000** in your browser.
 
 ## Environment Variables Reference
 
-| Variable | Required | Description |
-|---|---|---|
-| `POSTGRES_URL` | ✅ | PostgreSQL connection string (default Docker: `postgresql://dev_user:password@localhost:5499/postgres_dev`) |
-| `REDIS_URL` | ✅ | Redis connection string |
-| `BETTER_AUTH_SECRET` | ✅ | 32-character random secret for Better Auth |
-| `BETTER_AUTH_URL` | ✅ | Base URL of the app (e.g. `http://localhost:3000`) |
-| `TWITTER_CLIENT_ID` | ✅ | X (Twitter) OAuth 2.0 Client ID |
-| `TWITTER_CLIENT_SECRET` | ✅ | X (Twitter) OAuth 2.0 Client Secret |
-| `TOKEN_ENCRYPTION_KEYS` | ✅ | Comma-separated 32-byte keys (base64/hex). First key is primary. |
-| `NEXT_PUBLIC_APP_URL` | ✅ | Public URL of the app |
-| `TWITTER_BEARER_TOKEN` | ⚠️ Inspiration + Competitor only | Bearer token for importing public tweets and competitor analysis. Get from [developer.twitter.com](https://developer.twitter.com/en/portal/dashboard) |
-| `OPENROUTER_API_KEY` | ⚠️ AI only | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
-| `OPENROUTER_MODEL` | ⚠️ AI only | Default: `openai/gpt-4o`. Browse at [openrouter.ai/models](https://openrouter.ai/models) |
-| `GEMINI_API_KEY` | ⚠️ AI only | Google Gemini API key (for chat & inspiration features) |
-| `GOOGLE_AI_API_KEY` | ⚠️ AI only | Alias for `GEMINI_API_KEY` |
-| `REPLICATE_API_TOKEN` | ⚠️ AI Image only | Replicate token for AI image generation |
-| `STRIPE_SECRET_KEY` | ⚠️ Billing only | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | ⚠️ Billing only | Stripe webhook signing secret |
-| `STRIPE_PRICE_ID_MONTHLY` | ⚠️ Billing only | Stripe price ID for Pro Monthly plan |
-| `STRIPE_PRICE_ID_ANNUAL` | ⚠️ Billing only | Stripe price ID for Pro Annual plan |
-| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | ⚠️ Billing only | Stripe price ID for Agency Monthly plan |
-| `STRIPE_PRICE_ID_AGENCY_ANNUAL` | ⚠️ Billing only | Stripe price ID for Agency Annual plan |
-| `RESEND_API_KEY` | ⚠️ Email only | Resend API key. If unset, emails are logged to console. Get from [resend.com](https://resend.com/api-keys) |
-| `RESEND_FROM_EMAIL` | ⚠️ Email only | From address for outgoing emails (e.g. `noreply@yourdomain.com`) |
-| `BLOB_READ_WRITE_TOKEN` | ⚠️ Production only | Vercel Blob token. Leave empty to use local storage in dev. |
+| Variable                         | Required                         | Description                                                                                                                                           |
+| -------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`                   | ✅                               | PostgreSQL connection string (default Docker: `postgresql://dev_user:password@localhost:5499/postgres_dev`)                                           |
+| `REDIS_URL`                      | ✅                               | Redis connection string                                                                                                                               |
+| `BETTER_AUTH_SECRET`             | ✅                               | 32-character random secret for Better Auth                                                                                                            |
+| `BETTER_AUTH_URL`                | ✅                               | Base URL of the app (e.g. `http://localhost:3000`)                                                                                                    |
+| `TWITTER_CLIENT_ID`              | ✅                               | X (Twitter) OAuth 2.0 Client ID                                                                                                                       |
+| `TWITTER_CLIENT_SECRET`          | ✅                               | X (Twitter) OAuth 2.0 Client Secret                                                                                                                   |
+| `TOKEN_ENCRYPTION_KEYS`          | ✅                               | Comma-separated 32-byte keys (base64/hex). First key is primary.                                                                                      |
+| `NEXT_PUBLIC_APP_URL`            | ✅                               | Public URL of the app                                                                                                                                 |
+| `TWITTER_BEARER_TOKEN`           | ⚠️ Inspiration + Competitor only | Bearer token for importing public tweets and competitor analysis. Get from [developer.twitter.com](https://developer.twitter.com/en/portal/dashboard) |
+| `OPENROUTER_API_KEY`             | ⚠️ AI only                       | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                                                                           |
+| `OPENROUTER_MODEL`               | ⚠️ AI only                       | Default: `openai/gpt-4o`. Browse at [openrouter.ai/models](https://openrouter.ai/models)                                                              |
+| `GEMINI_API_KEY`                 | ⚠️ AI only                       | Google Gemini API key (for chat & inspiration features)                                                                                               |
+| `GOOGLE_AI_API_KEY`              | ⚠️ AI only                       | Alias for `GEMINI_API_KEY`                                                                                                                            |
+| `REPLICATE_API_TOKEN`            | ⚠️ AI Image only                 | Replicate token for AI image generation                                                                                                               |
+| `STRIPE_SECRET_KEY`              | ⚠️ Billing only                  | Stripe secret key                                                                                                                                     |
+| `STRIPE_WEBHOOK_SECRET`          | ⚠️ Billing only                  | Stripe webhook signing secret                                                                                                                         |
+| `STRIPE_PRICE_ID_MONTHLY`        | ⚠️ Billing only                  | Stripe price ID for Pro Monthly plan                                                                                                                  |
+| `STRIPE_PRICE_ID_ANNUAL`         | ⚠️ Billing only                  | Stripe price ID for Pro Annual plan                                                                                                                   |
+| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | ⚠️ Billing only                  | Stripe price ID for Agency Monthly plan                                                                                                               |
+| `STRIPE_PRICE_ID_AGENCY_ANNUAL`  | ⚠️ Billing only                  | Stripe price ID for Agency Annual plan                                                                                                                |
+| `RESEND_API_KEY`                 | ⚠️ Email only                    | Resend API key. If unset, emails are logged to console. Get from [resend.com](https://resend.com/api-keys)                                            |
+| `RESEND_FROM_EMAIL`              | ⚠️ Email only                    | From address for outgoing emails (e.g. `noreply@yourdomain.com`)                                                                                      |
+| `BLOB_READ_WRITE_TOKEN`          | ⚠️ Production only               | Vercel Blob token. Leave empty to use local storage in dev.                                                                                           |
 
 ### Generating `TOKEN_ENCRYPTION_KEYS`
 
@@ -480,36 +481,36 @@ pnpm run tokens:rotate          # Re-encrypt all stored tokens with the current 
 
 AstraPost uses **Drizzle ORM** with PostgreSQL. Key tables:
 
-| Table | Description |
-|---|---|
-| `user` | App users (Better Auth compatible) — includes timezone, language, plan, Stripe customer ID, referral code, 2FA, voice profile |
-| `session` | Active user sessions |
-| `account` | OAuth provider accounts (X, LinkedIn, Instagram) |
-| `verification` | Email/token verification records |
-| `x_accounts` | Connected X accounts with encrypted tokens, follower count, default flag, token expiry |
-| `linkedin_accounts` | Connected LinkedIn accounts with encrypted tokens |
-| `instagram_accounts` | Connected Instagram accounts with long-lived tokens |
-| `posts` | Scheduled/published/draft posts — platform, type, status, approval, recurrence, idempotency |
-| `tweets` | Individual tweet cards within a post (ordered by `position`) |
-| `media` | Uploaded media files linked to tweets (requires `user_id`) |
-| `tweet_analytics` | Latest analytics snapshot per tweet (impressions, likes, retweets, etc.) |
-| `tweet_analytics_snapshots` | Historical analytics records over time |
-| `social_analytics` | Cross-platform analytics (LinkedIn, Instagram) |
-| `follower_snapshots` | Daily follower count snapshots per X account |
-| `analytics_refresh_runs` | Audit log of analytics refresh jobs (multi-platform) |
-| `team_members` | Agency team member records with roles |
-| `team_invitations` | Pending team invitations |
-| `ai_generations` | History of AI-generated content (thread, tweet improve, affiliate, bio, calendar, variants, etc.) |
-| `inspiration_bookmarks` | Saved tweet inspirations |
-| `subscriptions` | Stripe subscription records linked to users |
-| `job_runs` | BullMQ job execution history with correlation IDs |
-| `affiliate_links` | Amazon affiliate product data and generated promotional tweets |
-| `affiliate_clicks` | Click tracking for affiliate links |
-| `notifications` | In-app notification feed per user |
-| `templates` | Saved tweet/thread templates |
-| `milestones` | Gamification achievements per user |
-| `feedback` | Product roadmap feature requests |
-| `feedback_votes` | User votes on roadmap items |
+| Table                       | Description                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `user`                      | App users (Better Auth compatible) — includes timezone, language, plan, Stripe customer ID, referral code, 2FA, voice profile |
+| `session`                   | Active user sessions                                                                                                          |
+| `account`                   | OAuth provider accounts (X, LinkedIn, Instagram)                                                                              |
+| `verification`              | Email/token verification records                                                                                              |
+| `x_accounts`                | Connected X accounts with encrypted tokens, follower count, default flag, token expiry                                        |
+| `linkedin_accounts`         | Connected LinkedIn accounts with encrypted tokens                                                                             |
+| `instagram_accounts`        | Connected Instagram accounts with long-lived tokens                                                                           |
+| `posts`                     | Scheduled/published/draft posts — platform, type, status, approval, recurrence, idempotency                                   |
+| `tweets`                    | Individual tweet cards within a post (ordered by `position`)                                                                  |
+| `media`                     | Uploaded media files linked to tweets (requires `user_id`)                                                                    |
+| `tweet_analytics`           | Latest analytics snapshot per tweet (impressions, likes, retweets, etc.)                                                      |
+| `tweet_analytics_snapshots` | Historical analytics records over time                                                                                        |
+| `social_analytics`          | Cross-platform analytics (LinkedIn, Instagram)                                                                                |
+| `follower_snapshots`        | Daily follower count snapshots per X account                                                                                  |
+| `analytics_refresh_runs`    | Audit log of analytics refresh jobs (multi-platform)                                                                          |
+| `team_members`              | Agency team member records with roles                                                                                         |
+| `team_invitations`          | Pending team invitations                                                                                                      |
+| `ai_generations`            | History of AI-generated content (thread, tweet improve, affiliate, bio, calendar, variants, etc.)                             |
+| `inspiration_bookmarks`     | Saved tweet inspirations                                                                                                      |
+| `subscriptions`             | Stripe subscription records linked to users                                                                                   |
+| `job_runs`                  | BullMQ job execution history with correlation IDs                                                                             |
+| `affiliate_links`           | Amazon affiliate product data and generated promotional tweets                                                                |
+| `affiliate_clicks`          | Click tracking for affiliate links                                                                                            |
+| `notifications`             | In-app notification feed per user                                                                                             |
+| `templates`                 | Saved tweet/thread templates                                                                                                  |
+| `milestones`                | Gamification achievements per user                                                                                            |
+| `feedback`                  | Product roadmap feature requests                                                                                              |
+| `feedback_votes`            | User votes on roadmap items                                                                                                   |
 
 To inspect or modify the schema interactively:
 
@@ -563,13 +564,13 @@ pnpm run db:migrate
 
 The `src/lib/` tree is organized so route handlers stay thin:
 
-| Module | Purpose |
-|---|---|
-| `lib/api/errors.ts` | `ApiError` — typed factory returning consistent `Response` objects (401/403/404/409/500). Never write inline `new Response(JSON.stringify({error: "..."})` in routes. |
-| `lib/api/ai-preamble.ts` | `aiPreamble()` — shared pipeline for all AI routes: auth → DB user → rate-limit → feature gate → quota check → API key guard → model instantiation. |
+| Module                           | Purpose                                                                                                                                                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/api/errors.ts`              | `ApiError` — typed factory returning consistent `Response` objects (401/403/404/409/500). Never write inline `new Response(JSON.stringify({error: "..."})` in routes.                                         |
+| `lib/api/ai-preamble.ts`         | `aiPreamble()` — shared pipeline for all AI routes: auth → DB user → rate-limit → feature gate → quota check → API key guard → model instantiation.                                                           |
 | `lib/middleware/require-plan.ts` | 15+ plan gate functions built with `makeFeatureGate()`. Returns HTTP 402 with structured JSON (includes `upgrade_url`, `suggested_plan`, `reset_at`, `remaining`). 14-day trial period handled automatically. |
-| `lib/schemas/common.ts` | Shared Zod schemas (`paginationSchema`, `uuidSchema`, `isoDateSchema`, `dateRangeSchema`) — import from here, never redeclare inline. |
-| `lib/utils/time.ts` | `getMonthWindow()` — returns current calendar month boundaries for quota reset logic. |
+| `lib/schemas/common.ts`          | Shared Zod schemas (`paginationSchema`, `uuidSchema`, `isoDateSchema`, `dateRangeSchema`) — import from here, never redeclare inline.                                                                         |
+| `lib/utils/time.ts`              | `getMonthWindow()` — returns current calendar month boundaries for quota reset logic.                                                                                                                         |
 
 ### Correlation ID Flow
 
@@ -640,11 +641,11 @@ AstraPost integrates with [Replicate](https://replicate.com/) to provide AI-powe
 
 ### Available Models
 
-| Model | Description | Resolution | Plan Availability |
-|---|---|---|---|---|
-| **Primary**: `nano-banana-2` | Gemini 2.5 Flash Image — Fast, efficient generation | 1K (1024px base) | All plans (Free, Pro, Agency) |
-| **Secondary**: `nano-banana-pro` | Gemini 3 Pro Image — Highest quality with advanced features | 2K (2048px base) | Pro and Agency only |
-| **Backup**: `nano-banana` | Gemini 2.5 Flash Image — Reliable fallback | 1K (1024px base) | All plans (Free, Pro, Agency) |
+| Model                            | Description                                                 | Resolution       | Plan Availability             |
+| -------------------------------- | ----------------------------------------------------------- | ---------------- | ----------------------------- |
+| **Primary**: `nano-banana-2`     | Gemini 2.5 Flash Image — Fast, efficient generation         | 1K (1024px base) | All plans (Free, Pro, Agency) |
+| **Secondary**: `nano-banana-pro` | Gemini 3 Pro Image — Highest quality with advanced features | 2K (2048px base) | Pro and Agency only           |
+| **Backup**: `nano-banana`        | Gemini 2.5 Flash Image — Reliable fallback                  | 1K (1024px base) | All plans (Free, Pro, Agency) |
 
 ### Model Features
 
@@ -699,6 +700,7 @@ The image generation system implements a robust fallback mechanism:
 If a prompt isn't provided but `tweetContent` is, the system uses an LLM (via OpenRouter) to auto-generate an optimized visual prompt.
 
 **Requirements:**
+
 - `OPENROUTER_MODEL` environment variable must be set (e.g., `anthropic/claude-sonnet-4.6`)
 - **IMPORTANT**: Never hardcode the model value in code — always read from `process.env.OPENROUTER_MODEL`
 - Recommended models:
@@ -719,12 +721,12 @@ Generated images can be customized with the following style modifiers:
 
 ### Aspect Ratio Support
 
-| Ratio | Dimensions | Use Case |
-|---|---|---|
-| **1:1** | 1024 × 1024 | Square format, standard posts |
-| **16:9** | 1344 × 768 | Landscape, header images |
-| **4:3** | 1024 × 768 | Standard landscape |
-| **9:16** | 768 × 1344 | Portrait, mobile-first |
+| Ratio    | Dimensions  | Use Case                      |
+| -------- | ----------- | ----------------------------- |
+| **1:1**  | 1024 × 1024 | Square format, standard posts |
+| **16:9** | 1344 × 768  | Landscape, header images      |
+| **4:3**  | 1024 × 768  | Standard landscape            |
+| **9:16** | 768 × 1344  | Portrait, mobile-first        |
 
 ### Setup Requirements
 
@@ -741,12 +743,12 @@ OPENROUTER_MODEL="anthropic/claude-sonnet-4.6"  # NEVER hardcode this value
 
 ### Implementation Files
 
-| File | Purpose |
-|---|---|
-| `src/app/api/ai/image/route.ts` | Image generation API endpoint (POST) |
-| `src/app/api/ai/image/status/route.ts` | Polling endpoint with fallback logic (GET) |
-| `src/lib/services/ai-image.ts` | Replicate API client and model mappings |
-| `src/components/composer/ai-image-dialog.tsx` | Client-side UI and fallback handling |
+| File                                          | Purpose                                    |
+| --------------------------------------------- | ------------------------------------------ |
+| `src/app/api/ai/image/route.ts`               | Image generation API endpoint (POST)       |
+| `src/app/api/ai/image/status/route.ts`        | Polling endpoint with fallback logic (GET) |
+| `src/lib/services/ai-image.ts`                | Replicate API client and model mappings    |
+| `src/components/composer/ai-image-dialog.tsx` | Client-side UI and fallback handling       |
 
 ---
 
@@ -759,6 +761,7 @@ pnpm test
 ```
 
 Tests are co-located with implementation files:
+
 - `src/lib/services/analytics.test.ts`
 - `src/lib/services/x-api.test.ts`
 - `src/lib/services/ai-quota.test.ts`
@@ -811,10 +814,12 @@ This section summarises major development cycles. For full commit-level detail, 
 ### April 2026 — AI Quota Tracking Fixes
 
 **Billing usage double-count bug**
+
 - `GET /api/billing/usage` counted image generations in both `usage.ai` and `usage.aiImages` — causing Pro users to see "102 / 100" in the Settings UI
 - Fixed by excluding images from the text quota count (`ne(aiGenerations.type, "image")`)
 
 **4 untracked AI endpoints fixed**
+
 - `/api/ai/inspiration` — added `recordAiUsage(..., "inspiration", ...)` after AI generation (cached responses skipped)
 - `/api/user/voice-profile` — added `recordAiUsage(..., "voice_profile", ...)`
 - `/api/ai/agentic/[id]/regenerate` — added quota gates + `recordAiUsage` for text (`"agentic_regenerate"`) and image (`"image"`) regenerations
@@ -824,12 +829,14 @@ This section summarises major development cycles. For full commit-level detail, 
 ### April 2026 — Pricing Audit & Trial System Fix
 
 **Trial system security fix**
+
 - Replaced blanket `if (isTrialActive) return { allowed: true }` bypass with `effectivePlan` resolution — trial users now get Pro Monthly limits (100 AI text, 50 images, 3 accounts) instead of unlimited Agency-tier access
 - Added `TRIAL_EFFECTIVE_PLAN` constant and `effectivePlan` field to `PlanContext` interface
 - Agency-only features (LinkedIn, teams) correctly blocked during trial
 - 9 new unit tests covering trial Pro access, quota caps, Agency blocking, expiry, and paid-plan passthrough
 
 **Pricing page overhaul**
+
 - Removed Instagram claims (not implemented)
 - Fixed "Multi-platform Support (X, LinkedIn, Instagram)" → "X (Twitter) Scheduling"
 - Expanded feature lists: Free (3→7), Pro (5→15), Agency (5→7) — surfaces 17+ previously hidden features
@@ -840,6 +847,7 @@ This section summarises major development cycles. For full commit-level detail, 
 ### April 2026 — Agentic Posting & Compose Overhaul
 
 **Agentic Posting** (`/dashboard/ai/agentic`) — Pro/Agency only
+
 - Drop a topic, AI autonomously runs a 5-step pipeline: Research → Strategy → Write → Images → Review
 - Streamed via SSE — each pipeline step updates a live progress timeline in the browser
 - Three-screen UX: Input (topic + advanced options + account selector) → Processing (timeline with elapsed/ETA) → Review (editable tweet cards + sticky action bar)
@@ -853,6 +861,7 @@ This section summarises major development cycles. For full commit-level detail, 
 - New files: `src/lib/ai/agentic-types.ts`, `src/lib/ai/agentic-prompts.ts`, `src/lib/services/agentic-pipeline.ts`, `src/components/ai/agentic-posting-client.tsx`
 
 **Compose Page overhaul (Phases 0–2)**
+
 - Extracted `AiToolsPanel` component with 6-tool pill tab switcher (Write / Hook / CTA / Rewrite / Translate / #Tags)
 - AI panel now accordion-expands inline below Content Tools card — no card swap, compose area stays visible
 - Unified `DateTimePicker`: date + time in one popover, replaces separate DatePicker + Select
@@ -864,6 +873,7 @@ This section summarises major development cycles. For full commit-level detail, 
 ### March 2026 — UX Audit & Polish (Phase 2–4E)
 
 **Composer overhaul**
+
 - Streaming thread generation: tweets appear one by one via SSE (eliminates frozen spinner)
 - Inline AI panel on desktop (no modal) — compose area stays visible during AI use
 - Sidebar split into "Content Tools" and "Publishing" cards
@@ -875,6 +885,7 @@ This section summarises major development cycles. For full commit-level detail, 
 - Auto-save timestamp, toast-based undo on tweet delete
 
 **Queue page**
+
 - Thread collapsible: "Show thread (N more)" inline expand
 - Bulk approve/reject buttons for Agency teams
 - Inline reschedule dialog (no page navigation)
@@ -882,12 +893,14 @@ This section summarises major development cycles. For full commit-level detail, 
 - Edit button navigates directly to composer with draft loaded
 
 **Drafts page**
+
 - Client-side search and sort (last edited / oldest / longest)
 - Thread badge with tweet count, media badge
 - Delete confirmation dialog (AlertDialog + toast)
 - Schedule shortcut button
 
 **Mobile navigation**
+
 - Fixed bottom nav bar (Compose, Queue, AI + More)
 - Collapsible sidebar sections for AI Tools and Analytics
 - Swipe-to-close sidebar (vaul `DrawerPrimitive`)
@@ -895,15 +908,18 @@ This section summarises major development cycles. For full commit-level detail, 
 - 44px touch targets on hamburger button
 
 **Settings improvements**
+
 - Per-account inline X connection health check
 - Expired token detection with inline reconnect button
 - Confirm-before-disconnect AlertDialog
 
 **Analytics charts (Viral Analyzer)**
+
 - All 6 data sections converted from badge lists to Recharts bar/hour charts
 - Top-N highlighting, custom tooltips matching shadcn card style
 
 **Other**
+
 - AI history page at `/dashboard/ai/history`
 - Sticky "Analyze Another" bar on Competitor Analyzer results
 - Full loading skeleton for Competitor Analyzer
@@ -980,6 +996,7 @@ POSTGRES_URL=postgresql://dev_user:password@localhost:5499/postgres_dev
 This error occurs when there are conflicting dynamic routes. Ensure all routes in the same directory use the same parameter name.
 
 **Example conflict:**
+
 ```
 app/api/team/invitations/[id]/route.ts
 app/api/team/invitations/[invitationId]/route.ts  // CONFLICT!
@@ -996,6 +1013,7 @@ pnpm dev  # Start the dev server — errors should clear
 ```
 
 If errors persist, try:
+
 ```bash
 rm -rf .next
 pnpm dev
@@ -1006,6 +1024,7 @@ pnpm dev
 If the worker shows errors like "Failed query" when processing analytics jobs:
 
 1. Check that the database schema is up to date:
+
    ```bash
    pnpm run db:migrate
    ```

@@ -50,9 +50,7 @@ export function ResponsiveDialog({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            {description && (
-              <DialogDescription>{description}</DialogDescription>
-            )}
+            {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
           {children}
         </DialogContent>
@@ -65,9 +63,7 @@ export function ResponsiveDialog({
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
-          {description && (
-            <DrawerDescription>{description}</DrawerDescription>
-          )}
+          {description && <DrawerDescription>{description}</DrawerDescription>}
         </DrawerHeader>
         <div className="px-4 pb-4">{children}</div>
       </DrawerContent>

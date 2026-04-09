@@ -33,8 +33,7 @@ export default async function CalendarPage({
   })();
 
   // Validate the ?view= param — only accept the three known view types.
-  const initialView: "month" | "week" | "day" =
-    view === "week" || view === "day" ? view : "month";
+  const initialView: "month" | "week" | "day" = view === "week" || view === "day" ? view : "month";
 
   const xAccountsList = await db.query.xAccounts.findMany({
     where: eq(xAccounts.userId, session.user.id),
@@ -81,8 +80,12 @@ export default async function CalendarPage({
         </>
       }
     >
-      <div className="rounded-lg border bg-background p-4 shadow-sm overflow-hidden -mx-1">
-        <CalendarViewClient posts={scheduledPosts} currentDate={currentDate} initialView={initialView} />
+      <div className="bg-background -mx-1 overflow-hidden rounded-lg border p-4 shadow-sm">
+        <CalendarViewClient
+          posts={scheduledPosts}
+          currentDate={currentDate}
+          initialView={initialView}
+        />
       </div>
     </DashboardPageWrapper>
   );

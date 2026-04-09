@@ -108,14 +108,25 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
   const togglePlan = (plan: string) => {
     const current = form.getValues("applicablePlans");
     if (current.includes(plan)) {
-      form.setValue("applicablePlans", current.filter((p) => p !== plan));
+      form.setValue(
+        "applicablePlans",
+        current.filter((p) => p !== plan)
+      );
     } else {
       form.setValue("applicablePlans", [...current, plan]);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!form.formState.isSubmitting) { form.reset(); onOpenChange(v); } }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!form.formState.isSubmitting) {
+          form.reset();
+          onOpenChange(v);
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create promo code</DialogTitle>
@@ -163,7 +174,9 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description <span className="text-muted-foreground">(optional)</span></FormLabel>
+                  <FormLabel>
+                    Description <span className="text-muted-foreground">(optional)</span>
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="Launch week discount" {...field} />
                   </FormControl>
@@ -223,7 +236,9 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 name="validFrom"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valid from <span className="text-muted-foreground">(optional)</span></FormLabel>
+                    <FormLabel>
+                      Valid from <span className="text-muted-foreground">(optional)</span>
+                    </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
                     </FormControl>
@@ -237,7 +252,9 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 name="validTo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valid to <span className="text-muted-foreground">(optional)</span></FormLabel>
+                    <FormLabel>
+                      Valid to <span className="text-muted-foreground">(optional)</span>
+                    </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
                     </FormControl>
@@ -252,14 +269,19 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
               name="maxRedemptions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Max redemptions <span className="text-muted-foreground">(leave blank for unlimited)</span></FormLabel>
+                  <FormLabel>
+                    Max redemptions{" "}
+                    <span className="text-muted-foreground">(leave blank for unlimited)</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min="1"
                       placeholder="Unlimited"
                       value={field.value ?? ""}
-                      onChange={(e) => field.onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))}
+                      onChange={(e) =>
+                        field.onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -268,7 +290,10 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
             />
 
             <FormItem>
-              <FormLabel>Applicable plans <span className="text-muted-foreground">(leave unselected for all plans)</span></FormLabel>
+              <FormLabel>
+                Applicable plans{" "}
+                <span className="text-muted-foreground">(leave unselected for all plans)</span>
+              </FormLabel>
               <div className="flex flex-wrap gap-2 pt-1">
                 {PLANS.map((plan) => (
                   <Button
@@ -288,7 +313,10 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { form.reset(); onOpenChange(false); }}
+                onClick={() => {
+                  form.reset();
+                  onOpenChange(false);
+                }}
                 disabled={form.formState.isSubmitting}
               >
                 Cancel

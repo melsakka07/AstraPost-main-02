@@ -219,7 +219,7 @@ describe("POST /api/billing/webhook", () => {
 
   it("returns 200 immediately and skips processing for a duplicate event", async () => {
     mockConstructEvent.mockReturnValue(
-      makeStripeEvent("customer.subscription.updated", makeSubscription()),
+      makeStripeEvent("customer.subscription.updated", makeSubscription())
     );
     // Signal that this event was already processed.
     mockDbQueryProcessedFindFirst.mockResolvedValue({ id: "existing-row" });
@@ -241,7 +241,7 @@ describe("POST /api/billing/webhook", () => {
         items: { data: [] },
         current_period_start: 1700000000,
         current_period_end: 1702592000,
-      }),
+      })
     );
     mockDbQuerySubscriptionsFindFirst.mockResolvedValue({
       id: "db-sub-1",
@@ -270,7 +270,7 @@ describe("POST /api/billing/webhook", () => {
         subscription: "sub_test",
         customer: "cus_test",
         metadata: { userId: "user-1", plan: "pro_monthly" },
-      }),
+      })
     );
 
     const res = await POST(makeRequest());
@@ -290,7 +290,7 @@ describe("POST /api/billing/webhook", () => {
         subscription: "sub_test",
         customer: "cus_test",
         metadata: {}, // no userId
-      }),
+      })
     );
 
     const res = await POST(makeRequest());
@@ -310,9 +310,7 @@ describe("POST /api/billing/webhook", () => {
     const sub = makeSubscription({
       items: { data: [{ price: { id: "price_annual" } }] },
     });
-    mockConstructEvent.mockReturnValue(
-      makeStripeEvent("customer.subscription.updated", sub),
-    );
+    mockConstructEvent.mockReturnValue(makeStripeEvent("customer.subscription.updated", sub));
     mockDbQuerySubscriptionsFindFirst.mockResolvedValue({
       id: "db-sub-1",
       userId: "user-1",
@@ -325,9 +323,7 @@ describe("POST /api/billing/webhook", () => {
 
     expect(res.status).toBe(200);
     const updateSetCalls = getSetArgs(mockDbUpdateSetFn);
-    const userPlanUpdate = updateSetCalls.find(
-      (v) => v.plan === "pro_annual",
-    );
+    const userPlanUpdate = updateSetCalls.find((v) => v.plan === "pro_annual");
     expect(userPlanUpdate).toBeDefined();
   });
 
@@ -336,9 +332,7 @@ describe("POST /api/billing/webhook", () => {
     const sub = makeSubscription({
       items: { data: [{ price: { id: "price_monthly" } }] },
     });
-    mockConstructEvent.mockReturnValue(
-      makeStripeEvent("customer.subscription.updated", sub),
-    );
+    mockConstructEvent.mockReturnValue(makeStripeEvent("customer.subscription.updated", sub));
     mockDbQuerySubscriptionsFindFirst.mockResolvedValue({
       id: "db-sub-1",
       userId: "user-1",
@@ -373,9 +367,7 @@ describe("POST /api/billing/webhook", () => {
       current_period_start: 1700000000,
       current_period_end: 1702592000,
     };
-    mockConstructEvent.mockReturnValue(
-      makeStripeEvent("customer.subscription.deleted", sub),
-    );
+    mockConstructEvent.mockReturnValue(makeStripeEvent("customer.subscription.deleted", sub));
     mockDbQuerySubscriptionsFindFirst.mockResolvedValue({
       id: "db-sub-2",
       userId: "user-2",
@@ -398,9 +390,7 @@ describe("POST /api/billing/webhook", () => {
       id: "inv_fail",
       subscription: "sub_grace",
     };
-    mockConstructEvent.mockReturnValue(
-      makeStripeEvent("invoice.payment_failed", invoice),
-    );
+    mockConstructEvent.mockReturnValue(makeStripeEvent("invoice.payment_failed", invoice));
     mockDbQuerySubscriptionsFindFirst.mockResolvedValue({
       id: "db-sub-3",
       userId: "user-3",
@@ -421,7 +411,7 @@ describe("POST /api/billing/webhook", () => {
 
   it("returns 200 for an unhandled event type without throwing", async () => {
     mockConstructEvent.mockReturnValue(
-      makeStripeEvent("payment_method.attached", { id: "pm_test" }),
+      makeStripeEvent("payment_method.attached", { id: "pm_test" })
     );
 
     const res = await POST(makeRequest());

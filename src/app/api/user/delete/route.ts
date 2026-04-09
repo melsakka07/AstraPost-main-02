@@ -7,7 +7,7 @@ import { user } from "@/lib/schema";
 
 export async function DELETE(_req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  
+
   if (!session) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
@@ -21,7 +21,7 @@ export async function DELETE(_req: Request) {
     // Sign out logic might be handled by client redirection after this call
     return new NextResponse(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("Error deleting account:", error);

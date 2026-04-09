@@ -67,10 +67,7 @@ export async function POST(req: Request) {
     stripeCustomerId = customer.id;
 
     // Persist the new customer ID immediately so retries reuse it.
-    await db
-      .update(user)
-      .set({ stripeCustomerId })
-      .where(eq(user.id, session.user.id));
+    await db.update(user).set({ stripeCustomerId }).where(eq(user.id, session.user.id));
   }
 
   // ── Trial eligibility ───────────────────────────────────────────────────────
@@ -122,9 +119,7 @@ export async function POST(req: Request) {
       mode: "subscription",
       customer: stripeCustomerId,
       line_items: [{ price: priceId, quantity: 1 }],
-      ...(trialDays !== undefined
-        ? { subscription_data: { trial_period_days: trialDays } }
-        : {}),
+      ...(trialDays !== undefined ? { subscription_data: { trial_period_days: trialDays } } : {}),
       // Apply our promo code as a Stripe discount if we have a coupon ID,
       // otherwise keep allow_promotion_codes: true for native Stripe codes.
       ...(stripeCouponId

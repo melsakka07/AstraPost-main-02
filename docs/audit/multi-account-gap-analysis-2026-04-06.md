@@ -10,33 +10,33 @@
 
 ### Category A: Discovery & Guidance (UX)
 
-| # | Gap | Where | Severity | Detail |
-|---|-----|-------|----------|--------|
-| A1 | **No "Add Account" button anywhere** | Settings page | Critical | Users can only "Reconnect" (expired tokens) or "Sync". There is no explicit "Add another X account" action. |
-| A2 | **No guidance on multi-account workflow** | Settings, onboarding | Critical | Nothing tells users: "Stay logged in, then connect additional accounts from Settings." A user who logs out and signs in with a different X account creates a separate AstraPost user. |
-| A3 | **Onboarding skips account connection** | `onboarding-wizard.tsx` | High | 4 steps (Preferences → Compose → Schedule → AI). No step for "Connect your X account" even though it's required to post. |
-| A4 | **Empty state in Composer has no CTA** | `target-accounts-select.tsx:69` | High | Shows "No accounts connected" but no link to Settings to fix it. Dead end. |
-| A5 | **Empty state in Settings has no CTA** | `connected-x-accounts.tsx:259` | High | Shows "No accounts connected." with no button to connect one. |
-| A6 | **No multi-account hint in Composer** | `composer-onboarding-hint.tsx` | Medium | Composer hints cover AI, scheduling, shortcuts — never mentions the account selector. |
-| A7 | **Plan Usage shows slots but no "Add" CTA** | `plan-usage.tsx:75` | Medium | Shows "2 / 3" but doesn't say "You have 1 slot remaining — [Add Account]". |
+| #   | Gap                                         | Where                           | Severity | Detail                                                                                                                                                                                |
+| --- | ------------------------------------------- | ------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | **No "Add Account" button anywhere**        | Settings page                   | Critical | Users can only "Reconnect" (expired tokens) or "Sync". There is no explicit "Add another X account" action.                                                                           |
+| A2  | **No guidance on multi-account workflow**   | Settings, onboarding            | Critical | Nothing tells users: "Stay logged in, then connect additional accounts from Settings." A user who logs out and signs in with a different X account creates a separate AstraPost user. |
+| A3  | **Onboarding skips account connection**     | `onboarding-wizard.tsx`         | High     | 4 steps (Preferences → Compose → Schedule → AI). No step for "Connect your X account" even though it's required to post.                                                              |
+| A4  | **Empty state in Composer has no CTA**      | `target-accounts-select.tsx:69` | High     | Shows "No accounts connected" but no link to Settings to fix it. Dead end.                                                                                                            |
+| A5  | **Empty state in Settings has no CTA**      | `connected-x-accounts.tsx:259`  | High     | Shows "No accounts connected." with no button to connect one.                                                                                                                         |
+| A6  | **No multi-account hint in Composer**       | `composer-onboarding-hint.tsx`  | Medium   | Composer hints cover AI, scheduling, shortcuts — never mentions the account selector.                                                                                                 |
+| A7  | **Plan Usage shows slots but no "Add" CTA** | `plan-usage.tsx:75`             | Medium   | Shows "2 / 3" but doesn't say "You have 1 slot remaining — [Add Account]".                                                                                                            |
 
 ### Category B: Account Management (UX + Backend)
 
-| # | Gap | Where | Severity | Detail |
-|---|-----|-------|----------|--------|
-| B1 | **No "Remove/Disconnect" button in UI** | `connected-x-accounts.tsx` | High | DELETE endpoint exists (`/api/x/accounts/[id]`) but no UI button to trigger it. Users cannot remove unwanted accounts. |
-| B2 | **No downgrade account cleanup** | Stripe webhook | High | User downgrades Pro (3 accounts) → Free (1 account). All 3 accounts remain `isActive = true`. No deactivation, no notification, no grace period to choose which to keep. |
-| B3 | **No "Set as default" enforcement** | `connected-x-accounts.tsx`, DB | Medium | Multiple accounts can have `isDefault = true` simultaneously (no DB constraint, no clearing of old default before setting new one). |
-| B4 | **No proactive token refresh** | Background jobs | Medium | Tokens expire silently. No background job checks for expiring tokens (e.g., 24h warning). User only discovers expired token when a post fails or they visit Settings. |
-| B5 | **Orphaned paused posts on account deletion** | `processors.ts` | Medium | Posts in `paused_needs_reconnect` status for a deleted account remain stuck forever. No migration to another account, no user notification. |
+| #   | Gap                                           | Where                          | Severity | Detail                                                                                                                                                                   |
+| --- | --------------------------------------------- | ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| B1  | **No "Remove/Disconnect" button in UI**       | `connected-x-accounts.tsx`     | High     | DELETE endpoint exists (`/api/x/accounts/[id]`) but no UI button to trigger it. Users cannot remove unwanted accounts.                                                   |
+| B2  | **No downgrade account cleanup**              | Stripe webhook                 | High     | User downgrades Pro (3 accounts) → Free (1 account). All 3 accounts remain `isActive = true`. No deactivation, no notification, no grace period to choose which to keep. |
+| B3  | **No "Set as default" enforcement**           | `connected-x-accounts.tsx`, DB | Medium   | Multiple accounts can have `isDefault = true` simultaneously (no DB constraint, no clearing of old default before setting new one).                                      |
+| B4  | **No proactive token refresh**                | Background jobs                | Medium   | Tokens expire silently. No background job checks for expiring tokens (e.g., 24h warning). User only discovers expired token when a post fails or they visit Settings.    |
+| B5  | **Orphaned paused posts on account deletion** | `processors.ts`                | Medium   | Posts in `paused_needs_reconnect` status for a deleted account remain stuck forever. No migration to another account, no user notification.                              |
 
 ### Category C: Edge Cases (Backend)
 
-| # | Gap | Where | Severity | Detail |
-|---|-----|-------|----------|--------|
-| C1 | **Inactive accounts bypass limit count** | `require-plan.ts:164` | Medium | `checkAccountLimitDetailed` counts only `isActive = true`. A user can accumulate unlimited deactivated accounts, then reactivate them without a limit check. |
-| C2 | **No cascade cleanup for job_runs** | `schema.ts` | Low | Deleting an X account cascades to posts, follower snapshots, analytics runs — but `jobRuns` and notifications become orphaned. |
-| C3 | **Race condition on concurrent OAuth** | `sync/route.ts` | Low | Two simultaneous OAuth completions for the same X account could create duplicates before the `onConflictDoUpdate` runs (unlikely but possible). |
+| #   | Gap                                      | Where                 | Severity | Detail                                                                                                                                                       |
+| --- | ---------------------------------------- | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C1  | **Inactive accounts bypass limit count** | `require-plan.ts:164` | Medium   | `checkAccountLimitDetailed` counts only `isActive = true`. A user can accumulate unlimited deactivated accounts, then reactivate them without a limit check. |
+| C2  | **No cascade cleanup for job_runs**      | `schema.ts`           | Low      | Deleting an X account cascades to posts, follower snapshots, analytics runs — but `jobRuns` and notifications become orphaned.                               |
+| C3  | **Race condition on concurrent OAuth**   | `sync/route.ts`       | Low      | Two simultaneous OAuth completions for the same X account could create duplicates before the `onConflictDoUpdate` runs (unlikely but possible).              |
 
 ---
 
@@ -54,11 +54,12 @@ Add a prominent button above the accounts list:
 
 ```tsx
 <Button onClick={handleAddAccount} disabled={atLimit}>
-  <Plus className="h-4 w-4 mr-2" /> Connect X Account
+  <Plus className="mr-2 h-4 w-4" /> Connect X Account
 </Button>
 ```
 
 The `handleAddAccount` function should:
+
 1. Call `checkAccountLimitDetailed` via a lightweight GET endpoint (or use client-side plan data)
 2. If under limit → trigger `signIn.social({ provider: "twitter", callbackURL: "/dashboard/settings?sync=1" })`
 3. If at limit → show upgrade modal with remaining slots info
@@ -96,6 +97,7 @@ When `accounts.length === 0`, replace "No accounts connected" with:
 Insert a new Step 1 (shift existing steps to 2-5):
 
 **Step 1: "Connect Your X Account"**
+
 - Check if user already has an active X account (they should — they signed in with one)
 - If yes → show confirmation with their connected account + "You can add more accounts later from Settings"
 - If no (edge case) → show "Connect X Account" button
@@ -125,6 +127,7 @@ Only show when user has 2+ accounts connected.
 **File:** `src/components/settings/connected-x-accounts.tsx`
 
 Add a trash icon button to each account card. On click:
+
 1. Show confirmation dialog: "Remove @username? Scheduled posts for this account will be cancelled."
 2. Call `DELETE /api/x/accounts/[id]`
 3. Refresh account list
@@ -132,6 +135,7 @@ Add a trash icon button to each account card. On click:
 **File:** `src/app/api/x/accounts/[id]/route.ts`
 
 Verify the DELETE handler:
+
 - Cancels or reassigns pending posts (don't leave orphans)
 - If removing the default account, auto-promote the next active account to default
 - Prevent removing the last remaining account (it's the auth account)
@@ -141,6 +145,7 @@ Verify the DELETE handler:
 **File:** `src/app/api/x/accounts/default/route.ts`
 
 Wrap in a transaction:
+
 ```typescript
 await db.transaction(async (tx) => {
   // Clear ALL defaults for this user
@@ -163,6 +168,7 @@ This prevents multiple defaults from existing simultaneously.
 **File:** `src/app/api/billing/webhook/route.ts`
 
 When plan changes (e.g., Pro → Free):
+
 1. Count active accounts
 2. If `activeCount > newLimit`:
    - Do NOT auto-deactivate accounts
@@ -194,6 +200,7 @@ Show a warning badge on excess accounts and disable posting (but don't auto-disc
 **File:** `src/lib/queue/processors.ts` (or new processor)
 
 Add a daily job:
+
 1. Query all X accounts where `tokenExpiresAt < NOW() + INTERVAL '48 hours'`
 2. For each: attempt a silent token refresh via `refreshToken`
 3. If refresh fails: create a notification + email: "Your @username token expires soon. Reconnect in Settings."
@@ -254,19 +261,19 @@ Test Suite: Multi-Account Limits
 
 #### Manual Testing Checklist
 
-| # | Scenario | Expected |
-|---|----------|----------|
-| 1 | New user → Settings → sees "Connect X Account" button | Button visible |
-| 2 | Free user clicks "Connect X Account" with 1 account | Blocked with upgrade modal |
-| 3 | Pro user clicks "Connect X Account" with 2 accounts | OAuth flow starts |
-| 4 | Pro user with 3 accounts → button disabled or shows "Limit reached" | Correct |
-| 5 | Composer with 0 accounts | Shows link to Settings |
-| 6 | Composer with 3 accounts | Dropdown with checkboxes, all visible |
-| 7 | Remove account with scheduled posts | Confirmation dialog warns about posts |
-| 8 | Remove default account | Next account auto-promoted to default |
-| 9 | Try to remove last account | Blocked with explanation |
-| 10 | Downgrade Pro → Free with 3 accounts | Notification about over-limit |
-| 11 | Onboarding → Step 1 shows connected account | Account visible with "add more later" text |
+| #   | Scenario                                                            | Expected                                   |
+| --- | ------------------------------------------------------------------- | ------------------------------------------ |
+| 1   | New user → Settings → sees "Connect X Account" button               | Button visible                             |
+| 2   | Free user clicks "Connect X Account" with 1 account                 | Blocked with upgrade modal                 |
+| 3   | Pro user clicks "Connect X Account" with 2 accounts                 | OAuth flow starts                          |
+| 4   | Pro user with 3 accounts → button disabled or shows "Limit reached" | Correct                                    |
+| 5   | Composer with 0 accounts                                            | Shows link to Settings                     |
+| 6   | Composer with 3 accounts                                            | Dropdown with checkboxes, all visible      |
+| 7   | Remove account with scheduled posts                                 | Confirmation dialog warns about posts      |
+| 8   | Remove default account                                              | Next account auto-promoted to default      |
+| 9   | Try to remove last account                                          | Blocked with explanation                   |
+| 10  | Downgrade Pro → Free with 3 accounts                                | Notification about over-limit              |
+| 11  | Onboarding → Step 1 shows connected account                         | Account visible with "add more later" text |
 
 ---
 
@@ -352,22 +359,22 @@ Agent 2: general-purpose
 
 ## 4. Files Modified Summary
 
-| Phase | File | Change |
-|-------|------|--------|
-| 1 | `src/components/settings/connected-x-accounts.tsx` | Add "Connect" button, guidance banner, fix empty state |
-| 1 | `src/components/composer/target-accounts-select.tsx` | Add Settings link on empty state |
-| 1 | `src/components/composer/composer-onboarding-hint.tsx` | Add multi-account hint |
-| 1 | `src/components/onboarding/onboarding-wizard.tsx` | Add "Connect Account" step |
-| 2 | `src/components/settings/connected-x-accounts.tsx` | Add remove button + confirmation |
-| 2 | `src/app/api/x/accounts/[id]/route.ts` | Verify/fix DELETE handler |
-| 2 | `src/app/api/x/accounts/default/route.ts` | Transaction-based default enforcement |
-| 3 | `src/app/api/billing/webhook/route.ts` | Downgrade over-limit handling |
-| 3 | `src/components/settings/connected-x-accounts.tsx` | Over-limit banner |
-| 4 | `src/lib/queue/processors.ts` | Token health check job |
-| 4 | `src/components/composer/target-accounts-select.tsx` | Token expiry badge |
-| 5 | `src/lib/middleware/require-plan.ts` | Count all accounts in limit check |
-| 6 | `src/lib/middleware/require-plan.test.ts` | Multi-account test cases |
+| Phase | File                                                   | Change                                                 |
+| ----- | ------------------------------------------------------ | ------------------------------------------------------ |
+| 1     | `src/components/settings/connected-x-accounts.tsx`     | Add "Connect" button, guidance banner, fix empty state |
+| 1     | `src/components/composer/target-accounts-select.tsx`   | Add Settings link on empty state                       |
+| 1     | `src/components/composer/composer-onboarding-hint.tsx` | Add multi-account hint                                 |
+| 1     | `src/components/onboarding/onboarding-wizard.tsx`      | Add "Connect Account" step                             |
+| 2     | `src/components/settings/connected-x-accounts.tsx`     | Add remove button + confirmation                       |
+| 2     | `src/app/api/x/accounts/[id]/route.ts`                 | Verify/fix DELETE handler                              |
+| 2     | `src/app/api/x/accounts/default/route.ts`              | Transaction-based default enforcement                  |
+| 3     | `src/app/api/billing/webhook/route.ts`                 | Downgrade over-limit handling                          |
+| 3     | `src/components/settings/connected-x-accounts.tsx`     | Over-limit banner                                      |
+| 4     | `src/lib/queue/processors.ts`                          | Token health check job                                 |
+| 4     | `src/components/composer/target-accounts-select.tsx`   | Token expiry badge                                     |
+| 5     | `src/lib/middleware/require-plan.ts`                   | Count all accounts in limit check                      |
+| 6     | `src/lib/middleware/require-plan.test.ts`              | Multi-account test cases                               |
 
 ---
 
-*Generated 2026-04-06. Addresses multi-account gaps identified during pricing audit.*
+_Generated 2026-04-06. Addresses multi-account gaps identified during pricing audit._

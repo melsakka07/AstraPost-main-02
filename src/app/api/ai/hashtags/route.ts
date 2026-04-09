@@ -4,7 +4,6 @@ import { aiPreamble } from "@/lib/api/ai-preamble";
 import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
-
 const hashtagRequestSchema = z.object({
   content: z.string().min(1),
   language: LANGUAGE_ENUM,
@@ -24,7 +23,9 @@ export async function POST(req: Request) {
     const result = hashtagRequestSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
+        status: 400,
+      });
     }
 
     const { content, language } = result.data;
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     const prompt = `
       You are a social media growth expert for X (Twitter).
       Suggest 5-10 highly relevant and trending hashtags for the following tweet content.
-      Language: ${LANGUAGES.find(l => l.code === language)?.label || 'English'}.
+      Language: ${LANGUAGES.find((l) => l.code === language)?.label || "English"}.
       
       Content:
       "${content}"
@@ -52,12 +53,12 @@ export async function POST(req: Request) {
     });
 
     await recordAiUsage(
-        session.user.id, 
-        "tools", // using "tools" type for now
-        0, 
-        prompt, 
-        JSON.stringify(object),
-        language
+      session.user.id,
+      "tools", // using "tools" type for now
+      0,
+      prompt,
+      JSON.stringify(object),
+      language
     );
 
     return Response.json(object);

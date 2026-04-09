@@ -20,6 +20,8 @@ export async function GET() {
     return Response.json(links);
   } catch (error) {
     console.error("Failed to fetch affiliate links:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch affiliate history" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to fetch affiliate history" }), {
+      status: 500,
+    });
   }
 }

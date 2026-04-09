@@ -33,15 +33,16 @@
 
 ## 1. AI Thread Writer
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/thread/route.ts` |
-| **AI Call** | `streamText()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
-| **Output** | Streamed plain text, split by `===TWEET===` delimiter |
+|               |                                                       |
+| ------------- | ----------------------------------------------------- |
+| **File**      | `src/app/api/ai/thread/route.ts`                      |
+| **AI Call**   | `streamText()`                                        |
+| **Model**     | `process.env.OPENROUTER_MODEL`                        |
+| **Plan Gate** | Free (quota-limited)                                  |
+| **Output**    | Streamed plain text, split by `===TWEET===` delimiter |
 
 ### Request Schema
+
 ```typescript
 {
   topic: string,            // min 1, max 500
@@ -55,6 +56,7 @@
 ```
 
 ### System Prompt — Single Mode
+
 ```
 You are an expert social media content writer for X (Twitter).
 Write exactly ONE post about "{topic}".
@@ -72,6 +74,7 @@ Requirements:
 ```
 
 ### System Prompt — Thread Mode
+
 ```
 You are an expert social media content writer for X (Twitter).
 Write exactly {tweetCount} tweets about "{topic}".
@@ -96,24 +99,26 @@ Output exactly {tweetCount} tweets. No headers, explanations, or extra text.
 ```
 
 ### Length Guidance (from `src/lib/ai/length-prompts.ts`)
-| Option | Max Chars | Guidance |
-|--------|-----------|---------|
-| `short` | 280 | Focus on ONE powerful idea. Be punchy and direct. Hook in the first line. |
-| `medium` | 1,000 | Developed take with clear structure — 2–3 short paragraphs. Strong opener, supporting points, memorable close. |
-| `long` | 2,000 | Thought leadership piece — in-depth analysis or detailed explainer. Use spacing for readability. |
+
+| Option   | Max Chars | Guidance                                                                                                       |
+| -------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| `short`  | 280       | Focus on ONE powerful idea. Be punchy and direct. Hook in the first line.                                      |
+| `medium` | 1,000     | Developed take with clear structure — 2–3 short paragraphs. Strong opener, supporting points, memorable close. |
+| `long`   | 2,000     | Thought leadership piece — in-depth analysis or detailed explainer. Use spacing for readability.               |
 
 ---
 
 ## 2. AI Translate
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/translate/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
+|               |                                     |
+| ------------- | ----------------------------------- |
+| **File**      | `src/app/api/ai/translate/route.ts` |
+| **AI Call**   | `generateObject()`                  |
+| **Model**     | `process.env.OPENROUTER_MODEL`      |
+| **Plan Gate** | Free (quota-limited)                |
 
 ### Request Schema
+
 ```typescript
 {
   tweets: string[],         // min 1, max 15 items, each max 280 chars
@@ -122,6 +127,7 @@ Output exactly {tweetCount} tweets. No headers, explanations, or extra text.
 ```
 
 ### Output Schema
+
 ```typescript
 {
   tweets: string[]          // max 280 chars each
@@ -129,6 +135,7 @@ Output exactly {tweetCount} tweets. No headers, explanations, or extra text.
 ```
 
 ### Prompt
+
 ```
 Translate this X thread into {targetLanguage}.
 
@@ -148,14 +155,15 @@ Thread:
 
 ## 3. AI Hashtag Generator
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/hashtags/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
+|               |                                    |
+| ------------- | ---------------------------------- |
+| **File**      | `src/app/api/ai/hashtags/route.ts` |
+| **AI Call**   | `generateObject()`                 |
+| **Model**     | `process.env.OPENROUTER_MODEL`     |
+| **Plan Gate** | Free (quota-limited)               |
 
 ### Request Schema
+
 ```typescript
 {
   content: string,          // min 1
@@ -164,6 +172,7 @@ Thread:
 ```
 
 ### Output Schema
+
 ```typescript
 {
   hashtags: string[]        // e.g. ["#growth", "#startup"]
@@ -171,6 +180,7 @@ Thread:
 ```
 
 ### Prompt
+
 ```
 You are a social media growth expert for X (Twitter).
 Suggest 5-10 highly relevant and trending hashtags for the following tweet content.
@@ -191,14 +201,15 @@ Constraints:
 
 ## 4. AI Affiliate Tweet Generator
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/affiliate/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
+|               |                                     |
+| ------------- | ----------------------------------- |
+| **File**      | `src/app/api/ai/affiliate/route.ts` |
+| **AI Call**   | `generateObject()`                  |
+| **Model**     | `process.env.OPENROUTER_MODEL`      |
+| **Plan Gate** | Free (quota-limited)                |
 
 ### Request Schema
+
 ```typescript
 {
   url: string,              // product URL
@@ -209,6 +220,7 @@ Constraints:
 ```
 
 ### Output Schema
+
 ```typescript
 {
   tweet: string,            // max 1100 chars
@@ -217,6 +229,7 @@ Constraints:
 ```
 
 ### Prompt
+
 ```
 You are an expert affiliate marketer on X (Twitter).
 Write a compelling, high-converting tweet to promote this product:
@@ -240,14 +253,15 @@ Constraints:
 
 ## 5. AI Tools — Hook / CTA / Rewrite
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/tools/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
+|               |                                 |
+| ------------- | ------------------------------- |
+| **File**      | `src/app/api/ai/tools/route.ts` |
+| **AI Call**   | `generateObject()`              |
+| **Model**     | `process.env.OPENROUTER_MODEL`  |
+| **Plan Gate** | Free (quota-limited)            |
 
 ### Request Schema
+
 ```typescript
 {
   tool: "hook" | "cta" | "rewrite",
@@ -259,13 +273,15 @@ Constraints:
 ```
 
 ### Output Schema
+
 ```typescript
 {
-  text: string              // max 1100 chars
+  text: string; // max 1100 chars
 }
 ```
 
 ### Prompt — Hook
+
 ```
 You are an expert viral X (Twitter) writer. Write ONE hook tweet about: "{topic}".
 Tone: {tone}.
@@ -280,6 +296,7 @@ Constraints:
 ```
 
 ### Prompt — CTA
+
 ```
 Write a short call-to-action for the END of an X thread.
 Tone: {tone}.
@@ -293,6 +310,7 @@ Constraints:
 ```
 
 ### Prompt — Rewrite
+
 ```
 Rewrite the following X tweet.
 Tone: {tone}.
@@ -312,15 +330,16 @@ Tweet:
 
 ## 6. AI Inspire — Content Adaptation
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/inspire/route.ts` |
-| **AI Call** | `generateText()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
-| **Output** | Plain text; `expand_thread` splits on `|||` delimiter |
+|               |                                         |
+| ------------- | --------------------------------------- | --- | --- | ----------- |
+| **File**      | `src/app/api/ai/inspire/route.ts`       |
+| **AI Call**   | `generateText()`                        |
+| **Model**     | `process.env.OPENROUTER_MODEL`          |
+| **Plan Gate** | Free (quota-limited)                    |
+| **Output**    | Plain text; `expand_thread` splits on ` |     |     | ` delimiter |
 
 ### Request Schema
+
 ```typescript
 {
   originalTweet: string,    // min 1, max 5000
@@ -335,6 +354,7 @@ Tweet:
 ### System Prompts by Action
 
 **rephrase**
+
 ```
 You are helping a user create original content inspired by an existing tweet.
 
@@ -351,6 +371,7 @@ Return ONLY the rephrased tweet text. No explanation or additional text.
 ```
 
 **change_tone**
+
 ```
 You are helping a user adapt a tweet's tone while keeping the core message.
 
@@ -367,6 +388,7 @@ Return ONLY the adapted tweet text. No explanation or additional text.
 ```
 
 **expand_thread**
+
 ```
 You are helping a user expand a single tweet into an engaging thread.
 
@@ -389,6 +411,7 @@ Example: First tweet hook...|||Second tweet...|||Third tweet...
 ```
 
 **add_take**
+
 ```
 You are helping a user add their personal perspective to an existing tweet idea.
 
@@ -405,6 +428,7 @@ Return ONLY the adapted tweet text. No explanation or additional text.
 ```
 
 **translate**
+
 ```
 You are helping a user translate a tweet while adapting cultural references appropriately.
 
@@ -422,6 +446,7 @@ Return ONLY the translated and adapted tweet text. No explanation or additional 
 ```
 
 **counter_point**
+
 ```
 You are helping a user create a respectful counter-argument or alternative viewpoint.
 
@@ -438,6 +463,7 @@ Return ONLY the counter-argument tweet text. No explanation or additional text.
 ```
 
 ### User Prompt (all actions)
+
 ```
 Original tweet:
 {originalTweet}
@@ -449,16 +475,17 @@ Original tweet:
 
 ## 7. AI Image Generation
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/image/route.ts` |
-| **AI Call (prompt gen)** | `generateText()` via OpenRouter |
-| **AI Call (image gen)** | Replicate API |
-| **Model (prompt)** | `process.env.OPENROUTER_MODEL` |
-| **Model (image)** | `process.env.REPLICATE_MODEL_FAST` / `REPLICATE_MODEL_PRO` / `REPLICATE_MODEL_FALLBACK` |
-| **Plan Gate** | Free (quota-limited); Pro required for `nano-banana-pro` |
+|                          |                                                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| **File**                 | `src/app/api/ai/image/route.ts`                                                         |
+| **AI Call (prompt gen)** | `generateText()` via OpenRouter                                                         |
+| **AI Call (image gen)**  | Replicate API                                                                           |
+| **Model (prompt)**       | `process.env.OPENROUTER_MODEL`                                                          |
+| **Model (image)**        | `process.env.REPLICATE_MODEL_FAST` / `REPLICATE_MODEL_PRO` / `REPLICATE_MODEL_FALLBACK` |
+| **Plan Gate**            | Free (quota-limited); Pro required for `nano-banana-pro`                                |
 
 ### Request Schema
+
 ```typescript
 {
   prompt?: string,          // max 1000 — if omitted, auto-generated from tweetContent
@@ -472,6 +499,7 @@ Original tweet:
 ### Auto-Prompt Generation (when no prompt provided)
 
 **System prompt:**
+
 ```
 You are an expert at creating vivid, specific image prompts for social media content.
 Generate a visual prompt that captures the essence of the post.
@@ -481,6 +509,7 @@ Return ONLY the image prompt, no explanation or additional text.
 ```
 
 **User prompt:**
+
 ```
 Generate an image prompt for the following social media post (respond with only the image prompt, nothing else):
 
@@ -490,34 +519,37 @@ Generate an image prompt for the following social media post (respond with only 
 ```
 
 ### Style Modifiers (appended to prompt, `src/lib/services/ai-image.ts`)
-| Style | Appended Suffix |
-|-------|----------------|
+
+| Style            | Appended Suffix                                                                       |
+| ---------------- | ------------------------------------------------------------------------------------- |
 | `photorealistic` | `, photorealistic, highly detailed, 8k, professional photography, cinematic lighting` |
-| `illustration` | `, digital illustration, vibrant colors, clean lines, modern art style` |
-| `minimalist` | `, minimalist design, clean composition, ample white space, simple` |
-| `abstract` | `, abstract art, artistic interpretation, creative, non-representational` |
-| `infographic` | `, infographic style, clear typography, data visualization, educational` |
-| `meme` | `, meme format, humorous, bold text overlay, internet meme style` |
+| `illustration`   | `, digital illustration, vibrant colors, clean lines, modern art style`               |
+| `minimalist`     | `, minimalist design, clean composition, ample white space, simple`                   |
+| `abstract`       | `, abstract art, artistic interpretation, creative, non-representational`             |
+| `infographic`    | `, infographic style, clear typography, data visualization, educational`              |
+| `meme`           | `, meme format, humorous, bold text overlay, internet meme style`                     |
 
 ### Model Mapping (`src/lib/services/ai-image.ts`)
-| Logical Name | Replicate Identifier (from env) | Resolution |
-|---|---|---|
-| `nano-banana-2` | `REPLICATE_MODEL_FAST` | 1K (1024px) |
-| `nano-banana-pro` | `REPLICATE_MODEL_PRO` | 2K (2048px) |
-| `nano-banana` | `REPLICATE_MODEL_FALLBACK` | 1K (1024px) |
+
+| Logical Name      | Replicate Identifier (from env) | Resolution  |
+| ----------------- | ------------------------------- | ----------- |
+| `nano-banana-2`   | `REPLICATE_MODEL_FAST`          | 1K (1024px) |
+| `nano-banana-pro` | `REPLICATE_MODEL_PRO`           | 2K (2048px) |
+| `nano-banana`     | `REPLICATE_MODEL_FALLBACK`      | 1K (1024px) |
 
 ---
 
 ## 8. AI Content Calendar
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/calendar/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Pro / Agency only |
+|               |                                    |
+| ------------- | ---------------------------------- |
+| **File**      | `src/app/api/ai/calendar/route.ts` |
+| **AI Call**   | `generateObject()`                 |
+| **Model**     | `process.env.OPENROUTER_MODEL`     |
+| **Plan Gate** | Pro / Agency only                  |
 
 ### Request Schema
+
 ```typescript
 {
   niche: string,            // min 1, max 300
@@ -529,6 +561,7 @@ Generate an image prompt for the following social media post (respond with only 
 ```
 
 ### Output Schema
+
 ```typescript
 {
   items: {
@@ -543,6 +576,7 @@ Generate an image prompt for the following social media post (respond with only 
 ```
 
 ### Prompt
+
 ```
 You are a social media strategist for X (Twitter).
 Create a content calendar for {weeks} week(s) with {postsPerWeek} posts per week
@@ -566,14 +600,15 @@ Return exactly {totalPosts} items.
 
 ## 9. URL to Thread (Summarize)
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/summarize/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Pro / Agency only |
+|               |                                     |
+| ------------- | ----------------------------------- |
+| **File**      | `src/app/api/ai/summarize/route.ts` |
+| **AI Call**   | `generateObject()`                  |
+| **Model**     | `process.env.OPENROUTER_MODEL`      |
+| **Plan Gate** | Pro / Agency only                   |
 
 ### Request Schema
+
 ```typescript
 {
   url: string,              // valid URL — article is fetched server-side
@@ -584,6 +619,7 @@ Return exactly {totalPosts} items.
 ```
 
 ### Output Schema
+
 ```typescript
 {
   tweets: string[],         // max 1100 chars each
@@ -593,6 +629,7 @@ Return exactly {totalPosts} items.
 ```
 
 ### Prompt
+
 ```
 You are an expert social media writer for X (Twitter).
 Read the following article and write a {tweetCount}-tweet thread that summarizes or comments on it.
@@ -615,14 +652,15 @@ Constraints:
 
 ## 10. A/B Variant Generator
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/variants/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Pro / Agency only |
+|               |                                    |
+| ------------- | ---------------------------------- |
+| **File**      | `src/app/api/ai/variants/route.ts` |
+| **AI Call**   | `generateObject()`                 |
+| **Model**     | `process.env.OPENROUTER_MODEL`     |
+| **Plan Gate** | Pro / Agency only                  |
 
 ### Request Schema
+
 ```typescript
 {
   tweet: string,            // min 1, max 1000
@@ -631,6 +669,7 @@ Constraints:
 ```
 
 ### Output Schema
+
 ```typescript
 {
   variants: {
@@ -642,6 +681,7 @@ Constraints:
 ```
 
 ### Prompt
+
 ```
 You are an expert social media copywriter.
 Given the following tweet, generate exactly 3 alternative versions using different angles.
@@ -665,14 +705,15 @@ For each variant:
 
 ## 11. Reply Suggester
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/reply/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Pro / Agency only |
+|               |                                 |
+| ------------- | ------------------------------- |
+| **File**      | `src/app/api/ai/reply/route.ts` |
+| **AI Call**   | `generateObject()`              |
+| **Model**     | `process.env.OPENROUTER_MODEL`  |
+| **Plan Gate** | Pro / Agency only               |
 
 ### Request Schema
+
 ```typescript
 {
   tweetUrl: string,         // valid X tweet URL — tweet is fetched server-side
@@ -683,6 +724,7 @@ For each variant:
 ```
 
 ### Output Schema
+
 ```typescript
 {
   replies: {
@@ -693,6 +735,7 @@ For each variant:
 ```
 
 ### Prompt
+
 ```
 You are an expert social media engagement writer.
 Generate 5 high-quality replies to the following tweet from {tweetAuthor}.
@@ -719,14 +762,15 @@ For each reply include:
 
 ## 12. Bio Optimizer
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/bio/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Pro / Agency only |
+|               |                                |
+| ------------- | ------------------------------ |
+| **File**      | `src/app/api/ai/bio/route.ts`  |
+| **AI Call**   | `generateObject()`             |
+| **Model**     | `process.env.OPENROUTER_MODEL` |
+| **Plan Gate** | Pro / Agency only              |
 
 ### Request Schema
+
 ```typescript
 {
   currentBio?: string,      // max 500, default ""
@@ -737,6 +781,7 @@ For each reply include:
 ```
 
 ### Output Schema
+
 ```typescript
 {
   variants: {
@@ -748,6 +793,7 @@ For each reply include:
 ```
 
 ### Prompt
+
 ```
 You are an expert X (Twitter) profile strategist.
 Generate exactly 3 improved bio variants for a content creator.
@@ -775,14 +821,15 @@ For each variant provide:
 
 ## 13. Competitor Analyzer
 
-| | |
-|---|---|
-| **File** | `src/app/api/analytics/competitor/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Pro / Agency only |
+|               |                                             |
+| ------------- | ------------------------------------------- |
+| **File**      | `src/app/api/analytics/competitor/route.ts` |
+| **AI Call**   | `generateObject()`                          |
+| **Model**     | `process.env.OPENROUTER_MODEL`              |
+| **Plan Gate** | Pro / Agency only                           |
 
 ### Request Schema
+
 ```typescript
 {
   username: string,         // X username, min 1, max 50
@@ -791,6 +838,7 @@ For each variant provide:
 ```
 
 ### Output Schema
+
 ```typescript
 {
   topTopics: string[],                   // max 10
@@ -806,6 +854,7 @@ For each variant provide:
 ```
 
 ### Prompt
+
 ```
 You are a social media strategist. Analyze the following {tweetsCount} tweets from @{username}
 and provide a comprehensive competitor analysis.
@@ -830,22 +879,24 @@ Based on these tweets, analyze:
 
 ## 14. Viral Content Score
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/score/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
-| **Note** | Score is clamped to 0–100 after generation (Azure rejects `minimum`/`maximum` on number fields) |
+|               |                                                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| **File**      | `src/app/api/ai/score/route.ts`                                                                 |
+| **AI Call**   | `generateObject()`                                                                              |
+| **Model**     | `process.env.OPENROUTER_MODEL`                                                                  |
+| **Plan Gate** | Free (quota-limited)                                                                            |
+| **Note**      | Score is clamped to 0–100 after generation (Azure rejects `minimum`/`maximum` on number fields) |
 
 ### Request Schema
+
 ```typescript
 {
-  content: string           // min 1, max 5000
+  content: string; // min 1, max 5000
 }
 ```
 
 ### Output Schema
+
 ```typescript
 {
   score: number,            // clamped to 0–100 post-generation
@@ -854,6 +905,7 @@ Based on these tweets, analyze:
 ```
 
 ### Prompt
+
 ```
 You are an expert social media analyst for X (Twitter).
 Analyze the following tweet/thread content and provide a viral potential score (0-100)
@@ -876,15 +928,16 @@ Feedback should be short and direct (e.g., "Strong hook", "Add a question", "Use
 
 ## 15. General AI Chat
 
-| | |
-|---|---|
-| **File** | `src/app/api/chat/route.ts` |
-| **AI Call** | `streamText()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
+|                   |                                       |
+| ----------------- | ------------------------------------- |
+| **File**          | `src/app/api/chat/route.ts`           |
+| **AI Call**       | `streamText()`                        |
+| **Model**         | `process.env.OPENROUTER_MODEL`        |
+| **Plan Gate**     | Free (quota-limited)                  |
 | **System Prompt** | None — uses conversation history only |
 
 ### Request Schema
+
 ```typescript
 {
   messages: UIMessage[]     // max 100 messages
@@ -897,20 +950,22 @@ No custom system prompt. Passes conversation history via `convertToModelMessages
 
 ## 16. Content Inspiration
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/inspiration/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
+|               |                                          |
+| ------------- | ---------------------------------------- |
+| **File**      | `src/app/api/ai/inspiration/route.ts`    |
+| **AI Call**   | `generateObject()`                       |
+| **Model**     | `process.env.OPENROUTER_MODEL`           |
 | **Plan Gate** | Free (cached 6 hours per niche+language) |
 
 ### Query Parameters
+
 ```
 niche: string     // default "Technology"
 language: string  // default "en"
 ```
 
 ### Output Schema
+
 ```typescript
 {
   topics: {
@@ -921,6 +976,7 @@ language: string  // default "en"
 ```
 
 ### Prompt
+
 ```
 You are a social media trend analyst.
 Generate 5 trending or evergreen topic ideas for a "{niche}" niche content creator on X (Twitter).
@@ -939,16 +995,17 @@ Constraints:
 
 ## 17. Template-Based Generation
 
-| | |
-|---|---|
-| **File** | `src/app/api/ai/template-generate/route.ts` |
-| **Template Prompts** | `src/lib/ai/template-prompts.ts` |
-| **AI Call** | `streamText()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Free (quota-limited) |
-| **Output** | Streamed plain text, split by `===TWEET===` delimiter |
+|                      |                                                       |
+| -------------------- | ----------------------------------------------------- |
+| **File**             | `src/app/api/ai/template-generate/route.ts`           |
+| **Template Prompts** | `src/lib/ai/template-prompts.ts`                      |
+| **AI Call**          | `streamText()`                                        |
+| **Model**            | `process.env.OPENROUTER_MODEL`                        |
+| **Plan Gate**        | Free (quota-limited)                                  |
+| **Output**           | Streamed plain text, split by `===TWEET===` delimiter |
 
 ### Request Schema
+
 ```typescript
 {
   templateId: string,
@@ -961,15 +1018,16 @@ Constraints:
 
 ### Available Templates
 
-| ID | Name | Structure |
-|----|------|-----------|
-| `educational-thread` | How-To Guide | Hook → Steps → Wrap-up + CTA |
-| `storytelling-thread` | Personal Story | Hook → Story arc → Lesson |
-| `contrarian-take` | Contrarian Take | The take → Case evidence → Debate invitation |
-| `listicle-thread` | Curated List | Hook → List items → Bonus + CTA |
-| `product-launch` | Product Launch | Announcement → Features → Social proof → CTA |
+| ID                    | Name            | Structure                                    |
+| --------------------- | --------------- | -------------------------------------------- |
+| `educational-thread`  | How-To Guide    | Hook → Steps → Wrap-up + CTA                 |
+| `storytelling-thread` | Personal Story  | Hook → Story arc → Lesson                    |
+| `contrarian-take`     | Contrarian Take | The take → Case evidence → Debate invitation |
+| `listicle-thread`     | Curated List    | Hook → List items → Bonus + CTA              |
+| `product-launch`      | Product Launch  | Announcement → Features → Social proof → CTA |
 
 ### Base Constraints (appended to all templates)
+
 ```
 Language: {langLabel}.
 Tone: {tone}.
@@ -1000,14 +1058,15 @@ Do NOT put the delimiter at the very start or very end. Output only tweets + del
 
 ## 18. Voice Profile Analyzer
 
-| | |
-|---|---|
-| **File** | `src/app/api/user/voice-profile/route.ts` |
-| **AI Call** | `generateObject()` |
-| **Model** | `process.env.OPENROUTER_MODEL` |
-| **Plan Gate** | Pro / Agency only |
+|               |                                           |
+| ------------- | ----------------------------------------- |
+| **File**      | `src/app/api/user/voice-profile/route.ts` |
+| **AI Call**   | `generateObject()`                        |
+| **Model**     | `process.env.OPENROUTER_MODEL`            |
+| **Plan Gate** | Pro / Agency only                         |
 
 ### Request Schema
+
 ```typescript
 {
   tweets: string[]          // 5–50 sample tweets from the user
@@ -1015,6 +1074,7 @@ Do NOT put the delimiter at the very start or very end. Output only tweets + del
 ```
 
 ### Output Schema
+
 ```typescript
 {
   tone: string,
@@ -1028,6 +1088,7 @@ Do NOT put the delimiter at the very start or very end. Output only tweets + del
 ```
 
 ### Prompt
+
 ```
 You are an expert writing style analyst.
 Analyze the following tweets and extract a detailed voice profile of this writer.
@@ -1046,7 +1107,9 @@ Provide:
 ```
 
 ### Voice Instructions Injection (used in Thread, Tools, Hook routes)
+
 When a user has a saved voice profile, this block is injected into prompts via `src/lib/ai/voice-profile.ts`:
+
 ```
 Voice Profile Instructions:
 - Tone: {tone}
@@ -1065,7 +1128,9 @@ ADHERE STRICTLY TO THIS WRITING STYLE. Mimic the user's voice perfectly.
 ## Shared Infrastructure
 
 ### `aiPreamble()` — `src/lib/api/ai-preamble.ts`
+
 Shared helper called at the top of every AI route. Handles:
+
 1. Session authentication
 2. DB user fetch (plan + voice profile)
 3. Redis rate limit check
@@ -1076,37 +1141,40 @@ Shared helper called at the top of every AI route. Handles:
 8. Model instantiation: `openrouter(process.env.OPENROUTER_MODEL!)`
 
 ### Usage Recording — `src/lib/services/ai-quota.ts`
+
 All routes call `recordAiUsage()` after generation:
+
 ```typescript
-await recordAiUsage(userId, type, tokenCount, prompt, output, language)
+await recordAiUsage(userId, type, tokenCount, prompt, output, language);
 ```
+
 Types tracked: `thread`, `translate`, `tools`, `inspire`, `calendar`, `summarize`, `variants`, `reply`, `bio_optimizer`, `competitor_analysis`, `viral_score`, `chat`, `inspiration`, `template`, `voice_profile`
 
 ---
 
 ## Model & Provider Map
 
-| Feature | AI Call | Provider | Model Env Var |
-|---------|---------|----------|---------------|
-| Thread Writer | `streamText` | OpenRouter | `OPENROUTER_MODEL` |
-| Translate | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Hashtag Generator | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Affiliate Tweet | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Tools (Hook/CTA/Rewrite) | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Inspire (Adaptation) | `generateText` | OpenRouter | `OPENROUTER_MODEL` |
-| Image — prompt gen | `generateText` | OpenRouter | `OPENROUTER_MODEL` |
-| Image — generation | Replicate API | Replicate | `REPLICATE_MODEL_FAST` / `REPLICATE_MODEL_PRO` / `REPLICATE_MODEL_FALLBACK` |
-| Content Calendar | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| URL to Thread | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| A/B Variants | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Reply Suggester | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Bio Optimizer | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Competitor Analyzer | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Viral Score | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| General Chat | `streamText` | OpenRouter | `OPENROUTER_MODEL` |
-| Content Inspiration | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
-| Template Generation | `streamText` | OpenRouter | `OPENROUTER_MODEL` |
-| Voice Profile | `generateObject` | OpenRouter | `OPENROUTER_MODEL` |
+| Feature                  | AI Call          | Provider   | Model Env Var                                                               |
+| ------------------------ | ---------------- | ---------- | --------------------------------------------------------------------------- |
+| Thread Writer            | `streamText`     | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Translate                | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Hashtag Generator        | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Affiliate Tweet          | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Tools (Hook/CTA/Rewrite) | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Inspire (Adaptation)     | `generateText`   | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Image — prompt gen       | `generateText`   | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Image — generation       | Replicate API    | Replicate  | `REPLICATE_MODEL_FAST` / `REPLICATE_MODEL_PRO` / `REPLICATE_MODEL_FALLBACK` |
+| Content Calendar         | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| URL to Thread            | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| A/B Variants             | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Reply Suggester          | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Bio Optimizer            | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Competitor Analyzer      | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Viral Score              | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| General Chat             | `streamText`     | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Content Inspiration      | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Template Generation      | `streamText`     | OpenRouter | `OPENROUTER_MODEL`                                                          |
+| Voice Profile            | `generateObject` | OpenRouter | `OPENROUTER_MODEL`                                                          |
 
 ---
 
@@ -1114,11 +1182,11 @@ Types tracked: `thread`, `translate`, `tools`, `inspire`, `calendar`, `summarize
 
 > These constraints apply when using `anthropic/claude-*` models routed via Azure on OpenRouter.
 
-| Constraint | Rule | Workaround |
-|-----------|------|-----------|
-| Array `minItems` | Only 0 or 1 supported | Remove `.min(N)` where N ≥ 2; use prompt text to specify count |
-| Number `minimum`/`maximum` | Not supported in output schema | Remove `.min()`/`.max()` on numbers; clamp after generation |
-| `.refine()` / `.superRefine()` | Not translatable to JSON Schema | Never use on output schemas |
-| Array `.max(N)` | Supported | Safe to use |
-| String `.max(N)` | Supported | Safe to use |
-| Enum types | Supported | Safe to use |
+| Constraint                     | Rule                            | Workaround                                                     |
+| ------------------------------ | ------------------------------- | -------------------------------------------------------------- |
+| Array `minItems`               | Only 0 or 1 supported           | Remove `.min(N)` where N ≥ 2; use prompt text to specify count |
+| Number `minimum`/`maximum`     | Not supported in output schema  | Remove `.min()`/`.max()` on numbers; clamp after generation    |
+| `.refine()` / `.superRefine()` | Not translatable to JSON Schema | Never use on output schemas                                    |
+| Array `.max(N)`                | Supported                       | Safe to use                                                    |
+| String `.max(N)`               | Supported                       | Safe to use                                                    |
+| Enum types                     | Supported                       | Safe to use                                                    |

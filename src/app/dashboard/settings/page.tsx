@@ -34,15 +34,15 @@ export default async function SettingsPage({
   const billingState = Array.isArray(billingParam) ? billingParam[0] : billingParam;
 
   const connectedAccounts = await db.query.xAccounts.findMany({
-      where: eq(xAccounts.userId, session.user.id)
+    where: eq(xAccounts.userId, session.user.id),
   });
 
   const connectedLinkedInAccounts = await db.query.linkedinAccounts.findMany({
-      where: eq(linkedinAccounts.userId, session.user.id)
+    where: eq(linkedinAccounts.userId, session.user.id),
   });
 
   const connectedInstagramAccounts = await db.query.instagramAccounts.findMany({
-      where: eq(instagramAccounts.userId, session.user.id)
+    where: eq(instagramAccounts.userId, session.user.id),
   });
 
   const userRow = await db.query.user.findFirst({
@@ -54,14 +54,23 @@ export default async function SettingsPage({
 
   const billingNotice =
     billingState === "success"
-      ? { tone: "success", text: "Payment completed successfully. Your subscription is now active." }
+      ? {
+          tone: "success",
+          text: "Payment completed successfully. Your subscription is now active.",
+        }
       : billingState === "cancelled"
-      ? { tone: "warning", text: "Checkout was canceled. You can resume anytime from this page." }
-      : billingState === "portal_return"
-      ? { tone: "info", text: "Returned from billing portal. Changes usually sync within a few moments." }
-      : billingState === "restore"
-      ? { tone: "warning", text: "No active billing profile was found. Select a plan to restore billing access." }
-      : null;
+        ? { tone: "warning", text: "Checkout was canceled. You can resume anytime from this page." }
+        : billingState === "portal_return"
+          ? {
+              tone: "info",
+              text: "Returned from billing portal. Changes usually sync within a few moments.",
+            }
+          : billingState === "restore"
+            ? {
+                tone: "warning",
+                text: "No active billing profile was found. Select a plan to restore billing access.",
+              }
+            : null;
 
   return (
     <DashboardPageWrapper
@@ -79,7 +88,7 @@ export default async function SettingsPage({
               name: session.user.name,
               email: session.user.email,
               timezone: userRow?.timezone ?? null,
-              language: userRow?.language ?? null
+              language: userRow?.language ?? null,
             }}
           />
         </div>
@@ -90,7 +99,7 @@ export default async function SettingsPage({
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-primary" />
+                <CreditCard className="text-primary h-5 w-5" />
                 <CardTitle>Subscription</CardTitle>
               </div>
               <CardDescription>Your current plan and billing details</CardDescription>
@@ -100,18 +109,18 @@ export default async function SettingsPage({
                 <div
                   className={
                     billingNotice.tone === "warning"
-                      ? "rounded-md border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-warning"
-                      : "rounded-md border border-border bg-muted/60 px-4 py-3 text-sm text-foreground"
+                      ? "border-warning/40 bg-warning/10 text-warning rounded-md border px-4 py-3 text-sm"
+                      : "border-border bg-muted/60 text-foreground rounded-md border px-4 py-3 text-sm"
                   }
                 >
                   {billingNotice.text}
                 </div>
               )}
-              <div className="flex flex-col gap-3 rounded-lg bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="bg-muted/30 flex flex-col gap-3 rounded-lg p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-sm font-medium text-muted-foreground mb-1">Current Plan</div>
+                  <div className="text-muted-foreground mb-1 text-sm font-medium">Current Plan</div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-base px-3 py-1 uppercase">
+                    <Badge variant="secondary" className="px-3 py-1 text-base uppercase">
                       {currentPlan}
                     </Badge>
                   </div>
@@ -137,12 +146,12 @@ export default async function SettingsPage({
               </div>
               {/* Live subscription lifecycle details (trial countdown, next billing, etc.) */}
               <BillingStatus />
-              <div className="text-xs text-muted-foreground px-2">
+              <div className="text-muted-foreground px-2 text-xs">
                 {hasStripeCustomerId
                   ? "Use the billing portal to update payment methods, invoices, or cancellation settings."
                   : isPaidPlan
-                  ? "Your account is on a paid plan without an active billing profile. Restore billing to manage subscription details."
-                  : "Upgrade to a paid plan to unlock billing portal access and self-service subscription management."}
+                    ? "Your account is on a paid plan without an active billing profile. Restore billing to manage subscription details."
+                    : "Upgrade to a paid plan to unlock billing portal access and self-service subscription management."}
               </div>
               <PlanUsage />
             </CardContent>
@@ -152,14 +161,14 @@ export default async function SettingsPage({
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
+                <Users className="text-primary h-5 w-5" />
                 <CardTitle>Team Management</CardTitle>
               </div>
               <CardDescription>Invite team members and manage access roles</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col gap-3 rounded-lg bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-muted-foreground">
+              <div className="bg-muted/30 flex flex-col gap-3 rounded-lg p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-muted-foreground text-sm">
                   Collaborate with your team by inviting members to your workspace.
                 </div>
                 <Button variant="outline" className="w-full sm:w-auto" asChild>
@@ -176,7 +185,7 @@ export default async function SettingsPage({
             <Card className="h-full">
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Twitter className="h-5 w-5 text-primary" />
+                  <Twitter className="text-primary h-5 w-5" />
                   <CardTitle>X (Twitter)</CardTitle>
                 </div>
                 <CardDescription>Manage your X accounts</CardDescription>
@@ -187,20 +196,20 @@ export default async function SettingsPage({
             </Card>
 
             <ConnectedLinkedInAccounts
-              initialAccounts={connectedLinkedInAccounts.map(a => ({
+              initialAccounts={connectedLinkedInAccounts.map((a) => ({
                 id: a.id,
                 linkedinName: a.linkedinName,
                 linkedinAvatarUrl: a.linkedinAvatarUrl,
-                isActive: a.isActive
+                isActive: a.isActive,
               }))}
             />
 
             <ConnectedInstagramAccounts
-              initialAccounts={connectedInstagramAccounts.map(a => ({
+              initialAccounts={connectedInstagramAccounts.map((a) => ({
                 id: a.id,
                 instagramUsername: a.instagramUsername,
                 instagramAvatarUrl: a.instagramAvatarUrl,
-                isActive: a.isActive
+                isActive: a.isActive,
               }))}
             />
           </div>

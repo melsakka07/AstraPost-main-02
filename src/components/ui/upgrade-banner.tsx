@@ -17,17 +17,17 @@ export function UpgradeBanner({
   className,
 }: UpgradeBannerProps) {
   return (
-    <Card className={`bg-gradient-to-r from-primary/10 via-primary/5 to-background border-primary/20 ${className}`}>
-      <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <Card
+      className={`from-primary/10 via-primary/5 to-background border-primary/20 bg-gradient-to-r ${className}`}
+    >
+      <CardContent className="flex flex-col items-center justify-between gap-4 p-6 sm:flex-row">
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-            <Sparkles className="h-5 w-5 text-primary" />
+          <div className="bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+            <Sparkles className="text-primary h-5 w-5" />
           </div>
           <div className="space-y-1 text-center sm:text-left">
             <h3 className="font-semibold tracking-tight">{title}</h3>
-            <p className="text-sm text-muted-foreground max-w-[500px]">
-              {description}
-            </p>
+            <p className="text-muted-foreground max-w-[500px] text-sm">{description}</p>
           </div>
         </div>
         <Button asChild>

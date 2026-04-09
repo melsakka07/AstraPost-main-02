@@ -52,11 +52,13 @@ export interface AgenticPost {
 
 export const ResearchBriefSchema = z.object({
   topic: z.string(),
-  angles: z.array(z.object({
-    title: z.string(),
-    description: z.string(),
-    viralPotential: z.enum(["high", "medium", "low"]),
-  })),
+  angles: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      viralPotential: z.enum(["high", "medium", "low"]),
+    })
+  ),
   trendingHashtags: z.array(z.string()),
   keyFacts: z.array(z.string()),
   recommendedAngle: z.string(),
@@ -87,7 +89,13 @@ export const AgenticTweetSchema = z.object({
 export const AgenticTweetsSchema = z.array(AgenticTweetSchema);
 
 export type PipelineStep = "research" | "strategy" | "writing" | "images" | "review" | "done";
-export type StepStatus = "in_progress" | "complete" | "failed" | "streaming" | "progress" | "needs_input";
+export type StepStatus =
+  | "in_progress"
+  | "complete"
+  | "failed"
+  | "streaming"
+  | "progress"
+  | "needs_input";
 
 export interface PipelineProgressEvent {
   step: PipelineStep;

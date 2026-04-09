@@ -4,10 +4,7 @@ import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { feedback, feedbackVotes } from "@/lib/schema";
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 

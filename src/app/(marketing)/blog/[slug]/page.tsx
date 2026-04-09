@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button";
 import { getBlogPost } from "@/lib/blog";
 import { BlogPostClient } from "./blog-post-client";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
   const { slug } = await params;
   const post = await getBlogPost(slug);
 
@@ -38,11 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function BlogPostPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const post = await getBlogPost(slug);
 
@@ -54,34 +54,35 @@ export default async function BlogPostPage({
     <>
       {/* Hero Section with Gradient */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 dark:from-primary/10 dark:via-purple-500/10 dark:to-pink-500/10" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-3xl -translate-y-1/2" />
+        <div className="from-primary/5 dark:from-primary/10 absolute inset-0 bg-gradient-to-br via-purple-500/5 to-pink-500/5 dark:via-purple-500/10 dark:to-pink-500/10" />
+        <div className="bg-primary/10 absolute top-0 left-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl" />
 
-        <div className="container mx-auto px-4 py-12 md:py-20 max-w-4xl relative">
+        <div className="relative container mx-auto max-w-4xl px-4 py-12 md:py-20">
           <Link
             href="/blog"
-            className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-8 group"
+            className="text-muted-foreground hover:text-primary group mb-8 inline-flex items-center text-sm transition-colors"
           >
-            <ArrowLeft className="me-2 h-4 w-4 transition-transform group-hover:-translate-x-1 rtl:scale-x-[-1] rtl:group-hover:translate-x-1" /> Back to Blog
+            <ArrowLeft className="me-2 h-4 w-4 transition-transform group-hover:-translate-x-1 rtl:scale-x-[-1] rtl:group-hover:translate-x-1" />{" "}
+            Back to Blog
           </Link>
 
           <div className="space-y-6">
-            <Badge className="bg-gradient-to-r from-primary to-purple-500 text-white border-0 hover:opacity-90 transition-opacity">
-              <Sparkles className="w-3 h-3 mr-1" />
+            <Badge className="from-primary border-0 bg-gradient-to-r to-purple-500 text-white transition-opacity hover:opacity-90">
+              <Sparkles className="mr-1 h-3 w-3" />
               Featured Post
             </Badge>
 
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <h1 className="from-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
               {post.title}
             </h1>
 
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl leading-relaxed">
+            <p className="text-muted-foreground max-w-3xl text-xl leading-relaxed md:text-2xl">
               {post.excerpt}
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-semibold">
+                <div className="from-primary flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 font-semibold text-white">
                   A
                 </div>
                 <div className="flex flex-col">
@@ -91,7 +92,7 @@ export default async function BlogPostPage({
               </div>
               <span className="hidden sm:inline">•</span>
               <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
+                <Clock className="h-4 w-4" />
                 {post.readTime}
               </div>
             </div>
@@ -100,8 +101,8 @@ export default async function BlogPostPage({
       </div>
 
       {/* Featured Image */}
-      <div className="container mx-auto px-4 max-w-4xl -mt-4">
-        <div className="relative aspect-[16/9] overflow-hidden rounded-2xl shadow-2xl border border-border/50 bg-muted group">
+      <div className="container mx-auto -mt-4 max-w-4xl px-4">
+        <div className="border-border/50 bg-muted group relative aspect-[16/9] overflow-hidden rounded-2xl border shadow-2xl">
           {post.image ? (
             <Image
               src={post.image}
@@ -112,8 +113,8 @@ export default async function BlogPostPage({
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 via-purple-500/20 to-pink-500/20 flex items-center justify-center">
-              <BookOpen className="w-24 h-24 text-primary/30" />
+            <div className="from-primary/20 flex h-full w-full items-center justify-center bg-gradient-to-br via-purple-500/20 to-pink-500/20">
+              <BookOpen className="text-primary/30 h-24 w-24" />
             </div>
           )}
         </div>
@@ -123,17 +124,18 @@ export default async function BlogPostPage({
       <BlogPostClient post={post} />
 
       {/* Author Section */}
-      <div className="container mx-auto px-4 max-w-4xl py-12">
-        <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-2xl p-8 border border-border/50">
+      <div className="container mx-auto max-w-4xl px-4 py-12">
+        <div className="from-muted/50 to-muted/30 border-border/50 rounded-2xl border bg-gradient-to-br p-8">
           <div className="flex items-start gap-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-lg">
+            <div className="from-primary flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-2xl font-bold text-white shadow-lg">
               A
             </div>
             <div>
-              <h3 className="font-bold text-lg">Written by the AstraPost Team</h3>
+              <h3 className="text-lg font-bold">Written by the AstraPost Team</h3>
               <p className="text-muted-foreground mt-2">
-                We're building the best AI-powered social media management platform for content creators
-                in the MENA region. Join thousands of creators scaling their presence with AstraPost.
+                We're building the best AI-powered social media management platform for content
+                creators in the MENA region. Join thousands of creators scaling their presence with
+                AstraPost.
               </p>
             </div>
           </div>
@@ -142,38 +144,42 @@ export default async function BlogPostPage({
 
       {/* Enhanced CTA Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-purple-500/10 to-pink-500/10" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 translate-x-1/2" />
+        <div className="from-primary/10 absolute inset-0 bg-gradient-to-br via-purple-500/10 to-pink-500/10" />
+        <div className="absolute right-0 bottom-0 h-[400px] w-[400px] translate-x-1/2 translate-y-1/2 rounded-full bg-purple-500/10 blur-3xl" />
 
-        <div className="container mx-auto px-4 py-16 max-w-4xl relative">
-          <div className="bg-gradient-to-br from-background to-muted/20 rounded-2xl p-8 md:p-12 border border-border/50 shadow-xl text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-purple-500 text-white mb-4">
-              <Sparkles className="w-8 h-8" />
+        <div className="relative container mx-auto max-w-4xl px-4 py-16">
+          <div className="from-background to-muted/20 border-border/50 space-y-6 rounded-2xl border bg-gradient-to-br p-8 text-center shadow-xl md:p-12">
+            <div className="from-primary mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-white">
+              <Sparkles className="h-8 w-8" />
             </div>
-            <h3 className="text-3xl md:text-4xl font-bold">Ready to Grow Your Audience?</h3>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <h3 className="text-3xl font-bold md:text-4xl">Ready to Grow Your Audience?</h3>
+            <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
               Join thousands of creators using AstraPost to schedule posts, analyze performance, and
               create viral content with AI.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button size="lg" className="bg-gradient-to-r from-primary to-purple-500 hover:opacity-90 transition-opacity" asChild>
+            <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
+              <Button
+                size="lg"
+                className="from-primary bg-gradient-to-r to-purple-500 transition-opacity hover:opacity-90"
+                asChild
+              >
                 <Link href="/login">Start Free Trial</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link href="/features">Explore Features</Link>
               </Button>
             </div>
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground pt-4">
+            <div className="text-muted-foreground flex items-center justify-center gap-6 pt-4 text-sm">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
                 No credit card required
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
                 14-day free trial
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
                 Cancel anytime
               </div>
             </div>

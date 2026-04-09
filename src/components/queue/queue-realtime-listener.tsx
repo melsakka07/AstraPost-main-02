@@ -44,7 +44,7 @@ export function QueueRealtimeListener() {
           signal: controller.signal,
         });
         if (!res.ok) return;
-        const { events, serverTime } = await res.json() as {
+        const { events, serverTime } = (await res.json()) as {
           events: { id: string; status: string; failReason: string | null }[];
           serverTime: string;
         };

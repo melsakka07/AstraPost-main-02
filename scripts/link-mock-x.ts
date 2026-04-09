@@ -9,7 +9,7 @@ async function linkMockAccount() {
   console.log(`Linking mock X account for ${email}...`);
 
   const foundUser = await db.query.user.findFirst({
-    where: eq(user.email, email)
+    where: eq(user.email, email),
   });
 
   if (!foundUser) {

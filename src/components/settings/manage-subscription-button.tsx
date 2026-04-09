@@ -24,8 +24,7 @@ export function ManageSubscriptionButton() {
         let payload: BillingPortalError | null = null;
         try {
           payload = (await res.json()) as BillingPortalError;
-        } catch {
-        }
+        } catch {}
 
         if (res.status === 401) {
           window.location.href = "/login?redirect=/dashboard/settings";

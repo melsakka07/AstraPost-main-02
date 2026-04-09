@@ -4,7 +4,19 @@ import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Lightbulb, Loader2, AlertCircle, CheckCircle2, History, Bookmark, ArrowRight, Download, ExternalLink, RefreshCw, X } from "lucide-react";
+import {
+  Lightbulb,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  History,
+  Bookmark,
+  ArrowRight,
+  Download,
+  ExternalLink,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
 import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
@@ -60,7 +72,13 @@ interface HistoryItem {
 
 export default function InspirationPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center">
+          <Loader2 className="text-muted-foreground mx-auto h-6 w-6 animate-spin" />
+        </div>
+      }
+    >
       <InspirationContent />
     </Suspense>
   );
@@ -112,11 +130,14 @@ function InspirationContent() {
     return patterns.some((pattern) => pattern.test(url));
   }, []);
 
-  const handleUrlChange = useCallback((value: string) => {
-    setTweetUrl(value);
-    setIsValidUrl(validateUrl(value));
-    setError(null);
-  }, [validateUrl]);
+  const handleUrlChange = useCallback(
+    (value: string) => {
+      setTweetUrl(value);
+      setIsValidUrl(validateUrl(value));
+      setError(null);
+    },
+    [validateUrl]
+  );
 
   // Initialize from URL search params or sessionStorage
   useEffect(() => {
@@ -134,7 +155,7 @@ function InspirationContent() {
       if (storedUrl && validateUrl(storedUrl)) {
         setTweetUrl(storedUrl);
         setIsValidUrl(true);
-        
+
         // Also try to restore the imported data to avoid refetching on every reload
         const storedData = sessionStorage.getItem("inspiration_current_data");
         if (storedData) {
@@ -154,7 +175,7 @@ function InspirationContent() {
       } else {
         sessionStorage.removeItem("inspiration_current_url");
       }
-      
+
       if (importedData) {
         sessionStorage.setItem("inspiration_current_data", JSON.stringify(importedData));
       } else {
@@ -213,22 +234,28 @@ function InspirationContent() {
   }, [isValidUrl, tweetUrl]);
 
   // Send to Composer
-  const handleSendToComposer = useCallback((tweets: string[]) => {
-    sessionStorage.setItem("inspiration_tweets", JSON.stringify(tweets));
-    if (importedData) {
-      sessionStorage.setItem("inspiration_source_id", importedData.originalTweet.id);
-      // W4: Store source attribution for display in Composer
-      try {
-        sessionStorage.setItem("inspiration_attribution", JSON.stringify({
-          handle: importedData.originalTweet.author.username,
-          url: tweetUrl,
-        }));
-      } catch {
-        // sessionStorage may be unavailable — fail silently
+  const handleSendToComposer = useCallback(
+    (tweets: string[]) => {
+      sessionStorage.setItem("inspiration_tweets", JSON.stringify(tweets));
+      if (importedData) {
+        sessionStorage.setItem("inspiration_source_id", importedData.originalTweet.id);
+        // W4: Store source attribution for display in Composer
+        try {
+          sessionStorage.setItem(
+            "inspiration_attribution",
+            JSON.stringify({
+              handle: importedData.originalTweet.author.username,
+              url: tweetUrl,
+            })
+          );
+        } catch {
+          // sessionStorage may be unavailable — fail silently
+        }
       }
-    }
-    router.push("/dashboard/compose");
-  }, [router, importedData, tweetUrl]);
+      router.push("/dashboard/compose");
+    },
+    [router, importedData, tweetUrl]
+  );
 
   // Bookmark the current inspiration
   const handleBookmark = useCallback(async () => {
@@ -354,15 +381,15 @@ function InspirationContent() {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-3 overflow-x-auto">
           <TabsTrigger value="import">
-            <Download className="h-4 w-4 me-2" />
+            <Download className="me-2 h-4 w-4" />
             Import Tweet
           </TabsTrigger>
           <TabsTrigger value="history">
-            <History className="h-4 w-4 me-2" />
+            <History className="me-2 h-4 w-4" />
             History
           </TabsTrigger>
           <TabsTrigger value="bookmarks">
-            <Bookmark className="h-4 w-4 me-2" />
+            <Bookmark className="me-2 h-4 w-4" />
             Bookmarks
           </TabsTrigger>
         </TabsList>
@@ -396,19 +423,19 @@ function InspirationContent() {
                     >
                       {isLoading ? (
                         <>
-                          <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                          <Loader2 className="me-2 h-4 w-4 animate-spin" />
                           Importing... ({importElapsed}s)
                         </>
                       ) : (
                         <>
                           Import
-                          <ArrowRight className="h-4 w-4 ms-2 rtl:scale-x-[-1]" />
+                          <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
                         </>
                       )}
                     </Button>
                   </div>
                   {tweetUrl.length >= 5 && !isValidUrl && (
-                    <p className="flex items-center gap-1.5 text-xs text-destructive">
+                    <p className="text-destructive flex items-center gap-1.5 text-xs">
                       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                       Please enter a valid X/Twitter URL
                     </p>
@@ -417,7 +444,7 @@ function InspirationContent() {
 
                 {/* Success Message */}
                 {successMessage && (
-                  <Alert className="bg-emerald-500/10 border-emerald-500/50">
+                  <Alert className="border-emerald-500/50 bg-emerald-500/10">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                     <AlertDescription className="text-emerald-600">
                       {successMessage}
@@ -438,18 +465,18 @@ function InspirationContent() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardContent className="p-6">
-                  <Skeleton className="h-4 w-3/4 mb-4" />
-                  <Skeleton className="h-4 w-1/2 mb-2" />
-                  <Skeleton className="h-20 w-full mb-4" />
+                  <Skeleton className="mb-4 h-4 w-3/4" />
+                  <Skeleton className="mb-2 h-4 w-1/2" />
+                  <Skeleton className="mb-4 h-20 w-full" />
                   <Skeleton className="h-12 w-1/3" />
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-6">
-                  <Skeleton className="h-6 w-full mb-4" />
+                  <Skeleton className="mb-4 h-6 w-full" />
                   <Skeleton className="h-32 w-full" />
                 </CardContent>
               </Card>
@@ -458,15 +485,17 @@ function InspirationContent() {
 
           {/* Imported Tweet + Adaptation Panel */}
           {importedData && !isLoading && (
-            <div className="grid lg:grid-cols-2 gap-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               {/* Left: Imported Tweet */}
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-2 sm:items-center">
                   <div>
-                    <h2 className="text-base sm:text-lg font-semibold">Imported Tweet</h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground">Original content from X/Twitter</p>
+                    <h2 className="text-base font-semibold sm:text-lg">Imported Tweet</h2>
+                    <p className="text-muted-foreground text-xs sm:text-sm">
+                      Original content from X/Twitter
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                     <Button
                       variant="outline"
                       size="icon"
@@ -502,7 +531,9 @@ function InspirationContent() {
               <div className="space-y-4">
                 <div>
                   <h2 className="text-lg font-semibold">Adapt Content</h2>
-                  <p className="text-sm text-muted-foreground">Use AI or manually adapt the tweet to your style</p>
+                  <p className="text-muted-foreground text-sm">
+                    Use AI or manually adapt the tweet to your style
+                  </p>
                 </div>
                 <AdaptationPanel
                   sourceTweet={importedData.originalTweet}
@@ -519,12 +550,14 @@ function InspirationContent() {
           {/* Empty State */}
           {!importedData && !isLoading && !error && (
             <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-12 sm:py-16 text-center px-4">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-4 sm:mb-6 border border-primary/10">
-                  <Lightbulb className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
+              <CardContent className="flex flex-col items-center justify-center px-4 py-12 text-center sm:py-16">
+                <div className="from-primary/10 to-primary/5 border-primary/10 mb-4 flex h-16 w-16 items-center justify-center rounded-full border bg-gradient-to-br sm:mb-6 sm:h-20 sm:w-20">
+                  <Lightbulb className="text-primary h-8 w-8 sm:h-10 sm:w-10" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">No tweet imported yet</h3>
-                <p className="text-sm sm:text-base text-muted-foreground max-w-md">
+                <h3 className="mb-2 text-lg font-semibold sm:mb-3 sm:text-xl">
+                  No tweet imported yet
+                </h3>
+                <p className="text-muted-foreground max-w-md text-sm sm:text-base">
                   Paste a X/Twitter URL above to import a tweet and adapt it with AI assistance.
                 </p>
               </CardContent>
@@ -537,33 +570,35 @@ function InspirationContent() {
           <Card>
             <CardContent className="p-6">
               {history.length === 0 ? (
-                <div className="text-center py-16">
-                  <History className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">No history yet. Import a tweet to get started.</p>
+                <div className="py-16 text-center">
+                  <History className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <p className="text-muted-foreground">
+                    No history yet. Import a tweet to get started.
+                  </p>
                 </div>
               ) : (
                 <ul role="list" className="space-y-3">
                   {history.map((item) => (
                     <li
                       key={item.id}
-                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
                             <span className="font-medium">@{item.sourceTweet.author.username}</span>
                             <Badge variant="outline" className="text-xs">
                               {item.action}
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-muted-foreground text-xs">
                               {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
                             </span>
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
+                          <p className="text-muted-foreground line-clamp-2 text-sm">
                             {item.sourceTweet.text}
                           </p>
                         </div>
-                        <div className="flex flex-col gap-1 shrink-0">
+                        <div className="flex shrink-0 flex-col gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -575,14 +610,14 @@ function InspirationContent() {
                               setActiveTab("import");
                             }}
                           >
-                            <RefreshCw className="h-3 w-3 me-1" />
+                            <RefreshCw className="me-1 h-3 w-3" />
                             Re-import
                           </Button>
                           <a
                             href={`https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center gap-1 rounded-md px-2 h-7 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                            className="text-muted-foreground hover:text-foreground hover:bg-accent inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium transition-colors"
                           >
                             <ExternalLink className="h-3 w-3" />
                             View on X
@@ -602,20 +637,22 @@ function InspirationContent() {
           <Card>
             <CardContent className="p-6">
               {bookmarks.length === 0 ? (
-                <div className="text-center py-16">
-                  <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">No bookmarks yet. Bookmark inspiring tweets to save them for later.</p>
+                <div className="py-16 text-center">
+                  <Bookmark className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <p className="text-muted-foreground">
+                    No bookmarks yet. Bookmark inspiring tweets to save them for later.
+                  </p>
                 </div>
               ) : (
                 <ul role="list" className="space-y-3">
                   {bookmarks.map((bookmark) => (
                     <li
                       key={bookmark.id}
-                      className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex items-center gap-2">
                             <span className="font-medium">@{bookmark.sourceAuthorHandle}</span>
                             {bookmark.action && (
                               <Badge variant="outline" className="text-xs">
@@ -623,11 +660,11 @@ function InspirationContent() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
+                          <p className="text-muted-foreground line-clamp-2 text-sm">
                             {bookmark.sourceText}
                           </p>
                           {bookmark.adaptedText && (
-                            <p className="text-sm text-foreground mt-2 line-clamp-2">
+                            <p className="text-foreground mt-2 line-clamp-2 text-sm">
                               {bookmark.adaptedText}
                             </p>
                           )}

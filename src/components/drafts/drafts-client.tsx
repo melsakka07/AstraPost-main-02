@@ -34,9 +34,7 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let result = q
-      ? drafts.filter((d) =>
-          (d.tweets[0]?.content ?? "").toLowerCase().includes(q)
-        )
+      ? drafts.filter((d) => (d.tweets[0]?.content ?? "").toLowerCase().includes(q))
       : [...drafts];
 
     if (sort === "updatedAt") {
@@ -47,14 +45,11 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
       );
     } else if (sort === "createdAt") {
       result = result.sort(
-        (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
     } else if (sort === "length") {
       result = result.sort(
-        (a, b) =>
-          (b.tweets[0]?.content?.length ?? 0) -
-          (a.tweets[0]?.content?.length ?? 0)
+        (a, b) => (b.tweets[0]?.content?.length ?? 0) - (a.tweets[0]?.content?.length ?? 0)
       );
     }
     return result;
@@ -80,7 +75,7 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
       {/* Search + Sort bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search drafts…"
             value={search}
@@ -102,34 +97,30 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
+        <div className="text-muted-foreground rounded-lg border border-dashed py-12 text-center text-sm">
           No drafts match your search.
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((post) => {
             const firstTweet = post.tweets[0];
             const isThread = post.tweets.length > 1;
             const hasMedia = post.tweets.some((t) => t.media.length > 0);
-            const editedDate = new Date(
-              post.updatedAt ?? post.createdAt
-            ).toLocaleDateString();
+            const editedDate = new Date(post.updatedAt ?? post.createdAt).toLocaleDateString();
 
             return (
               <Card
                 key={post.id}
-                className="group hover:shadow-lg transition-all duration-200 hover:border-primary/30"
+                className="group hover:border-primary/30 transition-all duration-200 hover:shadow-lg"
               >
-                <CardContent className="p-6 flex flex-col h-full">
+                <CardContent className="flex h-full flex-col p-6">
                   {/* Thread / Tweet badge */}
                   <div className="mb-3 flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                      {isThread
-                        ? `Thread · ${post.tweets.length} tweets`
-                        : "Tweet"}
+                    <span className="text-muted-foreground inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium">
+                      {isThread ? `Thread · ${post.tweets.length} tweets` : "Tweet"}
                     </span>
                     {hasMedia && (
-                      <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                      <span className="text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
                         <ImageIcon className="h-3 w-3" />
                         Media
                       </span>
@@ -137,8 +128,8 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
                   </div>
 
                   {/* Content preview */}
-                  <div className="flex-1 mb-4">
-                    <p className="line-clamp-4 whitespace-pre-wrap break-words text-sm leading-relaxed">
+                  <div className="mb-4 flex-1">
+                    <p className="line-clamp-4 text-sm leading-relaxed break-words whitespace-pre-wrap">
                       {firstTweet?.content ? (
                         firstTweet.content
                       ) : (
@@ -150,8 +141,8 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <div className="mt-auto flex items-center justify-between border-t pt-4">
+                    <span className="text-muted-foreground flex items-center gap-1 text-xs">
                       <FileText className="h-3 w-3" />
                       Edited {editedDate}
                     </span>
@@ -164,13 +155,11 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
                         variant="ghost"
                         size="sm"
                         asChild
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground h-7 px-2 text-xs"
                         aria-label={`Schedule draft: ${(firstTweet?.content ?? "").slice(0, 50)}`}
                       >
-                        <Link
-                          href={`/dashboard/compose?draft=${post.id}&openSchedule=1`}
-                        >
-                          <CalendarPlus className="h-3.5 w-3.5 mr-1" />
+                        <Link href={`/dashboard/compose?draft=${post.id}&openSchedule=1`}>
+                          <CalendarPlus className="mr-1 h-3.5 w-3.5" />
                           Schedule
                         </Link>
                       </Button>
@@ -180,9 +169,7 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
                         asChild
                         className="group-hover:bg-primary/10 h-7 px-2 text-xs"
                       >
-                        <Link href={`/dashboard/compose?draft=${post.id}`}>
-                          Edit
-                        </Link>
+                        <Link href={`/dashboard/compose?draft=${post.id}`}>Edit</Link>
                       </Button>
                     </div>
                   </div>

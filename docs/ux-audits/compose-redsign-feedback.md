@@ -20,18 +20,23 @@ Five quick-win improvements were identified that provide genuine incremental val
 ## 2. Strengths — What Is Well-Reasoned
 
 ### 2.1 Cognitive Load Reduction (Proposal 8)
+
 The principle of reducing visible interactive elements from ~18-20 to ~8-10 on first load is directionally correct. Research from Hick's Law supports this. The redesign's framing of three workflow stages (Writing, Enhancement, Publishing) is a useful mental model that could guide future refinements to the sidebar grouping.
 
 ### 2.2 Preview Improvements (Proposal 5)
+
 The suggestion to add thread connecting lines in the preview is a genuine improvement. The current preview (`composer.tsx:2138-2202`) shows one tweet at a time via carousel, which loses the visual thread metaphor. Connecting lines would reinforce thread structure and match X's native display.
 
 ### 2.3 Real-Time Preview Feedback
+
 The current preview already updates in real-time (it reads directly from `tweets[safePreviewIndex]`), validating the redesign's instinct. The call to show media layout and threaded structure in the preview is a worthwhile enhancement.
 
 ### 2.4 Mobile Bottom Sheet Pattern (Proposal 9)
+
 The suggestion to use bottom sheets for AI tools on mobile aligns with established mobile patterns (Google Maps, Apple Music). This is already implemented.
 
 ### 2.5 Sentence Case Labels (Proposal 6)
+
 The recommendation to switch section labels from `UPPERCASE` to sentence case is well-founded. The current `text-xs font-medium uppercase tracking-wider` styling (`composer.tsx:1817`) can feel heavy alongside other visual elements.
 
 ---
@@ -40,15 +45,15 @@ The recommendation to switch section labels from `UPPERCASE` to sentence case is
 
 The following proposals are already live in the codebase as of Phase 0-4 (2026-04-05). The redesign should be updated to reflect this.
 
-| Proposal | Current Implementation | File Reference |
-|----------|----------------------|----------------|
-| Progressive disclosure for AI tools | AI panel uses accordion expand inline on desktop; `AiToolsPanel` has internal pill tab switcher (`role="tablist"`) with 8 tools | `ai-tools-panel.tsx:36-45`, `composer.tsx:1884-1948` |
-| No visible border on textarea | `border-none focus-visible:ring-0` on textarea; focus state handled by parent Card | `tweet-card.tsx:192` |
-| Templates as separate entry point | `TemplatesDialog` is lazy-loaded via `React.lazy()` with `<Suspense>` boundary | `composer.tsx:39-41, 1837-1846` |
-| Mobile AI tools as bottom sheet | `<Sheet>` renders at `h-[60dvh]` with `AiToolsPanel` inside | `composer.tsx:2205-2283` |
-| "Save as Draft" as visible button | Rendered as `<Button variant="outline">` (not a text link) | `composer.tsx:2068` |
-| Tool ordering by workflow | TOOLS array ordered: Write, Inspire, Template, Hook, CTA, Rewrite, Translate, #Tags | `ai-tools-panel.tsx:36-45` |
-| Character counter separated from toolbar | Counter lives in `CardFooter` right-aligned section, visually separated from left-aligned toolbar buttons | `tweet-card.tsx:412-473` |
+| Proposal                                 | Current Implementation                                                                                                          | File Reference                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Progressive disclosure for AI tools      | AI panel uses accordion expand inline on desktop; `AiToolsPanel` has internal pill tab switcher (`role="tablist"`) with 8 tools | `ai-tools-panel.tsx:36-45`, `composer.tsx:1884-1948` |
+| No visible border on textarea            | `border-none focus-visible:ring-0` on textarea; focus state handled by parent Card                                              | `tweet-card.tsx:192`                                 |
+| Templates as separate entry point        | `TemplatesDialog` is lazy-loaded via `React.lazy()` with `<Suspense>` boundary                                                  | `composer.tsx:39-41, 1837-1846`                      |
+| Mobile AI tools as bottom sheet          | `<Sheet>` renders at `h-[60dvh]` with `AiToolsPanel` inside                                                                     | `composer.tsx:2205-2283`                             |
+| "Save as Draft" as visible button        | Rendered as `<Button variant="outline">` (not a text link)                                                                      | `composer.tsx:2068`                                  |
+| Tool ordering by workflow                | TOOLS array ordered: Write, Inspire, Template, Hook, CTA, Rewrite, Translate, #Tags                                             | `ai-tools-panel.tsx:36-45`                           |
+| Character counter separated from toolbar | Counter lives in `CardFooter` right-aligned section, visually separated from left-aligned toolbar buttons                       | `tweet-card.tsx:412-473`                             |
 
 ---
 
@@ -91,24 +96,26 @@ If the preview moves from the sidebar to below the compose area, the left column
 
 The redesign does not mention the following systems, all of which must survive any layout change:
 
-| Feature | Implementation | Risk If Overlooked |
-|---------|---------------|-------------------|
-| **Auto-save** | localStorage with 1s debounce, restore on mount, `beforeunload` guard | Data loss on layout restructure if save triggers change |
-| **Undo system** | `previousTweetsRef` + `preStreamTweetsRef` snapshots with toast-based undo actions | Regression if AI interaction model changes |
-| **SSE streaming** | Thread generation streams tweets in real-time via `ReadableStream` with progress bar and `aria-live` announcements | Must accommodate streaming UI in any new toolbar/panel model |
-| **Cross-page bridges** | `sessionStorage` payloads from AI Writer, Inspiration, Calendar, Reply Suggester; URL params `?draft=`, `?prefill=`, `?tone=`, `?topic=` | Pre-fill flows would break if layout assumptions change |
-| **Recurrence scheduling** | Daily/weekly/monthly/yearly with end date picker, server-enforced 1-year max | Won't fit in 280px rail |
-| **Multi-account posting** | `TargetAccountsSelect` with mixed X tiers, effective tier computation, token expiry warnings | Mixed-tier warnings (`composer.tsx:1769-1775`) need sidebar space |
-| **Viral Score Badge** | `ViralScoreBadge` in preview header, auto-analyzes with 2s debounce | Not mentioned; preview changes must preserve this |
-| **Draft editing mode** | Load via `?draft=<id>`, PATCH updates, editingDraftId state | Draft → compose flow must remain intact |
-| **Overwrite confirmation** | Triggers at 50+ chars before AI replaces content; uses `confirmOverwrite` + `pendingTweets` state | Any AI interaction changes must preserve this guard |
+| Feature                    | Implementation                                                                                                                           | Risk If Overlooked                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Auto-save**              | localStorage with 1s debounce, restore on mount, `beforeunload` guard                                                                    | Data loss on layout restructure if save triggers change           |
+| **Undo system**            | `previousTweetsRef` + `preStreamTweetsRef` snapshots with toast-based undo actions                                                       | Regression if AI interaction model changes                        |
+| **SSE streaming**          | Thread generation streams tweets in real-time via `ReadableStream` with progress bar and `aria-live` announcements                       | Must accommodate streaming UI in any new toolbar/panel model      |
+| **Cross-page bridges**     | `sessionStorage` payloads from AI Writer, Inspiration, Calendar, Reply Suggester; URL params `?draft=`, `?prefill=`, `?tone=`, `?topic=` | Pre-fill flows would break if layout assumptions change           |
+| **Recurrence scheduling**  | Daily/weekly/monthly/yearly with end date picker, server-enforced 1-year max                                                             | Won't fit in 280px rail                                           |
+| **Multi-account posting**  | `TargetAccountsSelect` with mixed X tiers, effective tier computation, token expiry warnings                                             | Mixed-tier warnings (`composer.tsx:1769-1775`) need sidebar space |
+| **Viral Score Badge**      | `ViralScoreBadge` in preview header, auto-analyzes with 2s debounce                                                                      | Not mentioned; preview changes must preserve this                 |
+| **Draft editing mode**     | Load via `?draft=<id>`, PATCH updates, editingDraftId state                                                                              | Draft → compose flow must remain intact                           |
+| **Overwrite confirmation** | Triggers at 50+ chars before AI replaces content; uses `confirmOverwrite` + `pendingTweets` state                                        | Any AI interaction changes must preserve this guard               |
 
 ---
 
 ## 6. Accessibility Impact
 
 ### 6.1 Icon-Only Toolbar Risks Regression (Proposal 3)
+
 The current sidebar uses labeled `<Button>` elements ("AI Writer", "Hook", "CTA") that are inherently accessible. The `AiToolsPanel` uses `role="tablist"` with `role="tab"` and `aria-selected` for each tool. Replacing these with icon-only toolbar buttons would require:
+
 - `aria-label` on every icon button
 - Tooltip-driven discovery (tooltips are not accessible to all assistive technologies; screen readers skip them)
 - Loss of the semantic tab structure
@@ -116,26 +123,28 @@ The current sidebar uses labeled `<Button>` elements ("AI Writer", "Hook", "CTA"
 **Recommendation:** If reducing visual weight, keep text labels but make them smaller — do not go icon-only.
 
 ### 6.2 Hiding Mobile Preview Reduces Discoverability (Proposal 9)
+
 The current mobile layout shows the preview inline in the single-column stack. Hiding it behind a tap-icon requires the user to know the icon exists. This trades content visibility for vertical space. The trade-off may be acceptable but needs user testing before shipping.
 
 ### 6.3 Positive: Sentence Case Labels (Proposal 6)
+
 Switching from `UPPERCASE` to sentence case improves readability for all users and is particularly helpful for users with cognitive disabilities who find all-caps text harder to parse.
 
 ---
 
 ## 7. Technical Feasibility
 
-| Proposal | Effort | Risk | Notes |
-|----------|--------|------|-------|
-| "Center Stage" layout | 3-5 days | High | Requires redesigning all sidebar components for 280px; AI panel, recurrence, and account selector affected |
-| Icon toolbar for Content Tools | 2-3 days | Medium | Must preserve `role="tablist"` and labeled buttons; popover/expand behavior already exists |
-| Best-time inside date picker | 3-4 days | Medium | `DateTimePicker` and `BestTimeSuggestions` are separate components with independent async data; combining adds complexity |
-| Preview repositioning | 0.5 days | Low | CSS/JSX reorder; data bindings unchanged |
-| Textarea height increase | 5 min | Trivial | Single CSS class change in `tweet-card.tsx:192` |
-| Placeholder text change | 5 min | Trivial | Single string change in `tweet-card.tsx:189` |
-| Section labels to sentence case | 15 min | Trivial | ~3 label changes in `composer.tsx` |
-| Thread connecting lines in preview | 1-2 days | Low | Additive enhancement to existing preview carousel |
-| Auto-suggest thread at >280 chars | 1 day | Low | Inline hint below textarea when `content.length > 280` and single-tweet mode |
+| Proposal                           | Effort   | Risk    | Notes                                                                                                                     |
+| ---------------------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| "Center Stage" layout              | 3-5 days | High    | Requires redesigning all sidebar components for 280px; AI panel, recurrence, and account selector affected                |
+| Icon toolbar for Content Tools     | 2-3 days | Medium  | Must preserve `role="tablist"` and labeled buttons; popover/expand behavior already exists                                |
+| Best-time inside date picker       | 3-4 days | Medium  | `DateTimePicker` and `BestTimeSuggestions` are separate components with independent async data; combining adds complexity |
+| Preview repositioning              | 0.5 days | Low     | CSS/JSX reorder; data bindings unchanged                                                                                  |
+| Textarea height increase           | 5 min    | Trivial | Single CSS class change in `tweet-card.tsx:192`                                                                           |
+| Placeholder text change            | 5 min    | Trivial | Single string change in `tweet-card.tsx:189`                                                                              |
+| Section labels to sentence case    | 15 min   | Trivial | ~3 label changes in `composer.tsx`                                                                                        |
+| Thread connecting lines in preview | 1-2 days | Low     | Additive enhancement to existing preview carousel                                                                         |
+| Auto-suggest thread at >280 chars  | 1 day    | Low     | Inline hint below textarea when `content.length > 280` and single-tweet mode                                              |
 
 ---
 
@@ -207,15 +216,15 @@ These should not proceed in their current form:
 
 ## Appendix: File References
 
-| File | Role |
-|------|------|
-| `src/components/composer/composer.tsx` | Main orchestrator, 60+ state variables, grid layout, sidebar cards |
-| `src/components/composer/tweet-card.tsx` | Individual tweet editor: textarea, media, toolbar, character counter |
-| `src/components/composer/ai-tools-panel.tsx` | 8-tool AI panel with pill tab switcher, streaming progress |
-| `src/components/composer/best-time-suggestions.tsx` | "Now" + suggested time slot buttons |
-| `src/components/composer/target-accounts-select.tsx` | Multi-account selector with tier badges |
-| `src/components/composer/ai-image-dialog.tsx` | AI image generation modal with progress bar |
-| `src/components/ui/date-time-picker.tsx` | Unified date + time popover |
-| `src/components/dashboard/dashboard-page-wrapper.tsx` | Mandatory page shell (icon, title, description) |
-| `src/components/dashboard/sidebar.tsx` | Navigation structure with Compose entry |
-| `docs/ux-audits/compose-redsign.md` | The redesign proposal under review |
+| File                                                  | Role                                                                 |
+| ----------------------------------------------------- | -------------------------------------------------------------------- |
+| `src/components/composer/composer.tsx`                | Main orchestrator, 60+ state variables, grid layout, sidebar cards   |
+| `src/components/composer/tweet-card.tsx`              | Individual tweet editor: textarea, media, toolbar, character counter |
+| `src/components/composer/ai-tools-panel.tsx`          | 8-tool AI panel with pill tab switcher, streaming progress           |
+| `src/components/composer/best-time-suggestions.tsx`   | "Now" + suggested time slot buttons                                  |
+| `src/components/composer/target-accounts-select.tsx`  | Multi-account selector with tier badges                              |
+| `src/components/composer/ai-image-dialog.tsx`         | AI image generation modal with progress bar                          |
+| `src/components/ui/date-time-picker.tsx`              | Unified date + time popover                                          |
+| `src/components/dashboard/dashboard-page-wrapper.tsx` | Mandatory page shell (icon, title, description)                      |
+| `src/components/dashboard/sidebar.tsx`                | Navigation structure with Compose entry                              |
+| `docs/ux-audits/compose-redsign.md`                   | The redesign proposal under review                                   |

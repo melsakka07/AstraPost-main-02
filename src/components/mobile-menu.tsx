@@ -47,7 +47,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
       {/* Hamburger toggle — mobile only */}
       <button
         type="button"
-        className="flex md:hidden h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:hidden"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
         aria-expanded={isOpen}
@@ -63,11 +63,9 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
       {/* Backdrop — fixed, z-40 (below header z-50) */}
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden",
+          "bg-background/80 fixed inset-0 z-40 backdrop-blur-sm md:hidden",
           "transition-opacity duration-200",
-          isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none",
+          isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={close}
         aria-hidden="true"
@@ -80,23 +78,19 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
         aria-label="Navigation menu"
         aria-modal="false"
         className={cn(
-          "absolute left-0 right-0 top-full z-50 border-b bg-background/95 shadow-xl md:hidden",
-          "backdrop-blur supports-[backdrop-filter]:bg-background/98",
-          "transition-all duration-200 ease-out origin-top",
+          "bg-background/95 absolute top-full right-0 left-0 z-50 border-b shadow-xl md:hidden",
+          "supports-[backdrop-filter]:bg-background/98 backdrop-blur",
+          "origin-top transition-all duration-200 ease-out",
           isOpen
-            ? "visible opacity-100 translate-y-0"
-            : "invisible opacity-0 -translate-y-2 pointer-events-none",
+            ? "visible translate-y-0 opacity-100"
+            : "pointer-events-none invisible -translate-y-2 opacity-0"
         )}
       >
-        <nav
-          className="container mx-auto px-4 py-5"
-          aria-label="Mobile navigation"
-        >
+        <nav className="container mx-auto px-4 py-5" aria-label="Mobile navigation">
           {/* Nav links — onClick closes menu (clean, no useEffect setState) */}
           <ul className="space-y-1" role="list">
             {NAV_LINKS.map(({ label, href }) => {
-              const isActive =
-                pathname === href || pathname.startsWith(`${href}/`);
+              const isActive = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <li key={href}>
                   <Link
@@ -107,7 +101,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
                       "flex h-11 items-center rounded-lg px-3 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-primary/10 text-foreground"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     {label}
@@ -118,19 +112,14 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
           </ul>
 
           {/* Auth CTAs */}
-          <div className="mt-4 flex flex-col gap-2 border-t border-border/60 pt-4">
+          <div className="border-border/60 mt-4 flex flex-col gap-2 border-t pt-4">
             {isAuthenticated ? (
               <Button asChild className="w-full" onClick={close}>
                 <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
             ) : (
               <>
-                <Button
-                  variant="outline"
-                  asChild
-                  className="w-full"
-                  onClick={close}
-                >
+                <Button variant="outline" asChild className="w-full" onClick={close}>
                   <Link href="/login">Sign In</Link>
                 </Button>
                 <Button asChild className="w-full" onClick={close}>

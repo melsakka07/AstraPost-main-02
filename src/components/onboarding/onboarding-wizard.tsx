@@ -149,67 +149,67 @@ const TIMEZONE_GROUPS = [
   {
     label: "Middle East & North Africa",
     zones: [
-      { value: "Asia/Riyadh",      label: "Saudi Arabia — Riyadh (GMT+3)" },
-      { value: "Asia/Dubai",       label: "UAE — Dubai (GMT+4)" },
-      { value: "Asia/Qatar",       label: "Qatar — Doha (GMT+3)" },
-      { value: "Asia/Kuwait",      label: "Kuwait (GMT+3)" },
-      { value: "Asia/Bahrain",     label: "Bahrain (GMT+3)" },
-      { value: "Asia/Muscat",      label: "Oman — Muscat (GMT+4)" },
-      { value: "Africa/Cairo",     label: "Egypt — Cairo (GMT+2/3)" },
-      { value: "Asia/Baghdad",     label: "Iraq — Baghdad (GMT+3)" },
-      { value: "Asia/Beirut",      label: "Lebanon — Beirut (GMT+2/3)" },
-      { value: "Asia/Amman",       label: "Jordan — Amman (GMT+2/3)" },
-      { value: "Asia/Jerusalem",   label: "Palestine/Israel (GMT+2/3)" },
-      { value: "Africa/Casablanca",label: "Morocco — Casablanca (GMT+1)" },
-      { value: "Africa/Algiers",   label: "Algeria (GMT+1)" },
-      { value: "Africa/Tunis",     label: "Tunisia (GMT+1)" },
-      { value: "Africa/Tripoli",   label: "Libya (GMT+2)" },
-      { value: "Asia/Aden",        label: "Yemen — Aden (GMT+3)" },
+      { value: "Asia/Riyadh", label: "Saudi Arabia — Riyadh (GMT+3)" },
+      { value: "Asia/Dubai", label: "UAE — Dubai (GMT+4)" },
+      { value: "Asia/Qatar", label: "Qatar — Doha (GMT+3)" },
+      { value: "Asia/Kuwait", label: "Kuwait (GMT+3)" },
+      { value: "Asia/Bahrain", label: "Bahrain (GMT+3)" },
+      { value: "Asia/Muscat", label: "Oman — Muscat (GMT+4)" },
+      { value: "Africa/Cairo", label: "Egypt — Cairo (GMT+2/3)" },
+      { value: "Asia/Baghdad", label: "Iraq — Baghdad (GMT+3)" },
+      { value: "Asia/Beirut", label: "Lebanon — Beirut (GMT+2/3)" },
+      { value: "Asia/Amman", label: "Jordan — Amman (GMT+2/3)" },
+      { value: "Asia/Jerusalem", label: "Palestine/Israel (GMT+2/3)" },
+      { value: "Africa/Casablanca", label: "Morocco — Casablanca (GMT+1)" },
+      { value: "Africa/Algiers", label: "Algeria (GMT+1)" },
+      { value: "Africa/Tunis", label: "Tunisia (GMT+1)" },
+      { value: "Africa/Tripoli", label: "Libya (GMT+2)" },
+      { value: "Asia/Aden", label: "Yemen — Aden (GMT+3)" },
     ],
   },
   {
     label: "Europe",
     zones: [
-      { value: "Europe/London",   label: "UK — London (GMT/BST)" },
-      { value: "Europe/Paris",    label: "France — Paris (GMT+1/2)" },
-      { value: "Europe/Berlin",   label: "Germany — Berlin (GMT+1/2)" },
-      { value: "Europe/Rome",     label: "Italy — Rome (GMT+1/2)" },
-      { value: "Europe/Madrid",   label: "Spain — Madrid (GMT+1/2)" },
+      { value: "Europe/London", label: "UK — London (GMT/BST)" },
+      { value: "Europe/Paris", label: "France — Paris (GMT+1/2)" },
+      { value: "Europe/Berlin", label: "Germany — Berlin (GMT+1/2)" },
+      { value: "Europe/Rome", label: "Italy — Rome (GMT+1/2)" },
+      { value: "Europe/Madrid", label: "Spain — Madrid (GMT+1/2)" },
       { value: "Europe/Istanbul", label: "Turkey — Istanbul (GMT+3)" },
-      { value: "Europe/Moscow",   label: "Russia — Moscow (GMT+3)" },
+      { value: "Europe/Moscow", label: "Russia — Moscow (GMT+3)" },
     ],
   },
   {
     label: "Americas",
     zones: [
-      { value: "America/New_York",    label: "US — New York (EST/EDT)" },
-      { value: "America/Chicago",     label: "US — Chicago (CST/CDT)" },
-      { value: "America/Denver",      label: "US — Denver (MST/MDT)" },
+      { value: "America/New_York", label: "US — New York (EST/EDT)" },
+      { value: "America/Chicago", label: "US — Chicago (CST/CDT)" },
+      { value: "America/Denver", label: "US — Denver (MST/MDT)" },
       { value: "America/Los_Angeles", label: "US — Los Angeles (PST/PDT)" },
-      { value: "America/Toronto",     label: "Canada — Toronto (EST/EDT)" },
-      { value: "America/Vancouver",   label: "Canada — Vancouver (PST/PDT)" },
-      { value: "America/Sao_Paulo",   label: "Brazil — São Paulo (GMT-3)" },
+      { value: "America/Toronto", label: "Canada — Toronto (EST/EDT)" },
+      { value: "America/Vancouver", label: "Canada — Vancouver (PST/PDT)" },
+      { value: "America/Sao_Paulo", label: "Brazil — São Paulo (GMT-3)" },
     ],
   },
   {
     label: "Asia Pacific",
     zones: [
-      { value: "Asia/Kolkata",    label: "India (IST, GMT+5:30)" },
-      { value: "Asia/Karachi",    label: "Pakistan — Karachi (GMT+5)" },
-      { value: "Asia/Dhaka",      label: "Bangladesh (GMT+6)" },
-      { value: "Asia/Singapore",  label: "Singapore (GMT+8)" },
-      { value: "Asia/Tokyo",      label: "Japan — Tokyo (GMT+9)" },
-      { value: "Asia/Shanghai",   label: "China — Shanghai (GMT+8)" },
-      { value: "Australia/Sydney",label: "Australia — Sydney (AEDT)" },
+      { value: "Asia/Kolkata", label: "India (IST, GMT+5:30)" },
+      { value: "Asia/Karachi", label: "Pakistan — Karachi (GMT+5)" },
+      { value: "Asia/Dhaka", label: "Bangladesh (GMT+6)" },
+      { value: "Asia/Singapore", label: "Singapore (GMT+8)" },
+      { value: "Asia/Tokyo", label: "Japan — Tokyo (GMT+9)" },
+      { value: "Asia/Shanghai", label: "China — Shanghai (GMT+8)" },
+      { value: "Australia/Sydney", label: "Australia — Sydney (AEDT)" },
     ],
   },
   {
     label: "Africa",
     zones: [
-      { value: "Africa/Lagos",        label: "Nigeria — Lagos (GMT+1)" },
-      { value: "Africa/Nairobi",      label: "Kenya — Nairobi (GMT+3)" },
+      { value: "Africa/Lagos", label: "Nigeria — Lagos (GMT+1)" },
+      { value: "Africa/Nairobi", label: "Kenya — Nairobi (GMT+3)" },
       { value: "Africa/Johannesburg", label: "South Africa (GMT+2)" },
-      { value: "Africa/Accra",        label: "Ghana — Accra (GMT)" },
+      { value: "Africa/Accra", label: "Ghana — Accra (GMT)" },
     ],
   },
 ];
@@ -229,13 +229,15 @@ export function OnboardingWizard() {
   const [prefTimezone, setPrefTimezone] = useState("Asia/Riyadh");
 
   // X Account State
-  const [xAccounts, setXAccounts] = useState<Array<{
-    id: string;
-    xUsername: string;
-    xDisplayName: string | null;
-    xAvatarUrl: string | null;
-    isDefault: boolean;
-  }>>([]);
+  const [xAccounts, setXAccounts] = useState<
+    Array<{
+      id: string;
+      xUsername: string;
+      xDisplayName: string | null;
+      xAvatarUrl: string | null;
+      isDefault: boolean;
+    }>
+  >([]);
   const [loadingAccounts, setLoadingAccounts] = useState(true);
 
   // Post State
@@ -301,9 +303,13 @@ export function OnboardingWizard() {
     if (currentStep === steps.length) {
       onboardingCompleteRef.current = fetch("/api/user/onboarding-complete", { method: "POST" })
         .then((res) => {
-          if (!res.ok) { toast.error("Could not save onboarding status. Please try again."); }
+          if (!res.ok) {
+            toast.error("Could not save onboarding status. Please try again.");
+          }
         })
-        .catch(() => { toast.error("Could not save onboarding status. Please try again."); });
+        .catch(() => {
+          toast.error("Could not save onboarding status. Please try again.");
+        });
     }
   }, [currentStep]);
 
@@ -372,9 +378,7 @@ export function OnboardingWizard() {
           return;
         }
         if (isOverHardLimit) {
-          toast.error(
-            `Tweet is too long (${tweetWeightedLength}/1000 characters)`
-          );
+          toast.error(`Tweet is too long (${tweetWeightedLength}/1000 characters)`);
           setLoading(false);
           return;
         }
@@ -424,19 +428,17 @@ export function OnboardingWizard() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto py-6 md:py-12 px-4">
+    <div className="mx-auto max-w-3xl px-4 py-6 md:py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-center mb-2">
-          Welcome to AstraPost! 🚀
-        </h1>
+        <h1 className="mb-2 text-center text-3xl font-bold">Welcome to AstraPost! 🚀</h1>
         <p className="text-muted-foreground text-center">
           Let&apos;s get you set up in just a few steps.
         </p>
       </div>
 
       {/* Mobile compact stepper */}
-      <div className="flex md:hidden items-center gap-2 mb-6 text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">
+      <div className="text-muted-foreground mb-6 flex items-center gap-2 text-sm md:hidden">
+        <span className="text-foreground font-medium">
           Step {currentStep} of {steps.length}
         </span>
         <span aria-hidden="true">·</span>
@@ -444,19 +446,16 @@ export function OnboardingWizard() {
       </div>
 
       {/* Desktop progress stepper */}
-      <div className="hidden md:flex justify-between items-center mb-12 relative">
-        <div className="absolute left-0 top-1/2 w-full h-1 bg-muted -z-10" />
+      <div className="relative mb-12 hidden items-center justify-between md:flex">
+        <div className="bg-muted absolute top-1/2 left-0 -z-10 h-1 w-full" />
         {steps.map((step) => {
           const isCompleted = step.id < currentStep;
           const isCurrent = step.id === currentStep;
           return (
-            <div
-              key={step.id}
-              className="flex flex-col items-center bg-background px-2"
-            >
+            <div key={step.id} className="bg-background flex flex-col items-center px-2">
               <div
                 className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors",
+                  "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors",
                   isCompleted
                     ? "bg-primary border-primary text-primary-foreground"
                     : isCurrent
@@ -465,9 +464,9 @@ export function OnboardingWizard() {
                 )}
               >
                 {isCompleted ? (
-                  <CheckCircle2 className="w-6 h-6" />
+                  <CheckCircle2 className="h-6 w-6" />
                 ) : (
-                  <step.icon className="w-5 h-5" />
+                  <step.icon className="h-5 w-5" />
                 )}
               </div>
               <span
@@ -484,29 +483,25 @@ export function OnboardingWizard() {
       </div>
 
       {/* Step Content */}
-      <Card className="min-h-[300px] md:min-h-[400px] flex flex-col shadow-lg border-2">
-        <CardHeader className="text-center border-b bg-muted/20">
-          <CardTitle className="text-2xl">
-            {steps[currentStep - 1]!.title}
-          </CardTitle>
-          <CardDescription>
-            {steps[currentStep - 1]!.description}
-          </CardDescription>
+      <Card className="flex min-h-[300px] flex-col border-2 shadow-lg md:min-h-[400px]">
+        <CardHeader className="bg-muted/20 border-b text-center">
+          <CardTitle className="text-2xl">{steps[currentStep - 1]!.title}</CardTitle>
+          <CardDescription>{steps[currentStep - 1]!.description}</CardDescription>
         </CardHeader>
 
-        <CardContent className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 space-y-6">
+        <CardContent className="flex flex-1 flex-col items-center justify-center space-y-6 p-4 md:p-8">
           {/* Step 1 — X Account Confirmation */}
           {currentStep === 1 && (
             <div className="w-full max-w-md space-y-6 text-center">
               {loadingAccounts ? (
                 <div className="flex flex-col items-center gap-4">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <Loader2 className="text-primary h-8 w-8 animate-spin" />
                   <p className="text-muted-foreground">Loading your account...</p>
                 </div>
               ) : xAccounts.length > 0 ? (
                 <>
-                  <div className="bg-primary/5 p-6 rounded-full inline-block mb-2">
-                    <Twitter className="w-12 h-12 text-primary" />
+                  <div className="bg-primary/5 mb-2 inline-block rounded-full p-6">
+                    <Twitter className="text-primary h-12 w-12" />
                   </div>
                   <h3 className="text-xl font-bold">Your X Account is Connected!</h3>
                   <p className="text-muted-foreground">
@@ -522,28 +517,25 @@ export function OnboardingWizard() {
                           alt={xAccounts[0]!.xUsername}
                           referrerPolicy="no-referrer"
                         />
-                        <AvatarFallback>
-                          {xAccounts[0]!.xUsername[0]!.toUpperCase()}
-                        </AvatarFallback>
+                        <AvatarFallback>{xAccounts[0]!.xUsername[0]!.toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <p className="font-semibold">
                           {xAccounts[0]!.xDisplayName || xAccounts[0]!.xUsername}
                         </p>
-                        <p className="text-sm text-muted-foreground">
-                          @{xAccounts[0]!.xUsername}
-                        </p>
+                        <p className="text-muted-foreground text-sm">@{xAccounts[0]!.xUsername}</p>
                       </div>
                       {xAccounts[0]!.isDefault && (
-                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">
+                        <span className="bg-primary/10 text-primary rounded-full px-2 py-1 text-xs font-medium">
                           Default
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <p className="text-sm text-muted-foreground">
-                    You can add more accounts later from Settings. Pro & Agency plans let you manage multiple X accounts under one subscription.
+                  <p className="text-muted-foreground text-sm">
+                    You can add more accounts later from Settings. Pro & Agency plans let you manage
+                    multiple X accounts under one subscription.
                   </p>
 
                   <Button variant="outline" asChild>
@@ -555,8 +547,8 @@ export function OnboardingWizard() {
                 </>
               ) : (
                 <>
-                  <div className="bg-amber-500/10 p-6 rounded-full inline-block mb-2">
-                    <Twitter className="w-12 h-12 text-amber-600" />
+                  <div className="mb-2 inline-block rounded-full bg-amber-500/10 p-6">
+                    <Twitter className="h-12 w-12 text-amber-600" />
                   </div>
                   <h3 className="text-xl font-bold">No X Account Connected</h3>
                   <p className="text-muted-foreground">
@@ -574,8 +566,8 @@ export function OnboardingWizard() {
           {currentStep === 2 && (
             <div className="w-full max-w-sm space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Languages className="h-4 w-4 text-primary" />
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <Languages className="text-primary h-4 w-4" />
                   Preferred Language
                 </label>
                 <Select value={prefLanguage} onValueChange={setPrefLanguage}>
@@ -590,14 +582,14 @@ export function OnboardingWizard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Used for AI-generated content and writing tools.
                 </p>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-primary" />
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <Globe className="text-primary h-4 w-4" />
                   Time Zone
                 </label>
                 <Select value={prefTimezone} onValueChange={setPrefTimezone}>
@@ -617,7 +609,7 @@ export function OnboardingWizard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Ensures your scheduled posts go out at the right local time.
                 </p>
               </div>
@@ -627,9 +619,7 @@ export function OnboardingWizard() {
           {/* Step 3 — Compose — O2, O3, O6 */}
           {currentStep === 3 && (
             <div className="w-full max-w-md space-y-3">
-              <label className="text-sm font-medium">
-                Draft your first tweet
-              </label>
+              <label className="text-sm font-medium">Draft your first tweet</label>
               {/* O3 — shadcn Textarea */}
               <Textarea
                 value={tweetContent}
@@ -641,7 +631,7 @@ export function OnboardingWizard() {
               {/* O2 — char counter with amber/destructive thresholds */}
               <p
                 className={cn(
-                  "text-xs text-right font-medium",
+                  "text-right text-xs font-medium",
                   isOverHardLimit
                     ? "text-destructive"
                     : isOverStandardLimit
@@ -651,9 +641,7 @@ export function OnboardingWizard() {
               >
                 {tweetWeightedLength} / 280
                 {isOverStandardLimit && !isOverHardLimit && (
-                  <span className="ml-1 opacity-70">
-                    (over X standard limit)
-                  </span>
+                  <span className="ml-1 opacity-70">(over X standard limit)</span>
                 )}
               </p>
             </div>
@@ -662,22 +650,20 @@ export function OnboardingWizard() {
           {/* Step 4 — Schedule — O1 */}
           {currentStep === 4 && (
             <div className="w-full max-w-xs space-y-4 text-center">
-              <p className="text-sm font-medium">
-                When should this go out?
-              </p>
+              <p className="text-sm font-medium">When should this go out?</p>
 
               {/* Send Now option */}
               <button
                 type="button"
                 onClick={handleSendNow}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 transition-colors p-4 text-sm font-medium text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 text-primary flex w-full items-center justify-center gap-2 rounded-lg border-2 p-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Rocket className="h-4 w-4" />
                 Send Now
               </button>
 
-              <div className="relative flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="text-muted-foreground relative flex items-center gap-2 text-xs">
                 <div className="flex-1 border-t" />
                 <span>or schedule for later</span>
                 <div className="flex-1 border-t" />
@@ -685,7 +671,7 @@ export function OnboardingWizard() {
 
               {/* O1 — DatePicker + time Select */}
               <div className="space-y-2 text-left">
-                <label className="text-xs text-muted-foreground">Date</label>
+                <label className="text-muted-foreground text-xs">Date</label>
                 <DatePicker
                   value={scheduledDate}
                   onChange={setScheduledDate}
@@ -693,11 +679,8 @@ export function OnboardingWizard() {
                 />
               </div>
               <div className="space-y-2 text-left">
-                <label className="text-xs text-muted-foreground">Time</label>
-                <Select
-                  value={scheduledTime}
-                  onValueChange={setScheduledTime}
-                >
+                <label className="text-muted-foreground text-xs">Time</label>
+                <Select value={scheduledTime} onValueChange={setScheduledTime}>
                   <SelectTrigger className="w-full" aria-label="Select time">
                     <SelectValue />
                   </SelectTrigger>
@@ -715,7 +698,7 @@ export function OnboardingWizard() {
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 We&apos;ll automatically publish it at this time.
               </p>
             </div>
@@ -723,36 +706,34 @@ export function OnboardingWizard() {
 
           {/* Step 5 — Explore AI — O4, O7 */}
           {currentStep === 5 && (
-            <div className="text-center space-y-6 max-w-lg w-full">
-              <div className="bg-primary/5 p-6 rounded-full inline-block mb-2">
-                <Rocket className="w-12 h-12 text-primary" />
+            <div className="w-full max-w-lg space-y-6 text-center">
+              <div className="bg-primary/5 mb-2 inline-block rounded-full p-6">
+                <Rocket className="text-primary h-12 w-12" />
               </div>
               <h3 className="text-xl font-bold">You&apos;re all set!</h3>
               <p className="text-muted-foreground">
-                Your first post is scheduled. Head over to the dashboard to
-                track its performance or create more content with our AI tools.
+                Your first post is scheduled. Head over to the dashboard to track its performance or
+                create more content with our AI tools.
               </p>
               {/* O4 + O7 — 4 real linked feature cards.
                   Must use navigateAfterOnboarding (hard reload) — not <Link>.
                   Client-side nav is faster than the DB write, causing the
                   dashboard layout to see onboardingCompleted=false and
                   redirect back to the onboarding shell (missing sidebar). */}
-              <div className="grid grid-cols-2 gap-3 text-left mt-4">
+              <div className="mt-4 grid grid-cols-2 gap-3 text-left">
                 {FEATURE_CARDS.map((card) => (
                   <button
                     key={card.href}
                     type="button"
                     onClick={() => void navigateAfterOnboarding(card.href)}
-                    className="p-4 border rounded-md hover:bg-muted/50 hover:border-primary/30 transition-colors block text-left w-full"
+                    className="hover:bg-muted/50 hover:border-primary/30 block w-full rounded-md border p-4 text-left transition-colors"
                     aria-label={`Go to ${card.title}`}
                   >
-                    <h3 className="font-semibold flex items-center gap-2">
-                      <card.icon className="h-4 w-4 text-primary" />
+                    <h3 className="flex items-center gap-2 font-semibold">
+                      <card.icon className="text-primary h-4 w-4" />
                       {card.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {card.description}
-                    </p>
+                    <p className="text-muted-foreground mt-1 text-xs">{card.description}</p>
                   </button>
                 ))}
               </div>
@@ -760,7 +741,7 @@ export function OnboardingWizard() {
           )}
         </CardContent>
 
-        <CardFooter className="flex justify-between border-t p-6 bg-muted/10">
+        <CardFooter className="bg-muted/10 flex justify-between border-t p-6">
           <Button
             variant="ghost"
             onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
@@ -777,17 +758,12 @@ export function OnboardingWizard() {
                 variant="ghost"
                 onClick={handleSkipSchedule}
                 disabled={loading}
-                className="min-h-[44px] text-muted-foreground"
+                className="text-muted-foreground min-h-[44px]"
               >
                 Skip — save as draft
               </Button>
             )}
-            <Button
-              onClick={handleNext}
-              disabled={loading}
-              size="lg"
-              className="min-h-[44px]"
-            >
+            <Button onClick={handleNext} disabled={loading} size="lg" className="min-h-[44px]">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {currentStep === steps.length ? "Go to Dashboard" : "Next Step"}
             </Button>

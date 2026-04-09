@@ -26,7 +26,7 @@ export function ThreadCollapsible({
       <Button
         variant="ghost"
         size="sm"
-        className="h-6 px-0 text-xs text-muted-foreground hover:text-foreground hover:bg-transparent gap-1"
+        className="text-muted-foreground hover:text-foreground h-6 gap-1 px-0 text-xs hover:bg-transparent"
         aria-expanded={open}
         aria-label={open ? "Collapse thread" : "Expand thread"}
         onClick={() => setOpen((v) => !v)}
@@ -45,19 +45,17 @@ export function ThreadCollapsible({
       </Button>
 
       {open && (
-        <ol className="mt-3 space-y-3 border-l-2 border-muted pl-4">
+        <ol className="border-muted mt-3 space-y-3 border-l-2 pl-4">
           {tweets.slice(1).map((tweet, idx) => (
             <li key={tweet.id} className="relative">
-              <span className="absolute -left-6 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
+              <span className="bg-muted text-muted-foreground absolute top-0.5 -left-6 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium">
                 {idx + 2}
               </span>
               <p
-                className={`${isCompact ? "line-clamp-3 text-sm" : "line-clamp-4"} whitespace-pre-wrap break-words`}
+                className={`${isCompact ? "line-clamp-3 text-sm" : "line-clamp-4"} break-words whitespace-pre-wrap`}
               >
                 {tweet.content ?? (
-                  <span className="italic text-muted-foreground/60">
-                    Empty tweet
-                  </span>
+                  <span className="text-muted-foreground/60 italic">Empty tweet</span>
                 )}
               </p>
             </li>

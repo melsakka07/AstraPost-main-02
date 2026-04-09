@@ -36,7 +36,9 @@ const ImageGenRequestSchema = z.object({
   tweetContent: z.string().max(5000).optional(),
   model: z.enum(["nano-banana-2", "nano-banana-pro", "nano-banana"]).default("nano-banana-2"),
   aspectRatio: z.enum(["1:1", "16:9", "4:3", "9:16"]).default("1:1"),
-  style: z.enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"]).optional(),
+  style: z
+    .enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"])
+    .optional(),
 });
 
 // ============================================================================
@@ -50,9 +52,7 @@ const ImageGenRequestSchema = z.object({
  * embedded in the LLM call. The `---` delimiters bound the user block so that
  * instruction-injection attempts cannot bleed into the surrounding prompt.
  */
-async function generateImagePromptFromTweet(
-  tweetContent: string
-): Promise<string> {
+async function generateImagePromptFromTweet(tweetContent: string): Promise<string> {
   // Sanitize: strip non-printable controls, normalize line endings, collapse
   // excessive blank lines, and cap at 500 chars (the schema allows up to 5000
   // but we don't need more than that for prompt generation).
@@ -60,7 +60,7 @@ async function generateImagePromptFromTweet(
 
   try {
     const openrouterProvider = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY || "" });
-    
+
     if (!process.env.OPENROUTER_MODEL) {
       throw new Error("OPENROUTER_MODEL environment variable is not configured");
     }
@@ -108,8 +108,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { prompt, tweetContent, model, aspectRatio, style } =
-      validationResult.data;
+    const { prompt, tweetContent, model, aspectRatio, style } = validationResult.data;
 
     // 3. Auth identity
     const userId = session.user.id;
@@ -138,15 +137,17 @@ export async function POST(req: NextRequest) {
       finalPrompt = await generateImagePromptFromTweet(tweetContent);
 
       // Fire-and-forget DB record; errors here must not block the image flow.
-      db.insert(aiGenerations).values({
-        id: crypto.randomUUID(),
-        userId,
-        type: "image_prompt",
-        inputPrompt: tweetContent.slice(0, 2000),
-        tokensUsed: 0, // OpenRouter streaming does not expose token counts here
-      }).catch((err: unknown) => {
-        console.error("Failed to record image_prompt ai generation", err);
-      });
+      db.insert(aiGenerations)
+        .values({
+          id: crypto.randomUUID(),
+          userId,
+          type: "image_prompt",
+          inputPrompt: tweetContent.slice(0, 2000),
+          tokensUsed: 0, // OpenRouter streaming does not expose token counts here
+        })
+        .catch((err: unknown) => {
+          console.error("Failed to record image_prompt ai generation", err);
+        });
     }
 
     if (!finalPrompt) {
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
     await redis.setex(
       `ai:img:pred:${predictionId}`,
       1800,
-      JSON.stringify({ userId, model, finalPrompt, aspectRatio, style: style ?? null }),
+      JSON.stringify({ userId, model, finalPrompt, aspectRatio, style: style ?? null })
     );
 
     // 10. Return prediction ID — client will poll for the result.
@@ -197,4 +198,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

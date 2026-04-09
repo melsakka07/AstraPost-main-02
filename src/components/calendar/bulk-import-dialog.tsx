@@ -107,9 +107,9 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
             <Label htmlFor="bulk-import-csv">CSV File</Label>
             <Input id="bulk-import-csv" type="file" accept=".csv" onChange={handleFileChange} />
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-xs">
             <p>Format example:</p>
-            <pre className="mt-1 rounded bg-muted p-2">
+            <pre className="bg-muted mt-1 rounded p-2">
               content,scheduledAt{"\n"}
               "Hello world","2023-10-01T10:00:00Z"
             </pre>

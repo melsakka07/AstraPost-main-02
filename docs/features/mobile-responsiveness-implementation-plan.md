@@ -52,6 +52,7 @@ src/
 ```
 
 **Key findings from foundation check:**
+
 - `layout.tsx` — ✅ `dir/lang` set, ✅ `min-h-dvh` used, ✅ `overflow-x-hidden` on body, ✅ no `user-scalable=no`, ✅ Cairo font loaded
 - `globals.css` — ✅ `100dvh` used, ✅ dark mode tokens, ✅ `:lang(ar)` selector, ⚠️ no `touch-action` global, ⚠️ no `-webkit-tap-highlight-color: transparent`
 - `dashboard/layout.tsx` — ✅ `min-h-dvh`, ⚠️ `p-4 md:p-8` (16px mobile padding OK), ⚠️ no safe-area insets on main
@@ -539,7 +540,7 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
 
 - **Verification:** `pnpm run check` — 0 errors, 18 warnings (identical to pre-existing baseline; no regressions)
 
-- **Files to modify:** *(original spec)* `package.json`, new `src/components/ui/responsive-dialog.tsx`
+- **Files to modify:** _(original spec)_ `package.json`, new `src/components/ui/responsive-dialog.tsx`
 - **What to do:**
   1. Install: `pnpm add vaul`
   2. Create `ResponsiveDialog` component that renders `Dialog` on `md:` and `Drawer` (vaul) on mobile
@@ -561,7 +562,13 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
     children: React.ReactNode;
   }
 
-  export function ResponsiveDialog({ open, onOpenChange, title, description, children }: ResponsiveDialogProps) {
+  export function ResponsiveDialog({
+    open,
+    onOpenChange,
+    title,
+    description,
+    children,
+  }: ResponsiveDialogProps) {
     const isDesktop = useMediaQuery("(min-width: 768px)");
 
     if (isDesktop) {
@@ -593,6 +600,7 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
   ```
 
   Also create `src/hooks/use-media-query.ts`:
+
   ```ts
   "use client";
   import { useEffect, useState } from "react";
@@ -618,6 +626,7 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
 #### Task 2.2: Emoji Picker — Lazy load + mobile sheet ✅ DONE
 
 > **Completed 2026-03-17** — `src/components/composer/tweet-card.tsx`
+>
 > - Replaced static `import EmojiPicker` with `next/dynamic` lazy import (`ssr: false`)
 > - On mobile (`useMediaQuery("(min-width: 768px)")` = false): trigger button opens a `<Sheet side="bottom" className="h-[400px] px-0">` with full-width EmojiPicker
 > - On desktop (≥768px): existing Popover behaviour preserved unchanged
@@ -634,22 +643,24 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
   const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
   // Replace Popover with conditional rendering:
-  {showEmojiPicker && (
-    <>
-      {/* Mobile: Sheet from bottom */}
-      <div className="md:hidden">
-        <Sheet open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-          <SheetContent side="bottom" className="h-[400px] px-0">
-            <EmojiPicker onEmojiClick={onEmojiClick} width="100%" height={350} />
-          </SheetContent>
-        </Sheet>
-      </div>
-      {/* Desktop: Popover */}
-      <div className="hidden md:block absolute z-50 bottom-full mb-1">
-        <EmojiPicker onEmojiClick={onEmojiClick} height={400} />
-      </div>
-    </>
-  )}
+  {
+    showEmojiPicker && (
+      <>
+        {/* Mobile: Sheet from bottom */}
+        <div className="md:hidden">
+          <Sheet open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+            <SheetContent side="bottom" className="h-[400px] px-0">
+              <EmojiPicker onEmojiClick={onEmojiClick} width="100%" height={350} />
+            </SheetContent>
+          </Sheet>
+        </div>
+        {/* Desktop: Popover */}
+        <div className="absolute bottom-full z-50 mb-1 hidden md:block">
+          <EmojiPicker onEmojiClick={onEmojiClick} height={400} />
+        </div>
+      </>
+    );
+  }
   ```
 
 - **RTL consideration:** Sheet from bottom is direction-neutral
@@ -660,6 +671,7 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
 #### Task 2.3: Inspiration Page — Responsive tabs, stacked URL input ✅ DONE
 
 > **Completed 2026-03-17** — `src/app/dashboard/inspiration/page.tsx`
+>
 > - URL input row: `flex gap-2` → `flex flex-col gap-2 sm:flex-row`; Import button gets `w-full sm:w-auto`
 > - TabsList: added `overflow-x-auto` for horizontal scrollability on narrow screens
 > - History list: `<div>` → `<ul role="list">` with `<li>` items (WCAG semantics)
@@ -694,6 +706,7 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
 #### Task 2.4: Analytics Page — Responsive charts and stat cards ✅ DONE
 
 > **Completed 2026-03-17** — `src/app/dashboard/analytics/page.tsx`, `src/components/analytics/account-selector.tsx` (new)
+>
 > - Chart components (`FollowerChart`, `ImpressionsChart`) already had `<div className="h-[300px] w-full">` + `<ResponsiveContainer width="100%" height="100%">` — no change needed
 > - All 8 stat-card values changed from `text-2xl` → `text-xl md:text-2xl` (comfortable mode shrinks on mobile, 2xl only at ≥768px)
 > - Created `AccountSelector` client component: Select dropdown on mobile (< 640px), chip links on desktop (≥ 640px). Used conditional spread `{...(selectedAccountId !== undefined && { value: ... })}` to satisfy `exactOptionalPropertyTypes: true`
@@ -712,6 +725,7 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
 #### Task 2.5: Queue Page — Card spacing and action button accessibility ✅ DONE
 
 > **Completed 2026-03-17** — `src/app/dashboard/queue/page.tsx`, `CancelPostButton`, `RetryPostButton`, `PostApprovalActions`
+>
 > - Card padding: comfortable mode already had `p-4 sm:p-6`; compact mode `p-3 sm:p-4` retained (intentionally smaller) — spec satisfied
 > - Button stacking: all 3 card types already used `flex-col sm:flex-row` — spec satisfied
 > - Added optional `ariaLabel?: string` prop to `CancelPostButton`, `RetryPostButton`, and `PostApprovalActions`
@@ -968,7 +982,7 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
   2. **Layout-triggering animations** — only the Radix UI accordion animates `height`; it is correctly wrapped in `overflow-hidden` in `accordion.tsx` which contains the reflow within its bounding box. This is the standard Radix UI pattern and is acceptable.
   3. **Hover transitions** — all use compositor-friendly properties only: `transform` (link underline, image scale), `opacity` (anchor links), `background` (table rows, repaint only — no relayout). No `width`, `height`, `top`, `left`, `margin`, or `padding` transitions found anywhere.
   4. **Inline style transitions** — zero instances of non-compositor property transitions in component files.
-  5. **Tailwind animate-* classes** — `animate-spin` (transform), `animate-pulse` (opacity), `animate-bounce` (transform) — all compositor-friendly.
+  5. **Tailwind animate-\* classes** — `animate-spin` (transform), `animate-pulse` (opacity), `animate-bounce` (transform) — all compositor-friendly.
 - **Estimated effort:** 2 hours
 
 ---
@@ -977,16 +991,16 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
 
 ### Device Matrix
 
-| Device             | OS          | Browser          | Screen    | Priority |
-|--------------------|-------------|------------------|-----------|----------|
-| iPhone 15 Pro      | iOS 18      | Safari           | 393×852   | P0       |
-| iPhone SE (3rd)    | iOS 18      | Safari           | 375×667   | P0       |
-| Samsung Galaxy S24 | Android 15  | Chrome           | 360×780   | P0       |
-| Samsung Galaxy A14 | Android 14  | Chrome           | 360×800   | P0       |
-| iPad Air           | iPadOS 18   | Safari           | 820×1180  | P1       |
-| Huawei P30 Lite    | Android 12  | Huawei Browser   | 360×780   | P1       |
-| Xiaomi Redmi Note  | Android 13  | Chrome           | 393×873   | P1       |
-| Samsung Galaxy Tab | Android 14  | Samsung Internet | 800×1280  | P2       |
+| Device             | OS         | Browser          | Screen   | Priority |
+| ------------------ | ---------- | ---------------- | -------- | -------- |
+| iPhone 15 Pro      | iOS 18     | Safari           | 393×852  | P0       |
+| iPhone SE (3rd)    | iOS 18     | Safari           | 375×667  | P0       |
+| Samsung Galaxy S24 | Android 15 | Chrome           | 360×780  | P0       |
+| Samsung Galaxy A14 | Android 14 | Chrome           | 360×800  | P0       |
+| iPad Air           | iPadOS 18  | Safari           | 820×1180 | P1       |
+| Huawei P30 Lite    | Android 12 | Huawei Browser   | 360×780  | P1       |
+| Xiaomi Redmi Note  | Android 13 | Chrome           | 393×873  | P1       |
+| Samsung Galaxy Tab | Android 14 | Samsung Internet | 800×1280 | P2       |
 
 ### Testing Checklist per Page
 
@@ -1023,19 +1037,20 @@ Fix approach: Replace mr-2 → me-2 throughout sidebar and other components
 
 Using Tailwind CSS 4 defaults (no custom breakpoints needed):
 
-| Breakpoint | Width  | Layout change                                              |
-|-----------|--------|-------------------------------------------------------------|
-| `base`    | 0px+   | Single column; Sheet nav; compact typography; stacked forms |
-| `sm:`     | 640px  | Two-column grids where appropriate; inline form rows        |
-| `md:`     | 768px  | Desktop sidebar visible; modal dialogs; full toolbar        |
-| `lg:`     | 1024px | Multi-column analytics; expanded sidebar content            |
-| `xl:`     | 1280px | Maximum content width constrained for readability           |
+| Breakpoint | Width  | Layout change                                               |
+| ---------- | ------ | ----------------------------------------------------------- |
+| `base`     | 0px+   | Single column; Sheet nav; compact typography; stacked forms |
+| `sm:`      | 640px  | Two-column grids where appropriate; inline form rows        |
+| `md:`      | 768px  | Desktop sidebar visible; modal dialogs; full toolbar        |
+| `lg:`      | 1024px | Multi-column analytics; expanded sidebar content            |
+| `xl:`      | 1280px | Maximum content width constrained for readability           |
 
 ---
 
 ## Files Modified (Summary by Phase)
 
 ### Phase 1 — Critical Fixes
+
 - `src/app/globals.css` — Touch feedback, tap highlight, safe-area utilities
 - `src/app/layout.tsx` — colorScheme viewport, skip link
 - `src/app/dashboard/layout.tsx` — main id, safe-area padding
@@ -1045,6 +1060,7 @@ Using Tailwind CSS 4 defaults (no custom breakpoints needed):
 - `src/components/onboarding/onboarding-wizard.tsx` — mobile stepper pattern
 
 ### Phase 2 — Component Overhaul
+
 - `package.json` — add vaul
 - `src/components/ui/responsive-dialog.tsx` — NEW: responsive dialog wrapper
 - `src/hooks/use-media-query.ts` — NEW: media query hook
@@ -1055,6 +1071,7 @@ Using Tailwind CSS 4 defaults (no custom breakpoints needed):
 - `src/app/dashboard/settings/page.tsx` — mobile settings nav
 
 ### Phase 3 — User Flows
+
 - `src/components/auth/sign-in-button.tsx` — inputMode, autoComplete
 - `src/components/auth/sign-up-form.tsx` — inputMode, autoComplete
 - `src/components/auth/forgot-password-form.tsx` — inputMode
@@ -1062,11 +1079,13 @@ Using Tailwind CSS 4 defaults (no custom breakpoints needed):
 - `src/app/dashboard/calendar/page.tsx` — mobile list view default
 
 ### Phase 4 — Dynamic Behavior
+
 - `src/app/chat/page.tsx` — visualViewport keyboard handling
 - `src/components/ui/rtl-icon.tsx` — NEW: RTL-aware directional icon
 - `src/app/globals.css` — prefers-reduced-motion, hover media query scoping
 
 ### Phase 5 — Accessibility
+
 - ✅ Task 5.1 — ARIA live regions + `role="status"` on loading spinners (8 files)
 - ✅ Task 5.2 — `autoFocus` on first dialog inputs; Radix focus trapping verified
 - ✅ Task 5.3 — Heading hierarchy fixed in achievements, referrals, analytics, viral pages
@@ -1074,6 +1093,7 @@ Using Tailwind CSS 4 defaults (no custom breakpoints needed):
 - ✅ Task 5.5 — Color independence audit complete; notification bell dot fixed (1 file); all badges verified
 
 ### Phase 6 — Performance
+
 - `src/app/dashboard/compose/page.tsx` — dynamic Composer import
 - `src/app/dashboard/calendar/page.tsx` — dynamic CalendarView import
 - `src/app/dashboard/analytics/page.tsx` — dynamic chart imports
@@ -1083,9 +1103,9 @@ Using Tailwind CSS 4 defaults (no custom breakpoints needed):
 
 ## Dependencies & New Packages
 
-| Package | Reason | Bundle impact |
-|---------|--------|---------------|
-| `vaul` | Responsive Drawer for modals on mobile — the standard shadcn/ui pattern | ~8KB gzipped |
+| Package | Reason                                                                  | Bundle impact |
+| ------- | ----------------------------------------------------------------------- | ------------- |
+| `vaul`  | Responsive Drawer for modals on mobile — the standard shadcn/ui pattern | ~8KB gzipped  |
 
 No other new packages required. All other improvements use existing Tailwind, shadcn/ui, and Radix primitives.
 
@@ -1093,13 +1113,13 @@ No other new packages required. All other improvements use existing Tailwind, sh
 
 ## Risks & Mitigations
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| RTL regression after logical property migration | Medium | High | Test every changed component in RTL mode (set `locale=ar` cookie); add to CI checklist |
-| Dark mode breakage from new components | Low | Medium | All new components use shadcn/ui CSS custom properties only; no hardcoded colors |
-| vaul Drawer conflicts with existing Dialog usage | Low | Medium | Introduce ResponsiveDialog wrapper first; migrate dialogs one-by-one |
-| EmojiPicker Sheet on mobile breaks textarea focus | Medium | High | Test focus flow: Sheet closes → textarea refocuses at cursor position |
-| Calendar view refactor breaks existing scheduling UX | Medium | High | Keep month view accessible; only default to list on mobile; user can switch |
-| Composer mobile layout audit reveals deep structural issues | High | High | Timebox Phase 3.2 to 4 hours; scope to layout fixes only, not feature changes |
-| Performance regression from lazy loading causing FOUC | Low | Medium | Add proper loading skeletons matching component dimensions (prevent CLS) |
-| iOS Safari `visualViewport` not supported in older versions | Low | Low | Add feature detection guard: `if (!window.visualViewport) return;` |
+| Risk                                                        | Likelihood | Impact | Mitigation                                                                             |
+| ----------------------------------------------------------- | ---------- | ------ | -------------------------------------------------------------------------------------- |
+| RTL regression after logical property migration             | Medium     | High   | Test every changed component in RTL mode (set `locale=ar` cookie); add to CI checklist |
+| Dark mode breakage from new components                      | Low        | Medium | All new components use shadcn/ui CSS custom properties only; no hardcoded colors       |
+| vaul Drawer conflicts with existing Dialog usage            | Low        | Medium | Introduce ResponsiveDialog wrapper first; migrate dialogs one-by-one                   |
+| EmojiPicker Sheet on mobile breaks textarea focus           | Medium     | High   | Test focus flow: Sheet closes → textarea refocuses at cursor position                  |
+| Calendar view refactor breaks existing scheduling UX        | Medium     | High   | Keep month view accessible; only default to list on mobile; user can switch            |
+| Composer mobile layout audit reveals deep structural issues | High       | High   | Timebox Phase 3.2 to 4 hours; scope to layout fixes only, not feature changes          |
+| Performance regression from lazy loading causing FOUC       | Low        | Medium | Add proper loading skeletons matching component dimensions (prevent CLS)               |
+| iOS Safari `visualViewport` not supported in older versions | Low        | Low    | Add feature detection guard: `if (!window.visualViewport) return;`                     |

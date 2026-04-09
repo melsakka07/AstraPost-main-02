@@ -26,10 +26,9 @@ export async function GET(req: Request) {
 
     // Validate days parameter
     if (days < 7 || days > 365) {
-      return new Response(
-        JSON.stringify({ error: "Days must be between 7 and 365" }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: "Days must be between 7 and 365" }), {
+        status: 400,
+      });
     }
 
     // 1. Fetch top-performing tweets
@@ -64,7 +63,7 @@ export async function GET(req: Request) {
       return Response.json({
         insufficientData: true,
         message: "Not enough tweet data to analyze. Publish more tweets to get insights.",
-        analysis: null
+        analysis: null,
       });
     }
 
@@ -75,15 +74,13 @@ export async function GET(req: Request) {
       insufficientData: false,
       dataPoints: topTweets.length,
       periodDays: days,
-      analysis
+      analysis,
     });
-
   } catch (error) {
     console.error("Viral Analysis Error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to analyze viral content" }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: "Failed to analyze viral content" }), {
+      status: 500,
+    });
   }
 }
 
@@ -97,9 +94,9 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
 
   // 2.3 Analyze tweet length performance
   const lengthPerformance = {
-    short: { total: 0, count: 0 },    // < 100 chars
-    medium: { total: 0, count: 0 },   // 100-200 chars
-    long: { total: 0, count: 0 },     // > 200 chars
+    short: { total: 0, count: 0 }, // < 100 chars
+    medium: { total: 0, count: 0 }, // 100-200 chars
+    long: { total: 0, count: 0 }, // > 200 chars
   };
 
   // 2.4 Analyze posting time performance
@@ -107,7 +104,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
   const hourPerformance = new Map<number, { total: number; count: number }>();
 
   // 2.5 Analyze content types (questions, stats, quotes, etc.)
-  const contentTypePerformance = new Map<string, { total: 0, count: 0 }>();
+  const contentTypePerformance = new Map<string, { total: 0; count: 0 }>();
 
   for (const tweet of tweets) {
     const engagement = parseFloat(tweet.engagementRate?.toString() || "0");
@@ -119,7 +116,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
       const current = hashtagPerformance.get(tag) || { totalEngagement: 0, count: 0 };
       hashtagPerformance.set(tag, {
         totalEngagement: current.totalEngagement + engagement,
-        count: current.count + 1
+        count: current.count + 1,
       });
     }
 
@@ -139,7 +136,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
       const current = keywordPerformance.get(phrase) || { totalEngagement: 0, count: 0 };
       keywordPerformance.set(phrase, {
         totalEngagement: current.totalEngagement + engagement,
-        count: current.count + 1
+        count: current.count + 1,
       });
     }
 
@@ -162,10 +159,16 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
       const hour = date.getHours();
 
       const currentDay = dayPerformance.get(day) ?? { total: 0, count: 0 };
-      dayPerformance.set(day, { total: currentDay.total + engagement, count: currentDay.count + 1 });
+      dayPerformance.set(day, {
+        total: currentDay.total + engagement,
+        count: currentDay.count + 1,
+      });
 
       const currentHour = hourPerformance.get(hour) ?? { total: 0, count: 0 };
-      hourPerformance.set(hour, { total: currentHour.total + engagement, count: currentHour.count + 1 });
+      hourPerformance.set(hour, {
+        total: currentHour.total + engagement,
+        count: currentHour.count + 1,
+      });
     }
 
     // Detect content types
@@ -196,7 +199,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
     .map(([tag, data]) => ({
       tag,
       avgEngagement: data.totalEngagement / data.count,
-      count: data.count
+      count: data.count,
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement)
     .slice(0, 10);
@@ -206,24 +209,38 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
     .map(([keyword, data]) => ({
       keyword,
       avgEngagement: data.totalEngagement / data.count,
-      count: data.count
+      count: data.count,
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement)
     .slice(0, 10);
 
   // Calculate length performance
   const lengthInsights = [
-    { category: "Short (<100 chars)", avg: lengthPerformance.short.total / lengthPerformance.short.count, count: lengthPerformance.short.count },
-    { category: "Medium (100-200)", avg: lengthPerformance.medium.total / lengthPerformance.medium.count, count: lengthPerformance.medium.count },
-    { category: "Long (>200 chars)", avg: lengthPerformance.long.total / lengthPerformance.long.count, count: lengthPerformance.long.count },
-  ].filter(l => l.count > 0).sort((a, b) => b.avg - a.avg);
+    {
+      category: "Short (<100 chars)",
+      avg: lengthPerformance.short.total / lengthPerformance.short.count,
+      count: lengthPerformance.short.count,
+    },
+    {
+      category: "Medium (100-200)",
+      avg: lengthPerformance.medium.total / lengthPerformance.medium.count,
+      count: lengthPerformance.medium.count,
+    },
+    {
+      category: "Long (>200 chars)",
+      avg: lengthPerformance.long.total / lengthPerformance.long.count,
+      count: lengthPerformance.long.count,
+    },
+  ]
+    .filter((l) => l.count > 0)
+    .sort((a, b) => b.avg - a.avg);
 
   // Calculate best posting times
   const bestDays = Array.from(dayPerformance.entries())
     .map(([day, data]) => ({
       day: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][day],
       avgEngagement: data.total / data.count,
-      count: data.count
+      count: data.count,
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement)
     .slice(0, 3);
@@ -232,7 +249,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
     .map(([hour, data]) => ({
       hour: `${hour}:00`,
       avgEngagement: data.total / data.count,
-      count: data.count
+      count: data.count,
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement)
     .slice(0, 5);
@@ -242,14 +259,21 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
     .map(([type, data]) => ({
       type,
       avgEngagement: data.total / data.count,
-      count: data.count
+      count: data.count,
     }))
     .sort((a, b) => b.avgEngagement - a.avgEngagement);
 
   // Calculate overall stats
-  const avgEngagement = tweets.reduce((sum, t) => sum + parseFloat(t.engagementRate?.toString() || "0"), 0) / tweets.length;
-  const topEngagement = Math.max(...tweets.map(t => parseFloat(t.engagementRate?.toString() || "0")));
-  const totalImpressions = tweets.reduce((sum, t) => sum + (parseInt(t.impressions?.toString() || "0")), 0);
+  const avgEngagement =
+    tweets.reduce((sum, t) => sum + parseFloat(t.engagementRate?.toString() || "0"), 0) /
+    tweets.length;
+  const topEngagement = Math.max(
+    ...tweets.map((t) => parseFloat(t.engagementRate?.toString() || "0"))
+  );
+  const totalImpressions = tweets.reduce(
+    (sum, t) => sum + parseInt(t.impressions?.toString() || "0"),
+    0
+  );
 
   // Generate actionable insights
   const insights = generateInsights({
@@ -260,7 +284,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
     bestHours,
     contentTypeInsights,
     avgEngagement,
-    tweets
+    tweets,
   });
 
   return {
@@ -269,7 +293,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
       topEngagement: Math.round(topEngagement * 100) / 100,
       totalImpressions,
       tweetsAnalyzed: tweets.length,
-      periodDays
+      periodDays,
     },
     hashtags: topHashtags,
     keywords: topKeywords,
@@ -277,7 +301,7 @@ async function analyzeViralPatterns(tweets: any[], periodDays: number) {
     bestDays,
     bestHours,
     contentTypes: contentTypeInsights,
-    insights
+    insights,
   };
 }
 
@@ -292,34 +316,52 @@ function generateInsights(data: any): string[] {
   // Length insights
   if (data.lengthInsights.length > 0) {
     const bestLength = data.lengthInsights[0];
-    insights.push(`Your **${bestLength.category}** tweets perform ${Math.round((bestLength.avg / data.overall.avgEngagement - 1) * 100)}% above average.`);
+    insights.push(
+      `Your **${bestLength.category}** tweets perform ${Math.round((bestLength.avg / data.overall.avgEngagement - 1) * 100)}% above average.`
+    );
   }
 
   // Day insights
   if (data.bestDays.length > 0) {
     const bestDay = data.bestDays[0];
-    insights.push(`**${bestDay.day}** is your best posting day with ${Math.round(bestDay.avgEngagement * 100)}% avg engagement.`);
+    insights.push(
+      `**${bestDay.day}** is your best posting day with ${Math.round(bestDay.avgEngagement * 100)}% avg engagement.`
+    );
   }
 
   // Hour insights
   if (data.bestHours.length > 0) {
-    insights.push(`Best posting hours: ${data.bestHours.slice(0, 3).map((h: any) => h.hour).join(", ")}`);
+    insights.push(
+      `Best posting hours: ${data.bestHours
+        .slice(0, 3)
+        .map((h: any) => h.hour)
+        .join(", ")}`
+    );
   }
 
   // Content type insights
   if (data.contentTypes.length > 0) {
     const bestType = data.contentTypes[0];
-    insights.push(`**${bestType.type.charAt(0).toUpperCase() + bestType.type.slice(1)}** content gets ${Math.round((bestType.avgEngagement / data.overall.avgEngagement - 1) * 100)}% more engagement.`);
+    insights.push(
+      `**${bestType.type.charAt(0).toUpperCase() + bestType.type.slice(1)}** content gets ${Math.round((bestType.avgEngagement / data.overall.avgEngagement - 1) * 100)}% more engagement.`
+    );
   }
 
   // Hashtag insights
   if (data.hashtags.length > 0) {
-    insights.push(`Top performing hashtag: **${data.hashtags[0].tag}** (${data.hashtags[0].count} uses)`);
+    insights.push(
+      `Top performing hashtag: **${data.hashtags[0].tag}** (${data.hashtags[0].count} uses)`
+    );
   }
 
   // Keyword insights
   if (data.keywords.length > 0) {
-    insights.push(`Popular themes: ${data.keywords.slice(0, 3).map((k: any) => `"${k.keyword}"`).join(", ")}`);
+    insights.push(
+      `Popular themes: ${data.keywords
+        .slice(0, 3)
+        .map((k: any) => `"${k.keyword}"`)
+        .join(", ")}`
+    );
   }
 
   return insights;

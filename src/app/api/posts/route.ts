@@ -6,7 +6,15 @@ import { logger } from "@/lib/logger";
 import { checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { tweets, media, xAccounts, linkedinAccounts, instagramAccounts, user, posts } from "@/lib/schema";
+import {
+  tweets,
+  media,
+  xAccounts,
+  linkedinAccounts,
+  instagramAccounts,
+  user,
+  posts,
+} from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 import type { InferSelectModel } from "drizzle-orm";
 
@@ -56,10 +64,10 @@ export async function POST(req: Request) {
     }
 
     const dbUser = await db.query.user.findFirst({
-        where: eq(user.id, ctx.currentTeamId),
-        columns: { plan: true, requiresApproval: true }
+      where: eq(user.id, ctx.currentTeamId),
+      columns: { plan: true, requiresApproval: true },
     });
-    
+
     // Rate limit check against the Team Owner's plan
     const rlResult = await checkRateLimit(ctx.currentTeamId, dbUser?.plan || "free", "posts");
     if (!rlResult.success) return createRateLimitResponse(rlResult);
@@ -70,62 +78,77 @@ export async function POST(req: Request) {
       method: "POST",
       correlationId,
       userId: ctx.currentTeamId, // Log against team owner
-      actorId: ctx.isOwner ? undefined : ctx.session.user.id
+      actorId: ctx.isOwner ? undefined : ctx.session.user.id,
     });
 
     const json = await req.json();
     const result = createPostSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
+        status: 400,
+      });
     }
 
-    const { tweets: tweetsData, scheduledAt, action, targetAccountIds, recurrencePattern, recurrenceEndDate } = result.data;
+    const {
+      tweets: tweetsData,
+      scheduledAt,
+      action,
+      targetAccountIds,
+      recurrencePattern,
+      recurrenceEndDate,
+    } = result.data;
 
     const availableX = await db.query.xAccounts.findMany({
       where: and(eq(xAccounts.userId, ctx.currentTeamId), eq(xAccounts.isActive, true)),
     });
     const availableLi = await db.query.linkedinAccounts.findMany({
-      where: and(eq(linkedinAccounts.userId, ctx.currentTeamId), eq(linkedinAccounts.isActive, true)),
+      where: and(
+        eq(linkedinAccounts.userId, ctx.currentTeamId),
+        eq(linkedinAccounts.isActive, true)
+      ),
     });
     const availableInsta = await db.query.instagramAccounts.findMany({
-      where: and(eq(instagramAccounts.userId, ctx.currentTeamId), eq(instagramAccounts.isActive, true)),
+      where: and(
+        eq(instagramAccounts.userId, ctx.currentTeamId),
+        eq(instagramAccounts.isActive, true)
+      ),
     });
 
     const selectedAccounts: PlatformAccount[] = [];
     const rawIds = targetAccountIds || [];
 
     for (const idStr of rawIds) {
-        if (idStr.startsWith("twitter:")) {
-            const id = idStr.split(":")[1] || "";
-            const acc = availableX.find(a => a.id === id);
-            if (acc) selectedAccounts.push({ id, platform: 'twitter', obj: acc });
-        } else if (idStr.startsWith("linkedin:")) {
-            const id = idStr.split(":")[1] || "";
-            const acc = availableLi.find(a => a.id === id);
-            if (acc) selectedAccounts.push({ id, platform: 'linkedin', obj: acc });
-        } else if (idStr.startsWith("instagram:")) {
-            const id = idStr.split(":")[1] || "";
-            const acc = availableInsta.find(a => a.id === id);
-            if (acc) selectedAccounts.push({ id, platform: 'instagram', obj: acc });
-        } else {
-            // Fallback for legacy clients sending plain IDs (assumed Twitter)
-            const acc = availableX.find(a => a.id === idStr);
-            if (acc) selectedAccounts.push({ id: idStr, platform: 'twitter', obj: acc });
-        }
+      if (idStr.startsWith("twitter:")) {
+        const id = idStr.split(":")[1] || "";
+        const acc = availableX.find((a) => a.id === id);
+        if (acc) selectedAccounts.push({ id, platform: "twitter", obj: acc });
+      } else if (idStr.startsWith("linkedin:")) {
+        const id = idStr.split(":")[1] || "";
+        const acc = availableLi.find((a) => a.id === id);
+        if (acc) selectedAccounts.push({ id, platform: "linkedin", obj: acc });
+      } else if (idStr.startsWith("instagram:")) {
+        const id = idStr.split(":")[1] || "";
+        const acc = availableInsta.find((a) => a.id === id);
+        if (acc) selectedAccounts.push({ id, platform: "instagram", obj: acc });
+      } else {
+        // Fallback for legacy clients sending plain IDs (assumed Twitter)
+        const acc = availableX.find((a) => a.id === idStr);
+        if (acc) selectedAccounts.push({ id: idStr, platform: "twitter", obj: acc });
+      }
     }
 
     // Default fallback if nothing valid selected
     if (selectedAccounts.length === 0) {
-        if (availableX.length > 0) {
-             const def = availableX.find(a => a.isDefault) || availableX[0];
-             if (def) selectedAccounts.push({ id: def.id, platform: 'twitter', obj: def });
-        } else if (availableLi.length > 0) {
-             const def = availableLi[0];
-             if (def) selectedAccounts.push({ id: def.id, platform: 'linkedin', obj: def });
-        } else if (action !== "draft") {
-             return new Response(JSON.stringify({ error: "No connected accounts" }), { status: 400 });
-        }
+      if (availableX.length > 0) {
+        const def = availableX.find((a) => a.isDefault) || availableX[0];
+        if (def) selectedAccounts.push({ id: def.id, platform: "twitter", obj: def });
+      } else if (availableLi.length > 0) {
+        const def = availableLi[0];
+        if (def) selectedAccounts.push({ id: def.id, platform: "linkedin", obj: def });
+      } else if (action !== "draft") {
+        return new Response(JSON.stringify({ error: "No connected accounts" }), { status: 400 });
+      }
     }
 
     const idempotencyKey = req.headers.get("idempotency-key");
@@ -158,22 +181,25 @@ export async function POST(req: Request) {
     let requiresApproval = false;
 
     if (action === "schedule" || action === "publish_now") {
-        if (action === "schedule" && !scheduledAt) {
-            return new Response(JSON.stringify({ error: "Scheduled date is required for scheduling" }), { status: 400 });
-        }
-        
-        // Approval Workflow Logic
-        if (dbUser?.requiresApproval && !ctx.isOwner && ctx.role !== "admin") {
-             // Editors require approval if enabled
-             status = "awaiting_approval";
-             requiresApproval = true;
-        } else {
-             status = "scheduled";
-        }
+      if (action === "schedule" && !scheduledAt) {
+        return new Response(
+          JSON.stringify({ error: "Scheduled date is required for scheduling" }),
+          { status: 400 }
+        );
+      }
 
-        finalScheduledAt = action === "schedule" ? new Date(scheduledAt!) : new Date();
+      // Approval Workflow Logic
+      if (dbUser?.requiresApproval && !ctx.isOwner && ctx.role !== "admin") {
+        // Editors require approval if enabled
+        status = "awaiting_approval";
+        requiresApproval = true;
+      } else {
+        status = "scheduled";
+      }
+
+      finalScheduledAt = action === "schedule" ? new Date(scheduledAt!) : new Date();
     } else {
-        status = "draft";
+      status = "draft";
     }
 
     // E16: Validate recurrence end date is within 1 year of the scheduled date (or now).
@@ -183,7 +209,9 @@ export async function POST(req: Request) {
       const maxAllowedEndDate = new Date(anchor.getTime() + 365 * 24 * 60 * 60 * 1000);
       if (new Date(recurrenceEndDate) > maxAllowedEndDate) {
         return new Response(
-          JSON.stringify({ error: "Recurrence end date cannot be more than 1 year from the scheduled date" }),
+          JSON.stringify({
+            error: "Recurrence end date cannot be more than 1 year from the scheduled date",
+          }),
           { status: 400 }
         );
       }
@@ -198,9 +226,9 @@ export async function POST(req: Request) {
     // --- Bulk-insert: pre-generate all IDs and collect rows before touching the DB ---
     // Replaces 3-level nested sequential awaits (worst case 780 round trips) with
     // 3 batched INSERT calls inside a single transaction.
-    const postRows:  (typeof posts.$inferInsert)[]   = [];
-    const tweetRows: (typeof tweets.$inferInsert)[]  = [];
-    const mediaRows: (typeof media.$inferInsert)[]   = [];
+    const postRows: (typeof posts.$inferInsert)[] = [];
+    const tweetRows: (typeof tweets.$inferInsert)[] = [];
+    const mediaRows: (typeof media.$inferInsert)[] = [];
     const queueJobs: { postId: string; delay: number }[] = [];
 
     const postType = tweetsData.length > 1 ? "thread" : undefined;
@@ -238,16 +266,17 @@ export async function POST(req: Request) {
       postRows.push({
         id: postId,
         userId: authorId,
-        xAccountId: acc.platform === 'twitter' ? acc.id : null,
-        linkedinAccountId: acc.platform === 'linkedin' ? acc.id : null,
-        instagramAccountId: acc.platform === 'instagram' ? acc.id : null,
+        xAccountId: acc.platform === "twitter" ? acc.id : null,
+        linkedinAccountId: acc.platform === "linkedin" ? acc.id : null,
+        instagramAccountId: acc.platform === "instagram" ? acc.id : null,
         platform: acc.platform,
         groupId,
-        type: postType ?? (acc.platform === 'linkedin' ? 'linkedin_post' : 'tweet'),
+        type: postType ?? (acc.platform === "linkedin" ? "linkedin_post" : "tweet"),
         status,
         scheduledAt: finalScheduledAt,
         requiresApproval,
-        recurrencePattern: recurrencePattern && recurrencePattern !== "none" ? recurrencePattern : null,
+        recurrencePattern:
+          recurrencePattern && recurrencePattern !== "none" ? recurrencePattern : null,
         recurrenceEndDate: recurrenceEndDate ? new Date(recurrenceEndDate) : null,
         idempotencyKey: idempotencyKey ? `${idempotencyKey}:${acc.platform}:${acc.id}` : null,
       });
@@ -258,7 +287,7 @@ export async function POST(req: Request) {
 
         tweetRows.push({ id: tweetId, postId, content: t.content, position: i + 1 });
 
-        for (const m of (t.media ?? [])) {
+        for (const m of t.media ?? []) {
           mediaRows.push({
             id: crypto.randomUUID(),
             postId,
@@ -307,7 +336,6 @@ export async function POST(req: Request) {
     const res = Response.json({ success: true, groupId, postIds: createdPostIds, queueFailed });
     res.headers.set("x-correlation-id", correlationId);
     return res;
-
   } catch (error) {
     console.error("Create Post Error:", error);
     return new Response(JSON.stringify({ error: "Failed to create post" }), { status: 500 });

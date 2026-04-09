@@ -61,12 +61,12 @@ export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSu
     const today = new Date();
     const currentDay = getDay(today);
     let daysUntil = slot.day - currentDay;
-    
+
     // If it's today but hour passed, move to next week
     if (daysUntil === 0 && today.getHours() >= slot.hour) {
-        daysUntil = 7;
+      daysUntil = 7;
     } else if (daysUntil < 0) {
-        daysUntil += 7;
+      daysUntil += 7;
     }
 
     let targetDate = addDays(today, daysUntil);
@@ -83,14 +83,14 @@ export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSu
     return (
       <div className="space-y-2">
         {!hideHeader && (
-          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <CalendarClock className="w-4 h-4" />
+          <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+            <CalendarClock className="h-4 w-4" />
             Best times to post
           </div>
         )}
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-7 w-16 rounded-md bg-muted animate-pulse" />
+            <div key={i} className="bg-muted h-7 w-16 animate-pulse rounded-md" />
           ))}
         </div>
       </div>
@@ -99,8 +99,8 @@ export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSu
 
   if (isError) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70">
-        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+      <div className="text-muted-foreground/70 flex items-center gap-1.5 text-xs">
+        <AlertCircle className="h-3.5 w-3.5 shrink-0" />
         Could not load best times
       </div>
     );
@@ -109,19 +109,19 @@ export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSu
   return (
     <div className="space-y-2">
       {!hideHeader && (
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <CalendarClock className="w-4 h-4" />
+        <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+          <CalendarClock className="h-4 w-4" />
           Best times to post
         </div>
       )}
 
       {isRestricted ? (
-        <Button 
-          variant="outline" 
-          className="w-full justify-start gap-2 border-dashed text-muted-foreground hover:text-primary hover:border-primary"
+        <Button
+          variant="outline"
+          className="text-muted-foreground hover:text-primary hover:border-primary w-full justify-start gap-2 border-dashed"
           onClick={() => openWithContext({ feature: "best_times" })}
         >
-          <Lock className="w-3 h-3" />
+          <Lock className="h-3 w-3" />
           Upgrade to see best times
         </Button>
       ) : (
@@ -129,7 +129,7 @@ export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSu
           <Button
             variant="secondary"
             size="sm"
-            className="h-7 text-xs bg-primary/10 hover:bg-primary/20 text-primary border-transparent"
+            className="bg-primary/10 hover:bg-primary/20 text-primary h-7 border-transparent text-xs"
             onClick={handleNow}
           >
             Now
@@ -139,10 +139,17 @@ export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSu
               key={i}
               variant="secondary"
               size="sm"
-              className="h-7 text-xs bg-primary/10 hover:bg-primary/20 text-primary border-transparent"
+              className="bg-primary/10 hover:bg-primary/20 text-primary h-7 border-transparent text-xs"
               onClick={() => handleSelect(slot)}
             >
-              {DAYS[slot.day]} {slot.hour > 12 ? `${slot.hour - 12}PM` : slot.hour === 12 ? "12PM" : slot.hour === 0 ? "12AM" : `${slot.hour}AM`}
+              {DAYS[slot.day]}{" "}
+              {slot.hour > 12
+                ? `${slot.hour - 12}PM`
+                : slot.hour === 12
+                  ? "12PM"
+                  : slot.hour === 0
+                    ? "12AM"
+                    : `${slot.hour}AM`}
             </Button>
           ))}
         </div>

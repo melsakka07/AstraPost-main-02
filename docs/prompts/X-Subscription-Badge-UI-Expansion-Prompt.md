@@ -25,12 +25,12 @@ You are working on **AstraPost**, a production-ready AI-powered social media sch
 
 **Key files you will touch or reference in this prompt:**
 
-| Surface       | Key Files                                                                                              |
-|---------------|--------------------------------------------------------------------------------------------------------|
-| **Settings**  | `src/components/settings/connected-x-accounts.tsx`, `src/components/settings/x-subscription-badge.tsx` |
-| **Composer**  | `src/components/composer/composer.tsx`, `src/components/composer/target-accounts-select.tsx`, `src/components/composer/tweet-card.tsx` |
-| **Sidebar**   | `src/components/dashboard/sidebar.tsx`, and the account switcher component (likely in `src/components/dashboard/`) |
-| **Queue**     | `src/components/queue/` directory — specifically queue content, thread collapsible, and the failure tip banners |
+| Surface      | Key Files                                                                                                                              |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Settings** | `src/components/settings/connected-x-accounts.tsx`, `src/components/settings/x-subscription-badge.tsx`                                 |
+| **Composer** | `src/components/composer/composer.tsx`, `src/components/composer/target-accounts-select.tsx`, `src/components/composer/tweet-card.tsx` |
+| **Sidebar**  | `src/components/dashboard/sidebar.tsx`, and the account switcher component (likely in `src/components/dashboard/`)                     |
+| **Queue**    | `src/components/queue/` directory — specifically queue content, thread collapsible, and the failure tip banners                        |
 
 ---
 
@@ -39,28 +39,35 @@ You are working on **AstraPost**, a production-ready AI-powered social media sch
 Follow these principles across all four surfaces. They are non-negotiable for this feature:
 
 ### 1. Progressive Disclosure
+
 The badge is **secondary information** — it should be visible but never compete with primary content (account name, tweet text, character count). Use small visual indicators (colored dots) at rest, and reveal detail (tier name, what it means) only on hover/tap via tooltips.
 
 ### 2. Contextual Relevance
+
 Only show information the user needs **at that moment**:
+
 - In the **Composer**, the tier matters because it determines their character limit — so place the badge near the account selector where posting decisions are made.
 - In the **Queue**, the tier matters only when a post fails due to character limits — so surface it inside the error context, not on every queue item.
 - In the **Sidebar**, the tier helps distinguish between multiple accounts — so show it inline with each account name in the switcher.
 
 ### 3. Consistency
+
 The `XSubscriptionBadge` component is the **single visual implementation**. Every surface renders the same component with the same colors, sizes, and tooltip behavior. Never recreate the badge inline with ad-hoc styles.
 
 ### 4. Non-Intrusive
+
 - No modals, no banners, no alerts to announce the tier.
 - No animation or pulsing on the badge — it's static information, not a notification.
 - The badge should feel like it has always been part of the UI, not bolted on.
 
 ### 5. Accessibility
+
 - Tooltips must be keyboard-accessible (focusable trigger element).
 - Badge colors must not be the sole differentiator — the tooltip text provides the tier name for colorblind users.
 - Use `aria-label` on the badge element describing the tier (e.g., `aria-label="X Premium subscriber"`).
 
 ### 6. Mobile-Friendly
+
 - Touch targets must be at least 44×44px for the interactive tooltip trigger area, even if the badge itself is 8–12px.
 - On mobile, tooltips should work via tap (not hover). Verify the shadcn/ui `Tooltip` component supports this — if not, use `Popover` as a fallback on touch devices.
 
@@ -76,6 +83,7 @@ The `XSubscriptionBadge` component is the **single visual implementation**. Ever
 The badge will now be used in 4 different component directories (settings, composer, dashboard, queue). It belongs in `src/components/ui/` alongside other shared primitives.
 
 **Steps:**
+
 1. Move the file from `settings/` to `ui/`.
 2. Update the import path in `src/components/settings/connected-x-accounts.tsx`.
 3. Verify the component already supports the `size` prop (`"sm"` | `"md"`). If not, add it — `"sm"` (8px) for dense contexts like the sidebar, `"md"` (12px) for prominent contexts like the composer.
@@ -116,6 +124,7 @@ This component lets users pick which X account(s) to publish from. Modify it to:
 3. Ensure the account data object passed to this component already includes `xSubscriptionTier` from the API response. If it doesn't, trace the data flow upstream and add the field.
 
 **Layout guidance:**
+
 ```
 [ @username ● ]    ← badge sits right after the username text, vertically centered
 ```
@@ -130,7 +139,7 @@ The tweet card shows a character counter. This is where the 280-character tensio
 
 1. **If the selected account has a paid tier** (Basic, Premium, Premium+): Show the badge (`size="sm"`) next to the character counter with tooltip: `"This account supports long posts (up to 25,000 characters)"`. This is informational only — the counter itself still enforces 280 in this phase.
 2. **If the selected account is Free or unknown**: Show nothing extra — the existing 280-char experience is unchanged.
-3. **If multiple accounts are selected with mixed tiers**: Show the badge of the *most restrictive* account (Free trumps paid), with tooltip: `"Character limit is based on the most restrictive account selected"`.
+3. **If multiple accounts are selected with mixed tiers**: Show the badge of the _most restrictive_ account (Free trumps paid), with tooltip: `"Character limit is based on the most restrictive account selected"`.
 
 **Important:** Do NOT change the character count logic, the validation, or the warning message. This phase only adds a visual indicator. The tooltip wording intentionally prepares the user for the next phase when limits will actually change.
 
@@ -149,6 +158,7 @@ Run `pnpm lint && pnpm typecheck` after this phase.
 ### Phase 4: Sidebar — Account Switcher
 
 **Files:**
+
 - `src/components/dashboard/sidebar.tsx`
 - Account switcher component (check `src/components/dashboard/` for a file like `account-switcher.tsx` or similar — it may be inline in `sidebar.tsx`)
 
@@ -157,6 +167,7 @@ The sidebar contains an account switcher for users with multiple connected X acc
 #### 4A: Locate the Account Switcher
 
 First, identify exactly where the account switcher renders:
+
 - It may be a dropdown in the sidebar header.
 - It may be a section within the sidebar navigation.
 - On mobile, it may appear in the drawer header (the `vaul` DrawerPrimitive).
@@ -169,10 +180,12 @@ For each X account listed in the switcher:
 
 1. **Display `XSubscriptionBadge`** (`size="sm"`) inline after the account username/display name.
 2. **Layout:**
+
    ```
    @myaccount ●          ✓ (default)
    @workaccount ●
    ```
+
    The badge sits between the username and any trailing indicators (default account checkmark, etc.).
 
 3. If the switcher shows the currently active account in a collapsed/summary state (e.g., just the avatar + name in the sidebar header), include the badge there too.
@@ -197,7 +210,8 @@ This is the most nuanced surface. The badge should **only appear when it adds va
 #### 5A: Enhance the 280-Character Warning
 
 **File:** Locate the component that renders the existing warning message:
-> *"X Premium required for long posts. One or more of your tweets exceeds 280 characters..."*
+
+> _"X Premium required for long posts. One or more of your tweets exceeds 280 characters..."_
 
 This warning currently appears when any tweet in a post exceeds 280 characters. Enhance it:
 
@@ -301,12 +315,12 @@ After implementation, verify each item:
 
 This implementation surfaces the X subscription tier badge across the four locations where it matters most:
 
-| Surface      | When Visible                        | Badge Size | Why It's Here                                            |
-|--------------|-------------------------------------|------------|----------------------------------------------------------|
-| **Settings** | Always (on connected accounts list) | `md`       | Primary place to manage and refresh tier status           |
-| **Composer** | Always (on account selector + near char counter for paid) | `sm` | Where character limit decisions are made             |
-| **Sidebar**  | Always (in account switcher)        | `sm`       | Quick identification when switching between accounts      |
-| **Queue**    | Only on character-limit warnings/errors | `md`   | Contextual explanation of why a post succeeded or failed  |
+| Surface      | When Visible                                              | Badge Size | Why It's Here                                            |
+| ------------ | --------------------------------------------------------- | ---------- | -------------------------------------------------------- |
+| **Settings** | Always (on connected accounts list)                       | `md`       | Primary place to manage and refresh tier status          |
+| **Composer** | Always (on account selector + near char counter for paid) | `sm`       | Where character limit decisions are made                 |
+| **Sidebar**  | Always (in account switcher)                              | `sm`       | Quick identification when switching between accounts     |
+| **Queue**    | Only on character-limit warnings/errors                   | `md`       | Contextual explanation of why a post succeeded or failed |
 
 The result is that users **always know their X tier** without ever needing to navigate to Settings — the information appears naturally wherever it's relevant, following the principle of progressive disclosure.
 

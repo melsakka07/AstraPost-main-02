@@ -1,4 +1,3 @@
-
 // Re-use the shared BullMQ connection rather than opening a second pool.
 // Two independent IORedis instances against the same server doubled the
 // connection count and used inconsistent retry behaviour. The BullMQ
@@ -32,7 +31,7 @@ export const RATE_LIMITS = {
     media: { limit: 500, window: 3600 },
     auth: { limit: 50, window: 900 },
     tweet_lookup: { limit: 200, window: 3600 }, // 200 per hour
-  }
+  },
 };
 
 /**
@@ -63,7 +62,6 @@ export async function checkRateLimit(
   plan: string, // Relaxed type — normalised internally
   type: "ai" | "ai_image" | "posts" | "media" | "auth" | "tweet_lookup"
 ): Promise<RateLimitResult> {
-
   // Normalize plan
   let role: "free" | "pro" | "agency" = "free";
   if (plan && plan.startsWith("pro")) role = "pro";
@@ -99,7 +97,7 @@ export async function checkRateLimit(
   return {
     success: count <= config.limit,
     remaining: Math.max(0, config.limit - count),
-    reset: Date.now() + (config.window * 1000),
+    reset: Date.now() + config.window * 1000,
     serviceError: false,
   };
 }
@@ -129,14 +127,11 @@ export function createRateLimitResponse(result: RateLimitResult): Response {
     );
   }
 
-  return new Response(
-    JSON.stringify({ error: "Too many requests", retryAfter }),
-    {
-      status: 429,
-      headers: {
-        "Content-Type": "application/json",
-        "Retry-After": retryAfter.toString(),
-      },
-    }
-  );
+  return new Response(JSON.stringify({ error: "Too many requests", retryAfter }), {
+    status: 429,
+    headers: {
+      "Content-Type": "application/json",
+      "Retry-After": retryAfter.toString(),
+    },
+  });
 }

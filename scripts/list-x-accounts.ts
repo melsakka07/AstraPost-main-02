@@ -7,7 +7,7 @@ config();
 
 async function main() {
   const accounts = await db.query.xAccounts.findMany({
-    orderBy: [desc(xAccounts.createdAt)]
+    orderBy: [desc(xAccounts.createdAt)],
   });
 
   console.log("\n=== All X Accounts in Database ===");

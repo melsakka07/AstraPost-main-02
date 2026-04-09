@@ -45,7 +45,7 @@ export function SettingsSectionNav() {
   return (
     <nav
       aria-label="Settings sections"
-      className="sticky top-16 z-10 -mx-1 overflow-x-auto snap-x snap-mandatory rounded-lg border bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/80"
+      className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-16 z-10 -mx-1 snap-x snap-mandatory overflow-x-auto rounded-lg border backdrop-blur-sm"
     >
       <div className="flex min-w-max items-center gap-1 p-1">
         {sections.map((section) => {
@@ -58,7 +58,7 @@ export function SettingsSectionNav() {
               onClick={() => handleClick(section.id)}
               aria-current={isActive ? "true" : undefined}
               className={cn(
-                "snap-start flex min-h-[44px] items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors whitespace-nowrap",
+                "flex min-h-[44px] snap-start items-center gap-1.5 rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors",
                 isActive
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"

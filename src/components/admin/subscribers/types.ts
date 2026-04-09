@@ -50,7 +50,14 @@ export interface SubscriberDetail {
     createdAt: string;
   } | null;
   connectedAccounts: {
-    x: Array<{ id: string; xUsername: string; xDisplayName: string | null; xAvatarUrl: string | null; followersCount: number | null; isDefault: boolean | null }>;
+    x: Array<{
+      id: string;
+      xUsername: string;
+      xDisplayName: string | null;
+      xAvatarUrl: string | null;
+      followersCount: number | null;
+      isDefault: boolean | null;
+    }>;
     linkedin: Array<{ id: string; linkedinName: string; linkedinAvatarUrl: string | null }>;
     instagram: Array<{ id: string; instagramUsername: string; instagramAvatarUrl: string | null }>;
   };

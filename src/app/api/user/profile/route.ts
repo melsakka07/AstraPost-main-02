@@ -26,9 +26,7 @@ function isValidIANATimezone(tz: string): boolean {
 
 const profileSchema = z.object({
   name: z.string().min(2).max(50),
-  timezone: z
-    .string()
-    .refine(isValidIANATimezone, { message: "Invalid timezone" }),
+  timezone: z.string().refine(isValidIANATimezone, { message: "Invalid timezone" }),
   language: z.string().min(2).max(10),
 });
 
@@ -48,10 +46,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { name, timezone, language } = profileSchema.parse(body);
 
-    await db
-      .update(user)
-      .set({ name, timezone, language })
-      .where(eq(user.id, session.user.id));
+    await db.update(user).set({ name, timezone, language }).where(eq(user.id, session.user.id));
 
     // Persist the locale cookie so the root layout's lang/dir attributes
     // (Finding 2.15 / E19) immediately reflect the user's language choice

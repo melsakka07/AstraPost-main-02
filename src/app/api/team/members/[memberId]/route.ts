@@ -16,7 +16,7 @@ export async function DELETE(
   try {
     const { memberId } = await params;
     const ctx = await getTeamContext();
-    
+
     if (!ctx) return new Response("Unauthorized", { status: 401 });
     if (!ctx.isOwner && ctx.role !== "admin") {
       return new Response("Forbidden: Only owners and admins can remove members", { status: 403 });
@@ -33,12 +33,12 @@ export async function DELETE(
 
     // Owners cannot be removed
     if (memberToRemove.userId === ctx.currentTeamId) {
-        return new Response("Cannot remove the team owner", { status: 403 });
+      return new Response("Cannot remove the team owner", { status: 403 });
     }
 
     // Admins can only remove editors/viewers, not other admins (unless they are owner)
     if (ctx.role === "admin" && memberToRemove.role === "admin") {
-        return new Response("Forbidden: Admins cannot remove other admins", { status: 403 });
+      return new Response("Forbidden: Admins cannot remove other admins", { status: 403 });
     }
 
     await db.delete(teamMembers).where(eq(teamMembers.id, memberId));
@@ -60,8 +60,8 @@ export async function PATCH(
 
     if (!ctx) return new Response("Unauthorized", { status: 401 });
     if (!ctx.isOwner) {
-        // Only owners can change roles for now to keep it simple
-        return new Response("Forbidden: Only the team owner can change roles", { status: 403 });
+      // Only owners can change roles for now to keep it simple
+      return new Response("Forbidden: Only the team owner can change roles", { status: 403 });
     }
 
     const json = await req.json();
@@ -74,18 +74,18 @@ export async function PATCH(
     if (!memberToUpdate) {
       return new Response("Member not found", { status: 404 });
     }
-    
+
     // Cannot change owner's role
     if (memberToUpdate.userId === ctx.currentTeamId) {
-        return new Response("Cannot change the team owner's role", { status: 403 });
+      return new Response("Cannot change the team owner's role", { status: 403 });
     }
 
-    await db.update(teamMembers)
-        .set({ role, updatedAt: new Date() })
-        .where(eq(teamMembers.id, memberId));
+    await db
+      .update(teamMembers)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(teamMembers.id, memberId));
 
     return Response.json({ success: true, message: "Role updated" });
-
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: "Invalid input", details: error.issues }, { status: 400 });

@@ -7,7 +7,7 @@ import { user } from "@/lib/schema";
 
 export async function GET(_req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  
+
   if (!session) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
@@ -23,17 +23,17 @@ export async function GET(_req: Request) {
         with: {
           tweets: {
             with: {
-              media: true
-            }
-          }
-        }
+              media: true,
+            },
+          },
+        },
       },
       affiliateLinks: true,
       aiGenerations: true,
       templates: true,
       teamMemberships: true,
-      ownedTeamMembers: true
-    }
+      ownedTeamMembers: true,
+    },
   });
 
   if (!userData) {
@@ -46,7 +46,7 @@ export async function GET(_req: Request) {
   return new NextResponse(json, {
     headers: {
       "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="astrapost-data-${userId}.json"`
-    }
+      "Content-Disposition": `attachment; filename="astrapost-data-${userId}.json"`,
+    },
   });
 }

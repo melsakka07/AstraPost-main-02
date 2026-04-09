@@ -27,8 +27,14 @@ export async function GET() {
     [successfulJobs24hRow],
   ] = await Promise.all([
     db.select({ value: count(user.id) }).from(user),
-    db.select({ value: count(user.id) }).from(user).where(gte(user.createdAt, sevenDaysAgo)),
-    db.select({ value: count(posts.id) }).from(posts).where(eq(posts.status, "published")),
+    db
+      .select({ value: count(user.id) })
+      .from(user)
+      .where(gte(user.createdAt, sevenDaysAgo)),
+    db
+      .select({ value: count(posts.id) })
+      .from(posts)
+      .where(eq(posts.status, "published")),
     db
       .select({ value: count(posts.id) })
       .from(posts)

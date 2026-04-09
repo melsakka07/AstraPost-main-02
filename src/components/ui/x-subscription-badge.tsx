@@ -24,16 +24,24 @@ const tierConfig: Record<string, TierConfig> = {
   PremiumPlus: { color: "bg-blue-500 ring-2 ring-yellow-400", label: "X Premium+ subscriber" },
 };
 
-const unknownConfig: TierConfig = { color: "bg-muted-foreground/40", label: "Subscription status unknown" };
+const unknownConfig: TierConfig = {
+  color: "bg-muted-foreground/40",
+  label: "Subscription status unknown",
+};
 const defaultConfig: TierConfig = { color: "bg-muted-foreground/40", label: "Free X account" };
 
-export function XSubscriptionBadge({ tier, size = "sm", loading = false, showUnknown = false }: XSubscriptionBadgeProps) {
+export function XSubscriptionBadge({
+  tier,
+  size = "sm",
+  loading = false,
+  showUnknown = false,
+}: XSubscriptionBadgeProps) {
   const sizeClasses = size === "sm" ? "h-2 w-2" : "h-3 w-3";
 
   if (loading) {
     return (
       <span
-        className={`${sizeClasses} rounded-full bg-muted-foreground/30 animate-pulse`}
+        className={`${sizeClasses} bg-muted-foreground/30 animate-pulse rounded-full`}
         aria-label="Loading subscription tier"
       />
     );
@@ -41,7 +49,7 @@ export function XSubscriptionBadge({ tier, size = "sm", loading = false, showUnk
 
   const isUnknown = showUnknown && tier === null;
   let config: TierConfig;
-  
+
   if (isUnknown) {
     config = unknownConfig;
   } else if (tier && tierConfig[tier]) {

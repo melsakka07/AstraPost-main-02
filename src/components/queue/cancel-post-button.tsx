@@ -45,8 +45,17 @@ export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLa
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label={ariaLabel} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
+        <Button
+          variant="ghost"
+          size="sm"
+          aria-label={ariaLabel}
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <XCircle className="mr-1 h-4 w-4" />
+          )}
           Cancel
         </Button>
       </AlertDialogTrigger>
@@ -54,12 +63,16 @@ export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLa
         <AlertDialogHeader>
           <AlertDialogTitle>Cancel scheduled post?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action will remove the post from the queue. You can find it in your cancelled posts later (if implemented) or just delete it.
+            This action will remove the post from the queue. You can find it in your cancelled posts
+            later (if implemented) or just delete it.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Keep</AlertDialogCancel>
-          <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/90">
+          <AlertDialogAction
+            onClick={handleCancel}
+            className="bg-destructive hover:bg-destructive/90"
+          >
             Yes, Cancel
           </AlertDialogAction>
         </AlertDialogFooter>

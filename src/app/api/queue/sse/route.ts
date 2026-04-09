@@ -7,10 +7,7 @@ import { getTeamContext } from "@/lib/team-context";
 
 const POLL_TIMEOUT_MS = 7000;
 
-type TimeoutResult<T> =
-  | { status: "ok"; value: T }
-  | { status: "timed_out" }
-  | { status: "error" };
+type TimeoutResult<T> = { status: "ok"; value: T } | { status: "timed_out" } | { status: "error" };
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<TimeoutResult<T>> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -61,14 +58,17 @@ export async function GET(req: Request) {
   }
   const serverTime = new Date().toISOString();
 
-  const changedResult = await withTimeout(db.query.posts.findMany({
-    where: and(
-      eq(posts.userId, ctx.currentTeamId),
-      inArray(posts.status, ["published", "failed"]),
-      gt(posts.updatedAt, since)
-    ),
-    columns: { id: true, status: true, failReason: true },
-  }), POLL_TIMEOUT_MS);
+  const changedResult = await withTimeout(
+    db.query.posts.findMany({
+      where: and(
+        eq(posts.userId, ctx.currentTeamId),
+        inArray(posts.status, ["published", "failed"]),
+        gt(posts.updatedAt, since)
+      ),
+      columns: { id: true, status: true, failReason: true },
+    }),
+    POLL_TIMEOUT_MS
+  );
 
   if (changedResult.status !== "ok") {
     logger.warn("queue_sse_query_timeout", { teamId: ctx.currentTeamId });

@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/db";
 import { user, posts, xAccounts } from "@/lib/schema";
 import { eq } from "drizzle-orm";
@@ -14,7 +13,7 @@ async function main() {
     email: `onboarding-${Date.now()}@example.com`,
     plan: "free",
     emailVerified: true,
-    onboardingCompleted: false
+    onboardingCompleted: false,
   });
 
   console.log(`Created User: ${userId}`);
@@ -27,7 +26,7 @@ async function main() {
     xUserId: "mock-x-id",
     xUsername: "mock_user",
     accessToken: "mock-token",
-    isActive: true
+    isActive: true,
   });
   console.log("Added mock X account");
 
@@ -39,7 +38,7 @@ async function main() {
     userId: userId,
     xAccountId: xAccountId,
     status: "draft",
-    type: "tweet"
+    type: "tweet",
   });
   console.log(`Created Draft Post: ${postId}`);
 
@@ -47,41 +46,42 @@ async function main() {
   // Call logic equivalent to PATCH /api/posts/[id]
   const scheduledAt = new Date();
   scheduledAt.setHours(scheduledAt.getHours() + 24);
-  
-  await db.update(posts)
-    .set({ 
-        status: "scheduled",
-        scheduledAt: scheduledAt
+
+  await db
+    .update(posts)
+    .set({
+      status: "scheduled",
+      scheduledAt: scheduledAt,
     })
     .where(eq(posts.id, postId));
-    
+
   console.log("Scheduled Post");
 
   // 5. Simulate Step 4: Complete Onboarding
-  await db.update(user)
-    .set({ onboardingCompleted: true })
-    .where(eq(user.id, userId));
-    
+  await db.update(user).set({ onboardingCompleted: true }).where(eq(user.id, userId));
+
   console.log("Completed Onboarding");
 
   // 6. Verification
   const updatedUser = await db.query.user.findFirst({
-      where: eq(user.id, userId)
+    where: eq(user.id, userId),
   });
-  
+
   if (!updatedUser?.onboardingCompleted) throw new Error("Onboarding not marked completed");
-  
+
   const updatedPost = await db.query.posts.findFirst({
-      where: eq(posts.id, postId)
+    where: eq(posts.id, postId),
   });
-  
+
   if (updatedPost?.status !== "scheduled") throw new Error("Post not scheduled");
 
   // Clean up
   await db.delete(user).where(eq(user.id, userId));
   await db.delete(xAccounts).where(eq(xAccounts.userId, userId)); // Cascade should handle post
-  
+
   console.log("Test Passed!");
 }
 
-main().catch(console.error).finally(() => process.exit(0));
+main()
+  .catch(console.error)
+  .finally(() => process.exit(0));

@@ -34,7 +34,13 @@ import { canPostLongContent } from "@/lib/services/x-subscription";
 function getFailureTip(
   failReason: string | null,
   tier?: XSubscriptionTier | null
-): { tip: string; href?: string; isCharLimit?: boolean; isTierLimit?: boolean; postId?: string } | null {
+): {
+  tip: string;
+  href?: string;
+  isCharLimit?: boolean;
+  isTierLimit?: boolean;
+  postId?: string;
+} | null {
   if (!failReason) return null;
   const r = failReason.toLowerCase();
   if (r.includes("tier_limit_exceeded")) {
@@ -62,7 +68,12 @@ function getFailureTip(
   if (r.includes("duplicate")) {
     return { tip: "X rejected this as a duplicate tweet. Edit the content before retrying." };
   }
-  if (r.includes("too long") || r.includes("character") || r.includes("length") || r.includes("280")) {
+  if (
+    r.includes("too long") ||
+    r.includes("character") ||
+    r.includes("length") ||
+    r.includes("280")
+  ) {
     if (canPostLongContent(tier)) {
       return {
         tip: "This post failed despite your paid subscription. Try refreshing your subscription status in Settings.",
@@ -175,7 +186,7 @@ export function QueueContent({
       {awaitingApprovalPosts.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-tight text-warning flex items-center gap-2">
+            <h2 className="text-warning flex items-center gap-2 text-xl font-semibold tracking-tight">
               <ShieldCheck className="h-5 w-5" />
               Awaiting Approval
             </h2>
@@ -192,22 +203,20 @@ export function QueueContent({
               <CardContent
                 className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}
               >
-                <div className="flex flex-row items-center gap-3 rounded-lg bg-warning/15 p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px]">
-                  <ShieldCheck className="h-5 w-5 shrink-0 text-warning sm:h-6 sm:w-6 sm:mb-2" />
-                  <div className="text-xs text-muted-foreground">Needs Review</div>
+                <div className="bg-warning/15 flex flex-row items-center gap-3 rounded-lg p-3 sm:min-w-[100px] sm:flex-col sm:justify-center sm:p-4 sm:text-center">
+                  <ShieldCheck className="text-warning h-5 w-5 shrink-0 sm:mb-2 sm:h-6 sm:w-6" />
+                  <div className="text-muted-foreground text-xs">Needs Review</div>
                 </div>
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex gap-2 items-center">
+                    <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
                         className="border-warning/30 text-warning bg-warning/10"
                       >
                         {post.type === "thread" ? "Thread" : "Tweet"}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        by {post.user.name}
-                      </span>
+                      <span className="text-muted-foreground text-xs">by {post.user.name}</span>
                     </div>
                     {(isOwner || role === "admin") && (
                       <PostApprovalActions
@@ -217,7 +226,7 @@ export function QueueContent({
                     )}
                   </div>
                   <p
-                    className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} whitespace-pre-wrap break-words`}
+                    className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} break-words whitespace-pre-wrap`}
                   >
                     {post.tweets[0]?.content}
                   </p>
@@ -261,15 +270,15 @@ export function QueueContent({
               <CardContent
                 className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}
               >
-                <div className="flex flex-row items-center gap-3 rounded-lg bg-muted/50 p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px]">
-                  <Clock className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6 sm:mb-1" />
+                <div className="bg-muted/50 flex flex-row items-center gap-3 rounded-lg p-3 sm:min-w-[100px] sm:flex-col sm:justify-center sm:p-4 sm:text-center">
+                  <Clock className="text-primary h-5 w-5 shrink-0 sm:mb-1 sm:h-6 sm:w-6" />
                   <div>
                     <div className="text-sm font-bold">
                       {post.scheduledAt
                         ? new Date(post.scheduledAt).toLocaleDateString()
                         : "No Date"}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       {post.scheduledAt
                         ? new Date(post.scheduledAt).toLocaleTimeString([], {
                             hour: "2-digit",
@@ -281,15 +290,11 @@ export function QueueContent({
                 </div>
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex gap-2 items-center">
-                      <Badge variant="outline">
-                        {post.type === "thread" ? "Thread" : "Tweet"}
-                      </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{post.type === "thread" ? "Thread" : "Tweet"}</Badge>
                       <Badge variant="secondary">Scheduled</Badge>
                       {!isOwner && post.user.id !== currentUserId && (
-                        <span className="text-xs text-muted-foreground">
-                          by {post.user.name}
-                        </span>
+                        <span className="text-muted-foreground text-xs">by {post.user.name}</span>
                       )}
                     </div>
                     {/* Q1 + Q6 */}
@@ -306,9 +311,7 @@ export function QueueContent({
                         className="text-muted-foreground hover:text-foreground"
                         aria-label={`Edit post ${index + 1}`}
                       >
-                        <Link href={`/dashboard/compose?draft=${post.id}`}>
-                          Edit
-                        </Link>
+                        <Link href={`/dashboard/compose?draft=${post.id}`}>Edit</Link>
                       </Button>
                       <CancelPostButton
                         postId={post.id}
@@ -317,7 +320,7 @@ export function QueueContent({
                     </div>
                   </div>
                   <p
-                    className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} whitespace-pre-wrap break-words`}
+                    className={`${isCompact ? "line-clamp-4 text-sm" : "line-clamp-5"} break-words whitespace-pre-wrap`}
                   >
                     {post.tweets[0]?.content}
                   </p>
@@ -331,7 +334,7 @@ export function QueueContent({
           {/* P1 — pagination controls */}
           {totalScheduled > SCHEDULED_PAGE_SIZE && (
             <div className="flex items-center justify-between pt-2">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {scheduledPage * SCHEDULED_PAGE_SIZE + 1}–
                 {Math.min((scheduledPage + 1) * SCHEDULED_PAGE_SIZE, totalScheduled)} of{" "}
                 {totalScheduled} posts
@@ -371,19 +374,19 @@ export function QueueContent({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight">Failed Posts</h2>
         {failedPosts.length > 0 && (
-          <p className="hidden text-sm text-muted-foreground sm:block">
+          <p className="text-muted-foreground hidden text-sm sm:block">
             Retry or edit failed content quickly
           </p>
         )}
       </div>
 
       {failedPosts.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-success/30 bg-success/10 px-4 py-6 text-center">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-success/15">
-            <CheckCircle2 className="h-5 w-5 text-success" />
+        <div className="border-success/30 bg-success/10 rounded-lg border border-dashed px-4 py-6 text-center">
+          <div className="bg-success/15 mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full">
+            <CheckCircle2 className="text-success h-5 w-5" />
           </div>
-          <h3 className="text-sm font-semibold text-success">All clear!</h3>
-          <p className="mt-1 text-xs text-success/70">
+          <h3 className="text-success text-sm font-semibold">All clear!</h3>
+          <p className="text-success/70 mt-1 text-xs">
             No failed posts. All queue jobs are healthy.
           </p>
         </div>
@@ -398,23 +401,34 @@ export function QueueContent({
                 <CardContent
                   className={`flex flex-col gap-4 sm:flex-row sm:gap-6 ${isCompact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}
                 >
-                  <div className={`flex flex-row items-center gap-3 rounded-lg p-3 sm:flex-col sm:justify-center sm:p-4 sm:text-center sm:min-w-[100px] ${isPaused ? "bg-warning/10" : "bg-muted/50"}`}>
-                    <AlertTriangle className={`h-5 w-5 shrink-0 sm:h-6 sm:w-6 sm:mb-2 ${isPaused ? "text-warning" : "text-destructive"}`} />
-                    <div className="text-xs text-muted-foreground">{isPaused ? "Paused" : "Failed"}</div>
+                  <div
+                    className={`flex flex-row items-center gap-3 rounded-lg p-3 sm:min-w-[100px] sm:flex-col sm:justify-center sm:p-4 sm:text-center ${isPaused ? "bg-warning/10" : "bg-muted/50"}`}
+                  >
+                    <AlertTriangle
+                      className={`h-5 w-5 shrink-0 sm:mb-2 sm:h-6 sm:w-6 ${isPaused ? "text-warning" : "text-destructive"}`}
+                    />
+                    <div className="text-muted-foreground text-xs">
+                      {isPaused ? "Paused" : "Failed"}
+                    </div>
                   </div>
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex gap-2 items-center flex-wrap">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">
                           {post.type === "thread" ? "Thread" : "Tweet"}
                         </Badge>
                         {isPaused ? (
-                          <Badge variant="outline" className="border-warning/50 text-warning bg-warning/10">Waiting for reconnection</Badge>
+                          <Badge
+                            variant="outline"
+                            className="border-warning/50 text-warning bg-warning/10"
+                          >
+                            Waiting for reconnection
+                          </Badge>
                         ) : (
                           <Badge variant="destructive">{post.status}</Badge>
                         )}
                         {post.xAccount?.xUsername && (
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-muted-foreground text-xs">
                             @{post.xAccount.xUsername}
                           </span>
                         )}
@@ -427,9 +441,7 @@ export function QueueContent({
                           className="text-muted-foreground hover:text-foreground"
                           aria-label={`Edit failed post ${index + 1}`}
                         >
-                          <Link href={`/dashboard/compose?draft=${post.id}`}>
-                            Edit
-                          </Link>
+                          <Link href={`/dashboard/compose?draft=${post.id}`}>Edit</Link>
                         </Button>
                         <RetryPostButton
                           postId={post.id}
@@ -437,25 +449,24 @@ export function QueueContent({
                         />
                       </div>
                     </div>
-                    <p className="whitespace-pre-wrap break-words">
-                      {post.tweets[0]?.content}
-                    </p>
+                    <p className="break-words whitespace-pre-wrap">{post.tweets[0]?.content}</p>
                     {/* Q4 — contextual failure tip */}
                     {post.failReason && (
-                      <p className="break-words text-sm text-muted-foreground">
-                        {post.failReason}
-                      </p>
+                      <p className="text-muted-foreground text-sm break-words">{post.failReason}</p>
                     )}
                     {tip && (
-                      <div className="flex flex-col gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                      <div className="border-destructive/20 bg-destructive/5 text-destructive flex flex-col gap-2 rounded-md border px-3 py-2 text-xs">
                         <div className="flex items-start gap-1.5">
                           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                          <span className="flex items-center gap-2 flex-wrap">
-                            {tip.isCharLimit && tier && <XSubscriptionBadge tier={tier} size="sm" />}
+                          <span className="flex flex-wrap items-center gap-2">
+                            {tip.isCharLimit && tier && (
+                              <XSubscriptionBadge tier={tier} size="sm" />
+                            )}
                             <span>
                               {tip.isTierLimit ? (
                                 <>
-                                  This post exceeds the character limit for your X account tier. Edit the content or convert to a thread.
+                                  This post exceeds the character limit for your X account tier.
+                                  Edit the content or convert to a thread.
                                 </>
                               ) : (
                                 tip.tip
@@ -463,7 +474,7 @@ export function QueueContent({
                               {tip.href && (
                                 <Link
                                   href={tip.href}
-                                  className="inline-flex items-center gap-0.5 underline underline-offset-2 font-medium"
+                                  className="inline-flex items-center gap-0.5 font-medium underline underline-offset-2"
                                 >
                                   Go to Settings
                                   <ExternalLink className="h-3 w-3" />
@@ -473,23 +484,21 @@ export function QueueContent({
                           </span>
                         </div>
                         {tip.isTierLimit && (
-                          <div className="flex items-center gap-2 ml-5">
+                          <div className="ml-5 flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               asChild
-                              className="h-7 text-xs border-destructive/30 hover:bg-destructive/10"
+                              className="border-destructive/30 hover:bg-destructive/10 h-7 text-xs"
                             >
-                              <Link href={`/dashboard/compose?draft=${post.id}`}>
-                                Edit Post
-                              </Link>
+                              <Link href={`/dashboard/compose?draft=${post.id}`}>Edit Post</Link>
                             </Button>
                             {post.type !== "thread" && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 asChild
-                                className="h-7 text-xs border-destructive/30 hover:bg-destructive/10"
+                                className="border-destructive/30 hover:bg-destructive/10 h-7 text-xs"
                               >
                                 <Link href={`/dashboard/compose?draft=${post.id}&convert=thread`}>
                                   Convert to Thread

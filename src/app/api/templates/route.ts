@@ -5,12 +5,15 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templates } from "@/lib/schema";
 
-const aiMetaSchema = z.object({
-  templateId: z.string(),
-  tone: z.string(),
-  language: z.string(),
-  outputFormat: z.string(),
-}).nullable().optional();
+const aiMetaSchema = z
+  .object({
+    templateId: z.string(),
+    tone: z.string(),
+    language: z.string(),
+    outputFormat: z.string(),
+  })
+  .nullable()
+  .optional();
 
 const createTemplateSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -50,20 +53,25 @@ export async function POST(req: Request) {
     const result = createTemplateSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
+        status: 400,
+      });
     }
 
     const { title, description, content, category, aiMeta } = result.data;
 
-    const [newTemplate] = await db.insert(templates).values({
-      id: crypto.randomUUID(),
-      userId: session.user.id,
-      title,
-      description,
-      content,
-      category,
-      ...(aiMeta !== undefined && { aiMeta }),
-    }).returning();
+    const [newTemplate] = await db
+      .insert(templates)
+      .values({
+        id: crypto.randomUUID(),
+        userId: session.user.id,
+        title,
+        description,
+        content,
+        category,
+        ...(aiMeta !== undefined && { aiMeta }),
+      })
+      .returning();
 
     return Response.json(newTemplate);
   } catch (error) {

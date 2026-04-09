@@ -29,9 +29,7 @@ function getSecret(): Buffer {
 
 /** HMAC-SHA256 over the canonical `userId:teamId` message. */
 function computeHmac(userId: string, teamId: string): string {
-  return createHmac("sha256", getSecret())
-    .update(`${userId}:${teamId}`)
-    .digest("hex");
+  return createHmac("sha256", getSecret()).update(`${userId}:${teamId}`).digest("hex");
 }
 
 // ── Public API ────────────────────────────────────────────────────────────
@@ -52,10 +50,7 @@ export function signTeamCookie(userId: string, teamId: string): string {
  *
  * Uses `timingSafeEqual` to prevent timing-oracle attacks on the HMAC.
  */
-export function verifyTeamCookie(
-  cookieValue: string,
-  userId: string
-): string | null {
+export function verifyTeamCookie(cookieValue: string, userId: string): string | null {
   // Expect exactly one dot separator
   const dotIdx = cookieValue.indexOf(".");
   if (dotIdx === -1) return null;

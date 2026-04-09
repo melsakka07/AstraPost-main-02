@@ -1,4 +1,3 @@
-
 import type { TemplateAiMeta } from "@/lib/ai/template-prompts";
 
 export interface Template {
@@ -22,8 +21,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
       "1️⃣ Step One: The Foundation\n\nStart by...",
       "2️⃣ Step Two: The Process\n\nNext, you need to...",
       "3️⃣ Step Three: The Polish\n\nFinally, ensure that...",
-      "💡 Summary:\n\n- Point 1\n- Point 2\n- Point 3\n\nSave this for later! 🔖"
-    ]
+      "💡 Summary:\n\n- Point 1\n- Point 2\n- Point 3\n\nSave this for later! 🔖",
+    ],
   },
   {
     id: "storytelling-thread",
@@ -36,8 +35,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
       "I tried everything, but nothing worked until...",
       "The turning point was...",
       "Here is what I learned:\n\n[LESSON]",
-      "If you are going through this, remember: [ADVICE]"
-    ]
+      "If you are going through this, remember: [ADVICE]",
+    ],
   },
   {
     id: "contrarian-take",
@@ -50,8 +49,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
       "But the reality is...",
       "Data/Experience shows that...",
       "Instead, you should focus on...",
-      "Do you agree? Let's discuss below! 👇"
-    ]
+      "Do you agree? Let's discuss below! 👇",
+    ],
   },
   {
     id: "listicle-thread",
@@ -63,8 +62,8 @@ export const SYSTEM_TEMPLATES: Template[] = [
       "1. [TOOL NAME]\n\nBest for: [USE CASE]\nLink: [URL]",
       "2. [TOOL NAME]\n\nBest for: [USE CASE]\nLink: [URL]",
       "3. [TOOL NAME]\n\nBest for: [USE CASE]\nLink: [URL]",
-      "Which one is your favorite?"
-    ]
+      "Which one is your favorite?",
+    ],
   },
   {
     id: "product-launch",
@@ -77,9 +76,9 @@ export const SYSTEM_TEMPLATES: Template[] = [
       "Solution: [PRODUCT]",
       "Feature 1: [BENEFIT]",
       "Feature 2: [BENEFIT]",
-      "Get it here: [LINK] 🔗\n\n#Launch #Startup"
-    ]
-  }
+      "Get it here: [LINK] 🔗\n\n#Launch #Startup",
+    ],
+  },
 ];
 
 export async function fetchUserTemplates(): Promise<Template[]> {
@@ -88,7 +87,7 @@ export async function fetchUserTemplates(): Promise<Template[]> {
   const data = await res.json();
   return data.map((t: any) => ({
     ...t,
-    isUserTemplate: true
+    isUserTemplate: true,
   }));
 }
 
@@ -97,7 +96,9 @@ export async function deleteUserTemplate(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete template");
 }
 
-export async function createUserTemplate(template: Omit<Template, "id" | "isUserTemplate">): Promise<Template> {
+export async function createUserTemplate(
+  template: Omit<Template, "id" | "isUserTemplate">
+): Promise<Template> {
   const res = await fetch("/api/templates", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

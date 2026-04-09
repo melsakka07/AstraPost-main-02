@@ -66,7 +66,9 @@ export function PromoCodesTable() {
     }
   }, []);
 
-  useEffect(() => { fetchCodes(); }, [fetchCodes]);
+  useEffect(() => {
+    fetchCodes();
+  }, [fetchCodes]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -91,7 +93,7 @@ export function PromoCodesTable() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {codes.length} active code{codes.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -104,7 +106,7 @@ export function PromoCodesTable() {
       {loading ? (
         <LoadingSkeleton />
       ) : codes.length === 0 ? (
-        <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex h-32 items-center justify-center rounded-lg border border-dashed text-sm">
           No promo codes yet. Create one to get started.
         </div>
       ) : (
@@ -142,15 +144,15 @@ export function PromoCodesTable() {
                       <div className="flex flex-col">
                         <span className="font-mono font-semibold">{code.code}</span>
                         {code.description && (
-                          <span className="text-xs text-muted-foreground">{code.description}</span>
+                          <span className="text-muted-foreground text-xs">{code.description}</span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{discountLabel}</Badge>
                     </TableCell>
-                    <TableCell className="tabular-nums text-sm">{redemptionLabel}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="text-sm tabular-nums">{redemptionLabel}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
                       {code.validFrom || code.validTo ? (
                         <span>
                           {code.validFrom ? format(new Date(code.validFrom), "d MMM yyyy") : "—"}
@@ -203,26 +205,33 @@ export function PromoCodesTable() {
         </div>
       )}
 
-      <CreatePromoDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSuccess={fetchCodes}
-      />
+      <CreatePromoDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={fetchCodes} />
 
       <EditPromoDialog
         open={!!editTarget}
-        onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+        onOpenChange={(v) => {
+          if (!v) setEditTarget(null);
+        }}
         promo={editTarget}
-        onSuccess={() => { setEditTarget(null); fetchCodes(); }}
+        onSuccess={() => {
+          setEditTarget(null);
+          fetchCodes();
+        }}
       />
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTarget(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete promo code?</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong>{deleteTarget?.code}</strong> will be soft-deleted and immediately deactivated.
-              Existing redemptions are preserved, but no new redemptions will be accepted.
+              <strong>{deleteTarget?.code}</strong> will be soft-deleted and immediately
+              deactivated. Existing redemptions are preserved, but no new redemptions will be
+              accepted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

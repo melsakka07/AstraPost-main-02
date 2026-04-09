@@ -1,13 +1,11 @@
 /* eslint-disable no-console */
-import { render } from '@react-email/render';
-import { Resend } from 'resend';
-import { PostFailureEmail } from '@/components/email/post-failure-email';
+import { render } from "@react-email/render";
+import { Resend } from "resend";
+import { PostFailureEmail } from "@/components/email/post-failure-email";
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
 interface SendEmailInput {
   to: string;
@@ -27,7 +25,9 @@ export async function sendEmail(input: SendEmailInput) {
       metadata: input.metadata || {},
     });
     if (process.env.NODE_ENV === "development") {
-      console.log(`[EMAIL to ${input.to}] Subject: ${input.subject}\nBody: ${input.text || "(HTML content)"}`);
+      console.log(
+        `[EMAIL to ${input.to}] Subject: ${input.subject}\nBody: ${input.text || "(HTML content)"}`
+      );
     }
     return;
   }
@@ -46,14 +46,18 @@ export async function sendEmail(input: SendEmailInput) {
       from: FROM_EMAIL,
       to: input.to,
       subject: input.subject,
-      text: input.text || '', 
+      text: input.text || "",
       ...(html ? { html } : {}),
-      ...(input.metadata ? {
-        tags: Object.entries(input.metadata).map(([name, value]) => ({
-          name: name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 256),
-          value: String(value).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 256),
-        })),
-      } : {}),
+      ...(input.metadata
+        ? {
+            tags: Object.entries(input.metadata).map(([name, value]) => ({
+              name: name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 256),
+              value: String(value)
+                .replace(/[^a-zA-Z0-9_-]/g, "_")
+                .slice(0, 256),
+            })),
+          }
+        : {}),
     });
 
     if (error) {
@@ -75,19 +79,19 @@ export async function sendBillingEmail(input: SendEmailInput) {
 
 export async function sendPostFailureEmail(to: string, postId: string, reason: string) {
   const retryUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/queue`;
-  
+
   await sendEmail({
     to,
     subject: "Action Required: Post Publishing Failed",
     react: PostFailureEmail({ postId, reason, retryUrl }),
     text: `Your post failed to publish.\n\nReason: ${reason}\n\nView Queue to retry: ${retryUrl}`,
-    metadata: { postId, reason, type: 'post_failure' },
+    metadata: { postId, reason, type: "post_failure" },
   });
 }
 
 export async function sendTeamInvitationEmail(to: string, token: string, teamName: string) {
   const url = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/join-team?token=${token}`;
-  
+
   await sendEmail({
     to,
     subject: `You've been invited to join ${teamName} on AstraPost`,
@@ -101,6 +105,6 @@ export async function sendTeamInvitationEmail(to: string, token: string, teamNam
         <p style="margin-top: 24px; font-size: 14px; color: #666;">This link expires in 7 days.</p>
       </div>
     `,
-    metadata: { type: 'team_invitation', token },
+    metadata: { type: "team_invitation", token },
   });
 }

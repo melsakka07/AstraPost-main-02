@@ -16,10 +16,7 @@ async function main() {
     if (refreshEnc && !isPrimaryKeyToken(refreshEnc)) {
       const plain = decryptToken(refreshEnc);
       const next = encryptToken(plain);
-      await db
-        .update(xAccounts)
-        .set({ refreshTokenEnc: next })
-        .where(eq(xAccounts.id, a.id));
+      await db.update(xAccounts).set({ refreshTokenEnc: next }).where(eq(xAccounts.id, a.id));
       rotatedRefresh++;
     }
 
@@ -27,10 +24,7 @@ async function main() {
     if (access && access.startsWith("v1:") && !isPrimaryKeyToken(access)) {
       const plain = decryptToken(access);
       const next = encryptToken(plain);
-      await db
-        .update(xAccounts)
-        .set({ accessToken: next })
-        .where(eq(xAccounts.id, a.id));
+      await db.update(xAccounts).set({ accessToken: next }).where(eq(xAccounts.id, a.id));
       rotatedAccess++;
     }
   }

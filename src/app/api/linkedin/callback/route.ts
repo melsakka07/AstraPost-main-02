@@ -78,8 +78,11 @@ export async function GET(req: NextRequest) {
       refresh_token?: string;
       expires_in: number;
     };
-    const { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn } =
-      tokenData;
+    const {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: expiresIn,
+    } = tokenData;
 
     const tempService = new LinkedInApiService(accessToken, "unknown");
     const userInfo = await tempService.getUser();

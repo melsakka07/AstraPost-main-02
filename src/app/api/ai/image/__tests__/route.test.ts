@@ -95,11 +95,7 @@ describe("AI Image API (POST)", () => {
     expect(data.predictionId).toBe("pred-abc123");
     expect(data.estimatedSeconds).toBe(20);
     expect(startImageGeneration).toHaveBeenCalled();
-    expect(redis.setex).toHaveBeenCalledWith(
-      "ai:img:pred:pred-abc123",
-      1800,
-      expect.any(String),
-    );
+    expect(redis.setex).toHaveBeenCalledWith("ai:img:pred:pred-abc123", 1800, expect.any(String));
   });
 
   it("should return 401 if unauthorized", async () => {

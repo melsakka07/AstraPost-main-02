@@ -95,7 +95,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
     if (view === "month") newDate = subMonths(currentDate, 1);
     else if (view === "week") newDate = subWeeks(currentDate, 1);
     else newDate = subDays(currentDate, 1);
-    
+
     updateDate(newDate);
   };
 
@@ -164,7 +164,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
 
     const originalDate = new Date(originalPost.scheduledAt);
     const newDate = new Date(newDateStr);
-    
+
     // Preserve time
     newDate.setHours(originalDate.getHours());
     newDate.setMinutes(originalDate.getMinutes());
@@ -190,7 +190,9 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
     }
   };
 
-  const activePost: CalendarPost | null = activeId ? (posts.find((p) => p.id === activeId) ?? null) : null;
+  const activePost: CalendarPost | null = activeId
+    ? (posts.find((p) => p.id === activeId) ?? null)
+    : null;
 
   // C3 — map each unique xAccountId to a stable color
   const accountColorMap = React.useMemo<Record<string, string>>(() => {
@@ -206,8 +208,8 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
   };
 
   return (
-    <div className="flex flex-col h-full space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
+    <div className="flex h-full flex-col space-y-4">
+      <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={handlePrev} aria-label="Previous period">
             <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
@@ -215,22 +217,20 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
           <Button variant="outline" size="icon" onClick={handleNext} aria-label="Next period">
             <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
           </Button>
-          <h2 className="text-base sm:text-lg font-semibold">
-            {format(currentDate, "MMMM yyyy")}
-          </h2>
+          <h2 className="text-base font-semibold sm:text-lg">{format(currentDate, "MMMM yyyy")}</h2>
           <Button variant="ghost" onClick={handleToday} className="min-h-[44px]">
             Today
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          {isUpdating && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          {isUpdating && <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />}
           <Select
             value={view}
             onValueChange={(v) => {
               setView(v as ViewType);
             }}
           >
-            <SelectTrigger className="w-full sm:w-[120px] min-h-[44px]">
+            <SelectTrigger className="min-h-[44px] w-full sm:w-[120px]">
               <SelectValue placeholder="View" />
             </SelectTrigger>
             <SelectContent>
@@ -242,57 +242,60 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
         </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="rounded-md border flex-1 overflow-hidden flex flex-col">
-            {view !== "day" && (
-                <div className="grid grid-cols-7 border-b bg-muted/50">
-                    {[
-                        { short: "S", full: "Sun" },
-                        { short: "M", full: "Mon" },
-                        { short: "T", full: "Tue" },
-                        { short: "W", full: "Wed" },
-                        { short: "T", full: "Thu" },
-                        { short: "F", full: "Fri" },
-                        { short: "S", full: "Sat" },
-                    ].map((day, i) => (
-                        <div key={i} className="p-1 sm:p-2 text-center text-xs sm:text-sm font-medium text-muted-foreground border-r last:border-r-0">
-                            <span className="sm:hidden">{day.short}</span>
-                            <span className="hidden sm:inline">{day.full}</span>
-                        </div>
-                    ))}
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex flex-1 flex-col overflow-hidden rounded-md border">
+          {view !== "day" && (
+            <div className="bg-muted/50 grid grid-cols-7 border-b">
+              {[
+                { short: "S", full: "Sun" },
+                { short: "M", full: "Mon" },
+                { short: "T", full: "Tue" },
+                { short: "W", full: "Wed" },
+                { short: "T", full: "Thu" },
+                { short: "F", full: "Fri" },
+                { short: "S", full: "Sat" },
+              ].map((day, i) => (
+                <div
+                  key={i}
+                  className="text-muted-foreground border-r p-1 text-center text-xs font-medium last:border-r-0 sm:p-2 sm:text-sm"
+                >
+                  <span className="sm:hidden">{day.short}</span>
+                  <span className="hidden sm:inline">{day.full}</span>
                 </div>
-            )}
-            
-            <div className={cn(
-                "grid bg-background",
-                view === "month" ? "grid-cols-7 grid-rows-6" :
-                view === "week" ? "grid-cols-7 grid-rows-1" :
-                "grid-cols-1 grid-rows-1"
-            )}>
-                {days.map((day) => {
-                    const dayKey = format(day, "yyyy-MM-dd");
-                    const dayPosts = posts.filter((p) => 
-                        p.scheduledAt && isSameDay(new Date(p.scheduledAt), day)
-                    );
-                    
-                    return (
-                        <CalendarDay
-                            key={dayKey}
-                            date={day}
-                            id={dayKey}
-                            posts={dayPosts}
-                            isCurrentMonth={isSameMonth(day, currentDate)}
-                            view={view}
-                            onDateClick={handleDateClick}
-                            accountColorMap={accountColorMap}
-                        />
-                    );
-                })}
+              ))}
             </div>
+          )}
+
+          <div
+            className={cn(
+              "bg-background grid",
+              view === "month"
+                ? "grid-cols-7 grid-rows-6"
+                : view === "week"
+                  ? "grid-cols-7 grid-rows-1"
+                  : "grid-cols-1 grid-rows-1"
+            )}
+          >
+            {days.map((day) => {
+              const dayKey = format(day, "yyyy-MM-dd");
+              const dayPosts = posts.filter(
+                (p) => p.scheduledAt && isSameDay(new Date(p.scheduledAt), day)
+              );
+
+              return (
+                <CalendarDay
+                  key={dayKey}
+                  date={day}
+                  id={dayKey}
+                  posts={dayPosts}
+                  isCurrentMonth={isSameMonth(day, currentDate)}
+                  view={view}
+                  onDateClick={handleDateClick}
+                  accountColorMap={accountColorMap}
+                />
+              );
+            })}
+          </div>
         </div>
 
         <DragOverlay>

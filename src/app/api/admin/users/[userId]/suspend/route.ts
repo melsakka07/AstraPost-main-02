@@ -5,10 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
-) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -31,10 +28,7 @@ export async function POST(
       return new NextResponse("Cannot suspend yourself", { status: 400 });
     }
 
-    await db
-      .update(user)
-      .set({ isSuspended: suspend })
-      .where(eq(user.id, userId));
+    await db.update(user).set({ isSuspended: suspend }).where(eq(user.id, userId));
 
     return NextResponse.json({ success: true });
   } catch (error) {

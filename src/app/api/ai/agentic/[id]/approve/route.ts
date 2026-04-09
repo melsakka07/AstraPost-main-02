@@ -26,10 +26,7 @@ const approveSchema = z.object({
     .min(1),
 });
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const correlationId = getCorrelationId(req);
   const { id } = await params;
 
@@ -37,7 +34,7 @@ export async function POST(
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return ApiError.unauthorized();
 
-    const json = await req.json() as unknown;
+    const json = (await req.json()) as unknown;
     const parsed = approveSchema.safeParse(json);
     if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
@@ -58,17 +55,15 @@ export async function POST(
 
     // Determine post status
     const postStatus =
-      action === "post_now" ? "scheduled" :
-      action === "schedule" ? "scheduled" :
-      "draft";
+      action === "post_now" ? "scheduled" : action === "schedule" ? "scheduled" : "draft";
 
     const postId = nanoid();
     const scheduledAtDate =
       action === "schedule" && scheduledAt
         ? new Date(scheduledAt)
         : action === "post_now"
-        ? new Date()
-        : null;
+          ? new Date()
+          : null;
 
     // Create posts + tweets + media in a transaction
     await db.transaction(async (tx) => {
@@ -100,8 +95,7 @@ export async function POST(
         .filter((t) => t.imageUrl != null)
         .map((t, idx) => {
           const matchingTweetRow =
-            tweetRows.find((tr) => tr.position === (t.position ?? idx + 1)) ??
-            tweetRows[0];
+            tweetRows.find((tr) => tr.position === (t.position ?? idx + 1)) ?? tweetRows[0];
           return {
             id: nanoid(),
             postId,
@@ -118,9 +112,7 @@ export async function POST(
 
       // Update agentic_posts row
       const agenticStatus =
-        action === "post_now" ? "posted" :
-        action === "schedule" ? "scheduled" :
-        "approved";
+        action === "post_now" ? "posted" : action === "schedule" ? "scheduled" : "approved";
 
       await tx
         .update(agenticPosts)
@@ -137,7 +129,7 @@ export async function POST(
       await scheduleQueue.add(
         "publish-post",
         { postId, userId: session.user.id, correlationId },
-        SCHEDULE_JOB_OPTIONS,
+        SCHEDULE_JOB_OPTIONS
       );
     }
 

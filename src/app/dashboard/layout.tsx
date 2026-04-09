@@ -15,11 +15,7 @@ import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
 import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
 import { getTeamContext } from "@/lib/team-context";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
   const isOnboardingRoute = pathname.startsWith("/dashboard/onboarding");
@@ -43,14 +39,12 @@ export default async function DashboardLayout({
 
   if (isOnboardingRoute) {
     return (
-      <div className="min-h-dvh bg-background flex flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <Rocket className="h-5 w-5 text-primary" aria-hidden="true" />
+      <div className="bg-background flex min-h-dvh flex-col">
+        <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 flex h-14 shrink-0 items-center gap-2 border-b px-6 backdrop-blur">
+          <Rocket className="text-primary h-5 w-5" aria-hidden="true" />
           <span className="text-lg font-bold tracking-tight">AstraPost</span>
         </header>
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
       </div>
     );
   }
@@ -80,10 +74,7 @@ export default async function DashboardLayout({
       columns: { id: true },
     }),
     db.query.xAccounts.findFirst({
-      where: and(
-        eq(xAccounts.userId, session.user.id),
-        eq(xAccounts.isActive, false)
-      ),
+      where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, false)),
       columns: { xUsername: true },
     }),
     getMonthlyAiUsage(session.user.id).catch(() => null),
@@ -99,7 +90,7 @@ export default async function DashboardLayout({
   }));
 
   return (
-    <div data-dashboard-layout className="flex min-h-dvh bg-background pb-safe">
+    <div data-dashboard-layout className="bg-background pb-safe flex min-h-dvh">
       <DashboardTour />
       <Sidebar
         aiUsage={aiUsage}
@@ -118,15 +109,8 @@ export default async function DashboardLayout({
         <AnnouncementBanner />
         {inactiveAccount && <TokenWarningBanner username={inactiveAccount.xUsername} />}
         <FailureBanner hasFailures={!!failedPost} />
-        <TrialBanner
-          trialEndsAt={dbUser?.trialEndsAt ?? null}
-          plan={dbUser?.plan ?? "free"}
-        />
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className="flex-1 p-page outline-none"
-        >
+        <TrialBanner trialEndsAt={dbUser?.trialEndsAt ?? null} plan={dbUser?.plan ?? "free"} />
+        <main id="main-content" tabIndex={-1} className="p-page flex-1 outline-none">
           {children}
         </main>
       </div>

@@ -20,10 +20,26 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  Wand2, Sparkles, ChevronDown, ChevronUp, CheckCircle2, Clock,
-  Circle, XCircle, RefreshCw, ImageIcon, Pencil, X,
-  Plus, Calendar, Send, BookmarkIcon, Trash2, ArrowLeft,
-  ListOrdered, GripVertical,
+  Wand2,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Clock,
+  Circle,
+  XCircle,
+  RefreshCw,
+  ImageIcon,
+  Pencil,
+  X,
+  Plus,
+  Calendar,
+  Send,
+  BookmarkIcon,
+  Trash2,
+  ArrowLeft,
+  ListOrdered,
+  GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { XAccountOption } from "@/app/dashboard/ai/agentic/page";
@@ -44,12 +60,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { XSubscriptionBadge } from "@/components/ui/x-subscription-badge";
-import type { AgenticPost, AgenticTweet, PipelineProgressEvent, PipelineStep } from "@/lib/ai/agentic-types";
+import type {
+  AgenticPost,
+  AgenticTweet,
+  PipelineProgressEvent,
+  PipelineStep,
+} from "@/lib/ai/agentic-types";
 import { LANGUAGES, TONE_ENUM } from "@/lib/constants";
 
 // ── Suggestion chips ──────────────────────────────────────────────────────────
@@ -63,12 +90,12 @@ const DEFAULT_SUGGESTIONS = [
 
 // ── Step metadata ─────────────────────────────────────────────────────────────
 const STEP_CONFIG: Record<PipelineStep, { label: string; estimatedMs: number }> = {
-  research:  { label: "Research",     estimatedMs: 4000  },
-  strategy:  { label: "Strategy",     estimatedMs: 3000  },
-  writing:   { label: "Writing",      estimatedMs: 7000  },
-  images:    { label: "Images",       estimatedMs: 20000 },
-  review:    { label: "Final Review", estimatedMs: 3000  },
-  done:      { label: "Done",         estimatedMs: 0     },
+  research: { label: "Research", estimatedMs: 4000 },
+  strategy: { label: "Strategy", estimatedMs: 3000 },
+  writing: { label: "Writing", estimatedMs: 7000 },
+  images: { label: "Images", estimatedMs: 20000 },
+  review: { label: "Final Review", estimatedMs: 3000 },
+  done: { label: "Done", estimatedMs: 0 },
 };
 
 const ORDERED_STEPS: PipelineStep[] = ["research", "strategy", "writing", "images", "review"];
@@ -105,8 +132,11 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
   const [audience, setAudience] = useState("");
 
   // ── Processing screen state ──
-  const [steps, setSteps] = useState<Record<PipelineStep, StepProgress>>(() =>
-    Object.fromEntries(ORDERED_STEPS.map((s) => [s, { state: "pending" as StepState }])) as Record<PipelineStep, StepProgress>
+  const [steps, setSteps] = useState<Record<PipelineStep, StepProgress>>(
+    () =>
+      Object.fromEntries(
+        ORDERED_STEPS.map((s) => [s, { state: "pending" as StepState }])
+      ) as Record<PipelineStep, StepProgress>
   );
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -161,7 +191,9 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
       if (status === "in_progress") {
         next[stepKey] = { state: "in_progress", startedAt: Date.now() };
       } else if (status === "complete") {
-        const elapsed = prev[stepKey]?.startedAt ? Date.now() - (prev[stepKey].startedAt ?? 0) : undefined;
+        const elapsed = prev[stepKey]?.startedAt
+          ? Date.now() - (prev[stepKey].startedAt ?? 0)
+          : undefined;
         let summary: string | undefined;
 
         if (step === "research" && data) {
@@ -192,79 +224,88 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
   }, []);
 
   // ── Submit pipeline ────────────────────────────────────────────────────────
-  const startPipeline = useCallback(async (topicOverride?: string) => {
-    const t = (topicOverride ?? topic).trim();
-    if (t.length < 3 || !selectedAccountId) return;
+  const startPipeline = useCallback(
+    async (topicOverride?: string) => {
+      const t = (topicOverride ?? topic).trim();
+      if (t.length < 3 || !selectedAccountId) return;
 
-    // Reset processing state
-    setSteps(Object.fromEntries(ORDERED_STEPS.map((s) => [s, { state: "pending" as StepState }])) as Record<PipelineStep, StepProgress>);
-    setShowCancelConfirm(false);
-    setScreen("processing");
+      // Reset processing state
+      setSteps(
+        Object.fromEntries(
+          ORDERED_STEPS.map((s) => [s, { state: "pending" as StepState }])
+        ) as Record<PipelineStep, StepProgress>
+      );
+      setShowCancelConfirm(false);
+      setScreen("processing");
 
-    const abort = new AbortController();
-    abortRef.current = abort;
+      const abort = new AbortController();
+      abortRef.current = abort;
 
-    try {
-      const res = await fetch("/api/ai/agentic", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          topic: t,
-          xAccountId: selectedAccountId,
-          language,
-          preferences: {
-            ...(tone !== "auto" && { tone }),
-            includeImages,
-            ...(audience.trim() && { audience: audience.trim() }),
-          },
-        }),
-        signal: abort.signal,
-      });
+      try {
+        const res = await fetch("/api/ai/agentic", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic: t,
+            xAccountId: selectedAccountId,
+            language,
+            preferences: {
+              ...(tone !== "auto" && { tone }),
+              includeImages,
+              ...(audience.trim() && { audience: audience.trim() }),
+            },
+          }),
+          signal: abort.signal,
+        });
 
-      if (res.status === 402) {
-        const err = await res.json().catch(() => ({}));
-        const resetAt = (err as { reset_at?: string }).reset_at;
-        const msg = resetAt
-          ? `AI quota reached. Resets on ${new Date(resetAt).toLocaleDateString()}. Upgrade for unlimited access.`
-          : "AI quota reached. Upgrade your plan to continue.";
-        toast.error(msg, { duration: 8000 });
-        setScreen("input");
-        return;
-      }
-
-      if (!res.ok || !res.body) {
-        const err = await res.json().catch(() => ({ error: "Request failed" }));
-        toast.error((err as { error?: string }).error ?? "Failed to start pipeline");
-        setScreen("input");
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() ?? "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6)) as PipelineProgressEvent;
-            handleProgressEvent(event);
-          } catch { /* skip malformed */ }
+        if (res.status === 402) {
+          const err = await res.json().catch(() => ({}));
+          const resetAt = (err as { reset_at?: string }).reset_at;
+          const msg = resetAt
+            ? `AI quota reached. Resets on ${new Date(resetAt).toLocaleDateString()}. Upgrade for unlimited access.`
+            : "AI quota reached. Upgrade your plan to continue.";
+          toast.error(msg, { duration: 8000 });
+          setScreen("input");
+          return;
         }
+
+        if (!res.ok || !res.body) {
+          const err = await res.json().catch(() => ({ error: "Request failed" }));
+          toast.error((err as { error?: string }).error ?? "Failed to start pipeline");
+          setScreen("input");
+          return;
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const lines = buffer.split("\n\n");
+          buffer = lines.pop() ?? "";
+
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            try {
+              const event = JSON.parse(line.slice(6)) as PipelineProgressEvent;
+              handleProgressEvent(event);
+            } catch {
+              /* skip malformed */
+            }
+          }
+        }
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        toast.error("Pipeline failed. Please try again.");
+        setScreen("input");
       }
-    } catch (err) {
-      if ((err as Error).name === "AbortError") return;
-      toast.error("Pipeline failed. Please try again.");
-      setScreen("input");
-    }
-  }, [topic, selectedAccountId, language, tone, includeImages, audience, handleProgressEvent]);
+    },
+    [topic, selectedAccountId, language, tone, includeImages, audience, handleProgressEvent]
+  );
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort();
@@ -278,7 +319,18 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
       try {
         const res = await fetch("/api/ai/agentic");
         if (!res.ok) return;
-        const { session } = await res.json() as { session: { id: string; status: string; topic: string; tweets: unknown; researchBrief: unknown; contentPlan: unknown; qualityScore: number | null; summary: string | null } | null };
+        const { session } = (await res.json()) as {
+          session: {
+            id: string;
+            status: string;
+            topic: string;
+            tweets: unknown;
+            researchBrief: unknown;
+            contentPlan: unknown;
+            qualityScore: number | null;
+            summary: string | null;
+          } | null;
+        };
         if (!session) return;
 
         if (session.status === "ready" && session.tweets) {
@@ -308,48 +360,58 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
             action: { label: "Refresh", onClick: () => window.location.reload() },
           });
         }
-      } catch { /* silent — recovery is best-effort */ }
+      } catch {
+        /* silent — recovery is best-effort */
+      }
     }
     void checkRecovery();
   }, []); // empty deps — run once on mount
 
   // ── Review actions ─────────────────────────────────────────────────────────
-  const handleApprove = useCallback(async (action: "post_now" | "schedule" | "save_draft") => {
-    if (!agenticPostIdRef.current || editedTweets.length === 0) return;
-    if (action === "schedule" && !scheduleDate) {
-      setShowSchedulePicker(true);
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`/api/ai/agentic/${agenticPostIdRef.current}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          ...(action === "schedule" && scheduleDate && { scheduledAt: new Date(scheduleDate + "T09:00:00Z").toISOString() }),
-          tweets: editedTweets,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        toast.error((err as { error?: string }).error ?? (err as { message?: string }).message ?? "Failed to approve post");
+  const handleApprove = useCallback(
+    async (action: "post_now" | "schedule" | "save_draft") => {
+      if (!agenticPostIdRef.current || editedTweets.length === 0) return;
+      if (action === "schedule" && !scheduleDate) {
+        setShowSchedulePicker(true);
         return;
       }
 
-      const labels: Record<string, string> = {
-        post_now: "Thread queued for posting! 🎉",
-        schedule: `Scheduled for ${scheduleDate || "later"}`,
-        save_draft: "Saved as draft. Open in Compose anytime.",
-      };
-      toast.success(labels[action] ?? "Done!");
-      setSuccessAction(action);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [editedTweets, scheduleDate]);
+      setIsSubmitting(true);
+      try {
+        const res = await fetch(`/api/ai/agentic/${agenticPostIdRef.current}/approve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action,
+            ...(action === "schedule" &&
+              scheduleDate && { scheduledAt: new Date(scheduleDate + "T09:00:00Z").toISOString() }),
+            tweets: editedTweets,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          toast.error(
+            (err as { error?: string }).error ??
+              (err as { message?: string }).message ??
+              "Failed to approve post"
+          );
+          return;
+        }
+
+        const labels: Record<string, string> = {
+          post_now: "Thread queued for posting! 🎉",
+          schedule: `Scheduled for ${scheduleDate || "later"}`,
+          save_draft: "Saved as draft. Open in Compose anytime.",
+        };
+        toast.success(labels[action] ?? "Done!");
+        setSuccessAction(action);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [editedTweets, scheduleDate]
+  );
 
   const handleRewriteTweet = useCallback(async (idx: number) => {
     if (!agenticPostIdRef.current) return;
@@ -360,8 +422,11 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tweetIndex: idx, regenerateImage: false }),
       });
-      if (!res.ok) { toast.error("Rewrite failed"); return; }
-      const { tweet } = await res.json() as { tweet: AgenticTweet };
+      if (!res.ok) {
+        toast.error("Rewrite failed");
+        return;
+      }
+      const { tweet } = (await res.json()) as { tweet: AgenticTweet };
       setEditedTweets((prev) => {
         const next = [...prev];
         next[idx] = tweet;
@@ -372,37 +437,45 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
     }
   }, []);
 
-  const handleRemoveTweet = useCallback((idx: number) => {
-    const removed = editedTweets[idx];
-    if (!removed) return;
-    setEditedTweets((prev) => prev.filter((_, i) => i !== idx));
-    const timer = setTimeout(() => { /* auto-dismiss */ }, 5000);
-    toast("Tweet removed", {
-      action: {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timer);
-          setEditedTweets((prev) => {
-            const next = [...prev];
-            next.splice(idx, 0, removed);
-            return next;
-          });
+  const handleRemoveTweet = useCallback(
+    (idx: number) => {
+      const removed = editedTweets[idx];
+      if (!removed) return;
+      setEditedTweets((prev) => prev.filter((_, i) => i !== idx));
+      const timer = setTimeout(() => {
+        /* auto-dismiss */
+      }, 5000);
+      toast("Tweet removed", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            clearTimeout(timer);
+            setEditedTweets((prev) => {
+              const next = [...prev];
+              next.splice(idx, 0, removed);
+              return next;
+            });
+          },
         },
-      },
-    });
-  }, [editedTweets]);
+      });
+    },
+    [editedTweets]
+  );
 
-  const handleSaveEdit = useCallback((idx: number) => {
-    setEditedTweets((prev) => {
-      const next = [...prev];
-      const existing = next[idx];
-      if (!existing) return next;
-      next[idx] = { ...existing, text: editText, charCount: editText.length };
-      return next;
-    });
-    setEditingIndex(null);
-    setEditText("");
-  }, [editText]);
+  const handleSaveEdit = useCallback(
+    (idx: number) => {
+      setEditedTweets((prev) => {
+        const next = [...prev];
+        const existing = next[idx];
+        if (!existing) return next;
+        next[idx] = { ...existing, text: editText, charCount: editText.length };
+        return next;
+      });
+      setEditingIndex(null);
+      setEditText("");
+    },
+    [editText]
+  );
 
   const handleAddTweet = useCallback(() => {
     setEditedTweets((prev) => [
@@ -429,50 +502,63 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
   }, []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  if (screen === "input") return (
-    <InputScreen
-      topic={topic}
-      setTopic={setTopic}
-      onSubmit={startPipeline}
-      onSelectTrend={(t) => { setTopic(t); void startPipeline(t); }}
-      selectedAccount={selectedAccount}
-      xAccounts={xAccounts}
-      selectedAccountId={selectedAccountId}
-      setSelectedAccountId={setSelectedAccountId}
-      showAdvanced={showAdvanced}
-      setShowAdvanced={setShowAdvanced}
-      tone={tone}
-      setTone={setTone}
-      language={language}
-      setLanguage={setLanguage}
-      includeImages={includeImages}
-      setIncludeImages={setIncludeImages}
-      audience={audience}
-      setAudience={setAudience}
-    />
-  );
+  if (screen === "input")
+    return (
+      <InputScreen
+        topic={topic}
+        setTopic={setTopic}
+        onSubmit={startPipeline}
+        onSelectTrend={(t) => {
+          setTopic(t);
+          void startPipeline(t);
+        }}
+        selectedAccount={selectedAccount}
+        xAccounts={xAccounts}
+        selectedAccountId={selectedAccountId}
+        setSelectedAccountId={setSelectedAccountId}
+        showAdvanced={showAdvanced}
+        setShowAdvanced={setShowAdvanced}
+        tone={tone}
+        setTone={setTone}
+        language={language}
+        setLanguage={setLanguage}
+        includeImages={includeImages}
+        setIncludeImages={setIncludeImages}
+        audience={audience}
+        setAudience={setAudience}
+      />
+    );
 
-  if (screen === "processing") return (
-    <ProcessingScreen
-      topic={topic}
-      steps={steps}
-      showCancelConfirm={showCancelConfirm}
-      setShowCancelConfirm={setShowCancelConfirm}
-      onCancel={handleCancel}
-      broadSuggestions={broadSuggestions}
-      broadMessage={broadMessage}
-      onSelectSuggestion={(s: string) => { setBroadSuggestions([]); void startPipeline(s); }}
-    />
-  );
+  if (screen === "processing")
+    return (
+      <ProcessingScreen
+        topic={topic}
+        steps={steps}
+        showCancelConfirm={showCancelConfirm}
+        setShowCancelConfirm={setShowCancelConfirm}
+        onCancel={handleCancel}
+        broadSuggestions={broadSuggestions}
+        broadMessage={broadMessage}
+        onSelectSuggestion={(s: string) => {
+          setBroadSuggestions([]);
+          void startPipeline(s);
+        }}
+      />
+    );
 
   // review screen
-  if (successAction) return (
-    <SuccessScreen
-      action={successAction}
-      {...(scheduleDate ? { scheduleDate } : {})}
-      onCreateAnother={() => { setSuccessAction(null); setScreen("input"); setTopic(""); }}
-    />
-  );
+  if (successAction)
+    return (
+      <SuccessScreen
+        action={successAction}
+        {...(scheduleDate ? { scheduleDate } : {})}
+        onCreateAnother={() => {
+          setSuccessAction(null);
+          setScreen("input");
+          setTopic("");
+        }}
+      />
+    );
 
   const doChangeTopic = async () => {
     await fetch("/api/ai/agentic", { method: "DELETE" }).catch(() => void 0);
@@ -496,9 +582,15 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
         setShowSchedulePicker={setShowSchedulePicker}
         isSubmitting={isSubmitting}
         selectedAccount={selectedAccount}
-        onEditStart={(idx) => { setEditingIndex(idx); setEditText(editedTweets[idx]?.text ?? ""); }}
+        onEditStart={(idx) => {
+          setEditingIndex(idx);
+          setEditText(editedTweets[idx]?.text ?? "");
+        }}
         onEditSave={handleSaveEdit}
-        onEditCancel={() => { setEditingIndex(null); setEditText(""); }}
+        onEditCancel={() => {
+          setEditingIndex(null);
+          setEditText("");
+        }}
         onRewrite={handleRewriteTweet}
         onRemove={handleRemoveTweet}
         onAddTweet={handleAddTweet}
@@ -539,14 +631,18 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Discard this thread?</AlertDialogTitle>
             <AlertDialogDescription>
-              This thread will be deleted and you&apos;ll return to the input screen. This can&apos;t be undone.
+              This thread will be deleted and you&apos;ll return to the input screen. This
+              can&apos;t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => { setShowDiscardConfirm(false); void doChangeTopic(); }}
+              onClick={() => {
+                setShowDiscardConfirm(false);
+                void doChangeTopic();
+              }}
             >
               Discard
             </AlertDialogAction>
@@ -583,15 +679,29 @@ interface InputScreenProps {
 }
 
 function InputScreen({
-  topic, setTopic, onSubmit, onSelectTrend, selectedAccount, xAccounts,
-  selectedAccountId, setSelectedAccountId,
-  showAdvanced, setShowAdvanced,
-  tone, setTone, language, setLanguage,
-  includeImages, setIncludeImages,
-  audience, setAudience,
+  topic,
+  setTopic,
+  onSubmit,
+  onSelectTrend,
+  selectedAccount,
+  xAccounts,
+  selectedAccountId,
+  setSelectedAccountId,
+  showAdvanced,
+  setShowAdvanced,
+  tone,
+  setTone,
+  language,
+  setLanguage,
+  includeImages,
+  setIncludeImages,
+  audience,
+  setAudience,
 }: InputScreenProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const canSubmit = topic.trim().length >= 3 && !!selectedAccountId;
 
@@ -600,19 +710,18 @@ function InputScreen({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto py-8 space-y-6 animate-in fade-in duration-300">
-
+    <div className="animate-in fade-in mx-auto w-full max-w-2xl space-y-6 py-8 duration-300">
       {/* ── Hero headline ──────────────────────────────────────────────────── */}
       <div className="text-center">
-        <div className="flex items-center justify-center mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
-            <Wand2 className="h-6 w-6 text-primary" />
+        <div className="mb-4 flex items-center justify-center">
+          <div className="from-primary/20 to-primary/5 border-primary/10 flex h-12 w-12 items-center justify-center rounded-2xl border bg-gradient-to-br">
+            <Wand2 className="text-primary h-6 w-6" />
           </div>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+        <h2 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
           What should we post about?
         </h2>
-        <p className="text-base text-muted-foreground text-center mt-3 max-w-lg mx-auto">
+        <p className="text-muted-foreground mx-auto mt-3 max-w-lg text-center text-base">
           AI will research, write, and create visuals — ready in seconds.
         </p>
       </div>
@@ -626,7 +735,7 @@ function InputScreen({
           onChange={(e) => setTopic(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="e.g., AI coding tools, sustainable fashion, Web3 gaming..."
-          className="w-full rounded-xl border border-input bg-background px-5 py-4 text-lg shadow-sm outline-none placeholder:text-muted-foreground/60 focus:ring-2 focus:ring-ring focus:border-transparent focus:shadow-md transition-shadow duration-200"
+          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded-xl border px-5 py-4 text-lg shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2"
           maxLength={500}
           aria-label="Topic for your post"
         />
@@ -638,8 +747,11 @@ function InputScreen({
           <button
             key={s}
             type="button"
-            onClick={() => { setTopic(s); onSubmit(s); }}
-            className="inline-flex items-center rounded-full border border-border bg-muted/50 px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors duration-150 select-none"
+            onClick={() => {
+              setTopic(s);
+              onSubmit(s);
+            }}
+            className="border-border bg-muted/50 text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors duration-150 select-none"
           >
             {s}
           </button>
@@ -647,9 +759,9 @@ function InputScreen({
       </div>
 
       {/* ── Generate button ────────────────────────────────────────────────── */}
-      <div className="flex justify-center mt-6">
+      <div className="mt-6 flex justify-center">
         <Button
-          className="h-12 px-8 text-base font-medium rounded-xl gap-2 active:scale-[0.98] transition-transform"
+          className="h-12 gap-2 rounded-xl px-8 text-base font-medium transition-transform active:scale-[0.98]"
           disabled={!canSubmit}
           onClick={() => onSubmit()}
           aria-label={`Generate AI post about ${topic || "your topic"}`}
@@ -667,7 +779,7 @@ function InputScreen({
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
+          className="text-muted-foreground hover:text-foreground mx-auto flex items-center gap-1.5 text-sm transition-colors"
         >
           <ChevronDown
             className={`h-4 w-4 transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`}
@@ -676,11 +788,16 @@ function InputScreen({
         </button>
 
         {showAdvanced && (
-          <div className="mt-4 p-5 rounded-xl border border-border bg-muted/30 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="border-border bg-muted/30 animate-in fade-in slide-in-from-top-1 mt-4 space-y-4 rounded-xl border p-5 duration-200">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* Tone */}
               <div className="space-y-1.5">
-                <Label htmlFor="agentic-tone" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tone</Label>
+                <Label
+                  htmlFor="agentic-tone"
+                  className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                >
+                  Tone
+                </Label>
                 <Select value={tone} onValueChange={setTone}>
                   <SelectTrigger id="agentic-tone" className="h-9 rounded-lg">
                     <SelectValue />
@@ -688,7 +805,9 @@ function InputScreen({
                   <SelectContent>
                     <SelectItem value="auto">Auto (AI decides)</SelectItem>
                     {TONE_ENUM.options.map((t) => (
-                      <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                      <SelectItem key={t} value={t} className="capitalize">
+                        {t}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -696,14 +815,21 @@ function InputScreen({
 
               {/* Language */}
               <div className="space-y-1.5">
-                <Label htmlFor="agentic-language" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Language</Label>
+                <Label
+                  htmlFor="agentic-language"
+                  className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+                >
+                  Language
+                </Label>
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger id="agentic-language" className="h-9 rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {LANGUAGES.map((l) => (
-                      <SelectItem key={l.code} value={l.code}>{l.label}</SelectItem>
+                      <SelectItem key={l.code} value={l.code}>
+                        {l.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -714,14 +840,23 @@ function InputScreen({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">Include AI Images</p>
-                <p className="text-xs text-muted-foreground">Generate visuals for key tweets</p>
+                <p className="text-muted-foreground text-xs">Generate visuals for key tweets</p>
               </div>
-              <Switch id="agentic-images" checked={includeImages} onCheckedChange={setIncludeImages} />
+              <Switch
+                id="agentic-images"
+                checked={includeImages}
+                onCheckedChange={setIncludeImages}
+              />
             </div>
 
             {/* Audience hint */}
             <div className="space-y-1.5">
-              <Label htmlFor="agentic-audience" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Audience hint <span className="normal-case">(optional)</span></Label>
+              <Label
+                htmlFor="agentic-audience"
+                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+              >
+                Audience hint <span className="normal-case">(optional)</span>
+              </Label>
               <Input
                 id="agentic-audience"
                 value={audience}
@@ -737,27 +872,31 @@ function InputScreen({
 
       {/* ── Account selector (bottom — secondary context) ──────────────────── */}
       {xAccounts.length > 0 && (
-        <div className="flex justify-center mt-8 pb-4">
+        <div className="mt-8 flex justify-center pb-4">
           {xAccounts.length === 1 ? (
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/30 px-4 py-2 text-sm text-muted-foreground">
+            <div className="border-border bg-muted/30 text-muted-foreground inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
               <Avatar className="h-5 w-5">
                 <AvatarImage src={selectedAccount?.profileImageUrl ?? undefined} />
-                <AvatarFallback className="text-[10px]">{selectedAccount?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="text-[10px]">
+                  {selectedAccount?.username?.[0]?.toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <span>Posting as</span>
-              <span className="font-medium text-foreground">@{selectedAccount?.username}</span>
+              <span className="text-foreground font-medium">@{selectedAccount?.username}</span>
               <XSubscriptionBadge tier={selectedAccount?.subscriptionTier ?? "None"} size="sm" />
             </div>
           ) : (
             <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-              <SelectTrigger className="inline-flex h-auto rounded-full border border-border bg-muted/30 px-4 py-2 text-sm text-muted-foreground hover:bg-accent transition-colors gap-2 w-auto">
+              <SelectTrigger className="border-border bg-muted/30 text-muted-foreground hover:bg-accent inline-flex h-auto w-auto gap-2 rounded-full border px-4 py-2 text-sm transition-colors">
                 <div className="flex items-center gap-2">
                   <Avatar className="h-5 w-5">
                     <AvatarImage src={selectedAccount?.profileImageUrl ?? undefined} />
-                    <AvatarFallback className="text-[10px]">{selectedAccount?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    <AvatarFallback className="text-[10px]">
+                      {selectedAccount?.username?.[0]?.toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <span>Posting as</span>
-                  <span className="font-medium text-foreground">@{selectedAccount?.username}</span>
+                  <span className="text-foreground font-medium">@{selectedAccount?.username}</span>
                 </div>
               </SelectTrigger>
               <SelectContent>
@@ -766,7 +905,9 @@ function InputScreen({
                     <div className="flex items-center gap-2">
                       <Avatar className="h-5 w-5">
                         <AvatarImage src={acc.profileImageUrl ?? undefined} />
-                        <AvatarFallback className="text-[10px]">{acc.username?.[0]?.toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="text-[10px]">
+                          {acc.username?.[0]?.toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       <span>@{acc.username}</span>
                     </div>
@@ -796,7 +937,16 @@ interface ProcessingScreenProps {
   onSelectSuggestion: (s: string) => void;
 }
 
-function ProcessingScreen({ topic, steps, showCancelConfirm, setShowCancelConfirm, onCancel, broadSuggestions, broadMessage, onSelectSuggestion }: ProcessingScreenProps) {
+function ProcessingScreen({
+  topic,
+  steps,
+  showCancelConfirm,
+  setShowCancelConfirm,
+  onCancel,
+  broadSuggestions,
+  broadMessage,
+  onSelectSuggestion,
+}: ProcessingScreenProps) {
   const totalEstimated = ORDERED_STEPS.reduce((acc, s) => acc + STEP_CONFIG[s].estimatedMs, 0);
   const completedMs = ORDERED_STEPS.reduce((acc, s) => {
     if (steps[s].state === "complete") return acc + STEP_CONFIG[s].estimatedMs;
@@ -805,17 +955,19 @@ function ProcessingScreen({ topic, steps, showCancelConfirm, setShowCancelConfir
   const remainingSecs = Math.round((totalEstimated - completedMs) / 1000);
 
   return (
-    <div className="mx-auto max-w-xl md:max-w-2xl py-8 space-y-6 animate-in fade-in duration-300">
+    <div className="animate-in fade-in mx-auto max-w-xl space-y-6 py-8 duration-300 md:max-w-2xl">
       {/* Header */}
       <div className="flex items-center justify-between border-b pb-4">
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Generating for topic</p>
-          <p className="font-medium truncate">{topic}</p>
+          <p className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
+            Generating for topic
+          </p>
+          <p className="truncate font-medium">{topic}</p>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground hover:text-destructive shrink-0 ml-4"
+          className="text-muted-foreground hover:text-destructive ml-4 shrink-0"
           onClick={() => setShowCancelConfirm(true)}
         >
           Cancel
@@ -824,11 +976,15 @@ function ProcessingScreen({ topic, steps, showCancelConfirm, setShowCancelConfir
 
       {/* Cancel confirm */}
       {showCancelConfirm && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between gap-4">
+        <div className="border-destructive/30 bg-destructive/5 flex items-center justify-between gap-4 rounded-lg border p-4">
           <p className="text-sm">Stop generating? Progress will be lost.</p>
-          <div className="flex gap-2 shrink-0">
-            <Button size="sm" variant="ghost" onClick={() => setShowCancelConfirm(false)}>Keep going</Button>
-            <Button size="sm" variant="destructive" onClick={onCancel}>Stop</Button>
+          <div className="flex shrink-0 gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setShowCancelConfirm(false)}>
+              Keep going
+            </Button>
+            <Button size="sm" variant="destructive" onClick={onCancel}>
+              Stop
+            </Button>
           </div>
         </div>
       )}
@@ -845,28 +1001,36 @@ function ProcessingScreen({ topic, steps, showCancelConfirm, setShowCancelConfir
               {/* Icon column */}
               <div className="flex flex-col items-center">
                 <StepIcon state={step.state} />
-                {!isLast && <div className={`w-px flex-1 my-1 ${step.state === "complete" ? "bg-green-500/40" : "bg-border"}`} />}
+                {!isLast && (
+                  <div
+                    className={`my-1 w-px flex-1 ${step.state === "complete" ? "bg-green-500/40" : "bg-border"}`}
+                  />
+                )}
               </div>
 
               {/* Content */}
-              <div className="pb-4 min-w-0 flex-1">
+              <div className="min-w-0 flex-1 pb-4">
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm font-medium ${step.state === "pending" ? "text-muted-foreground" : "text-foreground"}`}>
+                  <span
+                    className={`text-sm font-medium ${step.state === "pending" ? "text-muted-foreground" : "text-foreground"}`}
+                  >
                     {config.label}
                   </span>
                   {step.state === "complete" && step.elapsedMs && (
-                    <span className="text-xs text-muted-foreground">{(step.elapsedMs / 1000).toFixed(1)}s</span>
+                    <span className="text-muted-foreground text-xs">
+                      {(step.elapsedMs / 1000).toFixed(1)}s
+                    </span>
                   )}
                   {step.state === "in_progress" && (
-                    <span className="text-xs text-primary animate-pulse">Working…</span>
+                    <span className="text-primary animate-pulse text-xs">Working…</span>
                   )}
                 </div>
                 {step.summary && (
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{step.summary}</p>
+                  <p className="text-muted-foreground mt-0.5 truncate text-xs">{step.summary}</p>
                 )}
                 {step.state === "in_progress" && (
-                  <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden w-48">
-                    <div className="h-full bg-primary/60 rounded-full animate-[width_3s_ease-in-out_infinite] w-1/3" />
+                  <div className="bg-muted mt-2 h-1 w-48 overflow-hidden rounded-full">
+                    <div className="bg-primary/60 h-full w-1/3 animate-[width_3s_ease-in-out_infinite] rounded-full" />
                   </div>
                 )}
               </div>
@@ -877,21 +1041,19 @@ function ProcessingScreen({ topic, steps, showCancelConfirm, setShowCancelConfir
 
       {/* Estimated time */}
       {remainingSecs > 0 && (
-        <p className="text-xs text-muted-foreground text-center">
-          ~{remainingSecs}s remaining
-        </p>
+        <p className="text-muted-foreground text-center text-xs">~{remainingSecs}s remaining</p>
       )}
 
       {/* Broad topic suggestions overlay */}
       {broadSuggestions.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-4 space-y-3">
+        <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
           <p className="text-sm font-medium">{broadMessage}</p>
           <div className="flex flex-wrap gap-2">
             {broadSuggestions.map((s) => (
               <button
                 key={s}
                 onClick={() => onSelectSuggestion(s)}
-                className="rounded-full border border-amber-300 bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-sm hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                className="rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-sm transition-colors hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50"
               >
                 {s}
               </button>
@@ -905,10 +1067,14 @@ function ProcessingScreen({ topic, steps, showCancelConfirm, setShowCancelConfir
 
 function StepIcon({ state }: { state: StepState }) {
   switch (state) {
-    case "complete": return <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />;
-    case "in_progress": return <Clock className="h-5 w-5 text-primary shrink-0 animate-pulse" />;
-    case "failed": return <XCircle className="h-5 w-5 text-destructive shrink-0" />;
-    default: return <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />;
+    case "complete":
+      return <CheckCircle2 className="h-5 w-5 shrink-0 text-green-500" />;
+    case "in_progress":
+      return <Clock className="text-primary h-5 w-5 shrink-0 animate-pulse" />;
+    case "failed":
+      return <XCircle className="text-destructive h-5 w-5 shrink-0" />;
+    default:
+      return <Circle className="text-muted-foreground/40 h-5 w-5 shrink-0" />;
   }
 }
 
@@ -945,16 +1111,35 @@ interface ReviewScreenProps {
 }
 
 function ReviewScreen({
-  agenticPost, editedTweets, editingIndex, editText, setEditText,
-  rewritingIndex, showResearch, setShowResearch,
-  scheduleDate, setScheduleDate, showSchedulePicker, setShowSchedulePicker,
-  isSubmitting, selectedAccount,
-  onEditStart, onEditSave, onEditCancel, onRewrite, onRemove, onAddTweet,
-  onApprove, onReorder, onChangeTopic, onRegenerateAll, onDiscard,
+  agenticPost,
+  editedTweets,
+  editingIndex,
+  editText,
+  setEditText,
+  rewritingIndex,
+  showResearch,
+  setShowResearch,
+  scheduleDate,
+  setScheduleDate,
+  showSchedulePicker,
+  setShowSchedulePicker,
+  isSubmitting,
+  selectedAccount,
+  onEditStart,
+  onEditSave,
+  onEditCancel,
+  onRewrite,
+  onRemove,
+  onAddTweet,
+  onApprove,
+  onReorder,
+  onChangeTopic,
+  onRegenerateAll,
+  onDiscard,
 }: ReviewScreenProps) {
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -968,161 +1153,182 @@ function ReviewScreen({
   const qualityStars = Math.round(agenticPost.qualityScore);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4 pb-32 animate-in fade-in duration-300 lg:grid lg:grid-cols-[1fr_320px] lg:gap-6 lg:max-w-5xl lg:items-start">
+    <div className="animate-in fade-in mx-auto max-w-2xl space-y-4 pb-32 duration-300 lg:grid lg:max-w-5xl lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6">
       {/* Main content column */}
       <div className="space-y-4">
-      {/* Review header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-sm">Your post is ready</p>
-          <h2 className="font-semibold truncate">{agenticPost.summary}</h2>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex gap-0.5">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 w-3 rounded-full ${i < qualityStars ? "bg-amber-400" : "bg-muted"}`}
-              />
-            ))}
+        {/* Review header */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-muted-foreground text-sm">Your post is ready</p>
+            <h2 className="truncate font-semibold">{agenticPost.summary}</h2>
           </div>
-          <span className="text-xs text-muted-foreground tabular-nums">{agenticPost.qualityScore}/10</span>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Tweet cards — sortable */}
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={editedTweets.map((_, i) => String(i))}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-0">
-            {editedTweets.map((tweet, idx) => (
-              <div key={idx} className="relative">
-                {idx < editedTweets.length - 1 && (
-                  <div className="absolute left-5 top-full w-0.5 h-4 bg-border z-10" />
-                )}
-                <SortableTweetCard
-                  id={String(idx)}
-                  tweet={tweet}
-                  index={idx}
-                  total={editedTweets.length}
-                  isEditing={editingIndex === idx}
-                  isRewriting={rewritingIndex === idx}
-                  editText={editText}
-                  setEditText={setEditText}
-                  selectedAccount={selectedAccount}
-                  onEditStart={() => onEditStart(idx)}
-                  onEditSave={() => onEditSave(idx)}
-                  onEditCancel={onEditCancel}
-                  onRewrite={() => onRewrite(idx)}
-                  onRemove={() => onRemove(idx)}
+          <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex gap-0.5">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 w-3 rounded-full ${i < qualityStars ? "bg-amber-400" : "bg-muted"}`}
                 />
-                {idx < editedTweets.length - 1 && <div className="h-4" />}
-              </div>
-            ))}
+              ))}
+            </div>
+            <span className="text-muted-foreground text-xs tabular-nums">
+              {agenticPost.qualityScore}/10
+            </span>
           </div>
-        </SortableContext>
-      </DndContext>
-
-      {/* Add tweet + Regenerate all */}
-      <div className="flex items-center justify-between pt-2">
-        <Button variant="outline" size="sm" onClick={onAddTweet} className="gap-1.5">
-          <Plus className="h-3.5 w-3.5" />
-          Add Tweet
-        </Button>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={onChangeTopic} className="gap-1.5 text-muted-foreground">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Change topic
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onRegenerateAll} className="gap-1.5 text-muted-foreground">
-            <RefreshCw className="h-3.5 w-3.5" />
-            Regenerate all
-          </Button>
         </div>
-      </div>
 
-      {/* Research insights (collapsible on mobile, hidden on desktop) */}
-      <div className="rounded-lg border border-border overflow-hidden lg:hidden">
-        <button
-          onClick={() => setShowResearch(!showResearch)}
-          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
-        >
-          <span>Research Insights</span>
-          {showResearch ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
-        {showResearch && (
-          <div className="border-t px-4 py-4 space-y-3 text-sm">
-            <ResearchInsightsContent agenticPost={agenticPost} />
+        <Separator />
+
+        {/* Tweet cards — sortable */}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={editedTweets.map((_, i) => String(i))}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-0">
+              {editedTweets.map((tweet, idx) => (
+                <div key={idx} className="relative">
+                  {idx < editedTweets.length - 1 && (
+                    <div className="bg-border absolute top-full left-5 z-10 h-4 w-0.5" />
+                  )}
+                  <SortableTweetCard
+                    id={String(idx)}
+                    tweet={tweet}
+                    index={idx}
+                    total={editedTweets.length}
+                    isEditing={editingIndex === idx}
+                    isRewriting={rewritingIndex === idx}
+                    editText={editText}
+                    setEditText={setEditText}
+                    selectedAccount={selectedAccount}
+                    onEditStart={() => onEditStart(idx)}
+                    onEditSave={() => onEditSave(idx)}
+                    onEditCancel={onEditCancel}
+                    onRewrite={() => onRewrite(idx)}
+                    onRemove={() => onRemove(idx)}
+                  />
+                  {idx < editedTweets.length - 1 && <div className="h-4" />}
+                </div>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        {/* Add tweet + Regenerate all */}
+        <div className="flex items-center justify-between pt-2">
+          <Button variant="outline" size="sm" onClick={onAddTweet} className="gap-1.5">
+            <Plus className="h-3.5 w-3.5" />
+            Add Tweet
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onChangeTopic}
+              className="text-muted-foreground gap-1.5"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Change topic
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRegenerateAll}
+              className="text-muted-foreground gap-1.5"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Regenerate all
+            </Button>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Sticky action bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm px-4 py-4 md:static md:bottom-auto md:border md:rounded-xl md:px-6">
-        {showSchedulePicker && (
-          <div className="mb-4 flex items-center gap-3">
-            <DatePicker value={scheduleDate} onChange={setScheduleDate} />
-            {scheduleDate && (
-              <Button size="sm" onClick={() => onApprove("schedule")} disabled={isSubmitting}>
-                <Calendar className="h-3.5 w-3.5 mr-1.5" />
-                Confirm Schedule
+        {/* Research insights (collapsible on mobile, hidden on desktop) */}
+        <div className="border-border overflow-hidden rounded-lg border lg:hidden">
+          <button
+            onClick={() => setShowResearch(!showResearch)}
+            className="hover:bg-muted/50 flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
+          >
+            <span>Research Insights</span>
+            {showResearch ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          {showResearch && (
+            <div className="space-y-3 border-t px-4 py-4 text-sm">
+              <ResearchInsightsContent agenticPost={agenticPost} />
+            </div>
+          )}
+        </div>
+
+        {/* Sticky action bar */}
+        <div className="bg-background/95 fixed right-0 bottom-0 left-0 z-50 border-t px-4 py-4 backdrop-blur-sm md:static md:bottom-auto md:rounded-xl md:border md:px-6">
+          {showSchedulePicker && (
+            <div className="mb-4 flex items-center gap-3">
+              <DatePicker value={scheduleDate} onChange={setScheduleDate} />
+              {scheduleDate && (
+                <Button size="sm" onClick={() => onApprove("schedule")} disabled={isSubmitting}>
+                  <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                  Confirm Schedule
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => setShowSchedulePicker(false)}>
+                Cancel
               </Button>
-            )}
-            <Button size="sm" variant="ghost" onClick={() => setShowSchedulePicker(false)}>Cancel</Button>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              onClick={() => onApprove("post_now")}
+              disabled={isSubmitting}
+              className="flex-1 gap-2 sm:flex-none"
+            >
+              {isSubmitting ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Post Now
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSchedulePicker(true);
+              }}
+              disabled={isSubmitting}
+              className="flex-1 gap-2 sm:flex-none"
+            >
+              <Calendar className="h-4 w-4" />
+              {scheduleDate ? `Schedule for ${scheduleDate}` : "Schedule"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onApprove("save_draft")}
+              disabled={isSubmitting}
+              className="text-muted-foreground gap-1.5"
+            >
+              <BookmarkIcon className="h-3.5 w-3.5" />
+              Save Draft
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive ml-auto gap-1.5"
+              onClick={onDiscard}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Discard
+            </Button>
           </div>
-        )}
-        <div className="flex items-center gap-3 flex-wrap">
-          <Button
-            onClick={() => onApprove("post_now")}
-            disabled={isSubmitting}
-            className="gap-2 flex-1 sm:flex-none"
-          >
-            {isSubmitting ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <Send className="h-4 w-4" />}
-            Post Now
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => { setShowSchedulePicker(true); }}
-            disabled={isSubmitting}
-            className="gap-2 flex-1 sm:flex-none"
-          >
-            <Calendar className="h-4 w-4" />
-            {scheduleDate ? `Schedule for ${scheduleDate}` : "Schedule"}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onApprove("save_draft")}
-            disabled={isSubmitting}
-            className="gap-1.5 text-muted-foreground"
-          >
-            <BookmarkIcon className="h-3.5 w-3.5" />
-            Save Draft
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-muted-foreground hover:text-destructive ml-auto"
-            onClick={onDiscard}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Discard
-          </Button>
         </div>
       </div>
-      </div>{/* end main content column */}
+      {/* end main content column */}
 
       {/* Research Insights sidebar (desktop only) */}
       <div className="hidden lg:block">
-        <div className="sticky top-4 rounded-lg border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b">
+        <div className="border-border sticky top-4 overflow-hidden rounded-lg border">
+          <div className="border-b px-4 py-3">
             <p className="text-sm font-medium">Research Insights</p>
           </div>
-          <div className="px-4 py-4 space-y-3 text-sm">
+          <div className="space-y-3 px-4 py-4 text-sm">
             <ResearchInsightsContent agenticPost={agenticPost} />
           </div>
         </div>
@@ -1137,33 +1343,47 @@ function ResearchInsightsContent({ agenticPost }: { agenticPost: AgenticPost }) 
   return (
     <>
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Recommended Angle</p>
+        <p className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
+          Recommended Angle
+        </p>
         <p>{agenticPost.research.recommendedAngle}</p>
       </div>
       {agenticPost.research.trendingHashtags.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Trending Hashtags</p>
+          <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
+            Trending Hashtags
+          </p>
           <div className="flex flex-wrap gap-1.5">
             {agenticPost.research.trendingHashtags.map((h) => (
-              <span key={h} className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-xs">#{h}</span>
+              <span
+                key={h}
+                className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs"
+              >
+                #{h}
+              </span>
             ))}
           </div>
         </div>
       )}
       {agenticPost.research.keyFacts.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Key Facts</p>
+          <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
+            Key Facts
+          </p>
           <ul className="space-y-1">
             {agenticPost.research.keyFacts.map((f, i) => (
-              <li key={i} className="text-muted-foreground text-xs flex gap-1.5">
-                <span className="shrink-0 text-primary">•</span>{f}
+              <li key={i} className="text-muted-foreground flex gap-1.5 text-xs">
+                <span className="text-primary shrink-0">•</span>
+                {f}
               </li>
             ))}
           </ul>
         </div>
       )}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Content Plan</p>
+        <p className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
+          Content Plan
+        </p>
         <p className="text-muted-foreground">{agenticPost.plan.rationale}</p>
       </div>
     </>
@@ -1173,7 +1393,9 @@ function ResearchInsightsContent({ agenticPost }: { agenticPost: AgenticPost }) 
 // ── Sortable wrapper for drag-and-drop ────────────────────────────────────────
 
 function SortableTweetCard({ id, ...props }: { id: string } & AgenticTweetCardProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -1206,24 +1428,39 @@ interface AgenticTweetCardProps {
 }
 
 function AgenticTweetCard({
-  tweet, index, total, isEditing, isRewriting, editText, setEditText,
-  selectedAccount, onEditStart, onEditSave, onEditCancel, onRewrite, onRemove,
+  tweet,
+  index,
+  total,
+  isEditing,
+  isRewriting,
+  editText,
+  setEditText,
+  selectedAccount,
+  onEditStart,
+  onEditSave,
+  onEditCancel,
+  onRewrite,
+  onRemove,
   dragHandleProps,
 }: AgenticTweetCardProps) {
   const charCount = isEditing ? editText.length : tweet.charCount;
   const isOverLimit = charCount > 280;
 
   return (
-    <Card role="article" aria-label={`Tweet ${index + 1} of ${total}`} className={`relative transition-shadow hover:shadow-sm ${isRewriting ? "opacity-60" : ""}`}>
-      <CardContent className="pt-4 pb-3 px-4 space-y-3">
+    <Card
+      role="article"
+      aria-label={`Tweet ${index + 1} of ${total}`}
+      className={`relative transition-shadow hover:shadow-sm ${isRewriting ? "opacity-60" : ""}`}
+    >
+      <CardContent className="space-y-3 px-4 pt-4 pb-3">
         {/* Card header */}
-        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-1.5">
             {dragHandleProps && (
               <button
                 type="button"
                 aria-label="Drag to reorder tweet"
-                className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
+                className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab touch-none transition-colors active:cursor-grabbing"
                 {...dragHandleProps}
               >
                 <GripVertical className="h-4 w-4" />
@@ -1231,14 +1468,22 @@ function AgenticTweetCard({
             )}
             <Avatar className="h-5 w-5">
               <AvatarImage src={selectedAccount?.profileImageUrl ?? undefined} />
-              <AvatarFallback className="text-[10px]">{selectedAccount?.username?.[0]?.toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-[10px]">
+                {selectedAccount?.username?.[0]?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <span>@{selectedAccount?.username}</span>
-            {selectedAccount && <XSubscriptionBadge tier={selectedAccount.subscriptionTier} size="sm" />}
+            {selectedAccount && (
+              <XSubscriptionBadge tier={selectedAccount.subscriptionTier} size="sm" />
+            )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-muted-foreground/60">{index + 1}/{total}</span>
-            <span className={isOverLimit ? "text-destructive font-medium" : ""}>{charCount}/280</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="text-muted-foreground/60">
+              {index + 1}/{total}
+            </span>
+            <span className={isOverLimit ? "text-destructive font-medium" : ""}>
+              {charCount}/280
+            </span>
           </div>
         </div>
 
@@ -1252,8 +1497,12 @@ function AgenticTweetCard({
               autoFocus
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={onEditSave}>Save</Button>
-              <Button size="sm" variant="ghost" onClick={onEditCancel}>Cancel</Button>
+              <Button size="sm" onClick={onEditSave}>
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={onEditCancel}>
+                Cancel
+              </Button>
             </div>
           </div>
         ) : (
@@ -1267,19 +1516,27 @@ function AgenticTweetCard({
 
         {/* Image */}
         {tweet.imageUrl && (
-          <div className="relative rounded-lg overflow-hidden border border-border group">
+          <div className="border-border group relative overflow-hidden rounded-lg border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={tweet.imageUrl} alt={tweet.imagePrompt ?? "AI generated image"} className="w-full object-cover max-h-64" />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-              <button className="bg-background/90 rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center gap-1 hover:bg-background" onClick={onRewrite}>
-                <ImageIcon className="h-3 w-3" />New Image
+            <img
+              src={tweet.imageUrl}
+              alt={tweet.imagePrompt ?? "AI generated image"}
+              className="max-h-64 w-full object-cover"
+            />
+            <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-colors group-hover:bg-black/30 group-hover:opacity-100">
+              <button
+                className="bg-background/90 hover:bg-background flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium"
+                onClick={onRewrite}
+              >
+                <ImageIcon className="h-3 w-3" />
+                New Image
               </button>
             </div>
           </div>
         )}
         {tweet.hasImage && !tweet.imageUrl && (
-          <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground flex flex-col items-center gap-2">
-            <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+          <div className="border-border bg-muted/30 text-muted-foreground flex flex-col items-center gap-2 rounded-lg border border-dashed p-4 text-center text-xs">
+            <ImageIcon className="text-muted-foreground/40 h-5 w-5" />
             <span>Image couldn&apos;t be generated.</span>
             <button className="text-primary underline hover:no-underline" onClick={onRewrite}>
               Retry
@@ -1290,15 +1547,33 @@ function AgenticTweetCard({
         {/* Action row */}
         {!isEditing && (
           <div className="flex gap-1 pt-1">
-            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-muted-foreground" onClick={onEditStart}>
-              <Pencil className="h-3 w-3" />Edit
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground h-7 gap-1 text-xs"
+              onClick={onEditStart}
+            >
+              <Pencil className="h-3 w-3" />
+              Edit
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-muted-foreground" onClick={onRewrite} disabled={isRewriting}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground h-7 gap-1 text-xs"
+              onClick={onRewrite}
+              disabled={isRewriting}
+            >
               <RefreshCw className={`h-3 w-3 ${isRewriting ? "animate-spin" : ""}`} />
               {isRewriting ? "Rewriting…" : "Rewrite"}
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-muted-foreground hover:text-destructive" onClick={onRemove}>
-              <X className="h-3 w-3" />Remove
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-muted-foreground hover:text-destructive h-7 gap-1 text-xs"
+              onClick={onRemove}
+            >
+              <X className="h-3 w-3" />
+              Remove
             </Button>
           </div>
         )}
@@ -1309,30 +1584,48 @@ function AgenticTweetCard({
 
 // ── Success screen ─────────────────────────────────────────────────────────────
 
-function SuccessScreen({ action, scheduleDate, onCreateAnother }: { action: string; scheduleDate?: string; onCreateAnother: () => void }) {
+function SuccessScreen({
+  action,
+  scheduleDate,
+  onCreateAnother,
+}: {
+  action: string;
+  scheduleDate?: string;
+  onCreateAnother: () => void;
+}) {
   const message =
-    action === "post_now" ? "Thread queued for posting! 🎉" :
-    action === "schedule" ? `Scheduled for ${scheduleDate ?? "later"} ✓` :
-    "Saved as draft ✓";
+    action === "post_now"
+      ? "Thread queued for posting! 🎉"
+      : action === "schedule"
+        ? `Scheduled for ${scheduleDate ?? "later"} ✓`
+        : "Saved as draft ✓";
 
   return (
-    <div className="mx-auto max-w-md py-16 text-center space-y-6 animate-in fade-in duration-300">
+    <div className="animate-in fade-in mx-auto max-w-md space-y-6 py-16 text-center duration-300">
       <div className="text-5xl">✨</div>
       <div>
         <h2 className="text-xl font-semibold">{message}</h2>
-        <p className="text-muted-foreground text-sm mt-1">Your AI-generated content is ready.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Your AI-generated content is ready.</p>
       </div>
-      <div className="flex flex-col gap-2 items-center">
+      <div className="flex flex-col items-center gap-2">
         <Button onClick={onCreateAnother} className="gap-2">
           <Wand2 className="h-4 w-4" />
           Create Another
         </Button>
         <div className="flex gap-4 text-sm">
-          <Link href="/dashboard/queue" className="text-muted-foreground hover:text-foreground flex items-center gap-1">
-            <ListOrdered className="h-3.5 w-3.5" />View in Queue
+          <Link
+            href="/dashboard/queue"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <ListOrdered className="h-3.5 w-3.5" />
+            View in Queue
           </Link>
-          <Link href="/dashboard/calendar" className="text-muted-foreground hover:text-foreground flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" />Go to Calendar
+          <Link
+            href="/dashboard/calendar"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <Calendar className="h-3.5 w-3.5" />
+            Go to Calendar
           </Link>
         </div>
       </div>

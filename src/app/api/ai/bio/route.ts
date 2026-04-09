@@ -12,7 +12,9 @@ import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
   currentBio: z.string().max(500).optional().default(""),
-  goal: z.enum(["gain_followers", "attract_clients", "build_authority", "general"]).default("general"),
+  goal: z
+    .enum(["gain_followers", "attract_clients", "build_authority", "general"])
+    .default("general"),
   language: LANGUAGE_ENUM.default("en"),
   niche: z.string().max(100).optional().default(""),
 });

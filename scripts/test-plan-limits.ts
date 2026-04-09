@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/db";
 import { user, posts } from "@/lib/schema";
 import { checkAiLimit, checkPostLimit } from "@/lib/middleware/require-plan";
@@ -40,18 +39,25 @@ async function main() {
       // Skip inserting posts for now, or insert mock account.
     });
   }
-  
+
   // We need to bypass foreign key constraint for xAccountId or create one.
   // Let's create a mock xAccount.
-   await db.insert(posts).values({
+  await db
+    .insert(posts)
+    .values({
       id: `post-${freeUserId}-mock`,
       userId: freeUserId,
-      xAccountId: "mock-account", 
-    }).catch(() => console.log("Skipping post insertion due to FK constraint (expected in this simple script)"));
+      xAccountId: "mock-account",
+    })
+    .catch(() =>
+      console.log("Skipping post insertion due to FK constraint (expected in this simple script)")
+    );
 
   // Clean up
   await db.delete(user).where(eq(user.id, freeUserId));
   console.log("Test Finished (Partial verification)");
 }
 
-main().catch(console.error).finally(() => process.exit(0));
+main()
+  .catch(console.error)
+  .finally(() => process.exit(0));

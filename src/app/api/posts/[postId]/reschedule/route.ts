@@ -7,10 +7,7 @@ import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ postId: string }> }
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
   if (!ctx) return new NextResponse("Unauthorized", { status: 401 });
 

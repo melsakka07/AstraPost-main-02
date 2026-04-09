@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LANGUAGES } from "@/lib/constants";
 
 interface ProfileFormProps {
@@ -58,14 +64,14 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <User className="h-5 w-5 text-primary" />
+          <User className="text-primary h-5 w-5" />
           <CardTitle>Profile</CardTitle>
         </div>
         <CardDescription>Manage your account details and preferences</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Display Name</Label>
               <Input
@@ -96,7 +102,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-[0.8rem] text-muted-foreground">
+              <p className="text-muted-foreground text-[0.8rem]">
                 Posts will be scheduled in this timezone.
               </p>
             </div>

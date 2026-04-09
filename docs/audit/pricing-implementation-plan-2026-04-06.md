@@ -39,10 +39,10 @@ Replace the blanket trial bypass with **Pro-tier resolution**. During trial, res
 
 ### Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/lib/middleware/require-plan.ts` | Core trial logic change |
-| `src/lib/plan-limits.ts` | Add `TRIAL_PLAN` constant (optional, for clarity) |
+| File                                 | Change                                            |
+| ------------------------------------ | ------------------------------------------------- |
+| `src/lib/middleware/require-plan.ts` | Core trial logic change                           |
+| `src/lib/plan-limits.ts`             | Add `TRIAL_PLAN` constant (optional, for clarity) |
 
 ### Implementation Steps
 
@@ -62,8 +62,8 @@ Update the return type and logic so that when a trial is active, the `effectiveP
 ```typescript
 // Current PlanContext interface — add effectivePlan field:
 interface PlanContext {
-  plan: PlanType;           // actual DB plan (always "free" for trial users)
-  effectivePlan: PlanType;  // plan used for limit resolution ("pro_monthly" during trial)
+  plan: PlanType; // actual DB plan (always "free" for trial users)
+  effectivePlan: PlanType; // plan used for limit resolution ("pro_monthly" during trial)
   trialEndsAt: Date | null;
   isTrialActive: boolean;
 }
@@ -101,18 +101,19 @@ if (context.isTrialActive) return { allowed: true };
 
 Replace with using `context.effectivePlan` for limit lookups:
 
-| Gate Function | Line to Remove | Change `getPlanLimits(context.plan)` to |
-|--------------|----------------|----------------------------------------|
-| `checkAccountLimitDetailed` | `if (context.isTrialActive) return { allowed: true };` | `getPlanLimits(context.effectivePlan)` |
-| `checkPostLimitDetailed` | Same | Same |
-| `checkAiLimitDetailed` | Same | Same |
-| `checkAiQuotaDetailed` | Same | Same |
-| `checkBookmarkLimitDetailed` | Same | Same |
-| `checkAnalyticsExportLimitDetailed` | Same | Same |
-| `checkAiImageQuotaDetailed` | Same | Same |
-| `checkImageModelAccessDetailed` | Same | Same |
+| Gate Function                       | Line to Remove                                         | Change `getPlanLimits(context.plan)` to |
+| ----------------------------------- | ------------------------------------------------------ | --------------------------------------- |
+| `checkAccountLimitDetailed`         | `if (context.isTrialActive) return { allowed: true };` | `getPlanLimits(context.effectivePlan)`  |
+| `checkPostLimitDetailed`            | Same                                                   | Same                                    |
+| `checkAiLimitDetailed`              | Same                                                   | Same                                    |
+| `checkAiQuotaDetailed`              | Same                                                   | Same                                    |
+| `checkBookmarkLimitDetailed`        | Same                                                   | Same                                    |
+| `checkAnalyticsExportLimitDetailed` | Same                                                   | Same                                    |
+| `checkAiImageQuotaDetailed`         | Same                                                   | Same                                    |
+| `checkImageModelAccessDetailed`     | Same                                                   | Same                                    |
 
 **Pattern for each function:**
+
 1. Delete the `if (context.isTrialActive) return { allowed: true };` line
 2. Change `getPlanLimits(context.plan)` → `getPlanLimits(context.effectivePlan)`
 3. No other changes needed — the Pro limits will naturally flow through
@@ -125,28 +126,28 @@ Ensure the 402 response payload includes `trial_active: true` so the frontend ca
 
 After this change, trial users will be governed by `pro_monthly` limits. Confirm these features correctly resolve to `false` under Pro:
 
-| Feature | `pro_monthly` value | Expected trial behavior |
-|---------|---------------------|------------------------|
-| `canUseLinkedin` | `false` | Blocked ✓ |
-| `maxTeamMembers` | `null` | Blocked ✓ |
-| `analyticsExport` | `"csv_pdf"` (not `"white_label_pdf"`) | CSV/PDF only ✓ |
+| Feature           | `pro_monthly` value                   | Expected trial behavior |
+| ----------------- | ------------------------------------- | ----------------------- |
+| `canUseLinkedin`  | `false`                               | Blocked ✓               |
+| `maxTeamMembers`  | `null`                                | Blocked ✓               |
+| `analyticsExport` | `"csv_pdf"` (not `"white_label_pdf"`) | CSV/PDF only ✓          |
 
 These are correct — no additional changes needed.
 
 ### Expected Behavior After Phase 1
 
-| Resource | Free (no trial) | Free (trial active) | Pro (paid) | Agency (paid) |
-|----------|-----------------|---------------------|------------|---------------|
-| Posts/month | 20 | **Unlimited** (Pro) | Unlimited | Unlimited |
-| AI text/month | 20 | **100** (Pro) | 100 | Unlimited |
-| AI images/month | 10 | **50** (Pro) | 50 | Unlimited |
-| X accounts | 1 | **3** (Pro) | 3 | 10 |
-| Bookmarks | 5 | **Unlimited** (Pro) | Unlimited | Unlimited |
-| LinkedIn | No | **No** (Pro = no) | No | Yes |
-| Teams | No | **No** (Pro = no) | No | 5 members |
-| Agentic Posting | No | **Yes** (Pro) | Yes | Yes |
-| Viral Score | No | **Yes** (Pro) | Yes | Yes |
-| All other Pro features | No | **Yes** (Pro) | Yes | Yes |
+| Resource               | Free (no trial) | Free (trial active) | Pro (paid) | Agency (paid) |
+| ---------------------- | --------------- | ------------------- | ---------- | ------------- |
+| Posts/month            | 20              | **Unlimited** (Pro) | Unlimited  | Unlimited     |
+| AI text/month          | 20              | **100** (Pro)       | 100        | Unlimited     |
+| AI images/month        | 10              | **50** (Pro)        | 50         | Unlimited     |
+| X accounts             | 1               | **3** (Pro)         | 3          | 10            |
+| Bookmarks              | 5               | **Unlimited** (Pro) | Unlimited  | Unlimited     |
+| LinkedIn               | No              | **No** (Pro = no)   | No         | Yes           |
+| Teams                  | No              | **No** (Pro = no)   | No         | 5 members     |
+| Agentic Posting        | No              | **Yes** (Pro)       | Yes        | Yes           |
+| Viral Score            | No              | **Yes** (Pro)       | Yes        | Yes           |
+| All other Pro features | No              | **Yes** (Pro)       | Yes        | Yes           |
 
 ---
 
@@ -157,10 +158,10 @@ These are correct — no additional changes needed.
 
 ### Files to Modify
 
-| File | Change |
-|------|--------|
+| File                                       | Change                                |
+| ------------------------------------------ | ------------------------------------- |
 | `src/components/billing/pricing-table.tsx` | Remove Instagram from Agency features |
-| `src/app/(marketing)/pricing/page.tsx` | Fix core features section |
+| `src/app/(marketing)/pricing/page.tsx`     | Fix core features section             |
 
 ### Implementation Steps
 
@@ -170,13 +171,26 @@ In `src/components/billing/pricing-table.tsx`, change the Agency features array 
 
 ```typescript
 // BEFORE:
-features: ["Everything in Pro", "10 Connected Accounts", "Team Members (up to 5)", "LinkedIn & Instagram", "White-label Reports"]
+features: [
+  "Everything in Pro",
+  "10 Connected Accounts",
+  "Team Members (up to 5)",
+  "LinkedIn & Instagram",
+  "White-label Reports",
+];
 
 // AFTER:
-features: ["Everything in Pro", "10 X Accounts", "Team Members (up to 5)", "LinkedIn Integration", "White-label Reports"]
+features: [
+  "Everything in Pro",
+  "10 X Accounts",
+  "Team Members (up to 5)",
+  "LinkedIn Integration",
+  "White-label Reports",
+];
 ```
 
 Changes:
+
 - `"LinkedIn & Instagram"` → `"LinkedIn Integration"` (Instagram not implemented)
 - `"10 Connected Accounts"` → `"10 X Accounts"` (clarify platform)
 
@@ -184,12 +198,12 @@ Changes:
 
 In `src/app/(marketing)/pricing/page.tsx`, update the 6 core features (lines ~62-98):
 
-| Current | Replace With |
-|---------|-------------|
-| "Multi-platform Support" / "X, LinkedIn, Instagram" | "X (Twitter) Scheduling" / "Post and schedule across X. LinkedIn available on Agency plan." |
-| "Smart Scheduling with drag-and-drop calendar" | "Smart Scheduling" / "Schedule posts with timezone support. AI Content Calendar available on Pro." |
-| "Team Collaboration" / "(Agency plan)" | Keep as-is (correctly scoped) |
-| "Priority Support" / "for all plans" | "Community & Email Support" / "Documentation and email support for all users." |
+| Current                                             | Replace With                                                                                       |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| "Multi-platform Support" / "X, LinkedIn, Instagram" | "X (Twitter) Scheduling" / "Post and schedule across X. LinkedIn available on Agency plan."        |
+| "Smart Scheduling with drag-and-drop calendar"      | "Smart Scheduling" / "Schedule posts with timezone support. AI Content Calendar available on Pro." |
+| "Team Collaboration" / "(Agency plan)"              | Keep as-is (correctly scoped)                                                                      |
+| "Priority Support" / "for all plans"                | "Community & Email Support" / "Documentation and email support for all users."                     |
 
 #### Step 2.3: Fix annual savings label
 
@@ -212,11 +226,11 @@ Annual <span className="text-xs text-primary ml-1">(Save 17%)</span>
 
 ### Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/components/billing/pricing-table.tsx` | Expanded feature lists for all 3 plans |
-| `src/components/billing/pricing-card.tsx` | May need UI adjustments for longer feature lists |
-| `src/app/(marketing)/pricing/page.tsx` | Add trial banner, update core features, add comparison table |
+| File                                       | Change                                                       |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `src/components/billing/pricing-table.tsx` | Expanded feature lists for all 3 plans                       |
+| `src/components/billing/pricing-card.tsx`  | May need UI adjustments for longer feature lists             |
+| `src/app/(marketing)/pricing/page.tsx`     | Add trial banner, update core features, add comparison table |
 
 ### Implementation Steps
 
@@ -224,7 +238,7 @@ Annual <span className="text-xs text-primary ml-1">(Save 17%)</span>
 
 ```typescript
 // BEFORE:
-features: ["10 Posts per month", "1 Connected Account", "Basic Analytics"]
+features: ["10 Posts per month", "1 Connected Account", "Basic Analytics"];
 
 // AFTER:
 features: [
@@ -235,7 +249,7 @@ features: [
   "7-day Analytics",
   "Tweet Inspiration & Import",
   "14-day Pro Trial Included",
-]
+];
 ```
 
 **Decision required from user:** The pricing page says 10 posts/month but the code allows 20. This plan uses 20 (matching code). If you prefer 10, update `plan-limits.ts` line 37 instead.
@@ -250,7 +264,7 @@ features: [
   "Advanced Analytics",
   "AI Writer (100 credits)",
   "Thread Scheduling",
-]
+];
 
 // AFTER:
 features: [
@@ -269,7 +283,7 @@ features: [
   "Video & GIF Uploads",
   "90-day Analytics + CSV/PDF Export",
   "Unlimited Bookmarks",
-]
+];
 ```
 
 #### Step 3.3: Update Agency plan features
@@ -282,7 +296,7 @@ features: [
   "Team Members (up to 5)",
   "LinkedIn & Instagram",
   "White-label Reports",
-]
+];
 
 // AFTER:
 features: [
@@ -293,7 +307,7 @@ features: [
   "LinkedIn Integration",
   "1-year Analytics History",
   "White-label PDF Reports",
-]
+];
 ```
 
 #### Step 3.4: Add 14-day trial banner to pricing page
@@ -301,8 +315,8 @@ features: [
 In `src/app/(marketing)/pricing/page.tsx`, add a prominent banner above the pricing table:
 
 ```tsx
-<div className="mx-auto max-w-2xl text-center rounded-lg border border-primary/20 bg-primary/5 p-4 mb-8">
-  <p className="text-sm font-medium text-primary">
+<div className="border-primary/20 bg-primary/5 mx-auto mb-8 max-w-2xl rounded-lg border p-4 text-center">
+  <p className="text-primary text-sm font-medium">
     🎉 Start your 14-day free trial — access all Pro features, no credit card required.
   </p>
 </div>
@@ -311,6 +325,7 @@ In `src/app/(marketing)/pricing/page.tsx`, add a prominent banner above the pric
 #### Step 3.5: Update PricingCard for longer feature lists (if needed)
 
 If the expanded feature lists cause layout issues in `pricing-card.tsx`, consider:
+
 - Adding a scrollable area for features beyond a threshold (e.g., 8 items)
 - OR grouping features with subtle category headers
 - OR showing top 6-8 features with an expandable "See all features" link
@@ -321,15 +336,15 @@ Review the card visually after updating feature arrays. If the 3-column grid sti
 
 Below the pricing cards, add a full comparison table showing all features across all tiers. This is standard practice (see Buffer, Hootsuite pricing pages). Use a responsive table component:
 
-| Feature | Free | Pro | Agency |
-|---------|------|-----|--------|
-| Posts/month | 20 | Unlimited | Unlimited |
-| X Accounts | 1 | 3 | 10 |
-| AI Text Generations | 20/mo | 100/mo | Unlimited |
-| AI Image Generations | 10/mo | 50/mo | Unlimited |
-| Thread Scheduling | — | ✓ | ✓ |
-| Agentic Posting | — | ✓ | ✓ |
-| ... (all features) | | | |
+| Feature              | Free  | Pro       | Agency    |
+| -------------------- | ----- | --------- | --------- |
+| Posts/month          | 20    | Unlimited | Unlimited |
+| X Accounts           | 1     | 3         | 10        |
+| AI Text Generations  | 20/mo | 100/mo    | Unlimited |
+| AI Image Generations | 10/mo | 50/mo     | Unlimited |
+| Thread Scheduling    | —     | ✓         | ✓         |
+| Agentic Posting      | —     | ✓         | ✓         |
+| ... (all features)   |       |           |           |
 
 This can be a new component: `src/components/billing/pricing-comparison-table.tsx`.
 
@@ -342,10 +357,10 @@ This can be a new component: `src/components/billing/pricing-comparison-table.ts
 
 ### Files to Modify
 
-| File | Change |
-|------|--------|
+| File                                 | Change                                     |
+| ------------------------------------ | ------------------------------------------ |
 | `src/lib/middleware/require-plan.ts` | Already handled by Phase 1 (effectivePlan) |
-| Frontend components with plan checks | Ensure UI shows trial status and expiry |
+| Frontend components with plan checks | Ensure UI shows trial status and expiry    |
 
 ### Implementation Steps
 
@@ -426,25 +441,26 @@ All 317 existing tests must continue to pass. Any failures indicate a regression
 
 Test these scenarios manually (or via integration tests):
 
-| # | Scenario | Expected Result |
-|---|----------|----------------|
-| 1 | New user signs up → visits /pricing | Sees "14-day Pro Trial Included" on Free plan |
-| 2 | Free trial user → POST /api/ai/agentic | Allowed (Pro feature) |
-| 3 | Free trial user → 101st AI generation in month | Blocked with 402 (Pro limit = 100) |
-| 4 | Free trial user → POST /api/linkedin/callback | Blocked (Agency-only, not in Pro) |
-| 5 | Free trial user → POST /api/team/invite | Blocked (Agency-only) |
-| 6 | Trial expired user → POST /api/ai/agentic | Blocked with 402 |
-| 7 | Trial expired user → POST /api/posts (21st post) | Blocked with 402 (Free limit = 20) |
-| 8 | Paid Pro user → all Pro features | Allowed (unaffected by trial changes) |
-| 9 | Agency user → LinkedIn, teams | Allowed (unaffected) |
-| 10 | Pricing page → Free plan card | Shows 7 features including trial mention |
-| 11 | Pricing page → Pro plan card | Shows 15 features (expanded list) |
-| 12 | Pricing page → Agency plan card | No Instagram, says "LinkedIn Integration" |
-| 13 | Pricing page → Core features section | No "Multi-platform" claim for all plans |
+| #   | Scenario                                         | Expected Result                               |
+| --- | ------------------------------------------------ | --------------------------------------------- |
+| 1   | New user signs up → visits /pricing              | Sees "14-day Pro Trial Included" on Free plan |
+| 2   | Free trial user → POST /api/ai/agentic           | Allowed (Pro feature)                         |
+| 3   | Free trial user → 101st AI generation in month   | Blocked with 402 (Pro limit = 100)            |
+| 4   | Free trial user → POST /api/linkedin/callback    | Blocked (Agency-only, not in Pro)             |
+| 5   | Free trial user → POST /api/team/invite          | Blocked (Agency-only)                         |
+| 6   | Trial expired user → POST /api/ai/agentic        | Blocked with 402                              |
+| 7   | Trial expired user → POST /api/posts (21st post) | Blocked with 402 (Free limit = 20)            |
+| 8   | Paid Pro user → all Pro features                 | Allowed (unaffected by trial changes)         |
+| 9   | Agency user → LinkedIn, teams                    | Allowed (unaffected)                          |
+| 10  | Pricing page → Free plan card                    | Shows 7 features including trial mention      |
+| 11  | Pricing page → Pro plan card                     | Shows 15 features (expanded list)             |
+| 12  | Pricing page → Agency plan card                  | No Instagram, says "LinkedIn Integration"     |
+| 13  | Pricing page → Core features section             | No "Multi-platform" claim for all plans       |
 
 ### 5.5: Visual Regression Check
 
 After updating pricing page feature lists, verify the layout on:
+
 - Desktop (1440px+): 3-column grid balanced
 - Tablet (768px): Cards stack properly
 - Mobile (375px): Single column, no overflow
@@ -459,11 +475,11 @@ Use the Claude Preview MCP tool or browser dev tools to check.
 
 ### Files to Update
 
-| File | Update |
-|------|--------|
-| `CLAUDE.md` | Update "Recent Fixes" section with trial fix; update plan limits summary if present |
-| `README.md` | Update Features table, pricing section if present |
-| `docs/audit/pricing-gap-analysis-2026-04-06.md` | Mark resolved items |
+| File                                            | Update                                                                              |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `CLAUDE.md`                                     | Update "Recent Fixes" section with trial fix; update plan limits summary if present |
+| `README.md`                                     | Update Features table, pricing section if present                                   |
+| `docs/audit/pricing-gap-analysis-2026-04-06.md` | Mark resolved items                                                                 |
 
 ### CLAUDE.md Updates
 
@@ -614,20 +630,20 @@ Agent 1: general-purpose
 
 ## Summary of All Files Modified
 
-| Phase | File | Type of Change |
-|-------|------|---------------|
-| 1 | `src/lib/plan-limits.ts` | Add `TRIAL_EFFECTIVE_PLAN` constant |
-| 1 | `src/lib/middleware/require-plan.ts` | Replace trial bypass with effectivePlan |
-| 1 | `src/lib/middleware/require-plan.test.ts` | Add trial-specific test cases |
-| 2 | `src/components/billing/pricing-table.tsx` | Remove Instagram, fix labels |
-| 2 | `src/app/(marketing)/pricing/page.tsx` | Fix core features section |
-| 3 | `src/components/billing/pricing-table.tsx` | Expand feature lists |
-| 3 | `src/app/(marketing)/pricing/page.tsx` | Add trial banner |
-| 3 | `src/components/billing/pricing-card.tsx` | Visual adjustments (if needed) |
-| 3 | `src/components/billing/pricing-comparison-table.tsx` | New file (optional P3) |
-| 4 | Dashboard components (TBD) | Trial status indicator |
-| 6 | `CLAUDE.md` | Documentation updates |
-| 6 | `README.md` | Documentation updates |
+| Phase | File                                                  | Type of Change                          |
+| ----- | ----------------------------------------------------- | --------------------------------------- |
+| 1     | `src/lib/plan-limits.ts`                              | Add `TRIAL_EFFECTIVE_PLAN` constant     |
+| 1     | `src/lib/middleware/require-plan.ts`                  | Replace trial bypass with effectivePlan |
+| 1     | `src/lib/middleware/require-plan.test.ts`             | Add trial-specific test cases           |
+| 2     | `src/components/billing/pricing-table.tsx`            | Remove Instagram, fix labels            |
+| 2     | `src/app/(marketing)/pricing/page.tsx`                | Fix core features section               |
+| 3     | `src/components/billing/pricing-table.tsx`            | Expand feature lists                    |
+| 3     | `src/app/(marketing)/pricing/page.tsx`                | Add trial banner                        |
+| 3     | `src/components/billing/pricing-card.tsx`             | Visual adjustments (if needed)          |
+| 3     | `src/components/billing/pricing-comparison-table.tsx` | New file (optional P3)                  |
+| 4     | Dashboard components (TBD)                            | Trial status indicator                  |
+| 6     | `CLAUDE.md`                                           | Documentation updates                   |
+| 6     | `README.md`                                           | Documentation updates                   |
 
 ---
 
@@ -652,4 +668,4 @@ Estimated total: ~12 modified files, ~200-300 lines changed.
 
 ---
 
-*Implementation plan generated 2026-04-06 based on [Pricing Gap Analysis](./pricing-gap-analysis-2026-04-06.md).*
+_Implementation plan generated 2026-04-06 based on [Pricing Gap Analysis](./pricing-gap-analysis-2026-04-06.md)._

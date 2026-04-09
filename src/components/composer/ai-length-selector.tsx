@@ -1,12 +1,7 @@
 "use client";
 
 import { Lock } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { type AiLengthOptionId } from "@/lib/schemas/common";
 import { canPostLongContent } from "@/lib/services/x-subscription";
@@ -35,14 +30,14 @@ export function AiLengthSelector({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
+      <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center sm:gap-0">
         <span className="text-sm font-medium">Post Length</span>
-        <span className="text-xs text-muted-foreground truncate">
+        <span className="text-muted-foreground truncate text-xs">
           {AI_LENGTH_OPTIONS[selectedLength].description}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-1 rounded-lg border bg-muted/50 p-1">
+      <div className="bg-muted/50 grid grid-cols-3 gap-1 rounded-lg border p-1">
         {options.map((option) => {
           const isDisabled = option.requiresPremium && !isPremium;
           const isSelected = selectedLength === option.id;
@@ -60,18 +55,21 @@ export function AiLengthSelector({
                     onClick={() => !isDisabled && onLengthChange(option.id)}
                     className={cn(
                       "relative flex flex-col items-center gap-0.5 rounded-md px-3 py-2 text-sm font-medium transition-all",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "focus-visible:ring-ring focus-visible:ring-2 focus-visible:outline-none",
                       isSelected && !isDisabled
                         ? "bg-primary text-primary-foreground shadow-sm"
                         : isDisabled
-                          ? "opacity-50 cursor-not-allowed text-muted-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          ? "text-muted-foreground cursor-not-allowed opacity-50"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     <span className="flex items-center gap-1">
                       {option.label}
                       {isDisabled && (
-                        <Lock className="h-2.5 w-2.5 shrink-0 text-muted-foreground/60" aria-hidden="true" />
+                        <Lock
+                          className="text-muted-foreground/60 h-2.5 w-2.5 shrink-0"
+                          aria-hidden="true"
+                        />
                       )}
                     </span>
                     <span className="text-[10px] font-normal tabular-nums">

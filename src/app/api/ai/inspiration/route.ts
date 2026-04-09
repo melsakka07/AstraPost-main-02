@@ -10,10 +10,12 @@ import { recordAiUsage } from "@/lib/services/ai-quota";
 const CACHE_TTL = 6 * 60 * 60; // 6 hours
 
 const inspirationSchema = z.object({
-  topics: z.array(z.object({
-    topic: z.string(),
-    hook: z.string(),
-  })),
+  topics: z.array(
+    z.object({
+      topic: z.string(),
+      hook: z.string(),
+    })
+  ),
 });
 
 export async function GET(req: Request) {
@@ -32,20 +34,20 @@ export async function GET(req: Request) {
     const niche = searchParams.get("niche") || "Technology";
     const language = searchParams.get("language") || "en";
 
-    const cacheKey = `inspiration:${language}:${niche.toLowerCase().replace(/\s+/g, '_')}`;
-    
+    const cacheKey = `inspiration:${language}:${niche.toLowerCase().replace(/\s+/g, "_")}`;
+
     try {
-        const cached = await redis.get(cacheKey);
-        if (cached) {
-            return Response.json(JSON.parse(cached));
-        }
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return Response.json(JSON.parse(cached));
+      }
     } catch (e) {
-        console.error("Redis error:", e);
+      console.error("Redis error:", e);
     }
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-        return new Response(JSON.stringify({ error: "AI Service not configured" }), { status: 500 });
+      return new Response(JSON.stringify({ error: "AI Service not configured" }), { status: 500 });
     }
 
     const openrouter = createOpenRouter({ apiKey });
@@ -54,7 +56,7 @@ export async function GET(req: Request) {
     const prompt = `
       You are a social media trend analyst.
       Generate 5 trending or evergreen topic ideas for a "${niche}" niche content creator on X (Twitter).
-      Language: ${language === 'ar' ? 'Arabic' : 'English'}.
+      Language: ${language === "ar" ? "Arabic" : "English"}.
       
       For each topic, provide:
       1. The Topic (short title)
@@ -72,9 +74,9 @@ export async function GET(req: Request) {
     });
 
     try {
-        await redis.set(cacheKey, JSON.stringify(object), "EX", CACHE_TTL);
+      await redis.set(cacheKey, JSON.stringify(object), "EX", CACHE_TTL);
     } catch (e) {
-        console.error("Redis set error:", e);
+      console.error("Redis set error:", e);
     }
 
     // Record AI usage (only for fresh generations, not cached responses)
@@ -90,6 +92,8 @@ export async function GET(req: Request) {
     return Response.json(object);
   } catch (error) {
     console.error("AI Inspiration Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate inspiration" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to generate inspiration" }), {
+      status: 500,
+    });
   }
 }

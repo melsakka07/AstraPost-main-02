@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import {
-  CreditCard,
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
-  Users,
-} from "lucide-react";
+import { CreditCard, DollarSign, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,19 +72,31 @@ function StatCard({
     <Card>
       <CardContent className="pt-5">
         <div className="flex items-start justify-between">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-4 w-4 text-primary" />
+          <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-lg">
+            <Icon className="text-primary h-4 w-4" />
           </div>
           {trend && (
-            <span className={trend === "up" ? "text-green-500" : trend === "down" ? "text-destructive" : "text-muted-foreground"}>
-              {trend === "up" ? <TrendingUp className="h-4 w-4" /> : trend === "down" ? <TrendingDown className="h-4 w-4" /> : null}
+            <span
+              className={
+                trend === "up"
+                  ? "text-green-500"
+                  : trend === "down"
+                    ? "text-destructive"
+                    : "text-muted-foreground"
+              }
+            >
+              {trend === "up" ? (
+                <TrendingUp className="h-4 w-4" />
+              ) : trend === "down" ? (
+                <TrendingDown className="h-4 w-4" />
+              ) : null}
             </span>
           )}
         </div>
         <div className="mt-3">
           <p className="text-2xl font-bold tabular-nums">{value}</p>
-          <p className="text-sm font-medium text-foreground">{label}</p>
-          {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+          <p className="text-foreground text-sm font-medium">{label}</p>
+          {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
         </div>
       </CardContent>
     </Card>
@@ -102,7 +108,11 @@ function LoadingSkeleton() {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}><CardContent className="pt-5"><Skeleton className="h-20 w-full" /></CardContent></Card>
+          <Card key={i}>
+            <CardContent className="pt-5">
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
         ))}
       </div>
       <Skeleton className="h-64 w-full rounded-xl" />
@@ -158,7 +168,11 @@ export function BillingOverview() {
         <StatCard
           label="Churned this month"
           value={subs.cancelledThisMonth}
-          sub={churnDelta === 0 ? "Same as last month" : `${Math.abs(churnDelta)} ${churnDelta > 0 ? "more" : "fewer"} than last month`}
+          sub={
+            churnDelta === 0
+              ? "Same as last month"
+              : `${Math.abs(churnDelta)} ${churnDelta > 0 ? "more" : "fewer"} than last month`
+          }
           icon={churnDelta > 0 ? TrendingDown : TrendingUp}
           trend={churnDelta > 0 ? "down" : churnDelta < 0 ? "up" : "neutral"}
         />
@@ -183,7 +197,7 @@ export function BillingOverview() {
                   <p className="text-sm font-medium">{PLAN_LABELS[plan] ?? plan}</p>
                   <p className="mt-1 text-2xl font-bold tabular-nums">{count}</p>
                   {mrr.configured && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       ${(mrrCents / 100).toFixed(0)}/mo
                     </p>
                   )}
@@ -212,7 +226,7 @@ export function BillingOverview() {
             <TableBody>
               {transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
                     No subscription events yet
                   </TableCell>
                 </TableRow>
@@ -222,18 +236,20 @@ export function BillingOverview() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-medium">{tx.userName ?? "Unknown"}</span>
-                        <span className="text-xs text-muted-foreground">{tx.userEmail ?? "—"}</span>
+                        <span className="text-muted-foreground text-xs">{tx.userEmail ?? "—"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{PLAN_LABELS[tx.plan ?? ""] ?? tx.plan ?? "—"}</Badge>
+                      <Badge variant="secondary">
+                        {PLAN_LABELS[tx.plan ?? ""] ?? tx.plan ?? "—"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[tx.status ?? ""] ?? "outline"}>
                         {tx.status ?? "—"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="text-muted-foreground text-sm">
                       {format(new Date(tx.updatedAt), "d MMM yyyy")}
                     </TableCell>
                   </TableRow>

@@ -12,10 +12,7 @@ const patchSchema = z.object({
 
 // ── PATCH /api/admin/feature-flags/[key] ─────────────────────────────────────
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ key: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ key: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 

@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
@@ -74,7 +80,7 @@ export default function BioOptimizerPage() {
         if (res.status === 402) {
           let payload: PlanLimitPayload | null = null;
           try {
-            payload = await res.json() as PlanLimitPayload;
+            payload = (await res.json()) as PlanLimitPayload;
           } catch {}
           openWithContext({
             error: payload?.error,
@@ -92,12 +98,12 @@ export default function BioOptimizerPage() {
           });
           return;
         }
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         toast.error(err.error ?? "Failed to generate bio variants");
         return;
       }
 
-      const data = await res.json() as { variants: BioVariant[] };
+      const data = (await res.json()) as { variants: BioVariant[] };
       setVariants(data.variants);
     } catch {
       toast.error("Failed to generate bio variants. Please try again.");
@@ -143,12 +149,12 @@ export default function BioOptimizerPage() {
                   maxLength={500}
                 />
                 <span
-                  className={`pointer-events-none absolute bottom-2 right-2 select-none text-xs tabular-nums ${
+                  className={`pointer-events-none absolute right-2 bottom-2 text-xs tabular-nums select-none ${
                     currentBio.length > 160
                       ? "text-destructive"
                       : currentBio.length >= 130
-                      ? "text-amber-500"
-                      : "text-muted-foreground"
+                        ? "text-amber-500"
+                        : "text-muted-foreground"
                   }`}
                 >
                   {currentBio.length}/160
@@ -212,9 +218,15 @@ export default function BioOptimizerPage() {
               size="lg"
             >
               {isLoading ? (
-                <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({elapsed}s)</>
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  Generating... ({elapsed}s)
+                </>
               ) : (
-                <><Sparkles className="me-2 h-4 w-4" />Generate 3 Bio Variants</>
+                <>
+                  <Sparkles className="me-2 h-4 w-4" />
+                  Generate 3 Bio Variants
+                </>
               )}
             </Button>
           </CardContent>
@@ -223,68 +235,83 @@ export default function BioOptimizerPage() {
         {/* Results */}
         <div className="space-y-3">
           {variants.length === 0 && !isLoading && (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-3">
+            <div className="border-border bg-muted/20 space-y-3 rounded-xl border border-dashed p-5">
               {/* Blurred bio card previews */}
-              <div className="space-y-2 opacity-25 pointer-events-none select-none blur-[1px]" aria-hidden="true">
-                {[["Gain Followers", "w-full", "w-4/5"], ["Attract Clients", "w-3/4", "w-full"], ["Build Authority", "w-full", "w-2/3"]].map(([goal, w1, w2]) => (
-                  <div key={goal} className="rounded-lg border bg-card p-3 space-y-2">
+              <div
+                className="pointer-events-none space-y-2 opacity-25 blur-[1px] select-none"
+                aria-hidden="true"
+              >
+                {[
+                  ["Gain Followers", "w-full", "w-4/5"],
+                  ["Attract Clients", "w-3/4", "w-full"],
+                  ["Build Authority", "w-full", "w-2/3"],
+                ].map(([goal, w1, w2]) => (
+                  <div key={goal} className="bg-card space-y-2 rounded-lg border p-3">
                     <div className="flex items-center justify-between">
-                      <div className="h-4 w-20 bg-muted-foreground/20 rounded-full" />
-                      <div className="h-6 w-12 bg-muted-foreground/10 rounded" />
+                      <div className="bg-muted-foreground/20 h-4 w-20 rounded-full" />
+                      <div className="bg-muted-foreground/10 h-6 w-12 rounded" />
                     </div>
-                    <div className={`h-2.5 bg-muted-foreground/20 rounded ${w1}`} />
-                    <div className={`h-2.5 bg-muted-foreground/20 rounded ${w2}`} />
-                    <div className="h-2 bg-muted-foreground/10 rounded w-1/4" />
+                    <div className={`bg-muted-foreground/20 h-2.5 rounded ${w1}`} />
+                    <div className={`bg-muted-foreground/20 h-2.5 rounded ${w2}`} />
+                    <div className="bg-muted-foreground/10 h-2 w-1/4 rounded" />
                   </div>
                 ))}
               </div>
               <div className="text-center">
-                <p className="font-semibold text-sm">3 bio variants will appear here</p>
-                <p className="mt-1 text-xs text-muted-foreground">Each targets a different goal — followers, clients, or authority</p>
+                <p className="text-sm font-semibold">3 bio variants will appear here</p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Each targets a different goal — followers, clients, or authority
+                </p>
               </div>
             </div>
           )}
 
           {isLoading && (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 gap-3 h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Crafting optimized bios...</p>
+            <div className="border-border bg-muted/20 flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-16">
+              <Loader2 className="text-primary h-8 w-8 animate-spin" />
+              <p className="text-muted-foreground text-sm">Crafting optimized bios...</p>
             </div>
           )}
 
           {variants.map((v, idx) => (
             <Card key={idx} className="hover:border-primary/30 transition-colors">
-              <CardContent className="p-4 space-y-2">
+              <CardContent className="space-y-2 p-4">
                 <div className="flex items-center justify-between">
-                  <Badge variant="secondary" className="text-xs">{v.goal}</Badge>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => copyBio(v.text, idx)}
-                  >
+                  <Badge variant="secondary" className="text-xs">
+                    {v.goal}
+                  </Badge>
+                  <Button size="sm" variant="ghost" onClick={() => copyBio(v.text, idx)}>
                     {copiedIdx === idx ? (
-                      <><Check className="h-3.5 w-3.5 me-1" />Copied</>
+                      <>
+                        <Check className="me-1 h-3.5 w-3.5" />
+                        Copied
+                      </>
                     ) : (
-                      <><Copy className="h-3.5 w-3.5 me-1" />Copy</>
+                      <>
+                        <Copy className="me-1 h-3.5 w-3.5" />
+                        Copy
+                      </>
                     )}
                   </Button>
                 </div>
-                <p className="text-sm font-medium leading-relaxed">{v.text}</p>
+                <p className="text-sm leading-relaxed font-medium">{v.text}</p>
                 <div className="flex items-center justify-between gap-2">
-                  <p className={`text-xs tabular-nums ${v.text.length > 160 ? "text-destructive" : "text-emerald-500"}`}>
+                  <p
+                    className={`text-xs tabular-nums ${v.text.length > 160 ? "text-destructive" : "text-emerald-500"}`}
+                  >
                     {v.text.length}/160 chars{v.text.length > 160 && " — over limit"}
                   </p>
                   <a
                     href="https://x.com/settings/profile"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
                   >
                     <ExternalLink className="h-3 w-3" />
                     Open X Settings
                   </a>
                 </div>
-                <p className="text-xs text-muted-foreground italic">{v.rationale}</p>
+                <p className="text-muted-foreground text-xs italic">{v.rationale}</p>
               </CardContent>
             </Card>
           ))}

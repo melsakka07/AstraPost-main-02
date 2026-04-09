@@ -67,11 +67,11 @@ This caused the very first database query in each polling API route (`auth.api.g
 
 ### Why production was not affected
 
-| Factor | Local Dev | Production (Vercel) |
-|---|---|---|
-| HTTP protocol | HTTP/1.1 — **6 connections per origin** | HTTP/2 — **unlimited concurrent streams** |
-| DB connection pooling | Direct `postgres.js` sockets — stale sockets hang | PgBouncer — connections are managed, no stale socket issue |
-| Network reliability | Loopback, but sockets can go stale after dev server restarts | Managed Postgres with always-fresh connections |
+| Factor                | Local Dev                                                    | Production (Vercel)                                        |
+| --------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| HTTP protocol         | HTTP/1.1 — **6 connections per origin**                      | HTTP/2 — **unlimited concurrent streams**                  |
+| DB connection pooling | Direct `postgres.js` sockets — stale sockets hang            | PgBouncer — connections are managed, no stale socket issue |
+| Network reliability   | Loopback, but sockets can go stale after dev server restarts | Managed Postgres with always-fresh connections             |
 
 Production uses HTTP/2 (no per-origin connection cap) and PgBouncer (no stale socket problem), so neither bug had any visible effect there.
 
@@ -91,18 +91,24 @@ Added `AbortController` pattern:
 - Removed the old `cancelled` flag pattern (superseded entirely by `AbortController`).
 
 **Before:**
+
 ```typescript
 async function poll() {
   try {
     const res = await fetch(`/api/queue/sse?since=...`);
     // ...
-  } catch { /* silent */ }
+  } catch {
+    /* silent */
+  }
 }
 const id = setInterval(poll, POLL_INTERVAL_MS);
-return () => { clearInterval(id); }; // in-flight request NOT cancelled
+return () => {
+  clearInterval(id);
+}; // in-flight request NOT cancelled
 ```
 
 **After:**
+
 ```typescript
 const abortRef = useRef<AbortController | null>(null);
 
@@ -147,10 +153,12 @@ Applied the identical `AbortController` + timeout + cleanup pattern:
 Added connection timeout options to the `postgres()` client:
 
 ```typescript
-const client = globalThis._postgresClient || postgres(connectionString, {
-  connect_timeout: 10,  // fail fast (10 s) on stale/broken sockets
-  idle_timeout: 20,     // recycle idle connections after 20 s
-});
+const client =
+  globalThis._postgresClient ||
+  postgres(connectionString, {
+    connect_timeout: 10, // fail fast (10 s) on stale/broken sockets
+    idle_timeout: 20, // recycle idle connections after 20 s
+  });
 ```
 
 - `connect_timeout: 10` — if a new connection cannot be established within 10 seconds (e.g., stale socket, slow container), postgres.js throws immediately instead of waiting for the OS TCP timeout (30–60 s).
@@ -212,12 +220,12 @@ pnpm typecheck ✅  (no errors)
 
 ## Files Changed
 
-| File | Change |
-|---|---|
+| File                                               | Change                                             |
+| -------------------------------------------------- | -------------------------------------------------- |
 | `src/components/queue/queue-realtime-listener.tsx` | Added AbortController + 8s timeout + cleanup abort |
-| `src/components/dashboard/notification-bell.tsx` | Added AbortController + 8s timeout + cleanup abort |
-| `src/lib/db.ts` | Added `connect_timeout: 10` and `idle_timeout: 20` |
-| `docs/0-MY-LATEST-UPDATES.md` | Updated fix entry with both polling components |
+| `src/components/dashboard/notification-bell.tsx`   | Added AbortController + 8s timeout + cleanup abort |
+| `src/lib/db.ts`                                    | Added `connect_timeout: 10` and `idle_timeout: 20` |
+| `docs/0-MY-LATEST-UPDATES.md`                      | Updated fix entry with both polling components     |
 
 ---
 

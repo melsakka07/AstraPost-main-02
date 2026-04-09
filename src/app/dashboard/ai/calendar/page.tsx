@@ -26,7 +26,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
@@ -70,7 +76,20 @@ interface XAccount {
   isDefault: boolean;
 }
 
-const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 function getWeekLabel(weekNum: number, baseDate: Date): string {
   const day = baseDate.getDay(); // 0=Sun
@@ -129,7 +148,7 @@ export default function ContentCalendarPage() {
         if (res.status === 402) {
           let payload: PlanLimitPayload | null = null;
           try {
-            payload = await res.json() as PlanLimitPayload;
+            payload = (await res.json()) as PlanLimitPayload;
           } catch {}
           openWithContext({
             error: payload?.error,
@@ -150,7 +169,7 @@ export default function ContentCalendarPage() {
         throw new Error("Failed to generate calendar");
       }
 
-      const data = await res.json() as { items: CalendarItem[] };
+      const data = (await res.json()) as { items: CalendarItem[] };
       setItems(data.items ?? []);
       setGeneratedAt(new Date());
     } catch {
@@ -181,10 +200,20 @@ export default function ContentCalendarPage() {
   }
 
   // Resolve a calendar item's day name + week number + time string to an actual Date
-  function resolveItemDate(dayName: string, weekNum: number, startDate: Date, timeStr: string): Date {
+  function resolveItemDate(
+    dayName: string,
+    weekNum: number,
+    startDate: Date,
+    timeStr: string
+  ): Date {
     const DAY_OFFSETS: Record<string, number> = {
-      Monday: 0, Tuesday: 1, Wednesday: 2, Thursday: 3,
-      Friday: 4, Saturday: 5, Sunday: 6,
+      Monday: 0,
+      Tuesday: 1,
+      Wednesday: 2,
+      Thursday: 3,
+      Friday: 4,
+      Saturday: 5,
+      Sunday: 6,
     };
     const dayOffset = DAY_OFFSETS[dayName] ?? 0;
     const date = new Date(startDate);
@@ -209,7 +238,7 @@ export default function ContentCalendarPage() {
     try {
       const res = await fetch("/api/x/accounts");
       if (res.ok) {
-        const data = await res.json() as { accounts: XAccount[] };
+        const data = (await res.json()) as { accounts: XAccount[] };
         const accounts = data.accounts ?? [];
         setScheduleAllAccounts(accounts);
         const def = accounts.find((a) => a.isDefault) ?? accounts[0];
@@ -304,7 +333,7 @@ export default function ContentCalendarPage() {
       <Breadcrumb items={[{ label: "Content Calendar" }]} className="mb-2" />
       <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
         {/* Config Panel */}
-        <Card className="lg:col-span-1 h-fit">
+        <Card className="h-fit lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base">Configure Calendar</CardTitle>
           </CardHeader>
@@ -360,7 +389,7 @@ export default function ContentCalendarPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Posts Per Week</Label>
-                <span className="text-sm font-medium text-muted-foreground">{postsPerWeek}</span>
+                <span className="text-muted-foreground text-sm font-medium">{postsPerWeek}</span>
               </div>
               <Slider
                 value={[postsPerWeek]}
@@ -376,7 +405,9 @@ export default function ContentCalendarPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Weeks to Plan</Label>
-                <span className="text-sm font-medium text-muted-foreground">{weeks} week{weeks > 1 ? "s" : ""}</span>
+                <span className="text-muted-foreground text-sm font-medium">
+                  {weeks} week{weeks > 1 ? "s" : ""}
+                </span>
               </div>
               <Slider
                 value={[weeks]}
@@ -411,13 +442,13 @@ export default function ContentCalendarPage() {
         </Card>
 
         {/* Calendar Results */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-4 lg:col-span-2">
           {/* Schedule All header bar — only shown when results are ready */}
           {items.length > 0 && !isGenerating && (
-            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-2.5">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{items.length}</span>{" "}
-                post{items.length !== 1 ? "s" : ""} planned
+            <div className="border-border bg-muted/30 flex items-center justify-between rounded-lg border px-4 py-2.5">
+              <p className="text-muted-foreground text-sm">
+                <span className="text-foreground font-medium">{items.length}</span> post
+                {items.length !== 1 ? "s" : ""} planned
               </p>
               <Button size="sm" onClick={openScheduleAll}>
                 <CalendarCheck className="me-2 h-4 w-4" />
@@ -426,33 +457,43 @@ export default function ContentCalendarPage() {
             </div>
           )}
           {items.length === 0 && !isGenerating ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-4">
+            <div className="border-border bg-muted/20 space-y-4 rounded-xl border border-dashed p-5">
               {/* Blurred weekly grid preview */}
-              <div className="opacity-25 pointer-events-none select-none blur-[1.5px]" aria-hidden="true">
-                <div className="grid grid-cols-2 gap-1.5 mb-1.5 sm:grid-cols-4">
+              <div
+                className="pointer-events-none opacity-25 blur-[1.5px] select-none"
+                aria-hidden="true"
+              >
+                <div className="mb-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {["Mon", "Tue", "Wed", "Thu"].map((d) => (
-                    <div key={d} className="text-center text-[10px] text-muted-foreground font-semibold py-0.5">{d}</div>
+                    <div
+                      key={d}
+                      className="text-muted-foreground py-0.5 text-center text-[10px] font-semibold"
+                    >
+                      {d}
+                    </div>
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   {[...Array(8)].map((_, i) => (
-                    <div key={i} className="rounded-md border bg-card p-1.5 space-y-1">
-                      <div className="h-2 bg-muted-foreground/30 rounded w-full" />
-                      <div className="h-2 bg-muted-foreground/20 rounded w-3/4" />
-                      <div className="mt-1 h-3.5 w-3.5 rounded-full bg-primary/20" />
+                    <div key={i} className="bg-card space-y-1 rounded-md border p-1.5">
+                      <div className="bg-muted-foreground/30 h-2 w-full rounded" />
+                      <div className="bg-muted-foreground/20 h-2 w-3/4 rounded" />
+                      <div className="bg-primary/20 mt-1 h-3.5 w-3.5 rounded-full" />
                     </div>
                   ))}
                 </div>
               </div>
               <div className="text-center">
-                <p className="font-semibold text-sm">Your content calendar will appear here</p>
-                <p className="mt-1 text-xs text-muted-foreground">Set your niche and schedule, then click Generate Calendar</p>
+                <p className="text-sm font-semibold">Your content calendar will appear here</p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Set your niche and schedule, then click Generate Calendar
+                </p>
               </div>
             </div>
           ) : isGenerating ? (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 text-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Building your content calendar...</p>
+            <div className="border-border bg-muted/20 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-16 text-center">
+              <Loader2 className="text-primary h-8 w-8 animate-spin" />
+              <p className="text-muted-foreground text-sm">Building your content calendar...</p>
             </div>
           ) : (
             byWeek.map(({ weekNum, byDay }) => (
@@ -461,11 +502,11 @@ export default function ContentCalendarPage() {
                   <h2 className="text-base font-semibold">
                     {generatedAt ? getWeekLabel(weekNum, generatedAt) : `Week ${weekNum}`}
                   </h2>
-                  <div className="flex-1 h-px bg-border" />
+                  <div className="bg-border h-px flex-1" />
                 </div>
                 {Object.entries(byDay).map(([day, dayItems]) => (
                   <div key={day}>
-                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide px-1">
+                    <h3 className="text-muted-foreground mb-2 px-1 text-sm font-semibold tracking-wide uppercase">
                       {day}
                     </h3>
                     <div className="space-y-2">
@@ -474,7 +515,7 @@ export default function ContentCalendarPage() {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 space-y-1.5">
-                                <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex flex-wrap items-center gap-2">
                                   <span
                                     className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${
                                       TWEET_TYPE_COLORS[item.tweetType] ?? ""
@@ -485,13 +526,13 @@ export default function ContentCalendarPage() {
                                   <Badge variant="outline" className="text-xs">
                                     {item.tone}
                                   </Badge>
-                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <span className="text-muted-foreground flex items-center gap-1 text-xs">
                                     <Clock className="h-3 w-3" />
                                     {item.time}
                                   </span>
                                 </div>
-                                <p className="text-sm font-medium leading-snug">{item.topic}</p>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                <p className="text-sm leading-snug font-medium">{item.topic}</p>
+                                <p className="text-muted-foreground text-xs leading-relaxed">
                                   {item.brief}
                                 </p>
                               </div>
@@ -521,16 +562,15 @@ export default function ContentCalendarPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CalendarCheck className="h-5 w-5 text-primary" />
+              <CalendarCheck className="text-primary h-5 w-5" />
               Schedule All Calendar Items
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-5 py-2">
-            <p className="text-sm text-muted-foreground">
-              Schedule all{" "}
-              <span className="font-medium text-foreground">{items.length} posts</span> from
-              your content calendar. Each item's brief will be used as the initial draft
+            <p className="text-muted-foreground text-sm">
+              Schedule all <span className="text-foreground font-medium">{items.length} posts</span>{" "}
+              from your content calendar. Each item's brief will be used as the initial draft
               content — review and refine in your queue before publishing.
             </p>
 
@@ -541,12 +581,12 @@ export default function ContentCalendarPage() {
                 Post to
               </Label>
               {scheduleAllFetching ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading accounts…
                 </div>
               ) : scheduleAllAccounts.length === 0 ? (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   No connected X accounts found.{" "}
                   <a href="/dashboard/settings" className="underline">
                     Connect one in Settings
@@ -554,10 +594,7 @@ export default function ContentCalendarPage() {
                   .
                 </p>
               ) : (
-                <Select
-                  value={scheduleAllAccountId}
-                  onValueChange={setScheduleAllAccountId}
-                >
+                <Select value={scheduleAllAccountId} onValueChange={setScheduleAllAccountId}>
                   <SelectTrigger id="sa-account">
                     <SelectValue placeholder="Select account" />
                   </SelectTrigger>
@@ -566,7 +603,7 @@ export default function ContentCalendarPage() {
                       <SelectItem key={acc.id} value={acc.id}>
                         @{acc.xUsername}
                         {acc.isDefault && (
-                          <span className="ms-2 text-xs text-muted-foreground">(default)</span>
+                          <span className="text-muted-foreground ms-2 text-xs">(default)</span>
                         )}
                       </SelectItem>
                     ))}
@@ -588,9 +625,9 @@ export default function ContentCalendarPage() {
                 onChange={(e) => setScheduleAllStartDate(e.target.value)}
                 min={new Date().toISOString().slice(0, 10)}
               />
-              <p className="text-xs text-muted-foreground">
-                Monday of the first week. Day names in the calendar will be resolved to
-                actual dates from this anchor.
+              <p className="text-muted-foreground text-xs">
+                Monday of the first week. Day names in the calendar will be resolved to actual dates
+                from this anchor.
               </p>
             </div>
           </div>

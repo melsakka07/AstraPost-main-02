@@ -5,10 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { xAccounts, posts } from "@/lib/schema";
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return ApiError.unauthorized();
 
@@ -64,10 +61,7 @@ export async function DELETE(
         } else {
           // No active accounts, pick the oldest one (excluding current account)
           const oldestAccount = await tx.query.xAccounts.findFirst({
-            where: and(
-              eq(xAccounts.userId, session.user.id),
-              ne(xAccounts.id, id)
-            ),
+            where: and(eq(xAccounts.userId, session.user.id), ne(xAccounts.id, id)),
             columns: { id: true },
             orderBy: [asc(xAccounts.createdAt)],
           });

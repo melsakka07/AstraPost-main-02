@@ -1,11 +1,23 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useId, lazy, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import {
   BookmarkPlus,
   CalendarDays,
@@ -32,23 +44,54 @@ import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions
 import { ComposerOnboardingHint } from "@/components/composer/composer-onboarding-hint";
 // Phase 1: Removed InspirationPanel import - now using inline panel
 import { SortableTweet } from "@/components/composer/sortable-tweet";
-import { TargetAccountsSelect, SocialAccountLite } from "@/components/composer/target-accounts-select";
+import {
+  TargetAccountsSelect,
+  SocialAccountLite,
+} from "@/components/composer/target-accounts-select";
 // P4-E: Lazy-load TemplatesDialog — it's 834 lines and only needed on user interaction
 const TemplatesDialog = lazy(() =>
   import("@/components/composer/templates-dialog").then((m) => ({ default: m.TemplatesDialog }))
 );
 import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
@@ -108,9 +151,7 @@ export function Composer() {
   const dndId = useId();
   const searchParams = useSearchParams();
   const draftId = searchParams?.get("draft");
-  const [tweets, setTweets] = useState<TweetDraft[]>([
-    { id: "1", content: "", media: [] },
-  ]);
+  const [tweets, setTweets] = useState<TweetDraft[]>([{ id: "1", content: "", media: [] }]);
   const [scheduledDate, setScheduledDate] = useState<string>(
     searchParams?.get("scheduledAt") ?? ""
   );
@@ -134,7 +175,10 @@ export function Composer() {
   const [draftXAccountId, setDraftXAccountId] = useState<string | null>(null);
 
   // W4: Source attribution from Inspiration page
-  const [sourceAttribution, setSourceAttribution] = useState<{ handle: string; url: string } | null>(null);
+  const [sourceAttribution, setSourceAttribution] = useState<{
+    handle: string;
+    url: string;
+  } | null>(null);
   // W5: Calendar metadata hint (tone + topic) from Content Calendar page
   const [calendarMeta, setCalendarMeta] = useState<{ tone: string; topic: string } | null>(null);
 
@@ -142,12 +186,16 @@ export function Composer() {
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   // Phase 1: Added "inspire" and "template" to tool type (template for Phase 2)
-  const [aiTool, setAiTool] = useState<"thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags">("thread");
+  const [aiTool, setAiTool] = useState<
+    "thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags"
+  >("thread");
   const [aiTargetTweetId, setAiTargetTweetId] = useState<string | null>(null);
   const [aiTopic, setAiTopic] = useState("");
   const [aiHook, setAiHook] = useState("");
   // Phase 1: Inspiration state (moved from dialog to inline panel)
-  const [inspirationTopics, setInspirationTopics] = useState<Array<{ topic: string; hook: string }>>([]);
+  const [inspirationTopics, setInspirationTopics] = useState<
+    Array<{ topic: string; hook: string }>
+  >([]);
   const [inspirationNiche, setInspirationNiche] = useState("Technology");
   const [isLoadingInspiration, setIsLoadingInspiration] = useState(false);
   // Phase 2: Template state (moved from dialog to inline panel)
@@ -191,7 +239,10 @@ export function Composer() {
   useEffect(() => {
     try {
       const existing = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
-      localStorage.setItem("astra-ai-prefs", JSON.stringify({ ...existing, tone: aiTone, language: aiLanguage }));
+      localStorage.setItem(
+        "astra-ai-prefs",
+        JSON.stringify({ ...existing, tone: aiTone, language: aiLanguage })
+      );
     } catch {
       // localStorage unavailable — non-critical
     }
@@ -267,10 +318,10 @@ export function Composer() {
         if (cancelled) return;
         const list = (data.accounts || []) as SocialAccountLite[];
         setAccounts(list);
-        
+
         if (targetAccountIds.length === 0) {
-            const defaults = list.filter((a) => a.isDefault).map((a) => a.id);
-            setTargetAccountIds(defaults.length > 0 ? defaults : list.slice(0, 1).map((a) => a.id));
+          const defaults = list.filter((a) => a.isDefault).map((a) => a.id);
+          setTargetAccountIds(defaults.length > 0 ? defaults : list.slice(0, 1).map((a) => a.id));
         }
       } finally {
         if (!cancelled) setAccountsLoading(false);
@@ -301,7 +352,9 @@ export function Composer() {
         console.error("Failed to fetch AI image quota:", e);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detect browser timezone once after mount (SSR-safe — avoids hydration mismatch)
@@ -349,7 +402,9 @@ export function Composer() {
         // W4: Read source attribution before removing from storage
         const attributionStr = sessionStorage.getItem("inspiration_attribution");
         if (attributionStr) {
-          try { setSourceAttribution(JSON.parse(attributionStr) as { handle: string; url: string }); } catch {}
+          try {
+            setSourceAttribution(JSON.parse(attributionStr) as { handle: string; url: string });
+          } catch {}
           sessionStorage.removeItem("inspiration_attribution");
         }
 
@@ -399,8 +454,8 @@ export function Composer() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Only restore if we are at default state or empty
           if (tweets.length === 1 && tweets[0]?.content === "" && tweets[0]?.media.length === 0) {
-             setTweets(parsed);
-             toast.success("Draft restored from auto-save");
+            setTweets(parsed);
+            toast.success("Draft restored from auto-save");
           }
         }
       } catch (e) {
@@ -425,7 +480,10 @@ export function Composer() {
 
   // P0-A: Only show the "Auto-saved" label after a 5s delay to avoid premature "just now"
   useEffect(() => {
-    if (!lastSavedAt) { setShowSavedLabel(false); return; }
+    if (!lastSavedAt) {
+      setShowSavedLabel(false);
+      return;
+    }
     setShowSavedLabel(false);
     const t = setTimeout(() => setShowSavedLabel(true), 5000);
     return () => clearTimeout(t);
@@ -456,12 +514,24 @@ export function Composer() {
         if (cancelled) return;
 
         const loadedTweets: TweetDraft[] = (post.tweets || []).map(
-          (t: { content?: string; media?: Array<{ fileUrl: string; fileType: "image" | "video" | "gif"; fileSize?: number }> }) => ({
+          (t: {
+            content?: string;
+            media?: Array<{
+              fileUrl: string;
+              fileType: "image" | "video" | "gif";
+              fileSize?: number;
+            }>;
+          }) => ({
             id: Math.random().toString(36).substr(2, 9),
             content: t.content || "",
             media: (t.media || []).map((m) => ({
               url: m.fileUrl,
-              mimeType: m.fileType === "image" ? "image/jpeg" : m.fileType === "video" ? "video/mp4" : "image/gif",
+              mimeType:
+                m.fileType === "image"
+                  ? "image/jpeg"
+                  : m.fileType === "video"
+                    ? "video/mp4"
+                    : "image/gif",
               fileType: m.fileType,
               size: m.fileSize || 0,
             })),
@@ -482,7 +552,9 @@ export function Composer() {
         toast.error("Failed to load draft");
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [draftId]);
 
   // Once both accounts and the draft's linked account ID are known, restore the selection
@@ -505,7 +577,7 @@ export function Composer() {
         title: templateTitle,
         description: templateDescription,
         category: templateCategory,
-        content: tweets.map(t => t.content),
+        content: tweets.map((t) => t.content),
         ...(lastTemplateAiMeta ? { aiMeta: lastTemplateAiMeta } : {}),
       });
       toast.success("Template saved!");
@@ -537,8 +609,7 @@ export function Composer() {
     let payload: PlanLimitPayload | null = null;
     try {
       payload = (await res.json()) as PlanLimitPayload;
-    } catch {
-    }
+    } catch {}
 
     openUpgradeModal({
       error: payload?.error,
@@ -585,17 +656,12 @@ export function Composer() {
   const clearTweet = (id: string) => {
     const previous = tweets.find((t) => t.id === id);
     if (!previous || (previous.content === "" && previous.media.length === 0)) return;
-    setTweets((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, content: "", media: [] } : t))
-    );
+    setTweets((prev) => prev.map((t) => (t.id === id ? { ...t, content: "", media: [] } : t)));
     setGeneratedHashtags([]);
     toast("Tweet cleared", {
       action: {
         label: "Undo",
-        onClick: () =>
-          setTweets((prev) =>
-            prev.map((t) => (t.id === id ? previous : t))
-          ),
+        onClick: () => setTweets((prev) => prev.map((t) => (t.id === id ? previous : t))),
       },
     });
   };
@@ -605,19 +671,17 @@ export function Composer() {
   };
 
   const updateTweet = (id: string, content: string) => {
-    setTweets(
-      tweets.map((t) => (t.id === id ? { ...t, content } : t))
-    );
+    setTweets(tweets.map((t) => (t.id === id ? { ...t, content } : t)));
   };
 
   const updateTweetPreview = (id: string, preview: any) => {
-    setTweets(
-      tweets.map((t) => (t.id === id ? { ...t, linkPreview: preview } : t))
-    );
+    setTweets(tweets.map((t) => (t.id === id ? { ...t, linkPreview: preview } : t)));
   };
 
   const removeTweetMedia = (id: string, url: string) => {
-    setTweets(tweets.map((t) => (t.id === id ? { ...t, media: t.media.filter((m) => m.url !== url) } : t)));
+    setTweets(
+      tweets.map((t) => (t.id === id ? { ...t, media: t.media.filter((m) => m.url !== url) } : t))
+    );
   };
 
   const applyNumbering = (drafts: TweetDraft[]) => {
@@ -635,8 +699,7 @@ export function Composer() {
     drafts.map((t) => ({ ...t, content: t.content.replace(/^\s*\d+\/\d+\s+/g, "") }));
 
   // True when every non-empty tweet starts with the N/M prefix pattern
-  const isTweetsNumbered =
-    tweets.length > 1 && tweets.every((t) => /^\d+\/\d+\s/.test(t.content));
+  const isTweetsNumbered = tweets.length > 1 && tweets.every((t) => /^\d+\/\d+\s/.test(t.content));
 
   // P3-D: Detect dominant language of tweet content to suggest a smart translate target
   const detectTranslateTarget = (content: string): string => {
@@ -647,7 +710,10 @@ export function Composer() {
     return aiLanguage === "ar" ? "en" : "ar"; // fallback
   };
 
-  const openAiTool = (tool: "thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags", tweetId?: string) => {
+  const openAiTool = (
+    tool: "thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags",
+    tweetId?: string
+  ) => {
     setAiTool(tool);
     setGeneratedHashtags([]);
     // Phase 0: Hook now targets active tweet (same as rewrite/hashtags)
@@ -661,7 +727,10 @@ export function Composer() {
       setAiRewriteText("");
       if (tool === "translate") {
         // P3-D: Smart default — infer best target language from first tweet's content
-        const firstContent = tweets.find((t) => t.id === (tweetId ?? activeTweetId ?? tweets[0]?.id))?.content ?? tweets[0]?.content ?? "";
+        const firstContent =
+          tweets.find((t) => t.id === (tweetId ?? activeTweetId ?? tweets[0]?.id))?.content ??
+          tweets[0]?.content ??
+          "";
         setAiTranslateTarget(detectTranslateTarget(firstContent));
       } else {
         setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
@@ -675,7 +744,6 @@ export function Composer() {
     }
     setIsAiOpen(true);
   };
-
 
   // AI Image Dialog handlers
   const openAiImageDialog = (tweetId: string) => {
@@ -718,7 +786,9 @@ export function Composer() {
   const handleFetchInspiration = async () => {
     setIsLoadingInspiration(true);
     try {
-      const res = await fetch(`/api/ai/inspiration?niche=${inspirationNiche}&language=${aiLanguage}`);
+      const res = await fetch(
+        `/api/ai/inspiration?niche=${inspirationNiche}&language=${aiLanguage}`
+      );
       if (res.status === 402) {
         openUpgradeModal({ feature: "ai_writer" });
         return;
@@ -761,32 +831,39 @@ export function Composer() {
     if (!content) return;
 
     if (item.type === "thread" && content.tweets) {
-        setTweets(content.tweets.map((t: string) => ({
-            id: Math.random().toString(36).substr(2, 9),
-            content: t,
-            media: []
-        })));
-        setIsAiOpen(false);
-        toast.success("Restored thread from history");
-    } else if ((item.type === "hook" || item.type === "rewrite" || item.type === "cta") && content.text) {
-        if (aiTargetTweetId) {
-            updateTweet(aiTargetTweetId, content.text);
-        } else if (tweets[0]) {
-            updateTweet(tweets[0].id, content.text);
-        }
-        setIsAiOpen(false);
-        toast.success("Restored content from history");
+      setTweets(
+        content.tweets.map((t: string) => ({
+          id: Math.random().toString(36).substr(2, 9),
+          content: t,
+          media: [],
+        }))
+      );
+      setIsAiOpen(false);
+      toast.success("Restored thread from history");
+    } else if (
+      (item.type === "hook" || item.type === "rewrite" || item.type === "cta") &&
+      content.text
+    ) {
+      if (aiTargetTweetId) {
+        updateTweet(aiTargetTweetId, content.text);
+      } else if (tweets[0]) {
+        updateTweet(tweets[0].id, content.text);
+      }
+      setIsAiOpen(false);
+      toast.success("Restored content from history");
     } else if (item.type === "translate" && content.tweets) {
-        setTweets(content.tweets.map((t: string, idx: number) => ({
-            ...tweets[idx] || { id: Math.random().toString(36).substr(2, 9), media: [] },
-            content: t,
-        })));
-        setIsAiOpen(false);
-        toast.success("Restored translation from history");
+      setTweets(
+        content.tweets.map((t: string, idx: number) => ({
+          ...(tweets[idx] || { id: Math.random().toString(36).substr(2, 9), media: [] }),
+          content: t,
+        }))
+      );
+      setIsAiOpen(false);
+      toast.success("Restored translation from history");
     } else if (item.type === "hashtags" && content.hashtags) {
-        setGeneratedHashtags(content.hashtags);
-        setAiTool("hashtags");
-        // Don't close, let them pick
+      setGeneratedHashtags(content.hashtags);
+      setAiTool("hashtags");
+      // Don't close, let them pick
     }
   };
 
@@ -826,7 +903,12 @@ export function Composer() {
     toast.success("Template applied!");
   };
 
-  const handleAiRun = async (overrides?: { topic?: string; hook?: string; skipOverwriteCheck?: boolean; skipTranslateCheck?: boolean }) => {
+  const handleAiRun = async (overrides?: {
+    topic?: string;
+    hook?: string;
+    skipOverwriteCheck?: boolean;
+    skipTranslateCheck?: boolean;
+  }) => {
     setIsGenerating(true);
     try {
       const runTopic = overrides?.topic ?? aiTopic;
@@ -837,7 +919,11 @@ export function Composer() {
 
         // P2-F: Pre-check overwrite guard BEFORE starting API call
         // Show confirmation dialog if user has substantive content
-        if (!isSinglePost && !overrides?.skipOverwriteCheck && tweets.some((t) => t.content.trim().length > 50)) {
+        if (
+          !isSinglePost &&
+          !overrides?.skipOverwriteCheck &&
+          tweets.some((t) => t.content.trim().length > 50)
+        ) {
           preStreamTweetsRef.current = [...tweets];
           setPendingAiStreamGenerate(true);
           setConfirmOverwrite(true);
@@ -855,7 +941,9 @@ export function Composer() {
             language: aiLanguage,
             mode: isSinglePost ? "single" : "thread",
             ...(isSinglePost ? { lengthOption: aiLengthOption } : {}),
-            ...(isSinglePost && targetAccountIds[0] ? { targetAccountId: targetAccountIds[0] } : {}),
+            ...(isSinglePost && targetAccountIds[0]
+              ? { targetAccountId: targetAccountIds[0] }
+              : {}),
             ...(runHook ? { hook: runHook } : {}),
           }),
         });
@@ -864,7 +952,7 @@ export function Composer() {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
             return;
           } else if (res.status === 429) {
-            const body = await res.json().catch(() => ({})) as { retryAfter?: number };
+            const body = (await res.json().catch(() => ({}))) as { retryAfter?: number };
             const wait = body.retryAfter ? ` Try again in ${body.retryAfter}s.` : "";
             toast.error(`Rate limit reached.${wait}`);
           }
@@ -939,7 +1027,10 @@ export function Composer() {
                 streamDone = true;
                 break;
               }
-              if (event.done) { streamDone = true; break; }
+              if (event.done) {
+                streamDone = true;
+                break;
+              }
               if (typeof event.tweet === "string" && event.tweet.length > 0) {
                 // P2-F: Stream this tweet into composer immediately
                 const newDraft: TweetDraft = {
@@ -966,13 +1057,15 @@ export function Composer() {
         preStreamTweetsRef.current = null;
         // Phase 3: Standardized toast messages
         toast.success("AI Writer: Thread generated!", {
-          action: previousTweets ? {
-            label: "Undo",
-            onClick: () => {
-              setTweets(previousTweets);
-              toast.info("Thread restored");
-            },
-          } : undefined,
+          action: previousTweets
+            ? {
+                label: "Undo",
+                onClick: () => {
+                  setTweets(previousTweets);
+                  toast.info("Thread restored");
+                },
+              }
+            : undefined,
           duration: 5000,
         });
         return;
@@ -1015,7 +1108,7 @@ export function Composer() {
             await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
             return;
           } else if (res.status === 429) {
-            const body = await res.json().catch(() => ({})) as { retryAfter?: number };
+            const body = (await res.json().catch(() => ({}))) as { retryAfter?: number };
             const wait = body.retryAfter ? ` Try again in ${body.retryAfter}s.` : "";
             toast.error(`Rate limit reached.${wait}`);
             return;
@@ -1061,7 +1154,10 @@ export function Composer() {
                 streamDone = true;
                 break;
               }
-              if (event.done) { streamDone = true; break; }
+              if (event.done) {
+                streamDone = true;
+                break;
+              }
               if (typeof event.tweet === "string" && event.tweet.length > 0) {
                 const newDraft: TweetDraft = {
                   id: Math.random().toString(36).substr(2, 9),
@@ -1096,13 +1192,15 @@ export function Composer() {
 
         // Phase 3: Standardized toast messages
         toast.success("Template: Content generated!", {
-          action: previousTweets ? {
-            label: "Undo",
-            onClick: () => {
-              setTweets(previousTweets);
-              toast.info("Content restored");
-            },
-          } : undefined,
+          action: previousTweets
+            ? {
+                label: "Undo",
+                onClick: () => {
+                  setTweets(previousTweets);
+                  toast.info("Content restored");
+                },
+              }
+            : undefined,
           duration: 5000,
         });
         return;
@@ -1110,7 +1208,9 @@ export function Composer() {
 
       if (aiTool === "hook") {
         // Phase 0: Hook targets active tweet, not always tweet[0]
-        const targetTweet = aiTargetTweetId ? tweets.find((t) => t.id === aiTargetTweetId) : tweets[0];
+        const targetTweet = aiTargetTweetId
+          ? tweets.find((t) => t.id === aiTargetTweetId)
+          : tweets[0];
         if (!targetTweet) throw new Error("No tweet to update");
 
         // Phase 0: Overwrite guard for Hook
@@ -1140,16 +1240,18 @@ export function Composer() {
         setIsAiOpen(false);
         // Phase 3: Standardized toast messages
         toast.success("Hook: Opening line generated!", {
-          action: previousTweetsRef.current ? {
-            label: "Undo",
-            onClick: () => {
-              if (previousTweetsRef.current) {
-                setTweets(previousTweetsRef.current);
-                previousTweetsRef.current = null;
-                toast.info("Changes undone");
+          action: previousTweetsRef.current
+            ? {
+                label: "Undo",
+                onClick: () => {
+                  if (previousTweetsRef.current) {
+                    setTweets(previousTweetsRef.current);
+                    previousTweetsRef.current = null;
+                    toast.info("Changes undone");
+                  }
+                },
               }
-            },
-          } : undefined,
+            : undefined,
           duration: 5000,
         });
         return;
@@ -1157,7 +1259,11 @@ export function Composer() {
 
       if (aiTool === "cta") {
         // Phase 2: CTA now has access to thread context for better relevance
-        const threadContext = tweets.map((t) => t.content).filter(Boolean).join(" ").slice(0, 500);
+        const threadContext = tweets
+          .map((t) => t.content)
+          .filter(Boolean)
+          .join(" ")
+          .slice(0, 500);
         const res = await fetch("/api/ai/tools", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1229,19 +1335,22 @@ export function Composer() {
         setIsAiOpen(false);
         // Phase 3: Standardized toast messages
         const translatedCount = nonEmptyTweets.length;
-        toast.success(`Translate: ${translatedCount} tweet${translatedCount !== 1 ? "s" : ""} translated!`, {
-          action: {
-            label: "Undo",
-            onClick: () => {
-              if (previousTweetsRef.current) {
-                setTweets(previousTweetsRef.current);
-                previousTweetsRef.current = null;
-                toast.info("Translation undone");
-              }
+        toast.success(
+          `Translate: ${translatedCount} tweet${translatedCount !== 1 ? "s" : ""} translated!`,
+          {
+            action: {
+              label: "Undo",
+              onClick: () => {
+                if (previousTweetsRef.current) {
+                  setTweets(previousTweetsRef.current);
+                  previousTweetsRef.current = null;
+                  toast.info("Translation undone");
+                }
+              },
             },
-          },
-          duration: 5000,
-        });
+            duration: 5000,
+          }
+        );
         return;
       }
 
@@ -1354,7 +1463,11 @@ export function Composer() {
     const placeholders: TweetDraft["media"] = toUpload.map((file) => ({
       url: "",
       mimeType: file.type,
-      fileType: (file.type.startsWith("video/") ? "video" : file.type === "image/gif" ? "gif" : "image") as "image" | "video" | "gif",
+      fileType: (file.type.startsWith("video/")
+        ? "video"
+        : file.type === "image/gif"
+          ? "gif"
+          : "image") as "image" | "video" | "gif",
       size: file.size,
       uploading: true,
       placeholderId: Math.random().toString(36).slice(2, 11),
@@ -1385,7 +1498,12 @@ export function Composer() {
                   ...t,
                   media: t.media.map((m) =>
                     m.placeholderId === placeholderId
-                      ? { url: data.url, mimeType: data.mimeType, fileType: data.fileType, size: data.size }
+                      ? {
+                          url: data.url,
+                          mimeType: data.mimeType,
+                          fileType: data.fileType,
+                          size: data.size,
+                        }
                       : m
                   ),
                 }
@@ -1398,7 +1516,9 @@ export function Composer() {
         // Remove failed placeholder
         setTweets((prev) =>
           prev.map((t) =>
-            t.id === tweetId ? { ...t, media: t.media.filter((m) => m.placeholderId !== placeholderId) } : t
+            t.id === tweetId
+              ? { ...t, media: t.media.filter((m) => m.placeholderId !== placeholderId) }
+              : t
           )
         );
         toast.error(error instanceof Error ? error.message : "Failed to upload file");
@@ -1427,7 +1547,8 @@ export function Composer() {
     // Validate that every tweet has content (API rejects empty strings)
     const emptyIndex = tweets.findIndex((t) => !t.content.trim());
     if (emptyIndex !== -1) {
-      const label = tweets.length > 1 ? `Tweet ${emptyIndex + 1} is empty.` : "Tweet content cannot be empty.";
+      const label =
+        tweets.length > 1 ? `Tweet ${emptyIndex + 1} is empty.` : "Tweet content cannot be empty.";
       toast.error(label);
       return;
     }
@@ -1440,7 +1561,7 @@ export function Composer() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tweets: tweets.map(t => ({
+            tweets: tweets.map((t) => ({
               content: t.content,
               media: t.media,
             })),
@@ -1453,7 +1574,7 @@ export function Composer() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tweets: tweets.map(t => ({
+            tweets: tweets.map((t) => ({
               content: t.content,
               media: t.media,
             })),
@@ -1488,7 +1609,10 @@ export function Composer() {
         } else if (action === "publish_now") {
           // Posts are handed off to the background worker — they publish within seconds,
           // not instantly. "Sent to queue" is accurate; "published" would be premature.
-          message = count > 1 ? `${count} posts sent to queue — publishing shortly.` : "Post sent to queue — publishing shortly.";
+          message =
+            count > 1
+              ? `${count} posts sent to queue — publishing shortly.`
+              : "Post sent to queue — publishing shortly.";
         } else {
           message = count > 1 ? `Created ${count} drafts.` : "Post drafted!";
         }
@@ -1510,23 +1634,39 @@ export function Composer() {
     }
   };
 
-  const selectedAccount = accounts.find(a => targetAccountIds.includes(a.id)) || accounts[0];
-  const userImage = mounted ? (selectedAccount?.avatarUrl || session?.user?.image) : null;
-  const userName = mounted ? (selectedAccount?.displayName || session?.user?.name || "User Name") : "User Name";
-  const userHandle = mounted ? (selectedAccount?.username ? `@${selectedAccount.username}` : session?.user?.email ? `@${session.user.email.split('@')[0]}` : "@handle") : "@handle";
-  const selectedTier: XSubscriptionTier | undefined = selectedAccount?.platform === 'twitter' ? selectedAccount.xSubscriptionTier : undefined;
+  const selectedAccount = accounts.find((a) => targetAccountIds.includes(a.id)) || accounts[0];
+  const userImage = mounted ? selectedAccount?.avatarUrl || session?.user?.image : null;
+  const userName = mounted
+    ? selectedAccount?.displayName || session?.user?.name || "User Name"
+    : "User Name";
+  const userHandle = mounted
+    ? selectedAccount?.username
+      ? `@${selectedAccount.username}`
+      : session?.user?.email
+        ? `@${session.user.email.split("@")[0]}`
+        : "@handle"
+    : "@handle";
+  const selectedTier: XSubscriptionTier | undefined =
+    selectedAccount?.platform === "twitter" ? selectedAccount.xSubscriptionTier : undefined;
 
   // Multi-account mixed tier: apply the most restrictive tier among selected X accounts
-  const selectedXAccounts = accounts.filter(a => targetAccountIds.includes(a.id) && a.platform === 'twitter');
+  const selectedXAccounts = accounts.filter(
+    (a) => targetAccountIds.includes(a.id) && a.platform === "twitter"
+  );
   const effectiveTier: XSubscriptionTier | undefined = (() => {
     if (selectedXAccounts.length === 0) return selectedTier;
-    const tiers = selectedXAccounts.map(a => a.xSubscriptionTier as XSubscriptionTier | undefined);
+    const tiers = selectedXAccounts.map(
+      (a) => a.xSubscriptionTier as XSubscriptionTier | undefined
+    );
     // If any selected account is Free (None/null), treat the whole group as Free
-    if (tiers.some(t => !canPostLongContent(t))) return undefined;
+    if (tiers.some((t) => !canPostLongContent(t))) return undefined;
     return selectedTier;
   })();
-  const hasMixedTiers = selectedXAccounts.length > 1 &&
-    !selectedXAccounts.every(a => a.xSubscriptionTier === selectedXAccounts[0]?.xSubscriptionTier);
+  const hasMixedTiers =
+    selectedXAccounts.length > 1 &&
+    !selectedXAccounts.every(
+      (a) => a.xSubscriptionTier === selectedXAccounts[0]?.xSubscriptionTier
+    );
 
   // Preview carousel — computed after all state declarations (H6)
   const safePreviewIndex = Math.min(previewIndex, tweets.length - 1);
@@ -1538,7 +1678,8 @@ export function Composer() {
     (aiTool === "hook" && !aiTopic && !(tweets[0]?.content || "").trim()) ||
     (aiTool === "rewrite" && !aiRewriteText.trim()) ||
     (aiTool === "translate" && !tweets.some((t) => t.content.trim())) ||
-    (aiTool === "hashtags" && !(tweets.find((t) => t.id === aiTargetTweetId)?.content ?? "").trim());
+    (aiTool === "hashtags" &&
+      !(tweets.find((t) => t.id === aiTargetTweetId)?.content ?? "").trim());
 
   // P3-C: Global keyboard shortcuts — must be called after handleSubmit is declared
   useKeyboardShortcuts([
@@ -1607,11 +1748,11 @@ export function Composer() {
   ]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        className="hidden" 
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
         accept="image/*,video/*"
         multiple
         onChange={handleFileUpload}
@@ -1620,20 +1761,20 @@ export function Composer() {
       />
 
       {/* Editor Column */}
-      <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4 lg:col-span-2">
         {/* P3-E: First-time composer hint overlay */}
         <ComposerOnboardingHint />
         {/* W4: Inspiration attribution banner */}
         {sourceAttribution && (
-          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm">
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+          <div className="border-border/50 bg-muted/30 flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
               Inspired by{" "}
               <a
                 href={sourceAttribution.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-foreground hover:underline"
+                className="text-foreground font-medium hover:underline"
               >
                 @{sourceAttribution.handle}
               </a>
@@ -1652,17 +1793,24 @@ export function Composer() {
 
         {/* W5: Calendar metadata hint banner */}
         {calendarMeta && (calendarMeta.tone || calendarMeta.topic) && (
-          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm">
-            <span className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground flex-wrap">
-              <CalendarDays className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+          <div className="border-border/50 bg-muted/30 flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">
+            <span className="text-muted-foreground flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <CalendarDays className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
               {calendarMeta.topic && (
-                <span>Topic: <span className="font-medium text-foreground">{calendarMeta.topic}</span></span>
+                <span>
+                  Topic: <span className="text-foreground font-medium">{calendarMeta.topic}</span>
+                </span>
               )}
               {calendarMeta.topic && calendarMeta.tone && (
                 <span className="text-border/60 hidden sm:inline">·</span>
               )}
               {calendarMeta.tone && (
-                <span>Tone: <span className="font-medium text-foreground capitalize">{calendarMeta.tone}</span></span>
+                <span>
+                  Tone:{" "}
+                  <span className="text-foreground font-medium capitalize">
+                    {calendarMeta.tone}
+                  </span>
+                </span>
               )}
             </span>
             <Button
@@ -1678,105 +1826,123 @@ export function Composer() {
         )}
 
         <DndContext
-            id={dndId}
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+          id={dndId}
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-            <SortableContext
-                items={tweets.map(t => t.id)}
-                strategy={verticalListSortingStrategy}
-            >
-                {tweets.map((tweet, index) => {
-                  // Phase 3: Compute isAiTarget based on aiTool
-                  const isAiTarget = (() => {
-                    if (!isAiOpen) return false;
-                    if (aiTool === "thread" || aiTool === "inspire" || aiTool === "template") return true;
-                    if (aiTool === "hook" || aiTool === "rewrite" || aiTool === "hashtags") return tweet.id === aiTargetTweetId;
-                    if (aiTool === "cta") return index === tweets.length - 1;
-                    if (aiTool === "translate") return tweet.content.trim().length > 0;
-                    return false;
-                  })();
+          <SortableContext items={tweets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            {tweets.map((tweet, index) => {
+              // Phase 3: Compute isAiTarget based on aiTool
+              const isAiTarget = (() => {
+                if (!isAiOpen) return false;
+                if (aiTool === "thread" || aiTool === "inspire" || aiTool === "template")
+                  return true;
+                if (aiTool === "hook" || aiTool === "rewrite" || aiTool === "hashtags")
+                  return tweet.id === aiTargetTweetId;
+                if (aiTool === "cta") return index === tweets.length - 1;
+                if (aiTool === "translate") return tweet.content.trim().length > 0;
+                return false;
+              })();
 
-                  return (
-                    <SortableTweet
-                        key={tweet.id}
-                        id={tweet.id}
-                        tweet={tweet}
-                        index={index}
-                        totalTweets={tweets.length}
-                        updateTweet={updateTweet}
-                        updateTweetPreview={updateTweetPreview}
-                        removeTweet={removeTweet}
-                        removeTweetMedia={removeTweetMedia}
-                        triggerFileUpload={triggerFileUpload}
-                        openAiImage={openAiImageDialog}
-                        onMove={moveTweet}
-                        onClearTweet={() => clearTweet(tweet.id)}
-                        tier={effectiveTier}
-                        isAiTarget={isAiTarget}
-                        selectedTier={effectiveTier}
-                        {...(index === 0 && { onConvertToThread: addTweet })}
-                        {...(tweet.id === aiTargetTweetId && generatedHashtags.length > 0 && {
-                          suggestedHashtags: generatedHashtags,
-                          onHashtagClick: (tag: string) => {
-                            updateTweet(tweet.id, `${tweet.content} ${tag}`.trim());
-                            setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
-                          },
-                        })}
-                    />
-                  );
-                })}
-            </SortableContext>
+              return (
+                <SortableTweet
+                  key={tweet.id}
+                  id={tweet.id}
+                  tweet={tweet}
+                  index={index}
+                  totalTweets={tweets.length}
+                  updateTweet={updateTweet}
+                  updateTweetPreview={updateTweetPreview}
+                  removeTweet={removeTweet}
+                  removeTweetMedia={removeTweetMedia}
+                  triggerFileUpload={triggerFileUpload}
+                  openAiImage={openAiImageDialog}
+                  onMove={moveTweet}
+                  onClearTweet={() => clearTweet(tweet.id)}
+                  tier={effectiveTier}
+                  isAiTarget={isAiTarget}
+                  selectedTier={effectiveTier}
+                  {...(index === 0 && { onConvertToThread: addTweet })}
+                  {...(tweet.id === aiTargetTweetId &&
+                    generatedHashtags.length > 0 && {
+                      suggestedHashtags: generatedHashtags,
+                      onHashtagClick: (tag: string) => {
+                        updateTweet(tweet.id, `${tweet.content} ${tag}`.trim());
+                        setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
+                      },
+                    })}
+                />
+              );
+            })}
+          </SortableContext>
         </DndContext>
 
-        {tweets.some((t) => t.content.length > 280) && canPostLongContent(effectiveTier) && effectiveTier && (
-          <Alert className="border-success/40 bg-success/5 text-success dark:text-success">
-            <CheckCircle2 className="h-4 w-4 text-success" />
-            <AlertDescription className="flex items-center gap-2 text-success">
-              <XSubscriptionBadge tier={effectiveTier} size="md" />
-              <span>
-                Your account ({userHandle}) supports long posts — this will publish normally with up to 2,000 characters.
-              </span>
-            </AlertDescription>
-          </Alert>
-        )}
+        {tweets.some((t) => t.content.length > 280) &&
+          canPostLongContent(effectiveTier) &&
+          effectiveTier && (
+            <Alert className="border-success/40 bg-success/5 text-success dark:text-success">
+              <CheckCircle2 className="text-success h-4 w-4" />
+              <AlertDescription className="text-success flex items-center gap-2">
+                <XSubscriptionBadge tier={effectiveTier} size="md" />
+                <span>
+                  Your account ({userHandle}) supports long posts — this will publish normally with
+                  up to 2,000 characters.
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
 
         {tweets.some((t) => t.content.length > 280) && !canPostLongContent(effectiveTier) && (
           <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
             <Info className="h-4 w-4 text-amber-500" />
             <AlertDescription className="space-y-1 text-amber-700 dark:text-amber-400">
-              <p><span className="font-medium">X Premium required for long posts.</span></p>
               <p>
-                One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on{" "}
-                <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard account, these tweets will fail and appear as errors in your queue.
+                <span className="font-medium">X Premium required for long posts.</span>
               </p>
-              <p className="text-amber-600/80 dark:text-amber-400/80">Tip: Use the &quot;Convert to Thread&quot; button below to split your content into multiple tweets under 280 characters each.</p>
+              <p>
+                One or more of your tweets exceeds 280 characters. Standard X accounts are limited
+                to 280 characters per tweet — posts beyond this limit will only publish successfully
+                on <span className="font-medium">X Premium</span> accounts. If you&apos;re on a
+                standard account, these tweets will fail and appear as errors in your queue.
+              </p>
+              <p className="text-amber-600/80 dark:text-amber-400/80">
+                Tip: Use the &quot;Convert to Thread&quot; button below to split your content into
+                multiple tweets under 280 characters each.
+              </p>
             </AlertDescription>
           </Alert>
         )}
 
         {/* Premium soft warning: single post exceeds 2,000 chars */}
-        {tweets.length === 1 && tweets[0]!.content.length > 2000 && canPostLongContent(effectiveTier) && effectiveTier && (
-          <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
-            <Info className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-700 dark:text-amber-400">
-              <span className="font-medium">Post exceeds 2,000 characters.</span>{" "}
-              While your X Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend to see significantly lower engagement. Consider trimming your content or converting to a thread.
-            </AlertDescription>
-          </Alert>
-        )}
+        {tweets.length === 1 &&
+          tweets[0]!.content.length > 2000 &&
+          canPostLongContent(effectiveTier) &&
+          effectiveTier && (
+            <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
+              <Info className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-700 dark:text-amber-400">
+                <span className="font-medium">Post exceeds 2,000 characters.</span> While your X
+                Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend
+                to see significantly lower engagement. Consider trimming your content or converting
+                to a thread.
+              </AlertDescription>
+            </Alert>
+          )}
 
         {/* Mixed tier note: accounts have different subscription levels */}
         {hasMixedTiers && (
-          <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+          <div className="border-border/50 bg-muted/30 text-muted-foreground flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs">
             <Info className="h-3 w-3 shrink-0" />
-            <span>Character limit set to 280 based on the most restrictive account. To use longer posts, remove free-tier accounts or post separately.</span>
+            <span>
+              Character limit set to 280 based on the most restrictive account. To use longer posts,
+              remove free-tier accounts or post separately.
+            </span>
           </div>
         )}
 
         {lastSavedAt && showSavedLabel && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground/60 justify-end px-1">
+          <div className="text-muted-foreground/60 flex items-center justify-end gap-1 px-1 text-xs">
             <Clock className="h-3 w-3" />
             <span>Auto-saved · {formatTimeAgo(lastSavedAt)}</span>
           </div>
@@ -1784,10 +1950,10 @@ export function Composer() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            className="flex-1 py-4 sm:py-6 border-dashed text-sm sm:text-base"
+            className="flex-1 border-dashed py-4 text-sm sm:py-6 sm:text-base"
             onClick={addTweet}
           >
-            <Plus className="mr-1.5 sm:mr-2 h-4 w-4" />
+            <Plus className="mr-1.5 h-4 w-4 sm:mr-2" />
             {tweets.length === 1 ? "Convert to Thread" : "Add to Thread"}
           </Button>
           {/* P3-B: Auto-numbering status chip — visible when thread has 3+ tweets */}
@@ -1795,13 +1961,17 @@ export function Composer() {
             <Button
               variant={aiAddNumbering ? "secondary" : "ghost"}
               size="sm"
-              className="shrink-0 gap-1 text-xs h-9 sm:h-9"
+              className="h-9 shrink-0 gap-1 text-xs sm:h-9"
               onClick={() => {
                 const next = !aiAddNumbering;
                 setAiAddNumbering(next);
                 setTweets(next ? applyNumbering([...tweets]) : removeNumbering([...tweets]));
               }}
-              title={aiAddNumbering ? "Auto-numbering on — click to disable" : "Auto-numbering off — click to enable"}
+              title={
+                aiAddNumbering
+                  ? "Auto-numbering on — click to disable"
+                  : "Auto-numbering off — click to enable"
+              }
             >
               <ListOrdered className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{aiAddNumbering ? "1/N on" : "1/N off"}</span>
@@ -1814,72 +1984,96 @@ export function Composer() {
       <div className="space-y-3 sm:space-y-4">
         {/* B1: Preview section moved to top of sidebar */}
         <Card>
-          <CardContent className="pt-3 sm:pt-5 px-3 sm:px-6 space-y-2 sm:space-y-3">
-            <div className="flex justify-between items-center mb-1.5 sm:mb-2">
-              <p className="text-xs font-medium text-muted-foreground/70">Preview</p>
+          <CardContent className="space-y-2 px-3 pt-3 sm:space-y-3 sm:px-6 sm:pt-5">
+            <div className="mb-1.5 flex items-center justify-between sm:mb-2">
+              <p className="text-muted-foreground/70 text-xs font-medium">Preview</p>
               <div className="flex items-center gap-1">
-                {tweets.length > 1 && (
-                  <ViralScoreBadge content={tweets[0]?.content || ""} />
-                )}
-                {tweets.length <= 1 && (
-                  <ViralScoreBadge content={previewTweet?.content || ""} />
-                )}
+                {tweets.length > 1 && <ViralScoreBadge content={tweets[0]?.content || ""} />}
+                {tweets.length <= 1 && <ViralScoreBadge content={previewTweet?.content || ""} />}
               </div>
             </div>
-            <div className={cn(
-              "bg-background border rounded-md p-3 sm:p-4",
-              tweets.length > 1 && "max-h-[300px] sm:max-h-[400px] overflow-y-auto"
-            )}>
+            <div
+              className={cn(
+                "bg-background rounded-md border p-3 sm:p-4",
+                tweets.length > 1 && "max-h-[300px] overflow-y-auto sm:max-h-[400px]"
+              )}
+            >
               {tweets.length <= 1 ? (
                 /* Single tweet preview */
                 <div className="flex gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
+                  <div className="bg-muted relative h-8 w-8 shrink-0 overflow-hidden rounded-full sm:h-10 sm:w-10">
                     {userImage ? (
-                      <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
+                      <Image
+                        src={userImage}
+                        alt={userName}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
+                      <div className="bg-primary text-primary-foreground flex h-full w-full items-center justify-center font-bold">
                         {userName[0]?.toUpperCase() || "U"}
                       </div>
                     )}
                   </div>
-                  <div className="space-y-0.5 sm:space-y-1 w-full min-w-0">
-                    <div className="flex flex-col xl:flex-row xl:items-center gap-0 xl:gap-1 text-xs sm:text-sm">
-                      <span className="font-bold truncate">{userName}</span>
+                  <div className="w-full min-w-0 space-y-0.5 sm:space-y-1">
+                    <div className="flex flex-col gap-0 text-xs sm:text-sm xl:flex-row xl:items-center xl:gap-1">
+                      <span className="truncate font-bold">{userName}</span>
                       <span className="text-muted-foreground truncate">{userHandle}</span>
                     </div>
-                    <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{previewTweet?.content || "Preview text will appear here..."}</p>
+                    <p className="text-xs break-words whitespace-pre-wrap sm:text-sm">
+                      {previewTweet?.content || "Preview text will appear here..."}
+                    </p>
                     {(previewTweet?.media?.length || 0) > 0 && previewTweet?.media?.[0]?.url && (
-                      <div className="mt-2 rounded-lg overflow-hidden border">
-                        {previewTweet?.media?.[0]?.fileType === "video" && !previewTweet.media[0].url.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/i) ? (
-                          <video 
-                            src={previewTweet.media[0].url} 
-                            className="w-full h-auto" 
-                            controls 
-                            autoPlay 
-                            muted 
-                            loop 
-                            playsInline 
+                      <div className="mt-2 overflow-hidden rounded-lg border">
+                        {previewTweet?.media?.[0]?.fileType === "video" &&
+                        !previewTweet.media[0].url.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/i) ? (
+                          <video
+                            src={previewTweet.media[0].url}
+                            className="h-auto w-full"
+                            controls
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
                             preload="metadata"
                             crossOrigin="anonymous"
                           >
                             Your browser does not support the video tag.
                           </video>
                         ) : (
-                          <Image src={previewTweet.media[0].url} alt="Preview" width={600} height={400} className="w-full h-auto" />
+                          <Image
+                            src={previewTweet.media[0].url}
+                            alt="Preview"
+                            width={600}
+                            height={400}
+                            className="h-auto w-full"
+                          />
                         )}
                       </div>
                     )}
                     {previewTweet?.linkPreview && !previewTweet.media.length && (
-                      <div className="mt-2 border rounded-md overflow-hidden">
+                      <div className="mt-2 overflow-hidden rounded-md border">
                         {previewTweet.linkPreview.images?.[0] && (
                           <div className="relative h-48 w-full">
-                            <Image src={previewTweet.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
+                            <Image
+                              src={previewTweet.linkPreview.images[0]}
+                              alt="Preview"
+                              fill
+                              className="object-cover"
+                            />
                           </div>
                         )}
-                        <div className="p-3 bg-muted/20">
-                          <h4 className="font-medium text-sm line-clamp-1">{previewTweet.linkPreview.title}</h4>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{previewTweet.linkPreview.description}</p>
-                          <p className="text-xs text-muted-foreground mt-1 lowercase">{new URL(previewTweet.linkPreview.url).hostname}</p>
+                        <div className="bg-muted/20 p-3">
+                          <h4 className="line-clamp-1 text-sm font-medium">
+                            {previewTweet.linkPreview.title}
+                          </h4>
+                          <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
+                            {previewTweet.linkPreview.description}
+                          </p>
+                          <p className="text-muted-foreground mt-1 text-xs lowercase">
+                            {new URL(previewTweet.linkPreview.url).hostname}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -1889,62 +2083,88 @@ export function Composer() {
                 /* Thread preview — all tweets stacked with connecting lines */
                 tweets.map((t, i) => (
                   <div key={t.id}>
-                    {i > 0 && (
-                      <div className="w-0.5 h-3 sm:h-4 bg-muted-foreground/30 mx-auto" />
-                    )}
+                    {i > 0 && <div className="bg-muted-foreground/30 mx-auto h-3 w-0.5 sm:h-4" />}
                     <div className="flex gap-2 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-muted shrink-0 overflow-hidden relative">
+                      <div className="bg-muted relative h-8 w-8 shrink-0 overflow-hidden rounded-full sm:h-10 sm:w-10">
                         {userImage ? (
-                          <Image src={userImage} alt={userName} fill sizes="40px" className="object-cover" />
+                          <Image
+                            src={userImage}
+                            alt={userName}
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-primary text-primary-foreground font-bold">
+                          <div className="bg-primary text-primary-foreground flex h-full w-full items-center justify-center font-bold">
                             {userName[0]?.toUpperCase() || "U"}
                           </div>
                         )}
                       </div>
-                      <div className="space-y-0.5 sm:space-y-1 w-full min-w-0">
-                        <div className="flex flex-col xl:flex-row xl:items-center gap-0 xl:gap-1 text-xs sm:text-sm">
-                          <span className="font-bold truncate">{userName}</span>
-                          <div className="flex items-center gap-1 min-w-0">
+                      <div className="w-full min-w-0 space-y-0.5 sm:space-y-1">
+                        <div className="flex flex-col gap-0 text-xs sm:text-sm xl:flex-row xl:items-center xl:gap-1">
+                          <span className="truncate font-bold">{userName}</span>
+                          <div className="flex min-w-0 items-center gap-1">
                             <span className="text-muted-foreground truncate">{userHandle}</span>
                             {tweets.length > 1 && (
-                              <span className="text-[10px] sm:text-xs text-muted-foreground/60 shrink-0">{i + 1}/{tweets.length}</span>
+                              <span className="text-muted-foreground/60 shrink-0 text-[10px] sm:text-xs">
+                                {i + 1}/{tweets.length}
+                              </span>
                             )}
                           </div>
                         </div>
-                        <p className="text-xs sm:text-sm whitespace-pre-wrap break-words">{t.content || "..."}</p>
+                        <p className="text-xs break-words whitespace-pre-wrap sm:text-sm">
+                          {t.content || "..."}
+                        </p>
                         {t.media?.length > 0 && t.media?.[0]?.url && (
-                          <div className="mt-2 rounded-lg overflow-hidden border">
-                            {t.media[0].fileType === "video" && !t.media[0].url.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/i) ? (
-                              <video 
-                                src={t.media[0].url} 
-                                className="w-full h-auto" 
-                                controls 
-                                autoPlay 
-                                muted 
-                                loop 
-                                playsInline 
+                          <div className="mt-2 overflow-hidden rounded-lg border">
+                            {t.media[0].fileType === "video" &&
+                            !t.media[0].url.match(/\.(jpg|jpeg|png|webp)(\?.*)?$/i) ? (
+                              <video
+                                src={t.media[0].url}
+                                className="h-auto w-full"
+                                controls
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
                                 preload="metadata"
                                 crossOrigin="anonymous"
                               >
                                 Your browser does not support the video tag.
                               </video>
                             ) : (
-                              <Image src={t.media[0].url} alt="Preview" width={600} height={400} className="w-full h-auto" />
+                              <Image
+                                src={t.media[0].url}
+                                alt="Preview"
+                                width={600}
+                                height={400}
+                                className="h-auto w-full"
+                              />
                             )}
                           </div>
                         )}
                         {t.linkPreview && !t.media?.length && (
-                          <div className="mt-2 border rounded-md overflow-hidden">
+                          <div className="mt-2 overflow-hidden rounded-md border">
                             {t.linkPreview.images?.[0] && (
                               <div className="relative h-48 w-full">
-                                <Image src={t.linkPreview.images[0]} alt="Preview" fill className="object-cover" />
+                                <Image
+                                  src={t.linkPreview.images[0]}
+                                  alt="Preview"
+                                  fill
+                                  className="object-cover"
+                                />
                               </div>
                             )}
-                            <div className="p-3 bg-muted/20">
-                              <h4 className="font-medium text-sm line-clamp-1">{t.linkPreview.title}</h4>
-                              <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{t.linkPreview.description}</p>
-                              <p className="text-xs text-muted-foreground mt-1 lowercase">{new URL(t.linkPreview.url).hostname}</p>
+                            <div className="bg-muted/20 p-3">
+                              <h4 className="line-clamp-1 text-sm font-medium">
+                                {t.linkPreview.title}
+                              </h4>
+                              <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
+                                {t.linkPreview.description}
+                              </p>
+                              <p className="text-muted-foreground mt-1 text-xs lowercase">
+                                {new URL(t.linkPreview.url).hostname}
+                              </p>
                             </div>
                           </div>
                         )}
@@ -1959,47 +2179,90 @@ export function Composer() {
 
         {/* Card 1: Content Tools — always visible; AI panel expands inline on desktop (P1-B) */}
         <Card>
-          <CardContent className="pt-3 sm:pt-5 px-3 sm:px-6 space-y-2 sm:space-y-3">
-            <p className="text-xs font-medium text-muted-foreground/70">Content Tools</p>
-            <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-1.5 sm:gap-2">
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center" onClick={() => openAiTool("thread")}>
-                <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+          <CardContent className="space-y-2 px-3 pt-3 sm:space-y-3 sm:px-6 sm:pt-5">
+            <p className="text-muted-foreground/70 text-xs font-medium">Content Tools</p>
+            <div className="grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-2 xl:grid-cols-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
+                onClick={() => openAiTool("thread")}
+              >
+                <Sparkles className="text-primary h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">Writer</span>
               </Button>
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center" onClick={() => openAiTool("inspire")}>
-                <Lightbulb className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
+                onClick={() => openAiTool("inspire")}
+              >
+                <Lightbulb className="h-3.5 w-3.5 shrink-0 text-yellow-500" />
                 <span className="truncate">Inspire</span>
               </Button>
-              <Suspense fallback={<Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center" disabled><span className="truncate">Templates</span></Button>}>
+              <Suspense
+                fallback={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
+                    disabled
+                  >
+                    <span className="truncate">Templates</span>
+                  </Button>
+                }
+              >
                 <TemplatesDialog
                   onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)}
                   onTemplateSelect={handleTemplateConfigSelect}
                 />
               </Suspense>
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center" onClick={() => openAiTool("hook", activeTweetId ?? tweets[0]?.id)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
+                onClick={() => openAiTool("hook", activeTweetId ?? tweets[0]?.id)}
+              >
                 <Zap className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">Hook</span>
               </Button>
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center" onClick={() => openAiTool("cta")}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
+                onClick={() => openAiTool("cta")}
+              >
                 <Megaphone className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">CTA</span>
               </Button>
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center" onClick={() => openAiTool("translate")}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5"
+                onClick={() => openAiTool("translate")}
+              >
                 <Globe className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">Translate</span>
               </Button>
-              <Button variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center col-span-2 lg:col-span-2 xl:col-span-1" onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="col-span-2 h-9 w-full justify-center gap-1 text-xs sm:h-9 sm:gap-1.5 lg:col-span-2 xl:col-span-1"
+                onClick={() => openAiTool("hashtags", activeTweetId ?? tweets[0]?.id)}
+              >
                 <Hash className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">#Tags</span>
               </Button>
             </div>
-            <div className="mt-2 sm:mt-2 grid grid-cols-2 gap-1.5 sm:gap-2 border-t pt-2 sm:pt-2">
+            <div className="mt-2 grid grid-cols-2 gap-1.5 border-t pt-2 sm:mt-2 sm:gap-2 sm:pt-2">
               <Button
                 variant={isTweetsNumbered ? "secondary" : "ghost"}
                 size="sm"
-                className="h-9 sm:h-9 w-full justify-center gap-1 sm:gap-1.5 whitespace-nowrap text-xs text-muted-foreground"
+                className="text-muted-foreground h-9 w-full justify-center gap-1 text-xs whitespace-nowrap sm:h-9 sm:gap-1.5"
                 onClick={() =>
-                  setTweets(isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets]))
+                  setTweets(
+                    isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets])
+                  )
                 }
               >
                 <ListOrdered className="h-3.5 w-3.5 shrink-0" />
@@ -2008,7 +2271,7 @@ export function Composer() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 sm:h-9 w-full justify-center gap-1 sm:gap-1.5 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground h-9 w-full justify-center gap-1 text-xs whitespace-nowrap sm:h-9 sm:gap-1.5"
                 onClick={() => setIsSaveTemplateOpen(true)}
                 disabled={isSubmitting}
               >
@@ -2018,7 +2281,7 @@ export function Composer() {
             </div>
             {/* P1-B/C: Inline AI panel expands here on desktop when open */}
             {isAiOpen && isDesktop && (
-              <div className="pt-2 border-t">
+              <div className="border-t pt-2">
                 <AiToolsPanel
                   aiTool={aiTool}
                   onToolChange={(tool) => {
@@ -2069,10 +2332,10 @@ export function Composer() {
                   onHashtagClick={(tag) => {
                     const targetId = aiTargetTweetId ?? activeTweetId ?? tweets[0]?.id;
                     if (targetId) {
-                      const tweet = tweets.find(t => t.id === targetId);
+                      const tweet = tweets.find((t) => t.id === targetId);
                       if (tweet) {
                         updateTweet(targetId, `${tweet.content} ${tag}`.trim());
-                        setGeneratedHashtags(prev => prev.filter(t => t !== tag));
+                        setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
                       }
                     }
                   }}
@@ -2086,11 +2349,13 @@ export function Composer() {
 
         {/* Card 2: Publishing (H1 — split from content tools) */}
         <Card>
-          <CardContent className="pt-3 sm:pt-5 px-3 sm:px-6 space-y-3 sm:space-y-4">
-            <p className="text-xs font-medium text-muted-foreground/70">Publishing</p>
+          <CardContent className="space-y-3 px-3 pt-3 sm:space-y-4 sm:px-6 sm:pt-5">
+            <p className="text-muted-foreground/70 text-xs font-medium">Publishing</p>
 
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="post-accounts" className="text-xs sm:text-sm">Post to accounts</Label>
+              <Label htmlFor="post-accounts" className="text-xs sm:text-sm">
+                Post to accounts
+              </Label>
               <TargetAccountsSelect
                 value={targetAccountIds}
                 onChange={setTargetAccountIds}
@@ -2100,8 +2365,10 @@ export function Composer() {
             </div>
 
             <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="schedule-date" className="text-xs sm:text-sm">Schedule for</Label>
-              <div className="bg-muted/30 rounded-lg p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+              <Label htmlFor="schedule-date" className="text-xs sm:text-sm">
+                Schedule for
+              </Label>
+              <div className="bg-muted/30 space-y-1.5 rounded-lg p-2 sm:space-y-2 sm:p-3">
                 <DateTimePicker
                   id="schedule-date"
                   value={scheduledDate}
@@ -2118,27 +2385,30 @@ export function Composer() {
                 <BestTimeSuggestions onSelect={setScheduledDate} hideHeader />
               </div>
               {browserTimezone && (
-                <p className="text-[10px] sm:text-xs text-muted-foreground/60">
+                <p className="text-muted-foreground/60 text-[10px] sm:text-xs">
                   Times are in{" "}
-                  <span className="font-medium text-foreground">{browserTimezone}</span>
-                  {" "}
+                  <span className="text-foreground font-medium">{browserTimezone}</span>{" "}
                   <span className="tabular-nums">
-                    (UTC{(() => {
+                    (UTC
+                    {(() => {
                       const off = -new Date().getTimezoneOffset();
                       const h = Math.floor(Math.abs(off) / 60);
                       const m = Math.abs(off) % 60;
                       return `${off >= 0 ? "+" : "-"}${h}${m > 0 ? `:${String(m).padStart(2, "0")}` : ""}`;
-                    })()})
+                    })()}
+                    )
                   </span>
                 </p>
               )}
 
               {scheduledDate && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1.5 sm:pt-2">
+                <div className="grid grid-cols-1 gap-2 pt-1.5 sm:grid-cols-2 sm:pt-2">
                   <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Repeat</label>
+                    <label className="text-muted-foreground text-xs font-medium">Repeat</label>
                     <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
-                      <SelectTrigger className="h-8 sm:h-9"><SelectValue placeholder="None" /></SelectTrigger>
+                      <SelectTrigger className="h-8 sm:h-9">
+                        <SelectValue placeholder="None" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Never</SelectItem>
                         <SelectItem value="daily">Daily</SelectItem>
@@ -2149,8 +2419,12 @@ export function Composer() {
                   </div>
                   {recurrencePattern !== "none" && (
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-muted-foreground">End Date</label>
-                      <DatePicker className="h-8 sm:h-9" value={recurrenceEndDate} onChange={setRecurrenceEndDate} />
+                      <label className="text-muted-foreground text-xs font-medium">End Date</label>
+                      <DatePicker
+                        className="h-8 sm:h-9"
+                        value={recurrenceEndDate}
+                        onChange={setRecurrenceEndDate}
+                      />
                     </div>
                   )}
                 </div>
@@ -2158,20 +2432,29 @@ export function Composer() {
             </div>
 
             {/* H2: Action context — shows what will happen before the user clicks */}
-            <p className="text-[10px] sm:text-xs text-center text-muted-foreground">
+            <p className="text-muted-foreground text-center text-[10px] sm:text-xs">
               {scheduledDate ? (
-                <>Scheduling for{" "}
-                  <span className="font-medium text-foreground">
-                    {new Date(scheduledDate).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                <>
+                  Scheduling for{" "}
+                  <span className="text-foreground font-medium">
+                    {new Date(scheduledDate).toLocaleDateString(undefined, {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })}
                     {" at "}
-                    {new Date(scheduledDate).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                    {new Date(scheduledDate).toLocaleTimeString(undefined, {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </>
               ) : (
-                <>Posting immediately to{" "}
-                  <span className="font-medium text-foreground">
-                    {accounts.find(a => targetAccountIds.includes(a.id))?.username
-                      ? `@${accounts.find(a => targetAccountIds.includes(a.id))?.username}`
+                <>
+                  Posting immediately to{" "}
+                  <span className="text-foreground font-medium">
+                    {accounts.find((a) => targetAccountIds.includes(a.id))?.username
+                      ? `@${accounts.find((a) => targetAccountIds.includes(a.id))?.username}`
                       : "selected account"}
                   </span>
                 </>
@@ -2184,33 +2467,38 @@ export function Composer() {
                   <TooltipTrigger asChild>
                     <span tabIndex={0}>
                       <Button
-                        className="w-full h-10 sm:h-11 text-sm sm:text-base font-semibold"
+                        className="h-10 w-full text-sm font-semibold sm:h-11 sm:text-base"
                         onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
                         disabled={isSubmitting || !hasContent}
                       >
-                        {isSubmitting ? <Loader2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" /> : <Send className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />}
+                        {isSubmitting ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                        ) : (
+                          <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                        )}
                         Post to X
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  {!hasContent && (
-                    <TooltipContent>Add content to enable</TooltipContent>
-                  )}
+                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
                 </Tooltip>
               </TooltipProvider>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span tabIndex={0}>
-                      <Button variant="outline" className="w-full h-9 sm:h-10 text-sm" onClick={() => handleSubmit("draft")} disabled={isSubmitting || !hasContent}>
-                        <FileText className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      <Button
+                        variant="outline"
+                        className="h-9 w-full text-sm sm:h-10"
+                        onClick={() => handleSubmit("draft")}
+                        disabled={isSubmitting || !hasContent}
+                      >
+                        <FileText className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
                         Save as Draft
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  {!hasContent && (
-                    <TooltipContent>Add content to enable</TooltipContent>
-                  )}
+                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
                 </Tooltip>
               </TooltipProvider>
             </div>
@@ -2218,28 +2506,47 @@ export function Composer() {
         </Card>
 
         {/* Save Template Dialog */}
-        <Dialog open={isSaveTemplateOpen} onOpenChange={(v) => {
-          setIsSaveTemplateOpen(v);
-          if (!v) { setTemplateTitle(""); setTemplateDescription(""); setTemplateCategory("Personal"); }
-        }}>
+        <Dialog
+          open={isSaveTemplateOpen}
+          onOpenChange={(v) => {
+            setIsSaveTemplateOpen(v);
+            if (!v) {
+              setTemplateTitle("");
+              setTemplateDescription("");
+              setTemplateCategory("Personal");
+            }
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Save as Template</DialogTitle>
-              <DialogDescription>Save your current thread structure as a reusable template.</DialogDescription>
+              <DialogDescription>
+                Save your current thread structure as a reusable template.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>Title</Label>
-                <Input value={templateTitle} onChange={e => setTemplateTitle(e.target.value)} placeholder="My Awesome Template" />
+                <Input
+                  value={templateTitle}
+                  onChange={(e) => setTemplateTitle(e.target.value)}
+                  placeholder="My Awesome Template"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Input value={templateDescription} onChange={e => setTemplateDescription(e.target.value)} placeholder="Optional description" />
+                <Input
+                  value={templateDescription}
+                  onChange={(e) => setTemplateDescription(e.target.value)}
+                  placeholder="Optional description"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Category</Label>
                 <Select value={templateCategory} onValueChange={setTemplateCategory}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Personal">Personal</SelectItem>
                     <SelectItem value="Educational">Educational</SelectItem>
@@ -2249,20 +2556,38 @@ export function Composer() {
                 </Select>
               </div>
               {lastTemplateAiMeta && (
-                <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-                  <p className="font-medium text-foreground flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-primary" />
+                <div className="border-primary/20 bg-primary/5 text-muted-foreground space-y-0.5 rounded-md border px-3 py-2 text-xs">
+                  <p className="text-foreground flex items-center gap-1 font-medium">
+                    <Sparkles className="text-primary h-3 w-3" />
                     AI parameters will be saved
                   </p>
-                  <p>Tone: <span className="capitalize text-foreground">{lastTemplateAiMeta.tone}</span></p>
-                  <p>Language: <span className="text-foreground">{LANGUAGES.find(l => l.code === lastTemplateAiMeta.language)?.label ?? lastTemplateAiMeta.language}</span></p>
-                  <p>Format: <span className="text-foreground capitalize">{lastTemplateAiMeta.outputFormat.replace("-", " ")}</span></p>
-                  <p className="text-muted-foreground/70 pt-0.5">You can re-generate this content from My Templates.</p>
+                  <p>
+                    Tone:{" "}
+                    <span className="text-foreground capitalize">{lastTemplateAiMeta.tone}</span>
+                  </p>
+                  <p>
+                    Language:{" "}
+                    <span className="text-foreground">
+                      {LANGUAGES.find((l) => l.code === lastTemplateAiMeta.language)?.label ??
+                        lastTemplateAiMeta.language}
+                    </span>
+                  </p>
+                  <p>
+                    Format:{" "}
+                    <span className="text-foreground capitalize">
+                      {lastTemplateAiMeta.outputFormat.replace("-", " ")}
+                    </span>
+                  </p>
+                  <p className="text-muted-foreground/70 pt-0.5">
+                    You can re-generate this content from My Templates.
+                  </p>
                 </div>
               )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsSaveTemplateOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsSaveTemplateOpen(false)}>
+                Cancel
+              </Button>
               <Button onClick={handleSaveTemplate} disabled={!templateTitle.trim() || isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Template
@@ -2274,12 +2599,15 @@ export function Composer() {
       {/* Mobile AI panel — Sheet (P1-B: desktop uses inline accordion above) */}
       {!isDesktop && (
         <Sheet open={isAiOpen} onOpenChange={setIsAiOpen}>
-          <SheetContent side="bottom" className="h-[80dvh] sm:h-[60dvh] flex flex-col overflow-hidden pb-safe gap-0 px-0">
-            <SheetHeader className="shrink-0 pb-2 px-4 sm:px-6">
+          <SheetContent
+            side="bottom"
+            className="pb-safe flex h-[80dvh] flex-col gap-0 overflow-hidden px-0 sm:h-[60dvh]"
+          >
+            <SheetHeader className="shrink-0 px-4 pb-2 sm:px-6">
               <SheetTitle>AI Tools</SheetTitle>
               <SheetDescription>Generate content with AI assistance</SheetDescription>
             </SheetHeader>
-            <div className="flex-1 overflow-y-auto py-2 px-4 sm:px-6">
+            <div className="flex-1 overflow-y-auto px-4 py-2 sm:px-6">
               <AiToolsPanel
                 aiTool={aiTool}
                 onToolChange={(tool) => {
@@ -2331,10 +2659,10 @@ export function Composer() {
                 onHashtagClick={(tag) => {
                   const targetId = aiTargetTweetId ?? activeTweetId ?? tweets[0]?.id;
                   if (targetId) {
-                    const tweet = tweets.find(t => t.id === targetId);
+                    const tweet = tweets.find((t) => t.id === targetId);
                     if (tweet) {
                       updateTweet(targetId, `${tweet.content} ${tag}`.trim());
-                      setGeneratedHashtags(prev => prev.filter(t => t !== tag));
+                      setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
                     }
                   }
                 }}
@@ -2342,9 +2670,21 @@ export function Composer() {
                 isAiOpen={isAiOpen}
               />
             </div>
-            <div className="flex justify-end gap-2 pt-3 sm:pt-4 pb-4 sm:pb-6 px-4 sm:px-6 shrink-0 border-t mt-2">
-              <Button variant="outline" size="sm" className="h-10 sm:h-9" onClick={() => setIsAiOpen(false)}>Cancel</Button>
-              <Button size="sm" className="h-10 sm:h-9" onClick={() => handleAiRun()} disabled={isAiGenerateDisabled}>
+            <div className="mt-2 flex shrink-0 justify-end gap-2 border-t px-4 pt-3 pb-4 sm:px-6 sm:pt-4 sm:pb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 sm:h-9"
+                onClick={() => setIsAiOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="h-10 sm:h-9"
+                onClick={() => handleAiRun()}
+                disabled={isAiGenerateDisabled}
+              >
                 {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Generate
               </Button>
@@ -2359,16 +2699,20 @@ export function Composer() {
           <AlertDialogHeader>
             <AlertDialogTitle>Replace existing content?</AlertDialogTitle>
             <AlertDialogDescription>
-              Generating a new thread will replace your current {tweets.filter(t => t.content.trim()).length} tweet(s) with AI-generated content. Your draft was auto-saved and can be restored.
+              Generating a new thread will replace your current{" "}
+              {tweets.filter((t) => t.content.trim()).length} tweet(s) with AI-generated content.
+              Your draft was auto-saved and can be restored.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setConfirmOverwrite(false);
-              setPendingTweets(null);
-              setPendingAiStreamGenerate(false);
-              preStreamTweetsRef.current = null;
-            }}>
+            <AlertDialogCancel
+              onClick={() => {
+                setConfirmOverwrite(false);
+                setPendingTweets(null);
+                setPendingAiStreamGenerate(false);
+                preStreamTweetsRef.current = null;
+              }}
+            >
               Keep editing
             </AlertDialogCancel>
             <AlertDialogAction
@@ -2400,17 +2744,19 @@ export function Composer() {
           <AlertDialogHeader>
             <AlertDialogTitle>Translate tweets?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will translate {tweets.filter((t) => t.content.trim()).length} tweet(s) to {LANGUAGES.find((l) => l.code === aiTranslateTarget)?.label || aiTranslateTarget}. Your draft was auto-saved and can be restored.
+              This will translate {tweets.filter((t) => t.content.trim()).length} tweet(s) to{" "}
+              {LANGUAGES.find((l) => l.code === aiTranslateTarget)?.label || aiTranslateTarget}.
+              Your draft was auto-saved and can be restored.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmTranslate(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              setConfirmTranslate(false);
-              void handleAiRun({ skipTranslateCheck: true });
-            }}>
+            <AlertDialogCancel onClick={() => setConfirmTranslate(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmTranslate(false);
+                void handleAiRun({ skipTranslateCheck: true });
+              }}
+            >
               Translate
             </AlertDialogAction>
           </AlertDialogFooter>

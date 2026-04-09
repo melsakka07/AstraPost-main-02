@@ -80,13 +80,25 @@ interface PaginatedResponse {
 }
 
 const STATUS_BADGES: Record<FeedbackStatus, { label: string; className: string }> = {
-  pending: { label: "Pending", className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400" },
-  approved: { label: "Approved", className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" },
-  rejected: { label: "Rejected", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
+  pending: {
+    label: "Pending",
+    className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+  },
+  approved: {
+    label: "Approved",
+    className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  },
+  rejected: {
+    label: "Rejected",
+    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  },
 };
 
 const CATEGORY_BADGES: Record<string, { label: string; className: string }> = {
-  feature: { label: "Feature", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
+  feature: {
+    label: "Feature",
+    className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  },
   bug: { label: "Bug", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
   other: { label: "Other", className: "bg-muted text-muted-foreground" },
 };
@@ -232,7 +244,7 @@ export function RoadmapTable() {
   };
 
   const toggleSelect = (id: string) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
@@ -247,7 +259,7 @@ export function RoadmapTable() {
     if (selectedIds.size === data.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(data.map(item => item.id)));
+      setSelectedIds(new Set(data.map((item) => item.id)));
     }
   };
 
@@ -262,10 +274,13 @@ export function RoadmapTable() {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.value}
-              onClick={() => { setFilter(tab.value); setPage(1); }}
+              onClick={() => {
+                setFilter(tab.value);
+                setPage(1);
+              }}
               className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 filter === tab.value
                   ? "bg-primary text-primary-foreground"
@@ -273,27 +288,29 @@ export function RoadmapTable() {
               }`}
             >
               {tab.label}
-              <span className={`rounded-full px-2 py-0.5 text-xs ${
-                filter === tab.value ? "bg-primary-foreground/20" : "bg-muted-foreground/20"
-              }`}>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  filter === tab.value ? "bg-primary-foreground/20" : "bg-muted-foreground/20"
+                }`}
+              >
                 {tab.count}
               </span>
             </button>
           ))}
         </div>
         <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search by title or description..."
             value={search}
-            onChange={e => handleSearchChange(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-9"
           />
         </div>
       </div>
 
       {filter === "pending" && selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/50 p-3">
+        <div className="bg-muted/50 flex items-center gap-2 rounded-lg border p-3">
           <span className="text-sm font-medium">{selectedIds.size} selected</span>
           <Button size="sm" variant="outline" onClick={() => handleBulkAction("approved")}>
             <ThumbsUp className="mr-2 h-4 w-4" />
@@ -316,7 +333,7 @@ export function RoadmapTable() {
                     type="checkbox"
                     checked={selectedIds.size === data.length && data.length > 0}
                     onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-input"
+                    className="border-input h-4 w-4 rounded"
                   />
                 </TableHead>
               )}
@@ -332,23 +349,42 @@ export function RoadmapTable() {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {filter === "pending" && <TableCell><Skeleton className="h-4 w-4" /></TableCell>}
-                  <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-32" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                  <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                  {filter === "pending" && (
+                    <TableCell>
+                      <Skeleton className="h-4 w-4" />
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    <Skeleton className="h-4 w-48" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-16" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-24" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-5 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-8" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={filter === "pending" ? 7 : 6} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={filter === "pending" ? 7 : 6}
+                  className="text-muted-foreground h-24 text-center"
+                >
                   No submissions found
                 </TableCell>
               </TableRow>
             ) : (
-              data.map(item => (
+              data.map((item) => (
                 <TableRow key={item.id} className={selectedIds.has(item.id) ? "bg-muted/50" : ""}>
                   {filter === "pending" && (
                     <TableCell>
@@ -356,7 +392,7 @@ export function RoadmapTable() {
                         type="checkbox"
                         checked={selectedIds.has(item.id)}
                         onChange={() => toggleSelect(item.id)}
-                        className="h-4 w-4 rounded border-input"
+                        className="border-input h-4 w-4 rounded"
                       />
                     </TableCell>
                   )}
@@ -364,11 +400,11 @@ export function RoadmapTable() {
                     <div className="max-w-md">
                       <button
                         onClick={() => setViewTarget(item)}
-                        className="font-medium hover:underline text-left"
+                        className="text-left font-medium hover:underline"
                       >
                         {item.title}
                       </button>
-                      <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
+                      <p className="text-muted-foreground mt-0.5 line-clamp-1 text-sm">
                         {item.description}
                       </p>
                     </div>
@@ -387,7 +423,7 @@ export function RoadmapTable() {
                       <span className="text-sm">{item.user.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(item.createdAt), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell>
@@ -438,14 +474,16 @@ export function RoadmapTable() {
 
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+          <p className="text-muted-foreground text-sm">
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}{" "}
+            results
           </p>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={pagination.page === 1}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -456,7 +494,7 @@ export function RoadmapTable() {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
               disabled={pagination.page === pagination.totalPages}
             >
               <ChevronRight className="h-4 w-4" />
@@ -479,7 +517,7 @@ export function RoadmapTable() {
                 {STATUS_BADGES[viewTarget?.status ?? "pending"].label}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{viewTarget?.description}</p>
+            <p className="text-muted-foreground text-sm">{viewTarget?.description}</p>
             <div className="flex items-center gap-2 text-sm">
               <Avatar className="h-5 w-5">
                 <AvatarImage src={viewTarget?.user.image ?? undefined} />
@@ -488,17 +526,19 @@ export function RoadmapTable() {
               <span>{viewTarget?.user.name}</span>
               <span className="text-muted-foreground">•</span>
               <span className="text-muted-foreground">
-                {viewTarget?.createdAt ? format(new Date(viewTarget.createdAt), "MMM d, yyyy 'at' h:mm a") : ""}
+                {viewTarget?.createdAt
+                  ? format(new Date(viewTarget.createdAt), "MMM d, yyyy 'at' h:mm a")
+                  : ""}
               </span>
             </div>
             {viewTarget?.adminNotes && (
-              <div className="rounded-lg bg-muted p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-1">Admin Notes</p>
+              <div className="bg-muted rounded-lg p-3">
+                <p className="text-muted-foreground mb-1 text-xs font-medium">Admin Notes</p>
                 <p className="text-sm">{viewTarget.adminNotes}</p>
               </div>
             )}
             {viewTarget?.reviewedAt && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Reviewed: {format(new Date(viewTarget.reviewedAt), "MMM d, yyyy 'at' h:mm a")}
               </p>
             )}
@@ -506,7 +546,13 @@ export function RoadmapTable() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!rejectTarget} onOpenChange={() => { setRejectTarget(null); setRejectNotes(""); }}>
+      <Dialog
+        open={!!rejectTarget}
+        onOpenChange={() => {
+          setRejectTarget(null);
+          setRejectNotes("");
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reject Feedback</DialogTitle>
@@ -519,14 +565,20 @@ export function RoadmapTable() {
               <Label>Admin Notes (Optional)</Label>
               <Textarea
                 value={rejectNotes}
-                onChange={e => setRejectNotes(e.target.value)}
+                onChange={(e) => setRejectNotes(e.target.value)}
                 placeholder="Reason for rejection..."
                 className="mt-2"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setRejectTarget(null); setRejectNotes(""); }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectTarget(null);
+                setRejectNotes("");
+              }}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleReject} disabled={isRejecting}>

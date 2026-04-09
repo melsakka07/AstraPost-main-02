@@ -7,7 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useSession } from "@/lib/auth-client";
@@ -65,7 +71,7 @@ export function HashtagGenerator() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           content: content.trim(),
-          language
+          language,
         }),
       });
 
@@ -144,9 +150,7 @@ export function HashtagGenerator() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">
-              {content.length} characters
-            </p>
+            <p className="text-muted-foreground text-xs">{content.length} characters</p>
           </div>
 
           {/* Language Selector */}
@@ -164,7 +168,7 @@ export function HashtagGenerator() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Hashtags will be prioritized based on regional trends
             </p>
           </div>
@@ -200,15 +204,33 @@ export function HashtagGenerator() {
               <Badge variant="secondary">{generatedHashtags.length}</Badge>
             </CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={copyAllHashtags} aria-label="Copy all hashtags">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyAllHashtags}
+                aria-label="Copy all hashtags"
+              >
                 {allCopied ? (
-                  <><Check className="me-2 h-4 w-4" />Copied!</>
+                  <>
+                    <Check className="me-2 h-4 w-4" />
+                    Copied!
+                  </>
                 ) : (
-                  <><Copy className="me-2 h-4 w-4" />Copy All</>
+                  <>
+                    <Copy className="me-2 h-4 w-4" />
+                    Copy All
+                  </>
                 )}
               </Button>
-              <Button size="sm" onClick={() => sendToComposer([generatedHashtags.join(" ")], { source: "hashtag-generator" })} aria-label="Send hashtags to Composer">
-                <PenSquare className="me-2 h-4 w-4" />Compose
+              <Button
+                size="sm"
+                onClick={() =>
+                  sendToComposer([generatedHashtags.join(" ")], { source: "hashtag-generator" })
+                }
+                aria-label="Send hashtags to Composer"
+              >
+                <PenSquare className="me-2 h-4 w-4" />
+                Compose
               </Button>
             </div>
           </CardHeader>
@@ -218,27 +240,26 @@ export function HashtagGenerator() {
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="group relative cursor-pointer hover:bg-primary/20 transition-colors px-3 py-1.5 text-sm"
+                  className="group hover:bg-primary/20 relative cursor-pointer px-3 py-1.5 text-sm transition-colors"
                   onClick={() => copyHashtag(hashtag, index)}
                 >
                   {hashtag}
-                  {copiedIndex === index && (
-                    <Check className="ms-1 h-3 w-3 text-green-500" />
-                  )}
+                  {copiedIndex === index && <Check className="ms-1 h-3 w-3 text-green-500" />}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       removeHashtag(index);
                     }}
-                    className="ms-1 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                    className="hover:text-destructive ms-1 opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     ×
                   </button>
                 </Badge>
               ))}
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">
-              Click any hashtag to copy it, or use "Copy All" to get everything. Click × to remove a hashtag.
+            <p className="text-muted-foreground mt-4 text-xs">
+              Click any hashtag to copy it, or use "Copy All" to get everything. Click × to remove a
+              hashtag.
             </p>
           </CardContent>
         </Card>

@@ -28,9 +28,7 @@ const sidebarSections = [
   },
   {
     label: "Users",
-    items: [
-      { href: "/admin/subscribers", label: "Subscribers", icon: Users },
-    ],
+    items: [{ href: "/admin/subscribers", label: "Subscribers", icon: Users }],
   },
   {
     label: "Billing",
@@ -59,18 +57,18 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-dvh w-64 flex-col border-r bg-muted/30 fixed left-0 top-0 bottom-0">
+    <div className="bg-muted/30 fixed top-0 bottom-0 left-0 flex h-dvh w-64 flex-col border-r">
       <div className="flex h-14 items-center border-b px-6">
-        <Link href="/admin" className="flex items-center gap-2 font-semibold text-lg">
-          <ShieldCheck className="h-6 w-6 text-primary" />
+        <Link href="/admin" className="flex items-center gap-2 text-lg font-semibold">
+          <ShieldCheck className="text-primary h-6 w-6" />
           <span>Admin Panel</span>
         </Link>
       </div>
-      <div className="flex-1 overflow-auto py-4 px-4">
+      <div className="flex-1 overflow-auto px-4 py-4">
         <nav className="space-y-5">
           {sidebarSections.map((section) => (
             <div key={section.label}>
-              <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+              <p className="text-muted-foreground/60 mb-1 px-3 text-xs font-semibold tracking-wider uppercase">
                 {section.label}
               </p>
               <div className="grid gap-0.5">
@@ -79,7 +77,7 @@ export function AdminSidebar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted",
+                      "text-muted-foreground hover:text-primary hover:bg-muted flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
                       pathname === item.href && "bg-primary/10 text-primary font-medium"
                     )}
                   >
@@ -92,13 +90,13 @@ export function AdminSidebar() {
           ))}
         </nav>
       </div>
-      <div className="mt-auto p-4 border-t">
-          <Link href="/dashboard">
-            <Button variant="outline" className="w-full justify-start">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              Back to App
-            </Button>
-          </Link>
+      <div className="mt-auto border-t p-4">
+        <Link href="/dashboard">
+          <Button variant="outline" className="w-full justify-start">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Back to App
+          </Button>
+        </Link>
       </div>
     </div>
   );

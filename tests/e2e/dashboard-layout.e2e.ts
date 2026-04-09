@@ -1,6 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const DASHBOARD_ROUTES = ["/dashboard", "/dashboard/queue", "/dashboard/calendar", "/dashboard/analytics"] as const;
+const DASHBOARD_ROUTES = [
+  "/dashboard",
+  "/dashboard/queue",
+  "/dashboard/calendar",
+  "/dashboard/analytics",
+] as const;
 
 async function ensureAuthenticated(page: Page) {
   await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
@@ -31,7 +36,9 @@ async function expectNoMainDoubleScrollbar(page: Page) {
     const entries = Array.from(document.querySelectorAll<HTMLElement>("*"));
     return entries.filter((el) => {
       const style = window.getComputedStyle(el);
-      const canScroll = (style.overflowY === "auto" || style.overflowY === "scroll") && el.scrollHeight > el.clientHeight + 1;
+      const canScroll =
+        (style.overflowY === "auto" || style.overflowY === "scroll") &&
+        el.scrollHeight > el.clientHeight + 1;
       const wideMainRegion = el.clientWidth > window.innerWidth * 0.5;
       return canScroll && wideMainRegion && isVisible(el);
     }).length;

@@ -57,11 +57,12 @@ export function DeleteDialog({
           <AlertDialogTitle>Delete subscriber?</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
             <span className="block">
-              This will soft-delete <strong>{subscriberName}</strong>'s account and anonymise their personal information (name, email, avatar).
+              This will soft-delete <strong>{subscriberName}</strong>'s account and anonymise their
+              personal information (name, email, avatar).
             </span>
-            <span className="block text-destructive">
-              All active sessions will be invalidated. Their posts, analytics, and billing records will remain for record-keeping.
-              This action cannot be undone.
+            <span className="text-destructive block">
+              All active sessions will be invalidated. Their posts, analytics, and billing records
+              will remain for record-keeping. This action cannot be undone.
             </span>
           </AlertDialogDescription>
         </AlertDialogHeader>

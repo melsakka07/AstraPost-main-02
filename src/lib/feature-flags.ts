@@ -46,10 +46,30 @@ export function invalidateFeatureFlag(key: string): void {
 // ── Default flags ─────────────────────────────────────────────────────────────
 
 export const DEFAULT_FLAGS: Array<{ key: string; description: string; enabled: boolean }> = [
-  { key: "ai_image_generation", description: "AI image generation via Replicate API", enabled: true },
-  { key: "instagram_publishing", description: "Instagram post publishing (coming soon)", enabled: false },
-  { key: "linkedin_publishing", description: "LinkedIn post publishing (coming soon)", enabled: false },
-  { key: "referral_program", description: "User referral program with reward credits", enabled: false },
-  { key: "team_collaboration", description: "Team workspaces and multi-user collaboration", enabled: true },
+  {
+    key: "ai_image_generation",
+    description: "AI image generation via Replicate API",
+    enabled: true,
+  },
+  {
+    key: "instagram_publishing",
+    description: "Instagram post publishing (coming soon)",
+    enabled: false,
+  },
+  {
+    key: "linkedin_publishing",
+    description: "LinkedIn post publishing (coming soon)",
+    enabled: false,
+  },
+  {
+    key: "referral_program",
+    description: "User referral program with reward credits",
+    enabled: false,
+  },
+  {
+    key: "team_collaboration",
+    description: "Team workspaces and multi-user collaboration",
+    enabled: true,
+  },
   { key: "promo_codes", description: "Promo code entry at checkout", enabled: true },
 ];

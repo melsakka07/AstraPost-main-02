@@ -23,7 +23,7 @@ function isTokenExpiringSoon(expiresAt: string | Date | null | undefined): boole
 
 export type SocialAccountLite = {
   id: string;
-  platform: 'twitter' | 'linkedin' | 'instagram';
+  platform: "twitter" | "linkedin" | "instagram";
   username: string;
   displayName?: string | null;
   avatarUrl?: string | null;
@@ -36,7 +36,7 @@ export function TargetAccountsSelect({
   value,
   onChange,
   accounts,
-  loading
+  loading,
 }: {
   value: string[];
   onChange: (next: string[]) => void;
@@ -47,17 +47,21 @@ export function TargetAccountsSelect({
     const selected = accounts.filter((a) => value.includes(a.id));
     if (selected.length === 0) return "Select accounts";
     if (selected.length === 1 && selected[0]) {
-        return (
-            <span className="flex items-center gap-2 truncate">
-                {selected[0].platform === 'twitter' ? <Twitter className="h-3 w-3" /> : 
-                 selected[0].platform === 'linkedin' ? <Linkedin className="h-3 w-3" /> :
-                 <Instagram className="h-3 w-3" />}
-                <span className="truncate">{selected[0].username}</span>
-                {selected[0].platform === 'twitter' && selected[0].xSubscriptionTier && (
-                  <XSubscriptionBadge tier={selected[0].xSubscriptionTier} size="sm" />
-                )}
-            </span>
-        );
+      return (
+        <span className="flex items-center gap-2 truncate">
+          {selected[0].platform === "twitter" ? (
+            <Twitter className="h-3 w-3" />
+          ) : selected[0].platform === "linkedin" ? (
+            <Linkedin className="h-3 w-3" />
+          ) : (
+            <Instagram className="h-3 w-3" />
+          )}
+          <span className="truncate">{selected[0].username}</span>
+          {selected[0].platform === "twitter" && selected[0].xSubscriptionTier && (
+            <XSubscriptionBadge tier={selected[0].xSubscriptionTier} size="sm" />
+          )}
+        </span>
+      );
     }
     return `${selected.length} accounts`;
   }, [accounts, value]);
@@ -67,7 +71,9 @@ export function TargetAccountsSelect({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="w-full justify-between" disabled={loading}>
-            <span className="truncate flex items-center gap-2">{loading ? "Loading accounts..." : selectedLabels}</span>
+            <span className="flex items-center gap-2 truncate">
+              {loading ? "Loading accounts..." : selectedLabels}
+            </span>
             <ChevronDown className="h-4 w-4 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
@@ -78,7 +84,7 @@ export function TargetAccountsSelect({
             <div className="px-2 py-2">
               <a
                 href="/dashboard/settings"
-                className="text-sm text-primary underline underline-offset-2 hover:text-primary/80"
+                className="text-primary hover:text-primary/80 text-sm underline underline-offset-2"
               >
                 Connect an X account to start posting →
               </a>
@@ -96,11 +102,15 @@ export function TargetAccountsSelect({
                 }}
               >
                 <div className="flex items-center gap-2">
-                  {a.platform === 'twitter' ? <Twitter className="h-3 w-3 text-sky-500" /> :
-                   a.platform === 'linkedin' ? <Linkedin className="h-3 w-3 text-[#0077b5]" /> :
-                   <Instagram className="h-3 w-3 text-pink-600" />}
+                  {a.platform === "twitter" ? (
+                    <Twitter className="h-3 w-3 text-sky-500" />
+                  ) : a.platform === "linkedin" ? (
+                    <Linkedin className="h-3 w-3 text-[#0077b5]" />
+                  ) : (
+                    <Instagram className="h-3 w-3 text-pink-600" />
+                  )}
                   <span className="truncate">{a.displayName || a.username}</span>
-                  {a.platform === 'twitter' && a.xSubscriptionTier && (
+                  {a.platform === "twitter" && a.xSubscriptionTier && (
                     <XSubscriptionBadge tier={a.xSubscriptionTier} size="sm" />
                   )}
                   {isTokenExpiringSoon(a.tokenExpiresAt) && (

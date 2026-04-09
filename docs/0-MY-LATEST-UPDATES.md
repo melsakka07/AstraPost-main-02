@@ -4,25 +4,27 @@
 
 **Summary:** Fixed the text overflow layout in the Preview card component on the Compose page, which caused long account names and handles to break outside of the layout bounds on narrow screens or sidebar views.
 
-**Problem:** 
+**Problem:**
 The username ("AstraVision AI") and user handle ("@AstraVisionAI") were contained in a `flex` container that lacked `min-w-0` and truncation properties. When rendered in the desktop sidebar layout, the space constraint caused the handle to spill out to the right instead of wrapping or truncating cleanly.
 
 **Changes Made:**
 
-| Element | Before | After |
-|---------|--------|-------|
-| Name Container | `flex items-center gap-1` | `flex flex-col xl:flex-row xl:items-center gap-0 xl:gap-1` |
-| Text Spans | `<span className="font-bold">` | `<span className="font-bold truncate">` |
-| Parent Wrapper | `w-full` | `w-full min-w-0` (essential for flex truncation) |
-| Content Text | `whitespace-pre-wrap` | `whitespace-pre-wrap break-words` |
+| Element        | Before                         | After                                                      |
+| -------------- | ------------------------------ | ---------------------------------------------------------- |
+| Name Container | `flex items-center gap-1`      | `flex flex-col xl:flex-row xl:items-center gap-0 xl:gap-1` |
+| Text Spans     | `<span className="font-bold">` | `<span className="font-bold truncate">`                    |
+| Parent Wrapper | `w-full`                       | `w-full min-w-0` (essential for flex truncation)           |
+| Content Text   | `whitespace-pre-wrap`          | `whitespace-pre-wrap break-words`                          |
 
 **Key Responsive Patterns Used:**
+
 - `min-w-0` added to the parent container so flex children know their boundaries and are allowed to shrink.
 - The display name and handle will now stack vertically on smaller desktop screens (`flex-col`) and sit side-by-side only when there's plenty of space (`xl:flex-row`).
 - `truncate` ensures that if a user has a highly long display name or handle, it ends gracefully with an ellipsis instead of destroying the card's UI layout.
 - `break-words` added to the tweet preview content itself to ensure long URLs or uninterrupted strings don't force a horizontal scrollbar.
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx`
 
 **Status:** `pnpm run lint && pnpm run typecheck` passed successfully.
@@ -33,24 +35,27 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Summary:** Fixed an issue where the text in the Content Tools sidebar (like "Templates", "Translate") was overflowing and breaking out of its button boundaries on desktop screens.
 
-**Problem:** 
+**Problem:**
+
 1. The `TemplatesDialog` button was using its own default styling (`w-full justify-start px-4 py-2 h-9`) instead of matching the rest of the grid (`justify-center px-2 text-xs`).
 2. The grid was set to 4 columns on `sm:` breakpoints (`sm:grid-cols-4`). On desktop layouts where the sidebar is only 1/3 of the screen width, trying to fit 4 columns squeezed the buttons too tight, causing long words to spill out.
 
 **Changes Made:**
 
-| Element | Before | After |
-|---------|--------|-------|
+| Element                | Before                                     | After                                                                                               |
+| ---------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | TemplatesDialog Button | `w-full justify-start gap-2 h-9 px-4 py-2` | `variant="outline" size="sm" className="gap-1 sm:gap-1.5 text-xs h-9 sm:h-9 w-full justify-center"` |
-| Content Tools Grid | `grid-cols-2 sm:grid-cols-4` | `grid-cols-2 lg:grid-cols-2 xl:grid-cols-3` |
-| Button Text | `<span>Templates</span>` | `<span className="truncate">Templates</span>` |
+| Content Tools Grid     | `grid-cols-2 sm:grid-cols-4`               | `grid-cols-2 lg:grid-cols-2 xl:grid-cols-3`                                                         |
+| Button Text            | `<span>Templates</span>`                   | `<span className="truncate">Templates</span>`                                                       |
 
 **Key Responsive Patterns Used:**
+
 - Switched desktop sidebar to 2 columns (`lg:grid-cols-2`) and extra-large desktop to 3 columns (`xl:grid-cols-3`), ensuring buttons always have enough physical width to fit their text.
 - Added `truncate` to all button text spans to gracefully handle any future text overflowing with an ellipsis (`...`) instead of breaking the UI.
 - Unified the `TemplatesDialog` trigger button to perfectly match the `size="sm"` and `text-xs` utility classes of its sibling buttons.
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx`
 - `src/components/composer/templates-dialog.tsx`
 
@@ -66,16 +71,17 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Element | Before | After |
-|---------|--------|-------|
-| AI Sheet Container | `h-[60dvh] gap-4` | `h-[80dvh] sm:h-[60dvh] gap-0 px-0` (Taller on mobile, removes default gaps) |
-| Sheet Content Areas | No padding | `px-4 sm:px-6` added to Header, Body, and Footer to prevent content touching screen edges |
-| Post Length Header | `flex items-center` | `flex flex-col sm:flex-row` (Stacks on very small screens to avoid cramping) |
-| Post Length Desc | Full text | Added `truncate` to prevent it from pushing layout |
-| Footer Buttons | Default sizes | `size="sm"` with `h-10 sm:h-9` for better touch targets |
-| Footer Padding | `pt-4` | `pt-3 sm:pt-4 pb-4 sm:pb-6` for better mobile spacing and avoiding safe area overlap |
+| Element             | Before              | After                                                                                     |
+| ------------------- | ------------------- | ----------------------------------------------------------------------------------------- |
+| AI Sheet Container  | `h-[60dvh] gap-4`   | `h-[80dvh] sm:h-[60dvh] gap-0 px-0` (Taller on mobile, removes default gaps)              |
+| Sheet Content Areas | No padding          | `px-4 sm:px-6` added to Header, Body, and Footer to prevent content touching screen edges |
+| Post Length Header  | `flex items-center` | `flex flex-col sm:flex-row` (Stacks on very small screens to avoid cramping)              |
+| Post Length Desc    | Full text           | Added `truncate` to prevent it from pushing layout                                        |
+| Footer Buttons      | Default sizes       | `size="sm"` with `h-10 sm:h-9` for better touch targets                                   |
+| Footer Padding      | `pt-4`              | `pt-3 sm:pt-4 pb-4 sm:pb-6` for better mobile spacing and avoiding safe area overlap      |
 
 **Key Responsive Patterns Used:**
+
 - `h-[80dvh]` on mobile to give more breathing room for the form fields
 - `gap-0 px-0` on `SheetContent` to manually control padding inside its children, avoiding default shadcn gaps
 - `px-4 sm:px-6` padding manually applied to all sheet sections so content doesn't bleed into the screen edges
@@ -83,6 +89,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 - Better touch target sizing (`h-10`) for the primary action buttons in the sheet footer
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx`
 - `src/components/composer/ai-length-selector.tsx`
 
@@ -98,18 +105,19 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Element | Before | After |
-|---------|--------|-------|
-| Button container | `flex flex-wrap gap-1 sm:gap-1.5` | `grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2` |
-| Button sizing | Variable widths | `w-full justify-center` for consistent sizing |
-| Button height | `h-8 sm:h-9` | `h-9 sm:h-9` (consistent touch target) |
-| Icon size | `h-3 w-3 sm:h-3.5 sm:w-3.5` | `h-3.5 w-3.5 shrink-0` (consistent, prevents shrinking) |
-| CardContent padding | `pt-4 sm:pt-5` | `pt-3 sm:pt-5 px-3 sm:px-6` (consistent margins) |
-| Secondary buttons | `flex-1` with hidden labels | `w-full` with visible labels |
-| Number tweets label | Hidden on mobile | Always visible: "Number 1/N" / "Remove 1/N" |
-| Save Template label | Hidden on mobile | Always visible: "Save Template" |
+| Element             | Before                            | After                                                   |
+| ------------------- | --------------------------------- | ------------------------------------------------------- |
+| Button container    | `flex flex-wrap gap-1 sm:gap-1.5` | `grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2`      |
+| Button sizing       | Variable widths                   | `w-full justify-center` for consistent sizing           |
+| Button height       | `h-8 sm:h-9`                      | `h-9 sm:h-9` (consistent touch target)                  |
+| Icon size           | `h-3 w-3 sm:h-3.5 sm:w-3.5`       | `h-3.5 w-3.5 shrink-0` (consistent, prevents shrinking) |
+| CardContent padding | `pt-4 sm:pt-5`                    | `pt-3 sm:pt-5 px-3 sm:px-6` (consistent margins)        |
+| Secondary buttons   | `flex-1` with hidden labels       | `w-full` with visible labels                            |
+| Number tweets label | Hidden on mobile                  | Always visible: "Number 1/N" / "Remove 1/N"             |
+| Save Template label | Hidden on mobile                  | Always visible: "Save Template"                         |
 
 **Key Responsive Patterns Used:**
+
 - `grid grid-cols-2 sm:grid-cols-4` for 2-column mobile, 4-column desktop layout
 - `col-span-2 sm:col-span-1` for #Tags button to fill remaining space on mobile
 - `px-3 sm:px-6` for consistent left/right margins on mobile
@@ -117,6 +125,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 - Consistent `h-9` button height for better touch targets
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx` (Content Tools, Preview, and Publishing cards)
 
 **Status:** `pnpm run lint && pnpm run typecheck` passed successfully.
@@ -128,6 +137,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Summary:** Made the AI Tools panel in the Compose page (`/dashboard/compose`) fully responsive and mobile-friendly with proper touch targets and readable text sizes.
 
 **Problem:** The AI Tools panel (displayed as a bottom sheet on mobile) had several responsive issues:
+
 - Tab buttons used `text-[10px]` (10px font) which was unreadable on mobile
 - Tab buttons had `h-6` (24px height) which is below the 44px minimum touch target
 - Form labels and helper text used tiny 10px font sizes
@@ -135,19 +145,20 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Element | Before | After |
-|---------|--------|-------|
-| Tab buttons | `text-[10px] sm:text-xs h-6 sm:h-7` | `text-xs sm:text-sm h-9 sm:h-8 min-w-[44px]` |
-| Tab icons | `h-3 w-3 sm:h-3.5 sm:w-3.5` | `h-4 w-4` |
-| Scope indicator | `text-[10px] sm:text-xs` | `text-xs sm:text-sm` |
-| Form labels | `text-xs sm:text-sm` | `text-sm` |
-| Form inputs | `h-9 sm:h-10` | `h-11 sm:h-10` |
-| Helper text | `text-[10px] sm:text-xs` | `text-xs sm:text-sm` |
-| Hashtag chips | `h-5 sm:h-6 text-[10px]` | `h-8 sm:h-7 text-xs min-w-[44px]` |
-| Action buttons | `h-8 sm:h-9 text-xs` | `h-10 sm:h-9 text-sm min-w-[44px]` |
-| Inspiration cards | `p-2 sm:p-2.5` | `p-3` with larger text |
+| Element           | Before                              | After                                        |
+| ----------------- | ----------------------------------- | -------------------------------------------- |
+| Tab buttons       | `text-[10px] sm:text-xs h-6 sm:h-7` | `text-xs sm:text-sm h-9 sm:h-8 min-w-[44px]` |
+| Tab icons         | `h-3 w-3 sm:h-3.5 sm:w-3.5`         | `h-4 w-4`                                    |
+| Scope indicator   | `text-[10px] sm:text-xs`            | `text-xs sm:text-sm`                         |
+| Form labels       | `text-xs sm:text-sm`                | `text-sm`                                    |
+| Form inputs       | `h-9 sm:h-10`                       | `h-11 sm:h-10`                               |
+| Helper text       | `text-[10px] sm:text-xs`            | `text-xs sm:text-sm`                         |
+| Hashtag chips     | `h-5 sm:h-6 text-[10px]`            | `h-8 sm:h-7 text-xs min-w-[44px]`            |
+| Action buttons    | `h-8 sm:h-9 text-xs`                | `h-10 sm:h-9 text-sm min-w-[44px]`           |
+| Inspiration cards | `p-2 sm:p-2.5`                      | `p-3` with larger text                       |
 
 **Key Responsive Patterns Used:**
+
 - `min-w-[44px]` for minimum touch target on mobile buttons
 - `h-11 sm:h-10` pattern: larger on mobile, slightly smaller on desktop
 - `text-sm` as base text size for readability
@@ -155,6 +166,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 - `hidden xs:inline` for progressive label reveal on tab buttons
 
 **Files changed:**
+
 - `src/components/composer/ai-tools-panel.tsx`
 
 **Status:** `pnpm run lint && pnpm run typecheck` passed successfully.
@@ -167,12 +179,13 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Component | Responsive Improvements |
-|-----------|------------------------|
-| `composer.tsx` | Main grid `gap-4 sm:gap-6`, editor column `space-y-3 sm:space-y-4`, attribution/calendar banners with responsive padding/icons, Add tweet button `py-4 sm:py-6`, preview section with responsive avatars `w-8 h-8 sm:w-10 sm:h-10`, Content Tools buttons `h-8 sm:h-9`, Publishing card with responsive labels/inputs, Post button `h-10 sm:h-11`, Save Draft button `h-9 sm:h-10` |
-| `tweet-card.tsx` | Textarea `min-h-[120px] sm:min-h-[160px] text-base sm:text-lg`, media previews `w-16 h-16 sm:w-20 sm:h-20`, link preview `h-32 sm:h-48`, footer buttons `h-7 sm:h-8`, character counter `text-xs sm:text-sm`, connector line responsive positioning |
+| Component        | Responsive Improvements                                                                                                                                                                                                                                                                                                                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `composer.tsx`   | Main grid `gap-4 sm:gap-6`, editor column `space-y-3 sm:space-y-4`, attribution/calendar banners with responsive padding/icons, Add tweet button `py-4 sm:py-6`, preview section with responsive avatars `w-8 h-8 sm:w-10 sm:h-10`, Content Tools buttons `h-8 sm:h-9`, Publishing card with responsive labels/inputs, Post button `h-10 sm:h-11`, Save Draft button `h-9 sm:h-10` |
+| `tweet-card.tsx` | Textarea `min-h-[120px] sm:min-h-[160px] text-base sm:text-lg`, media previews `w-16 h-16 sm:w-20 sm:h-20`, link preview `h-32 sm:h-48`, footer buttons `h-7 sm:h-8`, character counter `text-xs sm:text-sm`, connector line responsive positioning                                                                                                                                |
 
 **Key Responsive Patterns Used:**
+
 - `text-xs sm:text-sm` and `text-base sm:text-lg` for responsive text
 - `h-7 w-7 sm:h-8 sm:w-8` for touch-friendly button sizes
 - `min-h-[120px] sm:min-h-[160px]` for responsive textarea heights
@@ -181,6 +194,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 - `hidden sm:inline` for hiding button labels on mobile
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx`
 - `src/components/composer/tweet-card.tsx`
 
@@ -194,14 +208,15 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Component | Responsive Improvements |
-|-----------|------------------------|
-| `page.tsx` | TabsList with responsive text/icons, section headers with `text-base sm:text-lg`, buttons with `h-8 w-8 sm:h-10 sm:w-10`, empty state with responsive padding and icon sizes |
-| `imported-tweet-card.tsx` | Avatar `w-10 h-10 sm:w-12 sm:h-12`, metrics with responsive icon/gap sizes, CardContent `p-3 sm:p-4`, thread reply indentation `ml-8 sm:ml-12` |
-| `adaptation-panel.tsx` | TabsList `h-9 sm:h-10`, labels `text-xs sm:text-sm`, SelectTrigger `h-9 sm:h-10`, Textarea `min-h-[60px] sm:min-h-[80px]`, buttons `h-9 sm:h-10` |
-| `manual-editor.tsx` | CardHeader/CardContent/CardFooter with responsive padding, character counter stacks vertically on mobile, textarea `min-h-[120px] sm:min-h-[150px]`, Alert icons/text responsive |
+| Component                 | Responsive Improvements                                                                                                                                                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page.tsx`                | TabsList with responsive text/icons, section headers with `text-base sm:text-lg`, buttons with `h-8 w-8 sm:h-10 sm:w-10`, empty state with responsive padding and icon sizes     |
+| `imported-tweet-card.tsx` | Avatar `w-10 h-10 sm:w-12 sm:h-12`, metrics with responsive icon/gap sizes, CardContent `p-3 sm:p-4`, thread reply indentation `ml-8 sm:ml-12`                                   |
+| `adaptation-panel.tsx`    | TabsList `h-9 sm:h-10`, labels `text-xs sm:text-sm`, SelectTrigger `h-9 sm:h-10`, Textarea `min-h-[60px] sm:min-h-[80px]`, buttons `h-9 sm:h-10`                                 |
+| `manual-editor.tsx`       | CardHeader/CardContent/CardFooter with responsive padding, character counter stacks vertically on mobile, textarea `min-h-[120px] sm:min-h-[150px]`, Alert icons/text responsive |
 
 **Key Responsive Patterns Used:**
+
 - `text-xs sm:text-sm` for responsive text sizes
 - `h-8 w-8 sm:h-10 sm:w-10` for touch-friendly button sizes
 - `gap-1.5 sm:gap-2` for responsive spacing
@@ -209,6 +224,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 - `flex-col sm:flex-row` for layout adaptation
 
 **Files changed:**
+
 - `src/app/dashboard/inspiration/page.tsx`
 - `src/components/inspiration/imported-tweet-card.tsx`
 - `src/components/inspiration/adaptation-panel.tsx`
@@ -225,6 +241,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Problem:** Once a tweet was imported on the Inspiration page, there was no way to clear the imported tweet and URL without manually editing the URL field or refreshing the page. This created a poor UX for users who wanted to start fresh.
 
 **Solution:**
+
 1. Added a `handleClear` function that clears all relevant state:
    - `tweetUrl` - clears the URL input
    - `isValidUrl` - resets URL validation
@@ -236,6 +253,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 2. Added a "Clear" button with an X icon next to the Bookmark button in the "Imported Tweet" section header
 
 **Files changed:**
+
 - `src/app/dashboard/inspiration/page.tsx` — added `handleClear` function and Clear button UI
 
 **Status:** `pnpm run lint && pnpm run typecheck` passed successfully.
@@ -249,12 +267,14 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Root Cause:** Twitter's video URLs from the X API cannot be played directly in a `<video>` element because the CDN requires authentication and blocks cross-origin requests. The `crossOrigin="anonymous"` attribute was insufficient.
 
 **Fix:** Changed the video rendering approach in `imported-tweet-card.tsx`:
+
 - Instead of trying to play videos directly, display the video thumbnail with a play button overlay
 - Clicking the thumbnail opens the original tweet on X in a new tab where the video can be viewed
 - Uses the `thumbnailUrl` from the X API (or falls back to the video URL if no thumbnail)
 - Added a "View on X" badge to make it clear the user will be redirected
 
 **Files changed:**
+
 - `src/components/inspiration/imported-tweet-card.tsx` — replaced `<video>` element with thumbnail + play button linking to original tweet
 
 **Status:** `pnpm run lint && pnpm run typecheck` passed successfully.
@@ -268,6 +288,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Fix:** Added the `crossOrigin="anonymous"` attribute to all `<video>` tags rendering Twitter media across the application (`imported-tweet-card.tsx`, `tweet-card.tsx`, and `composer.tsx`). This prevents the browser from sending user credentials/cookies to Twitter's CDN, which resolves the CORS 403 blocks when embedding `twimg.com` video URLs.
 
 **Files changed:**
+
 - `src/components/inspiration/imported-tweet-card.tsx`
 - `src/components/composer/tweet-card.tsx`
 - `src/components/composer/composer.tsx`
@@ -279,14 +300,17 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 ## 2026-04-08: Bug Fix — Inspiration Page State Persistence & Video Fallbacks ✅
 
 **Summary:** Fixed two separate issues on the Inspiration page:
+
 1. The imported tweet URL and data would disappear upon refreshing the page.
 2. Videos still occasionally failed to play or render correctly in edge cases.
 
 **Fix:**
+
 1. **State Persistence:** Implemented `sessionStorage` in `src/app/dashboard/inspiration/page.tsx` to save the current `tweetUrl` and `importedData`. On component mount, the page now checks for URL parameters (`?url=...`) first, then falls back to `sessionStorage`. This ensures that if a user accidentally refreshes the page, they don't lose their imported tweet. Also added `<Suspense>` boundary since `useSearchParams` is now used.
 2. **Video Fallback:** Added explicit closing tags (`</video>`) and an inner text fallback (`Your browser does not support the video tag.`) to all `<video>` elements across `imported-tweet-card.tsx`, `tweet-card.tsx`, and `composer.tsx`. This helps certain browsers better interpret the video tag when streaming MP4s from Twitter's CDN.
 
 **Files changed:**
+
 - `src/app/dashboard/inspiration/page.tsx` — added `sessionStorage` persistence and `<Suspense>` boundary
 - `src/components/inspiration/imported-tweet-card.tsx` — added video tag fallbacks
 - `src/components/composer/tweet-card.tsx` — added video tag fallbacks
@@ -303,6 +327,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Fix:** Updated `<video>` tags across `imported-tweet-card.tsx`, `tweet-card.tsx`, and `composer.tsx` to include `autoPlay`, `muted`, `loop`, `playsInline`, and `preload="metadata"`. This ensures videos automatically play smoothly and silently (just like on Twitter) instead of showing a blank frame. Also conditionally applied `controls` only for actual videos (excluding GIFs) for a cleaner UI.
 
 **Files changed:**
+
 - `src/components/inspiration/imported-tweet-card.tsx` — added autoplay attributes to video tags
 - `src/components/composer/tweet-card.tsx` — added autoplay attributes to media previews
 - `src/components/composer/composer.tsx` — added autoplay attributes to thread previews
@@ -318,6 +343,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Fix:** Replaced the `style={{ width: ... }}` and `style={{ left: ... }}` props with inline `ref` callbacks (`ref={(el) => { if (el) el.style.width = ... }}`). This successfully applies the dynamic percentage widths directly to the DOM nodes while completely bypassing the React `style` prop, satisfying strict HTML/CSS linters without needing an external CSS file for dynamic values.
 
 **Files changed:**
+
 - `src/components/composer/tweet-card.tsx` — updated progress bar and milestone tick to use `ref` callbacks for dynamic styles.
 
 **Status:** `pnpm run lint && pnpm run typecheck` passed successfully.
@@ -326,11 +352,12 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 ## 2026-04-08: Code Quality — Inline CSS Warnings Fixed ✅
 
-**Summary:** Resolved two editor warnings in `src/components/composer/tweet-card.tsx` regarding inline CSS variables. 
+**Summary:** Resolved two editor warnings in `src/components/composer/tweet-card.tsx` regarding inline CSS variables.
 
 **Fix:** Refactored the character-count progress bar to use standard inline `width` and `left` styles instead of arbitrary CSS variables injected via `React.CSSProperties`. This is standard practice in React for dynamic sizing without triggering linter complaints about inline CSS variables.
 
 **Files changed:**
+
 - `src/components/composer/tweet-card.tsx` — updated progress bar styles
 
 **Status:** pending re-run of `pnpm run lint && pnpm run typecheck` after applying the diff
@@ -341,11 +368,13 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Summary:** Fixed an issue where imported tweets with videos or GIFs rendered a broken `<video>` tag because the X API was returning a `.jpg` thumbnail URL instead of the actual video file.
 
-**Fix:** 
+**Fix:**
+
 1. Updated `src/lib/services/tweet-importer.ts` to request `media.fields=variants` from the X API v2. It now correctly parses the `.mp4` variant with the highest bitrate for videos and GIFs.
 2. Added defensive regex fallbacks (`!url.match(/\.(jpg|jpeg|png|webp)/i)`) across the UI (`imported-tweet-card.tsx`, `composer.tsx`, `tweet-card.tsx`) to ensure older cached tweets with `.jpg` video URLs render safely as images rather than broken video players.
 
 **Files changed:**
+
 - `src/lib/services/tweet-importer.ts` — fetches `.mp4` variants from X API
 - `src/components/inspiration/imported-tweet-card.tsx` — fallback to `<Image>` for `.jpg` video URLs
 - `src/components/composer/composer.tsx` — fallback to `<Image>` for `.jpg` video URLs
@@ -362,6 +391,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Fix:** Updated the footer action row in `src/components/composer/composer.tsx` to use a fluid `flex-wrap` and `flex-1` layout instead of hardcoded `sm:` breakpoints. This guarantees the buttons split the row 50/50 when there's space, and gracefully stack to 100% width when the container is too narrow.
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx` — made the numbering/template action row fluidly responsive
 
 **Status:** pending re-run of `pnpm run lint && pnpm run typecheck` after applying the diff
@@ -375,6 +405,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Fix:** Changed `src/components/composer/composer-onboarding-hint.tsx` to use `useSyncExternalStore()` with a server snapshot of `true` and a client snapshot based on `localStorage`, avoiding both the hydration mismatch and the `react-hooks/set-state-in-effect` lint error.
 
 **Files changed:**
+
 - `src/components/composer/composer-onboarding-hint.tsx` — moved first-render visibility logic to an external-store snapshot pattern
 
 **Status:** pending re-run of `pnpm run lint && pnpm run typecheck` after applying the diff
@@ -386,6 +417,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Summary:** Fixed ESLint `import/order` warnings in four API routes by reordering existing imports only. No runtime logic changed.
 
 **Files changed:**
+
 - `src/app/api/ai/agentic/[id]/regenerate/route.ts` — moved `recordAiUsage` after schema and image-service imports
 - `src/app/api/ai/inspiration/route.ts` — moved `redis` before `recordAiUsage`
 - `src/app/api/chat/route.ts` — moved `recordAiUsage` after `schema` import
@@ -407,14 +439,15 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 ### Bug 2: Four Untracked AI Endpoints
 
-| Endpoint | What was missing | Fix applied |
-|---|---|---|
-| `GET /api/ai/inspiration` | No `recordAiUsage` | Added `recordAiUsage(..., "inspiration", ...)` after `generateObject` (only for fresh, non-cached generations) |
-| `POST /api/user/voice-profile` | No `recordAiUsage` | Added `recordAiUsage(..., "voice_profile", ...)` after DB save |
-| `POST /api/ai/agentic/[id]/regenerate` | No quota check AND no `recordAiUsage` | Added `checkAiLimitDetailed` + `checkAiQuotaDetailed` gates; added `recordAiUsage(..., "agentic_regenerate", ...)` for text and `recordAiUsage(..., "image", ...)` for image regeneration |
-| `POST /api/chat` | No `recordAiUsage` (quota was checked but never decremented) | Added `onFinish` callback on `streamText` to call `recordAiUsage(..., "chat", ...)` after stream completes |
+| Endpoint                               | What was missing                                             | Fix applied                                                                                                                                                                               |
+| -------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/ai/inspiration`              | No `recordAiUsage`                                           | Added `recordAiUsage(..., "inspiration", ...)` after `generateObject` (only for fresh, non-cached generations)                                                                            |
+| `POST /api/user/voice-profile`         | No `recordAiUsage`                                           | Added `recordAiUsage(..., "voice_profile", ...)` after DB save                                                                                                                            |
+| `POST /api/ai/agentic/[id]/regenerate` | No quota check AND no `recordAiUsage`                        | Added `checkAiLimitDetailed` + `checkAiQuotaDetailed` gates; added `recordAiUsage(..., "agentic_regenerate", ...)` for text and `recordAiUsage(..., "image", ...)` for image regeneration |
+| `POST /api/chat`                       | No `recordAiUsage` (quota was checked but never decremented) | Added `onFinish` callback on `streamText` to call `recordAiUsage(..., "chat", ...)` after stream completes                                                                                |
 
 **Files changed:**
+
 - `src/app/api/billing/usage/route.ts` — excluded images from `usage.ai` count
 - `src/app/api/ai/inspiration/route.ts` — added `recordAiUsage` import + call
 - `src/app/api/user/voice-profile/route.ts` — added `recordAiUsage` import + call
@@ -430,11 +463,13 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Summary:** Disabled "Connect Instagram Account" and "Connect LinkedIn Account" buttons on the Settings page since these features are not yet ready for production use.
 
 **Changes Made:**
+
 - Set `disabled={true}` on both connect buttons in their respective components
 - Removed unused `loading` state and `Loader2` import from both components
 - Buttons now appear grayed out and do not respond to clicks
 
 **Files changed:**
+
 - `src/components/settings/connected-instagram-accounts.tsx` — disabled connect button, removed loading state
 - `src/components/settings/connected-linkedin-accounts.tsx` — disabled connect button, removed loading state
 
@@ -448,11 +483,11 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Files Created:**
 
-| File | Tests | What's covered |
-|------|-------|----------------|
-| `src/lib/services/agentic-pipeline.test.ts` | 5 | Happy path, too-broad detection, partial image failure, free-tier cap, progress event sequence |
-| `src/app/api/ai/agentic/[id]/approve/route.test.ts` | 7 | post_now, schedule, save_draft, 401, 404 ownership, 400 wrong status, 400 missing scheduledAt |
-| `src/lib/ai/agentic-types.test.ts` | 11 | ResearchBrief, ContentPlan, AgenticTweet, AgenticPost, PipelineProgressEvent shape validation |
+| File                                                | Tests | What's covered                                                                                 |
+| --------------------------------------------------- | ----- | ---------------------------------------------------------------------------------------------- |
+| `src/lib/services/agentic-pipeline.test.ts`         | 5     | Happy path, too-broad detection, partial image failure, free-tier cap, progress event sequence |
+| `src/app/api/ai/agentic/[id]/approve/route.test.ts` | 7     | post_now, schedule, save_draft, 401, 404 ownership, 400 wrong status, 400 missing scheduledAt  |
+| `src/lib/ai/agentic-types.test.ts`                  | 11    | ResearchBrief, ContentPlan, AgenticTweet, AgenticPost, PipelineProgressEvent shape validation  |
 
 **Full suite result:** `pnpm test` → **317/317 passed** (31 test files, 8.33s)
 
@@ -464,14 +499,15 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Description | File(s) |
-|------|-------------|---------|
-| 3A | Added `"editorial"` to `ImageStyle` union + `buildStyledPrompt` modifier | `src/lib/services/ai-image.ts` |
-| 3A | Added `generateAgenticImage()` — prompt prefix, poll loop, download, `upload()` to storage, returns `{url}\|{error}` | `src/lib/services/ai-image.ts` |
-| 3B | Pipeline Step 4 now calls `generateAgenticImage({style:"editorial"})` — removed inline `pollImageUntilDone` | `src/lib/services/agentic-pipeline.ts` |
-| 3C | Review card image `alt` uses `imagePrompt` text; failed-image placeholder upgraded with icon + Retry | `src/components/ai/agentic-posting-client.tsx` |
+| Item | Description                                                                                                          | File(s)                                        |
+| ---- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 3A   | Added `"editorial"` to `ImageStyle` union + `buildStyledPrompt` modifier                                             | `src/lib/services/ai-image.ts`                 |
+| 3A   | Added `generateAgenticImage()` — prompt prefix, poll loop, download, `upload()` to storage, returns `{url}\|{error}` | `src/lib/services/ai-image.ts`                 |
+| 3B   | Pipeline Step 4 now calls `generateAgenticImage({style:"editorial"})` — removed inline `pollImageUntilDone`          | `src/lib/services/agentic-pipeline.ts`         |
+| 3C   | Review card image `alt` uses `imagePrompt` text; failed-image placeholder upgraded with icon + Retry                 | `src/components/ai/agentic-posting-client.tsx` |
 
 **Key design decisions:**
+
 - `generateAgenticImage` prepends `"Professional social media image, high quality, modern design: "` to every prompt
 - Images are persisted to `agentic-images/` folder via `upload()` — Vercel Blob in prod, `public/uploads/` in dev — so URLs survive Replicate's ephemeral CDN expiry
 - Returns `{ error: string }` (never throws) so a single failed image never aborts the rest of the pipeline
@@ -486,15 +522,16 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Description | File(s) |
-|------|-------------|---------|
-| New | `buildResearchPrompt` — viral angle analysis, broad-topic detection, MENA/Arabic cultural rules | `src/lib/ai/agentic-prompts.ts` |
-| New | `buildStrategyPrompt` — tier-aware format selection (computes Premium vs Free limits internally) | `src/lib/ai/agentic-prompts.ts` |
-| New | `buildWritingPrompt` — copywriting with voice profile injection, per-format char limits, Arabic guidance | `src/lib/ai/agentic-prompts.ts` |
-| New | `buildReviewPrompt` — 8-point editorial checklist, 1–10 scoring guide, `passed` logic | `src/lib/ai/agentic-prompts.ts` |
-| Update | Pipeline service wired to use all 4 functions; removed inline template strings and unused vars | `src/lib/services/agentic-pipeline.ts` |
+| Item   | Description                                                                                              | File(s)                                |
+| ------ | -------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| New    | `buildResearchPrompt` — viral angle analysis, broad-topic detection, MENA/Arabic cultural rules          | `src/lib/ai/agentic-prompts.ts`        |
+| New    | `buildStrategyPrompt` — tier-aware format selection (computes Premium vs Free limits internally)         | `src/lib/ai/agentic-prompts.ts`        |
+| New    | `buildWritingPrompt` — copywriting with voice profile injection, per-format char limits, Arabic guidance | `src/lib/ai/agentic-prompts.ts`        |
+| New    | `buildReviewPrompt` — 8-point editorial checklist, 1–10 scoring guide, `passed` logic                    | `src/lib/ai/agentic-prompts.ts`        |
+| Update | Pipeline service wired to use all 4 functions; removed inline template strings and unused vars           | `src/lib/services/agentic-pipeline.ts` |
 
 **Prompt quality highlights:**
+
 - Every prompt ends with "Return ONLY valid JSON. No markdown, no explanation, no preamble."
 - Arabic: instructs AI to write natively (not translate), use MENA cultural references, mix Arabic/English hashtags
 - Strategy: tier-aware format selection with engagement principles (threads for education, long posts for thought leadership)
@@ -511,14 +548,14 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Description | File(s) |
-|------|-------------|---------|
-| 4A | Too-broad topic detection: research step emits `needs_input` SSE + suggestion chips overlay | `agentic-types.ts`, `agentic-pipeline.ts`, `agentic-posting-client.tsx` |
-| 4B | Recovery on mount: GET `/api/ai/agentic` returns latest session; client auto-restores review/generating state | `agentic/route.ts`, `agentic-posting-client.tsx` |
-| 4C | 402 quota error: date-aware message with `reset_at` from plan gate response | `agentic-posting-client.tsx` |
-| 4D | Responsive layout: `lg:grid [1fr_320px]` on Review screen, sidebar Research Insights on desktop | `agentic-posting-client.tsx` |
-| 4E | Accessibility: `role="status" aria-live="polite"` on timeline, `role="article"` on tweet cards, `aria-label` on input/button/chips | `agentic-posting-client.tsx` |
-| 4F | Transitions: `animate-in fade-in duration-300` on all screen roots, spinner on Post Now while submitting | `agentic-posting-client.tsx` |
+| Item | Description                                                                                                                        | File(s)                                                                 |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 4A   | Too-broad topic detection: research step emits `needs_input` SSE + suggestion chips overlay                                        | `agentic-types.ts`, `agentic-pipeline.ts`, `agentic-posting-client.tsx` |
+| 4B   | Recovery on mount: GET `/api/ai/agentic` returns latest session; client auto-restores review/generating state                      | `agentic/route.ts`, `agentic-posting-client.tsx`                        |
+| 4C   | 402 quota error: date-aware message with `reset_at` from plan gate response                                                        | `agentic-posting-client.tsx`                                            |
+| 4D   | Responsive layout: `lg:grid [1fr_320px]` on Review screen, sidebar Research Insights on desktop                                    | `agentic-posting-client.tsx`                                            |
+| 4E   | Accessibility: `role="status" aria-live="polite"` on timeline, `role="article"` on tweet cards, `aria-label` on input/button/chips | `agentic-posting-client.tsx`                                            |
+| 4F   | Transitions: `animate-in fade-in duration-300` on all screen roots, spinner on Post Now while submitting                           | `agentic-posting-client.tsx`                                            |
 
 **Status:** `pnpm run check` ✅ (0 errors, 0 warnings)
 
@@ -530,13 +567,14 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Description | File(s) |
-|------|-------------|---------|
-| 2A | Server component page — fetches active X accounts + voice profile flag | `src/app/dashboard/ai/agentic/page.tsx` |
-| 2B | Sidebar entry — "Agentic Posting" as first item in AI Tools (isPro, Wand2 icon) | `src/components/dashboard/sidebar.tsx` |
-| 2C | Full 3-screen client component: Input → Processing → Review | `src/components/ai/agentic-posting-client.tsx` |
+| Item | Description                                                                     | File(s)                                        |
+| ---- | ------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 2A   | Server component page — fetches active X accounts + voice profile flag          | `src/app/dashboard/ai/agentic/page.tsx`        |
+| 2B   | Sidebar entry — "Agentic Posting" as first item in AI Tools (isPro, Wand2 icon) | `src/components/dashboard/sidebar.tsx`         |
+| 2C   | Full 3-screen client component: Input → Processing → Review                     | `src/components/ai/agentic-posting-client.tsx` |
 
 **Three-Screen UX:**
+
 - **Screen 1 (Input):** Large topic input, suggestion chips (auto-submit on click), Generate button, Advanced options (tone/language/images/audience), account selector with XSubscriptionBadge
 - **Screen 2 (Processing):** Vertical timeline with step icons (✅/⏳/○/✕), per-step summaries, elapsed time, estimated remaining time, cancel with inline confirmation
 - **Screen 3 (Review):** Editable tweet cards with char counter, inline edit mode, Rewrite/Remove per tweet, AI-generated image preview with hover overlay, Research Insights collapsible, sticky action bar (Post Now / Schedule / Save Draft / Discard), success state with quick links
@@ -551,19 +589,20 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Description | File(s) |
-|------|-------------|---------|
-| 1A | `agenticPosts` table added to Drizzle schema with 14 columns, 3 indexes, FK to user/xAccounts/posts | `src/lib/schema.ts` |
-| 1A | Migration `0038_tiny_rocket_raccoon.sql` generated and applied | `drizzle/0038_tiny_rocket_raccoon.sql` |
-| 1B | Pipeline service — 5-step sequential AI chain (Research → Strategy → Write → Images → Review) | `src/lib/services/agentic-pipeline.ts` |
-| Types | All pipeline types: `ResearchBrief`, `ContentPlan`, `AgenticTweet`, `AgenticPost`, `PipelineProgressEvent` | `src/lib/ai/agentic-types.ts` |
-| Plan gate | `canUseAgenticPosting` boolean added to all plan limits; Pro/Agency = true, Free = false | `src/lib/plan-limits.ts` |
-| Plan gate | `"agentic_posting"` added to `GatedFeature` union + `checkAgenticPostingAccessDetailed` gate function | `src/lib/middleware/require-plan.ts` |
-| 1C | `POST /api/ai/agentic` — SSE streaming orchestration endpoint | `src/app/api/ai/agentic/route.ts` |
-| 1D | `POST /api/ai/agentic/[id]/approve` — approve/schedule/draft endpoint | `src/app/api/ai/agentic/[id]/approve/route.ts` |
-| 1E | `POST /api/ai/agentic/[id]/regenerate` — single-tweet regeneration | `src/app/api/ai/agentic/[id]/regenerate/route.ts` |
+| Item      | Description                                                                                                | File(s)                                           |
+| --------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 1A        | `agenticPosts` table added to Drizzle schema with 14 columns, 3 indexes, FK to user/xAccounts/posts        | `src/lib/schema.ts`                               |
+| 1A        | Migration `0038_tiny_rocket_raccoon.sql` generated and applied                                             | `drizzle/0038_tiny_rocket_raccoon.sql`            |
+| 1B        | Pipeline service — 5-step sequential AI chain (Research → Strategy → Write → Images → Review)              | `src/lib/services/agentic-pipeline.ts`            |
+| Types     | All pipeline types: `ResearchBrief`, `ContentPlan`, `AgenticTweet`, `AgenticPost`, `PipelineProgressEvent` | `src/lib/ai/agentic-types.ts`                     |
+| Plan gate | `canUseAgenticPosting` boolean added to all plan limits; Pro/Agency = true, Free = false                   | `src/lib/plan-limits.ts`                          |
+| Plan gate | `"agentic_posting"` added to `GatedFeature` union + `checkAgenticPostingAccessDetailed` gate function      | `src/lib/middleware/require-plan.ts`              |
+| 1C        | `POST /api/ai/agentic` — SSE streaming orchestration endpoint                                              | `src/app/api/ai/agentic/route.ts`                 |
+| 1D        | `POST /api/ai/agentic/[id]/approve` — approve/schedule/draft endpoint                                      | `src/app/api/ai/agentic/[id]/approve/route.ts`    |
+| 1E        | `POST /api/ai/agentic/[id]/regenerate` — single-tweet regeneration                                         | `src/app/api/ai/agentic/[id]/regenerate/route.ts` |
 
 **Architecture:**
+
 - Pipeline reuses all existing infrastructure: OpenRouter AI, Replicate images, voice profile, AI quota, BullMQ publishing
 - SSE format: `data: {"step":"research","status":"in_progress"}` etc.
 - Image polling: 60s timeout, 2s interval, parallel via `Promise.allSettled()`
@@ -580,10 +619,10 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Fix | File(s) |
-|------|-----|---------|
+| Item | Fix                                                                                                                                                                                                                                                     | File(s)               |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | P2-C | AI Image Dialog: replaced bare spinner with estimated-time progress bar. Quadratic ease-out fills 0→90% over 15s; jumps to 100% on success. "Taking longer than usual..." message appears after 25s. Progress stops on error, failure, or dialog close. | `ai-image-dialog.tsx` |
-| P2-D | Extended `beforeunload` guard to also warn when media is actively uploading (`m.uploading`). Prevents silent media loss if user closes tab during upload. | `composer.tsx` |
+| P2-D | Extended `beforeunload` guard to also warn when media is actively uploading (`m.uploading`). Prevents silent media loss if user closes tab during upload.                                                                                               | `composer.tsx`        |
 
 **Implementation Details:**
 
@@ -591,6 +630,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 - **P2-D Upload Guard**: The existing `beforeunload` handler already checked for unsaved text content. Extended the condition to also check `tweets.some(t => t.media.some(m => m.uploading))`. The guard is removed when content is empty and no uploads are in progress.
 
 **Files changed:**
+
 - `src/components/composer/ai-image-dialog.tsx` — added `progressPercent`, `isLongWait` state; `startProgressAnimation`/`stopProgressAnimation` callbacks; progress bar UI; wired into all generation/error paths
 - `src/components/composer/composer.tsx` — extended `beforeunload` handler condition
 
@@ -606,11 +646,12 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Fix | File(s) |
-|------|-----|---------|
+| Item | Fix                                                                                                                                                                                            | File(s)                                |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | P2-E | Combined date+time into unified scheduling popover — Calendar + inline time grid in single popover; single Apply/Clear footer; removed `TIME_SLOTS`/`TIME_SLOT_GROUPS` constants from composer | `composer.tsx`, `date-time-picker.tsx` |
 
 **Implementation Details:**
+
 - New `DateTimePicker` component at `src/components/ui/date-time-picker.tsx`:
   - Trigger button: "Schedule for" or formatted "Apr 5 at 2:30 PM" with inline clear X
   - Popover: Calendar (left) + time grid (right) on desktop; stacked on mobile
@@ -622,6 +663,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 - Removed unused `SelectGroup`/`SelectLabel` imports from `composer.tsx`
 
 **Files changed:**
+
 - `src/components/ui/date-time-picker.tsx` — new unified DateTimePicker component (replaces old version)
 - `src/components/composer/composer.tsx` — replaced DatePicker+Select grid with single `<DateTimePicker>`
 
@@ -635,12 +677,13 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Fix | File(s) |
-|------|-----|---------|
+| Item | Fix                                                                                                                                                                                                                                                         | File(s)                              |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | P2-A | Hashtag dual-display eliminated — panel closes immediately after generation; chips appear inline only; removed panel chip block from `AiToolsPanel`; removed `generatedHashtags`/`onHashtagApply` props; added cleanup effect to clear chips on panel close | `composer.tsx`, `ai-tools-panel.tsx` |
-| P2-B | Link preview loading skeleton — `linkPreviewPending` state tracks the 1s debounce window; skeleton card (shimmer image area + 3 text bars) shows immediately when a URL is detected; disappears when real preview loads or fetch fails | `tweet-card.tsx` |
+| P2-B | Link preview loading skeleton — `linkPreviewPending` state tracks the 1s debounce window; skeleton card (shimmer image area + 3 text bars) shows immediately when a URL is detected; disappears when real preview loads or fetch fails                      | `tweet-card.tsx`                     |
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx` — `setIsAiOpen(false)` after hashtag generation; cleanup `useEffect`; removed props from both `AiToolsPanel` call sites
 - `src/components/composer/ai-tools-panel.tsx` — removed `generatedHashtags`/`onHashtagApply` from interface and function
 - `src/components/composer/tweet-card.tsx` — added `Skeleton` import; `linkPreviewPending` state; skeleton in JSX
@@ -657,17 +700,18 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Fix | File(s) |
-|------|-----|---------|
-| P1-A | Extracted AI panel into `ai-tools-panel.tsx` — self-contained component with all 6 tool forms | `ai-tools-panel.tsx` (new) |
-| P1-B | Replaced ternary card-swap with accordion expand — Content Tools card always visible, AI panel expands inline below on desktop | `composer.tsx` |
-| P1-C | Added internal tool tab switcher (pill buttons: Write \| Hook \| CTA \| Rewrite \| Translate \| #Tags) inside `AiToolsPanel` | `ai-tools-panel.tsx` |
-| P1-D | Removed Rewrite and Hashtags buttons from tweet card toolbar; removed `openAiTool` prop from `TweetCard` and `SortableTweet` | `tweet-card.tsx`, `sortable-tweet.tsx` |
-| P1-E | Moved "Save as Template" button from Publishing card → Content Tools card | `composer.tsx` |
-| P1-F | Added loading skeleton (4 shimmer chips) and error state chip to `BestTimeSuggestions` | `best-time-suggestions.tsx` |
-| P1-G | Raised overwrite guard threshold from 1 char → 50 chars — prevents interrupting minor edits | `composer.tsx` |
+| Item | Fix                                                                                                                            | File(s)                                |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
+| P1-A | Extracted AI panel into `ai-tools-panel.tsx` — self-contained component with all 6 tool forms                                  | `ai-tools-panel.tsx` (new)             |
+| P1-B | Replaced ternary card-swap with accordion expand — Content Tools card always visible, AI panel expands inline below on desktop | `composer.tsx`                         |
+| P1-C | Added internal tool tab switcher (pill buttons: Write \| Hook \| CTA \| Rewrite \| Translate \| #Tags) inside `AiToolsPanel`   | `ai-tools-panel.tsx`                   |
+| P1-D | Removed Rewrite and Hashtags buttons from tweet card toolbar; removed `openAiTool` prop from `TweetCard` and `SortableTweet`   | `tweet-card.tsx`, `sortable-tweet.tsx` |
+| P1-E | Moved "Save as Template" button from Publishing card → Content Tools card                                                      | `composer.tsx`                         |
+| P1-F | Added loading skeleton (4 shimmer chips) and error state chip to `BestTimeSuggestions`                                         | `best-time-suggestions.tsx`            |
+| P1-G | Raised overwrite guard threshold from 1 char → 50 chars — prevents interrupting minor edits                                    | `composer.tsx`                         |
 
 **Files changed:**
+
 - `src/components/composer/ai-tools-panel.tsx` (**new**)
 - `src/components/composer/composer.tsx` — removed `aiDialogTitle`, `aiDialogDesc`, `aiTabsGenerateContent` computed JSX; removed `Slider`, `Switch`, `Textarea`, `AiLengthSelector`, `Tabs/TabsContent` imports; added `AiToolsPanel` import
 - `src/components/composer/tweet-card.tsx` — removed `Sparkles`, `Hash` imports; removed `openAiTool` prop
@@ -686,18 +730,19 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 
 **Changes Made:**
 
-| Item | Fix | File |
-|------|-----|------|
-| P0-A | Auto-save "just now" label delayed 5s before showing — avoids premature display | `composer.tsx` |
-| P0-B | Time Select placeholder changed from "Time" → "Select date first" when disabled | `composer.tsx` |
-| P0-C | Overwrite AlertDialog copy: "cannot be undone" → "Your draft was auto-saved and can be restored" | `composer.tsx` |
-| P0-D | Thread numbering toggle replaced from Button (On/Off) → Switch component (consistent with shadcn/ui patterns) | `composer.tsx` |
-| P0-E | `beforeunload` guard added — browser warns before tab close when composer has unsaved content | `composer.tsx` |
-| P0-F | AI language default changed from hardcoded `"ar"` → lazy init using `navigator.language` with LANGUAGES lookup and `"en"` fallback. Fixed the `useEffect` session sync to not override with `"ar"` if session language is absent. | `composer.tsx` |
-| P0-G | Mobile AI Sheet height reduced from `h-[90dvh]` → `h-[60dvh]` — composer now visible above the panel | `composer.tsx` |
-| P0-H | Remove-tweet, link-preview-dismiss, and media-remove buttons: `opacity-0 hover:opacity-100` pattern only on desktop; always visible on mobile | `tweet-card.tsx` |
+| Item | Fix                                                                                                                                                                                                                               | File             |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| P0-A | Auto-save "just now" label delayed 5s before showing — avoids premature display                                                                                                                                                   | `composer.tsx`   |
+| P0-B | Time Select placeholder changed from "Time" → "Select date first" when disabled                                                                                                                                                   | `composer.tsx`   |
+| P0-C | Overwrite AlertDialog copy: "cannot be undone" → "Your draft was auto-saved and can be restored"                                                                                                                                  | `composer.tsx`   |
+| P0-D | Thread numbering toggle replaced from Button (On/Off) → Switch component (consistent with shadcn/ui patterns)                                                                                                                     | `composer.tsx`   |
+| P0-E | `beforeunload` guard added — browser warns before tab close when composer has unsaved content                                                                                                                                     | `composer.tsx`   |
+| P0-F | AI language default changed from hardcoded `"ar"` → lazy init using `navigator.language` with LANGUAGES lookup and `"en"` fallback. Fixed the `useEffect` session sync to not override with `"ar"` if session language is absent. | `composer.tsx`   |
+| P0-G | Mobile AI Sheet height reduced from `h-[90dvh]` → `h-[60dvh]` — composer now visible above the panel                                                                                                                              | `composer.tsx`   |
+| P0-H | Remove-tweet, link-preview-dismiss, and media-remove buttons: `opacity-0 hover:opacity-100` pattern only on desktop; always visible on mobile                                                                                     | `tweet-card.tsx` |
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx`
 - `src/components/composer/tweet-card.tsx`
 
@@ -712,6 +757,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Summary:** Resolved linter warnings related to CSS inline styles (`react/forbid-dom-props` / `S5314`) in the composer's `tweet-card.tsx` by extracting the dynamic progress bar style objects into variables using an IIFE. This preserves the required dynamic functionality while satisfying strict AST-based lint rules.
 
 **Files changed:**
+
 - `src/components/composer/tweet-card.tsx`
 
 **Status:** `pnpm run check` ✅ (0 errors, 0 warnings)
@@ -742,6 +788,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 | Hashtags | Requires content in target tweet | Existing inline hint |
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx`
 
 **Status:** `pnpm run lint && pnpm run typecheck` ✅
@@ -767,6 +814,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
    - Improved catch block to log errors and return specific error messages
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx`
 - `src/app/api/ai/translate/route.ts`
 
@@ -798,6 +846,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Summary:** After freeze resolution, browser console still showed frequent `net::ERR_ABORTED` entries (especially for `/api/notifications` and queue polling). These were mostly cancellation side effects, but the polling implementation was still intentionally aborting previous requests every cycle, creating noisy logs.
 
 **Root Cause:**
+
 - `NotificationBell` and `QueueRealtimeListener` aborted the previous in-flight request at the start of every poll tick.
 - This pattern is safe for connection control but generates repeated canceled-request noise in browser dev console/network.
 
@@ -814,9 +863,11 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
    - Keeps timeout + unmount abort safety.
 
 **Important Note:**
+
 - `ERR_ABORTED` on `/_rsc` navigation requests can still appear in dev when Next.js cancels superseded navigations; this is expected behavior.
 
 **Files changed:**
+
 - `src/components/dashboard/notification-bell.tsx`
 - `src/components/queue/queue-realtime-listener.tsx`
 
@@ -850,6 +901,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
    - Database verified directly in Docker Postgres (`select now(), count(*) from posts` returned successfully).
 
 **Files changed:**
+
 - `src/app/dashboard/layout.tsx`
 - `src/app/dashboard/queue/page.tsx`
 - `docs/technical/navigation-freeze-connection-leak-fix.md`
@@ -857,6 +909,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Status:** `pnpm test` ✅ `pnpm run lint && pnpm run typecheck` ✅
 
 **Next Step:**
+
 - Re-test with authenticated user flow and repeatedly navigate through dashboard subroutes (`/dashboard/queue`, `/dashboard/analytics`, `/dashboard/ai`, `/dashboard/settings`) while watching Network tab for pending requests that never resolve.
 
 ---
@@ -890,6 +943,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
      - production: `idle_timeout: 60`, `max_lifetime: 1800`
 
 **Files changed:**
+
 - `src/components/queue/queue-realtime-listener.tsx`
 - `src/app/api/queue/sse/route.ts`
 - `src/app/api/notifications/route.ts`
@@ -899,6 +953,7 @@ The username ("AstraVision AI") and user handle ("@AstraVisionAI") were containe
 **Status:** `pnpm run lint && pnpm run typecheck` ✅
 
 **Next Step:**
+
 - Restart the dev server, reproduce the old navigation path (`/dashboard/queue` → multiple dashboard sublinks), and verify no requests remain pending indefinitely in the browser network tab.
 
 ---
@@ -937,6 +992,7 @@ Vercel uses **HTTP/2** (no per-origin connection limit) and **PgBouncer** connec
    - Added `idle_timeout: 20` — recycles idle connections after 20 s.
 
 **Files changed:**
+
 - `src/components/dashboard/notification-bell.tsx`
 - `src/components/queue/queue-realtime-listener.tsx`
 - `src/lib/db.ts`
@@ -944,6 +1000,7 @@ Vercel uses **HTTP/2** (no per-origin connection limit) and **PgBouncer** connec
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
 
 **Action required:**
+
 - Run `pnpm run db:migrate` to apply pending migrations 0032–0037 (already done ✅).
 - Restart `pnpm dev` to pick up all three fixes.
 
@@ -954,15 +1011,18 @@ Vercel uses **HTTP/2** (no per-origin connection limit) and **PgBouncer** connec
 **Summary:** Updated `.gitignore` to properly ignore the entire `logs` folder and its contents.
 
 **Changes Made:**
+
 1. **`.gitignore`**
    - Cleaned up redundant log file ignore rules and consolidated them into a single `/logs/` entry. This ensures the entire folder and its contents are ignored by Git without needing individual file extensions.
 
 **Files changed:**
+
 - `.gitignore`
 
 **Status:** Configuration updated ✅
 
 **Next Steps:**
+
 - Run `git rm -r --cached logs/` in the terminal if the logs folder or any of its files were already tracked by Git. This will untrack them while keeping the files on your local machine.
 - Commit the changes to your repository.
 
@@ -981,6 +1041,7 @@ Vercel uses **HTTP/2** (no per-origin connection limit) and **PgBouncer** connec
    - **Inline Styles:** The linter warned against using inline CSS `style={{ paddingBottom: ... }}`. Moved the safe-area inset property into Tailwind CSS's JIT compiler using the `pb-[env(safe-area-inset-bottom,0px)]` arbitrary value class.
 
 **Files changed:**
+
 - `src/components/dashboard/sidebar.tsx`
 - `src/components/dashboard/bottom-nav.tsx`
 
@@ -1004,9 +1065,10 @@ Vercel uses **HTTP/2** (no per-origin connection limit) and **PgBouncer** connec
    - Kept technical DevOps tools (`Feature Flags`, `Jobs (BullMQ)`) isolated under `System` to prevent non-technical admin misclicks.
 
 3. **Mobile Bottom Navigation (`src/components/dashboard/bottom-nav.tsx`)**
-   - **Home Anchor Added:** Inserted `Dashboard` as the first icon on the bottom navigation bar. Users natively expect the far-left icon on mobile nav bars to be the "Home" route. 
+   - **Home Anchor Added:** Inserted `Dashboard` as the first icon on the bottom navigation bar. Users natively expect the far-left icon on mobile nav bars to be the "Home" route.
 
 **Files changed:**
+
 - `src/components/dashboard/sidebar.tsx`
 - `src/components/admin/sidebar.tsx`
 - `src/components/dashboard/bottom-nav.tsx`
@@ -1049,6 +1111,7 @@ Vercel uses **HTTP/2** (no per-origin connection limit) and **PgBouncer** connec
 10. **`env.example`** — Documented all three new `REPLICATE_MODEL_*` vars with instructions.
 
 **New required `.env` vars:**
+
 ```env
 REPLICATE_MODEL_FAST="google/nano-banana-2"
 REPLICATE_MODEL_PRO="google/nano-banana-pro"
@@ -1056,11 +1119,13 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 ```
 
 **What remains acceptable in code (not changed):**
+
 - Zod enum `["nano-banana-2", "nano-banana-pro", "nano-banana"]` in `image/route.ts` — internal logical API constants, not provider identifiers
 - Database column default `"nano-banana-2"` in `schema.ts` — standard DB default
 - UI fallback `"nano-banana-2"` in `composer.tsx` — only triggers if the quota API call fails entirely
 
 **Files changed:**
+
 - `src/lib/env.ts`
 - `src/lib/api/ai-preamble.ts`
 - `src/app/api/chat/route.ts`
@@ -1084,6 +1149,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 2. **`src/app/dashboard/layout.tsx`** — Fixed import order: moved `next/headers` and `next/navigation` before `drizzle-orm` and `lucide-react` per the project's ESLint import group rules.
 
 **Files changed:**
+
 - `eslint.config.mjs`
 - `src/app/dashboard/layout.tsx`
 
@@ -1096,6 +1162,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Enhanced the AI Image Generation to support a robust fallback logic using the newly introduced `nano-banana` model. Also ensured `OPENROUTER_MODEL` environment variable usage is strictly enforced without hardcoded fallback values.
 
 **Implementation Details:**
+
 1. **Model & Configuration Updates:**
    - Added `nano-banana` model to `ImageModel` types in `src/lib/services/ai-image.ts` and `src/lib/plan-limits.ts`.
    - Updated `startImageGeneration` in `src/lib/services/ai-image.ts` to map `nano-banana` to `google/nano-banana` with `1K` resolution.
@@ -1103,7 +1170,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
    - Included the `nano-banana` model explicitly in the available image models array within `PLAN_LIMITS`.
 
 2. **Fallback Mechanism:**
-   - Updated `src/app/api/ai/image/status/route.ts` to trigger a silent fallback prediction using the backup model (`nano-banana`) whenever *either* the primary (`nano-banana-2`) or secondary (`nano-banana-pro`) model fails.
+   - Updated `src/app/api/ai/image/status/route.ts` to trigger a silent fallback prediction using the backup model (`nano-banana`) whenever _either_ the primary (`nano-banana-2`) or secondary (`nano-banana-pro`) model fails.
    - Maintained content safety checks — if a generation is blocked due to safety violations, it fails immediately and gracefully without fallback.
    - Preserved credit protection logic: credits are never consumed for failed image generations or retries until a successful image is actually saved to the database.
 
@@ -1111,6 +1178,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
    - Appended `nano-banana` to `ImageModel` typings in `src/components/composer/ai-image-dialog.tsx` so the UI is aware of the fallback state when polling.
 
 **Files changed:**
+
 - `src/lib/services/ai-image.ts` (Added `nano-banana` model)
 - `src/lib/plan-limits.ts` (Added `nano-banana` to plan limits)
 - `src/app/api/ai/image/route.ts` (Removed hardcoded `OPENROUTER_MODEL`, updated schema)
@@ -1145,11 +1213,13 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 6. **`src/components/dashboard/onboarding-redirect.tsx`** — **Deleted.** Fully replaced by server-side logic in the layout.
 
 **New user flow:**
+
 1. Sign in → server-side redirect fires before any HTML is sent → `/dashboard/onboarding` renders immediately
 2. Minimal shell: branded top bar only, no sidebar, no distractions
 3. Complete 4-step wizard → `onboarding-complete` API marks DB → "Go to Dashboard" → full layout renders
 
 **Files changed:**
+
 - `src/proxy.ts` (forward `x-pathname` header)
 - `src/app/dashboard/layout.tsx` (server-side redirect + onboarding shell)
 - `src/app/dashboard/onboarding/page.tsx` (add `<Suspense>`, keep `dynamic({ ssr: false })`)
@@ -1180,14 +1250,17 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Fixed two bugs: (1) users stuck in an infinite onboarding redirect loop after completing the wizard, and (2) Radix UI hydration mismatch console errors on the onboarding page and dashboard header.
 
 **Bug 1 — Onboarding Loop (infinite redirect):**
+
 - **Root cause:** `onboarding-wizard.tsx` had a `useEffect` that called `/api/user/onboarding-complete` when `currentStep === 5`, but the wizard only has 4 steps (`steps.length === 4`). The condition was never met, so `onboardingCompleted` was never set to `true` in the database. After finishing, `OnboardingRedirect` saw `isCompleted === false` and redirected back to `/dashboard/onboarding`.
 - **Fix:** Changed the condition from `currentStep === 5` to `currentStep === steps.length` so the completion API fires when the user reaches the last step (step 4 — Explore AI). This also means the feature card links on step 4 work immediately without needing to click "Go to Dashboard" first.
 
 **Bug 2 — Radix UI Hydration Mismatch:**
+
 - **Root cause:** `NotificationBell` and `UserProfile` components in the dashboard header use Radix UI `DropdownMenu` (which calls `useId()` internally), but were rendered with SSR. The existing `AccountSwitcher` was already wrapped with `dynamic({ ssr: false })`, but these two were not — creating an inconsistent `useId()` counter between server and client that cascaded to ALL downstream Radix components including the onboarding wizard's `Select` dropdowns.
 - **Fix:** Wrapped `NotificationBell` and `UserProfile` with `next/dynamic({ ssr: false })` in `dashboard-header.tsx`. Also added a `<Suspense>` boundary around `OnboardingWizard` in the onboarding page (required because it uses `useSearchParams()`).
 
 **Files changed:**
+
 - `src/components/onboarding/onboarding-wizard.tsx` (step condition fix: `5` → `steps.length`)
 - `src/components/dashboard/dashboard-header.tsx` (wrapped `NotificationBell` + `UserProfile` with `dynamic({ ssr: false })`)
 - `src/app/dashboard/onboarding/page.tsx` (added `<Suspense>` boundary)
@@ -1201,17 +1274,20 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Fixed all failing Vitest tests for Phase 8 of the X Dynamic Character Limits feature. All 147 tests now pass.
 
 **Root Cause:**
+
 - Zod v4 (v4.3.6) uses a stricter UUID regex than v3 — it requires RFC-4122-compliant UUIDs with version `[1-8]` in position 3 and variant `[89ab]` in position 4.
 - Test IDs like `00000000-0000-0000-0000-000000000001` (version `0`) fail this check.
 - 4 tests in `src/app/api/ai/thread/__tests__/route.test.ts` were returning 400 (Zod parse error) instead of 403/200/404 because the `targetAccountId` field failed UUID validation before reaching the tier-check logic.
 
 **Fixes applied:**
+
 - Replaced invalid test UUIDs with proper v4-format UUIDs (`550e8400-e29b-41d4-a716-44665544000X`)
 - Added 2 staleness tests: stale tier (>24h) triggers `fetchXSubscriptionTier()` re-fetch; fresh tier skips it
 - Added `getMaxCharacterLimit()` tests to `src/lib/x-post-length.test.ts` (Phase 8B requirement)
 - Fixed import order warnings and unused import TS error
 
 **Files changed:**
+
 - `src/app/api/ai/thread/__tests__/route.test.ts` (UUID fix + staleness tests)
 - `src/lib/x-post-length.test.ts` (added `getMaxCharacterLimit` tests)
 
@@ -1225,6 +1301,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Completed Phase 8 (Update Documentation) — reviewed existing documentation and added user-facing help text about tier limits.
 
 **Phase 8A — Documentation Review:**
+
 - Reviewed implementation plan for remaining documentation updates
 - Found no dedicated API documentation files in the codebase (API routes are self-documenting via TypeScript)
 - Verified existing UI components already have appropriate tier-related help text:
@@ -1233,11 +1310,13 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
   - `tweet-card.tsx`: Has length zone labels ("Short post", "Medium post", "Long post") and 280 milestone marker
 
 **Phase 8B — User-Facing Help Text:**
+
 - Added help text info box to `connected-x-accounts.tsx` in Settings page
 - Explains character limits: Free X accounts = 280 chars, X Premium = 2,000 chars
 - Describes tier badge meaning and refresh functionality
 
 **Files changed:**
+
 - `src/components/settings/connected-x-accounts.tsx` (added tier limits help text)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1250,26 +1329,31 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 7 (Update Existing Warning & Error Messages) to add Queue page failure banners for TIER_LIMIT_EXCEEDED errors with contextual UI.
 
 **Phase 7A — TIER_LIMIT_EXCEEDED Detection:**
+
 - Updated `getFailureTip()` function in `queue-content.tsx` to detect `tier_limit_exceeded` errors
 - Added `isTierLimit` flag to identify tier-specific failures
 - Returns the full error message with contextual guidance
 
 **Phase 7B — XSubscriptionBadge Integration:**
+
 - Shows `XSubscriptionBadge` (gray for Free tier) next to tier limit error messages
 - Visual indicator of the account's current subscription status
 - Tooltip shows tier label on hover
 
 **Phase 7C — Action Buttons for Tier Errors:**
+
 - Added "Edit Post" button linking to compose page with draft preloaded
 - Added "Convert to Thread" button (only for single posts, not threads)
 - Buttons styled with destructive border to match error context
 
 **Phase 7D — Tier Downgrade Toast Notifications:**
+
 - Updated `NotificationBell` component to show toast for `tier_downgrade_warning` notifications
 - Uses `toast.warning()` with "View Queue" action button
 - Tracks seen notification IDs to prevent duplicate toasts
 
 **Files changed:**
+
 - `src/components/queue/queue-content.tsx` (failure tip detection, action buttons)
 - `src/components/dashboard/notification-bell.tsx` (tier downgrade toast)
 
@@ -1283,6 +1367,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 6 (Pre-Publish Tier Verification) to prevent publishing content that exceeds the account's X subscription tier limit.
 
 **Phase 6A — Pre-Publish Tier Check:**
+
 - Added tier verification in `scheduleProcessor` before publishing
 - Checks each tweet's content length against the account's tier limit:
   - Free X accounts: 280 characters max
@@ -1290,6 +1375,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Uses `canPostLongContent()` helper from `x-subscription.ts`
 
 **Phase 6B — TIER_LIMIT_EXCEEDED Error Handling:**
+
 - When content exceeds tier limit, the job fails gracefully with:
   - Post status set to `failed` with descriptive `failReason`
   - Job run record created with `failed` status
@@ -1298,12 +1384,14 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Error data includes: `code`, `message`, `postLength`, `accountTier`, `maxAllowed`
 
 **Phase 6C — Tier Downgrade Notifications (Already Implemented):**
+
 - The `refreshXTiersProcessor` already handles tier downgrades
 - When tier drops from Premium to Free, checks for scheduled posts exceeding 280 chars
 - Creates `tier_downgrade_warning` notification for affected users
 - Lists oversized post IDs in notification metadata
 
 **Files changed:**
+
 - `src/lib/queue/processors.ts` (pre-publish tier verification)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1316,6 +1404,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Verified Phase 5 (BullMQ Recurring Job) was already fully implemented. Fixed minor import order warning in processors.ts.
 
 **Phase 5 — BullMQ Recurring Job (Already Implemented):**
+
 - `RefreshXTiersJobPayload` interface defined in `src/lib/queue/client.ts`
 - `xTierRefreshQueue` created in `src/lib/queue/client.ts`
 - `refreshXTiersProcessor` fully implemented in `src/lib/queue/processors.ts`:
@@ -1330,9 +1419,11 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Event handlers for completed/error/failed jobs
 
 **Bug Fix:**
+
 - Fixed import order warning in `processors.ts` (moved type import before regular imports)
 
 **Files changed:**
+
 - `src/lib/queue/processors.ts` (import order fix)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1345,14 +1436,17 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 4 of the X Dynamic Character Limits & AI Length Options plan. Added AiLengthSelector to the AI Writer page with Thread/Single Post mode toggle.
 
 **Phase 4A — AiLengthSelector Component:**
+
 - Component already existed at `src/components/composer/ai-length-selector.tsx`
 - Segmented control (Short/Medium/Long) with lock icons for Free X users
 - Reused in AI Writer page without changes
 
 **Phase 4B — Composer Integration:**
+
 - Already integrated in composer AI panel (single-post mode only)
 
 **Phase 4C — AI Writer Page Integration:**
+
 - Added Thread/Single Post mode toggle to `/dashboard/ai/writer` Thread tab
 - Thread mode: shows Thread Length slider (3–15 tweets)
 - Single Post mode: shows AiLengthSelector (Short/Medium/Long)
@@ -1363,9 +1457,11 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Button text changes: "Generate Thread" vs "Generate Post"
 
 **Bug Fix:**
+
 - Removed duplicate `isSinglePost` const declaration in `composer.tsx` (pre-existing TS2451 error)
 
 **Files changed:**
+
 - `src/app/dashboard/ai/writer/page.tsx` (mode toggle, AiLengthSelector, single-post handling)
 - `src/components/composer/composer.tsx` (removed duplicate variable declaration)
 
@@ -1379,12 +1475,14 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 5 of the X Subscription Badge UI Expansion plan. Enhanced queue page with contextual error messaging for character-limit failures.
 
 **Phase 5A — 280-Character Warning Enhancement:**
+
 - Added success Alert for paid users with long posts in `composer.tsx`
 - Shows `XSubscriptionBadge` with green/success styling
 - Message: "Your account (@username) supports long posts — this will publish normally with up to 25,000 characters"
 - Uses `CheckCircle2` icon for positive feedback
 
 **Phase 5B — Queue Failure Banners:**
+
 - Updated `queue/page.tsx` to include `xAccount` relation with `xSubscriptionTier` for all post queries (scheduled, failed, awaiting_approval)
 - Enhanced `getFailureTip()` in `queue-content.tsx` to detect character-limit errors
 - Added `isCharLimit` flag to failure tip return type
@@ -1395,12 +1493,14 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Added `@username` display in failed post cards
 
 **Phase 6 — Data Flow Verification:**
+
 - Verified all surfaces read `xSubscriptionTier` from consistent data sources
 - Settings page: reads from API response, updates via refresh
 - Composer: reads from `/api/accounts` response
 - Queue: reads from database relations via `xAccount.xSubscriptionTier`
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx` (success alert for paid users)
 - `src/app/dashboard/queue/page.tsx` (added xAccount relation to queries)
 - `src/components/queue/queue-content.tsx` (character-limit failure detection + badge)
@@ -1415,6 +1515,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 3 of the X Subscription Badge UI Expansion plan. Added tier context to the Composer component.
 
 **Phase 3A — Account Selector Badge:**
+
 - Added `xSubscriptionTier` to `/api/accounts` response for Twitter accounts
 - Extended `SocialAccountLite` type with `xSubscriptionTier` field
 - Added badge display in selected label (single account view)
@@ -1422,6 +1523,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Wrapped component with `TooltipProvider` for hover tooltips
 
 **Phase 3B — Character Counter Tier Context:**
+
 - Added `tier` prop to `TweetCard` component
 - Character counter now shows dynamic limit based on tier (280 or 25,000)
 - Added `XSubscriptionBadge` next to character counter for paid accounts
@@ -1429,6 +1531,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Tier flows from Composer → SortableTweet → TweetCard
 
 **Files changed:**
+
 - `src/app/api/accounts/route.ts` (added `xSubscriptionTier` to response)
 - `src/components/composer/target-accounts-select.tsx` (badge in selector)
 - `src/components/composer/tweet-card.tsx` (tier-aware character counter)
@@ -1462,6 +1565,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
    - Throws generic error on other HTTP errors
 
 **Files changed:**
+
 - `src/lib/services/x-subscription.test.ts` (new file)
 - `src/lib/services/x-api.test.ts` (updated)
 
@@ -1475,16 +1579,19 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 6 of the X Subscription Tier Detection feature. Added Zod schema and helper functions for subscription tier handling.
 
 **Zod Schema:**
+
 - Added `xSubscriptionTierEnum` to `src/lib/schemas/common.ts`
 - Enum values: `"None"`, `"Basic"`, `"Premium"`, `"PremiumPlus"`
 - Exported `XSubscriptionTier` type via `z.infer`
 
 **Helper Functions (`src/lib/services/x-subscription.ts`):**
+
 - `canPostLongContent(tier)` — Returns `true` for Basic, Premium, PremiumPlus
 - `getMaxCharacterLimit(tier)` — Returns 25,000 for paid tiers, 280 for free
 - `getTierLabel(tier)` — Returns human-readable label for display
 
 **Files changed:**
+
 - `src/lib/schemas/common.ts` (updated)
 - `src/lib/services/x-subscription.ts` (new file)
 
@@ -1498,6 +1605,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 5 of the X Subscription Tier Detection feature. Created the `XSubscriptionBadge` component and integrated it into the connected X accounts list.
 
 **Component Features:**
+
 - Small colored circle indicator (8px for `sm`, 12px for `md`)
 - Tooltip on hover showing tier label
 - Supports all 4 tiers + null:
@@ -1509,12 +1617,14 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Dark mode compatible via Tailwind CSS
 
 **Integration:**
+
 - Badge displays next to account display name
 - Refresh button (RefreshCw icon) to manually refresh tier
 - Auto-fetches missing tiers on component mount
 - Uses `TooltipProvider` from shadcn/ui
 
 **Files changed:**
+
 - `src/components/settings/x-subscription-badge.tsx` (new file)
 - `src/components/settings/connected-x-accounts.tsx` (updated)
 - `src/app/api/x/accounts/route.ts` (updated to return tier fields)
@@ -1529,6 +1639,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 4 of the X Subscription Tier Detection feature. Created the POST `/api/x/subscription-tier/refresh` API route for batch refresh.
 
 **Route Features:**
+
 - Validates user authentication via Better Auth session
 - Validates ownership of all requested account IDs
 - Accepts `accountIds` array in request body (1-10 accounts, UUID validated with Zod)
@@ -1537,6 +1648,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Returns detailed results per account with status
 
 **Response Shape:**
+
 ```json
 {
   "results": [
@@ -1563,6 +1675,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 ```
 
 **Files changed:**
+
 - `src/app/api/x/subscription-tier/refresh/route.ts` (new file)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1575,6 +1688,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 3 of the X Subscription Tier Detection feature. Created the GET `/api/x/subscription-tier` API route.
 
 **Route Features:**
+
 - Validates user authentication via Better Auth session
 - Validates account ownership (user must own the X account)
 - Accepts `accountId` query parameter (UUID validated with Zod)
@@ -1584,6 +1698,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Uses `ApiError` class for consistent error responses
 
 **Response Shape:**
+
 ```json
 {
   "tier": "Premium",
@@ -1593,6 +1708,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 ```
 
 **Files changed:**
+
 - `src/app/api/x/subscription-tier/route.ts` (new file)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1605,15 +1721,18 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 2 of the X Subscription Tier Detection feature. Added the `fetchXSubscriptionTier()` method to the X API service.
 
 **Methods Added:**
+
 - `getSubscriptionTier()` — Instance method that calls X API v2 `/2/users/me?user.fields=subscription_type`
 - `fetchXSubscriptionTier(accountId)` — Static method that orchestrates the full flow: lookup account, decrypt token, refresh if needed, fetch tier, update DB
 
 **Error Handling:**
+
 - `401` → throws `"X_SESSION_EXPIRED"`
 - `429` → throws `"X_RATE_LIMITED"`
 - Other errors → throws `"X_API_ERROR:{status}"`
 
 **Files changed:**
+
 - `src/lib/services/x-api.ts` (added `getSubscriptionTier()` and `fetchXSubscriptionTier()` methods)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1626,6 +1745,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Implemented Phase 1 of the X Subscription Tier Detection feature. Added database schema changes to track X subscription tiers for connected accounts.
 
 **Schema Changes:**
+
 - Added `xSubscriptionTier` column to `x_accounts` table (text, default 'None')
 - Added `xSubscriptionTierUpdatedAt` column to `x_accounts` table (timestamp)
 - Migration generated: `drizzle/0037_naive_dreaming_celestial.sql`
@@ -1634,6 +1754,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Tier Values:** `"None"`, `"Basic"`, `"Premium"`, `"PremiumPlus"`
 
 **Files changed:**
+
 - `src/lib/schema.ts` (added two new columns to xAccounts table)
 - `drizzle/0037_naive_dreaming_celestial.sql` (generated migration)
 
@@ -1651,6 +1772,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Fix:** Added a `mounted` state that is `false` on initial render (both server and client hydration). The `userImage` is set to `null` until `mounted` is `true`, ensuring consistent rendering between server and client. After the component mounts, the actual image URL is used.
 
 **Files changed:**
+
 - `src/components/composer/composer.tsx` (added `mounted` state, updated `userImage` derivation)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1664,6 +1786,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Fix:** Changed `aria-expanded={isOpen}` to `aria-expanded={isOpen ? "true" : "false"}` to use explicit string values.
 
 **Files changed:**
+
 - `src/components/mobile-menu.tsx`
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1673,11 +1796,13 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Completed Phase 9 final codebase sweep and dead code cleanup. All automated checks pass.
 
 **Full Codebase Sweep Results:**
+
 - No remaining references to `sign-up-form`, `forgot-password-form`, `reset-password-form`, `SecuritySettings`
 - No remaining `/register`, `/forgot-password`, `/reset-password` href links
 - CLAUDE.md already clean (no references to deleted components)
 
 **Dead Code Cleanup:**
+
 - Removed `sendVerificationEmail` and `sendResetPasswordEmail` functions from `src/lib/services/email.ts`
 - Removed unused imports `VerificationEmail` and `ResetPasswordEmail` from `services/email.ts`
 - Deleted orphaned `src/components/email/verification-email.tsx`
@@ -1685,15 +1810,18 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - `sendTeamInvitationEmail`, `sendBillingEmail`, `sendPostFailureEmail`, and `PostFailureEmail` component remain (still in use)
 
 **Files changed:**
+
 - `src/lib/services/email.ts` (removed dead functions)
 - `docs/features/x-oauth-only-auth.md` (Phase 9 progress + post-implementation checklist updated)
 
 **Files deleted:**
+
 - `src/components/email/verification-email.tsx`
 - `src/components/email/reset-password-email.tsx`
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
 **Manual testing** (requires dev server + real X OAuth):
+
 - [ ] New user sign-in via X OAuth → dashboard
 - [ ] Existing email/password user sign-in via X OAuth with matching email → existing data preserved
 - [ ] OAuth denial → friendly error message on login page
@@ -1704,17 +1832,20 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Completed Phase 8 by investigating Better Auth's account-linking-by-email behavior and adding the one-line `accountLinking.trustedProviders` config to enable automatic migration.
 
 **Investigation Findings:**
+
 - Better Auth's `findOAuthUser()` in `internal-adapter.mjs` first checks by OAuth accountId+providerId, then falls back to finding a user by email
 - If a user is found by email but not linked, it calls `linkAccount()` — but only if the provider is in `trustedProviders` OR `userInfo.emailVerified` is true
 - X OAuth doesn't set `emailVerified` → requires adding `twitter` to `trustedProviders`
 
 **Implementation:**
+
 - Added `accountLinking: { trustedProviders: ["twitter"] }` to `src/lib/auth.ts`
 - When an existing email/password user signs in with X OAuth using the same email, Better Auth automatically links the Twitter account to the existing user record
 - All existing posts and data are preserved (userId stays the same)
 - No custom migration code needed — Better Auth handles it natively
 
 **Files changed:**
+
 - `src/lib/auth.ts` (added `accountLinking.trustedProviders`)
 
 **Status:** `pnpm lint` ✅ `pnpm typecheck` ✅
@@ -1725,6 +1856,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 **Summary:** Completed Phase 2 (Login Page Redesign), Phase 6 (Marketing Site Link Cleanup), and Phase 7 (OAuth Error Handling) of the X OAuth-only auth migration.
 
 **Phase 2 - Login Page Redesign:**
+
 - Redesigned `src/app/(auth)/login/page.tsx` with clean value proposition: "Sign in with X to get started"
 - Added bullet list of 3 features (schedule, AI writer, analytics)
 - Added OAuth error display via `getErrorMessage()` function mapping `searchParams.error` codes
@@ -1739,6 +1871,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
   - Local error state for redirect failures
 
 **Phase 6 - Marketing Site Link Cleanup:**
+
 - `src/components/site-header.tsx`: "Get Started" → `/login`
 - `src/components/mobile-menu.tsx`: "Get Started Free" → `/login`
 - `src/components/auth/user-profile.tsx`: "Sign up" → `/login`
@@ -1747,6 +1880,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - `src/app/(marketing)/pricing/page.tsx`: CTA → `/login`
 
 **Phase 7 - OAuth Error Handling (already integrated into Phase 2):**
+
 - `access_denied` → "You need to authorize AstraPost to access your X account to continue."
 - `server_error` → "X is currently unavailable. Please try again in a few minutes."
 - `callback_error` → "Sign-in failed. Please try again."
@@ -1754,6 +1888,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Error display uses `role="alert"` + `text-destructive` for accessibility
 
 **Files changed:**
+
 - `src/app/(auth)/login/page.tsx` (redesigned)
 - `src/components/auth/sign-in-button.tsx` (simplified)
 - `src/components/site-header.tsx`
@@ -1770,12 +1905,14 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 ## 2026-03-29: Phase 1, 2 & 3 - Roadmap Moderation Feature COMPLETE ✅
 
 **Phase 1 - Backend:**
+
 - Schema changes: `feedbackStatusEnum` changed to `["pending", "approved", "rejected"]`, added `adminNotes` and `reviewedAt` columns
 - Database migration applied
 - Rate limiting on feedback submission (max 3/day)
 - Admin API routes created at `/api/admin/roadmap`
 
 **Phase 2 - Public Page Redesign:**
+
 - Created `submission-form.tsx` component with authentication check
 - Redesigned public roadmap page to show only submission form
 - Non-authenticated users see sign-in prompt
@@ -1783,6 +1920,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Removed all feedback list/voting UI
 
 **Phase 3 - Admin Roadmap Management:**
+
 - Created admin roadmap page at `/admin/roadmap`
 - Implemented tab filters (Pending/Approved/Rejected/All) with counts
 - Search by title or description
@@ -1791,6 +1929,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - Added Roadmap entry to admin sidebar
 
 **Files changed:**
+
 - `src/lib/schema.ts`
 - `src/app/api/feedback/route.ts`
 - `src/app/api/feedback/[id]/upvote/route.ts`
@@ -1810,10 +1949,12 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 ## 2026-03-28: Fixed Server Component Render Error (Enum Caching)
 
 **Files changed:**
+
 - `src/app/dashboard/queue/page.tsx`
 - `src/lib/queue/processors.ts`
 
 **What changed:**
+
 - **Bypassed Postgres Enum Cache:** Addressed the persistent "invalid input value for enum post_status" error causing the `/dashboard/queue` page to crash in production. Even after the database migration was applied, connection poolers (like PgBouncer used by Supabase/Neon) cache enum definitions. When the server component queried `inArray(posts.status, ["failed", "paused_needs_reconnect"])`, the pooler rejected the new value.
 - Modified the Drizzle query in `page.tsx` to cast the column to text before comparison: `sql`${posts.status}::text IN ('failed', 'paused_needs_reconnect')``. This completely bypasses the strict enum validation and resolves the Server Component 500 error.
 - Added a similar defensive cast in `processors.ts` when the background worker updates the post status, preventing the worker from crashing due to the same stale enum cache issue.
@@ -1823,10 +1964,12 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 ## 2026-03-28: Fixed Queue Dashboard Error (Missing Migration)
 
 **Files changed:**
+
 - `drizzle/0034_rainy_runaways.sql`
 - `drizzle/meta/_journal.json`
 
 **What changed:**
+
 - **Generated Database Migration:** The previous update added `paused_needs_reconnect` to the `post_status` enum in `schema.ts`, but a database migration was missing. This caused a Next.js Server Component render error (`invalid input value for enum post_status: "paused_needs_reconnect"`) on the `/dashboard/queue` page in production.
 - Ran `pnpm db:generate` to create the missing migration (`drizzle/0034_rainy_runaways.sql`).
 - Once this change is pushed and deployed, Vercel will automatically run `pnpm db:migrate` during the build process, which will add the missing enum value to the PostgreSQL database and fix the crash.
@@ -1836,6 +1979,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 ## 2026-03-28: Unified OAuth Flow & Resilient Background Posting
 
 **Files changed:**
+
 - `src/lib/auth.ts`
 - `src/lib/schema.ts`
 - `src/lib/queue/processors.ts`
@@ -1848,6 +1992,7 @@ REPLICATE_MODEL_FALLBACK="google/nano-banana"
 - `src/components/queue/queue-content.tsx`
 
 **What changed:**
+
 - **Unified Single OAuth Flow:** Modified `better-auth` configuration in `auth.ts` to seamlessly write OAuth tokens directly to the `xAccounts` table on every login via `databaseHooks.account.create.after` and `update.after`. The separate "Connect X Account" flow is deprecated.
 - **Resilient Token Refresh:** Updated `refreshWithLock` in `x-api.ts` to execute the token update inside a strict database transaction to prevent single-use refresh token loss. Added fingerprint logging for auditability.
 - **Retry Policy for Authorization Failures:** The background worker (`scheduleProcessor`) no longer marks posts as permanently `failed` upon OAuth token expiration (400/401 errors). It now marks the `xAccounts` connection as inactive, sets the post status to `paused_needs_reconnect`, and leverages BullMQ's `DelayedError` to retry in 1 hour.

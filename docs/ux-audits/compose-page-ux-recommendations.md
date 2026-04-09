@@ -29,27 +29,27 @@ The audit confirms three structural issues that persist across every user flow:
 
 ### 1.2 Key Problems Identified
 
-| ID | Problem | Severity | Origin |
-|----|---------|----------|--------|
-| FP-01 | AI entry points are duplicated across toolbar and sidebar | High | Audit Section B4, K |
-| FP-02 | Content Tools card replaced by AI panel — loss of spatial orientation | High | Audit Section E1 |
-| FP-03 | Hashtags generated in two simultaneous locations (panel + inline chips) | Medium | Audit Section E6, H8 |
-| FP-04 | Overwrite guard interrupts every AI generation that replaces content | Medium | Audit Section F4 |
-| FP-05 | No beforeunload protection — risk of lost work on tab close | High | Audit Section G9 |
-| FP-06 | Link preview fetch has no loading indicator — silent 1s delay | Low | Audit Section A1 |
-| FP-07 | Best Times component silently disappears on API error | Medium | Audit Section C3, Appendix 15 |
-| FP-08 | Mobile AI Sheet (90dvh) hides composer during generation | High | Audit Section E2, Appendix 7 |
-| FP-09 | "Number Tweets" is a manual step — user must remember to click | Low | Audit Section B5, Appendix 9 |
-| FP-10 | SSE streaming not announced to screen readers | Medium | Audit Appendix A11y |
-| FP-11 | Character counter may spam screen reader on every keystroke | Low | Audit Appendix A11y |
-| FP-12 | No keyboard shortcut system for power users | Medium | Audit Section L (Heuristic 7) |
-| FP-13 | Drag handle on desktop has no keyboard alternative | Medium | Audit Appendix A11y |
-| FP-14 | Time Select disabled until date selected — no affordance explaining why | Low | Audit Section C2 |
-| FP-15 | 60+ state variables indicate excessive component responsibility — maintenance risk | High | Audit Section J1 |
-| FP-16 | Auto-save "just now" label misleads when manually saved | Low | Audit Section A3, Appendix 6 |
-| FP-17 | AI tool decision fatigue: 6 tools × 7 tones × 10 languages shown simultaneously | Medium | Audit Section L (Hick's Law) |
-| FP-18 | Media remove button only visible on hover — discoverability problem on touch | Medium | Audit Section A1 |
-| FP-19 | Templates Dialog is 834 lines embedded in composer — cognitive and render overhead | Medium | Audit Section N |
+| ID    | Problem                                                                            | Severity | Origin                        |
+| ----- | ---------------------------------------------------------------------------------- | -------- | ----------------------------- |
+| FP-01 | AI entry points are duplicated across toolbar and sidebar                          | High     | Audit Section B4, K           |
+| FP-02 | Content Tools card replaced by AI panel — loss of spatial orientation              | High     | Audit Section E1              |
+| FP-03 | Hashtags generated in two simultaneous locations (panel + inline chips)            | Medium   | Audit Section E6, H8          |
+| FP-04 | Overwrite guard interrupts every AI generation that replaces content               | Medium   | Audit Section F4              |
+| FP-05 | No beforeunload protection — risk of lost work on tab close                        | High     | Audit Section G9              |
+| FP-06 | Link preview fetch has no loading indicator — silent 1s delay                      | Low      | Audit Section A1              |
+| FP-07 | Best Times component silently disappears on API error                              | Medium   | Audit Section C3, Appendix 15 |
+| FP-08 | Mobile AI Sheet (90dvh) hides composer during generation                           | High     | Audit Section E2, Appendix 7  |
+| FP-09 | "Number Tweets" is a manual step — user must remember to click                     | Low      | Audit Section B5, Appendix 9  |
+| FP-10 | SSE streaming not announced to screen readers                                      | Medium   | Audit Appendix A11y           |
+| FP-11 | Character counter may spam screen reader on every keystroke                        | Low      | Audit Appendix A11y           |
+| FP-12 | No keyboard shortcut system for power users                                        | Medium   | Audit Section L (Heuristic 7) |
+| FP-13 | Drag handle on desktop has no keyboard alternative                                 | Medium   | Audit Appendix A11y           |
+| FP-14 | Time Select disabled until date selected — no affordance explaining why            | Low      | Audit Section C2              |
+| FP-15 | 60+ state variables indicate excessive component responsibility — maintenance risk | High     | Audit Section J1              |
+| FP-16 | Auto-save "just now" label misleads when manually saved                            | Low      | Audit Section A3, Appendix 6  |
+| FP-17 | AI tool decision fatigue: 6 tools × 7 tones × 10 languages shown simultaneously    | Medium   | Audit Section L (Hick's Law)  |
+| FP-18 | Media remove button only visible on hover — discoverability problem on touch       | Medium   | Audit Section A1              |
+| FP-19 | Templates Dialog is 834 lines embedded in composer — cognitive and render overhead | Medium   | Audit Section N               |
 
 ### 1.3 Improvement Philosophy
 
@@ -120,33 +120,33 @@ Code at `composer.tsx` (auto-save effect): uploading items are filtered silently
 
 ### 2.3 Master Friction Point Registry
 
-| ID | Title | Severity | Category | Phase |
-|----|-------|----------|----------|-------|
-| FP-01 | AI entry points duplicated across toolbar and sidebar | High | Consolidation | P1 |
-| FP-02 | AI panel replaces Content Tools — layout shift breaks spatial memory | High | Layout | P1 |
-| FP-03 | Hashtags appear in two simultaneous UI surfaces | Medium | Duplication | P0 |
-| FP-04 | Overwrite guard fires on first character | Medium | Flow | P1 |
-| FP-05 | No beforeunload protection for unsaved content | High | Data Safety | P0 |
-| FP-06 | Link preview fetch: silent 1s delay, no loading indicator | Low | Feedback | P0 |
-| FP-07 | Best Times component silently disappears on API error | Medium | Feedback | P0 |
-| FP-08 | Mobile AI Sheet blinds composer during generation | High | Mobile | P2 |
-| FP-09 | "Number Tweets" is a manual step | Low | Automation | P3 |
-| FP-10 | SSE streaming not announced to screen readers | Medium | A11y | P4 |
-| FP-11 | Character counter spams screen reader announcements | Low | A11y | P4 |
-| FP-12 | No keyboard shortcut system | Medium | Efficiency | P3 |
-| FP-13 | Drag handle has no keyboard alternative on desktop | Medium | A11y | P4 |
-| FP-14 | Time Select disabled with no affordance explaining why | Low | Feedback | P0 |
-| FP-15 | 60+ state variables: excessive component responsibility | High | Architecture | P1 |
-| FP-16 | Auto-save "just now" label can mislead | Low | Copy | P0 |
-| FP-17 | AI tool decision fatigue: 6 tools × 7 tones × 10 languages | Medium | Complexity | P1 |
-| FP-18 | Media remove button hover-only — poor touch discoverability | Medium | Mobile | P2 |
-| FP-19 | Templates Dialog (834 lines) embedded in Composer | Medium | Architecture | P1 |
-| FP-20 | AI language defaults to Arabic for all users | High | Personalization | P0 |
-| FP-21 | Overwrite AlertDialog copy says "cannot be undone" — false | Low | Copy | P0 |
-| FP-22 | "Save as Template" misplaced in Publishing card | Medium | Layout | P1 |
-| FP-23 | Thread numbering toggle uses non-standard control | Low | Consistency | P0 |
-| FP-24 | AI Image: no progress indication during polling | Medium | Feedback | P2 |
-| FP-25 | Auto-save silently strips uploading media | Medium | Data Safety | P2 |
+| ID    | Title                                                                | Severity | Category        | Phase |
+| ----- | -------------------------------------------------------------------- | -------- | --------------- | ----- |
+| FP-01 | AI entry points duplicated across toolbar and sidebar                | High     | Consolidation   | P1    |
+| FP-02 | AI panel replaces Content Tools — layout shift breaks spatial memory | High     | Layout          | P1    |
+| FP-03 | Hashtags appear in two simultaneous UI surfaces                      | Medium   | Duplication     | P0    |
+| FP-04 | Overwrite guard fires on first character                             | Medium   | Flow            | P1    |
+| FP-05 | No beforeunload protection for unsaved content                       | High     | Data Safety     | P0    |
+| FP-06 | Link preview fetch: silent 1s delay, no loading indicator            | Low      | Feedback        | P0    |
+| FP-07 | Best Times component silently disappears on API error                | Medium   | Feedback        | P0    |
+| FP-08 | Mobile AI Sheet blinds composer during generation                    | High     | Mobile          | P2    |
+| FP-09 | "Number Tweets" is a manual step                                     | Low      | Automation      | P3    |
+| FP-10 | SSE streaming not announced to screen readers                        | Medium   | A11y            | P4    |
+| FP-11 | Character counter spams screen reader announcements                  | Low      | A11y            | P4    |
+| FP-12 | No keyboard shortcut system                                          | Medium   | Efficiency      | P3    |
+| FP-13 | Drag handle has no keyboard alternative on desktop                   | Medium   | A11y            | P4    |
+| FP-14 | Time Select disabled with no affordance explaining why               | Low      | Feedback        | P0    |
+| FP-15 | 60+ state variables: excessive component responsibility              | High     | Architecture    | P1    |
+| FP-16 | Auto-save "just now" label can mislead                               | Low      | Copy            | P0    |
+| FP-17 | AI tool decision fatigue: 6 tools × 7 tones × 10 languages           | Medium   | Complexity      | P1    |
+| FP-18 | Media remove button hover-only — poor touch discoverability          | Medium   | Mobile          | P2    |
+| FP-19 | Templates Dialog (834 lines) embedded in Composer                    | Medium   | Architecture    | P1    |
+| FP-20 | AI language defaults to Arabic for all users                         | High     | Personalization | P0    |
+| FP-21 | Overwrite AlertDialog copy says "cannot be undone" — false           | Low      | Copy            | P0    |
+| FP-22 | "Save as Template" misplaced in Publishing card                      | Medium   | Layout          | P1    |
+| FP-23 | Thread numbering toggle uses non-standard control                    | Low      | Consistency     | P0    |
+| FP-24 | AI Image: no progress indication during polling                      | Medium   | Feedback        | P2    |
+| FP-25 | Auto-save silently strips uploading media                            | Medium   | Data Safety     | P2    |
 
 ---
 
@@ -165,6 +165,7 @@ Code at `composer.tsx` (auto-save effect): uploading items are filtered silently
 **Why**: Typefully's composer uses exactly this split — toolbar for in-line formatting, side panel for AI. The current dual-path forces users to learn two navigation patterns for one mental task ("use AI").
 
 **Files Affected**:
+
 - `src/components/composer/tweet-card.tsx` — remove Rewrite and Hashtags buttons from `CardFooter`
 - `src/components/composer/composer.tsx` — consolidate AI tool triggers into sidebar section
 
@@ -183,6 +184,7 @@ Code at `composer.tsx` (auto-save effect): uploading items are filtered silently
 **Why**: Linear's command palette and Notion's slash menu establish that AI assistance should be discoverable but not disruptive. The expand-in-place pattern (used by Notion's block AI) preserves spatial memory while revealing progressive complexity. This directly solves FP-02 without losing the power of the AI tools.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — replace ternary swap with accordion expand inside the card
 - New: `src/components/composer/ai-tools-panel.tsx` — extract AI form into dedicated component (addresses FP-15)
 
@@ -199,6 +201,7 @@ Code at `composer.tsx` (auto-save effect): uploading items are filtered silently
 **Why**: Nielsen's Heuristic 4 (Consistency & Standards) demands that similar actions be grouped. Template saving is structurally identical to bookmarking content — it belongs with content tools, not the publish button.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — move template button and dialog trigger
 
 ---
@@ -218,6 +221,7 @@ Additionally, update the AlertDialog copy: change "This cannot be undone." to "Y
 **Why**: The overwrite guard exists for error prevention (Heuristic 5) but over-triggers, creating friction at precisely the moment of user intent (they just clicked "Generate"). A calibrated threshold respects the user's decision.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — overwrite condition and AlertDialog copy
 
 ---
@@ -233,6 +237,7 @@ Additionally, update the AlertDialog copy: change "This cannot be undone." to "Y
 **Why**: Zero Duplication principle. The in-panel chips serve no additional function over the inline chips — they just add visual noise. The inline chips are closer to the content and have better contextual placement (Apple's design maxim: place controls as close to their effect as possible).
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — remove hashtag chip rendering from AI panel form, keep `setIsAiOpen(false)` after hashtag generation
 
 ---
@@ -244,6 +249,7 @@ Additionally, update the AlertDialog copy: change "This cannot be undone." to "Y
 **Before**: The composer uses three different overlay patterns for AI tools: (1) inline card swap (desktop), (2) bottom Sheet 90dvh (mobile), (3) Dialog (AI Image, Templates). Each has different close affordances. Users must learn three mental models.
 
 **After**: Establish a single overlay hierarchy:
+
 - **Inline expand** (desktop): AI tools panel expands below the card header; Content Tools stay visible above
 - **Bottom drawer / Sheet** (mobile): consistent 60dvh — not 90dvh — allowing composer to remain visible above
 - **Full Dialog** (AI Image, Templates only): these require full focus and are justified as Dialogs
@@ -251,6 +257,7 @@ Additionally, update the AlertDialog copy: change "This cannot be undone." to "Y
 **Why**: OpenAI's ChatGPT interface maintains a single overlay mental model — the input is always visible. Typefully's AI panel is always a side drawer that never hides the composer.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — change Sheet height for AI panel from `h-[90dvh]` to `h-[60dvh]`
 
 ---
@@ -270,6 +277,7 @@ This is exactly the pattern Linear uses for its command palette — one entry po
 **Hick's Law justification**: Reducing 6 parallel decision points to 1 entry + 6 sequential tool options reduces the initial cognitive load substantially. Users who know what they want navigate to it inside the panel; new users only need to find one door.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — refactor Content Tools card and AI panel to use internal tab switcher
 - New: `src/components/composer/ai-tools-panel.tsx` — dedicated component
 
@@ -286,6 +294,7 @@ This is exactly the pattern Linear uses for its command palette — one entry po
 **Why**: Contextual Intelligence principle. The system knows the user's language preference from their profile. Defaulting to Arabic for a non-Arabic user produces a confusing first AI generation, which is a high-severity onboarding failure.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — lines 164, 169–173
 - `src/app/dashboard/compose/page.tsx` — consider passing initial language as prop from server session
 
@@ -296,6 +305,7 @@ This is exactly the pattern Linear uses for its command palette — one entry po
 **REC-09: Flow 1 (Quick Compose & Schedule) — reduce steps from 9 to 6**
 
 **Before (9 steps)**:
+
 1. Land on compose page
 2. Restore auto-save draft (automatic)
 3. Type in tweet card
@@ -307,6 +317,7 @@ This is exactly the pattern Linear uses for its command palette — one entry po
 9. Click "Post to X"
 
 **After (6 steps)**:
+
 1. Land on compose page — account is pre-selected (default account remembered)
 2. Type in tweet card
 3. Link preview auto-fetches (shows subtle skeleton during 1s debounce)
@@ -363,6 +374,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Why**: Nielsen's Heuristic 1 (Visibility of System Status). The user should never wonder whether a section exists.
 
 **Files Affected**:
+
 - `src/components/composer/best-time-suggestions.tsx` — add loading skeleton and error state
 
 ---
@@ -378,6 +390,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Why**: Heuristic 1 (Visibility of Status). The 1-second gap currently feels like the feature is broken or the URL was not recognized.
 
 **Files Affected**:
+
 - `src/components/composer/tweet-card.tsx` — add pending URL detection state and skeleton
 
 ---
@@ -391,6 +404,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **After**: On mobile (`isDesktop === false`), the remove button has `opacity-100` always. On desktop, keep the hover behavior for aesthetic cleanliness.
 
 **Files Affected**:
+
 - `src/components/composer/tweet-card.tsx` — conditional opacity class based on `isDesktop`
 
 ---
@@ -406,6 +420,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Why**: The current spinner creates anxiety because users have no expectation calibration. An estimated-time indicator (used by Midjourney and DALL-E interfaces) dramatically reduces perceived wait time.
 
 **Files Affected**:
+
 - `src/components/composer/ai-image-dialog.tsx` — replace spinner with progress pattern
 
 ---
@@ -423,6 +438,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Why**: Contextual Intelligence. Thread numbering is a best practice the system already knows about (it defaults the AI numbering toggle to `true`). The manual step is a consistency gap between AI-generated threads (auto-numbered) and manually-composed threads (not numbered until clicked).
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — `addTweet` function and state-derived numbering
 
 ---
@@ -438,6 +454,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Why**: Nielsen's Heuristic 3 (User Control & Freedom) and Heuristic 5 (Error Prevention). This is a one-line fix with zero UX cost for normal navigation and high value for accidental closure.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — add `beforeunload` useEffect
 
 ---
@@ -451,6 +468,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **After**: Change the placeholder to "Select date first" when the Select is disabled. This eliminates the confusion without requiring any additional UI element.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — disabled Time Select placeholder text
 
 ---
@@ -464,6 +482,7 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **After**: After the first generation, persist `aiTone` and `aiLanguage` to `localStorage["astra-ai-prefs"]`. On next session, restore from localStorage (with session language taking priority). This is a quality-of-life change that significantly reduces setup friction for returning users.
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — add localStorage persist/restore for AI prefs
 
 ---
@@ -474,20 +493,21 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 
 **Goal**: Zero-risk improvements that can ship immediately without architectural changes.
 
-| Item | Recommendation | Effort | Risk | Friction Points | Status |
-|------|---------------|--------|------|-----------------|--------|
-| P0-A | Fix "just now" auto-save label — add minimum 5s debounce before showing | S | Low | FP-16 | ✅ Done |
-| P0-B | Fix Time Select placeholder copy to "Select date first" when disabled | S | Low | FP-14 | ✅ Done |
-| P0-C | Fix overwrite AlertDialog copy — replace "cannot be undone" with accurate copy | S | Low | FP-21 | ✅ Done |
-| P0-D | Fix thread numbering toggle to use `Switch` component (not Button variant) | S | Low | FP-23 | ✅ Done |
-| P0-E | Add `beforeunload` guard for unsaved content | S | Low | FP-05 | ✅ Done |
-| P0-F | Fix AI language default — use session preference with navigator.language fallback | S | Medium | FP-20 | ✅ Done |
-| P0-G | Reduce AI mobile Sheet height from 90dvh to 60dvh | S | Low | FP-08 | ✅ Done |
-| P0-H | Make media remove button always visible on mobile | S | Low | FP-18 | ✅ Done |
+| Item | Recommendation                                                                    | Effort | Risk   | Friction Points | Status  |
+| ---- | --------------------------------------------------------------------------------- | ------ | ------ | --------------- | ------- |
+| P0-A | Fix "just now" auto-save label — add minimum 5s debounce before showing           | S      | Low    | FP-16           | ✅ Done |
+| P0-B | Fix Time Select placeholder copy to "Select date first" when disabled             | S      | Low    | FP-14           | ✅ Done |
+| P0-C | Fix overwrite AlertDialog copy — replace "cannot be undone" with accurate copy    | S      | Low    | FP-21           | ✅ Done |
+| P0-D | Fix thread numbering toggle to use `Switch` component (not Button variant)        | S      | Low    | FP-23           | ✅ Done |
+| P0-E | Add `beforeunload` guard for unsaved content                                      | S      | Low    | FP-05           | ✅ Done |
+| P0-F | Fix AI language default — use session preference with navigator.language fallback | S      | Medium | FP-20           | ✅ Done |
+| P0-G | Reduce AI mobile Sheet height from 90dvh to 60dvh                                 | S      | Low    | FP-08           | ✅ Done |
+| P0-H | Make media remove button always visible on mobile                                 | S      | Low    | FP-18           | ✅ Done |
 
 **Dependencies**: None. All items are isolated changes in existing files.
 
 **Success Metrics**:
+
 - Zero instances of Arabic default for non-Arabic users
 - No mobile users report invisible media remove button
 - Browser "leave site" dialog appears on accidental navigation with unsaved content
@@ -500,15 +520,15 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 
 **Goal**: Resolve structural fragmentation of AI entry points and layout shift issues. This is the highest-impact phase.
 
-| Item | Recommendation | Effort | Risk | Friction Points | Status |
-|------|---------------|--------|------|-----------------|--------|
-| P1-A | Extract AI panel into `ai-tools-panel.tsx` component | M | Medium | FP-15, FP-19 | ✅ Done |
-| P1-B | Replace Content Tools card AI buttons with unified AI Tools panel (accordion expand) | L | Medium | FP-01, FP-02, FP-17 | ✅ Done |
-| P1-C | Add internal tool switcher (tabs/segmented control) inside AI panel | M | Low | FP-17 | ✅ Done |
-| P1-D | Remove Rewrite and Hashtags from tweet card toolbar | S | Low | FP-01 | ✅ Done |
-| P1-E | Move "Save as Template" button from Publishing card to Content Tools / AI Tools card | S | Low | FP-22 | ✅ Done |
-| P1-F | Add Best Times loading skeleton and error state | S | Low | FP-07 | ✅ Done |
-| P1-G | Raise overwrite guard threshold to 50+ characters | S | Low | FP-04 | ✅ Done |
+| Item | Recommendation                                                                       | Effort | Risk   | Friction Points     | Status  |
+| ---- | ------------------------------------------------------------------------------------ | ------ | ------ | ------------------- | ------- |
+| P1-A | Extract AI panel into `ai-tools-panel.tsx` component                                 | M      | Medium | FP-15, FP-19        | ✅ Done |
+| P1-B | Replace Content Tools card AI buttons with unified AI Tools panel (accordion expand) | L      | Medium | FP-01, FP-02, FP-17 | ✅ Done |
+| P1-C | Add internal tool switcher (tabs/segmented control) inside AI panel                  | M      | Low    | FP-17               | ✅ Done |
+| P1-D | Remove Rewrite and Hashtags from tweet card toolbar                                  | S      | Low    | FP-01               | ✅ Done |
+| P1-E | Move "Save as Template" button from Publishing card to Content Tools / AI Tools card | S      | Low    | FP-22               | ✅ Done |
+| P1-F | Add Best Times loading skeleton and error state                                      | S      | Low    | FP-07               | ✅ Done |
+| P1-G | Raise overwrite guard threshold to 50+ characters                                    | S      | Low    | FP-04               | ✅ Done |
 
 **Dependencies**: P1-A must complete before P1-B and P1-C. P1-D after P1-B (verify tool access is preserved via panel before removing toolbar shortcuts).
 
@@ -517,11 +537,13 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Risk Level**: Medium — the AI panel restructure touches the most-used path. Requires thorough testing of all 6 tool flows on both desktop and mobile.
 
 **Success Metrics**:
+
 - Time to open AI panel: single click (down from 2 paths × 1 click each)
 - No layout shift when opening/closing AI tools
 - Overwrite guard appears in <5% of AI generations (was ~80% for returning users with drafts)
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx` — major refactor of sidebar section
 - New: `src/components/composer/ai-tools-panel.tsx`
 - `src/components/composer/tweet-card.tsx` — remove Rewrite/Hashtags from toolbar
@@ -533,14 +555,14 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 
 **Goal**: Streamline the three highest-frequency flows (Compose, AI Thread, Scheduling) and address remaining mobile experience gaps.
 
-| Item | Recommendation | Effort | Risk | Friction Points | Status |
-|------|---------------|--------|------|-----------------|--------|
-| P2-A | Eliminate hashtag dual display — inline chips only | S | Low | FP-03 | ✅ Done (2026-04-05) |
-| P2-B | Add link preview skeleton during 1s debounce | S | Low | FP-06 | ✅ Done (2026-04-05) |
-| P2-C | Add estimated-time progress indicator to AI Image Dialog | M | Low | FP-24 | ✅ Done (2026-04-05) |
-| P2-D | Add beforeunload guard for uploading media state | S | Low | FP-25 | ✅ Done (2026-04-05) |
-| P2-E | Combine date+time into unified scheduling popover | M | Medium | Flow 1 optimization | ✅ Done (2026-04-05) |
-| P2-F | Stream AI thread content directly into composer cards in real-time | L | Medium | Flow 2 optimization | ✅ Done (2026-04-05) |
+| Item | Recommendation                                                     | Effort | Risk   | Friction Points     | Status               |
+| ---- | ------------------------------------------------------------------ | ------ | ------ | ------------------- | -------------------- |
+| P2-A | Eliminate hashtag dual display — inline chips only                 | S      | Low    | FP-03               | ✅ Done (2026-04-05) |
+| P2-B | Add link preview skeleton during 1s debounce                       | S      | Low    | FP-06               | ✅ Done (2026-04-05) |
+| P2-C | Add estimated-time progress indicator to AI Image Dialog           | M      | Low    | FP-24               | ✅ Done (2026-04-05) |
+| P2-D | Add beforeunload guard for uploading media state                   | S      | Low    | FP-25               | ✅ Done (2026-04-05) |
+| P2-E | Combine date+time into unified scheduling popover                  | M      | Medium | Flow 1 optimization | ✅ Done (2026-04-05) |
+| P2-F | Stream AI thread content directly into composer cards in real-time | L      | Medium | Flow 2 optimization | ✅ Done (2026-04-05) |
 
 **Dependencies**: P2-A after P1-B (AI panel restructure must be complete). P2-F depends on P1-A (extracted AI panel). P2-E is independent.
 
@@ -549,12 +571,14 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Risk Level**: Medium — P2-E (date+time popover unification) and P2-F (streaming-into-composer) involve changes to the core post creation flow and need QA on all scheduling scenarios.
 
 **Success Metrics**:
+
 - Hashtag interaction: single click path only
 - AI Image generation: >80% of users wait for result instead of closing dialog
 - Mobile scheduling: reduced from 3 interactions to 2 for setting date+time
 - AI thread generation: user sees content populating in real-time
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx`
 - `src/components/composer/ai-tools-panel.tsx`
 - `src/components/composer/ai-image-dialog.tsx`
@@ -567,13 +591,13 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 
 **Goal**: Add power user features, smart defaults, and micro-interactions that make the composer feel fast and intelligent.
 
-| Item | Recommendation | Effort | Risk | Friction Points | Status |
-|------|---------------|--------|------|-----------------|--------|
-| P3-A | Persist AI tone + language preferences in localStorage | S | Low | FP-17, FP-19 | ✅ Done |
-| P3-B | Auto-number thread tweets when count >= 3 | M | Low | FP-09 | ✅ Done |
-| P3-C | Add keyboard shortcut system (Cmd+Enter publish, Cmd+D draft, Cmd+K open AI) | L | Low | FP-12 | ✅ Done |
-| P3-D | Smart language detection: infer language from tweet content for translation tool | M | Medium | Contextual Intelligence | ✅ Done |
-| P3-E | Add composer "getting started" hint overlay for first-time users | M | Low | Heuristic 10 (Help & Docs) | ✅ Done |
+| Item | Recommendation                                                                   | Effort | Risk   | Friction Points            | Status  |
+| ---- | -------------------------------------------------------------------------------- | ------ | ------ | -------------------------- | ------- |
+| P3-A | Persist AI tone + language preferences in localStorage                           | S      | Low    | FP-17, FP-19               | ✅ Done |
+| P3-B | Auto-number thread tweets when count >= 3                                        | M      | Low    | FP-09                      | ✅ Done |
+| P3-C | Add keyboard shortcut system (Cmd+Enter publish, Cmd+D draft, Cmd+K open AI)     | L      | Low    | FP-12                      | ✅ Done |
+| P3-D | Smart language detection: infer language from tweet content for translation tool | M      | Medium | Contextual Intelligence    | ✅ Done |
+| P3-E | Add composer "getting started" hint overlay for first-time users                 | M      | Low    | Heuristic 10 (Help & Docs) | ✅ Done |
 
 **Dependencies**: P3-C independent. P3-B depends on Phase 1 (stable AI panel). P3-D depends on P1-A.
 
@@ -582,11 +606,13 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Risk Level**: Low — all items are additive features. P3-C (keyboard shortcuts) must be tested for conflicts with browser defaults and RTL Arabic keyboard mappings.
 
 **Success Metrics**:
+
 - Returning users: zero re-selection of tone/language on second visit
 - Thread posts: >60% include numbering (up from current manual adoption)
 - Power users: >20% use keyboard shortcuts within 2 weeks of launch
 
 **Files Affected**:
+
 - `src/components/composer/composer.tsx`
 - New: `src/hooks/use-keyboard-shortcuts.ts`
 - New: `src/components/composer/composer-onboarding-hint.tsx`
@@ -597,15 +623,15 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 
 **Goal**: Achieve WCAG 2.1 AA compliance, eliminate remaining screen reader gaps, and complete responsive polish.
 
-| Item | Recommendation | Effort | Risk | A11y Gap | Status |
-|------|---------------|--------|------|----------|--------|
-| P4-A | Add `aria-live` region for SSE streaming announcements | S | Low | FP-10 | ✅ Done |
-| P4-B | Debounce character counter announcements — only announce every 10 chars | S | Low | FP-11 | ✅ Done |
-| P4-C | Add visible Up/Down keyboard reorder buttons on desktop (alongside drag handle) | M | Low | FP-13 | ✅ Done |
-| P4-D | Audit emoji picker keyboard navigation; add `aria-haspopup`/`aria-expanded` to triggers | M | Medium | Audit Appendix | ✅ Done |
-| P4-E | Performance: lazy-load `TemplatesDialog` (834 lines) with `React.lazy()` | M | Low | FP-19 | ✅ Done |
-| P4-F | Add `role="group"` and `aria-label` to tweet card groups in thread mode | S | Low | WCAG 1.3.1 | ✅ Done |
-| P4-G | Fix amber warning color contrast for WCAG AA compliance | S | Low | WCAG 1.4.3 | ✅ Done |
+| Item | Recommendation                                                                          | Effort | Risk   | A11y Gap       | Status  |
+| ---- | --------------------------------------------------------------------------------------- | ------ | ------ | -------------- | ------- |
+| P4-A | Add `aria-live` region for SSE streaming announcements                                  | S      | Low    | FP-10          | ✅ Done |
+| P4-B | Debounce character counter announcements — only announce every 10 chars                 | S      | Low    | FP-11          | ✅ Done |
+| P4-C | Add visible Up/Down keyboard reorder buttons on desktop (alongside drag handle)         | M      | Low    | FP-13          | ✅ Done |
+| P4-D | Audit emoji picker keyboard navigation; add `aria-haspopup`/`aria-expanded` to triggers | M      | Medium | Audit Appendix | ✅ Done |
+| P4-E | Performance: lazy-load `TemplatesDialog` (834 lines) with `React.lazy()`                | M      | Low    | FP-19          | ✅ Done |
+| P4-F | Add `role="group"` and `aria-label` to tweet card groups in thread mode                 | S      | Low    | WCAG 1.3.1     | ✅ Done |
+| P4-G | Fix amber warning color contrast for WCAG AA compliance                                 | S      | Low    | WCAG 1.4.3     | ✅ Done |
 
 **Dependencies**: P4-A and P4-B are independent. P4-C should come after P1 (AI panel restructure may affect tab order). P4-E independent.
 
@@ -614,11 +640,13 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 **Risk Level**: Low — all items are additive or non-breaking changes. P4-D (emoji picker) may require replacing the third-party library.
 
 **Success Metrics**:
+
 - WCAG 2.1 AA automated scan: 0 violations
 - Screen reader users can complete full compose-and-schedule flow without visual guidance
 - `TemplatesDialog` no longer contributes to initial bundle
 
 **Files Affected**:
+
 - `src/components/composer/tweet-card.tsx`
 - `src/components/composer/composer.tsx`
 - `src/components/composer/templates-dialog.tsx`
@@ -630,23 +658,23 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 
 ### Conversion Metrics (Product KPIs)
 
-| Metric | Current Baseline | Target (Post-Phase 2) | Measurement Method |
-|--------|-----------------|----------------------|--------------------|
-| Time to first successful post (new user) | ~4 min (est.) | <2.5 min | Session recording analysis |
-| AI tool adoption rate | Unknown | +40% relative | API call volume per DAU |
-| Thread completion rate (started → published) | Unknown | >70% | `posts` table: status distribution |
-| Mobile session completion rate | Unknown | +25% relative | Session recording, device segment |
-| Scheduling flow completion (step drop-off) | Unknown | <10% drop-off at time step | Funnel analysis |
+| Metric                                       | Current Baseline | Target (Post-Phase 2)      | Measurement Method                 |
+| -------------------------------------------- | ---------------- | -------------------------- | ---------------------------------- |
+| Time to first successful post (new user)     | ~4 min (est.)    | <2.5 min                   | Session recording analysis         |
+| AI tool adoption rate                        | Unknown          | +40% relative              | API call volume per DAU            |
+| Thread completion rate (started → published) | Unknown          | >70%                       | `posts` table: status distribution |
+| Mobile session completion rate               | Unknown          | +25% relative              | Session recording, device segment  |
+| Scheduling flow completion (step drop-off)   | Unknown          | <10% drop-off at time step | Funnel analysis                    |
 
 ### Quality Metrics (Engineering KPIs)
 
-| Metric | Current State | Target | Measurement |
-|--------|--------------|--------|-------------|
-| Composer component lines of code | 1,985 | <1,200 (post-extraction) | Direct count |
-| Number of state variables in `Composer` | 60+ | <35 | Code review |
-| Lighthouse Accessibility score | Unknown | ≥90 | CI pipeline |
-| AI panel interactions causing layout shift | Every open/close | 0 | Manual QA |
-| Duplicate hashtag surface reports (user complaints) | Unknown | 0 | Support tickets |
+| Metric                                              | Current State    | Target                   | Measurement     |
+| --------------------------------------------------- | ---------------- | ------------------------ | --------------- |
+| Composer component lines of code                    | 1,985            | <1,200 (post-extraction) | Direct count    |
+| Number of state variables in `Composer`             | 60+              | <35                      | Code review     |
+| Lighthouse Accessibility score                      | Unknown          | ≥90                      | CI pipeline     |
+| AI panel interactions causing layout shift          | Every open/close | 0                        | Manual QA       |
+| Duplicate hashtag surface reports (user complaints) | Unknown          | 0                        | Support tickets |
 
 ### Leading Indicators
 
@@ -661,75 +689,75 @@ This eliminates the dual-surface confusion and reduces the interaction to a clea
 ### 6.1 Friction Point → Recommendation Traceability Matrix
 
 | Friction Point | Primary Recommendation(s) | Phase |
-|---------------|--------------------------|-------|
-| FP-01 | REC-01, REC-07 | P1 |
-| FP-02 | REC-02, REC-07 | P1 |
-| FP-03 | REC-05 | P2 |
-| FP-04 | REC-04 | P1 |
-| FP-05 | REC-17 | P0 |
-| FP-06 | REC-13 | P2 |
-| FP-07 | REC-12 | P1 |
-| FP-08 | REC-06 | P0 |
-| FP-09 | REC-16 | P3 |
-| FP-10 | P4-A | P4 |
-| FP-11 | P4-B | P4 |
-| FP-12 | P3-C | P3 |
-| FP-13 | P4-C | P4 |
-| FP-14 | REC-18 | P0 |
-| FP-15 | REC-02, P1-A | P1 |
-| FP-16 | P0-A | P0 |
-| FP-17 | REC-07, REC-19 | P1/P3 |
-| FP-18 | REC-14 | P0 |
-| FP-19 | P1-A, P4-E | P1/P4 |
-| FP-20 | REC-08 | P0 |
-| FP-21 | REC-04 | P0 |
-| FP-22 | REC-03 | P1 |
-| FP-23 | P0-D | P0 |
-| FP-24 | REC-15 | P2 |
-| FP-25 | P2-D | P2 |
+| -------------- | ------------------------- | ----- |
+| FP-01          | REC-01, REC-07            | P1    |
+| FP-02          | REC-02, REC-07            | P1    |
+| FP-03          | REC-05                    | P2    |
+| FP-04          | REC-04                    | P1    |
+| FP-05          | REC-17                    | P0    |
+| FP-06          | REC-13                    | P2    |
+| FP-07          | REC-12                    | P1    |
+| FP-08          | REC-06                    | P0    |
+| FP-09          | REC-16                    | P3    |
+| FP-10          | P4-A                      | P4    |
+| FP-11          | P4-B                      | P4    |
+| FP-12          | P3-C                      | P3    |
+| FP-13          | P4-C                      | P4    |
+| FP-14          | REC-18                    | P0    |
+| FP-15          | REC-02, P1-A              | P1    |
+| FP-16          | P0-A                      | P0    |
+| FP-17          | REC-07, REC-19            | P1/P3 |
+| FP-18          | REC-14                    | P0    |
+| FP-19          | P1-A, P4-E                | P1/P4 |
+| FP-20          | REC-08                    | P0    |
+| FP-21          | REC-04                    | P0    |
+| FP-22          | REC-03                    | P1    |
+| FP-23          | P0-D                      | P0    |
+| FP-24          | REC-15                    | P2    |
+| FP-25          | P2-D                      | P2    |
 
 ### 6.2 Recommendation → File Impact Matrix
 
-| Recommendation | Files Modified | Files Created |
-|---------------|---------------|---------------|
-| REC-01 | `tweet-card.tsx`, `composer.tsx` | — |
-| REC-02 | `composer.tsx` | `ai-tools-panel.tsx` |
-| REC-03 | `composer.tsx` | — |
-| REC-04 | `composer.tsx` | — |
-| REC-05 | `composer.tsx` | — |
-| REC-06 | `composer.tsx` | — |
-| REC-07 | `composer.tsx` | `ai-tools-panel.tsx` |
-| REC-08 | `composer.tsx`, `page.tsx` | — |
-| REC-09 | `composer.tsx`, `date-picker.tsx` | — |
-| REC-10 | `composer.tsx`, `ai-tools-panel.tsx` | — |
-| REC-11 | `composer.tsx` | — |
-| REC-12 | `best-time-suggestions.tsx` | — |
-| REC-13 | `tweet-card.tsx` | — |
-| REC-14 | `tweet-card.tsx` | — |
-| REC-15 | `ai-image-dialog.tsx` | — |
-| REC-16 | `composer.tsx` | — |
-| REC-17 | `composer.tsx` | — |
-| REC-18 | `composer.tsx` | — |
-| REC-19 | `composer.tsx` | — |
-| P3-C | `composer.tsx` | `use-keyboard-shortcuts.ts` |
-| P3-E | `composer.tsx` | `composer-onboarding-hint.tsx` |
+| Recommendation | Files Modified                       | Files Created                  |
+| -------------- | ------------------------------------ | ------------------------------ |
+| REC-01         | `tweet-card.tsx`, `composer.tsx`     | —                              |
+| REC-02         | `composer.tsx`                       | `ai-tools-panel.tsx`           |
+| REC-03         | `composer.tsx`                       | —                              |
+| REC-04         | `composer.tsx`                       | —                              |
+| REC-05         | `composer.tsx`                       | —                              |
+| REC-06         | `composer.tsx`                       | —                              |
+| REC-07         | `composer.tsx`                       | `ai-tools-panel.tsx`           |
+| REC-08         | `composer.tsx`, `page.tsx`           | —                              |
+| REC-09         | `composer.tsx`, `date-picker.tsx`    | —                              |
+| REC-10         | `composer.tsx`, `ai-tools-panel.tsx` | —                              |
+| REC-11         | `composer.tsx`                       | —                              |
+| REC-12         | `best-time-suggestions.tsx`          | —                              |
+| REC-13         | `tweet-card.tsx`                     | —                              |
+| REC-14         | `tweet-card.tsx`                     | —                              |
+| REC-15         | `ai-image-dialog.tsx`                | —                              |
+| REC-16         | `composer.tsx`                       | —                              |
+| REC-17         | `composer.tsx`                       | —                              |
+| REC-18         | `composer.tsx`                       | —                              |
+| REC-19         | `composer.tsx`                       | —                              |
+| P3-C           | `composer.tsx`                       | `use-keyboard-shortcuts.ts`    |
+| P3-E           | `composer.tsx`                       | `composer-onboarding-hint.tsx` |
 
 ### 6.3 Audit Document Cross-References
 
-| This Document | Audit Section | Topic |
-|--------------|--------------|-------|
-| FP-01, REC-01 | Section B4, Section K (Sidebar Content Tools Buttons) | AI tool duplication |
-| FP-02, REC-02 | Section E1 (Desktop Inline Panel), Appendix Item 2 | Panel replacement |
-| FP-03, REC-05 | Section E6 (Hashtags), Appendix Item 3 | Dual display |
-| FP-04, REC-04 | Section F4 (Overwrite AlertDialog), Appendix Item 1 | Guard threshold |
-| FP-05, REC-17 | Section G9 (Cancellation Flow), Appendix Item 11 | Beforeunload |
-| FP-07, REC-12 | Section C3, Appendix Item 15 | Best Times silent failure |
-| FP-08, REC-06 | Section E2 (Mobile Sheet), Appendix Item 7 | Sheet height |
-| FP-10, P4-A | Appendix A11y Item 3 | SSE screen reader |
-| FP-12, P3-C | Section L (Heuristic 7: Flexibility & Efficiency) | Keyboard shortcuts |
-| FP-15, REC-02 | Section J1 (60+ State Variables), Section N | Component splitting |
-| FP-17 | Section L (Hick's Law Analysis) | Choice complexity |
-| FP-20, REC-08 | Section E3 (AI Tool Inputs), CLAUDE.md (Arabic MENA focus) | Language default |
+| This Document | Audit Section                                              | Topic                     |
+| ------------- | ---------------------------------------------------------- | ------------------------- |
+| FP-01, REC-01 | Section B4, Section K (Sidebar Content Tools Buttons)      | AI tool duplication       |
+| FP-02, REC-02 | Section E1 (Desktop Inline Panel), Appendix Item 2         | Panel replacement         |
+| FP-03, REC-05 | Section E6 (Hashtags), Appendix Item 3                     | Dual display              |
+| FP-04, REC-04 | Section F4 (Overwrite AlertDialog), Appendix Item 1        | Guard threshold           |
+| FP-05, REC-17 | Section G9 (Cancellation Flow), Appendix Item 11           | Beforeunload              |
+| FP-07, REC-12 | Section C3, Appendix Item 15                               | Best Times silent failure |
+| FP-08, REC-06 | Section E2 (Mobile Sheet), Appendix Item 7                 | Sheet height              |
+| FP-10, P4-A   | Appendix A11y Item 3                                       | SSE screen reader         |
+| FP-12, P3-C   | Section L (Heuristic 7: Flexibility & Efficiency)          | Keyboard shortcuts        |
+| FP-15, REC-02 | Section J1 (60+ State Variables), Section N                | Component splitting       |
+| FP-17         | Section L (Hick's Law Analysis)                            | Choice complexity         |
+| FP-20, REC-08 | Section E3 (AI Tool Inputs), CLAUDE.md (Arabic MENA focus) | Language default          |
 
 ---
 
@@ -749,7 +777,7 @@ This section documents the concrete, user-facing change in experience for every 
 Opening any AI tool caused the entire Content Tools card to disappear and be replaced by a full AI form. When the user finished generating and the panel closed, the Content Tools card snapped back into place. Every AI interaction reset the user's spatial memory of the sidebar — they had to reorient after every single generation. On a long session with repeated AI use, this felt like the interface was constantly rearranging itself around them.
 
 **After**
-The Content Tools card never disappears. Clicking any AI tool expands the AI panel *beneath* the existing tools as an inline accordion section. The card header, AI Writer button, templates button, and secondary tools remain visible at the top the entire time. The user can see both "what tools are available" and "the AI panel I opened" simultaneously. There is no layout shift, no card swap, and no disorientation. The experience is closer to opening a drawer than teleporting to a different screen.
+The Content Tools card never disappears. Clicking any AI tool expands the AI panel _beneath_ the existing tools as an inline accordion section. The card header, AI Writer button, templates button, and secondary tools remain visible at the top the entire time. The user can see both "what tools are available" and "the AI panel I opened" simultaneously. There is no layout shift, no card swap, and no disorientation. The experience is closer to opening a drawer than teleporting to a different screen.
 
 ---
 
@@ -954,6 +982,7 @@ There were no keyboard shortcuts on the composer. Every action required a mouse 
 
 **After**
 Three global shortcuts are registered:
+
 - **⌘ + Enter** (Ctrl+Enter on Windows): publishes immediately or schedules if a date is set — the single most common action, now a single chord from anywhere on the page including inside the tweet textarea.
 - **⌘ + D**: saves as draft — the second most common action.
 - **⌘ + K**: toggles the AI panel open/closed — opens the most-used content tool without leaving the keyboard.
@@ -1048,37 +1077,37 @@ All amber warning text uses `text-amber-700` (#B45309) in light mode, producing 
 
 ### 7.9 Summary of Improvements by User Type
 
-| User Type | Key Improvements |
-|-----------|-----------------|
-| **New user (first session)** | Onboarding hint explains AI, scheduling, and keyboard shortcuts on first visit. Language defaults to their browser language, not Arabic. Single clear entry to AI tools. Link preview skeleton confirms URL was recognised. |
-| **Returning power user** | AI tone and language remembered across sessions. Three keyboard shortcuts eliminate mouse dependency for publish, draft, and AI. Smart translate target pre-selected based on content language. Auto-numbering on threads of 3+. |
-| **Mobile user** | AI sheet is 60dvh — composer stays visible during generation. Media remove button always visible (no hover dependency). Up/Down reorder buttons available on all screen sizes. |
-| **Arabic/MENA user** | Language default respects profile setting. Smart translate suggests English when Arabic content detected. Best Times shows skeleton when loading (no disappearing section). |
+| User Type                         | Key Improvements                                                                                                                                                                                                                                                      |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **New user (first session)**      | Onboarding hint explains AI, scheduling, and keyboard shortcuts on first visit. Language defaults to their browser language, not Arabic. Single clear entry to AI tools. Link preview skeleton confirms URL was recognised.                                           |
+| **Returning power user**          | AI tone and language remembered across sessions. Three keyboard shortcuts eliminate mouse dependency for publish, draft, and AI. Smart translate target pre-selected based on content language. Auto-numbering on threads of 3+.                                      |
+| **Mobile user**                   | AI sheet is 60dvh — composer stays visible during generation. Media remove button always visible (no hover dependency). Up/Down reorder buttons available on all screen sizes.                                                                                        |
+| **Arabic/MENA user**              | Language default respects profile setting. Smart translate suggests English when Arabic content detected. Best Times shows skeleton when loading (no disappearing section).                                                                                           |
 | **Screen reader / keyboard user** | Thread cards announced as "Tweet N of M". SSE streaming progress announced live. Character counter no longer floods with announcements. Keyboard reorder available on desktop. Emoji button declares popup intent. Amber warnings meet WCAG AA contrast in all modes. |
-| **Any user — data safety** | beforeunload protects against tab-close loss, including during active media uploads. Overwrite dialog copy is truthful and calming. Auto-save label only appears after content is stably saved. |
+| **Any user — data safety**        | beforeunload protects against tab-close loss, including during active media uploads. Overwrite dialog copy is truthful and calming. Auto-save label only appears after content is stably saved.                                                                       |
 
 ---
 
 ### 7.10 Quantified Change Summary
 
-| Dimension | Before | After |
-|-----------|--------|-------|
-| AI entry points | 2 separate surfaces (toolbar + sidebar) | 1 unified surface (sidebar only) |
-| AI tools visible at once | 6 buttons in flat grid | 1 entry point → 6 tabs inside panel |
-| Layout shifts when opening AI | Every open/close | Zero |
-| Scheduling interactions | 2 controls (date + time separately) | 1 unified DateTimePicker |
-| Overwrite guard trigger rate | ~80% of sessions with drafts | ~5% (50-char threshold) |
-| Hashtag interaction surfaces | 2 simultaneous (panel + inline) | 1 (inline only) |
-| Keyboard shortcuts for publish/draft/AI | 0 | 3 (⌘↵, ⌘D, ⌘K) |
-| AI language remembered between sessions | Never | Always (localStorage) |
-| Thread auto-numbering (manual threads) | Never automatic | Automatic at 3+ tweets |
-| Screen reader streaming announcements | Silent | Live count + progressbar |
-| Character counter SR announcements | Every keystroke | Every 10 chars or near limit |
-| Desktop keyboard reorder | Impossible (drag-only) | Available (Up/Down buttons) |
-| Amber contrast ratio (light mode) | ~2.7:1 (fails WCAG AA) | ~4.6:1 (passes WCAG AA) |
-| TemplatesDialog in initial bundle | Always included | Lazy-loaded, excluded |
-| New user orientation | None | Dismissible hint on first visit |
-| Tab-close data loss protection | None | beforeunload guard (content + uploads) |
+| Dimension                               | Before                                  | After                                  |
+| --------------------------------------- | --------------------------------------- | -------------------------------------- |
+| AI entry points                         | 2 separate surfaces (toolbar + sidebar) | 1 unified surface (sidebar only)       |
+| AI tools visible at once                | 6 buttons in flat grid                  | 1 entry point → 6 tabs inside panel    |
+| Layout shifts when opening AI           | Every open/close                        | Zero                                   |
+| Scheduling interactions                 | 2 controls (date + time separately)     | 1 unified DateTimePicker               |
+| Overwrite guard trigger rate            | ~80% of sessions with drafts            | ~5% (50-char threshold)                |
+| Hashtag interaction surfaces            | 2 simultaneous (panel + inline)         | 1 (inline only)                        |
+| Keyboard shortcuts for publish/draft/AI | 0                                       | 3 (⌘↵, ⌘D, ⌘K)                         |
+| AI language remembered between sessions | Never                                   | Always (localStorage)                  |
+| Thread auto-numbering (manual threads)  | Never automatic                         | Automatic at 3+ tweets                 |
+| Screen reader streaming announcements   | Silent                                  | Live count + progressbar               |
+| Character counter SR announcements      | Every keystroke                         | Every 10 chars or near limit           |
+| Desktop keyboard reorder                | Impossible (drag-only)                  | Available (Up/Down buttons)            |
+| Amber contrast ratio (light mode)       | ~2.7:1 (fails WCAG AA)                  | ~4.6:1 (passes WCAG AA)                |
+| TemplatesDialog in initial bundle       | Always included                         | Lazy-loaded, excluded                  |
+| New user orientation                    | None                                    | Dismissible hint on first visit        |
+| Tab-close data loss protection          | None                                    | beforeunload guard (content + uploads) |
 
 ---
 

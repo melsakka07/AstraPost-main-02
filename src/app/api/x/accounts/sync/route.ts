@@ -1,4 +1,3 @@
-
 import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
@@ -32,7 +31,9 @@ export async function POST() {
     try {
       // Better Auth encrypts tokens via databaseHooks before persisting them.
       // We must decrypt before passing to XApiService which expects a raw Bearer token.
-      const rawToken = isEncryptedToken(la.accessToken) ? decryptToken(la.accessToken) : la.accessToken;
+      const rawToken = isEncryptedToken(la.accessToken)
+        ? decryptToken(la.accessToken)
+        : la.accessToken;
       const svc = new XApiService(rawToken);
       const me = await svc.getUser();
       profile = {
@@ -40,8 +41,7 @@ export async function POST() {
         name: (me as any)?.data?.name,
         profile_image_url: (me as any)?.data?.profile_image_url,
       };
-    } catch {
-    }
+    } catch {}
 
     const existing = await db.query.xAccounts.findFirst({
       where: eq(xAccounts.xUserId, la.accountId),
@@ -55,9 +55,13 @@ export async function POST() {
 
       // Better Auth already encrypts tokens via databaseHooks. Store them as-is
       // to avoid double-encryption. For legacy plaintext tokens, encrypt once.
-      const encAccessToken = isEncryptedToken(la.accessToken) ? la.accessToken : encryptToken(la.accessToken);
+      const encAccessToken = isEncryptedToken(la.accessToken)
+        ? la.accessToken
+        : encryptToken(la.accessToken);
       const encRefreshToken = la.refreshToken
-        ? (isEncryptedToken(la.refreshToken) ? la.refreshToken : encryptToken(la.refreshToken))
+        ? isEncryptedToken(la.refreshToken)
+          ? la.refreshToken
+          : encryptToken(la.refreshToken)
         : null;
 
       await db.insert(xAccounts).values({
@@ -73,9 +77,13 @@ export async function POST() {
         isActive: true,
       });
     } else {
-      const encAccessToken = isEncryptedToken(la.accessToken) ? la.accessToken : encryptToken(la.accessToken);
+      const encAccessToken = isEncryptedToken(la.accessToken)
+        ? la.accessToken
+        : encryptToken(la.accessToken);
       const encRefreshToken = la.refreshToken
-        ? (isEncryptedToken(la.refreshToken) ? la.refreshToken : encryptToken(la.refreshToken))
+        ? isEncryptedToken(la.refreshToken)
+          ? la.refreshToken
+          : encryptToken(la.refreshToken)
         : null;
 
       await db

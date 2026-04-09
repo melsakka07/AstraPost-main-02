@@ -59,7 +59,9 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice) {
   const direct = toId(maybeLegacy.subscription);
   if (direct) return direct;
 
-  const parent = (invoice as Stripe.Invoice & { parent?: { subscription_details?: { subscription?: unknown } } }).parent;
+  const parent = (
+    invoice as Stripe.Invoice & { parent?: { subscription_details?: { subscription?: unknown } } }
+  ).parent;
   return toId(parent?.subscription_details?.subscription);
 }
 
@@ -98,10 +100,10 @@ function getPlanFromPriceId(priceId: string | null | undefined): PlanValue | nul
     STRIPE_PRICE_ID_AGENCY_MONTHLY,
     STRIPE_PRICE_ID_AGENCY_ANNUAL,
   } = process.env;
-  if (STRIPE_PRICE_ID_MONTHLY        && priceId === STRIPE_PRICE_ID_MONTHLY)        return "pro_monthly";
-  if (STRIPE_PRICE_ID_ANNUAL         && priceId === STRIPE_PRICE_ID_ANNUAL)         return "pro_annual";
+  if (STRIPE_PRICE_ID_MONTHLY && priceId === STRIPE_PRICE_ID_MONTHLY) return "pro_monthly";
+  if (STRIPE_PRICE_ID_ANNUAL && priceId === STRIPE_PRICE_ID_ANNUAL) return "pro_annual";
   if (STRIPE_PRICE_ID_AGENCY_MONTHLY && priceId === STRIPE_PRICE_ID_AGENCY_MONTHLY) return "agency";
-  if (STRIPE_PRICE_ID_AGENCY_ANNUAL  && priceId === STRIPE_PRICE_ID_AGENCY_ANNUAL)  return "agency";
+  if (STRIPE_PRICE_ID_AGENCY_ANNUAL && priceId === STRIPE_PRICE_ID_AGENCY_ANNUAL) return "agency";
   return null;
 }
 
@@ -119,11 +121,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const stripeCustomerId = toId(session.customer);
 
   if (!stripeSubscriptionId || !userId || !stripeCustomerId) {
-    throw new Error(`checkout.session.completed missing required metadata: ${JSON.stringify({
-      stripeSubscriptionId,
-      userId,
-      stripeCustomerId,
-    })}`);
+    throw new Error(
+      `checkout.session.completed missing required metadata: ${JSON.stringify({
+        stripeSubscriptionId,
+        userId,
+        stripeCustomerId,
+      })}`
+    );
   }
 
   // Retrieve the subscription to get period info and the actual price ID.
@@ -161,26 +165,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Multi-table write — must be atomic.
   await db.transaction(async (tx) => {
-    await tx.update(user).set({
-      plan,
-      stripeCustomerId,
-      planExpiresAt: null,
-    }).where(eq(user.id, userId));
+    await tx
+      .update(user)
+      .set({
+        plan,
+        stripeCustomerId,
+        planExpiresAt: null,
+      })
+      .where(eq(user.id, userId));
 
-    await tx.insert(subscriptions).values({
-      id: crypto.randomUUID(),
-      userId,
-      stripeSubscriptionId: subscription.id,
-      stripePriceId: firstItem?.price?.id || "",
-      plan,
-      status: subStatus,
-      currentPeriodStart: period.currentPeriodStart,
-      currentPeriodEnd: period.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
-      cancelledAt: unixToDate(subscription.canceled_at),
-    }).onConflictDoUpdate({
-      target: subscriptions.stripeSubscriptionId,
-      set: {
+    await tx
+      .insert(subscriptions)
+      .values({
+        id: crypto.randomUUID(),
+        userId,
+        stripeSubscriptionId: subscription.id,
         stripePriceId: firstItem?.price?.id || "",
         plan,
         status: subStatus,
@@ -188,8 +187,19 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         currentPeriodEnd: period.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
         cancelledAt: unixToDate(subscription.canceled_at),
-      },
-    });
+      })
+      .onConflictDoUpdate({
+        target: subscriptions.stripeSubscriptionId,
+        set: {
+          stripePriceId: firstItem?.price?.id || "",
+          plan,
+          status: subStatus,
+          currentPeriodStart: period.currentPeriodStart,
+          currentPeriodEnd: period.currentPeriodEnd,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+          cancelledAt: unixToDate(subscription.canceled_at),
+        },
+      });
   });
 
   await runSideEffect(
@@ -333,10 +343,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     // Check if the user has more active X accounts than their new plan allows
     const newLimit = PLAN_LIMITS[newPlan].maxXAccounts;
     const activeAccounts = await db.query.xAccounts.findMany({
-      where: and(
-        eq(xAccounts.userId, existingRecord.userId),
-        eq(xAccounts.isActive, true)
-      ),
+      where: and(eq(xAccounts.userId, existingRecord.userId), eq(xAccounts.isActive, true)),
       columns: { id: true },
     });
     const activeCount = activeAccounts.length;
@@ -370,10 +377,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     if (Number.isFinite(newPostsLimit) && newPostsLimit < oldPostsLimit) {
       // Count currently scheduled posts for this user
       const scheduledPosts = await db.query.posts.findMany({
-        where: and(
-          eq(posts.userId, existingRecord.userId),
-          eq(posts.status, "scheduled")
-        ),
+        where: and(eq(posts.userId, existingRecord.userId), eq(posts.status, "scheduled")),
         columns: { id: true, scheduledAt: true },
         orderBy: [posts.scheduledAt], // Process oldest posts first
       });
@@ -387,9 +391,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
         // Move excess posts to draft status (batch update)
         const postIdsToMove = postsToMove.map((p) => p.id);
-        await db.update(posts)
-          .set({ status: "draft" })
-          .where(inArray(posts.id, postIdsToMove));
+        await db.update(posts).set({ status: "draft" }).where(inArray(posts.id, postIdsToMove));
 
         // Notify user about posts moved to draft
         await runSideEffect(
@@ -398,7 +400,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
               userId: existingRecord.userId,
               type: "billing_posts_moved_to_draft",
               title: "Scheduled posts moved to draft",
-              message: `Due to your plan change, ${excessCount} scheduled ${excessCount === 1 ? 'post' : 'posts'} ${excessCount === 1 ? 'was' : 'were'} moved to draft. Please reschedule ${excessCount === 1 ? 'it' : 'them'} or upgrade to keep all scheduled posts active.`,
+              message: `Due to your plan change, ${excessCount} scheduled ${excessCount === 1 ? "post" : "posts"} ${excessCount === 1 ? "was" : "were"} moved to draft. Please reschedule ${excessCount === 1 ? "it" : "them"} or upgrade to keep all scheduled posts active.`,
               metadata: {
                 oldPlan,
                 newPlan,
@@ -484,7 +486,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
           userId: existingRecord.userId,
           type: "billing_reactivated",
           title: "Subscription reactivated",
-          message: "Your subscription has been reactivated and will continue on its normal billing schedule.",
+          message:
+            "Your subscription has been reactivated and will continue on its normal billing schedule.",
           metadata: { stripeSubscriptionId: subscription.id },
         }),
       "billing_reactivated"
@@ -518,16 +521,22 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   // Multi-table write — must be atomic.
   await db.transaction(async (tx) => {
-    await tx.update(subscriptions).set({
-      status: "cancelled",
-      cancelAtPeriodEnd: true,
-      cancelledAt: unixToDate(subscription.canceled_at) || new Date(),
-    }).where(eq(subscriptions.stripeSubscriptionId, subscription.id));
+    await tx
+      .update(subscriptions)
+      .set({
+        status: "cancelled",
+        cancelAtPeriodEnd: true,
+        cancelledAt: unixToDate(subscription.canceled_at) || new Date(),
+      })
+      .where(eq(subscriptions.stripeSubscriptionId, subscription.id));
 
-    await tx.update(user).set({
-      plan: "free",
-      planExpiresAt: null,
-    }).where(eq(user.id, subRecord.userId));
+    await tx
+      .update(user)
+      .set({
+        plan: "free",
+        planExpiresAt: null,
+      })
+      .where(eq(user.id, subRecord.userId));
   });
 
   // ── Over-limit account detection on subscription deletion ─────────────
@@ -536,10 +545,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   const newPlan = "free";
   const newLimit = PLAN_LIMITS[newPlan].maxXAccounts;
   const activeAccounts = await db.query.xAccounts.findMany({
-    where: and(
-      eq(xAccounts.userId, subRecord.userId),
-      eq(xAccounts.isActive, true)
-    ),
+    where: and(eq(xAccounts.userId, subRecord.userId), eq(xAccounts.isActive, true)),
     columns: { id: true },
   });
   const activeCount = activeAccounts.length;
@@ -609,13 +615,19 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   // Multi-table write — must be atomic.
   await db.transaction(async (tx) => {
-    await tx.update(subscriptions).set({
-      status: "past_due",
-    }).where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+    await tx
+      .update(subscriptions)
+      .set({
+        status: "past_due",
+      })
+      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
 
-    await tx.update(user).set({
-      planExpiresAt: graceUntil,
-    }).where(eq(user.id, subRecord.userId));
+    await tx
+      .update(user)
+      .set({
+        planExpiresAt: graceUntil,
+      })
+      .where(eq(user.id, subRecord.userId));
   });
 
   const dbUser = await db.query.user.findFirst({
@@ -664,13 +676,19 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   const subRecord = await getSubscriptionRecord(stripeSubscriptionId);
   if (!subRecord) return;
 
-  await db.update(subscriptions).set({
-    status: "active",
-  }).where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+  await db
+    .update(subscriptions)
+    .set({
+      status: "active",
+    })
+    .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
 
-  await db.update(user).set({
-    planExpiresAt: null,
-  }).where(eq(user.id, subRecord.userId));
+  await db
+    .update(user)
+    .set({
+      planExpiresAt: null,
+    })
+    .where(eq(user.id, subRecord.userId));
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
@@ -792,11 +810,7 @@ export async function POST(req: Request) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (error) {
     console.error("Webhook signature verification failed", error);
     return new Response("Webhook Error", { status: 400 });

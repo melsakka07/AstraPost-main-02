@@ -57,7 +57,9 @@
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.50 0.016 285.938); /* ACC6: darkened from 0.552 — ensures ≥4.5:1 on muted backgrounds */
+  --muted-foreground: oklch(
+    0.5 0.016 285.938
+  ); /* ACC6: darkened from 0.552 — ensures ≥4.5:1 on muted backgrounds */
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
@@ -66,7 +68,7 @@
   --ring: oklch(0.705 0.015 286.067);
   /* Status semantic tokens — used for success/warning alert states */
   --success: oklch(0.527 0.154 150.069); /* ≈ emerald-600 */
-  --warning: oklch(0.554 0.135 66.442);  /* ≈ amber-700   */
+  --warning: oklch(0.554 0.135 66.442); /* ≈ amber-700   */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -102,8 +104,8 @@
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.552 0.016 285.938);
   /* Status semantic tokens — lighter values for dark backgrounds */
-  --success: oklch(0.696 0.17 162.48);   /* ≈ emerald-400 */
-  --warning: oklch(0.769 0.188 70.08);   /* ≈ amber-300   */
+  --success: oklch(0.696 0.17 162.48); /* ≈ emerald-400 */
+  --warning: oklch(0.769 0.188 70.08); /* ≈ amber-300   */
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -193,20 +195,26 @@ body:has([data-dashboard-layout]) [data-main-content] {
     @apply max-w-none;
     color: hsl(var(--foreground));
     line-height: 1.8;
-    font-feature-settings: "kern" 1, "liga" 1;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1;
   }
 
   /* Headings with gradient effect and scroll margin */
   .prose h1 {
-    @apply text-4xl md:text-5xl font-bold mt-12 mb-6 scroll-mt-24;
-    background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--foreground) / 0.8) 100%);
+    @apply mt-12 mb-6 scroll-mt-24 text-4xl font-bold md:text-5xl;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--foreground) / 0.8) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     letter-spacing: -0.02em;
   }
 
   .prose h2 {
-    @apply text-2xl md:text-3xl font-bold mt-12 mb-4 scroll-mt-24;
+    @apply mt-12 mb-4 scroll-mt-24 text-2xl font-bold md:text-3xl;
     color: hsl(var(--foreground));
     letter-spacing: -0.01em;
     position: relative;
@@ -225,13 +233,13 @@ body:has([data-dashboard-layout]) [data-main-content] {
   }
 
   .prose h3 {
-    @apply text-xl md:text-2xl font-bold mt-8 mb-3 scroll-mt-24;
+    @apply mt-8 mb-3 scroll-mt-24 text-xl font-bold md:text-2xl;
     color: hsl(var(--foreground));
     letter-spacing: -0.005em;
   }
 
   .prose h4 {
-    @apply text-lg font-bold mt-8 mb-3 scroll-mt-24;
+    @apply mt-8 mb-3 scroll-mt-24 text-lg font-bold;
     color: hsl(var(--foreground));
   }
 
@@ -344,7 +352,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
   /* Beautiful blockquotes */
   .prose blockquote {
-    @apply my-8 p-6 rounded-xl border-l-4;
+    @apply my-8 rounded-xl border-l-4 p-6;
     background: linear-gradient(135deg, hsl(var(--muted) / 0.5), hsl(var(--muted) / 0.2));
     border-color: hsl(var(--primary));
     position: relative;
@@ -353,7 +361,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
   }
 
   .prose blockquote::before {
-    content: "\"";
+    content: '"';
     position: absolute;
     top: -0.5rem;
     left: 1rem;
@@ -365,7 +373,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
   /* Inline code */
   .prose code {
-    @apply px-2 py-1 rounded-md text-sm font-mono;
+    @apply rounded-md px-2 py-1 font-mono text-sm;
     background: linear-gradient(135deg, hsl(var(--muted) / 0.8), hsl(var(--muted) / 0.4));
     color: hsl(var(--foreground));
     border: 1px solid hsl(var(--border) / 0.5);
@@ -374,7 +382,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
   /* Code blocks with beautiful styling */
   .prose pre {
-    @apply my-8 p-6 rounded-xl overflow-x-auto;
+    @apply my-8 overflow-x-auto rounded-xl p-6;
     background: linear-gradient(135deg, hsl(var(--muted) / 0.3), hsl(var(--muted) / 0.1));
     border: 1px solid hsl(var(--border) / 0.5);
     position: relative;
@@ -387,12 +395,17 @@ body:has([data-dashboard-layout]) [data-main-content] {
     left: 0;
     right: 0;
     height: 3px;
-    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.3), hsl(var(--primary) / 0.1));
+    background: linear-gradient(
+      90deg,
+      hsl(var(--primary)),
+      hsl(var(--primary) / 0.3),
+      hsl(var(--primary) / 0.1)
+    );
     border-radius: 0.5rem 0.5rem 0 0;
   }
 
   .prose pre code {
-    @apply bg-transparent p-0 border-0;
+    @apply border-0 bg-transparent p-0;
     color: hsl(var(--foreground));
   }
 
@@ -435,8 +448,10 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
   /* Images with shadow and rounded corners */
   .prose img {
-    @apply rounded-xl my-8 shadow-lg;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    @apply my-8 rounded-xl shadow-lg;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
   }
 
   /* hover state moved to @media (hover: hover) block below */
@@ -627,13 +642,21 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
 /* Accordion animations */
 @keyframes accordion-down {
-  from { height: 0; }
-  to { height: var(--radix-accordion-content-height); }
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
 }
 
 @keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); }
-  to { height: 0; }
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
 }
 
 .animate-accordion-down {

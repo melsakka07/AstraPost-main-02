@@ -33,17 +33,18 @@ STRIPE_PRICE_ID_AGENCY_ANNUAL   — Stripe Price ID for Agency Annual
 
 ### Plan Tiers
 
-| Plan | Billing Cycle | Trial |
-|------|--------------|-------|
-| Free | — | — |
-| Pro Monthly | Monthly | 14-day free trial |
-| Pro Annual | Annual | 14-day free trial |
-| Agency Monthly | Monthly | 14-day free trial |
-| Agency Annual | Annual | 14-day free trial |
+| Plan           | Billing Cycle | Trial             |
+| -------------- | ------------- | ----------------- |
+| Free           | —             | —                 |
+| Pro Monthly    | Monthly       | 14-day free trial |
+| Pro Annual     | Annual        | 14-day free trial |
+| Agency Monthly | Monthly       | 14-day free trial |
+| Agency Annual  | Annual        | 14-day free trial |
 
 ### Stripe MCP Tool
 
 A Stripe MCP tool is connected and available in this session. Use it to:
+
 - Inspect existing Stripe products and prices to confirm they match the env var price IDs.
 - Inspect webhook endpoint configuration to verify which events are being sent.
 - Look up customer and subscription objects when debugging.
@@ -54,10 +55,12 @@ Use the Stripe MCP tool proactively during the audit phase to cross-reference wh
 ### Existing Billing-Related Files (known from project structure)
 
 **API Routes:**
+
 - `src/app/api/billing/` — Contains subdirectories for checkout, portal, webhooks, and usage endpoints.
 - `src/app/api/billing/webhook/route.test.ts` — Existing webhook test file.
 
 **Frontend:**
+
 - `src/app/(marketing)/pricing/` or `src/app/pricing/` — Public pricing page.
 - `src/components/billing/` — Contains `pricing-card.tsx` and `pricing-table.tsx`.
 - `src/components/settings/` — Contains plan usage display components.
@@ -66,6 +69,7 @@ Use the Stripe MCP tool proactively during the audit phase to cross-reference wh
 - `src/components/ui/blurred-overlay.tsx` — Overlay for gated features.
 
 **Schema & Logic:**
+
 - `src/lib/schema.ts` — Contains `subscriptions` table. The `user` table includes `plan`, `stripeCustomerId`, and trial-related fields.
 - `src/lib/plan-limits.ts` — Defines plan-based feature limits.
 - `src/lib/middleware/require-plan.ts` — 15+ plan gate functions using `makeFeatureGate()`. Returns HTTP 402 with `upgrade_url`, `suggested_plan`, `reset_at`, `remaining`. Handles 14-day trial automatically.
@@ -113,27 +117,35 @@ After reading all the code and checking Stripe, create a document at `docs/featu
 ## Date: [today]
 
 ## 1. Existing Files Inventory
+
 [List every billing-related file with a 1-2 sentence summary of what it does]
 
 ## 2. Database Schema
+
 [Document the exact columns of the `subscriptions` table and all billing-related columns on the `user` table]
 
 ## 3. API Routes
+
 [For each billing API route: HTTP method, path, what it does, any issues found]
 
 ## 4. Frontend Components
+
 [For each billing component: what it renders, what data it needs, any issues found]
 
 ## 5. Plan Enforcement
+
 [How plan limits and gates work, what happens on 402, how trial logic works]
 
 ## 6. Stripe Configuration (from MCP)
+
 [Products, prices, webhook events, portal config]
 
 ## 7. Gaps & Issues Found
+
 [Specific list of what's missing, broken, or inconsistent]
 
 ## 8. Implementation Plan
+
 [What needs to be built/fixed to make billing fully functional, organized by priority]
 ```
 
@@ -544,13 +556,13 @@ Follow these project conventions — see `CLAUDE.md` for full details:
 
 ## Implementation Plan Summary
 
-| Phase | Focus | Key Deliverables |
-|-------|-------|-----------------|
-| **Phase 0** | Audit | Read every existing billing file, cross-reference with Stripe MCP, produce `billing-audit-report.md` |
-| **Phase 1** | Backend | Stripe singleton, checkout session, portal, complete webhook handler (6 events), price↔plan mapping, billing status endpoint |
-| **Phase 2** | Frontend | Pricing page, checkout flow, success handling, settings billing section, trial banner, upgrade modal, plan badges |
-| **Phase 3** | Lifecycle | Trial expiration, upgrades/downgrades, cancellation, payment failures, reactivation |
-| **Phase 4** | Hardening | Webhook security, idempotency, race condition handling, env validation, Stripe↔DB sync failsafe |
+| Phase       | Focus     | Key Deliverables                                                                                                             |
+| ----------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 0** | Audit     | Read every existing billing file, cross-reference with Stripe MCP, produce `billing-audit-report.md`                         |
+| **Phase 1** | Backend   | Stripe singleton, checkout session, portal, complete webhook handler (6 events), price↔plan mapping, billing status endpoint |
+| **Phase 2** | Frontend  | Pricing page, checkout flow, success handling, settings billing section, trial banner, upgrade modal, plan badges            |
+| **Phase 3** | Lifecycle | Trial expiration, upgrades/downgrades, cancellation, payment failures, reactivation                                          |
+| **Phase 4** | Hardening | Webhook security, idempotency, race condition handling, env validation, Stripe↔DB sync failsafe                              |
 
 ---
 
@@ -564,39 +576,46 @@ At the start of implementation, create `docs/features/billing-implementation-pro
 ## Status: In Progress
 
 ## Phase 0 — Audit
+
 - **Status:** Not Started
 - **Audit Report:** [link to billing-audit-report.md once created]
 - **Key Findings:**
 
 ## Phase 1 — Core Stripe Integration (Backend)
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 2 — Frontend Billing Experience
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 3 — Subscription Lifecycle Handling
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 4 — Hardening & Edge Cases
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Changelog
+
 | Date | Phase | Change |
-|------|-------|--------|
+| ---- | ----- | ------ |
 
 ## Testing Checklist
+
 - [ ] Checkout: Free → Pro Monthly works end-to-end
 - [ ] Checkout: Free → Pro Annual works end-to-end
 - [ ] Checkout: Free → Agency Monthly works end-to-end

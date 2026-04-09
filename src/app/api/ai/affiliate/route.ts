@@ -30,7 +30,9 @@ export async function POST(req: Request) {
     const result = affiliateRequestSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
+        status: 400,
+      });
     }
 
     const { url, affiliateTag, language, platform } = result.data;
@@ -38,7 +40,7 @@ export async function POST(req: Request) {
     // 1. Fetch Product Metadata
     let productTitle = "";
     let productImage = "";
-    
+
     try {
       const res = await fetch(url, {
         headers: {
@@ -47,8 +49,9 @@ export async function POST(req: Request) {
       });
       const html = await res.text();
       const $ = cheerio.load(html);
-      
-      productTitle = $('meta[property="og:title"]').attr("content") || $("title").text() || "Product";
+
+      productTitle =
+        $('meta[property="og:title"]').attr("content") || $("title").text() || "Product";
       productImage = $('meta[property="og:image"]').attr("content") || "";
     } catch (e) {
       console.error("Failed to fetch product metadata", e);
@@ -65,7 +68,7 @@ export async function POST(req: Request) {
       Platform: ${platform}
       Affiliate Tag/Coupon: ${affiliateTag || "None"}
       
-      Language: ${language === 'ar' ? 'Arabic' : 'English'}.
+      Language: ${language === "ar" ? "Arabic" : "English"}.
       
       Constraints:
       - Max 280 characters.
@@ -84,21 +87,21 @@ export async function POST(req: Request) {
     // 3. Construct Affiliate URL
     let affiliateUrl = url;
     if (affiliateTag) {
-        try {
-            const urlObj = new URL(url);
-            if (platform === 'amazon') {
-                urlObj.searchParams.set("tag", affiliateTag);
-            } else if (platform === 'noon') {
-                // For Noon, often the tag is a coupon code, but we can append it as a ref if applicable.
-                // We'll assume generic ref for now or just rely on the tweet text for the code.
-                // urlObj.searchParams.set("ref", affiliateTag); 
-            }
-            affiliateUrl = urlObj.toString();
-        } catch (e) {
-            console.error("Invalid URL construction", e);
+      try {
+        const urlObj = new URL(url);
+        if (platform === "amazon") {
+          urlObj.searchParams.set("tag", affiliateTag);
+        } else if (platform === "noon") {
+          // For Noon, often the tag is a coupon code, but we can append it as a ref if applicable.
+          // We'll assume generic ref for now or just rely on the tweet text for the code.
+          // urlObj.searchParams.set("ref", affiliateTag);
         }
+        affiliateUrl = urlObj.toString();
+      } catch (e) {
+        console.error("Invalid URL construction", e);
+      }
     }
-    
+
     const shortCode = nanoid(10);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const shortLink = `${appUrl}/go/${shortCode}`;
@@ -109,7 +112,7 @@ export async function POST(req: Request) {
       productTitle,
       productImage,
       affiliateUrl: shortLink,
-      originalAffiliateUrl: affiliateUrl
+      originalAffiliateUrl: affiliateUrl,
     };
 
     // Save to affiliateLinks table
@@ -127,19 +130,13 @@ export async function POST(req: Request) {
       wasScheduled: false,
     });
 
-    await recordAiUsage(
-        session.user.id, 
-        "affiliate", 
-        0, 
-        prompt, 
-        output,
-        language
-    );
+    await recordAiUsage(session.user.id, "affiliate", 0, prompt, output, language);
 
     return Response.json(output);
-
   } catch (error) {
     console.error("Affiliate Generation Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate affiliate tweet" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to generate affiliate tweet" }), {
+      status: 500,
+    });
   }
 }

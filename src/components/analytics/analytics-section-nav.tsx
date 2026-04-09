@@ -38,7 +38,7 @@ export function AnalyticsSectionNav() {
   }, []);
 
   return (
-    <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border py-2">
+    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 border-border sticky top-0 z-10 -mx-4 border-b px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
       <div className="flex gap-1">
         {SECTIONS.map((section) => (
           <button

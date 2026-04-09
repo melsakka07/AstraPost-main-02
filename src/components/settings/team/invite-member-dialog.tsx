@@ -109,8 +109,8 @@ export function InviteMemberDialog() {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <div className="relative">
-                        <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="colleague@example.com" className="pl-9" {...field} />
+                      <Mail className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+                      <Input placeholder="colleague@example.com" className="pl-9" {...field} />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -132,20 +132,26 @@ export function InviteMemberDialog() {
                     <SelectContent>
                       <SelectItem value="viewer">
                         <div className="flex flex-col">
-                            <span>Viewer</span>
-                            <span className="text-xs text-muted-foreground">Can view posts and analytics</span>
+                          <span>Viewer</span>
+                          <span className="text-muted-foreground text-xs">
+                            Can view posts and analytics
+                          </span>
                         </div>
                       </SelectItem>
                       <SelectItem value="editor">
                         <div className="flex flex-col">
-                            <span>Editor</span>
-                            <span className="text-xs text-muted-foreground">Can create and edit posts</span>
+                          <span>Editor</span>
+                          <span className="text-muted-foreground text-xs">
+                            Can create and edit posts
+                          </span>
                         </div>
                       </SelectItem>
                       <SelectItem value="admin">
-                         <div className="flex flex-col">
-                            <span>Admin</span>
-                            <span className="text-xs text-muted-foreground">Full access except billing</span>
+                        <div className="flex flex-col">
+                          <span>Admin</span>
+                          <span className="text-muted-foreground text-xs">
+                            Full access except billing
+                          </span>
                         </div>
                       </SelectItem>
                     </SelectContent>

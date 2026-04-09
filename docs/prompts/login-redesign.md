@@ -3,6 +3,7 @@
 You are working on **AstraPost** (also called AstraPost), a production-ready AI-powered social media management SaaS platform for X (Twitter). The project is built with Next.js 16 (App Router), React 19, TypeScript, Better Auth, PostgreSQL (Drizzle ORM), BullMQ, shadcn/ui, and Tailwind CSS 4.
 
 Before starting, read the following files to understand the full project structure, conventions, and rules:
+
 - `CLAUDE.md` — AI assistant guidelines, project structure, coding rules, and architectural constraints
 - `docs/0-MY-LATEST-UPDATES.md` — Latest code changes and tracking
 - `src/lib/auth.ts` — Current Better Auth server configuration
@@ -28,6 +29,7 @@ This must follow **industry best practices for OAuth-only SaaS authentication** 
 ## Requirements
 
 ### 1. Authentication Configuration
+
 - Remove the email/password plugin from Better Auth server config (`src/lib/auth.ts`)
 - Remove any password-related configuration, hooks, or plugins
 - Keep the Twitter OAuth plugin as the only social provider
@@ -36,6 +38,7 @@ This must follow **industry best practices for OAuth-only SaaS authentication** 
 - Update Better Auth client config (`src/lib/auth-client.ts`) to remove email/password methods and only expose social sign-in
 
 ### 2. Login Page Redesign
+
 - Redesign `src/app/(auth)/login/page.tsx` to show **only** an X sign-in button
 - The page should feel clean, focused, and trustworthy — not empty
 - Include a brief value proposition headline (e.g., "Sign in with X to manage your content") and optionally a short bullet list of what the user gets (schedule tweets, AI writer, analytics, etc.)
@@ -45,12 +48,14 @@ This must follow **industry best practices for OAuth-only SaaS authentication** 
 - The page must remain fully responsive (mobile-first, as per the project's MENA audience on mobile)
 
 ### 3. Remove Obsolete Auth Pages
+
 - `src/app/(auth)/register/page.tsx` — Remove or convert to a redirect to `/login` (since X OAuth handles both sign-in and sign-up in one flow)
 - `src/app/(auth)/forgot-password/page.tsx` — Remove or convert to a redirect to `/login`
 - `src/app/(auth)/reset-password/page.tsx` — Remove or convert to a redirect to `/login`
 - Any internal links throughout the entire codebase pointing to `/register`, `/forgot-password`, or `/reset-password` must be updated or removed
 
 ### 4. Remove Obsolete Auth Components
+
 - `src/components/auth/sign-up-form.tsx` — Remove (no longer needed)
 - `src/components/auth/forgot-password-form.tsx` — Remove (no longer needed)
 - `src/components/auth/reset-password-form.tsx` — Remove (no longer needed)
@@ -58,17 +63,20 @@ This must follow **industry best practices for OAuth-only SaaS authentication** 
 - Search the entire codebase for any imports of these removed components and clean them up
 
 ### 5. Settings Page Cleanup
+
 - If the settings page (`src/app/dashboard/settings/page.tsx` or any sub-components) contains a "Change Password" or "Security" section related to passwords, remove it
 - Keep any 2FA-related UI only if it applies to the OAuth flow (likely it does not, so remove it)
 - Ensure no password-related settings remain anywhere in the dashboard
 
 ### 6. Email Verification Considerations
+
 - Since we still request the user's email from X OAuth, determine whether the existing email verification flow in `verification` table is still needed
 - X OAuth provides a verified email directly — no separate verification step is needed
 - Remove any email verification UI flows that are no longer applicable
 - The `verification` table in the schema can remain (Better Auth may use it internally), but no custom verification UI should exist
 
 ### 7. Existing User Migration Strategy
+
 - **Existing users who signed up with email/password** need a clear migration path. Define the strategy:
   - **Recommended approach**: On their next visit, if they try to log in with email/password, show a one-time migration screen explaining: "We've moved to X-only sign-in. Please sign in with your X account. If your X account email matches your current email, your account will be linked automatically."
   - Better Auth's `account` table links OAuth identities to `user` records by email. If the X OAuth email matches the existing user's email, Better Auth should automatically link the OAuth account to the existing user — **verify this behavior** in the Better Auth docs and code before implementing
@@ -77,6 +85,7 @@ This must follow **industry best practices for OAuth-only SaaS authentication** 
 - Document the migration strategy clearly in the implementation plan
 
 ### 8. OAuth Error Handling (Best Practice Baseline)
+
 - Handle common X OAuth failure scenarios with user-friendly messages:
   - User denies access on X consent screen → "You need to authorize AstraPost to access your X account to continue."
   - X API is down or unreachable → "X is currently unavailable. Please try again in a few minutes."
@@ -85,24 +94,28 @@ This must follow **industry best practices for OAuth-only SaaS authentication** 
 - These error states should be handled on the login/callback page, not as raw error dumps
 
 ### 9. Session & Security (Best Practice Baseline)
+
 - Sessions remain managed by Better Auth (cookie-based) — no change needed to session mechanism
 - Ensure the OAuth `state` parameter is used to prevent CSRF (Better Auth handles this by default — verify)
 - Ensure the callback URL is strictly validated (Better Auth handles this — verify)
 - No new security measures beyond what Better Auth already provides are required for this phase
 
 ### 10. Database Schema
+
 - Do NOT drop or alter the `user`, `session`, `account`, or `verification` tables in this phase
 - Better Auth manages these tables internally, and removing columns could break the library
 - The `account` table will now only contain `provider: "twitter"` records going forward
 - Existing `account` records with other providers (if any) can be left as-is — they will simply never be used
 
 ### 11. Redirect & Route Protection
+
 - Update `src/proxy.ts` if it contains any password-related redirect logic
 - Ensure unauthenticated users are always redirected to `/login`
 - Ensure there are no dead-end redirects to `/register`, `/forgot-password`, or `/reset-password`
 - The marketing site (header/footer) may have "Sign Up" or "Log In" links — update them all to point to `/login`
 
 ### 12. Marketing Site & Public Pages
+
 - Search all files under `src/app/(marketing)/` for any links to `/register`, `/forgot-password`, `/reset-password`, or references to "email sign up", "create account with email", "password" in the context of authentication
 - Update all such references to point to `/login` with appropriate wording ("Get Started", "Sign in with X", etc.)
 - Check `src/components/site-header.tsx` and `src/components/site-footer.tsx` for auth-related navigation links
@@ -124,6 +137,7 @@ You must produce exactly **two deliverables**:
 ### Deliverable 1: Phased Implementation Plan
 
 Create a detailed implementation plan divided into logical phases. Each phase must include:
+
 - **Phase name and number** (e.g., "Phase 1: Auth Configuration Cleanup")
 - **Objective**: What this phase accomplishes
 - **Files to modify**: Exact file paths with a brief description of what changes in each
@@ -135,6 +149,7 @@ Create a detailed implementation plan divided into logical phases. Each phase mu
 - **Testing checklist**: How to verify this phase works correctly (manual steps, not automated tests)
 
 Structure the phases so that:
+
 - Each phase is independently deployable if possible
 - The most critical/fragile changes (auth config, user migration) come early when less has changed
 - UI changes come after backend changes are stable
@@ -148,14 +163,17 @@ Create a Markdown document at `docs/features/x-oauth-only-auth.md` with the foll
 # Feature: X OAuth-Only Authentication
 
 ## Overview
+
 [Brief description of the feature and its business justification]
 
 ## Implementation Plan
+
 [Link to or embed the phased plan from Deliverable 1]
 
 ## Progress Tracker
 
 ### Phase 1: [Name]
+
 - [ ] Task 1
 - [ ] Task 2
 - [ ] Task 3
@@ -165,25 +183,30 @@ Create a Markdown document at `docs/features/x-oauth-only-auth.md` with the foll
 - **Notes**: [Any observations, blockers, deviations from plan]
 
 ### Phase 2: [Name]
+
 [Same structure as above]
 
 ...
 
 ## Decisions Log
+
 | Date | Decision | Rationale | Alternatives Considered |
-|------|----------|-----------|------------------------|
-| ... | ... | ... | ... |
+| ---- | -------- | --------- | ----------------------- |
+| ...  | ...      | ...       | ...                     |
 
 ## Risks & Mitigations
+
 | Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| ... | ... | ... | ... |
+| ---- | ---------- | ------ | ---------- |
+| ...  | ...        | ...    | ...        |
 
 ## Open Questions
+
 - [Question 1]
 - [Question 2]
 
 ## Post-Implementation Checklist
+
 - [ ] All email/password UI removed from login page
 - [ ] Register, forgot-password, reset-password pages removed or redirected
 - [ ] No dead links to removed auth pages anywhere in the codebase

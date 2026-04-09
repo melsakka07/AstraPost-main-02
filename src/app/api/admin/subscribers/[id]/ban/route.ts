@@ -11,10 +11,7 @@ const banSchema = z.object({
 
 // ── POST /api/admin/subscribers/[id]/ban ─────────────────────────────────────
 
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
@@ -44,20 +41,14 @@ export async function POST(
   if (ban) {
     // Ban: set bannedAt + suspend + invalidate all sessions
     await db.transaction(async (tx) => {
-      await tx
-        .update(user)
-        .set({ bannedAt: new Date(), isSuspended: true })
-        .where(eq(user.id, id));
+      await tx.update(user).set({ bannedAt: new Date(), isSuspended: true }).where(eq(user.id, id));
 
       // Invalidate all active sessions
       await tx.delete(session).where(eq(session.userId, id));
     });
   } else {
     // Unban: clear bannedAt + restore suspended flag
-    await db
-      .update(user)
-      .set({ bannedAt: null, isSuspended: false })
-      .where(eq(user.id, id));
+    await db.update(user).set({ bannedAt: null, isSuspended: false }).where(eq(user.id, id));
   }
 
   return Response.json({ success: true, banned: ban });

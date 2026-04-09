@@ -14,6 +14,7 @@ You are auditing the **Agentic Posting** feature implementation in **AstraPost**
 4. At the end, produce a summary with a final compliance score and a prioritized list of any issues found
 
 **Rules for this audit:**
+
 - **Read every file before judging it** — use the `view` tool to read actual source code, do not guess or assume
 - **Do NOT modify any files** — this is a read-only verification pass
 - **Do NOT run `pnpm dev`** — you may run `pnpm lint`, `pnpm typecheck`, and `pnpm test` to verify build health
@@ -37,6 +38,7 @@ pnpm test
 ```
 
 **Checks:**
+
 - [ ] `pnpm lint` exits with 0 errors (warnings are acceptable)
 - [ ] `pnpm typecheck` exits with 0 errors
 - [ ] `pnpm test` exits with all tests passing (0 failures)
@@ -52,6 +54,7 @@ If any of these fail, report the errors verbatim and continue the audit — do n
 Search for the `agentic_posts` (or equivalent) table definition.
 
 **Checks:**
+
 - [ ] **Table exists** — an `agenticPosts` table (or equivalent name) is defined in the schema file
 - [ ] **Required columns present:** `id` (varchar PK), `userId` (FK to user), `xAccountId` (FK to x_accounts), `topic` (text), `researchBrief` (jsonb), `contentPlan` (jsonb), `tweets` (jsonb), `qualityScore` (integer), `summary` (text), `status` (varchar with default `"generating"`), `postId` (FK to posts, nullable), `correlationId` (varchar), `createdAt` (timestamp), `updatedAt` (timestamp)
 - [ ] **Foreign keys** — `userId` references `user.id` with `onDelete: "cascade"`, `xAccountId` references `xAccounts.id` with `onDelete: "cascade"`, `postId` references `posts.id`
@@ -65,6 +68,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/lib/ai/agentic-types.ts` (or wherever the types were placed)
 
 **Checks:**
+
 - [ ] **File exists** at the expected path
 - [ ] **`ResearchBrief` type** — has fields: `topic`, `angles` (array with `title`, `description`, `viralPotential`), `trendingHashtags`, `keyFacts`, `recommendedAngle`
 - [ ] **`ContentPlan` type** — has fields: `format` (`"single"` | `"thread"`), `lengthOption`, `tweetCount`, `tone`, `structure`, `imageSlots` (number array), `rationale`
@@ -79,6 +83,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/lib/ai/agentic-prompts.ts` (or wherever prompts were placed)
 
 **Checks:**
+
 - [ ] **File exists** at the expected path
 - [ ] **Research prompt function** — `buildResearchPrompt()` (or equivalent) exists, accepts `topic` and `language`, returns a string. Verify the prompt asks for structured JSON output and includes the `ResearchBrief` field names.
 - [ ] **Strategy prompt function** — `buildStrategyPrompt()` (or equivalent) exists, accepts the research brief, X subscription tier, language, and optional preferences. Verify the prompt passes the tier information so the AI knows available formats/lengths.
@@ -95,6 +100,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/lib/services/agentic-pipeline.ts` (or wherever the service was placed)
 
 **Checks:**
+
 - [ ] **File exists** at the expected path
 - [ ] **Main function signature** — exports a `runAgenticPipeline()` (or equivalent) function that accepts: topic, xAccountId, xSubscriptionTier, voiceProfile, language, userId, and an `onProgress` callback
 - [ ] **5-step sequential execution** — verify the function calls the 5 pipeline steps in order: Research → Strategy → Write → Images → Review
@@ -117,6 +123,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/app/api/ai/agentic/route.ts`
 
 **Checks:**
+
 - [ ] **File exists** at the expected path
 - [ ] **POST handler exported** — the file exports a `POST` function
 - [ ] **Authentication** — session is checked via `auth.api.getSession()` or `aiPreamble()`. Returns `ApiError.unauthorized()` if no session.
@@ -134,6 +141,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/app/api/ai/agentic/[id]/approve/route.ts`
 
 **Checks:**
+
 - [ ] **File exists** at the expected path (dynamic `[id]` segment)
 - [ ] **POST handler exported**
 - [ ] **Authentication + ownership** — session check + verify the agentic post belongs to the user
@@ -151,6 +159,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/app/api/ai/agentic/[id]/regenerate/route.ts`
 
 **Checks:**
+
 - [ ] **File exists** at the expected path
 - [ ] **POST handler exported**
 - [ ] **Authentication + ownership**
@@ -166,6 +175,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/lib/middleware/require-plan.ts`
 
 **Checks:**
+
 - [ ] **New gate function exists** — search for `checkAgenticPosting` or a `makeFeatureGate()` call that gates agentic posting
 - [ ] **Gated to Pro/Agency** — the gate allows Pro and Agency plans but blocks Free. Check the plan comparison logic.
 - [ ] **14-day trial handled** — verify the gate function goes through `makeFeatureGate()` which handles trial-period logic automatically (per existing patterns in the file)
@@ -178,6 +188,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/components/dashboard/sidebar.tsx`
 
 **Checks:**
+
 - [ ] **Entry exists** — search for `"Agentic"` or `"agentic"` in the sidebar sections array
 - [ ] **Under AI Tools section** — the entry is in the AI Tools group, not as a top-level item or under a different section
 - [ ] **Route correct** — the `href` or `path` points to `/dashboard/ai/agentic`
@@ -191,6 +202,7 @@ Search for the `agentic_posts` (or equivalent) table definition.
 **Read:** `src/app/dashboard/ai/agentic/page.tsx`
 
 **Checks:**
+
 - [ ] **File exists** at the expected path
 - [ ] **Server Component** — the file does NOT start with `"use client"`. It should be a Server Component that fetches data and passes it to a client component.
 - [ ] **`DashboardPageWrapper` used** — the page wraps content in `<DashboardPageWrapper>` with `icon`, `title`, and `description` props. Verify it's imported from `@/components/dashboard/dashboard-page-wrapper`.
@@ -207,11 +219,13 @@ Search for the `agentic_posts` (or equivalent) table definition.
 This is the largest verification section. Read the full file before checking.
 
 **Checks — General Architecture:**
+
 - [ ] **`"use client"` directive** — file starts with `"use client"`
 - [ ] **State machine** — the component manages a screen state with at least three values: `"input"`, `"processing"`, `"review"` (exact names may differ). Check for a `useState` or Zustand store.
 - [ ] **No separate routes** — the three screens are rendered conditionally within this single component (not via React Router or Next.js routing)
 
 **Checks — Screen 1 (Input):**
+
 - [ ] **Topic input field** — a text input exists with placeholder text suggesting example topics
 - [ ] **Generate button** — a primary CTA button that triggers the pipeline. Check that it's disabled when input is empty or too short.
 - [ ] **Suggestion chips** — tappable topic suggestion chips are rendered below the input (dynamic from user history or static fallbacks)
@@ -220,6 +234,7 @@ This is the largest verification section. Read the full file before checking.
 - [ ] **Submit triggers SSE** — submitting the form calls `POST /api/ai/agentic` and establishes an SSE connection for streaming progress
 
 **Checks — Screen 2 (Processing):**
+
 - [ ] **Timeline/progress display** — each pipeline step is visualized with a status indicator (complete ✅, in progress ⏳, pending ○, or equivalent visual pattern)
 - [ ] **Step summaries** — completed steps show a brief summary of their output (e.g., the recommended angle from research, the format decision from strategy)
 - [ ] **SSE event handling** — the component processes SSE events and updates the timeline in real-time. Check for `EventSource` or `fetch` with ReadableStream processing.
@@ -227,6 +242,7 @@ This is the largest verification section. Read the full file before checking.
 - [ ] **Error display** — if a step fails, the error is shown inline on the failed step (not just a generic error screen)
 
 **Checks — Screen 3 (Review):**
+
 - [ ] **Tweet cards rendered** — each tweet in the thread is displayed as a card with: text content, character count, position indicator, and image (if present)
 - [ ] **Inline editing** — tweet cards support inline text editing (clicking Edit switches to an editable textarea). Check for a local editing state.
 - [ ] **Per-tweet regeneration** — a "Rewrite" or "Regenerate" button exists per tweet that calls `POST /api/ai/agentic/{id}/regenerate`
@@ -247,6 +263,7 @@ This is the largest verification section. Read the full file before checking.
 ### Section 10: X Subscription Tier Integration
 
 **Checks — verify across multiple files:**
+
 - [ ] **Tier passed to pipeline** — in the orchestration route (`route.ts`), verify the `xSubscriptionTier` is read from the X account and passed to `runAgenticPipeline()`
 - [ ] **Strategy prompt uses tier** — in `agentic-prompts.ts`, verify `buildStrategyPrompt()` includes the tier in the system prompt, informing the AI about available formats
 - [ ] **Free tier format constraints** — in the strategy prompt, verify that Free users are limited to Short (≤280) single tweets or threads (≤280 per tweet). The prompt should NOT offer Medium or Long options for Free users.
@@ -260,6 +277,7 @@ This is the largest verification section. Read the full file before checking.
 This section verifies the "do not rebuild" rule — Agentic Posting should reuse existing services, not duplicate them.
 
 **Checks:**
+
 - [ ] **No duplicate Replicate client** — image generation calls the existing `src/lib/services/ai-image.ts` service, not a new Replicate implementation. Search for `replicate` imports in the agentic pipeline file — they should import from `ai-image.ts`, not from `replicate` directly.
 - [ ] **No duplicate publishing logic** — the approve route creates rows in the existing `posts` and `tweets` tables and enqueues a standard `publish-post` BullMQ job. It does NOT make direct X API calls to publish.
 - [ ] **No duplicate storage logic** — generated images are stored using the existing `upload()` from `@/lib/storage`, not a new storage implementation.
@@ -273,6 +291,7 @@ This section verifies the "do not rebuild" rule — Agentic Posting should reuse
 Scan all new and modified files for violations of the project's mandatory rules.
 
 **Checks:**
+
 - [ ] **No `getPlanLimits()` in route handlers** — search all new route files (`src/app/api/ai/agentic/`) for `getPlanLimits` or `normalizePlan`. Neither should appear.
 - [ ] **`exactOptionalPropertyTypes` compliance** — search for patterns like `prop={maybeUndefined}` in TSX files. The correct pattern is `{...(val !== undefined && { prop: val })}`. Check the client component and page component.
 - [ ] **Multi-table writes in transactions** — the approve route writes to multiple tables. Verify `db.transaction()` wraps all writes.
@@ -284,11 +303,13 @@ Scan all new and modified files for violations of the project's mandatory rules.
 ### Section 13: Tests
 
 **Read:** Test files for the agentic feature (check these locations):
+
 - `src/lib/services/agentic-pipeline.test.ts`
 - `src/app/api/ai/agentic/[id]/approve/route.test.ts`
 - `src/lib/ai/agentic-types.test.ts`
 
 **Checks:**
+
 - [ ] **Pipeline service tests exist** — at least one test file covers the pipeline service
 - [ ] **Happy path test** — a test mocks all 5 steps and verifies a complete `AgenticPost` is returned
 - [ ] **Image failure test** — a test verifies the pipeline completes even when image generation fails for some tweets
@@ -304,6 +325,7 @@ Scan all new and modified files for violations of the project's mandatory rules.
 **Read:** The client component and any sub-components.
 
 **Checks:**
+
 - [ ] **Mobile layout** — search for responsive Tailwind classes (`sm:`, `md:`, `lg:`, `xl:`) that adapt the layout for different screen sizes. The three-screen flow should work on mobile.
 - [ ] **Touch targets** — interactive elements (buttons, chips, action icons) have adequate size for touch (min 44×44px equivalent via padding)
 - [ ] **Dark mode** — verify shadcn/ui color tokens are used (`bg-background`, `text-foreground`, `bg-muted`, etc.) instead of hardcoded colors. Search for hardcoded color values like `bg-white`, `text-black`, `#ffffff` — these break dark mode.
@@ -321,7 +343,7 @@ After completing all sections, produce a summary report in this exact format:
 
 ## Build Health
 - Lint: PASS / FAIL (N errors)
-- Typecheck: PASS / FAIL (N errors)  
+- Typecheck: PASS / FAIL (N errors)
 - Tests: PASS / FAIL (N passed, N failed)
 
 ## Section Results
@@ -361,6 +383,7 @@ After completing all sections, produce a summary report in this exact format:
 ```
 
 **Scoring guidance:**
+
 - **≥ 95% (113+/119):** Ship-ready. Minor polish only.
 - **85–94% (101–112/119):** Nearly complete. Fix critical issues, then ship.
 - **70–84% (83–100/119):** Significant gaps. Prioritize critical issues before proceeding.

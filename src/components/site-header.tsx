@@ -14,7 +14,10 @@ export async function SiteHeader() {
   const isAuthenticated = !!session;
 
   return (
-    <header data-site-header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      data-site-header
+      className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 border-b backdrop-blur"
+    >
       <nav
         className="container mx-auto flex items-center justify-between px-4 py-3"
         aria-label="Main navigation"
@@ -23,10 +26,10 @@ export async function SiteHeader() {
         <div className="flex items-center gap-8">
           <Link
             href="/"
-            className="flex items-center gap-2 font-bold text-xl"
+            className="flex items-center gap-2 text-xl font-bold"
             aria-label="AstraPost - Go to homepage"
           >
-            <Rocket className="h-6 w-6 text-primary" />
+            <Rocket className="text-primary h-6 w-6" />
             <span>AstraPost</span>
           </Link>
 
@@ -40,7 +43,7 @@ export async function SiteHeader() {
 
           {/* Desktop auth — hidden on mobile */}
           {isAuthenticated ? (
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden items-center gap-3 md:flex">
               <NotificationBell />
               <Button variant="ghost" asChild>
                 <Link href="/dashboard">Dashboard</Link>
@@ -48,7 +51,7 @@ export async function SiteHeader() {
               <UserProfile user={session.user} />
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden items-center gap-2 md:flex">
               <Button variant="ghost" asChild>
                 <Link href="/login">Sign In</Link>
               </Button>

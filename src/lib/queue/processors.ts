@@ -6,7 +6,14 @@ import { type InferSelectModel, eq, and, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
-import { scheduleQueue, SCHEDULE_JOB_OPTIONS, type PublishPostPayload, type AnalyticsJobPayload, type RefreshXTiersJobPayload, type TokenHealthJobPayload } from "@/lib/queue/client";
+import {
+  scheduleQueue,
+  SCHEDULE_JOB_OPTIONS,
+  type PublishPostPayload,
+  type AnalyticsJobPayload,
+  type RefreshXTiersJobPayload,
+  type TokenHealthJobPayload,
+} from "@/lib/queue/client";
 import { posts, jobRuns, user, tweets, media, notifications, xAccounts } from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
@@ -24,7 +31,6 @@ type FullPost = InferSelectModel<typeof posts> & {
 
 /** Max date into the future we will ever enqueue a recurrence job (1 year from now). */
 const MAX_RECURRENCE_FUTURE_MS = 365 * 24 * 60 * 60 * 1000;
-
 
 export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
   const { postId, userId, correlationId } = job.data;
@@ -91,7 +97,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         queue: job.queueName,
         jobId: job.id,
         postId,
-      correlationId,
+        correlationId,
         status: post.status,
       });
       return;
@@ -156,12 +162,15 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
           ...errorData,
         });
 
-        await db.update(posts).set({
-          status: "failed",
-          failReason: errorData.message,
-          lastErrorCode: null,
-          lastErrorAt: new Date(),
-        }).where(eq(posts.id, postId));
+        await db
+          .update(posts)
+          .set({
+            status: "failed",
+            failReason: errorData.message,
+            lastErrorCode: null,
+            lastErrorAt: new Date(),
+          })
+          .where(eq(posts.id, postId));
 
         // Best-effort DB writes — wrapped so a failing insert cannot prevent
         // UnrecoverableError from being thrown (which would cause BullMQ retries).
@@ -222,8 +231,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         // absolute path (which would discard "public" on Windows).
         const filePath = path.resolve(process.cwd(), "public", fileUrl.replace(/^\//, ""));
         const withinUploads =
-          filePath === uploadsRoot ||
-          filePath.startsWith(uploadsRoot + path.sep);
+          filePath === uploadsRoot || filePath.startsWith(uploadsRoot + path.sep);
         if (!withinUploads) {
           throw new Error(
             `Path traversal detected: media URL "${fileUrl}" resolves outside uploads directory`
@@ -276,10 +284,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
                   ? "tweet_gif"
                   : "tweet_image",
           });
-          await db
-            .update(media)
-            .set({ xMediaId: uploadedId })
-            .where(eq(media.id, m.id));
+          await db.update(media).set({ xMediaId: uploadedId }).where(eq(media.id, m.id));
           mediaIds.push(uploadedId);
         } else {
           mediaIds.push(m.xMediaId);
@@ -293,10 +298,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       const postedId = result.data.id;
       lastTweetId = postedId;
 
-      await db
-        .update(tweets)
-        .set({ xTweetId: postedId })
-        .where(eq(tweets.id, tweetRow.id));
+      await db.update(tweets).set({ xTweetId: postedId }).where(eq(tweets.id, tweetRow.id));
     }
 
     // 5. Atomically mark post published + record successful job run.
@@ -304,7 +306,8 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
     // record in job_runs is never missing when the post status is "published",
     // even if the process crashes immediately after the DB commit.
     await db.transaction(async (tx) => {
-      await tx.update(posts)
+      await tx
+        .update(posts)
         .set({
           status: "published",
           publishedAt: new Date(),
@@ -314,7 +317,8 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         })
         .where(eq(posts.id, postId));
 
-      await tx.update(jobRuns)
+      await tx
+        .update(jobRuns)
         .set({
           status: "success",
           attempts: job.opts?.attempts,
@@ -423,7 +427,6 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       postId,
       correlationId,
     });
-
   } catch (error) {
     const code = (error as any)?.code;
     // Extract the human-readable detail from the X API v2 error response.
@@ -436,8 +439,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
     // True auth errors: expired/revoked token. Mark account inactive so the
     // scheduler skips it until the user reconnects with fresh credentials.
     const isAuthError =
-      (error instanceof Error && error.message.includes("X Session expired")) ||
-      code === 401;
+      (error instanceof Error && error.message.includes("X Session expired")) || code === 401;
 
     // 403 "not permitted" is a permanent app-level failure, NOT an auth error.
     // Root causes: missing tweet.write scope, Twitter Developer Free-tier plan
@@ -445,8 +447,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
     // won't help — the user needs to check their Twitter Developer Portal.
     // We mark the post as failed (not paused_needs_reconnect) so the Retry
     // button is available immediately and the account stays active.
-    const isPermissionError =
-      code === 403 && xApiDetail.toLowerCase().includes("not permitted");
+    const isPermissionError = code === 403 && xApiDetail.toLowerCase().includes("not permitted");
 
     // 403 "duplicate content" means the tweet was already posted to X (e.g. the
     // process crashed after the API call but before the DB write). Retrying will
@@ -473,7 +474,10 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       });
 
       await db.update(xAccounts).set({ isActive: false }).where(eq(xAccounts.id, post.xAccountId));
-      await db.update(posts).set({ status: sql`'paused_needs_reconnect'::text::post_status` }).where(eq(posts.id, postId));
+      await db
+        .update(posts)
+        .set({ status: sql`'paused_needs_reconnect'::text::post_status` })
+        .where(eq(posts.id, postId));
 
       if (job.token) {
         // Delay for 72 hours
@@ -502,7 +506,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       attemptsMade,
       final: isFinalAttempt,
     });
-    
+
     const updateSet: {
       status: "failed" | "scheduled";
       failReason: string;
@@ -549,7 +553,7 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
           },
         });
     }
-    
+
     const targetUserId = userId || post?.userId;
     if (isFinalAttempt && targetUserId) {
       await db.insert(notifications).values({
@@ -565,15 +569,15 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       // Send Email
       try {
         const userRecord = await db.query.user.findFirst({
-            where: eq(user.id, targetUserId),
-            columns: { email: true }
+          where: eq(user.id, targetUserId),
+          columns: { email: true },
         });
         if (userRecord?.email) {
-            await sendPostFailureEmail(
-                userRecord.email, 
-                postId, 
-                userHint || (error instanceof Error ? error.message : "Unknown error")
-            );
+          await sendPostFailureEmail(
+            userRecord.email,
+            postId,
+            userHint || (error instanceof Error ? error.message : "Unknown error")
+          );
         }
       } catch (emailError) {
         logger.error("failed_to_send_email", { error: emailError });
@@ -589,30 +593,30 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
 };
 
 export const analyticsProcessor = async (job: Job<AnalyticsJobPayload>) => {
-    const { correlationId, runIds } = job.data;
-    logger.info("analytics_job_started", {
-      queue: job.queueName,
-      jobId: job.id,
-      correlationId,
-    });
-    if (runIds && runIds.length > 0) {
-      await refreshFollowersAndMetricsForRuns(runIds);
-      logger.info("analytics_job_completed", {
-        queue: job.queueName,
-        jobId: job.id,
-        correlationId,
-        mode: "runs",
-        runIdsCount: runIds.length,
-      });
-      return;
-    }
-    await updateTweetMetrics();
+  const { correlationId, runIds } = job.data;
+  logger.info("analytics_job_started", {
+    queue: job.queueName,
+    jobId: job.id,
+    correlationId,
+  });
+  if (runIds && runIds.length > 0) {
+    await refreshFollowersAndMetricsForRuns(runIds);
     logger.info("analytics_job_completed", {
       queue: job.queueName,
       jobId: job.id,
       correlationId,
-      mode: "periodic",
+      mode: "runs",
+      runIdsCount: runIds.length,
     });
+    return;
+  }
+  await updateTweetMetrics();
+  logger.info("analytics_job_completed", {
+    queue: job.queueName,
+    jobId: job.id,
+    correlationId,
+    mode: "periodic",
+  });
 };
 
 // ── X Tier Refresh Processor ──────────────────────────────────────────────────
@@ -637,8 +641,8 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
         eq(xAccounts.isActive, true),
         or(
           sql`x_accounts.x_subscription_tier_updated_at is null`,
-          sql`x_accounts.x_subscription_tier_updated_at < now() - interval '24 hours'`,
-        ),
+          sql`x_accounts.x_subscription_tier_updated_at < now() - interval '24 hours'`
+        )
       ),
     });
 
@@ -674,15 +678,12 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
           if (wasPremium && isNowFree) {
             // Check for scheduled posts with content exceeding 280 chars
             const scheduledPosts = await db.query.posts.findMany({
-              where: and(
-                eq(posts.xAccountId, account.id),
-                eq(posts.status, "scheduled"),
-              ),
+              where: and(eq(posts.xAccountId, account.id), eq(posts.status, "scheduled")),
               with: { tweets: { columns: { content: true } } },
             });
 
             const oversized = scheduledPosts.filter((p) =>
-              p.tweets.some((t) => t.content.length > 280),
+              p.tweets.some((t) => t.content.length > 280)
             );
 
             if (oversized.length > 0) {
@@ -770,7 +771,7 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
       where: and(
         eq(xAccounts.isActive, true),
         sql`x_accounts.token_expires_at IS NOT NULL`,
-        sql`x_accounts.token_expires_at < NOW() + INTERVAL '48 hours'`,
+        sql`x_accounts.token_expires_at < NOW() + INTERVAL '48 hours'`
       ),
     });
 

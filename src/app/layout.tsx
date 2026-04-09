@@ -64,7 +64,7 @@ export const metadata: Metadata = {
     "Analytics",
     "Thread Maker",
     "Growth Tool",
-    "Marketing Automation"
+    "Marketing Automation",
   ],
   authors: [{ name: "AstraPost Team" }],
   creator: "AstraPost",
@@ -138,7 +138,7 @@ export default async function RootLayout({
         */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-md focus:outline-none focus:ring-2 focus:ring-ring"
+          className="focus:bg-background focus:text-foreground focus:ring-ring sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-md focus:ring-2 focus:outline-none"
         >
           {dir === "rtl" ? "تخطى إلى المحتوى الرئيسي" : "Skip to main content"}
         </a>

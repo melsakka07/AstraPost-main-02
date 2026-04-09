@@ -46,12 +46,14 @@ export function PlanUsage() {
   }, []);
 
   if (loading) {
-    return <div className="space-y-4">
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-full" />
-      <Skeleton className="h-4 w-full" />
-    </div>;
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+      </div>
+    );
   }
 
   if (!data) return null;
@@ -61,11 +63,16 @@ export function PlanUsage() {
   const accountPercentage = getPercentage(usage.accounts, limits.maxXAccounts);
   const aiPercentage = getPercentage(usage.ai, limits.aiGenerationsPerMonth);
   const imagePercentage = getPercentage(usage.aiImages, limits.aiImagesPerMonth);
-  const highestPercentage = Math.max(postPercentage, accountPercentage, aiPercentage, imagePercentage);
+  const highestPercentage = Math.max(
+    postPercentage,
+    accountPercentage,
+    aiPercentage,
+    imagePercentage
+  );
   const showUpgradeCta = highestPercentage >= 70 && plan !== "agency";
 
   return (
-    <div className="space-y-6 mt-4 border-t pt-4">
+    <div className="mt-4 space-y-6 border-t pt-4">
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
           <span>Posts this month</span>
@@ -91,7 +98,8 @@ export function PlanUsage() {
                 href="/dashboard/settings#accounts"
                 className="text-primary cursor-pointer hover:underline"
               >
-                {limits.maxXAccounts - usage.accounts} slot{limits.maxXAccounts - usage.accounts > 1 ? 's' : ''} available — add account
+                {limits.maxXAccounts - usage.accounts} slot
+                {limits.maxXAccounts - usage.accounts > 1 ? "s" : ""} available — add account
               </Link>
             ) : (
               <span className="text-muted-foreground">Account limit reached</span>
@@ -104,7 +112,8 @@ export function PlanUsage() {
         <div className="flex justify-between text-sm">
           <span>AI generations this month</span>
           <span className="text-muted-foreground">
-            {usage.ai} / {limits.aiGenerationsPerMonth === null ? "Unlimited" : limits.aiGenerationsPerMonth}
+            {usage.ai} /{" "}
+            {limits.aiGenerationsPerMonth === null ? "Unlimited" : limits.aiGenerationsPerMonth}
           </span>
         </div>
         <Progress value={aiPercentage} className="h-2" />
@@ -114,17 +123,19 @@ export function PlanUsage() {
         <div className="flex justify-between text-sm">
           <span>AI images this month</span>
           <span className="text-muted-foreground">
-            {usage.aiImages} / {limits.aiImagesPerMonth === null ? "Unlimited" : limits.aiImagesPerMonth}
+            {usage.aiImages} /{" "}
+            {limits.aiImagesPerMonth === null ? "Unlimited" : limits.aiImagesPerMonth}
           </span>
         </div>
         <Progress value={imagePercentage} className="h-2" />
       </div>
 
       {showUpgradeCta && (
-        <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-3">
+        <div className="border-primary/30 bg-primary/5 rounded-md border px-3 py-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-foreground">
-              You are using {Math.round(highestPercentage)}% of your plan limits. Upgrade now to avoid interruptions.
+            <p className="text-foreground text-sm">
+              You are using {Math.round(highestPercentage)}% of your plan limits. Upgrade now to
+              avoid interruptions.
             </p>
             <Button size="sm" asChild>
               <Link href="/pricing">Upgrade</Link>

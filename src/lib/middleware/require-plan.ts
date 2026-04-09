@@ -1,6 +1,13 @@
 import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { getPlanLimits, normalizePlan, TRIAL_EFFECTIVE_PLAN, type ImageModel, type PlanLimits, type PlanType } from "@/lib/plan-limits";
+import {
+  getPlanLimits,
+  normalizePlan,
+  TRIAL_EFFECTIVE_PLAN,
+  type ImageModel,
+  type PlanLimits,
+  type PlanType,
+} from "@/lib/plan-limits";
 import { aiGenerations, inspirationBookmarks, posts, user, xAccounts } from "@/lib/schema";
 import { getMonthWindow } from "@/lib/utils/time";
 
@@ -88,7 +95,8 @@ function buildFailure(params: Omit<PlanGateFailure, "allowed">): PlanGateFailure
 }
 
 export function buildPlanLimitPayload(result: PlanGateFailure) {
-  const remaining = typeof result.limit === "number" ? Math.max(0, result.limit - result.used) : null;
+  const remaining =
+    typeof result.limit === "number" ? Math.max(0, result.limit - result.used) : null;
 
   return {
     error: result.error,
@@ -157,7 +165,10 @@ function makeFeatureGate(
 
 // ─── Account & post quota gates (custom logic) ────────────────────────────────
 
-export async function checkAccountLimitDetailed(userId: string, increment = 1): Promise<PlanGateResult> {
+export async function checkAccountLimitDetailed(
+  userId: string,
+  increment = 1
+): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
   const limits = getPlanLimits(context.effectivePlan);
   if (limits.maxXAccounts === Infinity) return { allowed: true };
@@ -252,7 +263,13 @@ export async function checkAiQuotaDetailed(userId: string): Promise<PlanGateResu
   const aiCount = await db
     .select({ count: sql<number>`count(*)` })
     .from(aiGenerations)
-    .where(and(eq(aiGenerations.userId, userId), ne(aiGenerations.type, "image"), gte(aiGenerations.createdAt, start)));
+    .where(
+      and(
+        eq(aiGenerations.userId, userId),
+        ne(aiGenerations.type, "image"),
+        gte(aiGenerations.createdAt, start)
+      )
+    );
   const used = Number(aiCount[0]?.count ?? 0);
 
   if (used < limits.aiGenerationsPerMonth) return { allowed: true };
@@ -322,51 +339,76 @@ export async function checkBookmarkLimitDetailed(userId: string): Promise<PlanGa
 // ─── Boolean feature gates (generated via factory) ───────────────────────────
 
 export const checkViralScoreAccessDetailed = makeFeatureGate(
-  "viral_score", "canUseViralScore", "AI Viral Score is a Pro feature."
+  "viral_score",
+  "canUseViralScore",
+  "AI Viral Score is a Pro feature."
 );
 
 export const checkBestTimesAccessDetailed = makeFeatureGate(
-  "best_times", "canViewBestTimes", "Best Times to Post is a Pro feature."
+  "best_times",
+  "canViewBestTimes",
+  "Best Times to Post is a Pro feature."
 );
 
 export const checkVoiceProfileAccessDetailed = makeFeatureGate(
-  "voice_profile", "canUseVoiceProfile", "AI Voice Profile is a Pro feature."
+  "voice_profile",
+  "canUseVoiceProfile",
+  "AI Voice Profile is a Pro feature."
 );
 
 export const checkLinkedinAccessDetailed = makeFeatureGate(
-  "linkedin_access", "canUseLinkedin", "LinkedIn integration is an Agency plan feature.", "agency"
+  "linkedin_access",
+  "canUseLinkedin",
+  "LinkedIn integration is an Agency plan feature.",
+  "agency"
 );
 
 export const checkContentCalendarAccessDetailed = makeFeatureGate(
-  "content_calendar", "canUseContentCalendar", "AI Content Calendar is a Pro feature."
+  "content_calendar",
+  "canUseContentCalendar",
+  "AI Content Calendar is a Pro feature."
 );
 
 export const checkUrlToThreadAccessDetailed = makeFeatureGate(
-  "url_to_thread", "canUseUrlToThread", "URL → Thread Converter is a Pro feature."
+  "url_to_thread",
+  "canUseUrlToThread",
+  "URL → Thread Converter is a Pro feature."
 );
 
 export const checkVariantGeneratorAccessDetailed = makeFeatureGate(
-  "variant_generator", "canUseVariantGenerator", "A/B Variant Generator is a Pro feature."
+  "variant_generator",
+  "canUseVariantGenerator",
+  "A/B Variant Generator is a Pro feature."
 );
 
 export const checkCompetitorAnalyzerAccessDetailed = makeFeatureGate(
-  "competitor_analyzer", "canUseCompetitorAnalyzer", "Competitor Analyzer is a Pro feature."
+  "competitor_analyzer",
+  "canUseCompetitorAnalyzer",
+  "Competitor Analyzer is a Pro feature."
 );
 
 export const checkReplyGeneratorAccessDetailed = makeFeatureGate(
-  "reply_generator", "canUseReplyGenerator", "Reply Suggester is a Pro feature."
+  "reply_generator",
+  "canUseReplyGenerator",
+  "Reply Suggester is a Pro feature."
 );
 
 export const checkBioOptimizerAccessDetailed = makeFeatureGate(
-  "bio_optimizer", "canUseBioOptimizer", "AI Bio Optimizer is a Pro feature."
+  "bio_optimizer",
+  "canUseBioOptimizer",
+  "AI Bio Optimizer is a Pro feature."
 );
 
 export const checkInspirationAccessDetailed = makeFeatureGate(
-  "inspiration", "canUseInspiration", "Inspiration feature is not available on your plan."
+  "inspiration",
+  "canUseInspiration",
+  "Inspiration feature is not available on your plan."
 );
 
 export const checkAgenticPostingAccessDetailed = makeFeatureGate(
-  "agentic_posting", "canUseAgenticPosting", "Agentic Posting is a Pro feature."
+  "agentic_posting",
+  "canUseAgenticPosting",
+  "Agentic Posting is a Pro feature."
 );
 
 // ─── Image-specific gates ──────────────────────────────────────────────────────
@@ -410,11 +452,13 @@ export async function checkAiImageQuotaDetailed(userId: string): Promise<PlanGat
   const countResult = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(aiGenerations)
-    .where(and(
-      eq(aiGenerations.userId, userId),
-      eq(aiGenerations.type, "image"),
-      gte(aiGenerations.createdAt, start),
-    ));
+    .where(
+      and(
+        eq(aiGenerations.userId, userId),
+        eq(aiGenerations.type, "image"),
+        gte(aiGenerations.createdAt, start)
+      )
+    );
   const used = Number(countResult[0]?.count ?? 0);
 
   if (used < limits.aiImagesPerMonth) return { allowed: true };

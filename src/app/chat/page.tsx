@@ -20,9 +20,9 @@ const H2: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
 const H3: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
   <h3 className="mt-2 mb-2 text-lg font-semibold" {...props} />
 );
-const Paragraph: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = (
-  props
-) => <p className="mb-3 leading-7 text-sm" {...props} />;
+const Paragraph: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = (props) => (
+  <p className="mb-3 text-sm leading-7" {...props} />
+);
 const UL: React.FC<React.HTMLAttributes<HTMLUListElement>> = (props) => (
   <ul className="mb-3 ml-5 list-disc space-y-1 text-sm" {...props} />
 );
@@ -32,23 +32,16 @@ const OL: React.FC<React.OlHTMLAttributes<HTMLOListElement>> = (props) => (
 const LI: React.FC<React.LiHTMLAttributes<HTMLLIElement>> = (props) => (
   <li className="leading-6" {...props} />
 );
-const Anchor: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = (
-  props
-) => (
+const Anchor: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = (props) => (
   <a
-    className="underline underline-offset-2 text-primary hover:opacity-90"
+    className="text-primary underline underline-offset-2 hover:opacity-90"
     target="_blank"
     rel="noreferrer noopener"
     {...props}
   />
 );
-const Blockquote: React.FC<React.BlockquoteHTMLAttributes<HTMLElement>> = (
-  props
-) => (
-  <blockquote
-    className="mb-3 border-l-2 border-border pl-3 text-muted-foreground"
-    {...props}
-  />
+const Blockquote: React.FC<React.BlockquoteHTMLAttributes<HTMLElement>> = (props) => (
+  <blockquote className="border-border text-muted-foreground mb-3 border-l-2 pl-3" {...props} />
 );
 const Code: Components["code"] = ({ children, className, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
@@ -56,13 +49,13 @@ const Code: Components["code"] = ({ children, className, ...props }) => {
 
   if (isInline) {
     return (
-      <code className="rounded bg-muted px-1 py-0.5 text-xs" {...props}>
+      <code className="bg-muted rounded px-1 py-0.5 text-xs" {...props}>
         {children}
       </code>
     );
   }
   return (
-    <pre className="mb-3 w-full overflow-x-auto rounded-md bg-muted p-3">
+    <pre className="bg-muted mb-3 w-full overflow-x-auto rounded-md p-3">
       <code className="text-xs leading-5" {...props}>
         {children}
       </code>
@@ -70,23 +63,18 @@ const Code: Components["code"] = ({ children, className, ...props }) => {
   );
 };
 const HR: React.FC<React.HTMLAttributes<HTMLHRElement>> = (props) => (
-  <hr className="my-4 border-border" {...props} />
+  <hr className="border-border my-4" {...props} />
 );
-const Table: React.FC<React.TableHTMLAttributes<HTMLTableElement>> = (
-  props
-) => (
+const Table: React.FC<React.TableHTMLAttributes<HTMLTableElement>> = (props) => (
   <div className="mb-3 overflow-x-auto">
     <table className="w-full border-collapse text-sm" {...props} />
   </div>
 );
 const TH: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = (props) => (
-  <th
-    className="border border-border bg-muted px-2 py-1 text-left"
-    {...props}
-  />
+  <th className="border-border bg-muted border px-2 py-1 text-left" {...props} />
 );
 const TD: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = (props) => (
-  <td className="border border-border px-2 py-1" {...props} />
+  <td className="border-border border px-2 py-1" {...props} />
 );
 
 const markdownComponents: Components = {
@@ -158,8 +146,8 @@ function getMessageText(message: MaybePartsMessage): string {
   const parts = Array.isArray(message.parts)
     ? message.parts
     : Array.isArray(message.content)
-    ? message.content
-    : [];
+      ? message.content
+      : [];
   return parts
     .filter((p) => p?.type === "text" && p.text)
     .map((p) => p.text)
@@ -171,8 +159,8 @@ function renderMessageContent(message: MaybePartsMessage): ReactNode {
   const parts = Array.isArray(message.parts)
     ? message.parts
     : Array.isArray(message.content)
-    ? message.content
-    : [];
+      ? message.content
+      : [];
   return parts.map((p, idx) =>
     p?.type === "text" && p.text ? (
       <ReactMarkdown key={idx} components={markdownComponents}>
@@ -207,13 +195,13 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="p-1 hover:bg-muted rounded transition-colors"
+      className="hover:bg-muted rounded p-1 transition-colors"
       title="Copy to clipboard"
     >
       {copied ? (
         <Check className="h-3.5 w-3.5 text-green-500" />
       ) : (
-        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+        <Copy className="text-muted-foreground h-3.5 w-3.5" />
       )}
     </button>
   );
@@ -221,9 +209,9 @@ function CopyButton({ text }: { text: string }) {
 
 function ThinkingIndicator() {
   return (
-    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted max-w-[80%]">
+    <div className="bg-muted flex max-w-[80%] items-center gap-2 rounded-lg p-3">
       <Loader2 className="h-4 w-4 animate-spin" />
-      <span className="text-sm text-muted-foreground">AI is thinking...</span>
+      <span className="text-muted-foreground text-sm">AI is thinking...</span>
     </div>
   );
 }
@@ -317,7 +305,7 @@ export default function ChatPage() {
   if (!session) {
     return (
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl mx-auto">
+        <div className="mx-auto max-w-3xl">
           <UserProfile />
         </div>
       </div>
@@ -331,15 +319,15 @@ export default function ChatPage() {
     // virtual keyboard on iOS 15 and older (where dvh doesn't track the keyboard).
     // On Android / iOS 16+ dvh already adjusts, so keyboardHeight stays 0.
     <div
-      className="flex flex-col h-dvh overflow-hidden"
+      className="flex h-dvh flex-col overflow-hidden"
       style={keyboardHeight > 0 ? { paddingBottom: `${keyboardHeight}px` } : undefined}
     >
-      <div className="max-w-4xl mx-auto w-full flex flex-col flex-1 min-h-0 px-4">
+      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-4">
         {/* Header */}
-        <div className="shrink-0 flex justify-between items-center py-4 border-b flex-wrap gap-2">
-          <h1 className="text-xl sm:text-2xl font-bold">AstraPost Assistant</h1>
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b py-4">
+          <h1 className="text-xl font-bold sm:text-2xl">AstraPost Assistant</h1>
           <div className="flex items-center gap-2 sm:gap-4">
-            <span className="hidden sm:block text-sm text-muted-foreground">
+            <span className="text-muted-foreground hidden text-sm sm:block">
               Welcome, {session.user.name}!
             </span>
             {messages.length > 0 && (
@@ -353,8 +341,8 @@ export default function ChatPage() {
         {/* Error banner */}
         {error && (
           <div className="shrink-0 py-2">
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-              <p className="text-sm text-destructive">
+            <div className="bg-destructive/10 border-destructive/20 rounded-lg border p-3">
+              <p className="text-destructive text-sm">
                 Error: {error.message || "Something went wrong"}
               </p>
             </div>
@@ -362,39 +350,35 @@ export default function ChatPage() {
         )}
 
         {/* Messages — flex-1 so it fills available space and scrolls independently */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4">
           {messages.length === 0 && (
-            <div className="text-center text-muted-foreground py-12">
+            <div className="text-muted-foreground py-12 text-center">
               Start a conversation with AI
             </div>
           )}
           {messages.map((message) => {
             const messageText = getMessageText(message as MaybePartsMessage);
             const createdAt = (message as { createdAt?: Date }).createdAt;
-            const timestamp = createdAt
-              ? formatTimestamp(new Date(createdAt))
-              : null;
+            const timestamp = createdAt ? formatTimestamp(new Date(createdAt)) : null;
 
             return (
               <div
                 key={message.id}
-                className={`group p-3 rounded-lg ${
+                className={`group rounded-lg p-3 ${
                   message.role === "user"
                     ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
                     : "bg-muted max-w-[80%]"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="mb-1 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
                       {message.role === "user" ? "You" : "AI"}
                     </span>
-                    {timestamp && (
-                      <span className="text-xs opacity-60">{timestamp}</span>
-                    )}
+                    {timestamp && <span className="text-xs opacity-60">{timestamp}</span>}
                   </div>
                   {message.role === "assistant" && messageText && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="opacity-0 transition-opacity group-hover:opacity-100">
                       <CopyButton text={messageText} />
                     </div>
                   )}
@@ -403,9 +387,7 @@ export default function ChatPage() {
               </div>
             );
           })}
-          {isStreaming && messages[messages.length - 1]?.role === "user" && (
-            <ThinkingIndicator />
-          )}
+          {isStreaming && messages[messages.length - 1]?.role === "user" && <ThinkingIndicator />}
           {/* Scroll anchor — auto-scroll targets this element */}
           <div ref={messagesEndRef} aria-hidden="true" />
         </div>
@@ -419,7 +401,7 @@ export default function ChatPage() {
             sendMessage({ role: "user", parts: [{ type: "text", text }] });
             setInput("");
           }}
-          className="shrink-0 flex gap-2 py-3 border-t"
+          className="flex shrink-0 gap-2 border-t py-3"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           {/* text-base prevents iOS from auto-zooming when input font-size < 16px */}
@@ -427,13 +409,13 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1 min-h-[44px] px-3 py-2 text-base border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+            className="border-border focus:ring-ring min-h-[44px] flex-1 rounded-md border px-3 py-2 text-base focus:ring-2 focus:outline-none"
             disabled={isStreaming}
           />
           <Button type="submit" disabled={!input.trim() || isStreaming} className="min-h-[44px]">
             {isStreaming ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Sending
               </>
             ) : (

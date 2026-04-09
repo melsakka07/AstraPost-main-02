@@ -1,4 +1,3 @@
-
 import { redirect } from "next/navigation";
 import { eq, and, asc, gte, sql, inArray } from "drizzle-orm";
 import { QueueContent } from "@/components/queue/queue-content";
@@ -19,7 +18,10 @@ export default async function QueuePage({
 
   const resolvedParams = searchParams ? await searchParams : undefined;
   const pageParam = resolvedParams?.page;
-  const scheduledPage = Math.max(0, parseInt(Array.isArray(pageParam) ? (pageParam[0] ?? "0") : (pageParam ?? "0"), 10) || 0);
+  const scheduledPage = Math.max(
+    0,
+    parseInt(Array.isArray(pageParam) ? (pageParam[0] ?? "0") : (pageParam ?? "0"), 10) || 0
+  );
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, ctx.currentTeamId),
@@ -76,7 +78,10 @@ export default async function QueuePage({
     scheduledPosts = hasMoreScheduled ? scheduledRaw.slice(0, SCHEDULED_PAGE_SIZE) : scheduledRaw;
 
     failedPosts = await db.query.posts.findMany({
-      where: and(inArray(posts.xAccountId, accountIds), sql`${posts.status}::text IN ('failed', 'paused_needs_reconnect')`),
+      where: and(
+        inArray(posts.xAccountId, accountIds),
+        sql`${posts.status}::text IN ('failed', 'paused_needs_reconnect')`
+      ),
       orderBy: [asc(posts.updatedAt)],
       with: {
         tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
@@ -96,12 +101,10 @@ export default async function QueuePage({
     });
   }
 
-  const isNearLimit =
-    limits.postsPerMonth !== Infinity && postCount >= limits.postsPerMonth - 2;
+  const isNearLimit = limits.postsPerMonth !== Infinity && postCount >= limits.postsPerMonth - 2;
 
   // Serialize Infinity as null for the client component (Infinity can't cross RSC boundary)
-  const postsPerMonthLimit =
-    limits.postsPerMonth === Infinity ? null : limits.postsPerMonth;
+  const postsPerMonthLimit = limits.postsPerMonth === Infinity ? null : limits.postsPerMonth;
 
   return (
     <QueueContent

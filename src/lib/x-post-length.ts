@@ -43,7 +43,7 @@ export function getAvailableLengthOptions(tier: XSubscriptionTier | null) {
 
 export function isLengthOptionAllowed(
   optionId: AiLengthOptionId,
-  tier: XSubscriptionTier | null,
+  tier: XSubscriptionTier | null
 ): boolean {
   const option = AI_LENGTH_OPTIONS[optionId];
   return !option.requiresPremium || canPostLongContent(tier);

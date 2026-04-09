@@ -37,13 +37,13 @@ export function HeroMockup() {
       {/* Ambient glow — scale-105 so it softly bleeds past the chrome edges */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 scale-105 rounded-2xl bg-gradient-to-r from-primary/10 via-purple-500/8 to-pink-500/10 blur-2xl"
+        className="from-primary/10 pointer-events-none absolute inset-0 -z-10 scale-105 rounded-2xl bg-gradient-to-r via-purple-500/8 to-pink-500/10 blur-2xl"
       />
 
       {/* Browser chrome */}
-      <div className="overflow-hidden rounded-xl border border-border/60 shadow-2xl shadow-black/5 dark:shadow-black/30">
+      <div className="border-border/60 overflow-hidden rounded-xl border shadow-2xl shadow-black/5 dark:shadow-black/30">
         {/* Title bar */}
-        <div className="flex items-center gap-3 border-b border-border/60 bg-muted/60 px-4 py-2.5">
+        <div className="border-border/60 bg-muted/60 flex items-center gap-3 border-b px-4 py-2.5">
           {/* Traffic lights */}
           <div className="flex gap-1.5" aria-hidden="true">
             <span className="h-3 w-3 rounded-full bg-red-400/60" />
@@ -52,9 +52,12 @@ export function HeroMockup() {
           </div>
 
           {/* URL bar */}
-          <div className="mx-auto flex max-w-xs flex-1 items-center gap-1.5 rounded-md border border-border/40 bg-background/70 px-3 py-1">
-            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-green-500/60" aria-hidden="true" />
-            <span className="truncate text-[11px] text-muted-foreground/50">
+          <div className="border-border/40 bg-background/70 mx-auto flex max-w-xs flex-1 items-center gap-1.5 rounded-md border px-3 py-1">
+            <span
+              className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-green-500/60"
+              aria-hidden="true"
+            />
+            <span className="text-muted-foreground/50 truncate text-[11px]">
               app.astrapost.com/dashboard
             </span>
           </div>
@@ -64,16 +67,16 @@ export function HeroMockup() {
         </div>
 
         {/* Dashboard shell */}
-        <div className="flex bg-background" style={{ height: 380 }}>
+        <div className="bg-background flex" style={{ height: 380 }}>
           {/* ── Sidebar ── */}
           <div
-            className="hidden w-44 flex-shrink-0 flex-col gap-0.5 border-r border-border/50 bg-muted/20 p-3 sm:flex"
+            className="border-border/50 bg-muted/20 hidden w-44 flex-shrink-0 flex-col gap-0.5 border-r p-3 sm:flex"
             aria-hidden="true"
           >
             {/* Brand row */}
             <div className="mb-3 flex items-center gap-2 px-2 py-1">
-              <div className="h-5 w-5 rounded-md bg-primary/70" />
-              <div className="h-2.5 w-14 rounded-full bg-foreground/20" />
+              <div className="bg-primary/70 h-5 w-5 rounded-md" />
+              <div className="bg-foreground/20 h-2.5 w-14 rounded-full" />
             </div>
 
             {/* Nav items */}
@@ -90,9 +93,7 @@ export function HeroMockup() {
                   }`}
                 />
                 <div
-                  className={`h-2 rounded-full ${
-                    active ? "bg-primary/50" : "bg-foreground/15"
-                  }`}
+                  className={`h-2 rounded-full ${active ? "bg-primary/50" : "bg-foreground/15"}`}
                   style={{ width }}
                 />
               </div>
@@ -103,23 +104,20 @@ export function HeroMockup() {
           <div className="flex flex-1 flex-col overflow-hidden p-4" aria-hidden="true">
             {/* Top bar */}
             <div className="mb-4 flex items-center justify-between">
-              <div className="h-3 w-24 rounded-full bg-foreground/20" />
-              <div className="h-7 w-24 rounded-lg bg-primary/65" />
+              <div className="bg-foreground/20 h-3 w-24 rounded-full" />
+              <div className="bg-primary/65 h-7 w-24 rounded-lg" />
             </div>
 
             {/* Stat cards */}
             <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {STAT_CARDS.map(({ labelW, valueW, trend }, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg border border-border/50 bg-card p-3"
-                >
+                <div key={i} className="border-border/50 bg-card rounded-lg border p-3">
                   <div
-                    className="mb-1.5 h-1.5 rounded-full bg-muted-foreground/20"
+                    className="bg-muted-foreground/20 mb-1.5 h-1.5 rounded-full"
                     style={{ width: labelW }}
                   />
                   <div
-                    className="mb-1 h-4 rounded-full bg-foreground/55"
+                    className="bg-foreground/55 mb-1 h-4 rounded-full"
                     style={{ width: valueW }}
                   />
                   <div
@@ -132,21 +130,17 @@ export function HeroMockup() {
             </div>
 
             {/* Analytics chart */}
-            <div className="mb-3 rounded-lg border border-border/50 bg-card p-3">
+            <div className="border-border/50 bg-card mb-3 rounded-lg border p-3">
               <div className="mb-3 flex items-center justify-between">
-                <div className="h-2 w-24 rounded-full bg-foreground/20" />
-                <div className="h-2 w-14 rounded-full bg-muted-foreground/15" />
+                <div className="bg-foreground/20 h-2 w-24 rounded-full" />
+                <div className="bg-muted-foreground/15 h-2 w-14 rounded-full" />
               </div>
               <div className="flex items-end gap-1" style={{ height: 52 }}>
                 {CHART_BARS.map((h, i) => (
                   <div
                     key={i}
                     className={`flex-1 rounded-t ${
-                      i >= 10
-                        ? "bg-primary/80"
-                        : i >= 6
-                          ? "bg-primary/45"
-                          : "bg-primary/22"
+                      i >= 10 ? "bg-primary/80" : i >= 6 ? "bg-primary/45" : "bg-primary/22"
                     }`}
                     style={{ height: `${h}%` }}
                   />
@@ -155,28 +149,23 @@ export function HeroMockup() {
             </div>
 
             {/* Scheduled post queue */}
-            <div className="rounded-lg border border-border/50 bg-card p-3">
-              <div className="mb-2 h-2 w-16 rounded-full bg-foreground/20" />
+            <div className="border-border/50 bg-card rounded-lg border p-3">
+              <div className="bg-foreground/20 mb-2 h-2 w-16 rounded-full" />
               <div className="space-y-1.5">
                 {QUEUE_ITEMS.map(({ contentW, metaW, badgeColor }, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2.5 rounded-md bg-muted/30 p-2"
-                  >
-                    <div className="h-7 w-7 flex-shrink-0 rounded-full bg-primary/20" />
+                  <div key={i} className="bg-muted/30 flex items-center gap-2.5 rounded-md p-2">
+                    <div className="bg-primary/20 h-7 w-7 flex-shrink-0 rounded-full" />
                     <div className="flex-1 space-y-1.5">
                       <div
-                        className="h-1.5 rounded-full bg-foreground/20"
+                        className="bg-foreground/20 h-1.5 rounded-full"
                         style={{ width: contentW }}
                       />
                       <div
-                        className="h-1.5 rounded-full bg-muted-foreground/15"
+                        className="bg-muted-foreground/15 h-1.5 rounded-full"
                         style={{ width: metaW }}
                       />
                     </div>
-                    <div
-                      className={`h-5 w-12 flex-shrink-0 rounded-full ${badgeColor}`}
-                    />
+                    <div className={`h-5 w-12 flex-shrink-0 rounded-full ${badgeColor}`} />
                   </div>
                 ))}
               </div>
@@ -187,7 +176,7 @@ export function HeroMockup() {
         {/* Bottom fade — masks the mockup cutoff into the page background */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-background to-transparent"
+          className="from-background pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t to-transparent"
         />
       </div>
     </div>

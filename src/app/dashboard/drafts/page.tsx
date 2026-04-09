@@ -15,10 +15,7 @@ export default async function DraftsPage() {
   if (!session) redirect("/login?callbackUrl=/dashboard/drafts");
 
   const draftPosts = await db.query.posts.findMany({
-    where: and(
-      eq(posts.userId, session.user.id),
-      eq(posts.status, "draft")
-    ),
+    where: and(eq(posts.userId, session.user.id), eq(posts.status, "draft")),
     orderBy: [desc(posts.updatedAt)],
     with: {
       tweets: {

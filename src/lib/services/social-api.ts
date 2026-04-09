@@ -1,7 +1,7 @@
 export interface SocialMediaItem {
   url: string;
   mimeType: string; // 'image/jpeg', 'video/mp4'
-  fileType: 'image' | 'video' | 'gif';
+  fileType: "image" | "video" | "gif";
   size?: number;
 }
 
@@ -39,7 +39,7 @@ export interface SocialApiService {
    * Get follower count
    */
   getFollowerCount(): Promise<number>;
-  
+
   /**
    * Refresh the access token if needed
    */

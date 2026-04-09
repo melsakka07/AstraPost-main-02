@@ -7,7 +7,12 @@ import { promoCodes } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
 const createSchema = z.object({
-  code: z.string().min(1).max(50).toUpperCase().regex(/^[A-Z0-9_-]+$/, "Code must be uppercase letters, numbers, hyphens, or underscores"),
+  code: z
+    .string()
+    .min(1)
+    .max(50)
+    .toUpperCase()
+    .regex(/^[A-Z0-9_-]+$/, "Code must be uppercase letters, numbers, hyphens, or underscores"),
   description: z.string().max(500).optional(),
   discountType: z.enum(["percentage", "fixed"]),
   discountValue: z.number().positive().max(100_000),

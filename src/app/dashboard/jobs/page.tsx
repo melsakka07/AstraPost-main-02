@@ -11,7 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { jobRuns, tweets } from "@/lib/schema";
@@ -44,7 +50,9 @@ export default async function JobsPage({
 
   const where = and(
     eq(jobRuns.userId, session.user.id),
-    statusFilter ? eq(jobRuns.status, statusFilter as "running" | "success" | "failed" | "retrying") : sql<boolean>`true`,
+    statusFilter
+      ? eq(jobRuns.status, statusFilter as "running" | "success" | "failed" | "retrying")
+      : sql<boolean>`true`,
     queueFilter ? eq(jobRuns.queueName, queueFilter) : sql<boolean>`true`,
     q
       ? or(
@@ -76,7 +84,7 @@ export default async function JobsPage({
     }
   }
 
-  const truncateId = (id: string) => id.length > 8 ? id.slice(0, 8) : id;
+  const truncateId = (id: string) => (id.length > 8 ? id.slice(0, 8) : id);
 
   const badgeVariant = (s: string) => {
     if (s === "success") return "default";
@@ -99,7 +107,7 @@ export default async function JobsPage({
         <CardContent>
           <form className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end" method="GET">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Label className="text-muted-foreground text-xs">Status</Label>
               <Select name="status" defaultValue={status || "all"}>
                 <SelectTrigger className="h-10 sm:min-w-[180px]">
                   <SelectValue placeholder="All statuses" />
@@ -115,7 +123,7 @@ export default async function JobsPage({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Queue</Label>
+              <Label className="text-muted-foreground text-xs">Queue</Label>
               <Select name="queue" defaultValue={queue || "all"}>
                 <SelectTrigger className="h-10 sm:min-w-[180px]">
                   <SelectValue placeholder="All queues" />
@@ -129,7 +137,7 @@ export default async function JobsPage({
             </div>
 
             <div className="min-w-0 flex-1 space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Search</Label>
+              <Label className="text-muted-foreground text-xs">Search</Label>
               <Input
                 name="q"
                 defaultValue={q || ""}
@@ -140,7 +148,7 @@ export default async function JobsPage({
 
             <button
               type="submit"
-              className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-md px-4 text-sm font-medium transition-colors sm:w-auto"
             >
               Apply Filters
             </button>
@@ -152,10 +160,10 @@ export default async function JobsPage({
       {runs.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Settings2Icon className="h-8 w-8 text-muted-foreground" />
+            <div className="bg-muted mb-4 flex h-16 w-16 items-center justify-center rounded-full">
+              <Settings2Icon className="text-muted-foreground h-8 w-8" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
+            <h3 className="mb-2 text-lg font-semibold">No jobs found</h3>
             <p className="text-muted-foreground max-w-md">
               Try adjusting your filters or check back later for job history.
             </p>
@@ -166,51 +174,64 @@ export default async function JobsPage({
           {runs.map((r) => {
             const preview = r.postId ? postPreviews.get(r.postId) : undefined;
             return (
-              <Card key={r.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-6 space-y-3">
+              <Card key={r.id} className="transition-shadow hover:shadow-md">
+                <CardContent className="space-y-3 pt-6">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant={badgeVariant(String(r.status)) as any}>
                         {String(r.status)}
                       </Badge>
-                      <Badge variant="outline" className="text-xs">{String(r.queueName)}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {String(r.queueName)}
+                      </Badge>
                       {r.postId && (
                         <Link href={`/dashboard/jobs?q=${encodeURIComponent(String(r.postId))}`}>
-                          <Badge variant="secondary" className="hover:bg-secondary/80 cursor-pointer font-mono">
+                          <Badge
+                            variant="secondary"
+                            className="hover:bg-secondary/80 cursor-pointer font-mono"
+                          >
                             {truncateId(r.postId)}
                           </Badge>
                         </Link>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground" title={new Date(r.startedAt).toLocaleString()}>
+                    <div
+                      className="text-muted-foreground text-xs"
+                      title={new Date(r.startedAt).toLocaleString()}
+                    >
                       {formatDistanceToNow(new Date(r.startedAt), { addSuffix: true })}
                     </div>
                   </div>
 
                   {/* Post content preview */}
                   {preview && (
-                    <p className="line-clamp-2 text-sm text-muted-foreground italic border-l-2 border-border pl-3">
+                    <p className="text-muted-foreground border-border line-clamp-2 border-l-2 pl-3 text-sm italic">
                       {preview}
                     </p>
                   )}
 
-                  <div className="grid gap-2 text-sm bg-muted/30 rounded-md p-3">
-                    <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                  <div className="bg-muted/30 grid gap-2 rounded-md p-3 text-sm">
+                    <div className="text-muted-foreground flex items-center gap-1 text-xs">
                       <span>Job ID:</span>
-                      <span className="text-foreground font-mono">{truncateId(String(r.jobId))}</span>
+                      <span className="text-foreground font-mono">
+                        {truncateId(String(r.jobId))}
+                      </span>
                       <CopyIdButton value={String(r.jobId)} />
                     </div>
                     {r.correlationId && (
-                      <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                      <div className="text-muted-foreground flex items-center gap-1 text-xs">
                         <span>Correlation:</span>
-                        <span className="text-foreground font-mono">{truncateId(String(r.correlationId))}</span>
+                        <span className="text-foreground font-mono">
+                          {truncateId(String(r.correlationId))}
+                        </span>
                         <CopyIdButton value={String(r.correlationId)} />
                       </div>
                     )}
                     <div className="flex items-center gap-4 text-xs">
                       {(r.attempts || r.attemptsMade) && (
                         <div className="text-muted-foreground">
-                          Attempts: <span className="text-foreground font-medium">{r.attemptsMade || 0}</span>
+                          Attempts:{" "}
+                          <span className="text-foreground font-medium">{r.attemptsMade || 0}</span>
                           {" / "}
                           <span className="text-foreground font-medium">{r.attempts || "?"}</span>
                         </div>
@@ -225,7 +246,7 @@ export default async function JobsPage({
                       </div>
                     </div>
                     {r.error && (
-                      <div className="break-words text-destructive text-xs bg-destructive/10 rounded px-2 py-1 mt-2">
+                      <div className="text-destructive bg-destructive/10 mt-2 rounded px-2 py-1 text-xs break-words">
                         {String(r.error)}
                       </div>
                     )}
@@ -242,12 +263,12 @@ export default async function JobsPage({
           })}
 
           {/* Pagination */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-between border-t pt-4">
             <Link
               className={
                 page === 0
-                  ? "pointer-events-none text-muted-foreground"
-                  : "text-sm text-primary hover:underline"
+                  ? "text-muted-foreground pointer-events-none"
+                  : "text-primary text-sm hover:underline"
               }
               href={`/dashboard/jobs?${new URLSearchParams({
                 ...(status && status !== "all" ? { status } : {}),
@@ -258,9 +279,13 @@ export default async function JobsPage({
             >
               ← Previous
             </Link>
-            <div className="text-sm text-muted-foreground">Page {page + 1}</div>
+            <div className="text-muted-foreground text-sm">Page {page + 1}</div>
             <Link
-              className={runs.length < limit ? "pointer-events-none text-muted-foreground" : "text-sm text-primary hover:underline"}
+              className={
+                runs.length < limit
+                  ? "text-muted-foreground pointer-events-none"
+                  : "text-primary text-sm hover:underline"
+              }
               href={`/dashboard/jobs?${new URLSearchParams({
                 ...(status && status !== "all" ? { status } : {}),
                 ...(queue && queue !== "all" ? { queue } : {}),

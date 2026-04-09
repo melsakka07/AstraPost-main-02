@@ -7,10 +7,7 @@ import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, xAccounts } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ postId: string }> }
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
   if (!ctx) return new NextResponse("Unauthorized", { status: 401 });
 
@@ -42,10 +39,7 @@ export async function POST(
 
   const isRetryable = post.status === "failed" || post.status === "paused_needs_reconnect";
   if (!isRetryable) {
-    return NextResponse.json(
-      { error: "Only failed posts can be retried." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Only failed posts can be retried." }, { status: 400 });
   }
 
   // If the post was paused because the account was deactivated, re-activate it

@@ -24,17 +24,13 @@ export function BlurredOverlay({
 
   return (
     <div className={cn("relative overflow-hidden rounded-lg", className)}>
-      <div className="blur-sm select-none pointer-events-none opacity-50 filter">
-        {children}
-      </div>
-      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/20 backdrop-blur-[1px] p-6 text-center">
-        <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-          <Lock className="h-6 w-6 text-primary" />
+      <div className="pointer-events-none opacity-50 blur-sm filter select-none">{children}</div>
+      <div className="bg-background/20 absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center backdrop-blur-[1px]">
+        <div className="bg-primary/20 mb-4 flex h-12 w-12 items-center justify-center rounded-full">
+          <Lock className="text-primary h-6 w-6" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
-        <p className="text-sm text-muted-foreground max-w-[300px] mb-6">
-          {description}
-        </p>
+        <h3 className="mb-2 text-lg font-semibold">{title}</h3>
+        <p className="text-muted-foreground mb-6 max-w-[300px] text-sm">{description}</p>
         <Button asChild>
           <Link href="/pricing">Unlock Now</Link>
         </Button>

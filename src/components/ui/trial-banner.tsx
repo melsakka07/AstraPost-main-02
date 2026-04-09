@@ -15,7 +15,7 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
   const pathname = usePathname();
   const [dismissed, setDismissed] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
@@ -36,7 +36,7 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
   const dismissedByStorage = useSyncExternalStore(
     () => () => {},
     () => (bannerKey ? sessionStorage.getItem(bannerKey) === "1" : false),
-    () => false,
+    () => false
   );
 
   if (!isMounted) return null;
@@ -58,14 +58,14 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
     sessionStorage.setItem(bannerKey, "1");
     setDismissed(true);
   };
-  
+
   if (isExpired) {
     return (
       <div className="bg-destructive text-destructive-foreground px-4 py-2 text-sm font-medium">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-2">
           <AlertCircle className="h-4 w-4" />
           <span>Your free trial has expired. Upgrade to continue using Pro features.</span>
-          <Link href="/pricing" className="underline hover:text-white/90 ml-2">
+          <Link href="/pricing" className="ml-2 underline hover:text-white/90">
             Upgrade Now
           </Link>
           <button
@@ -82,17 +82,34 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
   }
 
   return (
-    <div className={isUrgent ? "bg-amber-500 px-4 py-2 text-sm font-medium text-white" : "border-b border-border bg-muted/60 px-4 py-2 text-sm font-medium text-foreground"}>
+    <div
+      className={
+        isUrgent
+          ? "bg-amber-500 px-4 py-2 text-sm font-medium text-white"
+          : "border-border bg-muted/60 text-foreground border-b px-4 py-2 text-sm font-medium"
+      }
+    >
       <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-2">
         <AlertCircle className="h-4 w-4" />
         <span>Your free trial ends in {daysLeft === 0 ? "today" : `${daysLeft} days`}.</span>
-        <Link href="/pricing" className={isUrgent ? "ml-2 underline hover:text-white/90" : "ml-2 underline hover:text-foreground/80"}>
+        <Link
+          href="/pricing"
+          className={
+            isUrgent
+              ? "ml-2 underline hover:text-white/90"
+              : "hover:text-foreground/80 ml-2 underline"
+          }
+        >
           Upgrade to Pro
         </Link>
         <button
           type="button"
           onClick={dismiss}
-          className={isUrgent ? "ml-2 inline-flex items-center justify-center rounded p-1 hover:bg-black/10" : "ml-2 inline-flex items-center justify-center rounded p-1 hover:bg-muted"}
+          className={
+            isUrgent
+              ? "ml-2 inline-flex items-center justify-center rounded p-1 hover:bg-black/10"
+              : "hover:bg-muted ml-2 inline-flex items-center justify-center rounded p-1"
+          }
           aria-label="Dismiss trial banner"
         >
           <X className="h-4 w-4" />

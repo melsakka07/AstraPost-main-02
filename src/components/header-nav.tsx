@@ -15,7 +15,7 @@ export function HeaderNav() {
   const pathname = usePathname();
 
   return (
-    <div className="hidden md:flex items-center gap-6 text-sm font-medium">
+    <div className="hidden items-center gap-6 text-sm font-medium md:flex">
       {NAV_LINKS.map(({ label, href }) => {
         const isActive = pathname === href || pathname.startsWith(`${href}/`);
         return (
@@ -24,10 +24,10 @@ export function HeaderNav() {
             href={href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "transition-colors underline-offset-4 hover:underline",
+              "underline-offset-4 transition-colors hover:underline",
               isActive
                 ? "text-foreground font-semibold"
-                : "text-muted-foreground hover:text-foreground",
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {label}

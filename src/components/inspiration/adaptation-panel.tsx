@@ -5,7 +5,13 @@ import { Loader2, Sparkles, RefreshCw, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/lib/auth-client";
@@ -24,7 +30,11 @@ const AI_ACTIONS = [
   { value: "expand_thread", label: "Expand Thread", description: "Turn into a multi-tweet thread" },
   { value: "add_take", label: "Add Your Take", description: "Inject your personal perspective" },
   { value: "translate", label: "Translate", description: "Translate to another language" },
-  { value: "counter_point", label: "Counter Point", description: "Create a respectful counter-argument" },
+  {
+    value: "counter_point",
+    label: "Counter Point",
+    description: "Create a respectful counter-argument",
+  },
 ];
 
 const TONES = [
@@ -120,18 +130,20 @@ export function AdaptationPanel({
 
   return (
     <Card>
-      <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+      <CardContent className="px-3 pt-4 sm:px-6 sm:pt-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "manual" | "ai")}>
-          <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10">
-            <TabsTrigger value="manual" className="text-xs sm:text-sm">Manual</TabsTrigger>
+          <TabsList className="grid h-9 w-full grid-cols-2 sm:h-10">
+            <TabsTrigger value="manual" className="text-xs sm:text-sm">
+              Manual
+            </TabsTrigger>
             <TabsTrigger value="ai" className="text-xs sm:text-sm">
-              <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+              <Sparkles className="mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               AI Assist
             </TabsTrigger>
           </TabsList>
 
           {/* Manual Tab */}
-          <TabsContent value="manual" className="space-y-4 mt-4">
+          <TabsContent value="manual" className="mt-4 space-y-4">
             <ManualEditor
               initialText={sourceTweet.text}
               sourceText={sourceTweet.text}
@@ -140,7 +152,7 @@ export function AdaptationPanel({
           </TabsContent>
 
           {/* AI Tab */}
-          <TabsContent value="ai" className="space-y-3 sm:space-y-4 mt-4">
+          <TabsContent value="ai" className="mt-4 space-y-3 sm:space-y-4">
             {/* Action Selector */}
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="text-xs sm:text-sm">What would you like to do?</Label>
@@ -153,14 +165,18 @@ export function AdaptationPanel({
                     <SelectItem key={action.value} value={action.value}>
                       <div className="flex flex-col">
                         <span className="text-xs sm:text-sm">{action.label}</span>
-                        <span className="text-[10px] sm:text-xs text-muted-foreground">{action.description}</span>
+                        <span className="text-muted-foreground text-[10px] sm:text-xs">
+                          {action.description}
+                        </span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {selectedAction && (
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{selectedAction.description}</p>
+                <p className="text-muted-foreground text-[10px] sm:text-xs">
+                  {selectedAction.description}
+                </p>
               )}
             </div>
 
@@ -205,27 +221,25 @@ export function AdaptationPanel({
                 value={userContext}
                 onChange={(e) => setUserContext(e.target.value)}
                 placeholder="Add your unique angle, expertise, or opinion..."
-                className="min-h-[60px] sm:min-h-[80px] resize-none text-sm"
+                className="min-h-[60px] resize-none text-sm sm:min-h-[80px]"
                 maxLength={1000}
               />
-              <p className="text-[10px] sm:text-xs text-muted-foreground">{userContext.length} / 1000</p>
+              <p className="text-muted-foreground text-[10px] sm:text-xs">
+                {userContext.length} / 1000
+              </p>
             </div>
 
             {/* Generate Button */}
             {!generatedContent ? (
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full"
-              >
+              <Button onClick={handleGenerate} disabled={isGenerating} className="w-full">
                 {isGenerating ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                     Generate
                   </>
                 )}
@@ -233,9 +247,9 @@ export function AdaptationPanel({
             ) : (
               <div className="space-y-4">
                 {/* Generated Content Display */}
-                <div className="rounded-lg border border-border p-4 space-y-3">
+                <div className="border-border space-y-3 rounded-lg border p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
+                    <span className="text-muted-foreground text-sm font-medium">
                       Generated Content ({aiAction})
                     </span>
                     <Button
@@ -253,26 +267,20 @@ export function AdaptationPanel({
                   </div>
 
                   {generatedContent.tweets.map((tweet, i) => (
-                    <div
-                      key={i}
-                      className="p-3 bg-muted/30 rounded-md border border-border"
-                    >
-                      <div className="text-xs text-muted-foreground mb-1">
+                    <div key={i} className="bg-muted/30 border-border rounded-md border p-3">
+                      <div className="text-muted-foreground mb-1 text-xs">
                         {generatedContent.tweets.length > 1 ? `Tweet ${i + 1}` : "Tweet"}
                       </div>
                       <p className="text-sm whitespace-pre-wrap">{tweet}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="text-muted-foreground mt-2 text-xs">
                         {tweet.length} / 1000 characters
                       </p>
                     </div>
                   ))}
 
                   {/* Send to Composer Button */}
-                  <Button
-                    onClick={handleSendAiToComposer}
-                    className="w-full"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
+                  <Button onClick={handleSendAiToComposer} className="w-full">
+                    <Send className="mr-2 h-4 w-4" />
                     Send to Composer
                   </Button>
                 </div>
@@ -281,8 +289,8 @@ export function AdaptationPanel({
 
             {/* Error Display */}
             {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/50 p-3">
-                <p className="text-sm text-destructive">{error}</p>
+              <div className="bg-destructive/10 border-destructive/50 rounded-lg border p-3">
+                <p className="text-destructive text-sm">{error}</p>
               </div>
             )}
           </TabsContent>

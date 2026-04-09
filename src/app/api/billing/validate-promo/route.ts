@@ -7,7 +7,9 @@ import { promoCodes } from "@/lib/schema";
 
 const schema = z.object({
   code: z.string().min(1).max(50),
-  plan: z.enum(["free", "pro_monthly", "pro_annual", "agency", "agency_monthly", "agency_annual"]).optional(),
+  plan: z
+    .enum(["free", "pro_monthly", "pro_annual", "agency", "agency_monthly", "agency_annual"])
+    .optional(),
 });
 
 // Simple IP-based rate limit: 20 attempts per minute
@@ -54,16 +56,25 @@ export async function POST(request: Request) {
 
   // Validity checks
   if (!promo.isActive) {
-    return Response.json({ valid: false, reason: "This promo code is no longer active" }, { status: 200 });
+    return Response.json(
+      { valid: false, reason: "This promo code is no longer active" },
+      { status: 200 }
+    );
   }
   if (promo.validFrom && new Date(promo.validFrom) > now) {
-    return Response.json({ valid: false, reason: "This promo code is not yet valid" }, { status: 200 });
+    return Response.json(
+      { valid: false, reason: "This promo code is not yet valid" },
+      { status: 200 }
+    );
   }
   if (promo.validTo && new Date(promo.validTo) < now) {
     return Response.json({ valid: false, reason: "This promo code has expired" }, { status: 200 });
   }
   if (promo.maxRedemptions !== null && promo.redemptionsCount >= promo.maxRedemptions) {
-    return Response.json({ valid: false, reason: "This promo code has reached its maximum redemptions" }, { status: 200 });
+    return Response.json(
+      { valid: false, reason: "This promo code has reached its maximum redemptions" },
+      { status: 200 }
+    );
   }
 
   // Check plan applicability (empty array = all plans)
@@ -72,7 +83,10 @@ export async function POST(request: Request) {
     // Normalise agency variants
     const normPlan = plan === "agency_monthly" || plan === "agency_annual" ? "agency" : plan;
     if (!applicable.includes(normPlan)) {
-      return Response.json({ valid: false, reason: "This promo code is not valid for the selected plan" }, { status: 200 });
+      return Response.json(
+        { valid: false, reason: "This promo code is not valid for the selected plan" },
+        { status: 200 }
+      );
     }
   }
 

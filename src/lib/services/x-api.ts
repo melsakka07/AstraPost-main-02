@@ -24,11 +24,7 @@ const REFRESH_LOCK_TTL_SECS = 30;
  */
 const REFRESH_LOCK_WAIT_MS = 1_500;
 
-type MediaCategory =
-  | "tweet_image"
-  | "tweet_gif"
-  | "tweet_video"
-  | "amplify_video";
+type MediaCategory = "tweet_image" | "tweet_gif" | "tweet_video" | "amplify_video";
 
 /**
  * Minimal shape required to perform a token refresh.
@@ -51,11 +47,7 @@ function sleep(ms: number): Promise<void> {
 
 // Builds a raw multipart/form-data Buffer for the APPEND step.
 // segment_index must be a text field; media must be raw binary.
-function buildMultipartBody(
-  boundary: string,
-  chunk: Buffer,
-  segmentIndex: number
-): Buffer {
+function buildMultipartBody(boundary: string, chunk: Buffer, segmentIndex: number): Buffer {
   const CRLF = "\r\n";
   const enc = new TextEncoder();
 
@@ -167,7 +159,7 @@ export class XApiService {
 
       const { accessToken, refreshToken, expiresIn } =
         await twitterClient.refreshOAuth2Token(refreshTokenValue);
-      
+
       if (refreshToken) {
         const fingerprint = crypto.createHash("sha256").update(refreshToken).digest("hex");
         logger.info("x_refresh_token_received", { xAccountId: account.id, fingerprint });
@@ -184,9 +176,7 @@ export class XApiService {
           .update(xAccounts)
           .set({
             accessToken: encryptToken(accessToken),
-            refreshTokenEnc: refreshToken
-              ? encryptToken(refreshToken)
-              : account.refreshTokenEnc,
+            refreshTokenEnc: refreshToken ? encryptToken(refreshToken) : account.refreshTokenEnc,
             tokenExpiresAt: newExpiresAt,
           })
           .where(eq(xAccounts.id, account.id));
@@ -253,7 +243,9 @@ export class XApiService {
     try {
       if (mediaIds && mediaIds.length > 0) {
         const limitedMediaIds = mediaIds.slice(0, 4);
-        const response = await this.client.v2.tweet(text, { media: { media_ids: limitedMediaIds as any } });
+        const response = await this.client.v2.tweet(text, {
+          media: { media_ids: limitedMediaIds as any },
+        });
         logger.info("x_tweet_posted", { tweetId: response?.data?.id, hasMedia: true });
         return response;
       }
@@ -313,7 +305,7 @@ export class XApiService {
 
         const result = await this.client.v2.tweet(params.text, {
           media: params.media,
-          reply: params.reply
+          reply: params.reply,
         });
 
         lastTweetId = result.data.id;
@@ -338,8 +330,7 @@ export class XApiService {
     options?: { mediaCategory?: MediaCategory }
   ): Promise<string> {
     const totalBytes = fileBuffer.byteLength;
-    const mediaCategory =
-      options?.mediaCategory ?? this.inferCategory(mimeType);
+    const mediaCategory = options?.mediaCategory ?? this.inferCategory(mimeType);
 
     // ── INIT ────────────────────────────────────────────────────────────────
     const initData = await this.jsonRequest<{
@@ -365,24 +356,19 @@ export class XApiService {
       const boundary = `----XApiBoundary${Date.now()}${i}`;
       const body = buildMultipartBody(boundary, chunk, i);
 
-      const appendRes = await fetch(
-        `https://api.x.com/2/media/upload/${mediaId}/append`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": `multipart/form-data; boundary=${boundary}`,
-          },
-          body: body as unknown as BodyInit,
-        }
-      );
+      const appendRes = await fetch(`https://api.x.com/2/media/upload/${mediaId}/append`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Content-Type": `multipart/form-data; boundary=${boundary}`,
+        },
+        body: body as unknown as BodyInit,
+      });
 
       if (!appendRes.ok && appendRes.status !== 204) {
         const errText = await appendRes.text().catch(() => "(empty)");
         console.error(`[XApi] APPEND chunk ${i} failed: HTTP ${appendRes.status} — ${errText}`);
-        throw new Error(
-          `[XApi] APPEND chunk ${i} failed: HTTP ${appendRes.status} — ${errText}`
-        );
+        throw new Error(`[XApi] APPEND chunk ${i} failed: HTTP ${appendRes.status} — ${errText}`);
       }
 
       logger.debug("x_media_upload_chunk_appended", { mediaId, chunk: i + 1, total: totalChunks });
@@ -409,8 +395,7 @@ export class XApiService {
 
     // ── STATUS POLL (video / gif only) ──────────────────────────────────────
     if (finalizeData.data.processing_info) {
-      const waitSecs =
-        finalizeData.data.processing_info.check_after_secs ?? 1;
+      const waitSecs = finalizeData.data.processing_info.check_after_secs ?? 1;
       await this.pollUntilReady(mediaId, waitSecs);
     }
 
@@ -509,10 +494,7 @@ export class XApiService {
   }
 
   // ── PRIVATE: Poll GET /2/media/upload/:id until succeeded or failed ────────
-  private async pollUntilReady(
-    mediaId: string,
-    initialWaitSecs: number
-  ): Promise<void> {
+  private async pollUntilReady(mediaId: string, initialWaitSecs: number): Promise<void> {
     let waitMs = initialWaitSecs * 1000;
     logger.info("x_media_upload_polling_start", { mediaId });
 
@@ -531,10 +513,13 @@ export class XApiService {
         };
       }>("GET", `https://api.x.com/2/media/upload/${mediaId}`);
 
-      const { state, check_after_secs, progress_percent, error } =
-        statusData.data.processing_info;
+      const { state, check_after_secs, progress_percent, error } = statusData.data.processing_info;
 
-      logger.debug("x_media_upload_polling_status", { mediaId, state, progressPercent: progress_percent });
+      logger.debug("x_media_upload_polling_status", {
+        mediaId,
+        state,
+        progressPercent: progress_percent,
+      });
 
       if (state === "succeeded") {
         logger.info("x_media_upload_processing_complete", { mediaId });
@@ -544,9 +529,7 @@ export class XApiService {
       if (state === "failed") {
         const errorMsg = error?.message ?? "unknown";
         const errorCode = error?.code;
-        throw new Error(
-          `[XApi] Media processing failed: ${errorMsg} (code ${errorCode})`
-        );
+        throw new Error(`[XApi] Media processing failed: ${errorMsg} (code ${errorCode})`);
       }
 
       waitMs = (check_after_secs ?? 2) * 1000;

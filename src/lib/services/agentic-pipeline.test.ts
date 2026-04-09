@@ -51,7 +51,14 @@ const STRATEGY_JSON = JSON.stringify({
 });
 
 const TWEETS_JSON = JSON.stringify([
-  { position: 0, text: "Hook tweet", hashtags: ["AITools"], hasImage: true, imagePrompt: "laptop with code", charCount: 50 },
+  {
+    position: 0,
+    text: "Hook tweet",
+    hashtags: ["AITools"],
+    hasImage: true,
+    imagePrompt: "laptop with code",
+    charCount: 50,
+  },
   { position: 1, text: "Value tweet", hashtags: [], hasImage: false, charCount: 30 },
   { position: 2, text: "CTA tweet", hashtags: ["AI"], hasImage: false, charCount: 25 },
 ]);
@@ -135,7 +142,9 @@ describe("runAgenticPipeline", () => {
       broadSuggestions: ["AI in healthcare", "Blockchain for finance", "Web3 gaming"],
     });
 
-    mockGenerateText.mockResolvedValueOnce({ text: tooBroadJson } as Awaited<ReturnType<typeof generateText>>);
+    mockGenerateText.mockResolvedValueOnce({ text: tooBroadJson } as Awaited<
+      ReturnType<typeof generateText>
+    >);
 
     const onProgress = vi.fn();
     const params = makeBaseParams(onProgress);
@@ -168,14 +177,37 @@ describe("runAgenticPipeline", () => {
     });
 
     const tweetsAllImages = JSON.stringify([
-      { position: 0, text: "Hook tweet", hashtags: [], hasImage: true, imagePrompt: "image prompt 0", charCount: 50 },
-      { position: 1, text: "Value tweet", hashtags: [], hasImage: true, imagePrompt: "image prompt 1", charCount: 30 },
-      { position: 2, text: "CTA tweet", hashtags: [], hasImage: true, imagePrompt: "image prompt 2", charCount: 25 },
+      {
+        position: 0,
+        text: "Hook tweet",
+        hashtags: [],
+        hasImage: true,
+        imagePrompt: "image prompt 0",
+        charCount: 50,
+      },
+      {
+        position: 1,
+        text: "Value tweet",
+        hashtags: [],
+        hasImage: true,
+        imagePrompt: "image prompt 1",
+        charCount: 30,
+      },
+      {
+        position: 2,
+        text: "CTA tweet",
+        hashtags: [],
+        hasImage: true,
+        imagePrompt: "image prompt 2",
+        charCount: 25,
+      },
     ]);
 
     mockGenerateText
       .mockResolvedValueOnce({ text: RESEARCH_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: strategyAllImages } as Awaited<ReturnType<typeof generateText>>)
+      .mockResolvedValueOnce({ text: strategyAllImages } as Awaited<
+        ReturnType<typeof generateText>
+      >)
       .mockResolvedValueOnce({ text: tweetsAllImages } as Awaited<ReturnType<typeof generateText>>)
       .mockResolvedValueOnce({ text: REVIEW_JSON } as Awaited<ReturnType<typeof generateText>>);
 
@@ -205,9 +237,7 @@ describe("runAgenticPipeline", () => {
 
     // images step emitted "complete" (pipeline didn't abort)
     const progressCalls = onProgress.mock.calls.map((c) => c[0] as PipelineProgressEvent);
-    expect(
-      progressCalls.some((e) => e.step === "images" && e.status === "complete")
-    ).toBe(true);
+    expect(progressCalls.some((e) => e.step === "images" && e.status === "complete")).toBe(true);
   });
 
   // ── Test 4: Free tier enforces short length ───────────────────────────────

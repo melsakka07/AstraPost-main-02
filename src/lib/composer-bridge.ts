@@ -16,10 +16,7 @@ export interface ComposerPayload {
   type?: "tweet" | "thread";
 }
 
-export function sendToComposer(
-  tweets: string[],
-  metadata?: Omit<ComposerPayload, "tweets">
-): void {
+export function sendToComposer(tweets: string[], metadata?: Omit<ComposerPayload, "tweets">): void {
   if (tweets.length === 0) return;
 
   const payload: ComposerPayload = { tweets, ...metadata };

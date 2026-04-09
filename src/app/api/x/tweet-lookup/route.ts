@@ -51,10 +51,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Validate URL format
     if (!isValidTweetUrl(tweetUrl)) {
-      return NextResponse.json(
-        { error: "Invalid X/Twitter URL format" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid X/Twitter URL format" }, { status: 400 });
     }
 
     // 4. Get user and plan info
@@ -88,10 +85,7 @@ export async function POST(req: NextRequest) {
       };
 
       const status = statusMap[result.code] || 500;
-      return NextResponse.json(
-        { error: result.error, code: result.code },
-        { status }
-      );
+      return NextResponse.json({ error: result.error, code: result.code }, { status });
     }
 
     // 8. Return successful result

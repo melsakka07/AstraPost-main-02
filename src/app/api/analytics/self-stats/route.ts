@@ -37,11 +37,7 @@ export async function GET(_req: Request) {
       .from(tweets)
       .innerJoin(posts, eq(tweets.postId, posts.id))
       .where(
-        and(
-          eq(posts.userId, userId),
-          eq(posts.status, "published"),
-          gte(posts.publishedAt, cutoff)
-        )
+        and(eq(posts.userId, userId), eq(posts.status, "published"), gte(posts.publishedAt, cutoff))
       )
       .orderBy(desc(posts.publishedAt))
       .limit(200);
@@ -89,11 +85,7 @@ export async function GET(_req: Request) {
       if (/["\u201c\u201d\u00ab\u00bb]/.test(text)) addType("quote");
       if (/\d+%|\d+ percent|\d+\/\d+/.test(text)) addType("statistic");
       if (/\n\n/.test(text)) addType("thread");
-      if (
-        !text.includes("?") &&
-        !/https?:\/\//.test(text) &&
-        !/\n\n/.test(text)
-      ) {
+      if (!text.includes("?") && !/https?:\/\//.test(text) && !/\n\n/.test(text)) {
         addType("plain text");
       }
     }
@@ -112,9 +104,6 @@ export async function GET(_req: Request) {
     });
   } catch (error) {
     console.error("Self-stats error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to compute self stats" }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: "Failed to compute self stats" }), { status: 500 });
   }
 }

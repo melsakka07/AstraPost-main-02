@@ -1,4 +1,3 @@
-
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
@@ -19,7 +18,8 @@ export async function GET(_req: Request) {
   const memberships = await db.query.teamMembers.findMany({
     where: eq(teamMembers.userId, session.user.id),
     with: {
-      team: { // This is the relations name in schema.ts "team" -> references user (owner)
+      team: {
+        // This is the relations name in schema.ts "team" -> references user (owner)
         columns: {
           id: true,
           name: true,

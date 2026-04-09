@@ -9,6 +9,7 @@
 ## Problem Description
 
 When attempting to generate AI images using the Replicate API integration, the application received `422 Unprocessable Entity` errors with the message:
+
 ```
 {"detail":"- version is required\n- Additional property model is not allowed\n","status":422,"title":"Input validation failed","invalid_fields":[{"type":"required","field":"","description":"version is required"},{"type":"additional_property_not_allowed","field":"","description":"Additional property model is not allowed"}]}
 ```
@@ -85,11 +86,13 @@ const createResponse = await fetch(`https://api.replicate.com/v1/models/${modelN
 ## Model Specifications
 
 ### Nano Banana 2 (`google/nano-banana-2`)
+
 - **Base Model:** Gemini 2.5 Flash Image
 - **Use Case:** Fast, efficient image generation
 - **Resolution:** 1K (default)
 
 ### Nano Banana Pro (`google/nano-banana-pro`)
+
 - **Base Model:** Gemini 3 Pro Image
 - **Use Case:** Highest quality, advanced features
 - **Resolution:** 2K (default)
@@ -99,11 +102,13 @@ const createResponse = await fetch(`https://api.replicate.com/v1/models/${modelN
 ## Verification
 
 ### Success Criteria
+
 - The API request uses the correct endpoint: `https://api.replicate.com/v1/models/.../predictions`
 - The request body only contains `input` (and other valid options like `stream`), but NOT `model` or `version`.
 - Replicate accepts the request and returns 201 Created (or 200 OK with `Prefer: wait`).
 
 ### Unit Tests
+
 Ran `pnpm test src/lib/services/__tests__/ai-image.test.ts` to verify the service logic still holds.
 
 ---

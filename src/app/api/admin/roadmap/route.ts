@@ -31,19 +31,13 @@ export async function GET(request: Request) {
 
   if (search) {
     conditions.push(
-      or(
-        ilike(feedback.title, `%${search}%`),
-        ilike(feedback.description, `%${search}%`)
-      )!
+      or(ilike(feedback.title, `%${search}%`), ilike(feedback.description, `%${search}%`))!
     );
   }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const countResult = await db
-    .select({ total: count() })
-    .from(feedback)
-    .where(where);
+  const countResult = await db.select({ total: count() }).from(feedback).where(where);
   const total = countResult[0]?.total ?? 0;
 
   const items = await db.query.feedback.findMany({

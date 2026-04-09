@@ -23,19 +23,21 @@ export default async function AchievementsPage() {
 
   const unlocked = await db.query.milestones.findMany({
     where: eq(milestones.userId, session.user.id),
-    columns: { milestoneId: true }
+    columns: { milestoneId: true },
   });
 
-  const unlockedIds = unlocked.map(m => m.milestoneId);
+  const unlockedIds = unlocked.map((m) => m.milestoneId);
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Achievements</h1>
       </div>
-      
+
       <div className="space-y-4">
-        <p className="text-muted-foreground">Unlock badges by growing your audience and posting consistently.</p>
+        <p className="text-muted-foreground">
+          Unlock badges by growing your audience and posting consistently.
+        </p>
         <MilestoneList unlockedMilestoneIds={unlockedIds} />
       </div>
     </div>

@@ -98,8 +98,8 @@ function getXApiToken(): string {
   if (!token) {
     throw new Error(
       "Twitter/X API Bearer Token not configured. " +
-      "Please set TWITTER_BEARER_TOKEN in your .env file. " +
-      "Get it from: https://developer.twitter.com/en/portal/dashboard -> Your App -> Keys and Tokens -> Bearer Token"
+        "Please set TWITTER_BEARER_TOKEN in your .env file. " +
+        "Get it from: https://developer.twitter.com/en/portal/dashboard -> Your App -> Keys and Tokens -> Bearer Token"
     );
   }
   return token;
@@ -162,7 +162,10 @@ function parseTweetResponse(data: any): Tweet | null {
         let bestUrl = mediaData.url || mediaData.preview_image_url;
 
         // For videos/gifs, try to find the best mp4 variant
-        if ((mediaData.type === "video" || mediaData.type === "animated_gif") && mediaData.variants) {
+        if (
+          (mediaData.type === "video" || mediaData.type === "animated_gif") &&
+          mediaData.variants
+        ) {
           const mp4Variants = mediaData.variants.filter((v: any) => v.content_type === "video/mp4");
           if (mp4Variants.length > 0) {
             // Sort by highest bitrate first
@@ -352,10 +355,7 @@ export async function importTweet(
     }
 
     // Fetch conversation context
-    const { parentTweets, topReplies } = await fetchConversationContext(
-      tweet.id,
-      tweet.id
-    );
+    const { parentTweets, topReplies } = await fetchConversationContext(tweet.id, tweet.id);
 
     const result: ImportedTweetContext = {
       originalTweet: tweet,

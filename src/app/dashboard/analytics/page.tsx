@@ -2,7 +2,18 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, asc, desc, eq, gte, isNotNull } from "drizzle-orm";
-import { BarChart3, Heart, MessageCircle, Repeat2, MousePointerClick, AlignJustify, LayoutGrid, CheckCircle2, XCircle, Clock } from "lucide-react";
+import {
+  BarChart3,
+  Heart,
+  MessageCircle,
+  Repeat2,
+  MousePointerClick,
+  AlignJustify,
+  LayoutGrid,
+  CheckCircle2,
+  XCircle,
+  Clock,
+} from "lucide-react";
 import { AccountSelector } from "@/components/analytics/account-selector";
 import { AnalyticsSectionNav } from "@/components/analytics/analytics-section-nav";
 import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
@@ -19,18 +30,31 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { analyticsRefreshRuns, followerSnapshots, posts, tweetAnalytics, tweetAnalyticsSnapshots, tweets, user, xAccounts } from "@/lib/schema";
+import {
+  analyticsRefreshRuns,
+  followerSnapshots,
+  posts,
+  tweetAnalytics,
+  tweetAnalyticsSnapshots,
+  tweets,
+  user,
+  xAccounts,
+} from "@/lib/schema";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
 
 export default async function AnalyticsPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ accountId?: string | string[]; density?: string | string[]; range?: string | string[] }>;
+  searchParams?: Promise<{
+    accountId?: string | string[];
+    density?: string | string[];
+    range?: string | string[];
+  }>;
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login?callbackUrl=/dashboard/analytics");
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  
+
   // Params
   const densityParam = resolvedSearchParams?.density;
   const densityValue = Array.isArray(densityParam) ? densityParam[0] : densityParam;
@@ -84,100 +108,96 @@ export default async function AnalyticsPage({
 
   // ── Round 2: five independent queries in parallel ──────────────────────────
   // All depend only on values already resolved above; none depend on each other.
-  const [
-    followerPoints,
-    refreshRuns,
-    snapshots,
-    prevSnapshots,
-    topTweets,
-    bestTimeData,
-  ] = await Promise.all([
-    // 1. Follower snapshots
-    selectedAccountId
-      ? db.query.followerSnapshots.findMany({
-          where: and(
-            eq(followerSnapshots.userId, session.user.id),
-            eq(followerSnapshots.xAccountId, selectedAccountId),
-            gte(followerSnapshots.capturedAt, startDate)
-          ),
-          orderBy: [asc(followerSnapshots.capturedAt)],
-          limit: 1000,
+  const [followerPoints, refreshRuns, snapshots, prevSnapshots, topTweets, bestTimeData] =
+    await Promise.all([
+      // 1. Follower snapshots
+      selectedAccountId
+        ? db.query.followerSnapshots.findMany({
+            where: and(
+              eq(followerSnapshots.userId, session.user.id),
+              eq(followerSnapshots.xAccountId, selectedAccountId),
+              gte(followerSnapshots.capturedAt, startDate)
+            ),
+            orderBy: [asc(followerSnapshots.capturedAt)],
+            limit: 1000,
+          })
+        : Promise.resolve([]),
+
+      // 2. Analytics refresh runs
+      selectedAccountId
+        ? db.query.analyticsRefreshRuns.findMany({
+            where: and(
+              eq(analyticsRefreshRuns.userId, session.user.id),
+              eq(analyticsRefreshRuns.xAccountId, selectedAccountId)
+            ),
+            orderBy: [desc(analyticsRefreshRuns.startedAt)],
+            limit: 5,
+          })
+        : Promise.resolve([]),
+
+      // 3. Tweet metrics snapshots
+      db
+        .select({
+          fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
+          impressions: tweetAnalyticsSnapshots.impressions,
+          likes: tweetAnalyticsSnapshots.likes,
+          retweets: tweetAnalyticsSnapshots.retweets,
+          replies: tweetAnalyticsSnapshots.replies,
+          clicks: tweetAnalyticsSnapshots.linkClicks,
         })
-      : Promise.resolve([]),
+        .from(tweetAnalyticsSnapshots)
+        .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
+        .innerJoin(posts, eq(tweets.postId, posts.id))
+        .where(
+          and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))
+        ),
 
-    // 2. Analytics refresh runs
-    selectedAccountId
-      ? db.query.analyticsRefreshRuns.findMany({
-          where: and(
-            eq(analyticsRefreshRuns.userId, session.user.id),
-            eq(analyticsRefreshRuns.xAccountId, selectedAccountId)
-          ),
-          orderBy: [desc(analyticsRefreshRuns.startedAt)],
-          limit: 5,
+      // 4. Previous period tweet metrics snapshots (for trend indicators)
+      db
+        .select({
+          fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
+          impressions: tweetAnalyticsSnapshots.impressions,
+          likes: tweetAnalyticsSnapshots.likes,
+          retweets: tweetAnalyticsSnapshots.retweets,
+          replies: tweetAnalyticsSnapshots.replies,
+          clicks: tweetAnalyticsSnapshots.linkClicks,
         })
-      : Promise.resolve([]),
-
-    // 3. Tweet metrics snapshots
-    db
-      .select({
-        fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
-        impressions: tweetAnalyticsSnapshots.impressions,
-        likes: tweetAnalyticsSnapshots.likes,
-        retweets: tweetAnalyticsSnapshots.retweets,
-        replies: tweetAnalyticsSnapshots.replies,
-        clicks: tweetAnalyticsSnapshots.linkClicks,
-      })
-      .from(tweetAnalyticsSnapshots)
-      .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
-      .innerJoin(posts, eq(tweets.postId, posts.id))
-      .where(and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))),
-
-    // 4. Previous period tweet metrics snapshots (for trend indicators)
-    db
-      .select({
-        fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
-        impressions: tweetAnalyticsSnapshots.impressions,
-        likes: tweetAnalyticsSnapshots.likes,
-        retweets: tweetAnalyticsSnapshots.retweets,
-        replies: tweetAnalyticsSnapshots.replies,
-        clicks: tweetAnalyticsSnapshots.linkClicks,
-      })
-      .from(tweetAnalyticsSnapshots)
-      .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
-      .innerJoin(posts, eq(tweets.postId, posts.id))
-      .where(
-        and(
-          eq(posts.userId, session.user.id),
-          gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate),
+        .from(tweetAnalyticsSnapshots)
+        .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
+        .innerJoin(posts, eq(tweets.postId, posts.id))
+        .where(
           and(
             eq(posts.userId, session.user.id),
-            gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate)
+            gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate),
+            and(
+              eq(posts.userId, session.user.id),
+              gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate)
+            )
           )
         )
-      )
-      .then((rows) => rows.filter((r) => new Date(r.fetchedAt) < startDate)),
+        .then((rows) => rows.filter((r) => new Date(r.fetchedAt) < startDate)),
 
-    // 5. Top tweets by impressions (isNotNull replaces the @ts-ignore sql string)
-    db
-      .select({
-        content: tweets.content,
-        xTweetId: tweets.xTweetId,
-        tweetId: tweets.id,
-        impressions: tweetAnalytics.impressions,
-        likes: tweetAnalytics.likes,
-        retweets: tweetAnalytics.retweets,
-        replies: tweetAnalytics.replies,
-      })
-      .from(tweetAnalytics)
-      .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
-      .innerJoin(posts, eq(tweets.postId, posts.id))
-      .where(and(eq(posts.userId, session.user.id), isNotNull(tweets.xTweetId)))
-      .orderBy(desc(tweetAnalytics.impressions))
-      .limit(5),
+      // 5. Top tweets by impressions (isNotNull replaces the @ts-ignore sql string)
+      db
+        .select({
+          content: tweets.content,
+          xTweetId: tweets.xTweetId,
+          tweetId: tweets.id,
+          impressions: tweetAnalytics.impressions,
+          likes: tweetAnalytics.likes,
+          retweets: tweetAnalytics.retweets,
+          replies: tweetAnalytics.replies,
+        })
+        .from(tweetAnalytics)
+        .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
+        .innerJoin(posts, eq(tweets.postId, posts.id))
+        .where(and(eq(posts.userId, session.user.id), isNotNull(tweets.xTweetId)))
+        .orderBy(desc(tweetAnalytics.impressions))
+        .limit(5),
 
-    // 5. Best times to post heatmap
-    AnalyticsEngine.getBestTimesToPost(session.user.id),
-  ]);
+      // 5. Best times to post heatmap
+      AnalyticsEngine.getBestTimesToPost(session.user.id),
+    ]);
 
   // ── Derive chart data from query results ───────────────────────────────────
   const followerByDay = new Map<string, number>();
@@ -267,7 +287,6 @@ export default async function AnalyticsPage({
         </>
       }
     >
-
       {isFree && (
         <UpgradeBanner
           title="Unlock Advanced Analytics"
@@ -280,7 +299,7 @@ export default async function AnalyticsPage({
       {/* ── Overview Section ── */}
       <div id="section-overview" className="flex items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Overview</h2>
-        <div className="h-px flex-1 bg-border" />
+        <div className="bg-border h-px flex-1" />
       </div>
 
       <Card>
@@ -301,17 +320,20 @@ export default async function AnalyticsPage({
               <CardHeader className="space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Current followers</CardTitle>
               </CardHeader>
-              <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{latestFollowers?.toLocaleString() || "—"}</div>
+              <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
+                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
+                  {latestFollowers?.toLocaleString() || "—"}
+                </div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Growth ({effectiveRange})</CardTitle>
               </CardHeader>
-              <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
+              <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
-                  {followerGrowth > 0 ? "+" : ""}{followerGrowth.toLocaleString()}
+                  {followerGrowth > 0 ? "+" : ""}
+                  {followerGrowth.toLocaleString()}
                 </div>
               </CardContent>
             </Card>
@@ -319,7 +341,7 @@ export default async function AnalyticsPage({
               <CardHeader className="space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Start of Period</CardTitle>
               </CardHeader>
-              <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
+              <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
                   {followersStart.toLocaleString()}
                 </div>
@@ -328,7 +350,11 @@ export default async function AnalyticsPage({
           </div>
 
           <div className="space-y-3">
-            <BlurredOverlay isLocked={isFree && rangeDays > 7} title="Follower History" description="Upgrade to Pro to see detailed follower growth over time.">
+            <BlurredOverlay
+              isLocked={isFree && rangeDays > 7}
+              title="Follower History"
+              description="Upgrade to Pro to see detailed follower growth over time."
+            >
               {accounts.length === 0 ? (
                 <EmptyState
                   icon={<BarChart3 className="h-6 w-6" />}
@@ -349,25 +375,41 @@ export default async function AnalyticsPage({
           <details className="group">
             <summary className="flex cursor-pointer list-none items-center gap-2 select-none">
               <h2 className="text-base font-semibold">Refresh history</h2>
-              <span className="text-xs text-muted-foreground group-open:hidden">(click to expand)</span>
-              <span className="text-xs text-muted-foreground hidden group-open:inline">(click to collapse)</span>
+              <span className="text-muted-foreground text-xs group-open:hidden">
+                (click to expand)
+              </span>
+              <span className="text-muted-foreground hidden text-xs group-open:inline">
+                (click to collapse)
+              </span>
             </summary>
             <div className="mt-2">
               {refreshRuns.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No refreshes yet.</div>
+                <div className="text-muted-foreground text-sm">No refreshes yet.</div>
               ) : (
                 <div className="space-y-2">
                   {refreshRuns.map((r) => {
                     const statusIcon =
                       r.status === "success" ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" aria-hidden="true" />
+                        <CheckCircle2
+                          className="h-3.5 w-3.5 shrink-0 text-emerald-500"
+                          aria-hidden="true"
+                        />
                       ) : r.status === "failed" ? (
-                        <XCircle className="h-3.5 w-3.5 text-destructive shrink-0" aria-hidden="true" />
+                        <XCircle
+                          className="text-destructive h-3.5 w-3.5 shrink-0"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
+                        <Clock
+                          className="text-muted-foreground h-3.5 w-3.5 shrink-0"
+                          aria-hidden="true"
+                        />
                       );
                     return (
-                      <div key={r.id} className="flex flex-col gap-2 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                      <div
+                        key={r.id}
+                        className="flex flex-col gap-2 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                      >
                         <div className="text-muted-foreground">
                           {new Date(r.startedAt).toLocaleString()}
                         </div>
@@ -387,7 +429,10 @@ export default async function AnalyticsPage({
                             {String(r.status).toUpperCase()}
                           </span>
                           {r.error ? (
-                            <span className="max-w-[320px] truncate text-muted-foreground" title={r.error}>
+                            <span
+                              className="text-muted-foreground max-w-[320px] truncate"
+                              title={r.error}
+                            >
                               {r.error}
                             </span>
                           ) : null}
@@ -405,17 +450,39 @@ export default async function AnalyticsPage({
       {/* ── Performance Section ── */}
       <div id="section-performance" className="flex items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
-        <div className="h-px flex-1 bg-border" />
+        <div className="bg-border h-px flex-1" />
       </div>
 
-      <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}>
+      <div
+        className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}
+      >
         {(
           [
-            { label: "Impressions", icon: BarChart3, current: totals.impressions, prev: prevTotals.impressions },
+            {
+              label: "Impressions",
+              icon: BarChart3,
+              current: totals.impressions,
+              prev: prevTotals.impressions,
+            },
             { label: "Likes", icon: Heart, current: totals.likes, prev: prevTotals.likes },
-            { label: "Retweets", icon: Repeat2, current: totals.retweets, prev: prevTotals.retweets },
-            { label: "Replies", icon: MessageCircle, current: totals.replies, prev: prevTotals.replies },
-            { label: "Link Clicks", icon: MousePointerClick, current: totals.clicks, prev: prevTotals.clicks },
+            {
+              label: "Retweets",
+              icon: Repeat2,
+              current: totals.retweets,
+              prev: prevTotals.retweets,
+            },
+            {
+              label: "Replies",
+              icon: MessageCircle,
+              current: totals.replies,
+              prev: prevTotals.replies,
+            },
+            {
+              label: "Link Clicks",
+              icon: MousePointerClick,
+              current: totals.clicks,
+              prev: prevTotals.clicks,
+            },
           ] as const
         ).map(({ label, icon: Icon, current, prev }) => {
           const d = delta(current, prev);
@@ -423,10 +490,12 @@ export default async function AnalyticsPage({
             <Card key={label}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{label}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Icon className="text-muted-foreground h-4 w-4" />
               </CardHeader>
-              <CardContent className={isCompact ? "px-4 pb-4 pt-0" : undefined}>
-                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>{current.toLocaleString()}</div>
+              <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
+                <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
+                  {current.toLocaleString()}
+                </div>
                 {d !== null && (
                   <p className={`mt-1 text-xs ${d >= 0 ? "text-emerald-500" : "text-destructive"}`}>
                     {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString()} vs prev {effectiveRange}
@@ -440,52 +509,64 @@ export default async function AnalyticsPage({
 
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">Impressions ({effectiveRange})</h2>
-        <BlurredOverlay isLocked={isFree && rangeDays > 7} title="Impressions History" description="Upgrade to Pro to see detailed impressions history over time.">
-            <ImpressionsChart data={impressionsChartData} />
+        <BlurredOverlay
+          isLocked={isFree && rangeDays > 7}
+          title="Impressions History"
+          description="Upgrade to Pro to see detailed impressions history over time."
+        >
+          <ImpressionsChart data={impressionsChartData} />
         </BlurredOverlay>
       </div>
 
       {/* ── Insights Section ── */}
       <div id="section-insights" className="flex items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Insights</h2>
-        <div className="h-px flex-1 bg-border" />
+        <div className="bg-border h-px flex-1" />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Best Time to Post</h3>
-              <BlurredOverlay isLocked={isFree} title="Optimization Insights" description="Upgrade to Pro to see when your audience is most active.">
-                  <BestTimeHeatmap data={bestTimeData} />
-              </BlurredOverlay>
-          </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">Best Time to Post</h3>
+          <BlurredOverlay
+            isLocked={isFree}
+            title="Optimization Insights"
+            description="Upgrade to Pro to see when your audience is most active."
+          >
+            <BestTimeHeatmap data={bestTimeData} />
+          </BlurredOverlay>
+        </div>
 
-          <div className="space-y-4">
-              <h3 className="text-xl font-semibold">Top Performing Tweets</h3>
-              <BlurredOverlay isLocked={isFree} title="Top Tweets" description="See your best performing content with Pro analytics.">
-                {topTweets.length === 0 ? (
-                  <EmptyState
-                    icon={<BarChart3 className="h-6 w-6" />}
-                    title="No tweet analytics yet"
-                    description="Once published posts are tracked by the analytics worker, your top tweets appear here."
-                    primaryAction={
-                      <Button asChild>
-                        <Link href="/dashboard/compose">Publish a Post</Link>
-                      </Button>
-                    }
-                  />
-                ) : (
-                  <TopTweetsList
-                    // Narrow xTweetId from string|null to string — isNotNull() in the
-                    // WHERE clause guarantees no nulls, but Drizzle's type inference
-                    // can't reflect WHERE clause narrowing on selected columns.
-                    tweets={topTweets.filter(
-                      (t): t is typeof t & { xTweetId: string } => t.xTweetId !== null
-                    )}
-                    isCompact={isCompact}
-                  />
+        <div className="space-y-4">
+          <h3 className="text-xl font-semibold">Top Performing Tweets</h3>
+          <BlurredOverlay
+            isLocked={isFree}
+            title="Top Tweets"
+            description="See your best performing content with Pro analytics."
+          >
+            {topTweets.length === 0 ? (
+              <EmptyState
+                icon={<BarChart3 className="h-6 w-6" />}
+                title="No tweet analytics yet"
+                description="Once published posts are tracked by the analytics worker, your top tweets appear here."
+                primaryAction={
+                  <Button asChild>
+                    <Link href="/dashboard/compose">Publish a Post</Link>
+                  </Button>
+                }
+              />
+            ) : (
+              <TopTweetsList
+                // Narrow xTweetId from string|null to string — isNotNull() in the
+                // WHERE clause guarantees no nulls, but Drizzle's type inference
+                // can't reflect WHERE clause narrowing on selected columns.
+                tweets={topTweets.filter(
+                  (t): t is typeof t & { xTweetId: string } => t.xTweetId !== null
                 )}
-              </BlurredOverlay>
-          </div>
+                isCompact={isCompact}
+              />
+            )}
+          </BlurredOverlay>
+        </div>
       </div>
     </DashboardPageWrapper>
   );

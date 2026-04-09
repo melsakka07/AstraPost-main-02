@@ -45,7 +45,9 @@ export function AnnouncementBanner() {
   if (!announcement || dismissed) return null;
 
   return (
-    <div className={`flex items-center justify-between gap-4 border-b px-4 py-2.5 text-sm font-medium ${STYLES[announcement.type]}`}>
+    <div
+      className={`flex items-center justify-between gap-4 border-b px-4 py-2.5 text-sm font-medium ${STYLES[announcement.type]}`}
+    >
       <span className="flex-1 text-center">{announcement.text}</span>
       <button
         onClick={dismiss}

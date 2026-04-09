@@ -34,7 +34,7 @@ export function QuickCompose() {
   return (
     <Card className="lg:col-span-3">
       <CardHeader className="flex flex-row items-center gap-2">
-        <PenSquare className="h-4 w-4 text-muted-foreground" />
+        <PenSquare className="text-muted-foreground h-4 w-4" />
         <CardTitle>Quick Compose</CardTitle>
       </CardHeader>
       <CardContent>
@@ -48,12 +48,12 @@ export function QuickCompose() {
               onChange={(e) => setContent(e.target.value)}
               maxLength={MAX_LENGTH}
             />
-            <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+            <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
               {hasContent && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"
                   onClick={() => setContent("")}
                   aria-label="Clear"
                   title="Clear"
@@ -61,16 +61,12 @@ export function QuickCompose() {
                   <X className="h-3.5 w-3.5" />
                 </Button>
               )}
-              <span className="text-[11px] tabular-nums text-muted-foreground/60">
+              <span className="text-muted-foreground/60 text-[11px] tabular-nums">
                 {charCount}/{MAX_LENGTH}
               </span>
             </div>
           </div>
-          <Button
-            className="w-full"
-            onClick={handleCompose}
-            disabled={!hasContent}
-          >
+          <Button className="w-full" onClick={handleCompose} disabled={!hasContent}>
             Continue in Editor
             <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
           </Button>

@@ -3,6 +3,7 @@
 ## Status: Complete ✅ (incl. Bonus Feature)
 
 ## Phase 1 — Backend: AI Template Prompt Engine & API Route
+
 - **Status:** Complete
 - **Files Created:**
   - `src/lib/ai/template-prompts.ts` — 5 `TemplatePromptConfig` objects with `buildPrompt()` functions, `getTemplatePrompt()` lookup helper, and `OutputFormat` type
@@ -17,6 +18,7 @@
   - Template IDs match the existing `SYSTEM_TEMPLATES` ids in `src/lib/templates.ts` exactly: `educational-thread`, `storytelling-thread`, `contrarian-take`, `listicle-thread`, `product-launch`
 
 ## Phase 2 — Frontend: Updated Templates Dialog with Generation Form
+
 - **Status:** Complete
 - **Files Created:** None
 - **Files Modified:**
@@ -30,6 +32,7 @@
   - `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅
 
 ## Phase 3 — Polish, Edge Cases & Quality
+
 - **Status:** Complete
 - **Files Created:** None
 - **Files Modified:**
@@ -42,6 +45,7 @@
   - `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅
 
 ## Bonus Feature — Save as Template from Generated Content
+
 - **Status:** Complete
 - **Files Created:**
   - `drizzle/0035_lovely_terrax.sql` — Migration adding `ai_meta JSONB` column to the `templates` table
@@ -60,6 +64,7 @@
   - `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅
 
 ## Prompt Quality Notes
+
 - How-To Guide: Hook + numbered steps + wrap-up CTA. Educational tone by default.
 - Personal Story: Vulnerable opener + chronological arc + lesson close. Casual tone by default.
 - Contrarian Take: Bold direct opinion + evidence tweets + debate invitation. Viral tone by default.
@@ -69,24 +74,25 @@
 - Character limit enforced in prompt: 280 chars per tweet (standard X limit). Updated in Phase 3 from original 800.
 
 ## Changelog
-| Date | Phase | Change |
-|------|-------|--------|
-| 2026-03-29 | Phase 1 | Created `template-prompts.ts` with 5 TemplatePromptConfig objects |
-| 2026-03-29 | Phase 1 | Created `template-generate/route.ts` SSE streaming endpoint |
-| 2026-03-29 | Phase 1 | Created this progress document |
-| 2026-03-29 | Phase 1 | Fixed import-order lint warning in route.ts |
-| 2026-03-29 | Phase 1 | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅ |
-| 2026-03-29 | Phase 2 | Rewrote templates-dialog.tsx with AI generation form + SSE streaming |
-| 2026-03-29 | Phase 2 | Updated composer.tsx: overwrite confirmation + defaultLanguage prop |
-| 2026-03-29 | Phase 2 | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅ |
-| 2026-03-29 | Phase 3 | Refined all 5 AI prompts: 280-char limit, Arabic instruction, clean count wording |
-| 2026-03-29 | Phase 3 | Templates dialog: validation error moved inline; quota display added |
-| 2026-03-29 | Phase 3 | AI History page: template type renders friendly message, Reuse hidden |
-| 2026-03-29 | Phase 3 | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅ |
-| 2026-03-29 | Bonus | Added `TemplateAiMeta` interface to `template-prompts.ts` |
-| 2026-03-29 | Bonus | Added `ai_meta` JSONB column to `templates` table (migration 0035) |
-| 2026-03-29 | Bonus | Updated `templates.ts` Template interface + re-export |
-| 2026-03-29 | Bonus | Updated `api/templates/route.ts` with aiMetaSchema + DB insert |
-| 2026-03-29 | Bonus | Updated `composer.tsx`: lastTemplateAiMeta state, handleSaveTemplate, Save dialog AI block |
-| 2026-03-29 | Bonus | Updated `templates-dialog.tsx`: onSelect with aiMeta, AI badge, Re-generate button |
-| 2026-03-29 | Bonus | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅ |
+
+| Date       | Phase   | Change                                                                                     |
+| ---------- | ------- | ------------------------------------------------------------------------------------------ |
+| 2026-03-29 | Phase 1 | Created `template-prompts.ts` with 5 TemplatePromptConfig objects                          |
+| 2026-03-29 | Phase 1 | Created `template-generate/route.ts` SSE streaming endpoint                                |
+| 2026-03-29 | Phase 1 | Created this progress document                                                             |
+| 2026-03-29 | Phase 1 | Fixed import-order lint warning in route.ts                                                |
+| 2026-03-29 | Phase 1 | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅                                    |
+| 2026-03-29 | Phase 2 | Rewrote templates-dialog.tsx with AI generation form + SSE streaming                       |
+| 2026-03-29 | Phase 2 | Updated composer.tsx: overwrite confirmation + defaultLanguage prop                        |
+| 2026-03-29 | Phase 2 | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅                                    |
+| 2026-03-29 | Phase 3 | Refined all 5 AI prompts: 280-char limit, Arabic instruction, clean count wording          |
+| 2026-03-29 | Phase 3 | Templates dialog: validation error moved inline; quota display added                       |
+| 2026-03-29 | Phase 3 | AI History page: template type renders friendly message, Reuse hidden                      |
+| 2026-03-29 | Phase 3 | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅                                    |
+| 2026-03-29 | Bonus   | Added `TemplateAiMeta` interface to `template-prompts.ts`                                  |
+| 2026-03-29 | Bonus   | Added `ai_meta` JSONB column to `templates` table (migration 0035)                         |
+| 2026-03-29 | Bonus   | Updated `templates.ts` Template interface + re-export                                      |
+| 2026-03-29 | Bonus   | Updated `api/templates/route.ts` with aiMetaSchema + DB insert                             |
+| 2026-03-29 | Bonus   | Updated `composer.tsx`: lastTemplateAiMeta state, handleSaveTemplate, Save dialog AI block |
+| 2026-03-29 | Bonus   | Updated `templates-dialog.tsx`: onSelect with aiMeta, AI badge, Re-generate button         |
+| 2026-03-29 | Bonus   | `pnpm lint && pnpm typecheck` — 0 errors, 0 warnings ✅                                    |

@@ -1,4 +1,5 @@
 # Subscriber Snapshot
+
 **Taken at:** 2026-03-31 13:10:09 UTC
 
 ---
@@ -67,15 +68,17 @@
 ## User Analysis
 
 ### User 1 — AstraVisionAI
-| Field | Value |
-|---|---|
-| **Email** | thunderlight.m@gmail.com |
-| **Platform Plan** | `free` (trial ends 2026-04-14) |
-| **X Account** | @AstraVisionPro |
+
+| Field                   | Value                            |
+| ----------------------- | -------------------------------- |
+| **Email**               | thunderlight.m@gmail.com         |
+| **Platform Plan**       | `free` (trial ends 2026-04-14)   |
+| **X Account**           | @AstraVisionPro                  |
 | **X Subscription Tier** | **Premium** (updated 2026-03-31) |
-| **Account Active** | Yes |
+| **Account Active**      | Yes                              |
 
 **AI Writer character limits:**
+
 - Short → 280 chars ✅
 - Medium → 1,000 chars ✅ (Premium unlocks long content)
 - Long → 2,000 chars ✅
@@ -84,15 +87,17 @@
 ---
 
 ### User 2 — Mohanad
-| Field | Value |
-|---|---|
-| **Email** | eng.m.elsakka@gmail.com |
-| **Platform Plan** | `free` (trial ends 2026-04-09) |
-| **X Account** | — (no X account connected) |
-| **X Subscription Tier** | N/A |
-| **Account Active** | N/A |
+
+| Field                   | Value                          |
+| ----------------------- | ------------------------------ |
+| **Email**               | eng.m.elsakka@gmail.com        |
+| **Platform Plan**       | `free` (trial ends 2026-04-09) |
+| **X Account**           | — (no X account connected)     |
+| **X Subscription Tier** | N/A                            |
+| **Account Active**      | N/A                            |
 
 **AI Writer character limits:**
+
 - Short → 280 chars ✅ (only option — no X account)
 - Medium / Long → ❌ locked
 - Composer max → 280 chars
@@ -100,15 +105,17 @@
 ---
 
 ### User 3 — AstraVision AI
-| Field | Value |
-|---|---|
-| **Email** | astravision.ai@gmail.com |
-| **Platform Plan** | `pro_monthly` |
-| **X Account** | @AstraVisionAI |
+
+| Field                   | Value                         |
+| ----------------------- | ----------------------------- |
+| **Email**               | astravision.ai@gmail.com      |
+| **Platform Plan**       | `pro_monthly`                 |
+| **X Account**           | @AstraVisionAI                |
 | **X Subscription Tier** | **None** (updated 2026-03-30) |
-| **Account Active** | Yes |
+| **Account Active**      | Yes                           |
 
 **AI Writer character limits:**
+
 - Short → 280 chars ✅ (only option — None tier)
 - Medium / Long → ❌ locked
 - Composer max → 280 chars
@@ -116,15 +123,17 @@
 ---
 
 ### User 4 — thunderlightatnight07
-| Field | Value |
-|---|---|
-| **Email** | hanood.it@gmail.com |
-| **Platform Plan** | `pro_annual` |
-| **X Account** | @Thunder_Light77 |
+
+| Field                   | Value                                                |
+| ----------------------- | ---------------------------------------------------- |
+| **Email**               | hanood.it@gmail.com                                  |
+| **Platform Plan**       | `pro_annual`                                         |
+| **X Account**           | @Thunder_Light77                                     |
 | **X Subscription Tier** | **None** (⚠️ tier never refreshed — null updated_at) |
-| **Account Active** | Yes |
+| **Account Active**      | Yes                                                  |
 
 **AI Writer character limits:**
+
 - Short → 280 chars ✅ (only option — None tier)
 - Medium / Long → ❌ locked
 - Composer max → 280 chars
@@ -134,12 +143,12 @@
 
 ## Summary Table
 
-| User | Plan | X Tier | AI Short (280) | AI Medium (1k) | AI Long (2k) |
-|---|---|---|---|---|---|
-| @AstraVisionPro | free (trial) | **Premium** | ✅ | ✅ | ✅ |
-| Mohanad (no X) | free (trial) | N/A | ✅ | ❌ | ❌ |
-| @AstraVisionAI | pro_monthly | None | ✅ | ❌ | ❌ |
-| @Thunder_Light77 | pro_annual | None | ✅ | ❌ | ❌ |
+| User             | Plan         | X Tier      | AI Short (280) | AI Medium (1k) | AI Long (2k) |
+| ---------------- | ------------ | ----------- | -------------- | -------------- | ------------ |
+| @AstraVisionPro  | free (trial) | **Premium** | ✅             | ✅             | ✅           |
+| Mohanad (no X)   | free (trial) | N/A         | ✅             | ❌             | ❌           |
+| @AstraVisionAI   | pro_monthly  | None        | ✅             | ❌             | ❌           |
+| @Thunder_Light77 | pro_annual   | None        | ✅             | ❌             | ❌           |
 
 ---
 

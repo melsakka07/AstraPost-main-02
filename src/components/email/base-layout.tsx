@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import {
   Body,
   Container,
@@ -8,7 +8,7 @@ import {
   Section,
   Text,
   Tailwind,
-} from '@react-email/components';
+} from "@react-email/components";
 
 interface BaseLayoutProps {
   preview?: string;
@@ -21,16 +21,16 @@ export const BaseLayout = ({ preview, children }: BaseLayoutProps) => {
       <Head />
       <Preview>{preview || ""}</Preview>
       <Tailwind>
-        <Body className="bg-white my-auto mx-auto font-sans">
-          <Container className="border border-solid border-[#eaeaea] rounded my-[40px] mx-auto p-[20px] max-w-[465px]">
+        <Body className="mx-auto my-auto bg-white font-sans">
+          <Container className="mx-auto my-[40px] max-w-[465px] rounded border border-solid border-[#eaeaea] p-[20px]">
             <Section className="mt-[32px]">
-              <Text className="text-black text-[24px] font-normal text-center p-0 my-[30px] mx-0">
+              <Text className="mx-0 my-[30px] p-0 text-center text-[24px] font-normal text-black">
                 <strong>AstraPost</strong>
               </Text>
             </Section>
             {children}
             <Section>
-              <Text className="text-[#666666] text-[12px] leading-[24px] text-center">
+              <Text className="text-center text-[12px] leading-[24px] text-[#666666]">
                 © 2026 AstraPost. All rights reserved.
               </Text>
             </Section>

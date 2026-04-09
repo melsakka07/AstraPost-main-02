@@ -56,11 +56,11 @@ export function BulkApproveButton({ postIds, action }: BulkApproveButtonProps) {
       onClick={handleBulk}
     >
       {loading ? (
-        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+        <Loader2 className="mr-1 h-4 w-4 animate-spin" />
       ) : action === "approve" ? (
-        <CheckCheck className="h-4 w-4 mr-1" />
+        <CheckCheck className="mr-1 h-4 w-4" />
       ) : (
-        <XCircle className="h-4 w-4 mr-1" />
+        <XCircle className="mr-1 h-4 w-4" />
       )}
       {loading ? "Processing…" : label}
     </Button>

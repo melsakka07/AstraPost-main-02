@@ -18,6 +18,7 @@ publishes via a BullMQ background worker, tracks analytics, and generates
 content using AI (OpenRouter, Google Gemini, Replicate for image generation).
 
 ### Tech Stack (for reference — do not suggest replacing core choices)
+
 - Next.js 16 / App Router / React 19 / TypeScript
 - PostgreSQL 18 + pgvector / Drizzle ORM
 - Better Auth (Email/Password + X OAuth 2.0) / AES-256 token encryption
@@ -33,6 +34,7 @@ Analyze every file in this repository. Organize your findings into the following
 sections. For EVERY finding, follow this exact format:
 
 ### Finding Format
+
 [SEVERITY: Critical | High | Medium | Low] — Brief title
 
 File(s): path/to/file.ts (line numbers if applicable)
@@ -40,12 +42,12 @@ Current behavior: What the code does now and why it's problematic
 Recommendation: Exactly what to change, with a concrete code snippet
 Rationale: Why this matters (security, performance, UX, maintainability)
 
-
 ---
 
 ## Section 1: Architecture & Project Structure
 
 Evaluate the overall project organization:
+
 - Is the App Router usage idiomatic? Are server components and client components
   properly separated? Are there unnecessary `"use client"` directives?
 - Is the separation between the Next.js app and the BullMQ worker clean?
@@ -58,6 +60,7 @@ Evaluate the overall project organization:
 ## Section 2: Database & Data Layer
 
 Review all Drizzle ORM schemas, queries, and migrations:
+
 - Schema design: normalization, indexing strategy, missing indexes,
   unnecessary indexes, proper use of pgvector
 - Query efficiency: N+1 problems, missing joins, unbounded queries,
@@ -73,6 +76,7 @@ Review all Drizzle ORM schemas, queries, and migrations:
 ## Section 3: Authentication & Security
 
 Audit the entire auth flow and all security surfaces:
+
 - Better Auth configuration: session management, CSRF protection,
   token rotation, cookie settings
 - OAuth 2.0 flow for X (Twitter): token storage, refresh logic,
@@ -92,6 +96,7 @@ Audit the entire auth flow and all security surfaces:
 ## Section 4: Background Jobs & Reliability
 
 Review the BullMQ worker and job processing:
+
 - Job retry logic: backoff strategy, max retries, dead letter handling
 - Idempotency: what happens if the same job runs twice?
   (e.g., double-posting to Twitter)
@@ -110,6 +115,7 @@ Review the BullMQ worker and job processing:
 ## Section 5: AI Integration
 
 Review all AI-related code:
+
 - OpenRouter integration: model fallback logic, token limit handling,
   cost tracking, streaming implementation
 - Google Gemini: proper error handling, rate limit management
@@ -126,6 +132,7 @@ Review all AI-related code:
 ## Section 6: API Design & Error Handling
 
 Review all API routes and server actions:
+
 - Consistent error response format across all endpoints
 - Proper HTTP status codes
 - Input validation (recommend zod schemas if not present)
@@ -139,6 +146,7 @@ Review all API routes and server actions:
 Perform a thorough UI/UX audit with special attention to the Arabic-first audience:
 
 ### RTL & Internationalization
+
 - Is RTL layout properly implemented throughout (not just CSS `direction: rtl`
   but logical properties like `margin-inline-start`)?
 - Are shadcn/ui components RTL-compatible? Any components that break in RTL?
@@ -149,6 +157,7 @@ Perform a thorough UI/UX audit with special attention to the Arabic-first audien
 - Does the calendar/date picker handle Arabic/Hijri dates if relevant?
 
 ### Design System & Components
+
 - shadcn/ui customization: is there a consistent design system, or are
   components styled ad-hoc?
 - Color system: does the dark mode implementation have contrast issues?
@@ -158,6 +167,7 @@ Perform a thorough UI/UX audit with special attention to the Arabic-first audien
   be extracted?
 
 ### Key User Flows (evaluate each)
+
 1. **Onboarding & Auth:** Is the signup → connect social account → first
    post flow smooth and guided?
 2. **Content Creation:** Is the editor intuitive? AI content generation
@@ -170,6 +180,7 @@ Perform a thorough UI/UX audit with special attention to the Arabic-first audien
    Plan comparison clear?
 
 ### Responsiveness & Performance
+
 - Mobile experience: is it truly usable on mobile, or just responsive?
 - Image optimization: proper use of next/image, WebP/AVIF, lazy loading
 - Cumulative Layout Shift: any layout jumps during loading?
@@ -177,6 +188,7 @@ Perform a thorough UI/UX audit with special attention to the Arabic-first audien
   client-side JS?
 
 ### Accessibility
+
 - Keyboard navigation for all interactive elements
 - Screen reader compatibility (proper ARIA labels, semantic HTML)
 - Focus management in modals, drawers, and dynamic content

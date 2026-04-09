@@ -17,13 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
-export function DeleteDraftButton({
-  postId,
-  ariaLabel,
-}: {
-  postId: string;
-  ariaLabel?: string;
-}) {
+export function DeleteDraftButton({ postId, ariaLabel }: { postId: string; ariaLabel?: string }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -51,7 +45,7 @@ export function DeleteDraftButton({
           variant="ghost"
           size="icon"
           aria-label={ariaLabel ?? "Delete draft"}
-          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-7 w-7"
         >
           {loading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

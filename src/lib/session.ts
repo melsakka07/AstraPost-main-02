@@ -42,7 +42,5 @@ export async function getOptionalSession() {
  * @returns True if the path requires authentication
  */
 export function isProtectedRoute(path: string): boolean {
-  return protectedRoutes.some(
-    (route) => path === route || path.startsWith(`${route}/`)
-  );
+  return protectedRoutes.some((route) => path === route || path.startsWith(`${route}/`));
 }

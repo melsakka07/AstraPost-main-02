@@ -6,7 +6,10 @@ import { z } from "zod";
 import { AnalyticsPdfDocument } from "@/components/analytics/pdf-document";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { checkAnalyticsExportLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import {
+  checkAnalyticsExportLimitDetailed,
+  createPlanLimitResponse,
+} from "@/lib/middleware/require-plan";
 import { getPlanLimits } from "@/lib/plan-limits";
 import { posts, tweetAnalytics, tweets, user } from "@/lib/schema";
 
@@ -108,8 +111,8 @@ export async function GET(req: Request) {
     };
 
     const stream = await renderToStream(<AnalyticsPdfDocument data={pdfData} />);
-    
-    // Cast stream to Readable because renderToStream returns NodeJS.ReadableStream 
+
+    // Cast stream to Readable because renderToStream returns NodeJS.ReadableStream
     // but Readable.toWeb expects stream.Readable (which is compatible but TS complains)
     const webStream = Readable.toWeb(stream as Readable);
 

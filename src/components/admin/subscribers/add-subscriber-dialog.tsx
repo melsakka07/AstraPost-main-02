@@ -84,7 +84,15 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!form.formState.isSubmitting) { form.reset(); onOpenChange(v); } }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!form.formState.isSubmitting) {
+          form.reset();
+          onOpenChange(v);
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add subscriber</DialogTitle>
@@ -139,11 +147,15 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
                       />
                       <button
                         type="button"
-                        className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex items-center px-3"
                         onClick={() => setShowPassword((v) => !v)}
                         tabIndex={-1}
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                     </div>
                   </FormControl>
@@ -183,7 +195,9 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
                 <FormItem className="flex items-center justify-between rounded-lg border p-3">
                   <div>
                     <FormLabel className="text-sm font-medium">Admin access</FormLabel>
-                    <p className="text-xs text-muted-foreground">Grant access to this admin panel</p>
+                    <p className="text-muted-foreground text-xs">
+                      Grant access to this admin panel
+                    </p>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -196,7 +210,10 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => { form.reset(); onOpenChange(false); }}
+                onClick={() => {
+                  form.reset();
+                  onOpenChange(false);
+                }}
                 disabled={form.formState.isSubmitting}
               >
                 Cancel

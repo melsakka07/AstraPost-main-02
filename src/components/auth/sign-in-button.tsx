@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { signIn, useSession } from "@/lib/auth-client"
+import { useState } from "react";
+import { signIn, useSession } from "@/lib/auth-client";
 
 export function SignInButton() {
-  const { data: session, isPending: sessionPending } = useSession()
-  const [isPending, setIsPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { data: session, isPending: sessionPending } = useSession();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (sessionPending) {
     return (
@@ -15,30 +15,41 @@ export function SignInButton() {
         className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white opacity-50"
       >
         <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
         </svg>
         Loading...
       </button>
-    )
+    );
   }
 
   if (session) {
-    return null
+    return null;
   }
 
   async function handleSignIn() {
-    setIsPending(true)
-    setError(null)
+    setIsPending(true);
+    setError(null);
 
     try {
       await signIn.social({
         provider: "twitter",
         callbackURL: "/dashboard",
-      })
+      });
     } catch {
-      setError("Failed to redirect to X. Please try again.")
-      setIsPending(false)
+      setError("Failed to redirect to X. Please try again.");
+      setIsPending(false);
     }
   }
 
@@ -48,13 +59,24 @@ export function SignInButton() {
         type="button"
         onClick={handleSignIn}
         disabled={isPending}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:bg-black/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-50"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:bg-black/90 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
         aria-label="Sign in with X"
       >
         {isPending ? (
           <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
           </svg>
         ) : (
           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -65,10 +87,10 @@ export function SignInButton() {
       </button>
 
       {error && (
-        <p role="alert" className="text-sm text-center text-destructive">
+        <p role="alert" className="text-destructive text-center text-sm">
           {error}
         </p>
       )}
     </div>
-  )
+  );
 }

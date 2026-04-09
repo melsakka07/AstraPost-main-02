@@ -34,13 +34,13 @@ const noNewline = (name: string) =>
  *     rejected rather than interpolated raw into an LLM system prompt.
  */
 export const voiceProfileSchema = z.object({
-  tone:              noNewline("tone").max(FIELD_MAX),
-  styleKeywords:     z.array(noNewline("styleKeywords item").max(KEYWORD_MAX)),
-  emojiUsage:        noNewline("emojiUsage").max(FIELD_MAX),
+  tone: noNewline("tone").max(FIELD_MAX),
+  styleKeywords: z.array(noNewline("styleKeywords item").max(KEYWORD_MAX)),
+  emojiUsage: noNewline("emojiUsage").max(FIELD_MAX),
   sentenceStructure: noNewline("sentenceStructure").max(FIELD_MAX),
-  vocabularyLevel:   noNewline("vocabularyLevel").max(FIELD_MAX),
-  formattingHabits:  noNewline("formattingHabits").max(FIELD_MAX),
-  doAndDonts:        z.array(noNewline("doAndDonts item").max(RULE_MAX)),
+  vocabularyLevel: noNewline("vocabularyLevel").max(FIELD_MAX),
+  formattingHabits: noNewline("formattingHabits").max(FIELD_MAX),
+  doAndDonts: z.array(noNewline("doAndDonts item").max(RULE_MAX)),
 });
 
 export type VoiceProfile = z.infer<typeof voiceProfileSchema>;
@@ -63,7 +63,7 @@ export type VoiceProfile = z.infer<typeof voiceProfileSchema>;
 export function sanitizeFieldValue(text: string, maxLength: number): string {
   return text
     .replace(/[\x00-\x1f\x7f]/g, " ") // replace ALL control chars (incl. \n \r \t) with a space
-    .replace(/ {2,}/g, " ")            // collapse multiple spaces to one
+    .replace(/ {2,}/g, " ") // collapse multiple spaces to one
     .trim()
     .slice(0, maxLength);
 }
@@ -81,8 +81,8 @@ export function sanitizeFieldValue(text: string, maxLength: number): string {
 export function sanitizeForPrompt(text: string, maxLength: number): string {
   return text
     .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, "") // strip non-printable controls (keep \t \n \r)
-    .replace(/\r\n?/g, "\n")                             // normalize line endings
-    .replace(/\n{3,}/g, "\n\n")                          // collapse 3+ blank lines to 2
+    .replace(/\r\n?/g, "\n") // normalize line endings
+    .replace(/\n{3,}/g, "\n\n") // collapse 3+ blank lines to 2
     .trim()
     .slice(0, maxLength);
 }

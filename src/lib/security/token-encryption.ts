@@ -51,10 +51,7 @@ export function encryptToken(plaintext: string): string {
   const kid = 0;
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-  const ciphertext = Buffer.concat([
-    cipher.update(Buffer.from(plaintext, "utf8")),
-    cipher.final(),
-  ]);
+  const ciphertext = Buffer.concat([cipher.update(Buffer.from(plaintext, "utf8")), cipher.final()]);
   const tag = cipher.getAuthTag();
   return `v1:${kid}:${iv.toString("base64")}.${ciphertext.toString("base64")}.${tag.toString("base64")}`;
 }
@@ -75,9 +72,7 @@ export function decryptToken(value: string): string {
   const ct = Buffer.from(ctB64, "base64");
   const tag = Buffer.from(tagB64, "base64");
 
-  const tryKeys = Number.isFinite(kid) && kid >= 0 && kid < keys.length
-    ? [keys[kid]!]
-    : keys;
+  const tryKeys = Number.isFinite(kid) && kid >= 0 && kid < keys.length ? [keys[kid]!] : keys;
 
   let lastErr: unknown;
   for (const key of tryKeys) {

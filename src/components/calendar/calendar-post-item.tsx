@@ -16,10 +16,9 @@ interface CalendarPostItemProps {
 }
 
 export function CalendarPostItem({ post, isOverlay, view, accentColor }: CalendarPostItemProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: post.id,
-    });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: post.id,
+  });
 
   const dndStyle = transform
     ? {
@@ -42,14 +41,14 @@ export function CalendarPostItem({ post, isOverlay, view, accentColor }: Calenda
         {...attributes}
         {...listeners}
         className={cn(
-          "cursor-grab active:cursor-grabbing border-l-[3px] rounded-sm px-1 py-0.5",
-          "min-h-[20px] overflow-hidden bg-primary/5 hover:bg-primary/10 transition-colors",
+          "cursor-grab rounded-sm border-l-[3px] px-1 py-0.5 active:cursor-grabbing",
+          "bg-primary/5 hover:bg-primary/10 min-h-[20px] overflow-hidden transition-colors",
           isDragging && "opacity-50",
-          isOverlay && "shadow-xl opacity-90 scale-105 rotate-2 cursor-grabbing"
+          isOverlay && "scale-105 rotate-2 cursor-grabbing opacity-90 shadow-xl"
         )}
       >
-        <p className="text-[10px] leading-tight truncate">
-          <span className="font-medium text-muted-foreground mr-1">{time}</span>
+        <p className="truncate text-[10px] leading-tight">
+          <span className="text-muted-foreground mr-1 font-medium">{time}</span>
           {content}
         </p>
       </div>
@@ -63,24 +62,22 @@ export function CalendarPostItem({ post, isOverlay, view, accentColor }: Calenda
       {...attributes}
       {...listeners}
       className={cn(
-        "cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow",
+        "cursor-grab transition-shadow hover:shadow-md active:cursor-grabbing",
         isDragging && "opacity-50",
-        isOverlay && "shadow-xl opacity-90 scale-105 rotate-2 cursor-grabbing",
+        isOverlay && "scale-105 rotate-2 cursor-grabbing opacity-90 shadow-xl",
         "bg-card border-l-4"
       )}
     >
-      <CardContent className="p-2 space-y-1 min-h-[44px] flex flex-col justify-center">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <Badge variant="outline" className="text-[10px] px-1 h-5">
+      <CardContent className="flex min-h-[44px] flex-col justify-center space-y-1 p-2">
+        <div className="text-muted-foreground flex items-center justify-between text-xs">
+          <Badge variant="outline" className="h-5 px-1 text-[10px]">
             {type}
           </Badge>
           <span>{time}</span>
         </div>
         <div className="flex items-start gap-1">
-          <GripVertical className="h-4 w-4 text-muted-foreground/30 flex-shrink-0 mt-0.5" />
-          <p className="line-clamp-2 text-xs leading-tight break-words flex-1">
-            {content}
-          </p>
+          <GripVertical className="text-muted-foreground/30 mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p className="line-clamp-2 flex-1 text-xs leading-tight break-words">{content}</p>
         </div>
       </CardContent>
     </Card>

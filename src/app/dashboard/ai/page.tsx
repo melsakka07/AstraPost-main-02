@@ -1,11 +1,5 @@
 import Link from "next/link";
-import {
-  Hash,
-  Link2,
-  PenTool,
-  Shuffle,
-  Sparkles,
-} from "lucide-react";
+import { Hash, Link2, PenTool, Shuffle, Sparkles } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,30 +49,30 @@ export default function AIHubPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {aiTools.map((tool) => (
           <Link key={tool.href} href={tool.href} className="group block">
-            <Card className="h-full transition-colors hover:border-primary/40 hover:bg-muted/40">
+            <Card className="hover:border-primary/40 hover:bg-muted/40 h-full transition-colors">
               <CardContent className="flex flex-col gap-3 p-5">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                    <tool.icon className="h-5 w-5 text-primary" />
+                  <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors">
+                    <tool.icon className="text-primary h-5 w-5" />
                   </div>
                   {tool.isPro && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary"
+                      className="border-primary/30 text-primary h-4 px-1.5 py-0 text-[10px]"
                     >
                       Pro
                     </Badge>
                   )}
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold leading-tight group-hover:text-primary transition-colors">
+                  <p className="group-hover:text-primary text-sm leading-tight font-semibold transition-colors">
                     {tool.title}
                   </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-muted-foreground text-xs leading-relaxed">
                     {tool.description}
                   </p>
                 </div>
-                <p className="mt-auto text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                <p className="text-primary mt-auto text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
                   Try it →
                 </p>
               </CardContent>
@@ -86,7 +80,6 @@ export default function AIHubPage() {
           </Link>
         ))}
       </div>
-
     </DashboardPageWrapper>
   );
 }

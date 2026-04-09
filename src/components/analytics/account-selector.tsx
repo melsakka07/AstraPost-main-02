@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Account {
   id: string;
@@ -40,7 +46,7 @@ export function AccountSelector({
 
   if (accounts.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground">
+      <div className="text-muted-foreground text-sm">
         Connect an X account to enable follower tracking.
       </div>
     );
@@ -68,7 +74,7 @@ export function AccountSelector({
       </div>
 
       {/* Desktop: Chip links with active highlight */}
-      <div className="hidden sm:flex flex-wrap items-center gap-2">
+      <div className="hidden flex-wrap items-center gap-2 sm:flex">
         {accounts.map((a) => {
           const active = a.id === selectedAccountId;
           return (

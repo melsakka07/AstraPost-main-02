@@ -1,11 +1,10 @@
-import { betterAuth } from "better-auth"
-import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { and, eq, isNull } from "drizzle-orm"
-import { db } from "./db"
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { and, eq, isNull } from "drizzle-orm";
+import { db } from "./db";
 import { generateReferralCode } from "./referral/utils";
-import { user as userTable } from "./schema"
+import { user as userTable } from "./schema";
 import { decryptToken, encryptToken, isEncryptedToken } from "./security/token-encryption";
-
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -39,10 +38,11 @@ export const auth = betterAuth({
 
           const referralCode = await generateReferralCode(user.name);
 
-          await db.update(userTable)
+          await db
+            .update(userTable)
             .set({
               trialEndsAt,
-              referralCode
+              referralCode,
             })
             .where(and(eq(userTable.id, user.id), isNull(userTable.trialEndsAt)));
         },
@@ -68,10 +68,10 @@ export const auth = betterAuth({
         after: async (account) => {
           if (account.providerId === "twitter" && account.accessToken) {
             try {
-              const rawToken = isEncryptedToken(account.accessToken) 
-                ? decryptToken(account.accessToken) 
+              const rawToken = isEncryptedToken(account.accessToken)
+                ? decryptToken(account.accessToken)
                 : account.accessToken;
-                
+
               // Fetch user profile from X to populate xAccounts
               const { XApiService } = await import("./services/x-api");
               const svc = new XApiService(rawToken);
@@ -83,33 +83,36 @@ export const auth = betterAuth({
               };
 
               const { xAccounts } = await import("./schema");
-              
-              await db.insert(xAccounts).values({
-                id: crypto.randomUUID(),
-                userId: account.userId,
-                xUserId: account.accountId,
-                xUsername: profile.username || "twitter_user",
-                xDisplayName: profile.name || "Twitter User",
-                xAvatarUrl: profile.profile_image_url || null,
-                accessToken: account.accessToken,
-                refreshTokenEnc: account.refreshToken || null,
-                tokenExpiresAt: account.accessTokenExpiresAt || null,
-                isActive: true,
-              }).onConflictDoUpdate({
-                target: xAccounts.xUserId,
-                set: {
+
+              await db
+                .insert(xAccounts)
+                .values({
+                  id: crypto.randomUUID(),
+                  userId: account.userId,
+                  xUserId: account.accountId,
+                  xUsername: profile.username || "twitter_user",
+                  xDisplayName: profile.name || "Twitter User",
+                  xAvatarUrl: profile.profile_image_url || null,
                   accessToken: account.accessToken,
                   refreshTokenEnc: account.refreshToken || null,
                   tokenExpiresAt: account.accessTokenExpiresAt || null,
                   isActive: true,
-                  updatedAt: new Date(),
-                }
-              });
+                })
+                .onConflictDoUpdate({
+                  target: xAccounts.xUserId,
+                  set: {
+                    accessToken: account.accessToken,
+                    refreshTokenEnc: account.refreshToken || null,
+                    tokenExpiresAt: account.accessTokenExpiresAt || null,
+                    isActive: true,
+                    updatedAt: new Date(),
+                  },
+                });
             } catch (error) {
               console.error("Failed to sync xAccount on create", error);
             }
           }
-        }
+        },
       },
       update: {
         before: async (data) => {
@@ -131,30 +134,33 @@ export const auth = betterAuth({
               const { xAccounts } = await import("./schema");
               // Upsert so a missing row (e.g. manually deleted) is recreated on
               // re-login rather than silently leaving the user with no xAccount.
-              await db.insert(xAccounts).values({
-                id: crypto.randomUUID(),
-                userId: account.userId,
-                xUserId: account.accountId,
-                xUsername: account.accountId, // fallback; create.after sets real username
-                accessToken: account.accessToken,
-                refreshTokenEnc: account.refreshToken || null,
-                tokenExpiresAt: account.accessTokenExpiresAt || null,
-                isActive: true,
-              }).onConflictDoUpdate({
-                target: xAccounts.xUserId,
-                set: {
+              await db
+                .insert(xAccounts)
+                .values({
+                  id: crypto.randomUUID(),
+                  userId: account.userId,
+                  xUserId: account.accountId,
+                  xUsername: account.accountId, // fallback; create.after sets real username
                   accessToken: account.accessToken,
                   refreshTokenEnc: account.refreshToken || null,
                   tokenExpiresAt: account.accessTokenExpiresAt || null,
                   isActive: true,
-                  updatedAt: new Date(),
-                },
-              });
+                })
+                .onConflictDoUpdate({
+                  target: xAccounts.xUserId,
+                  set: {
+                    accessToken: account.accessToken,
+                    refreshTokenEnc: account.refreshToken || null,
+                    tokenExpiresAt: account.accessTokenExpiresAt || null,
+                    isActive: true,
+                    updatedAt: new Date(),
+                  },
+                });
             } catch (error) {
               console.error("Failed to sync xAccount on update", error);
             }
           }
-        }
+        },
       },
     },
   },
@@ -178,4 +184,4 @@ export const auth = betterAuth({
       ],
     },
   },
-})
+});

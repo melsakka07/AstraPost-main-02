@@ -28,10 +28,7 @@ export async function POST(request: Request) {
   const { accountIds } = parsed.data;
 
   const accounts = await db.query.xAccounts.findMany({
-    where: and(
-      inArray(xAccounts.id, accountIds),
-      eq(xAccounts.userId, session.user.id)
-    ),
+    where: and(inArray(xAccounts.id, accountIds), eq(xAccounts.userId, session.user.id)),
     columns: {
       id: true,
       xSubscriptionTier: true,

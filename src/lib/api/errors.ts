@@ -15,12 +15,10 @@ import type { ZodIssue } from "zod";
  */
 export const ApiError = {
   /** 401 — caller is not authenticated. */
-  unauthorized: () =>
-    Response.json({ error: "Unauthorized" }, { status: 401 }),
+  unauthorized: () => Response.json({ error: "Unauthorized" }, { status: 401 }),
 
   /** 403 — caller is authenticated but lacks permission. */
-  forbidden: (message = "Forbidden") =>
-    Response.json({ error: message }, { status: 403 }),
+  forbidden: (message = "Forbidden") => Response.json({ error: message }, { status: 403 }),
 
   /**
    * 400 — invalid input.
@@ -29,10 +27,7 @@ export const ApiError = {
   badRequest: (messageOrIssues: string | ZodIssue[]) =>
     typeof messageOrIssues === "string"
       ? Response.json({ error: messageOrIssues }, { status: 400 })
-      : Response.json(
-          { error: "Validation failed", issues: messageOrIssues },
-          { status: 400 }
-        ),
+      : Response.json({ error: "Validation failed", issues: messageOrIssues }, { status: 400 }),
 
   /** 404 — resource does not exist or is not visible to the caller. */
   notFound: (resource = "Resource") =>

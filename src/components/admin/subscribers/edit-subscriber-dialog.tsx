@@ -102,9 +102,7 @@ export function EditSubscriberDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit subscriber</DialogTitle>
-          <DialogDescription>
-            Update {subscriber.name}'s account details.
-          </DialogDescription>
+          <DialogDescription>Update {subscriber.name}'s account details.</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

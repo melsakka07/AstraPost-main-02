@@ -1,27 +1,22 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Check, Copy } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import { Check, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface CopyButtonProps extends React.ComponentProps<typeof Button> {
-  value: string
+  value: string;
 }
 
-export function CopyButton({
-  value,
-  className,
-  variant = "outline",
-  ...props
-}: CopyButtonProps) {
-  const [hasCopied, setHasCopied] = React.useState(false)
+export function CopyButton({ value, className, variant = "outline", ...props }: CopyButtonProps) {
+  const [hasCopied, setHasCopied] = React.useState(false);
 
   React.useEffect(() => {
     setTimeout(() => {
-      setHasCopied(false)
-    }, 2000)
-  }, [hasCopied])
+      setHasCopied(false);
+    }, 2000);
+  }, [hasCopied]);
 
   return (
     <Button
@@ -29,17 +24,13 @@ export function CopyButton({
       variant={variant}
       className={cn("relative z-10 h-6 w-6 text-zinc-50 md:h-8 md:w-8", className)}
       onClick={() => {
-        navigator.clipboard.writeText(value)
-        setHasCopied(true)
+        navigator.clipboard.writeText(value);
+        setHasCopied(true);
       }}
       {...props}
     >
       <span className="sr-only">Copy</span>
-      {hasCopied ? (
-        <Check className="h-3 w-3" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
+      {hasCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
     </Button>
-  )
+  );
 }

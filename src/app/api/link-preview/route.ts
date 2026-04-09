@@ -60,8 +60,7 @@ export async function POST(req: Request) {
     const data = await getLinkPreview(url, {
       followRedirects: "follow",
       headers: {
-        "user-agent":
-          "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
       },
       timeout: 5000,
     });

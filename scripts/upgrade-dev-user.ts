@@ -9,7 +9,9 @@ import { user } from "../src/lib/schema";
 const userId: string | undefined = process.argv[2];
 
 if (!userId) {
-  console.error("Usage: node --require dotenv/config --import tsx scripts/upgrade-dev-user.ts <userId>");
+  console.error(
+    "Usage: node --require dotenv/config --import tsx scripts/upgrade-dev-user.ts <userId>"
+  );
   process.exit(1);
 }
 

@@ -87,9 +87,10 @@ export interface ImageGenerationProvider {
  * Calculate image dimensions based on aspect ratio
  * Uses a base size of 1024px for the shorter dimension
  */
-export function getDimensionsFromAspectRatio(
-  aspectRatio: AspectRatio
-): { width: number; height: number } {
+export function getDimensionsFromAspectRatio(aspectRatio: AspectRatio): {
+  width: number;
+  height: number;
+} {
   const baseSize = 1024;
 
   switch (aspectRatio) {
@@ -109,23 +110,19 @@ export function getDimensionsFromAspectRatio(
 /**
  * Build an enhanced prompt with style modifiers
  */
-export function buildStyledPrompt(
-  basePrompt: string,
-  style?: ImageStyle
-): string {
+export function buildStyledPrompt(basePrompt: string, style?: ImageStyle): string {
   if (!style) return basePrompt;
 
   const styleModifiers: Record<ImageStyle, string> = {
     photorealistic:
       ", photorealistic, highly detailed, 8k, professional photography, cinematic lighting",
-    illustration:
-      ", digital illustration, vibrant colors, clean lines, modern art style",
+    illustration: ", digital illustration, vibrant colors, clean lines, modern art style",
     minimalist: ", minimalist design, clean composition, ample white space, simple",
-    abstract:
-      ", abstract art, artistic interpretation, creative, non-representational",
+    abstract: ", abstract art, artistic interpretation, creative, non-representational",
     infographic: ", infographic style, clear typography, data visualization, educational",
     meme: ", meme format, humorous, bold text overlay, internet meme style",
-    editorial: ", professional editorial photography, high contrast, modern design, clean composition, sharp focus, commercial quality",
+    editorial:
+      ", professional editorial photography, high contrast, modern design, clean composition, sharp focus, commercial quality",
   };
 
   return basePrompt + (styleModifiers[style] || "");
@@ -201,23 +198,17 @@ interface ReplicatePrediction {
  * Polls a Replicate prediction until it reaches a terminal state. Retries
  * every second for up to 120 seconds before throwing "Prediction timed out".
  */
-async function pollPrediction(
-  predictionId: string,
-  token: string
-): Promise<ReplicatePrediction> {
+async function pollPrediction(predictionId: string, token: string): Promise<ReplicatePrediction> {
   const maxAttempts = 120; // 2 minutes max
   const pollInterval = 1000; // 1 second
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const response = await fetch(
-      `https://api.replicate.com/v1/predictions/${predictionId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Replicate API error: ${response.statusText}`);
@@ -230,9 +221,7 @@ async function pollPrediction(
     }
 
     if (prediction.status === "failed" || prediction.status === "canceled") {
-      throw new Error(
-        prediction.error || `Prediction ${prediction.status}`
-      );
+      throw new Error(prediction.error || `Prediction ${prediction.status}`);
     }
 
     // Wait before polling again
@@ -253,23 +242,18 @@ async function createPrediction(
   input: Record<string, string | number | boolean | string[] | null>,
   token: string
 ): Promise<ReplicatePrediction> {
-  const createResponse = await fetch(
-    `https://api.replicate.com/v1/predictions`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ version, input }),
-    }
-  );
+  const createResponse = await fetch(`https://api.replicate.com/v1/predictions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ version, input }),
+  });
 
   if (!createResponse.ok) {
     const errorText = await createResponse.text();
-    throw new Error(
-      `Failed to create prediction: ${createResponse.statusText} - ${errorText}`
-    );
+    throw new Error(`Failed to create prediction: ${createResponse.statusText} - ${errorText}`);
   }
 
   const prediction: ReplicatePrediction = await createResponse.json();
@@ -321,9 +305,7 @@ class NanoBanana2Provider implements ImageGenerationProvider {
         throw new Error("No image data returned from Replicate API");
       }
 
-      const imageUrl = typeof result.output === "string"
-        ? result.output
-        : result.output[0]!;
+      const imageUrl = typeof result.output === "string" ? result.output : result.output[0]!;
 
       return { imageUrl, width, height, model: this.name, prompt };
     } catch (error) {
@@ -374,9 +356,7 @@ class NanaBananaProProvider implements ImageGenerationProvider {
         throw new Error("No image data returned from Replicate API");
       }
 
-      const imageUrl = typeof result.output === "string"
-        ? result.output
-        : result.output[0]!;
+      const imageUrl = typeof result.output === "string" ? result.output : result.output[0]!;
 
       return { imageUrl, width, height, model: this.name, prompt };
     } catch (error) {
@@ -421,9 +401,7 @@ class NanoBananaProvider implements ImageGenerationProvider {
         throw new Error("No image data returned from Replicate API");
       }
 
-      const imageUrl = typeof result.output === "string"
-        ? result.output
-        : result.output[0]!;
+      const imageUrl = typeof result.output === "string" ? result.output : result.output[0]!;
 
       return { imageUrl, width, height, model: this.name, prompt };
     } catch (error) {
@@ -440,9 +418,7 @@ class NanoBananaProvider implements ImageGenerationProvider {
  *
  * Provider factory — returns a provider instance for the given model.
  */
-export function createImageProvider(
-  model: ImageModel
-): ImageGenerationProvider {
+export function createImageProvider(model: ImageModel): ImageGenerationProvider {
   switch (model) {
     case "nano-banana":
       return new NanoBananaProvider();
@@ -462,9 +438,7 @@ export function createImageProvider(
  *
  * Generate an image using the specified model (synchronous, blocking).
  */
-export async function generateImage(
-  params: ImageGenParams
-): Promise<ImageGenResult> {
+export async function generateImage(params: ImageGenParams): Promise<ImageGenResult> {
   const model = params.model || "nano-banana-2";
   const provider = createImageProvider(model);
   return provider.generate(params);
@@ -480,7 +454,7 @@ export async function generateImage(
  * via a separate status endpoint — avoids blocking serverless functions.
  */
 export async function startImageGeneration(
-  params: ImageGenParams,
+  params: ImageGenParams
 ): Promise<{ predictionId: string; status: string }> {
   const token = process.env.REPLICATE_API_TOKEN;
   if (!token) throw new Error("REPLICATE_API_TOKEN environment variable is not set");
@@ -488,37 +462,40 @@ export async function startImageGeneration(
   const model = params.model ?? "nano-banana-2";
   const prompt = buildStyledPrompt(params.prompt, params.style);
   const modelName =
-    model === "nano-banana-pro" ? process.env.REPLICATE_MODEL_PRO! :
-    model === "nano-banana" ? process.env.REPLICATE_MODEL_FALLBACK! :
-    process.env.REPLICATE_MODEL_FAST!;
+    model === "nano-banana-pro"
+      ? process.env.REPLICATE_MODEL_PRO!
+      : model === "nano-banana"
+        ? process.env.REPLICATE_MODEL_FALLBACK!
+        : process.env.REPLICATE_MODEL_FAST!;
   const resolution = model === "nano-banana-pro" ? "2K" : "1K";
 
   // Use the model name endpoint — /v1/models/{model_owner}/{model_name}/predictions
   // This endpoint always runs the latest deployment and does not require a version hash.
   // We MUST NOT send the "model" or "version" parameter in the body for this endpoint.
-  const createResponse = await fetch(`https://api.replicate.com/v1/models/${modelName}/predictions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Prefer: "wait",
-    },
-    body: JSON.stringify({
-      input: {
-        prompt,
-        aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
-        resolution,
-        output_format: "png",
-        safety_filter_level: "block_only_high",
+  const createResponse = await fetch(
+    `https://api.replicate.com/v1/models/${modelName}/predictions`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Prefer: "wait",
       },
-    }),
-  });
+      body: JSON.stringify({
+        input: {
+          prompt,
+          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
+          resolution,
+          output_format: "png",
+          safety_filter_level: "block_only_high",
+        },
+      }),
+    }
+  );
 
   if (!createResponse.ok) {
     const errorText = await createResponse.text();
-    throw new Error(
-      `Failed to create prediction: ${createResponse.statusText} - ${errorText}`,
-    );
+    throw new Error(`Failed to create prediction: ${createResponse.statusText} - ${errorText}`);
   }
 
   const prediction: ReplicatePrediction = await createResponse.json();
@@ -529,21 +506,16 @@ export async function startImageGeneration(
  * Check the current status of a Replicate prediction (single poll, no waiting).
  * The caller is responsible for retrying at an appropriate interval.
  */
-export async function checkImagePrediction(
-  predictionId: string,
-): Promise<ReplicatePrediction> {
+export async function checkImagePrediction(predictionId: string): Promise<ReplicatePrediction> {
   const token = process.env.REPLICATE_API_TOKEN;
   if (!token) throw new Error("REPLICATE_API_TOKEN environment variable is not set");
 
-  const response = await fetch(
-    `https://api.replicate.com/v1/predictions/${predictionId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+  const response = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
-  );
+  });
 
   if (!response.ok) {
     throw new Error(`Replicate API error: ${response.statusText}`);
@@ -598,7 +570,8 @@ export async function generateAgenticImage(params: {
   aspectRatio?: AspectRatio;
 }): Promise<{ url: string } | { error: string }> {
   const aspectRatio = params.aspectRatio ?? "16:9";
-  const style: ImageStyle = params.style === "digital-art" ? "illustration" : (params.style ?? "editorial");
+  const style: ImageStyle =
+    params.style === "digital-art" ? "illustration" : (params.style ?? "editorial");
 
   // Prepend quality prefix for editorial-grade output
   const enhancedPrompt = `Professional social media image, high quality, modern design: ${params.prompt}`;

@@ -58,30 +58,22 @@ export function UserProfile({ user: initialUser }: UserProfileProps = {}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="size-8 cursor-pointer hover:opacity-80 transition-opacity">
+        <Avatar className="size-8 cursor-pointer transition-opacity hover:opacity-80">
           <AvatarImage
             src={user.image || ""}
             alt={user.name || "User"}
             referrerPolicy="no-referrer"
           />
           <AvatarFallback>
-            {(
-              user.name?.[0] ||
-              user.email?.[0] ||
-              "U"
-            ).toUpperCase()}
+            {(user.name?.[0] || user.email?.[0] || "U").toUpperCase()}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {user.name}
-            </p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
-            </p>
+            <p className="text-sm leading-none font-medium">{user.name}</p>
+            <p className="text-muted-foreground text-xs leading-none">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

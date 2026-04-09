@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     // Only set if not already set
     const currentUser = await db.query.user.findFirst({
       where: eq(user.id, session.user.id),
-      columns: { referredBy: true }
+      columns: { referredBy: true },
     });
 
     if (currentUser?.referredBy) {
@@ -36,9 +36,7 @@ export async function POST(req: Request) {
     }
 
     // Update user
-    await db.update(user)
-      .set({ referredBy: referrerId })
-      .where(eq(user.id, session.user.id));
+    await db.update(user).set({ referredBy: referrerId }).where(eq(user.id, session.user.id));
 
     // Optional: Add credits to referrer here or via a separate event listener
     // For now, just link them.

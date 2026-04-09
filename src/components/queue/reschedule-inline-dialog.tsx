@@ -43,21 +43,16 @@ export function RescheduleInlineDialog({
           aria-label={ariaLabel ?? "Reschedule post"}
           className="text-muted-foreground hover:text-foreground"
         >
-          <CalendarClock className="h-4 w-4 mr-1" />
+          <CalendarClock className="mr-1 h-4 w-4" />
           Reschedule
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Reschedule Post</DialogTitle>
-          <DialogDescription>
-            Pick a new date and time to publish this post.
-          </DialogDescription>
+          <DialogDescription>Pick a new date and time to publish this post.</DialogDescription>
         </DialogHeader>
-        <ReschedulePostForm
-          postId={postId}
-          initialDate={toDatetimeLocal(scheduledAt)}
-        />
+        <ReschedulePostForm postId={postId} initialDate={toDatetimeLocal(scheduledAt)} />
       </DialogContent>
     </Dialog>
   );

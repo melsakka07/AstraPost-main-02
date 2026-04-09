@@ -153,7 +153,12 @@ export function PricingTable({ currentPlan, isLoggedIn = false }: PricingTablePr
   const router = useRouter();
   const [isAnnual, setIsAnnual] = useState(false);
   const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [changePlanDialog, setChangePlanDialog] = useState<{ open: boolean; plan: string; planLabel: string; isUpgrade: boolean }>({
+  const [changePlanDialog, setChangePlanDialog] = useState<{
+    open: boolean;
+    plan: string;
+    planLabel: string;
+    isUpgrade: boolean;
+  }>({
     open: false,
     plan: "",
     planLabel: "",
@@ -222,18 +227,22 @@ export function PricingTable({ currentPlan, isLoggedIn = false }: PricingTablePr
   return (
     <div className="flex flex-col items-center gap-13 py-8">
       <div className="flex items-center gap-4">
-        <Label htmlFor="billing-interval" className={!isAnnual ? "font-bold" : "text-muted-foreground"}>Monthly</Label>
-        <Switch
-          id="billing-interval"
-          checked={isAnnual}
-          onCheckedChange={setIsAnnual}
-        />
-        <Label htmlFor="billing-interval" className={isAnnual ? "font-bold" : "text-muted-foreground"}>
-          Annual <span className="text-xs text-primary ml-1">(Save 17%)</span>
+        <Label
+          htmlFor="billing-interval"
+          className={!isAnnual ? "font-bold" : "text-muted-foreground"}
+        >
+          Monthly
+        </Label>
+        <Switch id="billing-interval" checked={isAnnual} onCheckedChange={setIsAnnual} />
+        <Label
+          htmlFor="billing-interval"
+          className={isAnnual ? "font-bold" : "text-muted-foreground"}
+        >
+          Annual <span className="text-primary ml-1 text-xs">(Save 17%)</span>
         </Label>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 w-full max-w-5xl px-4">
+      <div className="grid w-full max-w-5xl gap-8 px-4 md:grid-cols-3">
         {plans.map((plan) => (
           <PricingCard
             key={plan.priceId}

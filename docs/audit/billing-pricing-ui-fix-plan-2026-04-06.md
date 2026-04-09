@@ -3,6 +3,7 @@
 > **Date**: 2026-04-06
 > **Scope**: Frontend only (2 files) — no backend, DB, or Stripe changes needed
 > **Files**:
+>
 > - `src/components/billing/pricing-card.tsx`
 > - `src/components/billing/pricing-table.tsx`
 
@@ -14,12 +15,12 @@ A user on `pro_monthly` visiting `/pricing` sees **both** Free and Pro cards lab
 
 **Root cause**: The pricing UI compares `currentPlan` (from DB) against card `priceId` values using simple string equality, but DB plan values don't always match card priceIds:
 
-| DB `user.plan` values | Card `priceId` values |
-|---|---|
-| `free` | `free` |
-| `pro_monthly` | `pro_monthly`, `pro_annual` |
-| `pro_annual` | `pro_monthly`, `pro_annual` |
-| `agency` | `agency_monthly`, `agency_annual` |
+| DB `user.plan` values | Card `priceId` values             |
+| --------------------- | --------------------------------- |
+| `free`                | `free`                            |
+| `pro_monthly`         | `pro_monthly`, `pro_annual`       |
+| `pro_annual`          | `pro_monthly`, `pro_annual`       |
+| `agency`              | `agency_monthly`, `agency_annual` |
 
 ---
 
@@ -97,28 +98,28 @@ getTierRank(plan) → returns numeric tier rank
 
 Replace the single `isCurrent` boolean with tier-aware logic:
 
-| User's DB Plan | Card priceId | Tab | Button Label | Disabled? | Click Action |
-|---|---|---|---|---|---|
-| `free` | `free` | any | Get Started | Yes | — |
-| `free` | `pro_monthly` | monthly | Upgrade to Pro | No | Checkout |
-| `free` | `pro_annual` | annual | Upgrade to Pro | No | Checkout |
-| `free` | `agency_monthly` | monthly | Upgrade to Agency | No | Checkout |
-| `free` | `agency_annual` | annual | Upgrade to Agency | No | Checkout |
-| `pro_monthly` | `free` | any | Downgrade | No | Portal |
-| `pro_monthly` | `pro_monthly` | monthly | Current Plan | Yes | — |
-| `pro_monthly` | `pro_annual` | annual | Switch to Annual | No | Portal |
-| `pro_monthly` | `agency_monthly` | monthly | Upgrade to Agency | No | Portal |
-| `pro_monthly` | `agency_annual` | annual | Upgrade to Agency | No | Portal |
-| `pro_annual` | `free` | any | Downgrade | No | Portal |
-| `pro_annual` | `pro_monthly` | monthly | Switch to Monthly | No | Portal |
-| `pro_annual` | `pro_annual` | annual | Current Plan | Yes | — |
-| `pro_annual` | `agency_monthly` | monthly | Upgrade to Agency | No | Portal |
-| `pro_annual` | `agency_annual` | annual | Upgrade to Agency | No | Portal |
-| `agency` | `free` | any | Downgrade | No | Portal |
-| `agency` | `pro_monthly` | monthly | Downgrade | No | Portal |
-| `agency` | `pro_annual` | annual | Downgrade | No | Portal |
-| `agency` | `agency_monthly` | monthly | Manage Plan | No | Portal |
-| `agency` | `agency_annual` | annual | Manage Plan | No | Portal |
+| User's DB Plan | Card priceId     | Tab     | Button Label      | Disabled? | Click Action |
+| -------------- | ---------------- | ------- | ----------------- | --------- | ------------ |
+| `free`         | `free`           | any     | Get Started       | Yes       | —            |
+| `free`         | `pro_monthly`    | monthly | Upgrade to Pro    | No        | Checkout     |
+| `free`         | `pro_annual`     | annual  | Upgrade to Pro    | No        | Checkout     |
+| `free`         | `agency_monthly` | monthly | Upgrade to Agency | No        | Checkout     |
+| `free`         | `agency_annual`  | annual  | Upgrade to Agency | No        | Checkout     |
+| `pro_monthly`  | `free`           | any     | Downgrade         | No        | Portal       |
+| `pro_monthly`  | `pro_monthly`    | monthly | Current Plan      | Yes       | —            |
+| `pro_monthly`  | `pro_annual`     | annual  | Switch to Annual  | No        | Portal       |
+| `pro_monthly`  | `agency_monthly` | monthly | Upgrade to Agency | No        | Portal       |
+| `pro_monthly`  | `agency_annual`  | annual  | Upgrade to Agency | No        | Portal       |
+| `pro_annual`   | `free`           | any     | Downgrade         | No        | Portal       |
+| `pro_annual`   | `pro_monthly`    | monthly | Switch to Monthly | No        | Portal       |
+| `pro_annual`   | `pro_annual`     | annual  | Current Plan      | Yes       | —            |
+| `pro_annual`   | `agency_monthly` | monthly | Upgrade to Agency | No        | Portal       |
+| `pro_annual`   | `agency_annual`  | annual  | Upgrade to Agency | No        | Portal       |
+| `agency`       | `free`           | any     | Downgrade         | No        | Portal       |
+| `agency`       | `pro_monthly`    | monthly | Downgrade         | No        | Portal       |
+| `agency`       | `pro_annual`     | annual  | Downgrade         | No        | Portal       |
+| `agency`       | `agency_monthly` | monthly | Manage Plan       | No        | Portal       |
+| `agency`       | `agency_annual`  | annual  | Manage Plan       | No        | Portal       |
 
 > **Note on Agency**: DB stores `"agency"` without cycle suffix, so we can't determine if the user is on monthly or annual. Both agency cards show "Manage Plan" and link to the portal where the user can see their exact billing cycle.
 

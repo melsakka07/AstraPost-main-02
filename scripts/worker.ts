@@ -1,7 +1,19 @@
 import "dotenv/config";
 import { Worker } from "bullmq";
-import { connection, scheduleQueue, analyticsQueue, xTierRefreshQueue, tokenHealthQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
-import { scheduleProcessor, analyticsProcessor, refreshXTiersProcessor, tokenHealthProcessor } from "@/lib/queue/processors";
+import {
+  connection,
+  scheduleQueue,
+  analyticsQueue,
+  xTierRefreshQueue,
+  tokenHealthQueue,
+  SCHEDULE_JOB_OPTIONS,
+} from "@/lib/queue/client";
+import {
+  scheduleProcessor,
+  analyticsProcessor,
+  refreshXTiersProcessor,
+  tokenHealthProcessor,
+} from "@/lib/queue/processors";
 import "@/lib/env";
 import { logger } from "@/lib/logger";
 
@@ -10,13 +22,13 @@ logger.info("worker_started", {
   nodeEnv: process.env.NODE_ENV,
 });
 
-console.log(`\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue', 'analytics-queue', 'x-tier-refresh-queue', and 'token-health-queue'...\nPress Ctrl+C to exit.\n`);
-
-const scheduleWorker = new Worker(
-  "schedule-queue",
-  scheduleProcessor,
-  { connection: connection as any }
+console.log(
+  `\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue', 'analytics-queue', 'x-tier-refresh-queue', and 'token-health-queue'...\nPress Ctrl+C to exit.\n`
 );
+
+const scheduleWorker = new Worker("schedule-queue", scheduleProcessor, {
+  connection: connection as any,
+});
 
 scheduleWorker.on("completed", (job) => {
   logger.info("job_completed", {
@@ -73,11 +85,9 @@ scheduleWorker.on("failed", (job, err) => {
   }
 });
 
-const analyticsWorker = new Worker(
-  "analytics-queue",
-  analyticsProcessor,
-  { connection: connection as any }
-);
+const analyticsWorker = new Worker("analytics-queue", analyticsProcessor, {
+  connection: connection as any,
+});
 
 analyticsWorker.on("completed", (job) => {
   logger.info("job_completed", {
@@ -123,21 +133,25 @@ analyticsWorker.on("failed", (job, err) => {
 });
 
 // Init Repeatable Job
-analyticsQueue.add("update-metrics", {}, {
-    repeat: {
-        every: 6 * 60 * 60 * 1000 // 6 hours
-    },
-    jobId: "analytics-job"
-}).catch(console.error);
+analyticsQueue
+  .add(
+    "update-metrics",
+    {},
+    {
+      repeat: {
+        every: 6 * 60 * 60 * 1000, // 6 hours
+      },
+      jobId: "analytics-job",
+    }
+  )
+  .catch(console.error);
 
 // ── X Tier Refresh Worker ───────────────────────────────────────────────────
 // Runs daily at 4 AM UTC to refresh X subscription tiers for all connected
 // accounts whose cached tier data is stale (>24h old) or never fetched.
-const xTierRefreshWorker = new Worker(
-  "x-tier-refresh-queue",
-  refreshXTiersProcessor,
-  { connection: connection as any },
-);
+const xTierRefreshWorker = new Worker("x-tier-refresh-queue", refreshXTiersProcessor, {
+  connection: connection as any,
+});
 
 xTierRefreshWorker.on("completed", (job) => {
   logger.info("job_completed", {
@@ -162,23 +176,23 @@ xTierRefreshWorker.on("failed", (job, err) => {
 });
 
 // Schedule daily tier refresh at 4 AM UTC — low-traffic window.
-xTierRefreshQueue.add(
-  "refresh-x-tiers",
-  { triggeredBy: "scheduler" },
-  {
-    repeat: { pattern: "0 4 * * *" }, // 4:00 AM UTC daily
-    removeOnComplete: { count: 50 },
-    removeOnFail: { count: 20 },
-  },
-).catch(console.error);
+xTierRefreshQueue
+  .add(
+    "refresh-x-tiers",
+    { triggeredBy: "scheduler" },
+    {
+      repeat: { pattern: "0 4 * * *" }, // 4:00 AM UTC daily
+      removeOnComplete: { count: 50 },
+      removeOnFail: { count: 20 },
+    }
+  )
+  .catch(console.error);
 
 // ── Token Health Check Worker ───────────────────────────────────────────────────
 // Runs daily at 2 AM UTC to check for X account tokens expiring within 48 hours.
-const tokenHealthWorker = new Worker(
-  "token-health-queue",
-  tokenHealthProcessor,
-  { connection: connection as any },
-);
+const tokenHealthWorker = new Worker("token-health-queue", tokenHealthProcessor, {
+  connection: connection as any,
+});
 
 tokenHealthWorker.on("completed", (job) => {
   logger.info("job_completed", {
@@ -203,15 +217,17 @@ tokenHealthWorker.on("failed", (job, err) => {
 });
 
 // Schedule daily token health check at 2 AM UTC — before tier refresh.
-tokenHealthQueue.add(
-  "token-health-check",
-  {},
-  {
-    repeat: { pattern: "0 2 * * *" }, // 2:00 AM UTC daily
-    removeOnComplete: { count: 50 },
-    removeOnFail: { count: 20 },
-  },
-).catch(console.error);
+tokenHealthQueue
+  .add(
+    "token-health-check",
+    {},
+    {
+      repeat: { pattern: "0 2 * * *" }, // 2:00 AM UTC daily
+      removeOnComplete: { count: 50 },
+      removeOnFail: { count: 20 },
+    }
+  )
+  .catch(console.error);
 
 const shutdown = async (signal: string) => {
   logger.warn(`${signal}_received`, {

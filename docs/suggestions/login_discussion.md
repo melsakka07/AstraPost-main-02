@@ -1,6 +1,6 @@
 Discussion:
 
-Question 1: Why did this issue happen in the first place, given that the user had a fresh login to the system using their X account? Why was the token not updated once the user logged in? 
+Question 1: Why did this issue happen in the first place, given that the user had a fresh login to the system using their X account? Why was the token not updated once the user logged in?
 
 Answer 1:
 
@@ -11,7 +11,7 @@ The key lies in understanding that **the application almost certainly maintains 
 
 **Session 1: Authentication (Login).** When the user logs into AstraPost using "Sign in with X," the application initiates an OAuth 2.0 flow whose sole purpose is to verify the user's identity. The system receives tokens scoped to answer the question "who is this person?" It uses those tokens to create or resume an application session — typically a session cookie or a JWT stored in the browser. Once the user is logged in, this job is done. These tokens may be short-lived or even discarded after the session is established, because the app doesn't need them anymore for login purposes.
 
-**Session 2: API Integration (Posting).** When the user goes to Settings and clicks "Connect X Account," the application initiates a *different* OAuth 2.0 flow. This one requests elevated scopes like `tweet.read`, `tweet.write`, and critically, `offline.access`. The `offline.access` scope is what grants the long-lived Refresh Token that the background worker needs to post tweets on the user's behalf at 2 AM when the user isn't even online. These tokens are encrypted and stored in the `xAccounts` database table — the `accessToken` and `refreshTokenEnc` fields mentioned in the report.
+**Session 2: API Integration (Posting).** When the user goes to Settings and clicks "Connect X Account," the application initiates a _different_ OAuth 2.0 flow. This one requests elevated scopes like `tweet.read`, `tweet.write`, and critically, `offline.access`. The `offline.access` scope is what grants the long-lived Refresh Token that the background worker needs to post tweets on the user's behalf at 2 AM when the user isn't even online. These tokens are encrypted and stored in the `xAccounts` database table — the `accessToken` and `refreshTokenEnc` fields mentioned in the report.
 
 These two sessions are **completely independent of each other.** When the user logged out and logged back in via X, they refreshed Session 1 — the authentication session. The application verified their identity, issued a new app session, and let them into the dashboard. But this login flow never touches the `xAccounts` table. It has no reason to. The tokens stored there for the background worker are a separate credential entirely.
 
@@ -21,7 +21,7 @@ This is why the fix requires the user to go to Settings and explicitly **reconne
 
 **Could this be designed better?** Absolutely. If the application detected during the login flow that the user's associated `xAccounts` record has `isActive === false`, it could immediately prompt the user to re-authorize posting permissions right then and there — or even combine both flows into a single OAuth request that covers both authentication and API integration scopes. That would eliminate the confusion entirely. As it stands, though, the two flows are separate, and that's why a fresh login doesn't solve the problem.
 
-Question 2: 
+Question 2:
 
 Can you please elaborate more and provide all the technical details and architecture required to achieve this: "combine both flows into a single OAuth request that covers both authentication and API integration scopes" ? Please also—if it is doable—highlight how it would be feasible to fix this issue by maintains two separate OAuth sessions Session 1: Authentication (Login) and Session 2: API Integration (Posting) ?
 
@@ -46,18 +46,18 @@ Currently, the login flow probably requests something minimal like `tweet.read u
 **Step 1: Define the Unified Scope Set.**
 
 In your authentication configuration — likely in a file such as `src/lib/auth.ts` or wherever the OAuth provider is configured (e.g., using a library like `better-auth`, `next-auth`, or a custom implementation) — you need to ensure the scope string includes everything both flows currently request independently.
- 
+
 ```typescript
 // The below snippet is for example only. please verify the real code in the code base.
 // src/lib/auth.ts (or equivalent auth configuration)
 
 const UNIFIED_X_SCOPES = [
-  "tweet.read",      // Read tweets (needed for identity + integration)
-  "tweet.write",     // Post tweets (needed for scheduled posting)
-  "users.read",      // Read user profile (needed for identity)
-  "offline.access",  // Issue a long-lived Refresh Token (critical for background worker)
-  "list.read",       // Optional: if the app reads lists
-  "like.write",      // Optional: if the app manages likes
+  "tweet.read", // Read tweets (needed for identity + integration)
+  "tweet.write", // Post tweets (needed for scheduled posting)
+  "users.read", // Read user profile (needed for identity)
+  "offline.access", // Issue a long-lived Refresh Token (critical for background worker)
+  "list.read", // Optional: if the app reads lists
+  "like.write", // Optional: if the app manages likes
 ].join(" ");
 ```
 
@@ -88,18 +88,24 @@ async function handleXOAuthCallback(code: string, codeVerifier: string) {
 
   // 3. PURPOSE A — Authentication: Create or resume the app session
   //    Look up the internal user by their X ID. Create one if this is a new signup.
-  let user = await db.select().from(users)
+  let user = await db
+    .select()
+    .from(users)
     .where(eq(users.xId, xUser.data.id))
     .limit(1)
-    .then(rows => rows[0]);
+    .then((rows) => rows[0]);
 
   if (!user) {
-    user = await db.insert(users).values({
-      xId: xUser.data.id,
-      username: xUser.data.username,
-      name: xUser.data.name,
-      avatarUrl: xUser.data.profile_image_url,
-    }).returning().then(rows => rows[0]);
+    user = await db
+      .insert(users)
+      .values({
+        xId: xUser.data.id,
+        username: xUser.data.username,
+        name: xUser.data.name,
+        avatarUrl: xUser.data.profile_image_url,
+      })
+      .returning()
+      .then((rows) => rows[0]);
   }
 
   // Issue the application session (cookie, JWT, etc.)
@@ -111,20 +117,25 @@ async function handleXOAuthCallback(code: string, codeVerifier: string) {
   const encryptedAccessToken = encrypt(accessToken);
   const encryptedRefreshToken = encrypt(refreshToken);
 
-  const existingXAccount = await db.select().from(xAccounts)
+  const existingXAccount = await db
+    .select()
+    .from(xAccounts)
     .where(eq(xAccounts.userId, user.id))
     .limit(1)
-    .then(rows => rows[0]);
+    .then((rows) => rows[0]);
 
   if (existingXAccount) {
     // Update the existing record with fresh tokens
-    await db.update(xAccounts).set({
-      accessTokenEnc: encryptedAccessToken,
-      refreshTokenEnc: encryptedRefreshToken,
-      tokenExpiresAt: new Date(Date.now() + expiresIn * 1000),
-      isActive: true, // Re-activate if it was previously marked inactive
-      lastRefreshedAt: new Date(),
-    }).where(eq(xAccounts.id, existingXAccount.id));
+    await db
+      .update(xAccounts)
+      .set({
+        accessTokenEnc: encryptedAccessToken,
+        refreshTokenEnc: encryptedRefreshToken,
+        tokenExpiresAt: new Date(Date.now() + expiresIn * 1000),
+        isActive: true, // Re-activate if it was previously marked inactive
+        lastRefreshedAt: new Date(),
+      })
+      .where(eq(xAccounts.id, existingXAccount.id));
   } else {
     // First time: create the xAccounts record
     await db.insert(xAccounts).values({
@@ -185,10 +196,12 @@ After the user successfully authenticates (Session 1 completes), but before redi
 
 async function postLoginHealthCheck(userId: string): Promise<TokenHealthStatus> {
   // Fetch the user's X integration account
-  const xAccount = await db.select().from(xAccounts)
+  const xAccount = await db
+    .select()
+    .from(xAccounts)
     .where(eq(xAccounts.userId, userId))
     .limit(1)
-    .then(rows => rows[0]);
+    .then((rows) => rows[0]);
 
   // Case 1: No integration exists yet. User has never connected for posting.
   if (!xAccount) {
@@ -200,7 +213,7 @@ async function postLoginHealthCheck(userId: string): Promise<TokenHealthStatus> 
     return { status: "needs_reconnect", xAccountId: xAccount.id };
   }
 
-  // Case 3: Integration exists and is marked active. 
+  // Case 3: Integration exists and is marked active.
   //         But is the token actually still valid? Test it.
   try {
     const decryptedAccessToken = decrypt(xAccount.accessTokenEnc);
@@ -220,26 +233,30 @@ async function postLoginHealthCheck(userId: string): Promise<TokenHealthStatus> 
         clientSecret: process.env.X_CLIENT_SECRET,
       });
 
-      const refreshResult = await client.refreshOAuth2Token(
-        decrypt(xAccount.refreshTokenEnc)
-      );
+      const refreshResult = await client.refreshOAuth2Token(decrypt(xAccount.refreshTokenEnc));
 
       // Refresh succeeded. Update the database.
-      await db.update(xAccounts).set({
-        accessTokenEnc: encrypt(refreshResult.accessToken),
-        refreshTokenEnc: encrypt(refreshResult.refreshToken),
-        tokenExpiresAt: new Date(Date.now() + refreshResult.expiresIn * 1000),
-        isActive: true,
-        lastRefreshedAt: new Date(),
-      }).where(eq(xAccounts.id, xAccount.id));
+      await db
+        .update(xAccounts)
+        .set({
+          accessTokenEnc: encrypt(refreshResult.accessToken),
+          refreshTokenEnc: encrypt(refreshResult.refreshToken),
+          tokenExpiresAt: new Date(Date.now() + refreshResult.expiresIn * 1000),
+          isActive: true,
+          lastRefreshedAt: new Date(),
+        })
+        .where(eq(xAccounts.id, xAccount.id));
 
       return { status: "refreshed" };
     } catch (refreshError) {
       // Both the access token and the refresh token are dead.
       // Mark the account as inactive.
-      await db.update(xAccounts).set({
-        isActive: false,
-      }).where(eq(xAccounts.id, xAccount.id));
+      await db
+        .update(xAccounts)
+        .set({
+          isActive: false,
+        })
+        .where(eq(xAccounts.id, xAccount.id));
 
       return { status: "needs_reconnect", xAccountId: xAccount.id };
     }
@@ -304,18 +321,15 @@ export function ReconnectPrompt({ xUsername }: { xUsername: string }) {
         <DialogHeader>
           <DialogTitle>Reconnect Your X Account</DialogTitle>
           <DialogDescription>
-            Your connection to @{xUsername} has expired. Scheduled posts 
-            cannot be published until you reauthorize. This takes about 
-            10 seconds.
+            Your connection to @{xUsername} has expired. Scheduled posts cannot be published until
+            you reauthorize. This takes about 10 seconds.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={handleDismiss}>
             Remind Me Later
           </Button>
-          <Button onClick={handleReconnect}>
-            Reconnect Now
-          </Button>
+          <Button onClick={handleReconnect}>Reconnect Now</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

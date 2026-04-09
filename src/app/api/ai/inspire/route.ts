@@ -60,7 +60,11 @@ const ACTION_SYSTEM_PROMPTS: Record<
   string,
   (tone?: string, language?: string, userContext?: string) => string
 > = {
-  rephrase: (tone, language, userContext) => `You are helping a user create original content inspired by an existing tweet.
+  rephrase: (
+    tone,
+    language,
+    userContext
+  ) => `You are helping a user create original content inspired by an existing tweet.
 
 IMPORTANT: Never plagiarize. Always produce substantially different text that adds new value, perspective, or creative expression. The output should be the user's own voice, not a copy.
 
@@ -72,7 +76,11 @@ ${userContext ? `User context: ${userContext}` : ""}
 
 Return ONLY the rephrased tweet text. No explanation or additional text.`,
 
-  change_tone: (tone, language, userContext) => `You are helping a user adapt a tweet's tone while keeping the core message.
+  change_tone: (
+    tone,
+    language,
+    userContext
+  ) => `You are helping a user adapt a tweet's tone while keeping the core message.
 
 IMPORTANT: Never plagiarize. Always produce substantially different text that adds new value or perspective. The output should be the user's own voice.
 
@@ -84,7 +92,11 @@ ${userContext ? `User context: ${userContext}` : ""}
 
 Return ONLY the adapted tweet text. No explanation or additional text.`,
 
-  expand_thread: (tone, language, userContext) => `You are helping a user expand a single tweet into an engaging thread.
+  expand_thread: (
+    tone,
+    language,
+    userContext
+  ) => `You are helping a user expand a single tweet into an engaging thread.
 
 IMPORTANT: Never plagiarize. Build upon the original idea with substantial new content, perspective, and value.
 
@@ -102,7 +114,11 @@ Thread structure:
 Return ONLY the thread tweets, one per line, separated by |||.
 Example: First tweet hook...|||Second tweet...|||Third tweet...`,
 
-  add_take: (tone, language, userContext) => `You are helping a user add their personal perspective to an existing tweet idea.
+  add_take: (
+    tone,
+    language,
+    userContext
+  ) => `You are helping a user add their personal perspective to an existing tweet idea.
 
 IMPORTANT: Never plagiarize. The output should include the user's unique opinion, experience, or insight that adds new value beyond the original.
 
@@ -114,7 +130,11 @@ ${userContext ? `User's perspective to inject: ${userContext}` : ""}
 
 Return ONLY the adapted tweet text. No explanation or additional text.`,
 
-  translate: (_tone, language, userContext) => `You are helping a user translate a tweet while adapting cultural references appropriately.
+  translate: (
+    _tone,
+    language,
+    userContext
+  ) => `You are helping a user translate a tweet while adapting cultural references appropriately.
 
 IMPORTANT: This is NOT a literal translation. Adapt expressions, idioms, and cultural references to make sense in the target language.
 
@@ -125,7 +145,11 @@ ${userContext ? `User context: ${userContext}` : ""}
 
 Return ONLY the translated and adapted tweet text. No explanation or additional text.`,
 
-  counter_point: (tone, language, userContext) => `You are helping a user create a respectful counter-argument or alternative viewpoint to an existing tweet.
+  counter_point: (
+    tone,
+    language,
+    userContext
+  ) => `You are helping a user create a respectful counter-argument or alternative viewpoint to an existing tweet.
 
 IMPORTANT: Never plagiarize. The output should present a different perspective that adds value to the conversation. Be respectful and constructive.
 
@@ -209,7 +233,10 @@ export async function POST(req: NextRequest) {
     // 10. Parse response based on action
     const tweets =
       action === "expand_thread"
-        ? text.split("|||").map((t) => t.trim()).filter((t) => t.length > 0)
+        ? text
+            .split("|||")
+            .map((t) => t.trim())
+            .filter((t) => t.length > 0)
         : [text.trim()];
 
     // 11. Record usage (standardised path — previously inlined db.insert)
@@ -226,7 +253,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("AI inspire error:", error);
     return NextResponse.json(
-      { error: "Failed to generate inspired content", message: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to generate inspired content",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

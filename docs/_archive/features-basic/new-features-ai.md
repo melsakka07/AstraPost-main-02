@@ -9,27 +9,27 @@
 - New backend service: `src/lib/services/ai-image.ts` — a provider-agnostic image generation abstraction.
 - Supported AI image models (user-selectable):
 
-| Model | Provider | Strengths | Best For |
-|-------|----------|-----------|----------|
-| **Nano Banana 2** | Gemini Nano | Fast, efficient, advanced reasoning, multi-image fusion | High-volume daily posting, quick iterations |
-| **Banana Pro** | Gemini Nano Pro | State-of-the-art generation + editing, character/style consistency | Premium visual content, brand consistency |
-| **Google Gemini (Imagen 4)** | Google | Highest quality, latest model | Hero images, marketing visuals |
+| Model                        | Provider        | Strengths                                                          | Best For                                    |
+| ---------------------------- | --------------- | ------------------------------------------------------------------ | ------------------------------------------- |
+| **Nano Banana 2**            | Gemini Nano     | Fast, efficient, advanced reasoning, multi-image fusion            | High-volume daily posting, quick iterations |
+| **Banana Pro**               | Gemini Nano Pro | State-of-the-art generation + editing, character/style consistency | Premium visual content, brand consistency   |
+| **Google Gemini (Imagen 4)** | Google          | Highest quality, latest model                                      | Hero images, marketing visuals              |
 
 - Each provider implementation wraps its respective API endpoint and returns a standardized `{ imageUrl: string, width: number, height: number, model: string }` response.
 - Model selection stored in user preferences (`user.preferredImageModel text` column) with a per-generation override in the UI.
 - Image generation quota tied to plan limits:
 
-| Plan | AI Images/Month | Available Models |
-|------|----------------|------------------|
-| Free | 3 | Nano Banana 2 only |
-| Pro ($29/mo) | 50 | All models |
-| Agency ($99/mo) | Unlimited | All models + priority queue |
+| Plan            | AI Images/Month | Available Models            |
+| --------------- | --------------- | --------------------------- |
+| Free            | 3               | Nano Banana 2 only          |
+| Pro ($29/mo)    | 50              | All models                  |
+| Agency ($99/mo) | Unlimited       | All models + priority queue |
 
 #### 3.8.2 Composer Integration — "Generate Image" Flow
 
 - New **"AI Image"** button added to each tweet card's footer in the Composer (alongside the existing media upload and AI rewrite buttons).
 - Clicking opens a `<Dialog>` component (`src/components/composer/ai-image-dialog.tsx`) with:
-  - **Auto-populated prompt**: Derived from the tweet's text content. The system sends the tweet text to the AI with a meta-prompt: *"Generate a vivid, specific image prompt that visually represents this tweet's message, suitable for social media."*
+  - **Auto-populated prompt**: Derived from the tweet's text content. The system sends the tweet text to the AI with a meta-prompt: _"Generate a vivid, specific image prompt that visually represents this tweet's message, suitable for social media."_
   - **Manual prompt override**: Users can edit or replace the auto-generated prompt.
   - **Model selector**: Dropdown to choose between Nano Banana 2, Banana Pro, or Google Gemini (Imagen 4). Defaults to user's preferred model.
   - **Aspect ratio selector**: 1:1 (square — ideal for X cards), 16:9 (landscape), 4:3 (standard).
@@ -74,11 +74,13 @@
 - "Use for all tweets" option in threads — apply the same image style/prompt pattern across all thread tweets.
 
 **Schema Changes**:
+
 - Add `preferredImageModel text` column to `user` table (default: `"nano-banana-2"`).
 - Add new rate limit category `"ai_image"` to `src/lib/rate-limiter.ts`.
 - Extend `aiGenerations.type` enum to include `"image"`.
 
 **Files Involved**:
+
 - New `src/lib/services/ai-image.ts` (provider abstraction + model implementations)
 - New `src/app/api/ai/image/route.ts` (API endpoint)
 - New `src/components/composer/ai-image-dialog.tsx` (generation UI dialog)
@@ -131,7 +133,7 @@
 
 - New page: `src/app/dashboard/inspiration/page.tsx` — accessible from the sidebar navigation.
 - **URL Input Section**:
-  - Prominent input field with placeholder: *"Paste a tweet URL to get inspired..."*
+  - Prominent input field with placeholder: _"Paste a tweet URL to get inspired..."_
   - "Import" button that triggers the fetch.
   - URL validation with immediate feedback (invalid format, private account, deleted tweet).
   - Loading skeleton while the tweet is being fetched.
@@ -150,15 +152,14 @@
   **Path B — AI-Assisted Enhancement:**
   - "Enhance with AI" button opens an AI adaptation panel with multiple options:
 
-  | AI Action | Description | API Endpoint |
-  |-----------|-------------|-------------|
-  | **Rephrase** | Rewrite in different words while preserving the core message | `POST /api/ai/inspire` |
-  | **Change Tone** | Adapt to a different tone (professional → casual, etc.) | `POST /api/ai/inspire` |
-  | **Expand to Thread** | Turn a single tweet into a multi-tweet thread elaborating on the idea | `POST /api/ai/inspire` |
-  | **Add Personal Take** | Inject the user's perspective/opinion onto the original idea | `POST /api/ai/inspire` |
-  | **Translate & Adapt** | Translate to another language while adapting cultural references | `POST /api/ai/inspire` |
-  | **Create Counter-Point** | Generate a respectful counter-argument or alternative viewpoint | `POST /api/ai/inspire` |
-
+  | AI Action                | Description                                                           | API Endpoint           |
+  | ------------------------ | --------------------------------------------------------------------- | ---------------------- |
+  | **Rephrase**             | Rewrite in different words while preserving the core message          | `POST /api/ai/inspire` |
+  | **Change Tone**          | Adapt to a different tone (professional → casual, etc.)               | `POST /api/ai/inspire` |
+  | **Expand to Thread**     | Turn a single tweet into a multi-tweet thread elaborating on the idea | `POST /api/ai/inspire` |
+  | **Add Personal Take**    | Inject the user's perspective/opinion onto the original idea          | `POST /api/ai/inspire` |
+  | **Translate & Adapt**    | Translate to another language while adapting cultural references      | `POST /api/ai/inspire` |
+  | **Create Counter-Point** | Generate a respectful counter-argument or alternative viewpoint       | `POST /api/ai/inspire` |
   - Each action uses the full imported context (original tweet + thread + replies) as input to produce more contextually aware output.
   - Tone selector (professional, casual, humorous, educational, inspirational, viral) — shared with existing AI tools.
   - Language selector (Arabic/English + future multi-language from feature 3.6).
@@ -180,7 +181,7 @@
     }
     ```
   - Uses existing OpenRouter integration (`@openrouter/ai-sdk-provider`) with model from `OPENROUTER_MODEL` env var.
-  - AI system prompt includes ethical guardrails: *"You are helping a user create original content inspired by an existing tweet. Never plagiarize — always produce substantially different text that adds new value, perspective, or creative expression. The output should be the user's own voice, not a copy."*
+  - AI system prompt includes ethical guardrails: _"You are helping a user create original content inspired by an existing tweet. Never plagiarize — always produce substantially different text that adds new value, perspective, or creative expression. The output should be the user's own voice, not a copy."_
   - Returns `{ tweets: string[], action: string, sourceTweetId: string }` — single tweet or thread array.
   - Auth + plan gating + rate limiting + quota recording via existing middleware stack.
 
@@ -215,15 +216,17 @@
 - **No direct copy**: The "Send to Composer" button is disabled if the text matches the original tweet by more than 80% (Levenshtein similarity check in the frontend).
 - **Attribution suggestion**: When adapted content is close to the source, suggest adding "Inspired by @{handle}" or a quote-tweet format.
 - **Source tracking**: The `posts` table can optionally store `inspiredByTweetId text` to maintain provenance (not displayed publicly, for internal analytics only).
-- **Content policy notice**: Small disclaimer on the Inspiration page: *"Create original content inspired by trending ideas. Always add your unique perspective."*
+- **Content policy notice**: Small disclaimer on the Inspiration page: _"Create original content inspired by trending ideas. Always add your unique perspective."_
 
 **Schema Changes**:
+
 - New `inspiration_bookmarks` table in `src/lib/schema.ts`.
 - Add optional `inspiredByTweetId text` column to `posts` table.
 - Add `"inspiration"` and `"inspire"` to `aiGenerations.type` values.
 - Add `"tweet_lookup"` rate limit category to `src/lib/rate-limiter.ts`.
 
 **Files Involved**:
+
 - New `src/lib/services/tweet-importer.ts` (tweet URL parsing + X API fetch + context retrieval)
 - New `src/app/api/x/tweet-lookup/route.ts` (tweet import API endpoint)
 - New `src/app/api/ai/inspire/route.ts` (AI adaptation API endpoint)

@@ -11,20 +11,25 @@ You are working on **AstraPost**, an AI-powered social media scheduling platform
 ### Existing Roadmap Files (read all of these first)
 
 **API Routes:**
+
 - `src/app/api/feedback/` — Roadmap feedback submission + upvoting endpoints.
 
 **Frontend:**
+
 - `src/app/(marketing)/roadmap/` or similar — Public roadmap page at `/roadmap`.
 - `src/components/roadmap/feedback-item.tsx` — Individual roadmap item card component (displays title, description, vote count, category badge, author avatar/name, vote button).
 - `src/components/roadmap/feedback-list.tsx` — List component that renders all feedback items.
 
 **Database:**
+
 - `src/lib/schema.ts` — Contains `feedback` table (roadmap items) and `feedback_votes` table (user votes on items).
 
 **Admin:**
+
 - `src/app/admin/` — Existing admin area with its own sidebar (`src/components/admin/`).
 
 ### Tech Stack (relevant subset)
+
 - **Framework:** Next.js 16 (App Router), React 19, TypeScript (strict mode)
 - **Database:** PostgreSQL 18 + Drizzle ORM
 - **Auth:** Better Auth
@@ -107,6 +112,7 @@ Transform the roadmap from an unmoderated public board into a **submission-only 
 - **View full details** — Expand the item inline or open a detail panel showing the full description, admin notes, and submission metadata.
 
 **Bulk actions (optional but recommended):**
+
 - Select multiple items with checkboxes.
 - "Approve Selected" and "Reject Selected" bulk action buttons.
 - Only available on the Pending tab.
@@ -130,6 +136,7 @@ Transform the roadmap from an unmoderated public board into a **submission-only 
   - Body: `{ ids: string[], status: "approved" | "rejected" }`
 
 **All admin routes must:**
+
 - Verify `role === "admin"` from the session.
 - Use `ApiError` from `@/lib/api/errors` for error responses.
 - Use Zod for input validation.
@@ -173,6 +180,7 @@ Follow all project conventions from `CLAUDE.md`:
 **Goal:** Schema changes, admin API routes, and submission API hardening.
 
 Tasks:
+
 1. Read all existing roadmap/feedback files: schema table, API routes, frontend components. Document what exists.
 2. Add `status`, `adminNotes`, and `reviewedAt` columns to the `feedback` table.
 3. Generate and apply the database migration.
@@ -187,6 +195,7 @@ Tasks:
 **Goal:** Strip the public roadmap page down to submission-only.
 
 Tasks:
+
 1. Remove the feedback items list, vote buttons, and all item display UI from the public `/roadmap` page.
 2. Keep and clean up the submission form (title, description, category).
 3. Add the post-submission success message/toast: "Thank you for your feedback! Our development team will review your submission."
@@ -200,6 +209,7 @@ Tasks:
 **Goal:** Build the admin review/approval interface.
 
 Tasks:
+
 1. Create `src/app/admin/roadmap/page.tsx` with admin auth protection.
 2. Build the tab filters (Pending / Approved / Rejected / All) with item counts.
 3. Build the submissions table/card list with all columns (title, description, category, author, date, status, actions).
@@ -221,26 +231,30 @@ Create `docs/features/roadmap-moderation-progress.md` at the start:
 ## Status: In Progress
 
 ## Phase 1 — Database & Backend
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 2 — Frontend: Public Roadmap Page Redesign
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 3 — Frontend: Admin Roadmap Management Page
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Changelog
+
 | Date | Phase | Change |
-|------|-------|--------|
+| ---- | ----- | ------ |
 ```
 
 ---

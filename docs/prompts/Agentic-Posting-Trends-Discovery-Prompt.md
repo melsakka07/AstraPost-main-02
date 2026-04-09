@@ -11,6 +11,7 @@ You are working on **AstraPost**. The Agentic Posting feature is already impleme
 **Why AI-powered trends instead of the X API:**
 
 The X API v2 has two trends endpoints:
+
 - **Personalized Trends** (`/2/users/personalized_trends`) — only returns data for X Premium subscribers; returns "Unknown" for Free users
 - **Trends by Location** (`/2/trends/by/woeid/:woeid`) — requires the X API Pro tier ($5,000/month)
 
@@ -31,6 +32,7 @@ GET /api/ai/trends?category=technology
 ```
 
 **Query parameters:**
+
 - `category` — one of: `technology`, `business`, `lifestyle`, `sports`, `news`, `entertainment`, `all`
 - Default: `all`
 
@@ -61,6 +63,7 @@ Format: [{ "title": "...", "description": "...", "postCount": "...", "category":
 6. Return the trends array.
 
 **Response shape:**
+
 ```json
 {
   "trends": [
@@ -125,6 +128,7 @@ Create a new `"use client"` component that renders a trending topics discovery p
 **Component design:**
 
 **Section header:**
+
 ```
 <div className="flex items-center gap-2 mt-8 mb-4">
   <TrendingUp className="h-4 w-4 text-primary" />
@@ -134,6 +138,7 @@ Create a new `"use client"` component that renders a trending topics discovery p
 ```
 
 **Category tabs** — horizontal scrollable row using shadcn/ui `ToggleGroup` or custom tabs:
+
 ```
 <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
   {categories.map(cat => (
@@ -154,6 +159,7 @@ Create a new `"use client"` component that renders a trending topics discovery p
 Categories: `All`, `Technology`, `Business`, `News`, `Lifestyle`, `Sports`, `Entertainment`
 
 **Trend cards** — compact, tappable cards:
+
 ```
 <div className="space-y-2 mt-3">
   {trends.map(trend => (
@@ -194,6 +200,7 @@ Categories: `All`, `Technology`, `Business`, `News`, `Lifestyle`, `Sports`, `Ent
 ```
 
 **Behavior:**
+
 1. **On mount:** Fetch trends for the `"all"` category. Show skeleton loaders (5 × `<Skeleton className="h-16 w-full rounded-lg" />`) while loading.
 2. **On category tap:** Fetch trends for the selected category. Show skeletons during fetch. If cached server-side (Redis), this returns instantly.
 3. **On trend card click:** Fill the topic input with `trend.title` AND start the agentic pipeline immediately (same behavior as suggestion chips).
@@ -210,6 +217,7 @@ Categories: `All`, `Technology`, `Business`, `News`, `Lifestyle`, `Sports`, `Ent
 1. **Import and render** `<AgenticTrendsPanel>` on Screen 1 (Input), positioned between the suggestion chips and the Advanced options toggle.
 
 2. **Pass the `onSelectTrend` callback** to the panel. When a trend is selected:
+
    ```typescript
    const handleSelectTrend = (topicText: string) => {
      setTopic(topicText);
@@ -219,9 +227,16 @@ Categories: `All`, `Technology`, `Business`, `News`, `Lifestyle`, `Sports`, `Ent
    ```
 
 3. **Zod schema** — add to `src/lib/schemas/common.ts`:
+
    ```typescript
    export const trendCategoryEnum = z.enum([
-     "all", "technology", "business", "news", "lifestyle", "sports", "entertainment"
+     "all",
+     "technology",
+     "business",
+     "news",
+     "lifestyle",
+     "sports",
+     "entertainment",
    ]);
    export type TrendCategory = z.infer<typeof trendCategoryEnum>;
 
@@ -235,17 +250,19 @@ Categories: `All`, `Technology`, `Business`, `News`, `Lifestyle`, `Sports`, `Ent
    ```
 
 4. **Redis caching** — in the API route, use the existing Redis connection:
+
    ```typescript
    import { redis } from "@/lib/rate-limiter"; // or wherever Redis is imported from
-   
+
    const cacheKey = `trends:${category}`;
    const cached = await redis.get(cacheKey);
    if (cached) return Response.json(JSON.parse(cached));
-   
+
    // ... AI call ...
-   
+
    await redis.setex(cacheKey, 1800, JSON.stringify(result)); // 30 min TTL
    ```
+
    Check the existing codebase for how Redis is imported and used (the tweet importer uses Redis caching with 1-hour TTL — follow that same pattern).
 
 Run `pnpm lint && pnpm typecheck`.

@@ -1,5 +1,3 @@
-
-
 # Stripe MCP Implementation Plan for AstraPost (Production)
 
 ## Overview
@@ -12,18 +10,18 @@ This plan instructs an LLM with Stripe MCP access to complete the remaining Stri
 
 ## Current State — Already Done
 
-| Item | Status |
-|---|---|
-| `STRIPE_SECRET_KEY` | ✅ Set in `.env` (production `sk_live_*`) |
-| `STRIPE_WEBHOOK_SECRET` | ✅ Set in `.env` (`whsec_*`) |
-| AstraPost Pro product | ✅ Created (`prod_UDLVJC0QQ35iMC`) |
-| AstraPost Pro Annual product | ✅ Created (`prod_UDLV9HcYRBM36k`) |
-| AstraPost Agency Monthly product | ✅ Created (`prod_UDLVHs1ePIlrG5`) |
-| AstraPost Agency Annual product | ✅ Created (`prod_UDLVSCcSpjBaNo`) |
-| Pro Monthly — $29/mo | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_MONTHLY`) |
-| Pro Annual — $290/yr | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_ANNUAL`) |
-| Agency Monthly — $99/mo | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_AGENCY_MONTHLY`) |
-| Agency Annual — $990/yr | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_AGENCY_ANNUAL`) |
+| Item                             | Status                                                   |
+| -------------------------------- | -------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`              | ✅ Set in `.env` (production `sk_live_*`)                |
+| `STRIPE_WEBHOOK_SECRET`          | ✅ Set in `.env` (`whsec_*`)                             |
+| AstraPost Pro product            | ✅ Created (`prod_UDLVJC0QQ35iMC`)                       |
+| AstraPost Pro Annual product     | ✅ Created (`prod_UDLV9HcYRBM36k`)                       |
+| AstraPost Agency Monthly product | ✅ Created (`prod_UDLVHs1ePIlrG5`)                       |
+| AstraPost Agency Annual product  | ✅ Created (`prod_UDLVSCcSpjBaNo`)                       |
+| Pro Monthly — $29/mo             | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_MONTHLY`)        |
+| Pro Annual — $290/yr             | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_ANNUAL`)         |
+| Agency Monthly — $99/mo          | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_AGENCY_MONTHLY`) |
+| Agency Annual — $990/yr          | ✅ Price ID in `.env` (`STRIPE_PRICE_ID_AGENCY_ANNUAL`)  |
 
 ---
 
@@ -35,12 +33,12 @@ This plan instructs an LLM with Stripe MCP access to complete the remaining Stri
 
 Use the Stripe MCP to retrieve each price and verify:
 
-| Env Var | Expected Amount | Expected Currency | Expected Interval |
-|---|---|---|---|
-| `STRIPE_PRICE_ID_MONTHLY` | 2900 ($29.00) | `usd` | `month` |
-| `STRIPE_PRICE_ID_ANNUAL` | 29000 ($290.00) | `usd` | `year` |
-| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | 9900 ($99.00) | `usd` | `month` |
-| `STRIPE_PRICE_ID_AGENCY_ANNUAL` | 99000 ($990.00) | `usd` | `year` |
+| Env Var                          | Expected Amount | Expected Currency | Expected Interval |
+| -------------------------------- | --------------- | ----------------- | ----------------- |
+| `STRIPE_PRICE_ID_MONTHLY`        | 2900 ($29.00)   | `usd`             | `month`           |
+| `STRIPE_PRICE_ID_ANNUAL`         | 29000 ($290.00) | `usd`             | `year`            |
+| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | 9900 ($99.00)   | `usd`             | `month`           |
+| `STRIPE_PRICE_ID_AGENCY_ANNUAL`  | 99000 ($990.00) | `usd`             | `year`            |
 
 For each price, retrieve it using the Price ID from the `.env` file and confirm `unit_amount`, `currency`, and `recurring.interval` match. If any mismatch is found, **stop and report it** — do not auto-fix production prices.
 
@@ -154,7 +152,8 @@ After completing all steps, output this status report:
 - **The `.env` comments contain product IDs.** Each price's parent product is noted (e.g., `prod_UDLVJC0QQ35iMC`). Use these to cross-reference when verifying.
 - **Webhook secret sensitivity.** If a new webhook must be created (Step 3), the user must update `STRIPE_WEBHOOK_SECRET` in their Vercel environment variables and trigger a redeployment. Emphasize this — a mismatched secret will silently reject all webhook events.
 
----------
+---
+
 as per the plan: c:\Users\saqqa\CodeX\AstraPost-main\AstraPost-main-02\docs\audit\downgrade-cancellation-analysis-2026-04-06.md
 
 What's Still Needed for Stripe:
@@ -177,4 +176,5 @@ customer.subscription.deleted (handles full cancellation → free)
 invoice.payment_failed (triggers grace period)
 invoice.payment_succeeded (clears past_due status)
 Proration behavior — The code uses create_prorations which is Stripe's default. No Stripe-side config needed, but verify in Stripe Dashboard → Settings → Subscriptions that "Proration" is not disabled.
----------------
+
+---

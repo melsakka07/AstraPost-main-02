@@ -9,6 +9,7 @@
 This prompt builds on two previous implementation phases. **Before writing any code**, confirm all of the following exist in the codebase:
 
 **From Phase 1 (Tier Detection):**
+
 - `x_subscription_tier` and `x_subscription_tier_updated_at` columns on the `x_accounts` table
 - `fetchXSubscriptionTier()` in `src/lib/services/x-api.ts`
 - `GET /api/x/subscription-tier` and `POST /api/x/subscription-tier/refresh` routes
@@ -16,6 +17,7 @@ This prompt builds on two previous implementation phases. **Before writing any c
 - `canPostLongContent()` and `getMaxCharacterLimit()` helpers
 
 **From Phase 2 (Badge Visibility):**
+
 - `XSubscriptionBadge` component at `src/components/ui/x-subscription-badge.tsx`
 - Badge integrated in Settings, Composer (account selector + character counter area), Sidebar account switcher, and Queue error context
 - `xSubscriptionTier` flowing through the Zustand store / data layer to all four surfaces
@@ -30,20 +32,20 @@ You are working on **AstraPost**, a production-ready AI-powered social media sch
 
 **Critical architectural context for this feature:**
 
-| Concern | Key Files |
-|---|---|
-| **AI thread writer endpoint** | `src/app/api/ai/thread/route.ts` — `POST /api/ai/thread` |
-| **AI preamble (shared pipeline)** | `src/lib/api/ai-preamble.ts` — auth → rate-limit → plan gate → model |
-| **Composer** | `src/components/composer/composer.tsx`, `tweet-card.tsx`, `target-accounts-select.tsx` |
-| **Character counter / validation** | Inside `tweet-card.tsx` or `composer.tsx` — locate the exact 280-char check |
-| **280-char warning message** | Locate in composer components — the message starting with *"X Premium required for long posts..."* |
-| **BullMQ queue client** | `src/lib/queue/client.ts` — job payload types defined here |
-| **BullMQ job processors** | `src/lib/queue/processors.ts` — worker logic here |
-| **Worker entry point** | `scripts/worker.ts` |
-| **X API service** | `src/lib/services/x-api.ts` — `fetchXSubscriptionTier()` lives here |
-| **Plan limits / gates** | `src/lib/middleware/require-plan.ts`, `src/lib/plan-limits.ts` |
-| **Shared Zod schemas** | `src/lib/schemas/common.ts` |
-| **Existing helpers** | `canPostLongContent()`, `getMaxCharacterLimit()` — update these as needed |
+| Concern                            | Key Files                                                                                          |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **AI thread writer endpoint**      | `src/app/api/ai/thread/route.ts` — `POST /api/ai/thread`                                           |
+| **AI preamble (shared pipeline)**  | `src/lib/api/ai-preamble.ts` — auth → rate-limit → plan gate → model                               |
+| **Composer**                       | `src/components/composer/composer.tsx`, `tweet-card.tsx`, `target-accounts-select.tsx`             |
+| **Character counter / validation** | Inside `tweet-card.tsx` or `composer.tsx` — locate the exact 280-char check                        |
+| **280-char warning message**       | Locate in composer components — the message starting with _"X Premium required for long posts..."_ |
+| **BullMQ queue client**            | `src/lib/queue/client.ts` — job payload types defined here                                         |
+| **BullMQ job processors**          | `src/lib/queue/processors.ts` — worker logic here                                                  |
+| **Worker entry point**             | `scripts/worker.ts`                                                                                |
+| **X API service**                  | `src/lib/services/x-api.ts` — `fetchXSubscriptionTier()` lives here                                |
+| **Plan limits / gates**            | `src/lib/middleware/require-plan.ts`, `src/lib/plan-limits.ts`                                     |
+| **Shared Zod schemas**             | `src/lib/schemas/common.ts`                                                                        |
+| **Existing helpers**               | `canPostLongContent()`, `getMaxCharacterLimit()` — update these as needed                          |
 
 **AI Integration stack:** OpenRouter via `@openrouter/ai-sdk-provider` + Vercel AI SDK 5. The AI thread writer uses streaming (SSE). Do NOT use direct OpenAI — always import from `@openrouter/ai-sdk-provider`.
 
@@ -55,10 +57,10 @@ The user's **X subscription status** is the sole variable that controls availabl
 
 ### Feature Matrix
 
-| User's X Status | Manual Typing Limit | AI Length Options | Thread Mode |
-|---|---|---|---|
-| **Free X** (`None`) | 280 characters | Short (≤280) only | Yes (each tweet ≤280) |
-| **X Premium** (`Basic` / `Premium` / `PremiumPlus`) | 2,000 characters | Short (≤280), Medium (281–1,000), Long (1,001–2,000) | Yes (each tweet ≤280) |
+| User's X Status                                     | Manual Typing Limit | AI Length Options                                    | Thread Mode           |
+| --------------------------------------------------- | ------------------- | ---------------------------------------------------- | --------------------- |
+| **Free X** (`None`)                                 | 280 characters      | Short (≤280) only                                    | Yes (each tweet ≤280) |
+| **X Premium** (`Basic` / `Premium` / `PremiumPlus`) | 2,000 characters    | Short (≤280), Medium (281–1,000), Long (1,001–2,000) | Yes (each tweet ≤280) |
 
 ### Why 2,000 — Not 25,000
 
@@ -131,7 +133,10 @@ export function getAvailableLengthOptions(tier: XSubscriptionTier | null) {
   return [AI_LENGTH_OPTIONS.short];
 }
 
-export function isLengthOptionAllowed(optionId: AiLengthOptionId, tier: XSubscriptionTier | null): boolean {
+export function isLengthOptionAllowed(
+  optionId: AiLengthOptionId,
+  tier: XSubscriptionTier | null
+): boolean {
   const option = AI_LENGTH_OPTIONS[optionId];
   return !option.requiresPremium || canPostLongContent(tier);
 }
@@ -189,12 +194,14 @@ After authentication (via `aiPreamble()` or session check), look up the user's s
 The AI system prompt must be different for each length target. This is critical for output quality — you are not just changing a character count constraint, you are changing the writing style and structure.
 
 **Short (≤280 chars) — System Prompt Guidance:**
+
 - Focus on: one powerful idea, a hook that stops the scroll, punchy language
 - Constraints: stay under 280 characters including any hashtags
 - Style: concise, impactful, every word earns its place
 - Techniques: rhetorical questions, bold statements, numbered lists (1-3 items max), strategic line breaks
 
 **Medium (281–1,000 chars) — System Prompt Guidance:**
+
 - Focus on: developed take with clear structure — opening hook, developed middle, strong closer
 - Constraints: target 500–900 characters (leave room for editing), never exceed 1,000
 - Style: conversational authority, smooth paragraph transitions
@@ -202,6 +209,7 @@ The AI system prompt must be different for each length target. This is critical 
 - Techniques: storytelling opening, data points, contrarian framing, end with a call-to-action or question
 
 **Long (1,001–2,000 chars) — System Prompt Guidance:**
+
 - Focus on: thought leadership, in-depth analysis, storytelling, detailed explainers
 - Constraints: target 1,200–1,800 characters, never exceed 2,000
 - Style: authoritative yet accessible, clear section breaks using line breaks
@@ -209,6 +217,7 @@ The AI system prompt must be different for each length target. This is critical 
 - Techniques: anecdotal opening, numbered insights, "Here's what most people miss:" patterns, end with a forward-looking statement or CTA
 
 **Thread Mode — System Prompt Guidance (unchanged from existing):**
+
 - Each tweet ≤280 characters
 - Numbered format (1/N, 2/N...)
 - First tweet is a compelling hook
@@ -225,6 +234,7 @@ Build these as template functions in a new file `src/lib/ai/length-prompts.ts` t
 #### 2E: Apply to Other AI Endpoints (if applicable)
 
 Check whether these endpoints also generate tweet content that needs length awareness:
+
 - `POST /api/ai/tools` — general AI writing tools
 - `POST /api/ai/inspire` — content inspiration (rephrase, expand, etc.)
 - `POST /api/ai/variants` — A/B variant generator
@@ -244,6 +254,7 @@ This is the most user-facing change. The composer must feel different for Premiu
 **Files:** `src/components/composer/composer.tsx`, `src/components/composer/tweet-card.tsx`
 
 Search the codebase for every instance of the number `280` used as a character limit. Common patterns:
+
 - `const MAX_CHARS = 280;`
 - `if (text.length > 280)`
 - Character counter displaying `${count}/280`
@@ -264,11 +275,13 @@ const maxChars = getMaxCharacterLimit(selectedAccount?.xSubscriptionTier ?? null
 The character counter must adapt to the tier:
 
 **For Free X users (280 limit):**
+
 - Counter shows: `142/280`
 - Turns yellow at 250, red at 280+
 - Behavior unchanged from current implementation
 
 **For Premium X users in single-post mode (2,000 limit):**
+
 - Counter shows: `856/2,000`
 - Add a **soft milestone marker at 280** — a subtle visual tick mark or color shift in the progress indicator, with a tiny label like "280" to show where the classic tweet length falls. This helps users who are used to thinking in 280-char units.
 - Turns yellow at 1,800, red at 2,000+
@@ -278,22 +291,24 @@ The character counter must adapt to the tier:
   - 1,001–2,000: `"Long post"`
 
 **For Premium X users in Thread Mode:**
+
 - Each tweet card shows `142/280` — same as Free users. The per-tweet limit doesn't change in threads.
 
 #### 3C: Replace the 280-Char Warning Message
 
 **Current message (for everyone):**
-> *"X Premium required for long posts. One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on X Premium accounts. If you're on a standard account, these tweets will fail and appear as errors in your queue."*
+
+> _"X Premium required for long posts. One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on X Premium accounts. If you're on a standard account, these tweets will fail and appear as errors in your queue."_
 
 **New behavior:**
 
-1. **Free X user exceeds 280 chars:** Show the existing warning message unchanged. Additionally, add a subtle suggestion: *"Tip: Use Thread Mode to split your content into multiple tweets."*
+1. **Free X user exceeds 280 chars:** Show the existing warning message unchanged. Additionally, add a subtle suggestion: _"Tip: Use Thread Mode to split your content into multiple tweets."_
 
-2. **Premium X user exceeds 2,000 chars:** Show a new warning: *"Your post exceeds the 2,000-character recommended limit. While your X Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend to see significantly lower engagement. Consider trimming your content or converting to a thread."* — Use a yellow/amber `Alert` tone, not a blocking red error. Allow the user to proceed if they choose (soft warning, not hard block).
+2. **Premium X user exceeds 2,000 chars:** Show a new warning: _"Your post exceeds the 2,000-character recommended limit. While your X Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend to see significantly lower engagement. Consider trimming your content or converting to a thread."_ — Use a yellow/amber `Alert` tone, not a blocking red error. Allow the user to proceed if they choose (soft warning, not hard block).
 
 3. **Premium X user between 281–2,000 chars in single-post mode:** No warning. This is expected behavior. The `XSubscriptionBadge` near the counter (from Phase 2) is sufficient context.
 
-4. **Premium X user exceeds 280 in Thread Mode (per-tweet):** Show a per-tweet warning: *"This tweet exceeds 280 characters. Even with X Premium, individual tweets in a thread are limited to 280 characters. Shorten this tweet or move content to the next one."*
+4. **Premium X user exceeds 280 in Thread Mode (per-tweet):** Show a per-tweet warning: _"This tweet exceeds 280 characters. Even with X Premium, individual tweets in a thread are limited to 280 characters. Shorten this tweet or move content to the next one."_
 
 #### 3D: Mode Selector in Composer
 
@@ -309,7 +324,7 @@ When a user selects multiple target X accounts for a post (the multi-account fea
 
 1. Determine the **most restrictive** account's tier.
 2. Apply that tier's character limit.
-3. Show a contextual note if accounts have different tiers: *"Character limit set to 280 based on @freeaccount. To use longer posts, remove free-tier accounts or post separately."*
+3. Show a contextual note if accounts have different tiers: _"Character limit set to 280 based on @freeaccount. To use longer posts, remove free-tier accounts or post separately."_
 4. The `XSubscriptionBadge` next to each account in the selector (from Phase 2) makes the tier difference visible at a glance.
 
 Run `pnpm lint && pnpm typecheck`.
@@ -346,12 +361,14 @@ Render as a **segmented control** (3 horizontal buttons, only one active at a ti
 ```
 
 **Behavior:**
-- **Free X user:** Only "Short" is enabled. "Medium" and "Long" are visible but disabled (grayed out) with a lock icon and tooltip: *"Requires X Premium subscription"*. Showing disabled options (rather than hiding them) is a deliberate UX choice — it signals that the capability exists and gives Free users a reason to consider X Premium.
+
+- **Free X user:** Only "Short" is enabled. "Medium" and "Long" are visible but disabled (grayed out) with a lock icon and tooltip: _"Requires X Premium subscription"_. Showing disabled options (rather than hiding them) is a deliberate UX choice — it signals that the capability exists and gives Free users a reason to consider X Premium.
 - **Premium X user:** All three options are enabled and selectable.
 - Default selection: `"short"` for all users.
 - Below the selector, show a one-line description of the selected option (from `AI_LENGTH_OPTIONS[selected].description`).
 
 **Styling:**
+
 - Use shadcn/ui `ToggleGroup` or a custom segmented control with Tailwind.
 - Active segment: `bg-primary text-primary-foreground`
 - Inactive segment: `bg-muted text-muted-foreground`
@@ -421,7 +438,7 @@ await queue.add(
   { triggeredBy: "scheduler" },
   {
     repeat: { pattern: "0 4 * * *" }, // 4:00 AM UTC daily — low-traffic time
-    removeOnComplete: 50,             // keep last 50 completed jobs
+    removeOnComplete: 50, // keep last 50 completed jobs
     removeOnFail: 20,
   }
 );
@@ -477,7 +494,7 @@ When the daily refresh job (Phase 5) detects a tier **downgrade** (e.g., `Premiu
 
 1. Query `posts` table for that user's posts with status `scheduled` or `pending`, joined with `tweets` to check character lengths.
 2. If any post exceeds the new limit, create an in-app notification (using the existing `notifications` service at `src/lib/services/notifications.ts`):
-   > *"Your X Premium subscription for @username is no longer active. You have N scheduled posts that exceed 280 characters — these will fail to publish. Please edit or convert them to threads before their scheduled time."*
+   > _"Your X Premium subscription for @username is no longer active. You have N scheduled posts that exceed 280 characters — these will fail to publish. Please edit or convert them to threads before their scheduled time."_
 3. Optionally, send an email notification using the existing Resend email service if the user has email notifications enabled.
 
 This is a proactive grace period — the user gets warned before posts actually fail.
@@ -505,7 +522,7 @@ The Queue page already has contextual failure tip banners (401/403/rate-limit/du
 
 When a user's tier changes from Premium to Free (detected by the daily refresh or manual refresh), show a toast notification via `sonner` (already in the project):
 
-> *"Your X Premium subscription for @username is no longer active. Medium and Long post options have been disabled."*
+> _"Your X Premium subscription for @username is no longer active. Medium and Long post options have been disabled."_
 
 This should trigger on the frontend when the Zustand store detects the tier change (after a refresh API call completes with a different tier than what was stored).
 
@@ -631,39 +648,48 @@ Run `pnpm test` to confirm all tests pass.
 **Method:** Direct file inspection of all implementation files
 
 ### Phase 1 ✅ Complete
+
 - `src/lib/services/x-subscription.ts`: `getMaxCharacterLimit()` correctly returns `2_000` for Premium tiers (was 25,000 in initial Phase 6 of tier detection feature).
 - `src/lib/x-post-length.ts`: `AI_LENGTH_OPTIONS`, `getAvailableLengthOptions()`, `isLengthOptionAllowed()` all present and correct.
 - `src/lib/schemas/common.ts`: `aiLengthOptionEnum` and `AiLengthOptionId` type exported.
 
 ### Phase 2 ✅ Complete
+
 - `src/app/api/ai/thread/route.ts`: Request schema includes `mode` and `lengthOption`. Tier validation blocks non-short options for Free accounts with correct `ApiError.forbidden()`. Staleness check (24h) triggers inline `XApiService.fetchXSubscriptionTier()` before validation. Length-specific prompts built via `getLengthPrompt()` from `src/lib/ai/length-prompts.ts`. Single-post streaming uses plain text (`Content-Type: text/plain`); thread mode uses SSE.
 
 ### Phase 3 ✅ Complete
+
 - `src/components/composer/tweet-card.tsx`: `maxChars` computed via `getMaxCharacterLimit(tier)`. Thread mode enforces 280 regardless of tier (`isThreadMode ? 280 : getMaxCharacterLimit(tier)`). Character counter shows dynamic limit with length zone labels.
 
 ### Phase 4 ✅ Complete
+
 - `src/components/composer/ai-length-selector.tsx`: Segmented control (Short/Medium/Long) with lock icons and tooltips for disabled options. Uses `canPostLongContent()` to gate Medium/Long.
 - `src/components/composer/composer.tsx`: `AiLengthSelector` integrated, `aiLengthOption` state sent to API only in single-post mode.
 - `src/app/dashboard/ai/writer/page.tsx`: Thread/Single Post mode toggle integrated (per updates log).
 
 ### Phase 5 ✅ Complete
+
 - `src/lib/queue/client.ts`: `RefreshXTiersJobPayload`, `xTierRefreshQueue` defined.
 - `src/lib/queue/processors.ts`: `refreshXTiersProcessor` queries accounts with stale tier (`>24h` or null), calls `fetchXSubscriptionTier()` per account with 500ms delay, logs summary.
 - `scripts/worker.ts`: `xTierRefreshWorker` created, repeatable job scheduled at `0 4 * * *` UTC with `removeOnComplete: { count: 50 }` and `removeOnFail: { count: 20 }`.
 - **Staleness check in route:** `src/app/api/ai/thread/route.ts` performs inline tier refresh if cached data >24h old before validating length option. ✅
 
 ### Phase 6 ✅ Complete
+
 - `src/lib/queue/processors.ts` (`scheduleProcessor`): Pre-publish check iterates `post.tweets`, compares `content.length` against `maxAllowedChars` (280 or 2,000 based on tier). On failure: post set to `failed` with `failReason`, job run inserted, `notifications` record created (`type: "post_failed"`), `UnrecoverableError` thrown.
 - **Tier downgrade notification:** `refreshXTiersProcessor` detects downgrade, queries scheduled posts, creates `tier_downgrade_warning` notification with `postIds` metadata. ✅
 
 ### Phase 7 ✅ Complete
+
 - `src/components/queue/queue-content.tsx`: `getFailureTip()` checks `failReason.toLowerCase().includes("tier_limit_exceeded")`, sets `isTierLimit: true`. Banner shows `XSubscriptionBadge` + descriptive message + "Edit Post" and "Convert to Thread" buttons.
 - `src/components/dashboard/notification-bell.tsx`: Detects `tier_downgrade_warning` notification type, fires `toast.warning()` with "View Queue" action button and tracks seen IDs to prevent duplicate toasts.
 
 ### Phase 8 ✅ Complete (fixed 2026-03-31)
+
 All test files existed but had failures. Root cause: **Zod v4** uses a stricter UUID regex requiring RFC-4122 compliant UUIDs (version `[1-8]` in position 3, variant `[89ab]` in position 4). Test IDs like `00000000-0000-0000-0000-000000000001` fail this check. Fixed by replacing with proper v4-format UUIDs.
 
 Two additional tests were added to `route.test.ts`:
+
 - Stale tier (>24h) triggers `fetchXSubscriptionTier()` re-fetch before validation
 - Fresh tier (<24h) skips the re-fetch
 
@@ -677,14 +703,14 @@ Five `getMaxCharacterLimit()` tests added to `x-post-length.test.ts` (Phase 8B r
 
 This implementation transforms AstraPost from a 280-char-only platform into a tier-aware content creation tool:
 
-| What Changes | Free X Users | Premium X Users |
-|---|---|---|
-| **Manual typing** | 280 chars (unchanged) | Up to 2,000 chars |
-| **AI generation** | Short only (unchanged) | Short + Medium + Long |
-| **Thread Mode** | Available (unchanged) | Available (unchanged) |
-| **Character counter** | `N/280` (unchanged) | `N/2,000` with 280 milestone |
-| **Pre-publish check** | 280 enforced | Tier re-verified, 2,000 enforced |
-| **Background refresh** | N/A | Daily tier sync via BullMQ |
+| What Changes           | Free X Users           | Premium X Users                  |
+| ---------------------- | ---------------------- | -------------------------------- |
+| **Manual typing**      | 280 chars (unchanged)  | Up to 2,000 chars                |
+| **AI generation**      | Short only (unchanged) | Short + Medium + Long            |
+| **Thread Mode**        | Available (unchanged)  | Available (unchanged)            |
+| **Character counter**  | `N/280` (unchanged)    | `N/2,000` with 280 milestone     |
+| **Pre-publish check**  | 280 enforced           | Tier re-verified, 2,000 enforced |
+| **Background refresh** | N/A                    | Daily tier sync via BullMQ       |
 
 The architecture is clean: **one variable (X subscription tier) controls one behavior (post length)**. No entangling with AstraPost's own plan system, no complex feature matrices, no user confusion.
 

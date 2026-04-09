@@ -15,10 +15,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false, error: "Invalid referral code" }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-      valid: true, 
+    return NextResponse.json({
+      valid: true,
       referrerId: referrer.id,
-      referrerName: referrer.name 
+      referrerName: referrer.name,
     });
   } catch (error) {
     console.error("Referral validation error:", error);

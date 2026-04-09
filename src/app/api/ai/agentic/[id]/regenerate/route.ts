@@ -9,7 +9,11 @@ import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { checkAiLimitDetailed, checkAiQuotaDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import {
+  checkAiLimitDetailed,
+  checkAiQuotaDetailed,
+  createPlanLimitResponse,
+} from "@/lib/middleware/require-plan";
 import type { ImageModel } from "@/lib/plan-limits";
 import { agenticPosts } from "@/lib/schema";
 import { startImageGeneration, checkImagePrediction } from "@/lib/services/ai-image";
@@ -42,10 +46,7 @@ async function pollImage(predictionId: string): Promise<string | null> {
   return null;
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const correlationId = getCorrelationId(req);
   const { id } = await params;
 
@@ -59,7 +60,7 @@ export async function POST(
     const aiQuota = await checkAiQuotaDetailed(session.user.id);
     if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
 
-    const json = await req.json() as unknown;
+    const json = (await req.json()) as unknown;
     const parsed = regenerateSchema.safeParse(json);
     if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
@@ -169,10 +170,7 @@ Return ONLY a valid JSON object (no markdown):
     const updatedTweets = [...currentTweets];
     updatedTweets[tweetIndex] = updatedTweet;
 
-    await db
-      .update(agenticPosts)
-      .set({ tweets: updatedTweets })
-      .where(eq(agenticPosts.id, id));
+    await db.update(agenticPosts).set({ tweets: updatedTweets }).where(eq(agenticPosts.id, id));
 
     logger.info("agentic_tweet_regenerated", {
       agenticPostId: id,

@@ -1,5 +1,3 @@
-
-
 # AstraPost Compose Page — UI/UX Audit & Recommendations
 
 I've carefully analyzed the screenshot alongside the detailed documentation you provided. Below is a thorough critique organized by area, with concrete recommendations grounded in design patterns used by Google (Material Design 3), Apple (Human Interface Guidelines), and Microsoft (Fluent Design), as well as best-in-class SaaS tools like Notion, Linear, and Buffer.
@@ -127,8 +125,6 @@ Fifth, all the small alignment and grouping fixes — moving "Number tweets" to 
 These changes, taken together, would transform the compose page from a feature-rich-but-dense tool into something that feels as focused and fluid as composing a tweet on X itself — but with powerful features waiting just one click below the surface. The goal is to make the simple case effortless (write and post) while keeping the complex case possible (AI-assisted, scheduled, multi-account thread with custom hashtags and images).
 
 ---
-
-
 
 I can absolutely create a detailed visual mockup for you. Let me build out the redesigned interface using ASCII wireframes and structured visual representations, showing exactly how each element repositions and how the hierarchy changes.
 

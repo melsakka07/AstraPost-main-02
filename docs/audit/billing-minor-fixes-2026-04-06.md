@@ -22,6 +22,7 @@
 ### Cross-Cutting Verification
 
 After all fixes:
+
 - Run `pnpm lint && pnpm typecheck` — must pass
 - Run `pnpm test` — no regressions
 
@@ -42,15 +43,19 @@ After all fixes:
 **Fix**: Remove both unused queries entirely. They compute `aiGenerations` count and `inspirationBookmarks` count, but neither value is referenced anywhere in the response.
 
 **Delete** the `aiGenerations` query block:
+
 ```typescript
 // DELETE THIS:
 await db
   .select({ count: sql<number>`count(*)` })
   .from(aiGenerations)
-  .where(and(eq(aiGenerations.userId, session.user.id), gte(aiGenerations.createdAt, startOfMonth)));
+  .where(
+    and(eq(aiGenerations.userId, session.user.id), gte(aiGenerations.createdAt, startOfMonth))
+  );
 ```
 
 **Delete** the `inspirationBookmarks` query block:
+
 ```typescript
 // DELETE THIS:
 await db
@@ -72,20 +77,18 @@ await db
 **Fix**: Replace the `for` loop with a single batch update using `inArray`.
 
 **Replace**:
+
 ```typescript
 for (const post of postsToMove) {
-  await db.update(posts)
-    .set({ status: "draft" })
-    .where(eq(posts.id, post.id));
+  await db.update(posts).set({ status: "draft" }).where(eq(posts.id, post.id));
 }
 ```
 
 **With**:
+
 ```typescript
 const postIdsToMove = postsToMove.map((p) => p.id);
-await db.update(posts)
-  .set({ status: "draft" })
-  .where(inArray(posts.id, postIdsToMove));
+await db.update(posts).set({ status: "draft" }).where(inArray(posts.id, postIdsToMove));
 ```
 
 **Ensure** `inArray` is imported from `drizzle-orm` at the top of the file. Check if it's already imported; if not, add it to the existing import line.
@@ -101,6 +104,7 @@ await db.update(posts)
 **Fix**: Add a brief comment above each `db.update()` call to document why a transaction is not needed:
 
 Above the cancellation sync (~line 60):
+
 ```typescript
 // Single-table write — no transaction needed (webhook also syncs this field)
 await db
@@ -109,6 +113,7 @@ await db
 ```
 
 Above the reactivation sync (~line 114):
+
 ```typescript
 // Single-table write — no transaction needed (webhook also syncs this field)
 await db

@@ -28,10 +28,12 @@ export async function POST(req: Request) {
 
   await db.transaction(async (tx) => {
     // Clear ALL defaults for this user
-    await tx.update(xAccounts).set({ isDefault: false }).where(eq(xAccounts.userId, session.user.id));
+    await tx
+      .update(xAccounts)
+      .set({ isDefault: false })
+      .where(eq(xAccounts.userId, session.user.id));
     // Set the new default
     await tx.update(xAccounts).set({ isDefault }).where(eq(xAccounts.id, xAccountId));
   });
   return Response.json({ success: true });
 }
-

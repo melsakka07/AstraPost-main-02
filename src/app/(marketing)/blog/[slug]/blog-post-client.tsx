@@ -113,9 +113,9 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
   return (
     <>
       {/* Reading Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-muted z-50">
+      <div className="bg-muted fixed top-0 right-0 left-0 z-50 h-1">
         <div
-          className="h-full bg-gradient-to-r from-primary via-purple-500 to-pink-500 transition-all duration-150"
+          className="from-primary h-full bg-gradient-to-r via-purple-500 to-pink-500 transition-all duration-150"
           style={{ width: `${readingProgress}%` }}
         />
       </div>
@@ -123,18 +123,18 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
       {/* Share Button - Floating */}
       <button
         onClick={handleShare}
-        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-500 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center"
+        className="from-primary fixed right-6 bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
         aria-label="Share article"
       >
-        <Share2 className="w-5 h-5" />
+        <Share2 className="h-5 w-5" />
       </button>
 
       {/* Table of Contents */}
       {headings.length > 0 && (
-        <div className="container mx-auto px-4 max-w-4xl mt-8">
-          <div className="bg-muted/30 rounded-xl p-6 border border-border/50">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <BookOpen className="w-5 h-5" />
+        <div className="container mx-auto mt-8 max-w-4xl px-4">
+          <div className="bg-muted/30 border-border/50 rounded-xl border p-6">
+            <h3 className="mb-4 flex items-center gap-2 font-semibold">
+              <BookOpen className="h-5 w-5" />
               Table of Contents
             </h3>
             <nav className="space-y-2">
@@ -142,8 +142,8 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
                 <a
                   key={heading.id}
                   href={`#${heading.id}`}
-                  className={`block text-sm hover:text-primary transition-colors ${
-                    heading.level === 3 ? "pl-4 text-muted-foreground" : ""
+                  className={`hover:text-primary block text-sm transition-colors ${
+                    heading.level === 3 ? "text-muted-foreground pl-4" : ""
                   } ${
                     activeHeading === heading.id
                       ? "text-primary font-medium"
@@ -159,7 +159,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
       )}
 
       {/* Article Content */}
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
         <div ref={contentRef} className="prose prose-lg dark:prose-invert max-w-none">
           <MDXRemote {...post.content} />
         </div>

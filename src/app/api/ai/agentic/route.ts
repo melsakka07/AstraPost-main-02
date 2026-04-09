@@ -41,7 +41,7 @@ export async function GET() {
         or(
           eq(agenticPosts.status, "generating"),
           eq(agenticPosts.status, "ready"),
-          eq(agenticPosts.status, "needs_input"),
+          eq(agenticPosts.status, "needs_input")
         )
       ),
       orderBy: [desc(agenticPosts.createdAt)],
@@ -72,7 +72,7 @@ export async function DELETE() {
           or(
             eq(agenticPosts.status, "generating"),
             eq(agenticPosts.status, "ready"),
-            eq(agenticPosts.status, "needs_input"),
+            eq(agenticPosts.status, "needs_input")
           )
         )
       );
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     const { session, dbUser } = preamble;
 
     // 2. Validate request body
-    const json = await req.json() as unknown;
+    const json = (await req.json()) as unknown;
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
@@ -186,7 +186,8 @@ export async function POST(req: Request) {
         } catch (err) {
           // Handle too-broad topic gracefully
           if (err instanceof Error && err.message === "TOPIC_TOO_BROAD") {
-            await db.update(agenticPosts)
+            await db
+              .update(agenticPosts)
               .set({ status: "needs_input" })
               .where(eq(agenticPosts.id, agenticPostId))
               .catch(() => void 0);

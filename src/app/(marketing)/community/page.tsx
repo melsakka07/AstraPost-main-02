@@ -94,26 +94,25 @@ export default function CommunityPage() {
     <div className="relative min-h-dvh">
       {/* Background gradient */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
+        <div className="from-primary/5 absolute top-0 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-br via-purple-500/5 to-pink-500/5 blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 py-16 md:py-24 space-y-24">
-
+      <div className="container mx-auto space-y-24 px-4 py-16 md:py-24">
         {/* ── Hero ───────────────────────────────────────────────────────── */}
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid items-center gap-12 md:grid-cols-2">
           <div className="space-y-6">
             <Badge variant="outline">Community</Badge>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
               Join the AstraPost Community
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              Connect with thousands of creators, share your wins, get feedback on
-              your content, and grow together.
+            <p className="text-muted-foreground text-xl leading-relaxed">
+              Connect with thousands of creators, share your wins, get feedback on your content, and
+              grow together.
             </p>
             <div className="flex flex-wrap gap-4">
               <Button size="lg" disabled>
                 Join Discord
-                <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 h-4">
+                <Badge variant="secondary" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
                   Coming Soon
                 </Badge>
               </Button>
@@ -126,26 +125,26 @@ export default function CommunityPage() {
           </div>
 
           {/* Stats card */}
-          <div className="relative aspect-square md:aspect-auto rounded-2xl bg-gradient-to-tr from-primary/20 via-background to-background p-8 border shadow-lg flex items-center justify-center">
-            <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
-            <div className="relative z-10 text-center space-y-8">
+          <div className="from-primary/20 via-background to-background relative flex aspect-square items-center justify-center rounded-2xl border bg-gradient-to-tr p-8 shadow-lg md:aspect-auto">
+            <div className="bg-grid-white/10 absolute inset-0 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+            <div className="relative z-10 space-y-8 text-center">
               <div className="flex justify-center gap-8">
-                <div className="flex flex-col items-center p-4 bg-background rounded-lg shadow-sm border">
-                  <Users className="h-8 w-8 text-primary mb-2" />
+                <div className="bg-background flex flex-col items-center rounded-lg border p-4 shadow-sm">
+                  <Users className="text-primary mb-2 h-8 w-8" />
                   <span className="text-2xl font-bold">{stats[0]!.value}</span>
-                  <span className="text-sm text-muted-foreground">{stats[0]!.label}</span>
+                  <span className="text-muted-foreground text-sm">{stats[0]!.label}</span>
                 </div>
-                <div className="flex flex-col items-center p-4 bg-background rounded-lg shadow-sm border">
-                  <MessagesSquare className="h-8 w-8 text-primary mb-2" />
+                <div className="bg-background flex flex-col items-center rounded-lg border p-4 shadow-sm">
+                  <MessagesSquare className="text-primary mb-2 h-8 w-8" />
                   <span className="text-2xl font-bold">{stats[1]!.value}</span>
-                  <span className="text-sm text-muted-foreground">{stats[1]!.label}</span>
+                  <span className="text-muted-foreground text-sm">{stats[1]!.label}</span>
                 </div>
               </div>
               <div className="flex justify-center">
-                <div className="flex flex-col items-center p-4 bg-background rounded-lg shadow-sm border w-full max-w-[200px]">
-                  <Trophy className="h-8 w-8 text-primary mb-2" />
+                <div className="bg-background flex w-full max-w-[200px] flex-col items-center rounded-lg border p-4 shadow-sm">
+                  <Trophy className="text-primary mb-2 h-8 w-8" />
                   <span className="text-2xl font-bold">{stats[2]!.value}</span>
-                  <span className="text-sm text-muted-foreground">{stats[2]!.label}</span>
+                  <span className="text-muted-foreground text-sm">{stats[2]!.label}</span>
                 </div>
               </div>
             </div>
@@ -153,15 +152,15 @@ export default function CommunityPage() {
         </div>
 
         {/* ── Benefits ───────────────────────────────────────────────────── */}
-        <div className="bg-muted/30 rounded-3xl p-12 text-center max-w-4xl mx-auto space-y-8">
+        <div className="bg-muted/30 mx-auto max-w-4xl space-y-8 rounded-3xl p-12 text-center">
           <h2 className="text-3xl font-bold">Why Join?</h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-3">
             {benefits.map((benefit, index) => (
-              <div key={index} className="text-left space-y-3">
-                <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+              <div key={index} className="space-y-3 text-left">
+                <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
                   {benefit.icon}
                 </div>
-                <h3 className="font-semibold text-lg">{benefit.title}</h3>
+                <h3 className="text-lg font-semibold">{benefit.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
                   {benefit.description}
                 </p>
@@ -171,24 +170,22 @@ export default function CommunityPage() {
         </div>
 
         {/* ── FAQ + Contact Form ──────────────────────────────────────────── */}
-        <div className="max-w-5xl mx-auto space-y-8">
-          <div className="text-center space-y-3">
+        <div className="mx-auto max-w-5xl space-y-8">
+          <div className="space-y-3 text-center">
             <Badge variant="outline" className="gap-1.5">
               <HelpCircle className="h-3.5 w-3.5" />
               Support
             </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-              Have a question?
-            </h2>
-            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Have a question?</h2>
+            <p className="text-muted-foreground mx-auto max-w-xl text-lg">
               Check the FAQ below or send us a message — we&apos;re happy to help.
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10 items-start">
+          <div className="grid items-start gap-10 lg:grid-cols-2">
             {/* FAQ accordion */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium tracking-wide uppercase">
                 <MessageCircle className="h-4 w-4" />
                 Frequently asked questions
               </div>
@@ -197,13 +194,13 @@ export default function CommunityPage() {
                   <AccordionItem
                     key={i}
                     value={`faq-${i}`}
-                    className="border rounded-xl px-4 data-[state=open]:shadow-sm transition-shadow"
+                    className="rounded-xl border px-4 transition-shadow data-[state=open]:shadow-sm"
                   >
-                    <AccordionTrigger className="text-left text-sm font-medium py-4 hover:no-underline [&>svg]:hidden">
+                    <AccordionTrigger className="py-4 text-left text-sm font-medium hover:no-underline [&>svg]:hidden">
                       <span className="flex-1 pr-4">{faq.question}</span>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
+                      <ChevronDown className="text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
                     </AccordionTrigger>
-                    <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+                    <AccordionContent className="text-muted-foreground pb-4 text-sm leading-relaxed">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -211,13 +208,13 @@ export default function CommunityPage() {
               </Accordion>
 
               {/* Direct email fallback */}
-              <div className="flex items-start gap-3 rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4 mt-0.5 shrink-0" />
+              <div className="text-muted-foreground flex items-start gap-3 rounded-xl border border-dashed p-4 text-sm">
+                <Mail className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   For urgent issues, email us directly at{" "}
                   <a
                     href="mailto:support@astrapost.app"
-                    className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                    className="text-foreground hover:text-primary font-medium underline underline-offset-4"
                   >
                     support@astrapost.app
                   </a>
@@ -227,7 +224,7 @@ export default function CommunityPage() {
 
             {/* Contact form */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium tracking-wide uppercase">
                 <Mail className="h-4 w-4" />
                 Send a message
               </div>
@@ -237,20 +234,17 @@ export default function CommunityPage() {
         </div>
 
         {/* ── CTA ────────────────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-muted/50 to-muted/20 p-8 md:p-12 text-center max-w-4xl mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5" />
+        <div className="border-border/50 from-muted/50 to-muted/20 relative mx-auto max-w-4xl overflow-hidden rounded-2xl border bg-gradient-to-br p-8 text-center md:p-12">
+          <div className="from-primary/5 absolute inset-0 bg-gradient-to-r via-purple-500/5 to-pink-500/5" />
           <div className="relative">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Ready to join 2,500+ creators?
-            </h3>
-            <p className="text-muted-foreground max-w-lg mx-auto mb-8">
-              Get instant access to our community of creators and start growing
-              your audience today.
+            <h3 className="mb-4 text-2xl font-bold md:text-3xl">Ready to join 2,500+ creators?</h3>
+            <p className="text-muted-foreground mx-auto mb-8 max-w-lg">
+              Get instant access to our community of creators and start growing your audience today.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Button size="lg" disabled>
                 Join Community Now
-                <Badge variant="secondary" className="ml-2 text-[10px] px-1.5 py-0 h-4">
+                <Badge variant="secondary" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
                   Coming Soon
                 </Badge>
               </Button>
@@ -260,7 +254,6 @@ export default function CommunityPage() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -12,8 +12,14 @@ const { mockDb, mockPostTweet, mockPostTweetReply, mockUploadMedia } = vi.hoiste
       orderBy: () => builder,
       limit: () => builder,
       offset: () => builder,
-      then: ((resolve?: ((v: unknown) => unknown) | null, reject?: ((r: unknown) => unknown) | null) =>
-        Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined)) as unknown as PromiseLike<unknown>["then"],
+      then: ((
+        resolve?: ((v: unknown) => unknown) | null,
+        reject?: ((r: unknown) => unknown) | null
+      ) =>
+        Promise.resolve(result).then(
+          resolve ?? undefined,
+          reject ?? undefined
+        )) as unknown as PromiseLike<unknown>["then"],
     };
     return builder;
   }
@@ -68,7 +74,7 @@ vi.mock("@/lib/services/x-api", () => {
 // Mock BullMQ and IORedis
 vi.mock("bullmq", () => ({
   Queue: vi.fn(),
-  Worker: vi.fn(function() {
+  Worker: vi.fn(function () {
     return { on: vi.fn() };
   }),
 }));
@@ -102,9 +108,7 @@ describe("Schedule Processor", () => {
         accessToken: "token",
         refreshToken: "refresh",
       },
-      tweets: [
-        { id: "tweetRow1", content: "Hello World", position: 1, media: [], xTweetId: null },
-      ],
+      tweets: [{ id: "tweetRow1", content: "Hello World", position: 1, media: [], xTweetId: null }],
     };
 
     mockDb.query.posts.findFirst.mockResolvedValue(mockPost);

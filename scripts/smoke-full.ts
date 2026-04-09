@@ -38,7 +38,9 @@ async function waitForPostgresReady() {
     );
 
     if (res.code === 0) {
-      console.log(`[smoke:full] Postgres ready after ${Math.round((Date.now() - started) / 1000)}s`);
+      console.log(
+        `[smoke:full] Postgres ready after ${Math.round((Date.now() - started) / 1000)}s`
+      );
       return;
     }
 
@@ -141,7 +143,9 @@ async function main() {
     worker = startWorker();
     await Promise.race([
       worker.waitReady(),
-      new Promise<void>((_, reject) => setTimeout(() => reject(new Error("Worker start timeout")), 15000)),
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error("Worker start timeout")), 15000)
+      ),
     ]);
 
     console.log("[smoke:full] Running end-to-end smoke...");
@@ -149,7 +153,11 @@ async function main() {
     if (smoke.code !== 0) throw new Error(`smoke:e2e failed (code=${smoke.code})`);
 
     console.log(
-      JSON.stringify({ ok: true, durationMs: Date.now() - startedAt, mode: "TWITTER_DRY_RUN" }, null, 2)
+      JSON.stringify(
+        { ok: true, durationMs: Date.now() - startedAt, mode: "TWITTER_DRY_RUN" },
+        null,
+        2
+      )
     );
   } finally {
     if (worker) {

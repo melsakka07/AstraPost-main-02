@@ -20,13 +20,7 @@ import { ViralHourChart } from "@/components/analytics/viral-hour-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,22 +53,12 @@ interface ViralAnalysis {
   insights: string[];
 }
 
-const DAY_ORDER = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
+const DAY_ORDER = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 /** Safely render **bold** markdown syntax as React nodes (no XSS risk). */
 function safeBold(text: string): React.ReactNode {
   const parts = text.split(/\*\*(.*?)\*\*/g);
-  return parts.map((part, i) =>
-    i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-  );
+  return parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part));
 }
 
 export default function ViralAnalyzerPage() {
@@ -100,9 +84,7 @@ export default function ViralAnalyzerPage() {
         setAnalysis(data.analysis);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to analyze viral content"
-      );
+      setError(err instanceof Error ? err.message : "Failed to analyze viral content");
     } finally {
       setIsLoading(false);
     }
@@ -133,24 +115,44 @@ export default function ViralAnalyzerPage() {
     ];
 
     if (analysis.hashtags.length > 0) {
-      lines.push("## Top Hashtags", "| Hashtag | Avg Engagement | Tweets |", "|---------|---------------|--------|");
-      analysis.hashtags.slice(0, 8).forEach((h) => lines.push(`| #${h.tag} | ${fmt(h.avgEngagement)} | ${h.count} |`));
+      lines.push(
+        "## Top Hashtags",
+        "| Hashtag | Avg Engagement | Tweets |",
+        "|---------|---------------|--------|"
+      );
+      analysis.hashtags
+        .slice(0, 8)
+        .forEach((h) => lines.push(`| #${h.tag} | ${fmt(h.avgEngagement)} | ${h.count} |`));
       lines.push("");
     }
     if (analysis.keywords.length > 0) {
-      lines.push("## Top Keywords", "| Keyword | Avg Engagement | Tweets |", "|---------|---------------|--------|");
-      analysis.keywords.slice(0, 8).forEach((k) => lines.push(`| "${k.keyword}" | ${fmt(k.avgEngagement)} | ${k.count} |`));
+      lines.push(
+        "## Top Keywords",
+        "| Keyword | Avg Engagement | Tweets |",
+        "|---------|---------------|--------|"
+      );
+      analysis.keywords
+        .slice(0, 8)
+        .forEach((k) => lines.push(`| "${k.keyword}" | ${fmt(k.avgEngagement)} | ${k.count} |`));
       lines.push("");
     }
     if (analysis.bestDays.length > 0) {
-      lines.push("## Best Days", "| Day | Avg Engagement | Tweets |", "|-----|---------------|--------|");
+      lines.push(
+        "## Best Days",
+        "| Day | Avg Engagement | Tweets |",
+        "|-----|---------------|--------|"
+      );
       [...analysis.bestDays]
         .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day))
         .forEach((d) => lines.push(`| ${d.day} | ${fmt(d.avgEngagement)} | ${d.count} |`));
       lines.push("");
     }
     if (analysis.length.length > 0) {
-      lines.push("## Tweet Length Performance", "| Length | Avg Engagement | Tweets |", "|--------|---------------|--------|");
+      lines.push(
+        "## Tweet Length Performance",
+        "| Length | Avg Engagement | Tweets |",
+        "|--------|---------------|--------|"
+      );
       analysis.length.forEach((l) => lines.push(`| ${l.category} | ${fmt(l.avg)} | ${l.count} |`));
     }
 
@@ -171,7 +173,9 @@ export default function ViralAnalyzerPage() {
       ...analysis.length.map((l) => `length,${l.category},${fmt(l.avg)},${l.count}`),
       ...analysis.bestDays.map((d) => `best_days,${d.day},${fmt(d.avgEngagement)},${d.count}`),
       ...analysis.bestHours.map((h) => `best_hours,${h.hour},${fmt(h.avgEngagement)},${h.count}`),
-      ...analysis.contentTypes.map((c) => `content_types,${c.type},${fmt(c.avgEngagement)},${c.count}`),
+      ...analysis.contentTypes.map(
+        (c) => `content_types,${c.type},${fmt(c.avgEngagement)},${c.count}`
+      ),
     ];
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -251,12 +255,12 @@ export default function ViralAnalyzerPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Not enough tweet data to analyze. Publish more tweets (at least 5
-              with 100+ impressions) to get viral content insights.
+              Not enough tweet data to analyze. Publish more tweets (at least 5 with 100+
+              impressions) to get viral content insights.
             </AlertDescription>
           </Alert>
           <div className="relative">
-            <div className="pointer-events-none select-none opacity-40 blur-[2px]">
+            <div className="pointer-events-none opacity-40 blur-[2px] select-none">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                 {[
                   { label: "Tweets Analyzed", value: "24" },
@@ -266,7 +270,7 @@ export default function ViralAnalyzerPage() {
                 ].map((item) => (
                   <Card key={item.label}>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                      <CardTitle className="text-muted-foreground text-sm font-medium">
                         {item.label}
                       </CardTitle>
                     </CardHeader>
@@ -278,14 +282,14 @@ export default function ViralAnalyzerPage() {
               </div>
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-xl border bg-background/95 px-8 py-6 text-center shadow-lg backdrop-blur-sm max-w-md">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <TrendingUp className="h-6 w-6 text-primary" />
+              <div className="bg-background/95 max-w-md rounded-xl border px-8 py-6 text-center shadow-lg backdrop-blur-sm">
+                <div className="bg-primary/10 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+                  <TrendingUp className="text-primary h-6 w-6" />
                 </div>
                 <h2 className="text-lg font-semibold">Unlock Viral Insights</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Publish 5+ tweets with 100+ impressions to unlock AI-powered
-                  analysis of your top-performing content patterns.
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your
+                  top-performing content patterns.
                 </p>
               </div>
             </div>
@@ -333,16 +337,14 @@ export default function ViralAnalyzerPage() {
                 value: analysis.overall.totalImpressions.toLocaleString(),
               },
             ].map((s) => (
-              <Card key={s.label} className="hover:shadow-md transition-shadow">
+              <Card key={s.label} className="transition-shadow hover:shadow-md">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                  <CardTitle className="text-muted-foreground text-sm font-medium">
                     {s.label}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div
-                    className={`text-3xl font-bold ${s.highlight ? "text-green-600" : ""}`}
-                  >
+                  <div className={`text-3xl font-bold ${s.highlight ? "text-green-600" : ""}`}>
                     {s.value}
                   </div>
                 </CardContent>
@@ -354,18 +356,15 @@ export default function ViralAnalyzerPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
+                <Sparkles className="text-primary h-5 w-5" />
                 AI-Generated Insights
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
                 {analysis.insights.map((insight, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-3 text-sm leading-relaxed"
-                  >
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  <li key={i} className="flex items-start gap-3 text-sm leading-relaxed">
+                    <span className="bg-primary mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
                     <span>{safeBold(insight)}</span>
                   </li>
                 ))}
@@ -375,19 +374,30 @@ export default function ViralAnalyzerPage() {
 
           {/* Action Plan — synthesised from analysis data */}
           {(() => {
-            const bestDay = [...analysis.bestDays].sort((a, b) => b.avgEngagement - a.avgEngagement)[0];
-            const bestHour = [...analysis.bestHours].sort((a, b) => b.avgEngagement - a.avgEngagement)[0];
+            const bestDay = [...analysis.bestDays].sort(
+              (a, b) => b.avgEngagement - a.avgEngagement
+            )[0];
+            const bestHour = [...analysis.bestHours].sort(
+              (a, b) => b.avgEngagement - a.avgEngagement
+            )[0];
             const topHashtag = analysis.hashtags[0];
             const bestLength = [...analysis.length].sort((a, b) => b.avg - a.avg)[0];
 
-            const actions: Array<{ icon: React.ComponentType<{ className?: string }>; text: React.ReactNode }> = [];
+            const actions: Array<{
+              icon: React.ComponentType<{ className?: string }>;
+              text: React.ReactNode;
+            }> = [];
 
             if (bestDay && bestHour) {
               actions.push({
                 icon: Clock,
                 text: (
                   <>
-                    Post on <strong>{bestDay.day}s at {bestHour.hour}</strong> — your engagement is highest then.
+                    Post on{" "}
+                    <strong>
+                      {bestDay.day}s at {bestHour.hour}
+                    </strong>{" "}
+                    — your engagement is highest then.
                   </>
                 ),
               });
@@ -398,7 +408,8 @@ export default function ViralAnalyzerPage() {
                 icon: Hash,
                 text: (
                   <>
-                    Include <strong>#{topHashtag.tag}</strong> — your top hashtag by engagement rate.
+                    Include <strong>#{topHashtag.tag}</strong> — your top hashtag by engagement
+                    rate.
                   </>
                 ),
               });
@@ -409,7 +420,8 @@ export default function ViralAnalyzerPage() {
                 icon: Type,
                 text: (
                   <>
-                    Write <strong>{bestLength.category.toLowerCase()}</strong> tweets — they get the most engagement in your account.
+                    Write <strong>{bestLength.category.toLowerCase()}</strong> tweets — they get the
+                    most engagement in your account.
                   </>
                 ),
               });
@@ -421,19 +433,21 @@ export default function ViralAnalyzerPage() {
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    <CheckCircle2 className="text-primary h-5 w-5" />
                     Your Action Plan
                   </CardTitle>
-                  <CardDescription>3 specific steps to improve your engagement based on your data.</CardDescription>
+                  <CardDescription>
+                    3 specific steps to improve your engagement based on your data.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ol className="space-y-3">
                     {actions.map((action, i) => (
                       <li key={i} className="flex items-start gap-3 text-sm">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        <div className="bg-primary/10 text-primary flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                           {i + 1}
                         </div>
-                        <span className="leading-relaxed pt-0.5">{action.text}</span>
+                        <span className="pt-0.5 leading-relaxed">{action.text}</span>
                       </li>
                     ))}
                   </ol>
@@ -444,15 +458,13 @@ export default function ViralAnalyzerPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             {/* V1 — Top Hashtags */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Hash className="h-5 w-5 text-primary" />
+                  <Hash className="text-primary h-5 w-5" />
                   Top Hashtags
                 </CardTitle>
-                <CardDescription>
-                  Hashtags that drive the most engagement
-                </CardDescription>
+                <CardDescription>Hashtags that drive the most engagement</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -471,15 +483,13 @@ export default function ViralAnalyzerPage() {
             </Card>
 
             {/* V6 — Top Keywords */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Type className="h-5 w-5 text-primary" />
+                  <Type className="text-primary h-5 w-5" />
                   Top Keywords
                 </CardTitle>
-                <CardDescription>
-                  Word patterns that resonate with your audience
-                </CardDescription>
+                <CardDescription>Word patterns that resonate with your audience</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -498,15 +508,13 @@ export default function ViralAnalyzerPage() {
             </Card>
 
             {/* V4 — Tweet Length Performance */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <BarChart3 className="h-5 w-5 text-primary" />
+                  <BarChart3 className="text-primary h-5 w-5" />
                   Tweet Length Performance
                 </CardTitle>
-                <CardDescription>
-                  Which lengths perform best for you
-                </CardDescription>
+                <CardDescription>Which lengths perform best for you</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -521,30 +529,25 @@ export default function ViralAnalyzerPage() {
                   height={200}
                   emptyText="No length data yet"
                 />
-                <p className="mt-2 text-xs text-muted-foreground text-right">
+                <p className="text-muted-foreground mt-2 text-right text-xs">
                   Short &lt;100 · Medium 100–200 · Long &gt;200 chars
                 </p>
               </CardContent>
             </Card>
 
             {/* V3 — Best Days */}
-            <Card className="hover:shadow-md transition-shadow">
+            <Card className="transition-shadow hover:shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Clock className="h-5 w-5 text-primary" />
+                  <Clock className="text-primary h-5 w-5" />
                   Best Days to Post
                 </CardTitle>
-                <CardDescription>
-                  Days when your content gets the most engagement
-                </CardDescription>
+                <CardDescription>Days when your content gets the most engagement</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
                   data={[...analysis.bestDays]
-                    .sort(
-                      (a, b) =>
-                        DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day)
-                    )
+                    .sort((a, b) => DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day))
                     .map((d) => ({
                       name: d.day.slice(0, 3),
                       value: d.avgEngagement,
@@ -560,35 +563,27 @@ export default function ViralAnalyzerPage() {
             </Card>
 
             {/* V2 — Best Hours */}
-            <Card className="hover:shadow-md transition-shadow lg:col-span-2">
+            <Card className="transition-shadow hover:shadow-md lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Clock className="h-5 w-5 text-primary" />
+                  <Clock className="text-primary h-5 w-5" />
                   Best Hours to Post
                 </CardTitle>
-                <CardDescription>
-                  24-hour engagement — top 3 highlighted
-                </CardDescription>
+                <CardDescription>24-hour engagement — top 3 highlighted</CardDescription>
               </CardHeader>
               <CardContent>
-                <ViralHourChart
-                  data={analysis.bestHours}
-                  formatValue={fmt}
-                  highlightTop={3}
-                />
+                <ViralHourChart data={analysis.bestHours} formatValue={fmt} highlightTop={3} />
               </CardContent>
             </Card>
 
             {/* V5 — Content Types */}
-            <Card className="hover:shadow-md transition-shadow lg:col-span-2">
+            <Card className="transition-shadow hover:shadow-md lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Type className="h-5 w-5 text-primary" />
+                  <Type className="text-primary h-5 w-5" />
                   Content Type Performance
                 </CardTitle>
-                <CardDescription>
-                  Which types of content work best for you
-                </CardDescription>
+                <CardDescription>Which types of content work best for you</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -602,10 +597,7 @@ export default function ViralAnalyzerPage() {
                   orientation="horizontal"
                   highlightTop={2}
                   formatValue={fmt}
-                  height={Math.max(
-                    160,
-                    analysis.contentTypes.length * 36
-                  )}
+                  height={Math.max(160, analysis.contentTypes.length * 36)}
                   emptyText="No content type data yet"
                 />
               </CardContent>

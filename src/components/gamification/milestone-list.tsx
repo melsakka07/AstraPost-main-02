@@ -12,29 +12,28 @@ export function MilestoneList({ unlockedMilestoneIds }: MilestoneListProps) {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {Object.values(MILESTONES).map((milestone) => {
         const isUnlocked = unlockedMilestoneIds.includes(milestone.id);
-        
+
         return (
-          <Card key={milestone.id} className={cn(
-            "relative overflow-hidden transition-all",
-            !isUnlocked && "opacity-60 bg-muted/50 grayscale"
-          )}>
+          <Card
+            key={milestone.id}
+            className={cn(
+              "relative overflow-hidden transition-all",
+              !isUnlocked && "bg-muted/50 opacity-60 grayscale"
+            )}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {milestone.title}
-              </CardTitle>
+              <CardTitle className="text-sm font-medium">{milestone.title}</CardTitle>
               {isUnlocked ? (
                 <span className="text-2xl">{milestone.icon}</span>
               ) : (
-                <Lock className="h-4 w-4 text-muted-foreground" />
+                <Lock className="text-muted-foreground h-4 w-4" />
               )}
             </CardHeader>
             <CardContent>
-              <div className="text-xs text-muted-foreground">
-                {milestone.description}
-              </div>
+              <div className="text-muted-foreground text-xs">{milestone.description}</div>
               {isUnlocked && (
-                <div className="absolute -right-4 -bottom-4 h-16 w-16 opacity-10 rotate-12">
-                   <Trophy className="h-full w-full" />
+                <div className="absolute -right-4 -bottom-4 h-16 w-16 rotate-12 opacity-10">
+                  <Trophy className="h-full w-full" />
                 </div>
               )}
             </CardContent>

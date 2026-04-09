@@ -6,20 +6,20 @@
 
 AstraPost splits into two independently deployed processes:
 
-| Process | Host | Purpose |
-|---------|------|---------|
-| **Next.js app** | Vercel | Web server, API routes, SSR |
+| Process           | Host    | Purpose                                                 |
+| ----------------- | ------- | ------------------------------------------------------- |
+| **Next.js app**   | Vercel  | Web server, API routes, SSR                             |
 | **BullMQ worker** | Railway | Background job processor (tweet scheduling + analytics) |
 
 Supporting services:
 
-| Service | Provider | Instance | Purpose |
-|---------|----------|----------|---------|
-| PostgreSQL | Neon | `ep-square-truth-an6kpx3y-pooler` · `us-east-1` | Primary database |
-| Redis | Upstash | `amazing-bee-85245` · `us-east-1` | BullMQ queues + rate limiting |
-| File storage | Vercel Blob | — | User media uploads |
-| Email | Resend | — | Transactional emails |
-| Payments | Stripe | — | Pro/Agency subscriptions |
+| Service      | Provider    | Instance                                        | Purpose                       |
+| ------------ | ----------- | ----------------------------------------------- | ----------------------------- |
+| PostgreSQL   | Neon        | `ep-square-truth-an6kpx3y-pooler` · `us-east-1` | Primary database              |
+| Redis        | Upstash     | `amazing-bee-85245` · `us-east-1`               | BullMQ queues + rate limiting |
+| File storage | Vercel Blob | —                                               | User media uploads            |
+| Email        | Resend      | —                                               | Transactional emails          |
+| Payments     | Stripe      | —                                               | Pro/Agency subscriptions      |
 
 > **Credentials are not stored in this file.** Set `POSTGRES_URL` and `REDIS_URL` directly in Vercel and Railway environment variable settings (see §2 and §4).
 
@@ -50,29 +50,31 @@ Use the **Production** environment scope for all variables below unless noted.
 
 ### Required — Core
 
-| Variable | Example / Notes |
-|----------|----------------|
-| `POSTGRES_URL` | Neon pooled connection string. Instance: `ep-square-truth-an6kpx3y-pooler.c-6.us-east-1.aws.neon.tech`, database `neondb`. Includes `?sslmode=require&channel_binding=require`. Copy the exact string from the Neon dashboard — **never hardcode credentials in files**. |
-| `BETTER_AUTH_SECRET` | Generate: `openssl rand -base64 32`. Must be ≥32 chars. |
-| `BETTER_AUTH_URL` | `https://astrapost.vercel.app` |
-| `TOKEN_ENCRYPTION_KEYS` | Comma-separated base64 32-byte keys. First key is primary. Generate: `openssl rand -base64 32`. |
-| `NEXT_PUBLIC_APP_URL` | `https://astrapost.vercel.app` (no trailing slash) |
-| `NODE_ENV` | `production` |
+| Variable                | Example / Notes                                                                                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POSTGRES_URL`          | Neon pooled connection string. Instance: `ep-square-truth-an6kpx3y-pooler.c-6.us-east-1.aws.neon.tech`, database `neondb`. Includes `?sslmode=require&channel_binding=require`. Copy the exact string from the Neon dashboard — **never hardcode credentials in files**. |
+| `BETTER_AUTH_SECRET`    | Generate: `openssl rand -base64 32`. Must be ≥32 chars.                                                                                                                                                                                                                  |
+| `BETTER_AUTH_URL`       | `https://astrapost.vercel.app`                                                                                                                                                                                                                                           |
+| `TOKEN_ENCRYPTION_KEYS` | Comma-separated base64 32-byte keys. First key is primary. Generate: `openssl rand -base64 32`.                                                                                                                                                                          |
+| `NEXT_PUBLIC_APP_URL`   | `https://astrapost.vercel.app` (no trailing slash)                                                                                                                                                                                                                       |
+| `NODE_ENV`              | `production`                                                                                                                                                                                                                                                             |
 
 ### Required — X (Twitter) OAuth
 
-| Variable | Notes |
-|----------|-------|
-| `TWITTER_CLIENT_ID` | From [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard). Enable OAuth 2.0, "Read and Write" permissions, and "Request email from users". |
-| `TWITTER_CLIENT_SECRET` | Same app — OAuth 2.0 client secret. |
-| `TWITTER_BEARER_TOKEN` | Same app → Keys and Tokens → Bearer Token. Required for the Inspiration tweet import feature. |
+| Variable                | Notes                                                                                                                                                               |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TWITTER_CLIENT_ID`     | From [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard). Enable OAuth 2.0, "Read and Write" permissions, and "Request email from users". |
+| `TWITTER_CLIENT_SECRET` | Same app — OAuth 2.0 client secret.                                                                                                                                 |
+| `TWITTER_BEARER_TOKEN`  | Same app → Keys and Tokens → Bearer Token. Required for the Inspiration tweet import feature.                                                                       |
 
 **Callback URL to register in the Twitter app:**
+
 ```
 https://astrapost.vercel.app/api/auth/callback/twitter
 ```
 
 **Required OAuth scopes:**
+
 ```
 tweet.read  tweet.write  users.read  offline.access  media.write
 ```
@@ -81,34 +83,35 @@ tweet.read  tweet.write  users.read  offline.access  media.write
 
 ### Required — Redis (Upstash)
 
-| Variable | Notes |
-|----------|-------|
+| Variable    | Notes                                                                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `REDIS_URL` | Upstash Redis TLS URL. Instance: `amazing-bee-85245.upstash.io:6379` (note: `rediss://` scheme — TLS). Copy the exact string from the Upstash console — **never hardcode credentials in files**. |
 
 > The worker on Railway needs this same `REDIS_URL`. Set it in the Railway service environment as well (see §4).
 
 ### Required — AI
 
-| Variable | Notes |
-|----------|-------|
-| `OPENROUTER_API_KEY` | From [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys). Powers thread writer, translation, hashtags, tools, and chat. |
-| `OPENROUTER_MODEL` | Default: `openai/gpt-4o`. Can override with any model from [openrouter.ai/models](https://openrouter.ai/models). |
-| `GEMINI_API_KEY` | From [Google AI Studio](https://aistudio.google.com/app/apikey). Powers the Inspiration (inspire) and image endpoints. |
-| `GOOGLE_AI_API_KEY` | Alias for `GEMINI_API_KEY` — set both to the same value. |
-| `REPLICATE_API_TOKEN` | From [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens). Powers AI image generation (Flux models). |
+| Variable              | Notes                                                                                                                                  |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENROUTER_API_KEY`  | From [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys). Powers thread writer, translation, hashtags, tools, and chat. |
+| `OPENROUTER_MODEL`    | Default: `openai/gpt-4o`. Can override with any model from [openrouter.ai/models](https://openrouter.ai/models).                       |
+| `GEMINI_API_KEY`      | From [Google AI Studio](https://aistudio.google.com/app/apikey). Powers the Inspiration (inspire) and image endpoints.                 |
+| `GOOGLE_AI_API_KEY`   | Alias for `GEMINI_API_KEY` — set both to the same value.                                                                               |
+| `REPLICATE_API_TOKEN` | From [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens). Powers AI image generation (Flux models).           |
 
 ### Required — Stripe Billing
 
-| Variable | Notes |
-|----------|-------|
-| `STRIPE_SECRET_KEY` | From [Stripe dashboard → API keys](https://dashboard.stripe.com/apikeys). Use `sk_live_...` for production. |
-| `STRIPE_WEBHOOK_SECRET` | From Stripe → Webhooks → your endpoint → Signing secret. Must match the endpoint registered for `https://astrapost.vercel.app/api/billing/webhook`. |
-| `STRIPE_PRICE_ID_MONTHLY` | Pro Monthly price ID from Stripe (`price_...`). |
-| `STRIPE_PRICE_ID_ANNUAL` | Pro Annual price ID from Stripe. |
-| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | Agency Monthly price ID. |
-| `STRIPE_PRICE_ID_AGENCY_ANNUAL` | Agency Annual price ID. |
+| Variable                         | Notes                                                                                                                                               |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`              | From [Stripe dashboard → API keys](https://dashboard.stripe.com/apikeys). Use `sk_live_...` for production.                                         |
+| `STRIPE_WEBHOOK_SECRET`          | From Stripe → Webhooks → your endpoint → Signing secret. Must match the endpoint registered for `https://astrapost.vercel.app/api/billing/webhook`. |
+| `STRIPE_PRICE_ID_MONTHLY`        | Pro Monthly price ID from Stripe (`price_...`).                                                                                                     |
+| `STRIPE_PRICE_ID_ANNUAL`         | Pro Annual price ID from Stripe.                                                                                                                    |
+| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | Agency Monthly price ID.                                                                                                                            |
+| `STRIPE_PRICE_ID_AGENCY_ANNUAL`  | Agency Annual price ID.                                                                                                                             |
 
 **Stripe Webhook events to enable:**
+
 ```
 checkout.session.completed
 customer.subscription.created
@@ -119,18 +122,19 @@ invoice.payment_failed
 ```
 
 **Webhook endpoint URL:**
+
 ```
 https://astrapost.vercel.app/api/billing/webhook
 ```
 
 ### Optional
 
-| Variable | Notes |
-|----------|-------|
+| Variable                | Notes                                                                                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob token — auto-provisioned when you add Vercel Blob to the project. Without this, uploaded media falls back to local disk (not suitable for production). |
-| `RESEND_API_KEY` | From [resend.com](https://resend.com). Without it, emails are logged to console only. |
-| `RESEND_FROM_EMAIL` | e.g. `noreply@astrapost.com`. Must match a verified domain in Resend. |
-| `TWITTER_DRY_RUN` | Set to `1` to prevent the worker from posting to real X accounts (testing only). **Never set in production.** |
+| `RESEND_API_KEY`        | From [resend.com](https://resend.com). Without it, emails are logged to console only.                                                                              |
+| `RESEND_FROM_EMAIL`     | e.g. `noreply@astrapost.com`. Must match a verified domain in Resend.                                                                                              |
+| `TWITTER_DRY_RUN`       | Set to `1` to prevent the worker from posting to real X accounts (testing only). **Never set in production.**                                                      |
 
 ---
 
@@ -210,20 +214,21 @@ The worker (`scripts/worker.ts`) runs as a **separate long-lived process** — i
 
 The following variables are **confirmed set** in the Railway service as of 2026-03-27:
 
-| Variable | Status | Notes |
-|----------|--------|-------|
-| `POSTGRES_URL` | ✅ Set | Neon pooled — `ep-square-truth-an6kpx3y-pooler`, `us-east-1` |
-| `REDIS_URL` | ✅ Set | Upstash TLS — `amazing-bee-85245.upstash.io:6379`, `rediss://` scheme |
-| `TWITTER_CLIENT_ID` | ✅ Set | X OAuth client ID |
-| `TWITTER_CLIENT_SECRET` | ✅ Set | X OAuth client secret |
-| `TOKEN_ENCRYPTION_KEYS` | ✅ Set | Must match Vercel exactly — worker decrypts X OAuth tokens |
-| `BETTER_AUTH_SECRET` | ✅ Set | Must match Vercel exactly |
-| `BETTER_AUTH_URL` | ✅ Set | `https://astrapost.vercel.app` |
-| `NODE_ENV` | ✅ Set | `production` |
-| `OPENROUTER_API_KEY` | ✅ Set | Not used by the worker today, but safe to have |
-| `NEXT_PUBLIC_APP_URL` | ⚠️ Not needed | Build-time browser variable — the worker has no browser context. Safe to remove from Railway to avoid confusion. **Note:** was set with a typo (`NEXT_PUBLIC_APP_UR`) — ensure it is either removed or corrected if kept. |
+| Variable                | Status        | Notes                                                                                                                                                                                                                     |
+| ----------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`          | ✅ Set        | Neon pooled — `ep-square-truth-an6kpx3y-pooler`, `us-east-1`                                                                                                                                                              |
+| `REDIS_URL`             | ✅ Set        | Upstash TLS — `amazing-bee-85245.upstash.io:6379`, `rediss://` scheme                                                                                                                                                     |
+| `TWITTER_CLIENT_ID`     | ✅ Set        | X OAuth client ID                                                                                                                                                                                                         |
+| `TWITTER_CLIENT_SECRET` | ✅ Set        | X OAuth client secret                                                                                                                                                                                                     |
+| `TOKEN_ENCRYPTION_KEYS` | ✅ Set        | Must match Vercel exactly — worker decrypts X OAuth tokens                                                                                                                                                                |
+| `BETTER_AUTH_SECRET`    | ✅ Set        | Must match Vercel exactly                                                                                                                                                                                                 |
+| `BETTER_AUTH_URL`       | ✅ Set        | `https://astrapost.vercel.app`                                                                                                                                                                                            |
+| `NODE_ENV`              | ✅ Set        | `production`                                                                                                                                                                                                              |
+| `OPENROUTER_API_KEY`    | ✅ Set        | Not used by the worker today, but safe to have                                                                                                                                                                            |
+| `NEXT_PUBLIC_APP_URL`   | ⚠️ Not needed | Build-time browser variable — the worker has no browser context. Safe to remove from Railway to avoid confusion. **Note:** was set with a typo (`NEXT_PUBLIC_APP_UR`) — ensure it is either removed or corrected if kept. |
 
 **Variables the worker does NOT need** (do not add to Railway):
+
 - `STRIPE_*` — billing is handled by the web app only
 - `RESEND_*` — email is sent by the web app only
 - `REPLICATE_API_TOKEN` — image generation is web app only
@@ -234,9 +239,9 @@ The following variables are **confirmed set** in the Railway service as of 2026-
 
 Two BullMQ workers run in the same process:
 
-| Queue | Processor | Trigger |
-|-------|-----------|---------|
-| `schedule-queue` | `scheduleProcessor` | Enqueued by the web app when a post is scheduled. Decrypts X tokens, posts tweet/thread via X API v2, updates post status + analytics. |
+| Queue             | Processor            | Trigger                                                                                                                                                            |
+| ----------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `schedule-queue`  | `scheduleProcessor`  | Enqueued by the web app when a post is scheduled. Decrypts X tokens, posts tweet/thread via X API v2, updates post status + analytics.                             |
 | `analytics-queue` | `analyticsProcessor` | Repeatable job added at startup. Runs every **6 hours** (`every: 6 * 60 * 60 * 1000`). Updates tweet metrics (likes, retweets, impressions) for all tracked posts. |
 
 ### Monitoring Worker Health
@@ -252,6 +257,7 @@ Two BullMQ workers run in the same process:
 ### Graceful Shutdown
 
 The worker handles `SIGTERM` and `SIGINT`:
+
 1. Closes both queues.
 2. Closes both workers (waits for in-progress jobs to finish).
 3. Exits with code 0.

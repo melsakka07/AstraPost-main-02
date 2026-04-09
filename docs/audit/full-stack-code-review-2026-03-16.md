@@ -1,4 +1,5 @@
 # AstraPost — Full-Stack Code Review
+
 **Date:** 2026-03-16
 **Reviewer:** Principal Full-Stack Engineer (AI-assisted)
 **Scope:** Complete repository audit — security, architecture, database, reliability, AI, UX, performance, billing
@@ -24,9 +25,11 @@ The **three most critical issues remaining** are:
 ## Section 1: Architecture & Project Structure
 
 ### [POSITIVE] Route group layout separation is idiomatic
+
 `(marketing)/layout.tsx`, `(auth)/layout.tsx`, and the `dashboard/` tree are cleanly separated. Marketing pages never render dashboard chrome, and vice versa.
 
 ### [POSITIVE] Team context resolved server-side with HMAC-signed cookies
+
 `src/lib/team-context.ts` verifies an HMAC on the team cookie and falls back to the personal workspace on tampering. This is proper defence-in-depth.
 
 ---
@@ -62,9 +65,11 @@ File: `src/app/admin/layout.tsx` (line 15)
 Current behavior: `<main className="flex-1 ml-64 p-8">` pushes the content 16rem from the left. In RTL mode (Arabic), this creates an overlapping layout.
 
 Recommendation:
+
 ```tsx
 <main className="flex-1 ms-64 p-8">
 ```
+
 `ms-*` (margin-inline-start) respects the document's text direction.
 
 Rationale: AstraPost targets Arabic users — RTL layout correctness is a first-class concern.
@@ -84,9 +89,11 @@ Recommendation: Add a JSDoc comment explaining this is the Next.js 16 proxy entr
 ## Section 2: Database & Data Layer
 
 ### [POSITIVE] Schema uses pgEnum for all status/plan fields
+
 All status columns (`postStatusEnum`, `planEnum`, `subscriptionStatusEnum`, etc.) use proper PostgreSQL enums, providing both constraint enforcement and query optimisation.
 
 ### [POSITIVE] Bulk insert with transaction in post creation
+
 `POST /api/posts` pre-generates all IDs, collects rows, and issues 3 batched INSERTs in a single transaction. This is the correct pattern.
 
 ---
@@ -96,10 +103,12 @@ All status columns (`postStatusEnum`, `planEnum`, `subscriptionStatusEnum`, etc.
 File: `src/lib/schema.ts` (lines 411–413)
 
 Current behavior:
+
 ```ts
 uniqueIndex("analytics_tweet_id_unique").on(table.tweetId),
 index("analytics_tweet_id_idx").on(table.tweetId),
 ```
+
 A `UNIQUE` constraint already creates a B-tree index. The additional non-unique `index` on the same column is redundant and wastes storage.
 
 Recommendation: Remove `index("analytics_tweet_id_idx")`. Keep only the unique index.
@@ -119,6 +128,7 @@ File: `src/lib/schema.ts`
 File: `src/lib/schema.ts` (lines 109, 145)
 
 Current behavior:
+
 ```ts
 email: text("email").notNull().unique(),  // creates a unique index
 ...
@@ -152,12 +162,15 @@ Recommendation: If `groupId` always groups posts within the same batch, consider
 ## Section 3: Authentication & Security
 
 ### [POSITIVE] AES-256-GCM token encryption with proper IV and auth tag
+
 `src/lib/security/token-encryption.ts` uses `crypto.randomBytes(12)` for each IV, includes the GCM authentication tag, and supports key rotation. This is production-grade cryptographic implementation.
 
 ### [POSITIVE] Magic-byte file type detection
+
 `src/app/api/media/upload/route.ts` examines actual file bytes rather than trusting the `Content-Type` header or filename extension. Prevents extension-spoofed uploads.
 
 ### [POSITIVE] VoiceProfile injection protection
+
 `src/lib/ai/voice-profile.ts` validates via Zod schema, rejects newlines, sanitizes each field before interpolation. This properly mitigates the prompt injection vector.
 
 ---
@@ -167,6 +180,7 @@ Recommendation: If `groupId` always groups posts within the same batch, consider
 File: `src/app/api/link-preview/route.ts`
 
 Current behavior:
+
 ```ts
 export async function POST(req: Request) {
   const { url } = await req.json();
@@ -175,9 +189,11 @@ export async function POST(req: Request) {
   return NextResponse.json(data);
 }
 ```
+
 There is **no session check** and **no URL blocklist**. Any unauthenticated user can POST `{ "url": "http://169.254.169.254/latest/meta-data/" }` and the server will fetch it, following redirects. On AWS/GCP/Azure, this leaks cloud instance metadata including credentials. On internal networks, it probes Redis (`http://127.0.0.1:6379/`), Postgres, and any other service.
 
 Recommendation:
+
 ```ts
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -196,7 +212,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
   }
 
-  const BLOCKED_HOSTS = /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1|0\.0\.0\.0)/i;
+  const BLOCKED_HOSTS =
+    /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1|0\.0\.0\.0)/i;
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
   }
@@ -204,7 +221,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "URL not allowed" }, { status: 403 });
   }
 
-  const data = await getLinkPreview(url, { followRedirects: 'follow', timeout: 5000 });
+  const data = await getLinkPreview(url, { followRedirects: "follow", timeout: 5000 });
   return NextResponse.json(data);
 }
 ```
@@ -218,11 +235,13 @@ Rationale: SSRF is an OWASP Top 10 vulnerability. A serverless function fetching
 File: `src/app/api/linkedin/callback/route.ts`
 
 Current behavior: The callback reads `?code=` and exchanges it for a token without validating a `state` parameter. An attacker can:
+
 1. Initiate their own LinkedIn OAuth flow against AstraPost, getting a `?code=ATTACKER_CODE`
 2. Trick the victim into visiting `/api/linkedin/callback?code=ATTACKER_CODE`
 3. AstraPost silently associates the attacker's LinkedIn account with the victim's profile
 
 Recommendation: In `GET /api/linkedin/auth`, generate a random state, store it in a signed cookie (or server-side session), and redirect to LinkedIn with `&state=<value>`. In the callback:
+
 ```ts
 const state = searchParams.get("state");
 const cookieStore = await cookies();
@@ -232,6 +251,7 @@ if (!state || !expectedState || state !== expectedState) {
 }
 cookieStore.delete("linkedin_oauth_state");
 ```
+
 Apply the same pattern to the Instagram OAuth callback.
 
 Rationale: OAuth CSRF (sometimes called "account hijacking via OAuth") is listed in OWASP's OAuth security guidance. Without a `state` check, account linkage can be attacked.
@@ -243,6 +263,7 @@ Rationale: OAuth CSRF (sometimes called "account hijacking via OAuth") is listed
 File: `src/app/api/admin/users/[userId]/impersonate/route.ts`
 
 **Resolution:** All three `@ts-ignore` directives removed.
+
 - `session.user.isAdmin`: accessed via a narrow `{ isAdmin?: boolean }` cast with an explanatory comment — preserves type safety while acknowledging the BetterAuth additionalFields gap.
 - `auth.api.createSession`: replaced with a module-level `AdminAuthApi` type that extends `typeof auth.api` with the minimal `createSession` signature. The cast is `auth.api as unknown as AdminAuthApi` — if BetterAuth ever adds this to its public types, the cast becomes redundant but harmless; if the signature changes, TypeScript will flag it here.
 - `newSession.token`: flows naturally from the typed `AdminAuthApi` return type; no cast needed.
@@ -290,12 +311,15 @@ Recommendation: Document this as an explicit architectural decision: "BetterAuth
 ## Section 4: Background Jobs & Reliability
 
 ### [POSITIVE] Idempotent publish with per-tweet `xTweetId` check
+
 The worker checks `if (tweetRow.xTweetId)` before posting, and `if (!m.xMediaId)` before uploading media. Combined with the transaction that marks the post as published, this makes the processor safe to retry.
 
 ### [POSITIVE] Recurrence capped at 1 year with `MAX_RECURRENCE_FUTURE_MS`
+
 The 1-year cap prevents unbounded queue growth when no end date is specified.
 
 ### [POSITIVE] Path traversal protection for local media
+
 The `uploadsRoot` containment check in the processor correctly prevents reading arbitrary files from `fileUrl`.
 
 ---
@@ -305,6 +329,7 @@ The `uploadsRoot` containment check in the processor correctly prevents reading 
 File: `src/lib/services/x-api.ts`
 
 **Resolution:** Added `private static async refreshWithLock(account, userId)` that:
+
 1. Issues `SET x:token_refresh_lock:{accountId} 1 EX 30 NX` — returns `"OK"` if acquired, `null` if already held.
 2. **Lock acquired (or Redis unavailable):** Performs the refresh inside a `try/finally`; the `finally` block calls `redis.del(lockKey)` so the lock is released immediately on success or error. The 30 s TTL is a safety net if the worker is killed mid-operation.
 3. **Lock contended:** Waits `REFRESH_LOCK_WAIT_MS` (1.5 s) then re-reads the account row from the DB — by which point the lock holder has written the new token — and returns an `XApiService` from the fresh row.
@@ -353,12 +378,15 @@ For `analyticsWorker`: the DLQ guard only fires when `job.opts?.attempts` is exp
 ## Section 5: AI Integration
 
 ### [POSITIVE] Async Replicate polling pattern
+
 `POST /api/ai/image` now uses `startImageGeneration()` (fire-and-forget) and returns a `predictionId`. The client polls `GET /api/ai/image/status?id=<id>`. This correctly avoids serverless timeout.
 
 ### [POSITIVE] Atomic Redis DEL for idempotent usage recording
+
 The status endpoint uses `redis.del()` which returns 1 for the first deleter and 0 for concurrent duplicates, preventing double-counting.
 
 ### [POSITIVE] Ownership check on prediction polling
+
 `meta.userId !== session.user.id` prevents users from polling each other's image generations.
 
 ---
@@ -376,6 +404,7 @@ File: `src/app/api/ai/image/route.ts`
 File: `src/lib/services/ai-image.ts` (lines 143–182)
 
 **Resolution:** All synchronous blocking symbols (`pollPrediction`, `createPrediction`, `NanoBanana2Provider`, `NanaBananaProProvider`, `createImageProvider`, `generateImage`) are now marked with comprehensive `@deprecated` JSDoc that:
+
 1. Names the correct replacement (`startImageGeneration()` + `checkImagePrediction()`)
 2. States the failure mode ("blocks for up to 2 minutes, will time out in serverless environments")
 3. A block comment at the top of the deprecated section explicitly labels it as `DEPRECATED — Synchronous blocking path (DO NOT USE in production)`
@@ -397,12 +426,15 @@ File: `src/app/api/ai/image/route.ts` (lines 45–65, 162–166)
 File: `src/app/api/ai/thread/route.ts` (line 97)
 
 Current behavior:
+
 ```ts
 await recordAiUsage(session.user.id, "thread", 0, prompt, object, language);
 ```
+
 All AI thread generations are recorded with `tokensUsed: 0`. Token-based quota enforcement cannot function correctly.
 
 Recommendation: Use the Vercel AI SDK's `usage` property if available, or use the OpenRouter streaming response to track token usage. Alternatively, estimate tokens from prompt/response length until the SDK exposes this:
+
 ```ts
 const { object, usage } = await generateObject({ model, schema: tweetSchema, prompt });
 await recordAiUsage(session.user.id, "thread", usage?.totalTokens ?? 0, prompt, object, language);
@@ -423,9 +455,11 @@ Recommendation: Configure a fallback model in OpenRouter provider settings, or a
 ## Section 6: API Design & Error Handling
 
 ### [POSITIVE] Zod input validation on all major mutation endpoints
+
 `POST /api/posts`, `/api/ai/thread`, `/api/ai/image`, and others use `z.safeParse()` with proper error surfacing.
 
 ### [POSITIVE] Correlation IDs throughout scheduling flow
+
 `getCorrelationId()` is used in post creation and propagated to BullMQ jobs, allowing end-to-end request tracing.
 
 ---
@@ -435,16 +469,19 @@ Recommendation: Configure a fallback model in OpenRouter provider settings, or a
 File: `src/app/api/media/upload/route.ts` (lines 134–143)
 
 Current behavior:
+
 ```ts
 const uploadsRoot = path.resolve(process.cwd(), "public", "uploads");
 await mkdir(uploadsRoot, { recursive: true });
 await writeFile(filePath, buffer);
 ```
+
 This uses the local filesystem unconditionally. On Vercel serverless, writes to `public/uploads/` land in an ephemeral container filesystem. After the function instance is recycled (minutes to hours), the file is gone. Users see broken media in their posts.
 
 **This is already correct in `ai-image/status/route.ts` which calls `upload()` from `@/lib/storage`.** The user media upload route needs the same treatment.
 
 Recommendation:
+
 ```ts
 import { upload } from "@/lib/storage";
 
@@ -472,17 +509,22 @@ File: `src/app/api/feedback/route.ts`
 File: `src/app/api/feedback/route.ts` (line 93)
 
 Current behavior:
+
 ```ts
 await db.update(feedback).set({ upvotes: 1 }).where(eq(feedback.id, createdFeedback.id));
 ```
+
 This sets `upvotes = 1` absolutely (not atomically incremented). If two users submit feedback at the same time and there's a race, the value will be 1 regardless. More importantly, this contradicts the `upvotes: 1` in the initial insert — it's redundant but harmless since this immediately follows creation.
 
 Recommendation:
+
 ```ts
-await db.update(feedback)
+await db
+  .update(feedback)
   .set({ upvotes: sql`upvotes + 1` })
   .where(eq(feedback.id, createdFeedback.id));
 ```
+
 Note: The upvote/downvote endpoint (`feedback/[id]/upvote/route.ts`) already correctly uses `sql\`upvotes + 1\``.
 
 ---
@@ -502,9 +544,11 @@ Recommendation: Gate the endpoint behind an `ADMIN_DIAGNOSTICS_TOKEN` environmen
 File: `src/app/api/link-preview/route.ts` (line 22)
 
 Current behavior:
+
 ```ts
-return NextResponse.json({ error: 'Failed to fetch preview' }, { status: 200 });
+return NextResponse.json({ error: "Failed to fetch preview" }, { status: 200 });
 ```
+
 Returning `200` with an error body prevents callers from detecting failure via HTTP status codes.
 
 Recommendation: Return `{ status: 400 }` or `{ status: 502 }` on fetch failure.
@@ -514,9 +558,11 @@ Recommendation: Return `{ status: 400 }` or `{ status: 502 }` on fetch failure.
 ## Section 7: UI/UX Review
 
 ### [POSITIVE] RTL `dir` attribute set from locale cookie
+
 `src/app/layout.tsx` correctly applies `lang={locale} dir={dir}` to the `<html>` element and suppresses hydration warnings. RTL handling at the root level is the correct approach.
 
 ### [POSITIVE] Dark mode with `ThemeProvider` and system preference support
+
 `defaultTheme="system"` with `enableSystem` provides a proper dark mode experience.
 
 ---
@@ -526,6 +572,7 @@ Recommendation: Return `{ status: 400 }` or `{ status: 502 }` on fetch failure.
 File: `src/app/layout.tsx` + `src/app/globals.css`
 
 **Resolution:**
+
 - `Cairo` imported from `next/font/google` alongside Geist. Configured with `subsets: ["arabic", "latin"]`, `weight: ["400", "500", "600", "700"]`, and `display: "swap"` for optimised loading.
 - `--font-arabic` CSS variable injected on `<body>` via `${cairo.variable}`.
 - `:lang(ar) { font-family: var(--font-arabic), system-ui, sans-serif; }` added inside `@layer base` in `globals.css` — activates Cairo exclusively when `lang="ar"` is set on `<html>`, leaving the Geist stack unchanged for all other locales. The existing RTL cookie-detection (`locale` cookie → `dir="rtl"`) already sets `lang="ar"` on the root element, so no further wiring is needed.
@@ -537,9 +584,11 @@ File: `src/app/layout.tsx` + `src/app/globals.css`
 File: `src/app/layout.tsx` (line 55)
 
 Current behavior:
+
 ```ts
 openGraph: { locale: "en_US", ... }
 ```
+
 OpenGraph `locale` is hardcoded to `en_US`. Arabic users sharing AstraPost links will see English metadata.
 
 Recommendation: Generate locale-aware metadata in each page's `generateMetadata` function based on the user's preferred language, or at minimum add `alternates: [{ locale: "ar_SA", url: "/" }]`.
@@ -553,10 +602,12 @@ Review across: `src/app/admin/layout.tsx`, `src/components/dashboard/sidebar.tsx
 Current behavior: Physical properties (`ml-*`, `mr-*`, `pl-*`, `pr-*`) are used in layout components. In RTL mode, `ml-64` creates left margin (what was right in RTL), causing layout overlap.
 
 Key affected locations:
+
 - `src/app/admin/layout.tsx:15` — `ml-64`
 - Any sidebar/content split using physical margin/padding
 
 Recommendation: Use Tailwind's logical property variants:
+
 - `ml-*` → `ms-*` (margin-inline-start)
 - `mr-*` → `me-*` (margin-inline-end)
 - `pl-*` → `ps-*` (padding-inline-start)
@@ -587,9 +638,11 @@ Recommendation: Replace with `overflow-x-clip` (preserves scroll context better)
 ## Section 8: Performance & Scalability
 
 ### [POSITIVE] Analytics engine uses SQL GROUP BY instead of JS aggregation
+
 `AnalyticsEngine.getBestTimesToPost()` pushes the `GROUP BY (DOW, hour)` + `AVG` computation into PostgreSQL. This is bounded at 168 rows regardless of data volume.
 
 ### [POSITIVE] Redis caching for prediction metadata (30 min TTL)
+
 Image generation state is cached in Redis, avoiding DB reads on every poll.
 
 ---
@@ -605,12 +658,15 @@ Duplicate of the finding above — this is also a performance concern since loca
 File: `src/app/api/billing/webhook/route.ts` (line 436)
 
 Current behavior:
+
 ```ts
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 ```
+
 This is inside the `POST` handler, so a new Stripe client is created on every webhook event. While this is cheap (no persistent connection), it's unnecessary overhead.
 
 Recommendation: Move to module-level initialization:
+
 ```ts
 // At module scope, outside the handler
 let _stripe: Stripe | null = null;
@@ -641,12 +697,15 @@ Already noted in Section 2 — repeating here as it affects database performance
 ## Section 9: Developer Experience & Code Quality
 
 ### [POSITIVE] Structured logging with `logger.ts`
+
 Structured JSON logging is used throughout the worker and API routes. Log entries include `correlationId`, `postId`, `userId`, and job metadata.
 
 ### [POSITIVE] Zod schemas for all input validation
+
 New endpoints consistently use `z.safeParse()` with proper error objects rather than ad-hoc manual validation.
 
 ### [POSITIVE] Comprehensive Drizzle schema with relations
+
 All 20+ tables have explicit Drizzle relations defined, enabling type-safe relational queries.
 
 ---
@@ -662,6 +721,7 @@ Already documented in Section 3. See fix description there.
 Files: `src/lib/services/ai-image.ts:189`, `src/app/api/posts/route.ts:150`
 
 Current behavior:
+
 ```ts
 // ai-image.ts
 async function createPrediction(version: string, input: Record<string, any>, ...): ...
@@ -671,6 +731,7 @@ const selectedAccounts: { id: string; platform: 'twitter' | 'linkedin' | 'instag
 ```
 
 Recommendation:
+
 - For `createPrediction`: type `input` as `Record<string, string | number | boolean | string[] | null>`
 - For `selectedAccounts.obj`: use a discriminated union type based on platform
 
@@ -681,9 +742,11 @@ Recommendation:
 File: `src/app/api/posts/route.ts` (lines 109, 129)
 
 Current behavior:
+
 ```ts
 refreshToken: null,  // This field doesn't exist in xAccounts schema
 ```
+
 The `xAccounts` table in `schema.ts` has `refreshTokenEnc` (encrypted) but not `refreshToken` (plaintext). Drizzle silently ignores unknown fields in `.values()` calls. This is dead code that creates confusion.
 
 Recommendation: Remove the `refreshToken: null` lines from both the `db.insert` and `db.update` calls in the posts route. They serve no purpose.
@@ -713,12 +776,15 @@ Current behavior: `tokensUsed: 0` is passed to `recordAiUsage`. This renders the
 ## Section 10: Stripe & Billing
 
 ### [POSITIVE] Webhook signature verification with `stripe.webhooks.constructEvent()`
+
 Stripe's signature verification is correctly applied before any processing.
 
 ### [POSITIVE] Plan derived from verified price ID, not metadata
+
 `getPlanFromPriceId()` maps server-side env vars to plans. Metadata is only used as a fallback with a structured warning.
 
 ### [POSITIVE] Grace period (7 days) on payment failure
+
 `handleInvoicePaymentFailed` sets `planExpiresAt` 7 days out, giving users time to update payment without losing access.
 
 ---
@@ -728,6 +794,7 @@ Stripe's signature verification is correctly applied before any processing.
 File: `src/app/api/billing/webhook/route.ts`
 
 **Resolution:** `handleSubscriptionUpdated` now:
+
 1. Resolves `newPlan` from the subscription's first price item via `getPlanFromPriceId()`.
 2. Fetches the existing subscription record **before** the DB update to capture `oldPlan` for accurate change detection (avoids reading stale post-update data).
 3. Updates `subscriptions.plan` and `subscriptions.stripePriceId` alongside the existing status/period fields.
@@ -759,28 +826,28 @@ Recommendation: Add explicit handling for `customer.subscription.paused` and log
 
 The following 20 items are ordered by **impact × urgency**. Fix in sequence unless items are tagged as independent.
 
-| # | Finding | Section | Severity | Est. Effort | Notes |
-|---|---------|---------|----------|-------------|-------|
-| 1 | ~~**SSRF via `/api/link-preview`** — add auth + URL blocklist~~ ✅ DONE (2026-03-16) | §3, §6 | Critical | 2h | Session auth + SSRF blocklist + proper error status |
-| 2 | ~~**OAuth CSRF: add state param to LinkedIn (+ Instagram) callbacks**~~ ✅ DONE (2026-03-16) | §3 | Critical | 4h | HttpOnly SameSite=lax state cookie; validated + cleared on all exit paths; both platforms |
-| 3 | ~~**Media upload → use `upload()` from `@/lib/storage`**~~ ✅ DONE (2026-03-16) | §6, §8 | Critical | 2h | Replaced direct fs writes with upload(); added .mp4 to storage.ts ALLOWED_EXTENSIONS |
-| 4 | ~~**`handleSubscriptionUpdated` must update `user.plan`**~~ ✅ DONE (2026-03-16) | §10 | High | 2h | Fetches pre-update record for change detection; updates subscriptions.plan + stripePriceId; syncs user.plan + clears planExpiresAt only on actual plan change; fires billing_plan_changed notification; unknown price IDs logged as warn |
-| 5 | ~~**Add auth to `GET /api/feedback`**~~ ✅ DONE (2026-03-16) | §3, §6 | High | 1h | Added 401 guard; votes filter now always scoped to session.user.id |
-| 6 | ~~**Feedback POST: add Zod length validation**~~ ✅ DONE (2026-03-16) | §6 | High | 1h | `feedbackSchema` with title≤100 / description≤2000 / category enum; structured 400 with field errors; removed redundant `upvotes:1` update after insert |
-| 7 | ~~**`generateImagePromptFromTweet`: sanitize input before AI prompt**~~ ✅ DONE (2026-03-16) | §5 | High | 1h | `sanitizeForPrompt(tweetContent, 500)` + `---` delimiters bound user block; fallback also uses sanitized content |
-| 8 | ~~**Remove `@ts-ignore` from admin impersonation route**~~ ✅ DONE (2026-03-16) | §3, §9 | High | 2h | All three `@ts-ignore` removed; `AdminAuthApi` type declares `createSession` shape; `isAdmin` accessed via narrow cast with explanatory comment |
-| 9 | ~~**X token refresh: add Redis distributed lock**~~ ✅ DONE (2026-03-16) | §4 | High | 3h | `refreshWithLock` private static with `SET … EX 30 NX`; contended path waits 1.5 s then re-reads DB; Redis-down path falls through without lock; both `getClientForUser` and `getClientForAccountId` unified through single helper |
-| 10 | ~~**Add Arabic font (Cairo) for RTL typography**~~ ✅ DONE (2026-03-16) | §7 | High | 2h | `Cairo` loaded via `next/font/google` with arabic+latin subsets & weights 400–700; `--font-arabic` CSS variable injected on `<body>`; `:lang(ar)` rule in `globals.css` activates it only for Arabic locale |
-| 11 | ~~**BullMQ `removeOnFail`: set 7-day TTL instead of indefinite**~~ ✅ DONE (2026-03-16) | §4 | High | 30m | `removeOnFail: { age: 7 * 24 * 60 * 60 }` — 7-day prune; added X media-ID 24 h expiry warning comment |
-| 12 | ~~**Fix `admin/layout.tsx` `ml-64` → `ms-64` (RTL)**~~ ✅ DONE (2026-03-16) | §1, §7 | Medium | 30m | `ms-64` (logical inline-start) replaces physical `ml-64` |
-| 13 | ~~**Validate `timezone` against IANA list**~~ ✅ DONE (2026-03-16) | §3 | Medium | 1h | `isValidIANATimezone` via `Intl.DateTimeFormat` + `.refine()` in `profileSchema` — zero bundle size, covers full IANA database |
-| 14 | **Implement i18n framework (`next-intl`)** | §7 | Medium | 2–3 days | Foundational for Arabic UI |
-| 15 | ~~**Webhook idempotency: store processed Stripe event IDs**~~ ✅ DONE (2026-03-16) | §10 | Medium | 3h | `processedWebhookEvents` table (UNIQUE on `stripeEventId`); guard after sig-verify; insert after switch succeeds; migration `0029_rainy_scrambler.sql` |
-| 16 | ~~**Deprecate synchronous `pollPrediction` path in ai-image.ts**~~ ✅ DONE (2026-03-16) | §5 | Medium | 1h | All 6 synchronous symbols annotated with `@deprecated` JSDoc + block-level deprecation banner; `createPrediction` input typed to remove `any` |
-| 17 | ~~**Add composite DB index on `(userId, status, publishedAt)` for posts**~~ ✅ DONE (2026-03-16) | §2 | Medium | 1h | `posts_user_status_published_idx` B-tree on `(userId, status, publishedAt)` — column order follows query selectivity; migration `0030_powerful_whirlwind.sql` |
-| 18 | ~~**Track AI prompt-generation call in quota for image endpoint**~~ ✅ DONE (2026-03-16) | §5 | Medium | 1h | Fire-and-forget `aiGenerations` insert of type `"image_prompt"` after `generateImagePromptFromTweet` succeeds; errors logged via `console.error` without blocking image flow |
-| 19 | ~~**Add DLQ alerting on permanently failed BullMQ jobs**~~ ✅ DONE (2026-03-16) | §4 | Medium | 2h | `job_permanently_failed` log key emitted in both `scheduleWorker` and `analyticsWorker` `failed` handlers when all retries exhausted; `maxAttempts` sourced from `SCHEDULE_JOB_OPTIONS.attempts` (no magic numbers); analytics guard only fires when `attempts` is explicitly set |
-| 20 | ~~**Write tests for `scheduleProcessor`, billing webhook, token encryption**~~ ✅ DONE (2026-03-16) | §9 | Medium | 1–2 days | 14 tests for AES-256-GCM token encryption; 12 tests for billing webhook (idempotency, plan sync, grace period); 8 new tests for `scheduleProcessor` permanent-failure path (final/non-final retry, notifications, 401 hint, idempotency); 39 total new tests — all passing |
+| #   | Finding                                                                                             | Section | Severity | Est. Effort | Notes                                                                                                                                                                                                                                                                             |
+| --- | --------------------------------------------------------------------------------------------------- | ------- | -------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | ~~**SSRF via `/api/link-preview`** — add auth + URL blocklist~~ ✅ DONE (2026-03-16)                | §3, §6  | Critical | 2h          | Session auth + SSRF blocklist + proper error status                                                                                                                                                                                                                               |
+| 2   | ~~**OAuth CSRF: add state param to LinkedIn (+ Instagram) callbacks**~~ ✅ DONE (2026-03-16)        | §3      | Critical | 4h          | HttpOnly SameSite=lax state cookie; validated + cleared on all exit paths; both platforms                                                                                                                                                                                         |
+| 3   | ~~**Media upload → use `upload()` from `@/lib/storage`**~~ ✅ DONE (2026-03-16)                     | §6, §8  | Critical | 2h          | Replaced direct fs writes with upload(); added .mp4 to storage.ts ALLOWED_EXTENSIONS                                                                                                                                                                                              |
+| 4   | ~~**`handleSubscriptionUpdated` must update `user.plan`**~~ ✅ DONE (2026-03-16)                    | §10     | High     | 2h          | Fetches pre-update record for change detection; updates subscriptions.plan + stripePriceId; syncs user.plan + clears planExpiresAt only on actual plan change; fires billing_plan_changed notification; unknown price IDs logged as warn                                          |
+| 5   | ~~**Add auth to `GET /api/feedback`**~~ ✅ DONE (2026-03-16)                                        | §3, §6  | High     | 1h          | Added 401 guard; votes filter now always scoped to session.user.id                                                                                                                                                                                                                |
+| 6   | ~~**Feedback POST: add Zod length validation**~~ ✅ DONE (2026-03-16)                               | §6      | High     | 1h          | `feedbackSchema` with title≤100 / description≤2000 / category enum; structured 400 with field errors; removed redundant `upvotes:1` update after insert                                                                                                                           |
+| 7   | ~~**`generateImagePromptFromTweet`: sanitize input before AI prompt**~~ ✅ DONE (2026-03-16)        | §5      | High     | 1h          | `sanitizeForPrompt(tweetContent, 500)` + `---` delimiters bound user block; fallback also uses sanitized content                                                                                                                                                                  |
+| 8   | ~~**Remove `@ts-ignore` from admin impersonation route**~~ ✅ DONE (2026-03-16)                     | §3, §9  | High     | 2h          | All three `@ts-ignore` removed; `AdminAuthApi` type declares `createSession` shape; `isAdmin` accessed via narrow cast with explanatory comment                                                                                                                                   |
+| 9   | ~~**X token refresh: add Redis distributed lock**~~ ✅ DONE (2026-03-16)                            | §4      | High     | 3h          | `refreshWithLock` private static with `SET … EX 30 NX`; contended path waits 1.5 s then re-reads DB; Redis-down path falls through without lock; both `getClientForUser` and `getClientForAccountId` unified through single helper                                                |
+| 10  | ~~**Add Arabic font (Cairo) for RTL typography**~~ ✅ DONE (2026-03-16)                             | §7      | High     | 2h          | `Cairo` loaded via `next/font/google` with arabic+latin subsets & weights 400–700; `--font-arabic` CSS variable injected on `<body>`; `:lang(ar)` rule in `globals.css` activates it only for Arabic locale                                                                       |
+| 11  | ~~**BullMQ `removeOnFail`: set 7-day TTL instead of indefinite**~~ ✅ DONE (2026-03-16)             | §4      | High     | 30m         | `removeOnFail: { age: 7 * 24 * 60 * 60 }` — 7-day prune; added X media-ID 24 h expiry warning comment                                                                                                                                                                             |
+| 12  | ~~**Fix `admin/layout.tsx` `ml-64` → `ms-64` (RTL)**~~ ✅ DONE (2026-03-16)                         | §1, §7  | Medium   | 30m         | `ms-64` (logical inline-start) replaces physical `ml-64`                                                                                                                                                                                                                          |
+| 13  | ~~**Validate `timezone` against IANA list**~~ ✅ DONE (2026-03-16)                                  | §3      | Medium   | 1h          | `isValidIANATimezone` via `Intl.DateTimeFormat` + `.refine()` in `profileSchema` — zero bundle size, covers full IANA database                                                                                                                                                    |
+| 14  | **Implement i18n framework (`next-intl`)**                                                          | §7      | Medium   | 2–3 days    | Foundational for Arabic UI                                                                                                                                                                                                                                                        |
+| 15  | ~~**Webhook idempotency: store processed Stripe event IDs**~~ ✅ DONE (2026-03-16)                  | §10     | Medium   | 3h          | `processedWebhookEvents` table (UNIQUE on `stripeEventId`); guard after sig-verify; insert after switch succeeds; migration `0029_rainy_scrambler.sql`                                                                                                                            |
+| 16  | ~~**Deprecate synchronous `pollPrediction` path in ai-image.ts**~~ ✅ DONE (2026-03-16)             | §5      | Medium   | 1h          | All 6 synchronous symbols annotated with `@deprecated` JSDoc + block-level deprecation banner; `createPrediction` input typed to remove `any`                                                                                                                                     |
+| 17  | ~~**Add composite DB index on `(userId, status, publishedAt)` for posts**~~ ✅ DONE (2026-03-16)    | §2      | Medium   | 1h          | `posts_user_status_published_idx` B-tree on `(userId, status, publishedAt)` — column order follows query selectivity; migration `0030_powerful_whirlwind.sql`                                                                                                                     |
+| 18  | ~~**Track AI prompt-generation call in quota for image endpoint**~~ ✅ DONE (2026-03-16)            | §5      | Medium   | 1h          | Fire-and-forget `aiGenerations` insert of type `"image_prompt"` after `generateImagePromptFromTweet` succeeds; errors logged via `console.error` without blocking image flow                                                                                                      |
+| 19  | ~~**Add DLQ alerting on permanently failed BullMQ jobs**~~ ✅ DONE (2026-03-16)                     | §4      | Medium   | 2h          | `job_permanently_failed` log key emitted in both `scheduleWorker` and `analyticsWorker` `failed` handlers when all retries exhausted; `maxAttempts` sourced from `SCHEDULE_JOB_OPTIONS.attempts` (no magic numbers); analytics guard only fires when `attempts` is explicitly set |
+| 20  | ~~**Write tests for `scheduleProcessor`, billing webhook, token encryption**~~ ✅ DONE (2026-03-16) | §9      | Medium   | 1–2 days    | 14 tests for AES-256-GCM token encryption; 12 tests for billing webhook (idempotency, plan sync, grace period); 8 new tests for `scheduleProcessor` permanent-failure path (final/non-final retry, notifications, 401 hint, idempotency); 39 total new tests — all passing        |
 
 ---
 

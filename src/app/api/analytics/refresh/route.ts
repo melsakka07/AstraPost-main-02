@@ -37,9 +37,10 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ error: "No connected X accounts" }), { status: 400 });
   }
 
-  const targetIds = parsed.data.xAccountIds && parsed.data.xAccountIds.length > 0
-    ? parsed.data.xAccountIds
-    : all.map((a) => a.id);
+  const targetIds =
+    parsed.data.xAccountIds && parsed.data.xAccountIds.length > 0
+      ? parsed.data.xAccountIds
+      : all.map((a) => a.id);
 
   const selected = all.filter((a) => targetIds.includes(a.id));
   if (selected.length === 0) {

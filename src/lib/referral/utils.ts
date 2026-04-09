@@ -8,9 +8,12 @@ const nanoid = customAlphabet("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 6);
 export async function generateReferralCode(name: string): Promise<string> {
   // Base code on name (e.g. ALEX)
   const firstName = (name || "USER").split(" ")[0] ?? "USER";
-  const base = firstName.toUpperCase().replace(/[^A-Z]/g, "").substring(0, 4);
+  const base = firstName
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .substring(0, 4);
   let code = `${base}${nanoid(4)}`;
-  
+
   // Ensure uniqueness
   let exists = await db.query.user.findFirst({
     where: eq(user.referralCode, code),

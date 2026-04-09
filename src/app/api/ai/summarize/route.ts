@@ -24,11 +24,12 @@ async function fetchArticleText(url: string): Promise<{ text: string; title: str
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
       "Accept-Language": "en-US,en;q=0.9",
       "Accept-Encoding": "gzip, deflate, br",
       "Cache-Control": "no-cache",
-      "Pragma": "no-cache",
+      Pragma: "no-cache",
       "Sec-Fetch-Dest": "document",
       "Sec-Fetch-Mode": "navigate",
       "Sec-Fetch-Site": "none",
@@ -46,22 +47,13 @@ async function fetchArticleText(url: string): Promise<{ text: string; title: str
   // Remove noise
   $("script, style, nav, footer, header, aside, .ad, [class*='ad-'], [id*='ad-']").remove();
 
-  const title =
-    $("meta[property='og:title']").attr("content") ||
-    $("title").text() ||
-    "";
+  const title = $("meta[property='og:title']").attr("content") || $("title").text() || "";
 
   // Prefer article/main content
-  const content =
-    $("article").text() ||
-    $("main").text() ||
-    $("body").text();
+  const content = $("article").text() || $("main").text() || $("body").text();
 
   // Normalize whitespace and limit to ~4000 chars to stay in context
-  const text = content
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 4000);
+  const text = content.replace(/\s+/g, " ").trim().slice(0, 4000);
 
   return { text, title: title.trim() };
 }
@@ -97,10 +89,9 @@ export async function POST(req: Request) {
     }
 
     if (articleText.length < 100) {
-      return new Response(
-        JSON.stringify({ error: "Not enough content found at this URL." }),
-        { status: 422 }
-      );
+      return new Response(JSON.stringify({ error: "Not enough content found at this URL." }), {
+        status: 422,
+      });
     }
 
     const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";

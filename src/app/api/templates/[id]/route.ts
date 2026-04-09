@@ -4,10 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { templates } from "@/lib/schema";
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
@@ -22,7 +19,7 @@ export async function DELETE(
       .returning();
 
     if (!deletedTemplate) {
-        return new Response("Template not found", { status: 404 });
+      return new Response("Template not found", { status: 404 });
     }
 
     return Response.json(deletedTemplate);

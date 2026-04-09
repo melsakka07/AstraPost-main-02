@@ -1,4 +1,4 @@
-You have a thorough understanding of agentic AI UX patterns, industry best practices, and the competitive landscape. 
+You have a thorough understanding of agentic AI UX patterns, industry best practices, and the competitive landscape.
 Here's my polished, comprehensive prompt for you to follow. You must use all the agents whenever applicable:
 
 ---
@@ -37,6 +37,7 @@ Reference platforms for UX inspiration: Apple's design language (radical simplic
 Design the complete agent pipeline. This is a **multi-agent orchestration system** where each agent has a single responsibility and passes its output to the next agent in the chain. Document the following agents, their responsibilities, inputs, outputs, and failure modes:
 
 **Agent 1 — Topic Intelligence Agent (Research)**
+
 - **Input:** User-provided topic/niche keyword (e.g., "AI coding tools", "sustainable fashion", "Web3 gaming")
 - **Responsibilities:**
   - Perform real-time web research on the topic using available search/research APIs
@@ -47,6 +48,7 @@ Design the complete agent pipeline. This is a **multi-agent orchestration system
 - **Failure mode:** If insufficient data is found, surface this to the user with an option to refine the topic or provide additional context
 
 **Agent 2 — Content Strategy Agent (Planning)**
+
 - **Input:** `TopicResearchBrief` from Agent 1 + User's account metadata (platform, subscription tier, historical performance data if available)
 - **Responsibilities:**
   - Determine the optimal content format based on:
@@ -60,6 +62,7 @@ Design the complete agent pipeline. This is a **multi-agent orchestration system
 - **Failure mode:** If account tier cannot be determined, default to Free tier (280 characters) and flag for user confirmation
 
 **Agent 3 — Copywriting Agent (Content Generation)**
+
 - **Input:** `TopicResearchBrief` from Agent 1 + `ContentPlan` from Agent 2
 - **Responsibilities:**
   - Write the actual tweet or thread content following the content plan
@@ -73,6 +76,7 @@ Design the complete agent pipeline. This is a **multi-agent orchestration system
 - **Failure mode:** If content exceeds character limits, self-correct by tightening copy. If quality is below threshold, regenerate with alternative angle.
 
 **Agent 4 — Visual Generation Agent (Image Creation)**
+
 - **Input:** `ThreadContent` from Agent 3 (specifically the image descriptions/prompts for flagged tweets)
 - **Responsibilities:**
   - Generate a compelling, on-brand, attention-grabbing image for each tweet flagged for visual content
@@ -83,6 +87,7 @@ Design the complete agent pipeline. This is a **multi-agent orchestration system
 - **Failure mode:** If image generation fails for any tweet, mark it and present the thread to the user with a note that they can manually attach an image or retry generation
 
 **Agent 5 — Quality Assurance Agent (Review & Polish)**
+
 - **Input:** Complete `ThreadContent` with images from Agent 4
 - **Responsibilities:**
   - Final review of all content for: grammar, clarity, factual accuracy (cross-reference with research brief), character count compliance, hashtag relevance, image-text alignment
@@ -104,8 +109,8 @@ Design the complete user-facing experience step by step. The UX must adhere to t
 
 - **Location:** Side menu → AI Tools → "Agentic Posting" (with a distinctive icon — suggest a rocket, wand, or autopilot icon)
 - **What the user sees:** A single, beautifully designed screen with:
-  - A prominent headline: e.g., *"What should we post about?"* or *"Drop a topic. We'll handle the rest."*
-  - One large, focused text input field (not a textarea — a single-line input with generous padding, placeholder text like *"e.g., AI coding tools, sustainable fashion, Web3 gaming..."*)
+  - A prominent headline: e.g., _"What should we post about?"_ or _"Drop a topic. We'll handle the rest."_
+  - One large, focused text input field (not a textarea — a single-line input with generous padding, placeholder text like _"e.g., AI coding tools, sustainable fashion, Web3 gaming..."_)
   - Optional: A row of **smart suggestion chips** below the input — trending topics, recently used topics, or AI-suggested niches based on the user's posting history. These chips provide zero-effort input: one tap and the pipeline starts.
   - Optional: A small "Advanced" disclosure toggle (collapsed by default) that reveals: preferred tone (dropdown: Informational / Provocative / Storytelling / Witty), target audience hint (text input), and any must-include elements (links, mentions). **These are strictly optional** — the AI should produce excellent results with just the topic alone.
   - A single primary CTA button: **"Generate"** or **"Create Post"** (large, prominent, impossible to miss)
@@ -120,6 +125,7 @@ Design the complete user-facing experience step by step. The UX must adhere to t
 
   **Option A — Linear Timeline (Recommended)**
   A vertical timeline/stepper showing each agent phase:
+
   ```
   ✅ Researching trends for "AI coding tools"...        [Complete]
   ⏳ Planning content strategy...                        [In Progress — streaming dots]
@@ -127,24 +133,28 @@ Design the complete user-facing experience step by step. The UX must adhere to t
   ○  Generating images...                                [Pending]
   ○  Final quality review...                             [Pending]
   ```
+
   Each completed step shows a brief, one-line summary of what was decided (e.g., "Found 3 trending angles. Choosing: 'New AI coding tools replacing traditional IDEs'"). The in-progress step has a subtle animated indicator (pulsing dot, typing dots, or a thin progress bar). Pending steps are dimmed.
 
   **Option B — Conversational Stream (ChatGPT-style)**
   A chat-like interface where each agent "reports" its progress as a message:
+
   ```
   🔍 Research Agent: Found 12 relevant articles and 3 trending hashtags for "AI coding tools". Top angle: "5 AI tools developers are switching to in 2026"
-  
+
   📋 Strategy Agent: Recommending a 5-tweet thread (your account is Premium). Hook + 3 value tweets + CTA. Images on tweets 1, 3, and 5.
-  
+
   ✍️ Writing Agent: Drafting thread... [streaming text appears here]
   ```
 
   **Option C — Minimal Progress (Apple-style)**
   A clean, centered progress indicator with a single status line that updates:
+
   ```
   [Elegant circular progress indicator]
   "Researching trends..." → "Planning your thread..." → "Writing copy..." → "Creating visuals..." → "Almost ready..."
   ```
+
   This is the simplest option — less transparency but maximum cleanliness.
 
 - **Key UX requirements for this step:**
@@ -204,21 +214,25 @@ This is the most critical screen — where the user sees the complete output and
 Document how the feature handles every edge case gracefully:
 
 **3a. Account & Platform Intelligence**
+
 - **Auto-detection of X/Twitter tier:** The system must automatically determine whether the user's connected X/Twitter account is Free or Premium. Document how this is detected (API, user profile metadata, user-set preference in settings). If detection is impossible, show a one-time, friendly prompt: "Are you on X Premium?" with a toggle — remember the answer.
 - **Character limit enforcement:** For Free tier users, the Copywriting Agent must produce tweets ≤ 280 characters. For Premium users, it has more flexibility but should still optimize for readability. If a user edits a tweet and exceeds the limit, show a real-time character count with a red warning — and offer an inline "AI Trim" button that intelligently shortens the text while preserving meaning.
 - **Multi-platform consideration:** If the app supports posting to platforms beyond X/Twitter, document how Agentic Posting adapts content for each platform's constraints and best practices (this can be Phase 2 scope).
 
 **3b. Topic Handling**
+
 - **Vague or broad topics:** If the user enters something too vague (e.g., "technology"), the Topic Intelligence Agent should narrow it down and present 3–4 specific angles as chips for the user to choose from, rather than producing generic content.
 - **Sensitive or restricted topics:** If the topic involves sensitive content (politics, health misinformation, etc.), handle appropriately — either proceed with balanced, factual content or surface a notice to the user.
 - **Trending topic boost:** If the user's topic aligns with a currently trending hashtag or event, highlight this in the research brief and optimize content timing accordingly.
 
 **3c. Image Generation Edge Cases**
+
 - **Generation failure:** If the image generation agent fails (API timeout, content policy rejection, etc.), present the thread without images and offer: "Images couldn't be generated. You can [Retry] or [Upload your own]."
 - **Image quality concerns:** Provide a "Regenerate Image" option on each image that allows the user to get a new variation without changing the text.
 - **Image-free preference:** Some users may prefer text-only threads. Include a toggle (in the Advanced options of Step 1, or as a global preference in settings): "Include AI-generated images" — ON by default.
 
 **3d. Error Recovery**
+
 - **Network failure during pipeline:** Save the current pipeline state. Show: "Something went wrong. Your progress has been saved. [Resume] [Start Over]"
 - **Partial pipeline failure:** If one agent fails but others succeed, present what's available and clearly indicate what's missing: "Your thread is ready but we couldn't generate images for tweets 3 and 5. [Retry Images] [Continue Without]"
 - **Post/Schedule failure:** If the final posting fails, retain the content and show: "Couldn't post right now. Your thread has been saved as a draft. [Try Again] [Open in Compose]"
@@ -230,21 +244,25 @@ Document how the feature handles every edge case gracefully:
 Document how Agentic Posting integrates with the existing codebase and features documented in the audit:
 
 **4a. Side Menu Integration**
+
 - Where exactly in the side menu does "Agentic Posting" live? Under which section/group?
 - Icon recommendation and naming convention consistent with existing menu items
 - Active state, hover state, notification badge (e.g., "New" badge for feature launch)
 
 **4b. Relationship with Existing Compose Page**
+
 - Agentic Posting generates a thread that can be **opened in the regular Compose page for further editing** if the user wants full manual control. Document this handoff flow.
 - "Save as Draft" from Agentic Posting should create a draft that appears in the same draft system used by the regular Compose page.
 - Shared components: identify which existing components from the Compose page audit can be reused (tweet preview cards, character counters, scheduling date picker, account selector, media upload UI).
 
 **4c. Shared State & Data Architecture**
+
 - How does the generated thread data flow into the existing state management system?
 - Where are drafts stored? How are generated images stored/referenced?
 - API endpoints needed: which existing endpoints are reused, which are new?
 
 **4d. Consistency with Design System**
+
 - All new UI must use the existing design tokens (colors, typography, spacing, border radius, shadows)
 - New components must follow the same interaction patterns documented in the audit (modal behavior, button hierarchy, loading states, toast notifications)
 - If new component patterns are introduced (e.g., the agent progress timeline), document them as additions to the design system
@@ -254,6 +272,7 @@ Document how Agentic Posting integrates with the existing codebase and features 
 #### Section 5 — Phased Implementation Roadmap
 
 **Phase 1 — MVP: Single Tweet Generation (1–2 weeks)**
+
 - Implement the basic flow: topic input → research → single tweet generation (no thread, no images) → review → post/schedule
 - Focus on: input screen, agent progress display (minimal version), single tweet preview card, post/schedule actions
 - Agents active: Topic Intelligence (simplified), Content Strategy (single tweet only), Copywriting
@@ -262,6 +281,7 @@ Document how Agentic Posting integrates with the existing codebase and features 
 - **Files to modify:** Side menu navigation, routing configuration, draft storage service
 
 **Phase 2 — Thread Generation & Scheduling (1–2 weeks)**
+
 - Extend to full thread generation: multi-tweet threads with intelligent structuring
 - Implement the complete thread preview UI with per-tweet editing, reordering, add/remove
 - Implement the full scheduling flow with date/time picker and optimal time suggestions
@@ -269,6 +289,7 @@ Document how Agentic Posting integrates with the existing codebase and features 
 - Goal: Deliver the complete text-based Agentic Posting experience
 
 **Phase 3 — AI Image Generation (1–2 weeks)**
+
 - Integrate the Visual Generation Agent: auto-generate images for flagged tweets
 - Implement image preview, regeneration, swap, and upload-your-own flows
 - Ensure visual consistency across thread images
@@ -276,6 +297,7 @@ Document how Agentic Posting integrates with the existing codebase and features 
 - Goal: Complete the multimedia Agentic Posting experience
 
 **Phase 4 — Intelligence & Polish (1–2 weeks)**
+
 - Smart topic suggestions based on user history and trending data
 - Engagement prediction indicators
 - Analytics integration (track performance of agentic posts vs. manual posts)
@@ -285,6 +307,7 @@ Document how Agentic Posting integrates with the existing codebase and features 
 - Goal: Transform MVP into a polished, delightful, production-quality feature
 
 **Phase 5 — Advanced Features (Future / Backlog)**
+
 - Multi-platform support (LinkedIn, Threads, Bluesky — adapt content per platform)
 - Recurring Agentic Posting ("Post about AI tools every Monday at 9 AM" — fully autonomous with weekly approval)
 - Brand voice training (learn from user's past posts to match their unique tone)
@@ -300,6 +323,7 @@ For each phase, document: items included, components to create/modify, APIs need
 Save the complete feature specification to: **`docs/features/agentic-posting-feature-spec.md`**
 
 **Document Structure:**
+
 ```
 # Agentic Posting — Feature Specification
 

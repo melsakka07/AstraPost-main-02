@@ -17,7 +17,15 @@ interface CalendarDayProps {
   accountColorMap?: Record<string, string>;
 }
 
-export function CalendarDay({ id, date, posts, isCurrentMonth, view, onDateClick, accountColorMap }: CalendarDayProps) {
+export function CalendarDay({
+  id,
+  date,
+  posts,
+  isCurrentMonth,
+  view,
+  onDateClick,
+  accountColorMap,
+}: CalendarDayProps) {
   const { setNodeRef, isOver } = useDroppable({
     id,
   });
@@ -26,7 +34,7 @@ export function CalendarDay({ id, date, posts, isCurrentMonth, view, onDateClick
     <div
       ref={setNodeRef}
       className={cn(
-        "group relative flex flex-col gap-1 border-b border-r p-2 transition-colors last:border-r-0 overflow-hidden",
+        "group relative flex flex-col gap-1 overflow-hidden border-r border-b p-2 transition-colors last:border-r-0",
         !isCurrentMonth && "bg-muted/10 text-muted-foreground",
         isOver && "bg-accent/50",
         view === "month" && "min-h-[80px]",
@@ -38,7 +46,8 @@ export function CalendarDay({ id, date, posts, isCurrentMonth, view, onDateClick
         <span
           className={cn(
             "text-sm font-medium",
-            isToday(date) && "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground"
+            isToday(date) &&
+              "bg-primary text-primary-foreground flex h-6 w-6 items-center justify-center rounded-full"
           )}
         >
           {format(date, "d")}
@@ -46,15 +55,18 @@ export function CalendarDay({ id, date, posts, isCurrentMonth, view, onDateClick
         {onDateClick && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onDateClick(date); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDateClick(date);
+            }}
             aria-label={`Create post for ${format(date, "MMMM d")}`}
-            className="opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground transition-opacity"
+            className="text-muted-foreground hover:bg-accent hover:text-foreground flex h-5 w-5 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
-      <div className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 space-y-1 overflow-x-hidden overflow-y-auto">
         {posts.map((post) => (
           <CalendarPostItem
             key={post.id}

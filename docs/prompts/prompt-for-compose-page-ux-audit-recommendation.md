@@ -34,7 +34,7 @@ Save the output to: **`docs/ux-audits/compose-page-ux-recommendations.md`**
 All recommendations **must** be evaluated against these non-negotiable principles:
 
 **1. Radical Simplicity**
-Remove everything that doesn't directly serve the core task: *composing and publishing great content*. If a feature can be hidden, consolidated, or deferred — it should be. The user should never feel overwhelmed. When in doubt, remove.
+Remove everything that doesn't directly serve the core task: _composing and publishing great content_. If a feature can be hidden, consolidated, or deferred — it should be. The user should never feel overwhelmed. When in doubt, remove.
 
 **2. Zero Duplication**
 Audit every button, control, and option for functional overlap. If two buttons do similar things, merge them. If a feature is accessible from multiple places with no clear reason, consolidate to one intuitive location. No redundant paths.
@@ -60,6 +60,7 @@ Inspired by Apple and OpenAI — clean typography, generous whitespace, subtle a
 **1a. Re-examine the 15 existing friction points:**
 
 For each documented friction point in the audit:
+
 - **Confirm or refine** — Is the friction point accurately described? Does the code confirm it? Adjust the description if needed.
 - **Classify severity** — Critical (blocks/confuses users), High (causes notable frustration), Medium (minor annoyance), Low (cosmetic/polish).
 - **Classify type** — Cognitive overload, Redundancy, Inconsistency, Missing feedback, Accessibility gap, Navigation friction, Visual clutter, Performance issue.
@@ -92,6 +93,7 @@ This is the core of the document. For each recommendation:
 **2a. Toolbar & Action Consolidation**
 
 Analyze every button and control in the compose toolbar(s) and action areas. Propose a **simplified, consolidated toolbar architecture** that:
+
 - Groups related functions logically (e.g., all content-enhancement tools in one smart menu)
 - Eliminates duplicate or overlapping controls
 - Prioritizes the 3–4 most-used actions as visible; nests everything else
@@ -101,6 +103,7 @@ Analyze every button and control in the compose toolbar(s) and action areas. Pro
 **2b. Modal & Dialog Rationalization**
 
 Audit all 5+ dialogs and frequent popovers. Propose:
+
 - A **unified overlay system** with consistent behavior (open/close animations, backdrop, escape key, focus trap)
 - Consolidation of modals that could be merged (e.g., if scheduling and publishing are separate modals, consider unifying them)
 - Conversion of unnecessary modals to inline/contextual UI where possible (reduce context switches)
@@ -109,6 +112,7 @@ Audit all 5+ dialogs and frequent popovers. Propose:
 **2c. AI Tools Simplification**
 
 The audit documents 6 AI sub-tools. Propose:
+
 - A **unified AI assistant interface** (inspired by ChatGPT's input model or Notion AI's slash-command pattern) that replaces scattered AI buttons with one intelligent entry point
 - Contextual AI suggestions that surface based on what the user is doing, not requiring them to discover and navigate to separate tools
 - Clear before → after comparison
@@ -116,6 +120,7 @@ The audit documents 6 AI sub-tools. Propose:
 **2d. Flow Optimization**
 
 For each of the 10 documented user flows, propose an **optimized flow** that:
+
 - Reduces the number of steps/clicks to completion
 - Eliminates unnecessary decision points
 - Provides clearer progress indication and feedback
@@ -125,6 +130,7 @@ For each of the 10 documented user flows, propose an **optimized flow** that:
 **2e. Visual & Layout Recommendations**
 
 Propose layout changes that:
+
 - Maximize the text composition area (the primary task should dominate the viewport)
 - Create clear visual hierarchy between primary action (Post/Schedule), secondary actions (AI, Media, etc.), and tertiary options (Categories, Labels, etc.)
 - Reduce visual noise — identify elements that can be hidden, simplified, or redesigned
@@ -133,6 +139,7 @@ Propose layout changes that:
 **2f. Smart Defaults & Contextual Intelligence**
 
 Propose intelligent defaults and contextual behaviors that reduce explicit user decisions:
+
 - Auto-detection of content type (thread vs. single post based on content length)
 - Smart scheduling suggestions based on past behavior or optimal times
 - Platform-aware feature surfacing (show/hide options based on selected social account)
@@ -146,18 +153,21 @@ Propose intelligent defaults and contextual behaviors that reduce explicit user 
 Organize all recommendations into a **phased implementation plan** with the following structure:
 
 **Phase 0 — Quick Wins (1–2 days each, no architectural changes)**
+
 - Bug fixes, label changes, tooltip improvements, disabled-state fixes
 - Removing or hiding clearly redundant elements
 - Adding missing feedback (toasts, loading states, confirmations)
 - Criteria: Zero risk, immediate UX improvement, no dependencies
 
 **Phase 1 — Foundation & Consolidation (1–2 week sprint)**
+
 - Toolbar consolidation and simplification
 - Unified overlay/modal system implementation
 - Visual hierarchy and layout adjustments
 - Criteria: Moderate complexity, high impact, sets foundation for later phases
 
 **Phase 2 — Flow Optimization (1–2 week sprint)**
+
 - Streamlined scheduling flow
 - Improved thread creation experience
 - Enhanced media upload/management UX
@@ -165,6 +175,7 @@ Organize all recommendations into a **phased implementation plan** with the foll
 - Criteria: Flow-level changes, depends on Phase 1 foundation
 
 **Phase 3 — Intelligence & Delight (2–3 week sprint)**
+
 - Unified AI assistant interface
 - Smart defaults and contextual intelligence
 - Keyboard shortcuts and power-user features
@@ -172,6 +183,7 @@ Organize all recommendations into a **phased implementation plan** with the foll
 - Criteria: Advanced features, depends on Phases 1–2
 
 **Phase 4 — Accessibility & Polish (1–2 week sprint)**
+
 - WCAG 2.1 AA full compliance
 - Screen reader optimization
 - Keyboard navigation completeness
@@ -180,6 +192,7 @@ Organize all recommendations into a **phased implementation plan** with the foll
 - Criteria: Quality and compliance, can partially parallel Phase 3
 
 For each phase, document:
+
 - **Items included** — specific recommendations with reference numbers
 - **Dependencies** — what must be completed before this phase begins
 - **Estimated effort** — T-shirt size (S/M/L/XL) per item
@@ -242,7 +255,7 @@ Create **`docs/ux-audits/compose-page-ux-recommendations.md`** with this structu
 - **No recommendation without implementation guidance** — at minimum, identify the components/files affected and the nature of the change (UI-only, state logic, API change, new component, etc.)
 - **Benchmark against best-in-class** — for each major recommendation, reference how Apple, OpenAI/ChatGPT, Linear, Notion, or Typefully handles the equivalent interaction
 - **Be opinionated but justified** — this is the time to make strong UX recommendations, backed by evidence from the audit and industry standards
-- **Preserve power** — simplification must not remove capability. Every feature should still be accessible; the goal is to make the *default* experience simpler while keeping depth available for power users
+- **Preserve power** — simplification must not remove capability. Every feature should still be accessible; the goal is to make the _default_ experience simpler while keeping depth available for power users
 
 ---
 

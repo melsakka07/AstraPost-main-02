@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Activity,
-  Bot,
-  CheckCircle2,
-  FileText,
-  Users,
-  XCircle,
-  Zap,
-} from "lucide-react";
+import { Activity, Bot, CheckCircle2, FileText, Users, XCircle, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -37,14 +29,14 @@ function StatCard({
     variant === "success"
       ? "text-green-500"
       : variant === "destructive"
-      ? "text-destructive"
-      : "text-primary";
+        ? "text-destructive"
+        : "text-primary";
   const iconBg =
     variant === "success"
       ? "bg-green-500/10"
       : variant === "destructive"
-      ? "bg-destructive/10"
-      : "bg-primary/10";
+        ? "bg-destructive/10"
+        : "bg-primary/10";
 
   return (
     <Card>
@@ -54,8 +46,8 @@ function StatCard({
         </div>
         <div className="mt-3">
           <p className="text-2xl font-bold tabular-nums">{value}</p>
-          <p className="text-sm font-medium text-foreground">{label}</p>
-          {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+          <p className="text-foreground text-sm font-medium">{label}</p>
+          {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
         </div>
       </CardContent>
     </Card>
@@ -66,7 +58,11 @@ function LoadingSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <Card key={i}><CardContent className="pt-5"><Skeleton className="h-20 w-full" /></CardContent></Card>
+        <Card key={i}>
+          <CardContent className="pt-5">
+            <Skeleton className="h-20 w-full" />
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -90,19 +86,17 @@ export function PlatformStats() {
     stats.jobs.failedLast24h === 0
       ? "success"
       : stats.jobs.failedLast24h > 5
-      ? "destructive"
-      : "default";
+        ? "destructive"
+        : "default";
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Users</h2>
+        <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
+          Users
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            label="Total users"
-            value={stats.users.total.toLocaleString()}
-            icon={Users}
-          />
+          <StatCard label="Total users" value={stats.users.total.toLocaleString()} icon={Users} />
           <StatCard
             label="New (last 7 days)"
             value={stats.users.newLast7d}
@@ -126,7 +120,9 @@ export function PlatformStats() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Content</h2>
+        <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
+          Content
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Posts published"
@@ -145,7 +141,9 @@ export function PlatformStats() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Queue Health</h2>
+        <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
+          Queue Health
+        </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label="Jobs completed (24h)"

@@ -59,7 +59,11 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
         <p className="sr-only">{bestSummary}</p>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-separate border-spacing-[3px]" role="grid" aria-label="Posting engagement heatmap by day and hour">
+          <table
+            className="w-full border-separate border-spacing-[3px]"
+            role="grid"
+            aria-label="Posting engagement heatmap by day and hour"
+          >
             <thead>
               <tr>
                 {/* Empty corner cell */}
@@ -68,7 +72,7 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
                   <th
                     key={h}
                     scope="col"
-                    className="text-[10px] text-center text-muted-foreground font-normal min-w-[20px] pb-1"
+                    className="text-muted-foreground min-w-[20px] pb-1 text-center text-[10px] font-normal"
                   >
                     {h % 2 === 0 ? formatHour(h) : ""}
                   </th>
@@ -80,7 +84,7 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
                 <tr key={day}>
                   <th
                     scope="row"
-                    className="w-10 text-xs font-medium text-muted-foreground text-left pr-1 whitespace-nowrap"
+                    className="text-muted-foreground w-10 pr-1 text-left text-xs font-medium whitespace-nowrap"
                   >
                     {day}
                   </th>
@@ -90,7 +94,7 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
                       <td
                         key={`${day}-${hour}`}
                         className={cn(
-                          "h-8 min-w-[20px] rounded-sm text-[10px] text-center transition-all hover:scale-110 cursor-help",
+                          "h-8 min-w-[20px] cursor-help rounded-sm text-center text-[10px] transition-all hover:scale-110",
                           getColor(score)
                         )}
                         title={`${day} ${formatHour(hour)} — Score: ${score}`}
@@ -106,14 +110,14 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
           </table>
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground mt-4 flex items-center justify-end gap-2 text-xs">
           <span>Less Active</span>
           <div className="flex gap-1" aria-hidden="true">
-            <div className="w-4 h-4 rounded-sm bg-muted/20" />
-            <div className="w-4 h-4 rounded-sm bg-primary/20" />
-            <div className="w-4 h-4 rounded-sm bg-primary/40" />
-            <div className="w-4 h-4 rounded-sm bg-primary/60" />
-            <div className="w-4 h-4 rounded-sm bg-primary" />
+            <div className="bg-muted/20 h-4 w-4 rounded-sm" />
+            <div className="bg-primary/20 h-4 w-4 rounded-sm" />
+            <div className="bg-primary/40 h-4 w-4 rounded-sm" />
+            <div className="bg-primary/60 h-4 w-4 rounded-sm" />
+            <div className="bg-primary h-4 w-4 rounded-sm" />
           </div>
           <span>More Active</span>
         </div>

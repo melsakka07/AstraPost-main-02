@@ -94,10 +94,7 @@ export async function GET(req: NextRequest) {
   // Retrieve prediction metadata cached by the POST endpoint.
   const raw = await redis.get(`ai:img:pred:${predictionId}`);
   if (!raw) {
-    return NextResponse.json(
-      { error: "Prediction not found or expired" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Prediction not found or expired" }, { status: 404 });
   }
 
   const meta: PredictionMeta = JSON.parse(raw);
@@ -123,15 +120,19 @@ export async function GET(req: NextRequest) {
       const rawError = prediction.error ?? `Prediction ${prediction.status}`;
 
       // Permanent: prompt blocked by content-safety filters — no fallback.
-      const isContentBlocked =
-        /safety|content.?polic|blocked|violat|forbidden|HARM|E002/i.test(rawError);
+      const isContentBlocked = /safety|content.?polic|blocked|violat|forbidden|HARM|E002/i.test(
+        rawError
+      );
 
       // Automatic model fallback: if the primary or secondary model fails for
       // any non-content-blocked reason, silently retry with the backup model (nano-banana).
       // The fallback is transparent to the user — no credit is charged for the
       // failed attempt, and the new prediction ID is returned so the client can
       // keep polling without interruption.
-      if ((meta.model === "nano-banana-2" || meta.model === "nano-banana-pro") && !isContentBlocked) {
+      if (
+        (meta.model === "nano-banana-2" || meta.model === "nano-banana-pro") &&
+        !isContentBlocked
+      ) {
         await redis.del(`ai:img:pred:${predictionId}`);
 
         try {
@@ -150,7 +151,7 @@ export async function GET(req: NextRequest) {
           await redis.setex(
             `ai:img:pred:${fallback.predictionId}`,
             1800,
-            JSON.stringify(fallbackMeta),
+            JSON.stringify(fallbackMeta)
           );
 
           return NextResponse.json({
@@ -169,8 +170,9 @@ export async function GET(req: NextRequest) {
 
       // Transient: service overload / rate limit from the underlying model
       const isTransient =
-        /high.?demand|unavailable|rate.?limit|E003|ModelRateLimit|capacity|try.?again|busy|503/i
-          .test(rawError);
+        /high.?demand|unavailable|rate.?limit|E003|ModelRateLimit|capacity|try.?again|busy|503/i.test(
+          rawError
+        );
 
       return NextResponse.json(
         {
@@ -186,7 +188,7 @@ export async function GET(req: NextRequest) {
               : "GENERATION_FAILED",
           retryable: isTransient,
         },
-        { status: 422 },
+        { status: 422 }
       );
     }
 
@@ -194,16 +196,11 @@ export async function GET(req: NextRequest) {
 
     if (!prediction.output) {
       await redis.del(`ai:img:pred:${predictionId}`);
-      return NextResponse.json(
-        { error: "No output returned from prediction" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "No output returned from prediction" }, { status: 500 });
     }
 
     const replicateUrl =
-      typeof prediction.output === "string"
-        ? prediction.output
-        : prediction.output[0]!;
+      typeof prediction.output === "string" ? prediction.output : prediction.output[0]!;
 
     const { width, height } = getDimensionsFromAspectRatio(meta.aspectRatio);
 
@@ -257,7 +254,7 @@ export async function GET(req: NextRequest) {
         error: "Failed to check prediction status",
         message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

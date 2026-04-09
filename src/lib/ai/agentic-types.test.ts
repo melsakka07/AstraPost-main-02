@@ -134,9 +134,7 @@ describe("AgenticTweet", () => {
 describe("AgenticPost", () => {
   const research: ResearchBrief = {
     topic: "AI tools",
-    angles: [
-      { title: "angle", description: "desc", viralPotential: "medium" },
-    ],
+    angles: [{ title: "angle", description: "desc", viralPotential: "medium" }],
     trendingHashtags: [],
     keyFacts: [],
     recommendedAngle: "angle",
@@ -202,14 +200,7 @@ describe("PipelineProgressEvent", () => {
   });
 
   it("step and status unions cover expected values", () => {
-    const steps: PipelineStep[] = [
-      "research",
-      "strategy",
-      "writing",
-      "images",
-      "review",
-      "done",
-    ];
+    const steps: PipelineStep[] = ["research", "strategy", "writing", "images", "review", "done"];
     const statuses: StepStatus[] = [
       "in_progress",
       "complete",

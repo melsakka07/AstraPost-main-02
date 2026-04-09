@@ -16,41 +16,47 @@ async function createTestUser() {
     // Better Auth handles hashing. It's safer to use the signup function or a script that uses the auth client.
     // HOWEVER, since this is a script, we can't easily use the client side auth client.
     // We can insert a user and then you can "login" or we can try to use the backend auth to create.
-    
+
     // Actually, the easiest way for a "test account" that works with "Sign In" is to just REGISTER it via the UI.
     // But if you want to bypass that and have data pre-filled:
-    
+
     const userId = nanoid();
-    
+
     // Insert User
-    await db.insert(user).values({
-      id: userId,
-      name,
-      email,
-      emailVerified: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      onboardingCompleted: true,
-      plan: "pro_monthly" // Give them pro plan to test features
-    }).onConflictDoNothing();
+    await db
+      .insert(user)
+      .values({
+        id: userId,
+        name,
+        email,
+        emailVerified: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        onboardingCompleted: true,
+        plan: "pro_monthly", // Give them pro plan to test features
+      })
+      .onConflictDoNothing();
 
     console.log(`✅ User created: ${email}`);
 
     // 2. Insert Mock X Account (So you can test Dashboard/Compose without real OAuth)
     const xAccountId = nanoid();
-    await db.insert(xAccounts).values({
-      id: xAccountId,
-      userId: userId,
-      xUserId: "123456789",
-      xUsername: "test_twitter_user",
-      xDisplayName: "Test Twitter User",
-      xAvatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
-      accessToken: "mock_token",
-      isActive: true,
-      followersCount: 1500,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).onConflictDoNothing();
+    await db
+      .insert(xAccounts)
+      .values({
+        id: xAccountId,
+        userId: userId,
+        xUserId: "123456789",
+        xUsername: "test_twitter_user",
+        xDisplayName: "Test Twitter User",
+        xAvatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
+        accessToken: "mock_token",
+        isActive: true,
+        followersCount: 1500,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .onConflictDoNothing();
 
     console.log("✅ Mock X Account created");
 
@@ -58,7 +64,7 @@ async function createTestUser() {
     // Since we are inserting directly, we can't easily set the password hash that Better Auth expects without using its internal hashing.
     // ALTERNATIVE: You should just Register this user in the UI.
     // BUT, I will print the credentials you should use to REGISTER.
-    
+
     console.log("\n---------------------------------------------------");
     console.log("⚠️  ACTION REQUIRED: ");
     console.log("Since password hashing is handled by the auth library, please:");
@@ -68,7 +74,6 @@ async function createTestUser() {
     console.log(`   Password: ${password}`);
     console.log("3. The mock X account and Pro plan have been pre-seeded for this email!");
     console.log("---------------------------------------------------\n");
-
   } catch (error) {
     console.error("Error creating test data:", error);
   }

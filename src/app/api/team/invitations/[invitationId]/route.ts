@@ -15,12 +15,16 @@ export async function DELETE(
     if (!ctx) return new Response("Unauthorized", { status: 401 });
 
     if (!ctx.isOwner && ctx.role !== "admin") {
-      return new Response("Forbidden: Only owners and admins can revoke invitations", { status: 403 });
+      return new Response("Forbidden: Only owners and admins can revoke invitations", {
+        status: 403,
+      });
     }
 
     const deleted = await db
       .delete(teamInvitations)
-      .where(and(eq(teamInvitations.id, invitationId), eq(teamInvitations.teamId, ctx.currentTeamId)))
+      .where(
+        and(eq(teamInvitations.id, invitationId), eq(teamInvitations.teamId, ctx.currentTeamId))
+      )
       .returning();
 
     if (deleted.length === 0) {

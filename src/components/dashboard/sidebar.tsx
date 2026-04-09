@@ -66,9 +66,7 @@ interface SidebarSection {
 const sidebarSections: SidebarSection[] = [
   {
     label: "Overview",
-    items: [
-      { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    ],
+    items: [{ icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" }],
   },
   {
     label: "Content",
@@ -83,9 +81,20 @@ const sidebarSections: SidebarSection[] = [
     label: "AI Tools",
     collapsible: true,
     items: [
-      { icon: Wand2, label: "Agentic Posting", href: "/dashboard/ai/agentic", isPro: true, isNew: true },
+      {
+        icon: Wand2,
+        label: "Agentic Posting",
+        href: "/dashboard/ai/agentic",
+        isPro: true,
+        isNew: true,
+      },
       { icon: Sparkles, label: "AI Tools", href: "/dashboard/ai" },
-      { icon: CalendarRange, label: "Content Calendar", href: "/dashboard/ai/calendar", isPro: true },
+      {
+        icon: CalendarRange,
+        label: "Content Calendar",
+        href: "/dashboard/ai/calendar",
+        isPro: true,
+      },
       { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply", isPro: true },
       { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio", isPro: true },
       { icon: History, label: "AI History", href: "/dashboard/ai/history" },
@@ -128,12 +137,7 @@ interface CollapsibleSectionProps {
   isMobile: boolean;
 }
 
-function CollapsibleSection({
-  section,
-  pathname,
-  onNavigate,
-  isMobile,
-}: CollapsibleSectionProps) {
+function CollapsibleSection({ section, pathname, onNavigate, isMobile }: CollapsibleSectionProps) {
   const hasActiveChild = section.items.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
@@ -153,13 +157,15 @@ function CollapsibleSection({
         type="button"
         onClick={() => isMobile && setIsOpen((v) => !v)}
         className={cn(
-          "flex w-full items-center justify-between px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60 transition-colors",
+          "text-muted-foreground/60 flex w-full items-center justify-between px-3 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors",
           isMobile && "hover:text-muted-foreground cursor-pointer"
         )}
-        {...(isMobile ? {
-          "aria-expanded": isOpen,
-          "aria-controls": `section-${section.label}`
-        } : {})}
+        {...(isMobile
+          ? {
+              "aria-expanded": isOpen,
+              "aria-controls": `section-${section.label}`,
+            }
+          : {})}
         // Prevent keyboard interaction on desktop where the button is decorative
         tabIndex={isMobile ? 0 : -1}
       >
@@ -203,12 +209,15 @@ function CollapsibleSection({
               <item.icon className="h-4.5 w-4.5 shrink-0" />
               {item.label}
               {item.isNew && (
-                <Badge className="ms-auto text-[10px] px-1.5 py-0 h-4 bg-emerald-500/15 text-emerald-600 border-emerald-500/30 border">
+                <Badge className="ms-auto h-4 border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0 text-[10px] text-emerald-600">
                   New
                 </Badge>
               )}
               {item.isPro && !item.isNew && (
-                <Badge variant="outline" className="ms-auto text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary">
+                <Badge
+                  variant="outline"
+                  className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
+                >
                   Pro
                 </Badge>
               )}
@@ -244,8 +253,7 @@ function SidebarContent({
       ? Math.min(100, Math.round((aiUsage.used / aiUsage.limit) * 100))
       : 0;
 
-  const aiProgressLabel =
-    aiUsage && aiUsage.limit === null ? "Unlimited" : `${aiProgress}%`;
+  const aiProgressLabel = aiUsage && aiUsage.limit === null ? "Unlimited" : `${aiProgress}%`;
 
   const linkPy = isMobile ? "py-3" : "py-2.5"; // M3
 
@@ -259,15 +267,13 @@ function SidebarContent({
     });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* M7 — user avatar + quick sign-out in mobile Drawer header */}
       {isMobile && user && (
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+        <div className="border-border flex items-center gap-3 border-b px-4 py-3">
           <Avatar className="h-8 w-8 shrink-0">
             <AvatarImage src={user.image ?? undefined} alt={user.name} />
-            <AvatarFallback className="text-xs">
-              {user.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
+            <AvatarFallback className="text-xs">{user.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <span className="flex-1 truncate text-sm font-medium">{user.name}</span>
           <button
@@ -284,18 +290,15 @@ function SidebarContent({
       {/* Brand */}
       <Link
         href="/"
-        className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-6 hover:opacity-80 transition-opacity"
+        className="border-border flex h-16 shrink-0 items-center gap-2 border-b px-6 transition-opacity hover:opacity-80"
         aria-label="Go to AstraPost home"
       >
-        <Rocket className="h-6 w-6 text-primary" />
+        <Rocket className="text-primary h-6 w-6" />
         <span className="text-xl font-bold tracking-tight">AstraPost</span>
       </Link>
 
       {/* Navigation sections */}
-      <nav
-        className="flex-1 overflow-y-auto px-3 py-4"
-        aria-label="Dashboard navigation"
-      >
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Dashboard navigation">
         {sidebarSections.map((section, idx) => (
           <div key={section.label} className={cn(idx > 0 && "mt-6")}>
             {idx === 0 ? (
@@ -336,7 +339,7 @@ function SidebarContent({
             ) : (
               // Regular section with label — always expanded
               <>
-                <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                <p className="text-muted-foreground/60 mb-1.5 px-3 text-[11px] font-semibold tracking-wider uppercase">
                   {section.label}
                 </p>
                 <div className="space-y-0.5">
@@ -361,7 +364,10 @@ function SidebarContent({
                         <item.icon className="h-4.5 w-4.5 shrink-0" />
                         {item.label}
                         {item.isPro && (
-                          <Badge variant="outline" className="ms-auto text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary">
+                          <Badge
+                            variant="outline"
+                            className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
+                          >
                             Pro
                           </Badge>
                         )}
@@ -380,7 +386,7 @@ function SidebarContent({
             href="/roadmap"
             onClick={() => onNavigate?.()}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+              "text-muted-foreground hover:bg-muted hover:text-foreground flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
               linkPy
             )}
           >
@@ -391,16 +397,16 @@ function SidebarContent({
       </nav>
 
       {/* Bottom: AI credits + sign out */}
-      <div className="shrink-0 space-y-3 border-t border-border p-4">
-        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+      <div className="border-border shrink-0 space-y-3 border-t p-4">
+        <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
           {aiUsage ? (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-foreground">AI Credits</span>
-                <span className="text-xs text-muted-foreground">{aiProgressLabel}</span>
+                <span className="text-foreground text-xs font-medium">AI Credits</span>
+                <span className="text-muted-foreground text-xs">{aiProgressLabel}</span>
               </div>
               <Progress value={aiProgress} className="h-1.5" />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {typeof aiUsage.limit === "number"
                   ? `${aiUsage.used}/${aiUsage.limit} used this month`
                   : `${aiUsage.used} used this month`}
@@ -421,7 +427,7 @@ function SidebarContent({
         {!isMobile && (
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive w-full justify-start"
             onClick={handleSignOut}
           >
             <LogOut className="me-2 h-4.5 w-4.5" />
@@ -468,29 +474,23 @@ export function Sidebar({ aiUsage, user }: SidebarProps) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:sticky md:top-0 md:h-dvh md:w-64 md:shrink-0 flex-col bg-card border-r border-border">
+      <div className="bg-card border-border hidden flex-col border-r md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0">
         <SidebarContent pathname={pathname} aiUsage={aiUsage} isMobile={false} />
       </div>
 
       {/* Mobile Sidebar Drawer (vaul) — M4 swipe-to-close, M7 user header */}
-      <DrawerPrimitive.Root
-        open={open}
-        onOpenChange={setOpen}
-        direction={sheetSide}
-      >
+      <DrawerPrimitive.Root open={open} onOpenChange={setOpen} direction={sheetSide}>
         <DrawerPrimitive.Portal>
           <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
           <DrawerPrimitive.Content
             className={cn(
-              "fixed top-0 z-50 h-full w-64 bg-card outline-none overflow-auto",
+              "bg-card fixed top-0 z-50 h-full w-64 overflow-auto outline-none",
               sheetSide === "left"
-                ? "left-0 border-r border-border"
-                : "right-0 border-l border-border"
+                ? "border-border left-0 border-r"
+                : "border-border right-0 border-l"
             )}
           >
-            <DrawerPrimitive.Title className="sr-only">
-              Navigation menu
-            </DrawerPrimitive.Title>
+            <DrawerPrimitive.Title className="sr-only">Navigation menu</DrawerPrimitive.Title>
             <DrawerPrimitive.Description className="sr-only">
               Main navigation links
             </DrawerPrimitive.Description>

@@ -89,22 +89,26 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
       const res = await fetch(`/api/feedback/${id}/upvote`, {
         method: "POST",
       });
-      
+
       if (!res.ok) throw new Error("Vote failed");
-      
+
       const { voted } = await res.json();
-      
+
       // Optimistic update
-      setItems(prev => prev.map(item => {
-        if (item.id === id) {
-          return {
-            ...item,
-            hasUpvoted: voted,
-            upvotes: voted ? item.upvotes + 1 : item.upvotes - 1
-          };
-        }
-        return item;
-      }).sort((a, b) => b.upvotes - a.upvotes)); // Re-sort
+      setItems((prev) =>
+        prev
+          .map((item) => {
+            if (item.id === id) {
+              return {
+                ...item,
+                hasUpvoted: voted,
+                upvotes: voted ? item.upvotes + 1 : item.upvotes - 1,
+              };
+            }
+            return item;
+          })
+          .sort((a, b) => b.upvotes - a.upvotes)
+      ); // Re-sort
 
       toast.success(voted ? "Upvoted!" : "Vote removed");
     } catch (error) {
@@ -139,26 +143,27 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
 
   const getFilteredItems = (status: string) => {
     if (status === "all") return items;
-    if (status === "planned") return items.filter(i => i.status === "planned" || i.status === "in_progress");
-    if (status === "completed") return items.filter(i => i.status === "completed");
-    if (status === "pending") return items.filter(i => i.status === "pending");
+    if (status === "planned")
+      return items.filter((i) => i.status === "planned" || i.status === "in_progress");
+    if (status === "completed") return items.filter((i) => i.status === "completed");
+    if (status === "pending") return items.filter((i) => i.status === "pending");
     return items;
   };
 
   const filteredItems = getFilteredItems(activeTab);
 
   if (loading) {
-      return (
-          <div role="status" aria-label="Loading feedback" className="flex justify-center py-20">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
-              <span className="sr-only">Loading feedback...</span>
-          </div>
-      )
+    return (
+      <div role="status" aria-label="Loading feedback" className="flex justify-center py-20">
+        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" aria-hidden="true" />
+        <span className="sr-only">Loading feedback...</span>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
@@ -169,109 +174,111 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
         </Tabs>
 
         {isLoggedIn ? (
-            <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Submit Idea
-                </Button>
+              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
+              <DialogHeader>
                 <DialogTitle>Submit Feedback</DialogTitle>
                 <DialogDescription>
-                    Share your ideas, report bugs, or request features.
+                  Share your ideas, report bugs, or request features.
                 </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
+              </DialogHeader>
+              <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
+                  <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
-                        <FormItem>
+                      <FormItem>
                         <FormLabel>Title</FormLabel>
                         <FormControl>
-                            <Input placeholder="e.g. Add Instagram Reels Support" {...field} />
+                          <Input placeholder="e.g. Add Instagram Reels Support" {...field} />
                         </FormControl>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                    />
-                    <FormField
+                  />
+                  <FormField
                     control={form.control}
                     name="category"
                     render={({ field }) => (
-                        <FormItem>
+                      <FormItem>
                         <FormLabel>Category</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
+                          <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
+                              <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
+                          </FormControl>
+                          <SelectContent>
                             <SelectItem value="feature">Feature Request</SelectItem>
                             <SelectItem value="bug">Bug Report</SelectItem>
                             <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
+                          </SelectContent>
                         </Select>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                    />
-                    <FormField
+                  />
+                  <FormField
                     control={form.control}
                     name="description"
                     render={({ field }) => (
-                        <FormItem>
+                      <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                            <Textarea 
-                                placeholder="Describe your idea in detail..." 
-                                className="min-h-[100px]"
-                                {...field} 
-                            />
+                          <Textarea
+                            placeholder="Describe your idea in detail..."
+                            className="min-h-[100px]"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                    />
-                    <div className="flex justify-end gap-2">
-                        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Submit
-                        </Button>
-                    </div>
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Submit
+                    </Button>
+                  </div>
                 </form>
-                </Form>
+              </Form>
             </DialogContent>
-            </Dialog>
+          </Dialog>
         ) : (
-            <Button asChild>
-                <a href="/login?redirect=/roadmap">Login to Submit</a>
-            </Button>
+          <Button asChild>
+            <a href="/login?redirect=/roadmap">Login to Submit</a>
+          </Button>
         )}
       </div>
 
       <div className="space-y-4">
-         {filteredItems.length === 0 ? (
-             <div className="text-center py-20 border rounded-xl border-dashed bg-muted/30">
-                 <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground mb-4 opacity-50" />
-                 <h3 className="text-lg font-medium">No feedback found</h3>
-                 <p className="text-muted-foreground">Be the first to submit an idea!</p>
-             </div>
-         ) : (
-             filteredItems.map(item => (
-                 <FeedbackItem 
-                    key={item.id} 
-                    item={item} 
-                    onUpvote={onUpvote}
-                    isVoting={isVoting === item.id}
-                 />
-             ))
-         )}
+        {filteredItems.length === 0 ? (
+          <div className="bg-muted/30 rounded-xl border border-dashed py-20 text-center">
+            <MessageSquare className="text-muted-foreground mx-auto mb-4 h-10 w-10 opacity-50" />
+            <h3 className="text-lg font-medium">No feedback found</h3>
+            <p className="text-muted-foreground">Be the first to submit an idea!</p>
+          </div>
+        ) : (
+          filteredItems.map((item) => (
+            <FeedbackItem
+              key={item.id}
+              item={item}
+              onUpvote={onUpvote}
+              isVoting={isVoting === item.id}
+            />
+          ))
+        )}
       </div>
     </div>
   );

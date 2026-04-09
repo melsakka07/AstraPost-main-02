@@ -69,8 +69,8 @@ export function BillingStatus() {
   if (loading) {
     return (
       <div className="space-y-2">
-        <div className="h-5 w-36 rounded animate-pulse bg-muted" />
-        <div className="h-4 w-52 rounded animate-pulse bg-muted" />
+        <div className="bg-muted h-5 w-36 animate-pulse rounded" />
+        <div className="bg-muted h-4 w-52 animate-pulse rounded" />
       </div>
     );
   }
@@ -86,9 +86,7 @@ export function BillingStatus() {
   const trialEnd = trialEndsAt ? new Date(trialEndsAt) : null;
   const periodEnd = currentPeriodEnd ? new Date(currentPeriodEnd) : null;
   const trialDaysLeft =
-    trialEnd !== null
-      ? Math.max(0, differenceInCalendarDays(trialEnd, new Date()))
-      : null;
+    trialEnd !== null ? Math.max(0, differenceInCalendarDays(trialEnd, new Date())) : null;
 
   return (
     <div className="space-y-3 text-sm">
@@ -134,9 +132,7 @@ export function BillingStatus() {
           Free trial ends{" "}
           <span
             className={
-              trialDaysLeft <= 3
-                ? "font-medium text-amber-500"
-                : "font-medium text-foreground"
+              trialDaysLeft <= 3 ? "font-medium text-amber-500" : "text-foreground font-medium"
             }
           >
             {trialDaysLeft === 0
@@ -151,12 +147,10 @@ export function BillingStatus() {
 
       {/* Next billing date (active, not cancelling) */}
       {isActive && !cancelAtPeriodEnd && periodEnd && (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center gap-1.5">
           <CalendarClock className="h-4 w-4 flex-shrink-0" />
           Next billing date:{" "}
-          <span className="font-medium text-foreground">
-            {format(periodEnd, "MMM d, yyyy")}
-          </span>
+          <span className="text-foreground font-medium">{format(periodEnd, "MMM d, yyyy")}</span>
         </div>
       )}
 
@@ -165,15 +159,15 @@ export function BillingStatus() {
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-700 dark:text-amber-400">
           <p className="mb-3">
             Your subscription will be cancelled on{" "}
-            <span className="font-medium">{format(periodEnd, "MMM d, yyyy")}</span>.
-            You&apos;ll keep full access until then.
+            <span className="font-medium">{format(periodEnd, "MMM d, yyyy")}</span>. You&apos;ll
+            keep full access until then.
           </p>
           <Button
             size="sm"
             variant="outline"
             onClick={handleUndoCancellation}
             disabled={undoingCancellation}
-            className="border-amber-500/50 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+            className="border-amber-500/50 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
           >
             {undoingCancellation ? "Reactivating..." : "Undo Cancellation"}
           </Button>
@@ -182,7 +176,7 @@ export function BillingStatus() {
 
       {/* Past due warning */}
       {isPastDue && (
-        <div className="space-y-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
+        <div className="border-destructive/30 bg-destructive/10 text-destructive space-y-3 rounded-md border px-4 py-3">
           <p className="flex items-center gap-2 font-medium">
             <AlertTriangle className="h-4 w-4" />
             Payment failed — your account is past due.

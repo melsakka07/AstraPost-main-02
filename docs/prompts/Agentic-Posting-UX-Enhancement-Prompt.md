@@ -9,6 +9,7 @@
 You are performing a **UI/UX quality pass** on the Agentic Posting feature in AstraPost. This is not a functional audit — the feature works. Your job is to make it **beautiful, fluid, and confidence-inspiring**.
 
 **Approach:**
+
 1. Read every component file in the Agentic Posting feature
 2. Compare what exists against the detailed visual specification below
 3. Apply enhancements directly — modify the actual code
@@ -16,6 +17,7 @@ You are performing a **UI/UX quality pass** on the Agentic Posting feature in As
 5. Do NOT change functional logic, API calls, state management, or data flow — only visual presentation, layout, spacing, animation, transitions, and interaction feedback
 
 **Design system constraints — you MUST work within these:**
+
 - **Tailwind CSS 4** — all styling via utility classes, no custom CSS files
 - **shadcn/ui** — use existing primitives (Card, Button, Badge, Tooltip, Alert, Separator, Skeleton, Tabs, ToggleGroup, etc.)
 - **shadcn/ui color tokens** — `bg-background`, `text-foreground`, `bg-muted`, `text-muted-foreground`, `bg-primary`, `text-primary-foreground`, `bg-destructive`, `border`, `ring`, `accent` — never hardcode colors
@@ -35,17 +37,20 @@ src/components/ai/agentic-posting-client.tsx
 ```
 
 Also check for any sub-components that may have been created:
+
 ```
 src/components/ai/agentic-*.tsx
 src/components/ai/agentic/
 ```
 
 Read the main sidebar file to see how the entry was added:
+
 ```
 src/components/dashboard/sidebar.tsx
 ```
 
 Read the existing composer tweet card for design reference (the review screen should match its visual language):
+
 ```
 src/components/composer/tweet-card.tsx
 ```
@@ -594,6 +599,7 @@ Verify and apply — search for ANY of these dark-mode-breaking patterns:
 After applying all enhancements, do one final read-through of the entire client component.
 
 **Check for:**
+
 1. **Consistent border-radius** — all cards, inputs, buttons in this feature should use `rounded-xl` (matching the hero input). Don't mix `rounded-md`, `rounded-lg`, and `rounded-xl` within the feature.
 2. **Consistent spacing scale** — use Tailwind's spacing scale consistently. Primary gaps: `gap-3` or `gap-4` between elements, `space-y-4` or `space-y-6` between sections. Don't alternate randomly.
 3. **Consistent text sizing** — headline: `text-3xl sm:text-4xl`, section headers: `text-lg`, body text: `text-[15px]` (tweet content) or `text-sm` (UI labels), helper text: `text-xs`.

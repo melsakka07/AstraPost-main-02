@@ -2,13 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  CheckCircle2,
-  ChevronDown,
-  Circle,
-  Rocket,
-  X,
-} from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -104,16 +98,16 @@ export function SetupChecklist({
   if (allCompleted) return null;
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 via-primary/[0.02] to-transparent">
+    <div className="border-primary/20 from-primary/5 via-primary/[0.02] rounded-xl border bg-gradient-to-r to-transparent">
       {/* Compact header — always visible */}
       <div className="flex items-center gap-3 px-4 py-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Rocket className="h-4 w-4 text-primary" />
+        <div className="bg-primary/10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+          <Rocket className="text-primary h-4 w-4" />
         </div>
 
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <span className="text-sm font-semibold">Getting Started</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-muted-foreground text-xs">
             {completedCount}/{steps.length}
           </span>
           <Progress value={progress} className="hidden h-1.5 w-24 sm:block" />
@@ -137,7 +131,7 @@ export function SetupChecklist({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground h-7 w-7"
             onClick={handleDismiss}
             aria-label="Dismiss checklist"
           >
@@ -150,9 +144,7 @@ export function SetupChecklist({
       <div
         className={cn(
           "grid transition-all duration-300 ease-in-out",
-          isExpanded
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
+          isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
         )}
       >
         <div className="overflow-hidden">
@@ -164,25 +156,20 @@ export function SetupChecklist({
                 className={cn(
                   "group flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all",
                   step.completed
-                    ? "border-green-500/20 bg-green-500/5 text-muted-foreground pointer-events-none"
+                    ? "text-muted-foreground pointer-events-none border-green-500/20 bg-green-500/5"
                     : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                 )}
               >
                 {step.completed ? (
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
                 ) : (
-                  <Circle className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                  <Circle className="text-muted-foreground group-hover:text-primary h-4 w-4 shrink-0" />
                 )}
-                <span
-                  className={cn(
-                    "whitespace-nowrap",
-                    step.completed && "line-through"
-                  )}
-                >
+                <span className={cn("whitespace-nowrap", step.completed && "line-through")}>
                   {step.label}
                 </span>
                 {!step.completed && (
-                  <span className="ml-1 text-xs font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="text-primary ml-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
                     {step.cta}
                   </span>
                 )}

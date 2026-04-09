@@ -42,8 +42,8 @@ export async function GET() {
       and(
         eq(aiGenerations.userId, userId),
         eq(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, monthStart),
-      ),
+        gte(aiGenerations.createdAt, monthStart)
+      )
     );
 
   const used = usageRows[0]?.count ?? 0;

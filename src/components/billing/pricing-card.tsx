@@ -1,6 +1,13 @@
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 export interface PricingPlan {
@@ -110,14 +117,16 @@ export function PricingCard({ plan, currentPlan, isLoading, onSelect }: PricingC
   );
 
   return (
-    <Card className={cn(
-      "flex flex-col relative",
-      plan.popular ? "border-primary shadow-lg scale-105 z-10" : "border-border",
-      "transition-all duration-200 hover:shadow-md"
-    )}>
+    <Card
+      className={cn(
+        "relative flex flex-col",
+        plan.popular ? "border-primary z-10 scale-105 shadow-lg" : "border-border",
+        "transition-all duration-200 hover:shadow-md"
+      )}
+    >
       {plan.popular && (
-        <div className="absolute -top-4 left-0 right-0 flex justify-center">
-          <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+        <div className="absolute -top-4 right-0 left-0 flex justify-center">
+          <span className="bg-primary text-primary-foreground rounded-full px-3 py-1 text-xs font-bold tracking-wide uppercase">
             Most Popular
           </span>
         </div>
@@ -126,7 +135,7 @@ export function PricingCard({ plan, currentPlan, isLoading, onSelect }: PricingC
         <CardTitle className="text-xl">{plan.name}</CardTitle>
         <CardDescription>{plan.description}</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4 flex-1">
+      <CardContent className="grid flex-1 gap-4">
         <div className="flex items-baseline gap-1">
           <span className="text-3xl font-bold">{plan.price}</span>
           <span className="text-muted-foreground">/{plan.interval}</span>
@@ -144,7 +153,7 @@ export function PricingCard({ plan, currentPlan, isLoading, onSelect }: PricingC
         <div className="space-y-2 text-sm">
           {plan.features.map((feature) => (
             <div key={feature} className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-primary" />
+              <Check className="text-primary h-4 w-4" />
               <span className="text-muted-foreground">{feature}</span>
             </div>
           ))}

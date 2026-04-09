@@ -35,10 +35,13 @@ export async function POST(req: NextRequest) {
     const limits = getPlanLimits(plan);
 
     if (limits.maxTeamMembers === null) {
-        return new Response(JSON.stringify({ 
-            error: "upgrade_required", 
-            message: "Team members are only available on the Agency plan." 
-        }), { status: 403 });
+      return new Response(
+        JSON.stringify({
+          error: "upgrade_required",
+          message: "Team members are only available on the Agency plan.",
+        }),
+        { status: 403 }
+      );
     }
 
     // Count current members + pending invitations
@@ -46,32 +49,39 @@ export async function POST(req: NextRequest) {
       .select({ count: sql<number>`count(*)` })
       .from(teamMembers)
       .where(eq(teamMembers.teamId, ctx.currentTeamId));
-    
+
     const invitesCount = await db
       .select({ count: sql<number>`count(*)` })
       .from(teamInvitations)
-      .where(and(eq(teamInvitations.teamId, ctx.currentTeamId), eq(teamInvitations.status, "pending")));
+      .where(
+        and(eq(teamInvitations.teamId, ctx.currentTeamId), eq(teamInvitations.status, "pending"))
+      );
 
     const totalUsed = Number(membersCount[0]?.count ?? 0) + Number(invitesCount[0]?.count ?? 0);
 
     if (totalUsed >= limits.maxTeamMembers) {
-        return new Response(JSON.stringify({ 
-            error: "limit_exceeded", 
-            message: `You have reached the maximum of ${limits.maxTeamMembers} team members.` 
-        }), { status: 403 });
+      return new Response(
+        JSON.stringify({
+          error: "limit_exceeded",
+          message: `You have reached the maximum of ${limits.maxTeamMembers} team members.`,
+        }),
+        { status: 403 }
+      );
     }
 
     // Check if invitation exists
     const existingInvite = await db.query.teamInvitations.findFirst({
-        where: and(
-            eq(teamInvitations.teamId, ctx.currentTeamId),
-            eq(teamInvitations.email, email),
-            eq(teamInvitations.status, "pending")
-        )
+      where: and(
+        eq(teamInvitations.teamId, ctx.currentTeamId),
+        eq(teamInvitations.email, email),
+        eq(teamInvitations.status, "pending")
+      ),
     });
 
     if (existingInvite) {
-        return new Response(JSON.stringify({ error: "Invitation already pending for this email" }), { status: 409 });
+      return new Response(JSON.stringify({ error: "Invitation already pending for this email" }), {
+        status: 409,
+      });
     }
 
     // Create invitation
@@ -80,20 +90,19 @@ export async function POST(req: NextRequest) {
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 
     await db.insert(teamInvitations).values({
-        id: crypto.randomUUID(),
-        teamId: ctx.currentTeamId,
-        email,
-        role,
-        token,
-        expiresAt,
-        status: "pending"
+      id: crypto.randomUUID(),
+      teamId: ctx.currentTeamId,
+      email,
+      role,
+      token,
+      expiresAt,
+      status: "pending",
     });
 
     // Send email
     await sendTeamInvitationEmail(email, token, owner?.name || "AstraPost Team");
 
     return Response.json({ success: true, message: "Invitation sent" });
-
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return Response.json({ error: "Invalid input", details: error.issues }, { status: 400 });

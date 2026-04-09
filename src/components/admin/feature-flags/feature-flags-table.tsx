@@ -51,15 +51,15 @@ export function FeatureFlagsTable() {
     }
   }, []);
 
-  useEffect(() => { fetchFlags(); }, [fetchFlags]);
+  useEffect(() => {
+    fetchFlags();
+  }, [fetchFlags]);
 
   const toggle = async (flag: FeatureFlag) => {
     setToggling(flag.key);
     const newEnabled = !flag.enabled;
     // Optimistic update
-    setFlags((prev) =>
-      prev.map((f) => (f.key === flag.key ? { ...f, enabled: newEnabled } : f))
-    );
+    setFlags((prev) => prev.map((f) => (f.key === flag.key ? { ...f, enabled: newEnabled } : f)));
     try {
       const res = await fetch(`/api/admin/feature-flags/${flag.key}`, {
         method: "PATCH",
@@ -87,7 +87,7 @@ export function FeatureFlagsTable() {
   if (flags.length === 0) {
     return (
       <Card>
-        <CardContent className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+        <CardContent className="text-muted-foreground flex h-32 items-center justify-center text-sm">
           No feature flags found.
         </CardContent>
       </Card>
@@ -116,7 +116,7 @@ export function FeatureFlagsTable() {
                 <TableCell>
                   <span className="font-mono text-sm">{flag.key}</span>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="text-muted-foreground text-sm">
                   {flag.description ?? "—"}
                 </TableCell>
                 <TableCell>
@@ -139,8 +139,9 @@ export function FeatureFlagsTable() {
       </div>
 
       {systemFlags.length > 0 && (
-        <p className="text-xs text-muted-foreground">
-          {systemFlags.length} internal system flag{systemFlags.length !== 1 ? "s" : ""} hidden (prefixed with _).
+        <p className="text-muted-foreground text-xs">
+          {systemFlags.length} internal system flag{systemFlags.length !== 1 ? "s" : ""} hidden
+          (prefixed with _).
         </p>
       )}
     </div>

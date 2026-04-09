@@ -1,7 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Sparkles, Loader2, TrendingUp, Hash, MessageSquare, Lightbulb, LayoutGrid, ChevronDown, ArrowLeftRight } from "lucide-react";
+import {
+  Users,
+  Sparkles,
+  Loader2,
+  TrendingUp,
+  Hash,
+  MessageSquare,
+  Lightbulb,
+  LayoutGrid,
+  ChevronDown,
+  ArrowLeftRight,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -10,7 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 
@@ -107,7 +124,7 @@ export default function CompetitorAnalyzerPage() {
         if (competitorRes.status === 402) {
           let payload: PlanLimitPayload | null = null;
           try {
-            payload = await competitorRes.json() as PlanLimitPayload;
+            payload = (await competitorRes.json()) as PlanLimitPayload;
           } catch {}
           openWithContext({
             error: payload?.error,
@@ -125,17 +142,17 @@ export default function CompetitorAnalyzerPage() {
           });
           return;
         }
-        const err = await competitorRes.json().catch(() => ({})) as { error?: string };
+        const err = (await competitorRes.json().catch(() => ({}))) as { error?: string };
         toast.error(err.error ?? "Failed to analyze account");
         return;
       }
 
-      const data = await competitorRes.json() as AnalysisResult;
+      const data = (await competitorRes.json()) as AnalysisResult;
       setResult(data);
 
       // Self-stats are best-effort: silently ignore errors
       if (selfRes.ok) {
-        setSelfStats(await selfRes.json() as SelfStats);
+        setSelfStats((await selfRes.json()) as SelfStats);
       } else {
         setSelfStats({ hasData: false });
       }
@@ -159,7 +176,9 @@ export default function CompetitorAnalyzerPage() {
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="username">X Username</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+                  @
+                </span>
                 <Input
                   id="username"
                   placeholder="username"
@@ -188,9 +207,15 @@ export default function CompetitorAnalyzerPage() {
               className="sm:self-end"
             >
               {isLoading ? (
-                <><Loader2 className="me-2 h-4 w-4 animate-spin" />Analyzing...</>
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
               ) : (
-                <><Sparkles className="me-2 h-4 w-4" />Analyze</>
+                <>
+                  <Sparkles className="me-2 h-4 w-4" />
+                  Analyze
+                </>
               )}
             </Button>
           </div>
@@ -199,13 +224,14 @@ export default function CompetitorAnalyzerPage() {
 
       {/* Results */}
       {!result && !isLoading && (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <Users className="h-7 w-7 text-primary" />
+        <div className="border-border bg-muted/20 flex flex-col items-center justify-center rounded-xl border border-dashed p-16 text-center">
+          <div className="bg-primary/10 mb-4 flex h-14 w-14 items-center justify-center rounded-full">
+            <Users className="text-primary h-7 w-7" />
           </div>
           <p className="font-semibold">Enter a public X username to analyze</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Analyze any public X account to discover their posting patterns, top topics, and engagement strategy.
+          <p className="text-muted-foreground mt-1 text-sm">
+            Analyze any public X account to discover their posting patterns, top topics, and
+            engagement strategy.
           </p>
         </div>
       )}
@@ -216,7 +242,7 @@ export default function CompetitorAnalyzerPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Card key={i}>
-                <CardContent className="p-4 space-y-2">
+                <CardContent className="space-y-2 p-4">
                   <Skeleton className="h-3 w-20" />
                   <Skeleton className="h-7 w-16" />
                 </CardContent>
@@ -227,7 +253,7 @@ export default function CompetitorAnalyzerPage() {
           <div className="grid gap-4 md:grid-cols-2">
             {Array.from({ length: 2 }).map((_, i) => (
               <Card key={i}>
-                <CardContent className="p-4 space-y-3">
+                <CardContent className="space-y-3 p-4">
                   <Skeleton className="h-4 w-36" />
                   <Skeleton className="h-[180px] w-full rounded-md" />
                 </CardContent>
@@ -236,7 +262,7 @@ export default function CompetitorAnalyzerPage() {
           </div>
           {/* Strategic Summary skeleton */}
           <Card>
-            <CardContent className="p-4 space-y-2">
+            <CardContent className="space-y-2 p-4">
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-3 w-full" />
               <Skeleton className="h-3 w-4/5" />
@@ -251,7 +277,7 @@ export default function CompetitorAnalyzerPage() {
           <div className="grid gap-4 md:grid-cols-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <Card key={i}>
-                <CardContent className="p-4 space-y-3">
+                <CardContent className="space-y-3 p-4">
                   <Skeleton className="h-4 w-28" />
                   <div className="flex flex-wrap gap-1.5">
                     {Array.from({ length: 4 }).map((__, j) => (
@@ -264,7 +290,7 @@ export default function CompetitorAnalyzerPage() {
           </div>
           {/* Tone Profile skeleton */}
           <Card>
-            <CardContent className="p-4 space-y-2">
+            <CardContent className="space-y-2 p-4">
               <Skeleton className="h-4 w-28" />
               <Skeleton className="h-3 w-full" />
               <Skeleton className="h-3 w-3/4" />
@@ -281,17 +307,21 @@ export default function CompetitorAnalyzerPage() {
       {result && (
         <div className="space-y-5">
           {/* A34 — Sticky "Analyze Another" bar so the input doesn't need re-scrolling */}
-          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded-lg border bg-background/95 px-4 py-2.5 backdrop-blur">
-            <p className="text-sm font-medium truncate">
+          <div className="bg-background/95 sticky top-0 z-10 flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 backdrop-blur">
+            <p className="truncate text-sm font-medium">
               @{result.username}
-              <span className="ms-2 text-xs text-muted-foreground font-normal">
-                {result.followerCount.toLocaleString()} followers · {result.tweetCount} tweets analyzed
+              <span className="text-muted-foreground ms-2 text-xs font-normal">
+                {result.followerCount.toLocaleString()} followers · {result.tweetCount} tweets
+                analyzed
               </span>
             </p>
             <Button
               size="sm"
               variant="outline"
-              onClick={() => { setResult(null); setSelfStats(null); }}
+              onClick={() => {
+                setResult(null);
+                setSelfStats(null);
+              }}
               className="shrink-0"
             >
               <Sparkles className="me-1.5 h-3.5 w-3.5" />
@@ -303,8 +333,9 @@ export default function CompetitorAnalyzerPage() {
           <div className="flex items-center gap-3">
             <div>
               <h2 className="text-xl font-bold">@{result.username}</h2>
-              <p className="text-sm text-muted-foreground">
-                {result.displayName} · {result.followerCount.toLocaleString()} followers · {result.tweetCount} tweets analyzed
+              <p className="text-muted-foreground text-sm">
+                {result.displayName} · {result.followerCount.toLocaleString()} followers ·{" "}
+                {result.tweetCount} tweets analyzed
               </p>
             </div>
           </div>
@@ -313,26 +344,32 @@ export default function CompetitorAnalyzerPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Followers</p>
-                <p className="text-2xl font-bold tabular-nums">{result.followerCount.toLocaleString()}</p>
+                <p className="text-muted-foreground mb-1 text-xs">Followers</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {result.followerCount.toLocaleString()}
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Tweets Analyzed</p>
+                <p className="text-muted-foreground mb-1 text-xs">Tweets Analyzed</p>
                 <p className="text-2xl font-bold tabular-nums">{result.tweetCount}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Content Types</p>
-                <p className="text-2xl font-bold tabular-nums">{result.analysis.preferredContentTypes.length}</p>
+                <p className="text-muted-foreground mb-1 text-xs">Content Types</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {result.analysis.preferredContentTypes.length}
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground mb-1">Top Hashtags</p>
-                <p className="text-2xl font-bold tabular-nums">{result.analysis.topHashtags.length}</p>
+                <p className="text-muted-foreground mb-1 text-xs">Top Hashtags</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {result.analysis.topHashtags.length}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -342,18 +379,20 @@ export default function CompetitorAnalyzerPage() {
             <button
               type="button"
               onClick={() => setCompareOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
               aria-expanded={compareOpen}
               aria-controls="competitor-compare-panel"
             >
-              <span className="text-sm font-semibold flex items-center gap-2">
-                <ArrowLeftRight className="h-4 w-4 text-primary" />
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <ArrowLeftRight className="text-primary h-4 w-4" />
                 Compare with Your Account
               </span>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${compareOpen ? "" : "-rotate-90"}`} />
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${compareOpen ? "" : "-rotate-90"}`}
+              />
             </button>
             {compareOpen && (
-              <CardContent id="competitor-compare-panel" className="pt-0 pb-5 px-5">
+              <CardContent id="competitor-compare-panel" className="px-5 pt-0 pb-5">
                 {selfStats === null ? (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
@@ -365,27 +404,28 @@ export default function CompetitorAnalyzerPage() {
                   </div>
                 ) : !selfStats.hasData ? (
                   <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
+                    <div className="bg-muted mb-3 flex h-10 w-10 items-center justify-center rounded-full">
+                      <ArrowLeftRight className="text-muted-foreground h-5 w-5" />
                     </div>
                     <p className="text-sm font-medium">No data to compare yet</p>
-                    <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-                      Publish posts from AstraPost to see how you stack up against @{result.username}.
+                    <p className="text-muted-foreground mt-1 max-w-xs text-xs">
+                      Publish posts from AstraPost to see how you stack up against @
+                      {result.username}.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-5">
                     {/* Column headers */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-center">
+                      <div className="bg-muted/40 rounded-lg border px-3 py-2 text-center">
                         <p className="text-xs font-semibold">Your Account</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
+                        <p className="text-muted-foreground mt-0.5 text-xs">
                           {selfStats.tweetsAnalyzed} tweets · last 90 days
                         </p>
                       </div>
-                      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-center">
+                      <div className="bg-muted/40 rounded-lg border px-3 py-2 text-center">
                         <p className="text-xs font-semibold">@{result.username}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
+                        <p className="text-muted-foreground mt-0.5 text-xs">
                           {result.tweetCount} tweets analyzed
                         </p>
                       </div>
@@ -393,8 +433,8 @@ export default function CompetitorAnalyzerPage() {
 
                     {/* Posting Frequency */}
                     <div>
-                      <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                      <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                        <TrendingUp className="text-primary h-3.5 w-3.5" />
                         Posting Frequency
                       </p>
                       <div className="grid grid-cols-2 gap-3">
@@ -402,7 +442,9 @@ export default function CompetitorAnalyzerPage() {
                           <p className="text-sm font-semibold">{selfStats.postingFrequency}</p>
                         </div>
                         <div className="rounded-lg border px-3 py-2.5 text-center">
-                          <p className="text-sm font-semibold">{result.analysis.postingFrequency}</p>
+                          <p className="text-sm font-semibold">
+                            {result.analysis.postingFrequency}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -412,16 +454,20 @@ export default function CompetitorAnalyzerPage() {
                       const myTags = (selfStats.topHashtags ?? []).slice(0, 6);
                       const theirTags = result.analysis.topHashtags.slice(0, 6);
                       const mySet = new Set(myTags.map((t) => t.toLowerCase().replace(/^#/, "")));
-                      const theirSet = new Set(theirTags.map((t) => t.toLowerCase().replace(/^#/, "")));
-                      const hasOverlap = myTags.some((t) => theirSet.has(t.toLowerCase().replace(/^#/, "")));
+                      const theirSet = new Set(
+                        theirTags.map((t) => t.toLowerCase().replace(/^#/, ""))
+                      );
+                      const hasOverlap = myTags.some((t) =>
+                        theirSet.has(t.toLowerCase().replace(/^#/, ""))
+                      );
                       return (
                         <div>
-                          <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                            <Hash className="h-3.5 w-3.5 text-primary" />
+                          <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                            <Hash className="text-primary h-3.5 w-3.5" />
                             Top Hashtags
                             {hasOverlap && (
-                              <span className="ms-auto text-xs text-muted-foreground flex items-center gap-1">
-                                <span className="inline-block h-2 w-2 rounded-full bg-primary/70" />
+                              <span className="text-muted-foreground ms-auto flex items-center gap-1 text-xs">
+                                <span className="bg-primary/70 inline-block h-2 w-2 rounded-full" />
                                 shared tags highlighted
                               </span>
                             )}
@@ -429,7 +475,9 @@ export default function CompetitorAnalyzerPage() {
                           <div className="grid grid-cols-2 gap-3">
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {myTags.length === 0 ? (
-                                <span className="text-xs text-muted-foreground">No hashtags yet</span>
+                                <span className="text-muted-foreground text-xs">
+                                  No hashtags yet
+                                </span>
                               ) : (
                                 myTags.map((tag, i) => {
                                   const norm = tag.toLowerCase().replace(/^#/, "");
@@ -447,7 +495,9 @@ export default function CompetitorAnalyzerPage() {
                             </div>
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {theirTags.length === 0 ? (
-                                <span className="text-xs text-muted-foreground">No hashtags found</span>
+                                <span className="text-muted-foreground text-xs">
+                                  No hashtags found
+                                </span>
                               ) : (
                                 theirTags.map((tag, i) => {
                                   const norm = tag.toLowerCase().replace(/^#/, "");
@@ -476,19 +526,21 @@ export default function CompetitorAnalyzerPage() {
                       const theirSet = new Set(theirTypes.map((t) => t.toLowerCase()));
                       return (
                         <div>
-                          <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                            <LayoutGrid className="h-3.5 w-3.5 text-primary" />
+                          <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                            <LayoutGrid className="text-primary h-3.5 w-3.5" />
                             Content Types
                           </p>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {myTypes.length === 0 ? (
-                                <span className="text-xs text-muted-foreground">No data yet</span>
+                                <span className="text-muted-foreground text-xs">No data yet</span>
                               ) : (
                                 myTypes.map((type, i) => (
                                   <Badge
                                     key={i}
-                                    variant={theirSet.has(type.toLowerCase()) ? "default" : "secondary"}
+                                    variant={
+                                      theirSet.has(type.toLowerCase()) ? "default" : "secondary"
+                                    }
                                     className="text-xs"
                                   >
                                     {type}
@@ -498,12 +550,14 @@ export default function CompetitorAnalyzerPage() {
                             </div>
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {theirTypes.length === 0 ? (
-                                <span className="text-xs text-muted-foreground">No data found</span>
+                                <span className="text-muted-foreground text-xs">No data found</span>
                               ) : (
                                 theirTypes.map((type, i) => (
                                   <Badge
                                     key={i}
-                                    variant={mySet.has(type.toLowerCase()) ? "default" : "secondary"}
+                                    variant={
+                                      mySet.has(type.toLowerCase()) ? "default" : "secondary"
+                                    }
                                     className="text-xs"
                                   >
                                     {type}
@@ -518,19 +572,19 @@ export default function CompetitorAnalyzerPage() {
 
                     {/* Best Posting Times */}
                     <div>
-                      <p className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                      <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                        <MessageSquare className="text-primary h-3.5 w-3.5" />
                         Best Posting Times
                       </p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-lg border px-3 py-2.5">
-                          <p className="text-xs text-muted-foreground mb-1">Your account</p>
-                          <p className="text-sm text-muted-foreground italic">
+                          <p className="text-muted-foreground mb-1 text-xs">Your account</p>
+                          <p className="text-muted-foreground text-sm italic">
                             See Best Time Predictor for details
                           </p>
                         </div>
                         <div className="rounded-lg border px-3 py-2.5">
-                          <p className="text-xs text-muted-foreground mb-1">@{result.username}</p>
+                          <p className="text-muted-foreground mb-1 text-xs">@{result.username}</p>
                           <p className="text-sm">{result.analysis.bestPostingTimes}</p>
                         </div>
                       </div>
@@ -546,22 +600,25 @@ export default function CompetitorAnalyzerPage() {
             <button
               type="button"
               onClick={() => setChartsOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
               aria-expanded={chartsOpen}
               aria-controls="competitor-charts-panel"
             >
-              <span className="text-sm font-semibold flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-primary" />
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <LayoutGrid className="text-primary h-4 w-4" />
                 Charts
               </span>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${chartsOpen ? "" : "-rotate-90"}`} />
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${chartsOpen ? "" : "-rotate-90"}`}
+              />
             </button>
             {chartsOpen && (
-              <CardContent id="competitor-charts-panel" className="pt-0 pb-4 px-5">
+              <CardContent id="competitor-charts-panel" className="px-5 pt-0 pb-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <Hash className="h-3.5 w-3.5 text-primary" />Hashtag Prominence
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <Hash className="text-primary h-3.5 w-3.5" />
+                      Hashtag Prominence
                     </p>
                     <ViralBarChart
                       data={rankToChartData(result.analysis.topHashtags, "#")}
@@ -572,8 +629,9 @@ export default function CompetitorAnalyzerPage() {
                     />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <LayoutGrid className="h-3.5 w-3.5 text-primary" />Content Mix
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <LayoutGrid className="text-primary h-3.5 w-3.5" />
+                      Content Mix
                     </p>
                     <ViralBarChart
                       data={rankToChartData(result.analysis.preferredContentTypes)}
@@ -593,20 +651,22 @@ export default function CompetitorAnalyzerPage() {
             <button
               type="button"
               onClick={() => setSummaryOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
               aria-expanded={summaryOpen}
               aria-controls="competitor-summary-panel"
             >
-              <span className="text-sm font-semibold flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-primary" />
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <MessageSquare className="text-primary h-4 w-4" />
                 Strategic Summary
               </span>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${summaryOpen ? "" : "-rotate-90"}`} />
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${summaryOpen ? "" : "-rotate-90"}`}
+              />
             </button>
             {summaryOpen && (
-              <CardContent id="competitor-summary-panel" className="pt-0 pb-4 px-5">
+              <CardContent id="competitor-summary-panel" className="px-5 pt-0 pb-4">
                 <p className="text-sm leading-relaxed">{result.analysis.summary}</p>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <div className="text-muted-foreground mt-3 flex flex-wrap gap-2 text-xs">
                   <span className="flex items-center gap-1 rounded-md border px-2 py-1">
                     📅 {result.analysis.postingFrequency}
                   </span>
@@ -623,46 +683,54 @@ export default function CompetitorAnalyzerPage() {
             <button
               type="button"
               onClick={() => setInsightsOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
               aria-expanded={insightsOpen}
               aria-controls="competitor-insights-panel"
             >
-              <span className="text-sm font-semibold flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <TrendingUp className="text-primary h-4 w-4" />
                 Topics, Hashtags & Insights
               </span>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${insightsOpen ? "" : "-rotate-90"}`} />
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${insightsOpen ? "" : "-rotate-90"}`}
+              />
             </button>
             {insightsOpen && (
-              <CardContent id="competitor-insights-panel" className="pt-0 pb-4 px-5">
+              <CardContent id="competitor-insights-panel" className="px-5 pt-0 pb-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   {/* Topics */}
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <TrendingUp className="h-3.5 w-3.5 text-primary" />Top Topics
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <TrendingUp className="text-primary h-3.5 w-3.5" />
+                      Top Topics
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {result.analysis.topTopics.map((t, i) => (
-                        <Badge key={i} variant="secondary">{t}</Badge>
+                        <Badge key={i} variant="secondary">
+                          {t}
+                        </Badge>
                       ))}
                     </div>
                   </div>
 
                   {/* Hashtags */}
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <Hash className="h-3.5 w-3.5 text-primary" />Top Hashtags
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <Hash className="text-primary h-3.5 w-3.5" />
+                      Top Hashtags
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {result.analysis.topHashtags.map((h, i) => (
-                        <Badge key={i} variant="outline">#{h.replace(/^#/, "")}</Badge>
+                        <Badge key={i} variant="outline">
+                          #{h.replace(/^#/, "")}
+                        </Badge>
                       ))}
                     </div>
                   </div>
 
                   {/* Key Strengths */}
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Key Strengths</p>
+                    <p className="text-muted-foreground mb-2 text-xs font-medium">Key Strengths</p>
                     <ul className="space-y-1.5">
                       {result.analysis.keyStrengths.map((s, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm">
@@ -675,13 +743,14 @@ export default function CompetitorAnalyzerPage() {
 
                   {/* Differentiation Opportunities */}
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                      <Lightbulb className="h-3.5 w-3.5 text-primary" />Your Opportunities
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <Lightbulb className="text-primary h-3.5 w-3.5" />
+                      Your Opportunities
                     </p>
                     <ul className="space-y-1.5">
                       {result.analysis.differentiationOpportunities.map((o, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm">
-                          <span className="mt-0.5 text-primary">→</span>
+                          <span className="text-primary mt-0.5">→</span>
                           {o}
                         </li>
                       ))}
@@ -697,19 +766,25 @@ export default function CompetitorAnalyzerPage() {
             <button
               type="button"
               onClick={() => setToneOpen((v) => !v)}
-              className="flex w-full items-center justify-between px-5 py-3.5 text-start hover:bg-muted/30 transition-colors rounded-t-lg"
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
               aria-expanded={toneOpen}
               aria-controls="competitor-tone-panel"
             >
               <span className="text-sm font-semibold">Tone Profile</span>
-              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${toneOpen ? "" : "-rotate-90"}`} />
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${toneOpen ? "" : "-rotate-90"}`}
+              />
             </button>
             {toneOpen && (
-              <CardContent id="competitor-tone-panel" className="pt-0 pb-4 px-5">
-                <p className="text-sm leading-relaxed text-muted-foreground">{result.analysis.toneProfile}</p>
+              <CardContent id="competitor-tone-panel" className="px-5 pt-0 pb-4">
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {result.analysis.toneProfile}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {result.analysis.preferredContentTypes.map((t, i) => (
-                    <Badge key={i} variant="secondary" className="text-xs">{t}</Badge>
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {t}
+                    </Badge>
                   ))}
                 </div>
               </CardContent>

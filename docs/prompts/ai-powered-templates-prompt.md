@@ -67,7 +67,7 @@ The current flow requires the user to do the creative work of filling in placeho
 5. AI generates content **structured according to the selected template's pattern** and streams it into the Composer (using the same streaming pattern as the AI Thread Writer — tweets appear one by one).
 6. User reviews, edits if desired, and publishes.
 
-**The key insight:** Each system template becomes an AI prompt template — a structured instruction that tells the AI *how* to shape the output (not just *what* to write about). The template defines the content structure; the user provides the topic; the AI does the writing.
+**The key insight:** Each system template becomes an AI prompt template — a structured instruction that tells the AI _how_ to shape the output (not just _what_ to write about). The template defines the content structure; the user provides the topic; the AI does the writing.
 
 ---
 
@@ -102,13 +102,13 @@ The current flow requires the user to do the creative work of filling in placeho
 
 Each system template should map to a carefully crafted AI prompt. Here are the 5 templates and what their AI prompts should produce:
 
-| Template | AI Prompt Goal | Default Tone | Default Format |
-|----------|---------------|-------------|----------------|
-| **How-To Guide** | A step-by-step instructional thread. Hook tweet stating the skill/outcome, numbered steps (one per tweet), closing tweet with encouragement or CTA. | Educational | Thread (3–5) |
-| **Personal Story** | A narrative thread. Hook tweet with a relatable or surprising opener, body tweets telling the story chronologically, closing tweet with the lesson or takeaway. | Casual | Thread (3–5) |
-| **Contrarian Take** | A bold single tweet or short thread. Opening tweet with the contrarian opinion stated clearly, optional supporting tweets with evidence/reasoning, closing with a question or call for debate. | Viral | Single Tweet |
-| **Curated List** | A listicle thread. Hook tweet framing the list ("X tools/books/tips for Y"), numbered items (one per tweet with a brief description of each), closing tweet with a summary or bonus pick. | Professional | Thread (5–10) |
-| **Product Launch** | A launch announcement thread. Hook tweet with the big news, feature/benefit tweets, social proof or early results tweet, closing with CTA (link, signup, etc.). | Inspirational | Thread (3–5) |
+| Template            | AI Prompt Goal                                                                                                                                                                                 | Default Tone  | Default Format |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------- |
+| **How-To Guide**    | A step-by-step instructional thread. Hook tweet stating the skill/outcome, numbered steps (one per tweet), closing tweet with encouragement or CTA.                                            | Educational   | Thread (3–5)   |
+| **Personal Story**  | A narrative thread. Hook tweet with a relatable or surprising opener, body tweets telling the story chronologically, closing tweet with the lesson or takeaway.                                | Casual        | Thread (3–5)   |
+| **Contrarian Take** | A bold single tweet or short thread. Opening tweet with the contrarian opinion stated clearly, optional supporting tweets with evidence/reasoning, closing with a question or call for debate. | Viral         | Single Tweet   |
+| **Curated List**    | A listicle thread. Hook tweet framing the list ("X tools/books/tips for Y"), numbered items (one per tweet with a brief description of each), closing tweet with a summary or bonus pick.      | Professional  | Thread (5–10)  |
+| **Product Launch**  | A launch announcement thread. Hook tweet with the big news, feature/benefit tweets, social proof or early results tweet, closing with CTA (link, signup, etc.).                                | Inspirational | Thread (3–5)   |
 
 The AI prompts should be detailed enough to consistently produce well-structured content but flexible enough to handle any topic. Reference the project's existing AI prompt patterns in the thread writer for style.
 
@@ -166,6 +166,7 @@ Follow all project conventions from `CLAUDE.md`:
 **Goal:** Build the API endpoint and the template prompt definitions.
 
 Tasks:
+
 1. Read the existing template system files (`src/lib/templates.ts`, the templates dialog component) and the AI thread writer (`src/app/api/ai/thread/route.ts`) to understand current patterns.
 2. Create `src/lib/ai/template-prompts.ts`:
    - Define a `TemplatePromptConfig` type: `{ id, name, description, defaultTone, defaultFormat, placeholderTopic, buildPrompt(topic, tone, language, format) → string }`.
@@ -186,6 +187,7 @@ Tasks:
 **Goal:** Replace the static template insertion with the AI generation form.
 
 Tasks:
+
 1. Modify the Templates dialog component:
    - Add a state to track the selected system template (`selectedTemplate: TemplatePromptConfig | null`).
    - When a system template card is clicked, instead of inserting text into the editor, transition to the generation form view.
@@ -209,6 +211,7 @@ Tasks:
 **Goal:** Refine the UX, test edge cases, and ensure quality.
 
 Tasks:
+
 1. **Prompt quality tuning:** Test each of the 5 templates with various topics. Refine the AI prompts in `template-prompts.ts` to improve output quality, consistency, and adherence to tweet character limits. Pay attention to Arabic content generation quality since this is a MENA-focused platform.
 2. **Empty/edge states:**
    - What if the user submits a very vague topic (e.g., "stuff")? The AI should still produce reasonable output, but consider adding a minimum character count on the topic input (e.g., 10 chars).
@@ -232,29 +235,34 @@ Create `docs/features/ai-templates-progress.md` at the start:
 ## Status: In Progress
 
 ## Phase 1 — Backend: AI Template Prompt Engine & API Route
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 2 — Frontend: Updated Templates Dialog with Generation Form
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Phase 3 — Polish, Edge Cases & Quality
+
 - **Status:** Not Started
 - **Files Created:**
 - **Files Modified:**
 - **Decisions & Notes:**
 
 ## Prompt Quality Notes
+
 [Track refinements to each template's AI prompt here]
 
 ## Changelog
+
 | Date | Phase | Change |
-|------|-------|--------|
+| ---- | ----- | ------ |
 ```
 
 ---

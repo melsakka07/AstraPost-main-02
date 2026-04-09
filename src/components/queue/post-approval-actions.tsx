@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -23,8 +22,8 @@ export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsPr
       });
 
       if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Failed to update post");
+        const err = await res.json();
+        throw new Error(err.error || "Failed to update post");
       }
 
       toast.success(`Post ${action}d successfully`);
@@ -49,7 +48,7 @@ export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsPr
       <Button
         size="sm"
         aria-label={ariaLabel ? `Approve ${ariaLabel}` : undefined}
-        className="bg-green-600 hover:bg-green-700 text-white"
+        className="bg-green-600 text-white hover:bg-green-700"
         onClick={() => handleAction("approve")}
       >
         <Check className="mr-1 h-4 w-4" />

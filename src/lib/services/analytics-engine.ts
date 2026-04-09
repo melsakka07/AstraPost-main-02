@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 import { posts, tweetAnalytics, tweets } from "@/lib/schema";
 
 export type BestTimeBucket = {
-  day: number;   // 0-6 (Sun-Sat)
-  hour: number;  // 0-23
+  day: number; // 0-6 (Sun-Sat)
+  hour: number; // 0-23
   score: number; // Normalized 0-100 score based on engagement
   count: number; // Number of posts in this bucket
 };
@@ -30,10 +30,10 @@ export class AnalyticsEngine {
     // time buckets, so it never silently drops valid data.
     const rows = await db
       .select({
-        day:     sql<number>`EXTRACT(DOW FROM ${posts.publishedAt})::int`,
-        hour:    sql<number>`EXTRACT(HOUR FROM ${posts.publishedAt})::int`,
+        day: sql<number>`EXTRACT(DOW FROM ${posts.publishedAt})::int`,
+        hour: sql<number>`EXTRACT(HOUR FROM ${posts.publishedAt})::int`,
         avgRate: sql<number>`AVG(${tweetAnalytics.engagementRate}::float8)`,
-        count:   sql<number>`COUNT(*)::int`,
+        count: sql<number>`COUNT(*)::int`,
       })
       .from(tweetAnalytics)
       .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
@@ -67,8 +67,8 @@ export class AnalyticsEngine {
     if (maxRate <= 0) return [];
 
     return rows.map((r) => ({
-      day:   r.day,
-      hour:  r.hour,
+      day: r.day,
+      hour: r.hour,
       score: Math.round((Number(r.avgRate) / maxRate) * 100),
       count: Number(r.count),
     }));
@@ -83,27 +83,27 @@ export class AnalyticsEngine {
 
     // This is simplified. Ideally we want daily snapshots of avg engagement.
     // For now, we'll plot individual post engagement rates over time.
-    
-    const trends = await db
-        .select({
-            date: posts.publishedAt,
-            rate: tweetAnalytics.engagementRate
-        })
-        .from(tweetAnalytics)
-        .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
-        .innerJoin(posts, eq(tweets.postId, posts.id))
-        .where(
-            and(
-                eq(posts.userId, userId),
-                gte(posts.publishedAt, startDate),
-                isNotNull(posts.publishedAt)
-            )
-        )
-        .orderBy(asc(posts.publishedAt));
 
-    return trends.map(t => ({
-        date: t.date?.toISOString().split('T')[0],
-        value: parseFloat(t.rate?.toString() || "0")
+    const trends = await db
+      .select({
+        date: posts.publishedAt,
+        rate: tweetAnalytics.engagementRate,
+      })
+      .from(tweetAnalytics)
+      .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(
+        and(
+          eq(posts.userId, userId),
+          gte(posts.publishedAt, startDate),
+          isNotNull(posts.publishedAt)
+        )
+      )
+      .orderBy(asc(posts.publishedAt));
+
+    return trends.map((t) => ({
+      date: t.date?.toISOString().split("T")[0],
+      value: parseFloat(t.rate?.toString() || "0"),
     }));
   }
 }

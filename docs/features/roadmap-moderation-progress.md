@@ -3,6 +3,7 @@
 ## Status: ALL PHASES COMPLETE ✅
 
 ## Phase 1 — Database & Backend
+
 - **Status:** Completed
 - **Files Created:**
   - `src/app/api/admin/roadmap/route.ts` — GET list with filters, pagination, search
@@ -19,6 +20,7 @@
   - Public GET endpoint now only returns approved items for potential future public roadmap display
 
 ## Phase 2 — Frontend: Public Roadmap Page Redesign
+
 - **Status:** Completed
 - **Files Created:**
   - `src/components/roadmap/submission-form.tsx` — New submission-only form component
@@ -32,6 +34,7 @@
   - Added empty state message to make page less bare
 
 ## Phase 3 — Frontend: Admin Roadmap Management Page
+
 - **Status:** Completed
 - **Files Created:**
   - `src/app/admin/roadmap/page.tsx` — Admin roadmap management page
@@ -49,15 +52,16 @@
   - Pagination controls
 
 ## Changelog
-| Date | Phase | Change |
-|------|-------|--------|
+
+| Date       | Phase   | Change                                                                                       |
+| ---------- | ------- | -------------------------------------------------------------------------------------------- |
 | 2026-03-29 | Phase 1 | Database schema updated: changed feedbackStatusEnum, added adminNotes and reviewedAt columns |
-| 2026-03-29 | Phase 1 | Migration generated and applied |
-| 2026-03-29 | Phase 1 | Created admin API routes for roadmap moderation |
-| 2026-03-29 | Phase 1 | Updated feedback submission with rate limiting |
-| 2026-03-29 | Phase 1 | Updated upvote route to only allow voting on approved items |
-| 2026-03-29 | Phase 2 | Created new submission-form.tsx component |
-| 2026-03-29 | Phase 2 | Redesigned public roadmap page to be submission-only |
-| 2026-03-29 | Phase 3 | Created admin roadmap page and table component |
-| 2026-03-29 | Phase 3 | Added Roadmap entry to admin sidebar |
-| 2026-03-29 | Phase 3 | Implemented bulk select and bulk actions |
+| 2026-03-29 | Phase 1 | Migration generated and applied                                                              |
+| 2026-03-29 | Phase 1 | Created admin API routes for roadmap moderation                                              |
+| 2026-03-29 | Phase 1 | Updated feedback submission with rate limiting                                               |
+| 2026-03-29 | Phase 1 | Updated upvote route to only allow voting on approved items                                  |
+| 2026-03-29 | Phase 2 | Created new submission-form.tsx component                                                    |
+| 2026-03-29 | Phase 2 | Redesigned public roadmap page to be submission-only                                         |
+| 2026-03-29 | Phase 3 | Created admin roadmap page and table component                                               |
+| 2026-03-29 | Phase 3 | Added Roadmap entry to admin sidebar                                                         |
+| 2026-03-29 | Phase 3 | Implemented bulk select and bulk actions                                                     |

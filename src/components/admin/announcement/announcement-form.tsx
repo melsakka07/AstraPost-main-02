@@ -81,15 +81,17 @@ export function AnnouncementForm() {
     type === "warning"
       ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
       : type === "success"
-      ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
-      : "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400";
+        ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
+        : "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400";
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Banner preview</CardTitle>
-          <CardDescription>How it will appear to users at the top of their dashboard.</CardDescription>
+          <CardDescription>
+            How it will appear to users at the top of their dashboard.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {text && enabled ? (
@@ -97,7 +99,7 @@ export function AnnouncementForm() {
               {text}
             </div>
           ) : (
-            <div className="flex h-12 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex h-12 items-center justify-center rounded-lg border border-dashed text-sm">
               {!text ? "Enter text below to preview" : "Toggle active to show preview"}
             </div>
           )}
@@ -139,7 +141,9 @@ export function AnnouncementForm() {
                     </FormControl>
                     <SelectContent>
                       {(Object.keys(TYPE_LABELS) as Array<keyof typeof TYPE_LABELS>).map((key) => (
-                        <SelectItem key={key} value={key}>{TYPE_LABELS[key]}</SelectItem>
+                        <SelectItem key={key} value={key}>
+                          {TYPE_LABELS[key]}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -158,7 +162,7 @@ export function AnnouncementForm() {
                     <FormControl>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </FormControl>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       {field.value ? "Visible to all users" : "Hidden"}
                     </span>
                   </div>

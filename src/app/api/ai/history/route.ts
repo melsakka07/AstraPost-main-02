@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
   if (id) {
     const item = await db.query.aiGenerations.findFirst({
-        where: eq(aiGenerations.id, id),
+      where: eq(aiGenerations.id, id),
     });
     if (item && item.userId !== session.user.id) return new Response("Forbidden", { status: 403 });
     return Response.json({ item });

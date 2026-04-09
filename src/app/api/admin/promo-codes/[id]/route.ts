@@ -18,10 +18,7 @@ const patchSchema = z.object({
 
 // ── PATCH /api/admin/promo-codes/[id] ─────────────────────────────────────────
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
@@ -50,8 +47,10 @@ export async function PATCH(
   if (data.description !== undefined) updatePayload.description = data.description;
   if (data.discountType !== undefined) updatePayload.discountType = data.discountType;
   if (data.discountValue !== undefined) updatePayload.discountValue = String(data.discountValue);
-  if (data.validFrom !== undefined) updatePayload.validFrom = data.validFrom ? new Date(data.validFrom) : null;
-  if (data.validTo !== undefined) updatePayload.validTo = data.validTo ? new Date(data.validTo) : null;
+  if (data.validFrom !== undefined)
+    updatePayload.validFrom = data.validFrom ? new Date(data.validFrom) : null;
+  if (data.validTo !== undefined)
+    updatePayload.validTo = data.validTo ? new Date(data.validTo) : null;
   if (data.maxRedemptions !== undefined) updatePayload.maxRedemptions = data.maxRedemptions;
   if (data.applicablePlans !== undefined) updatePayload.applicablePlans = data.applicablePlans;
   if (data.isActive !== undefined) updatePayload.isActive = data.isActive;
@@ -67,10 +66,7 @@ export async function PATCH(
 
 // ── DELETE /api/admin/promo-codes/[id] ────────────────────────────────────────
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 

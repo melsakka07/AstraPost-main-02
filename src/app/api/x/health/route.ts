@@ -19,18 +19,12 @@ export async function GET(req: Request) {
     if (accountId) {
       // S3 — verify ownership before testing a specific account
       const account = await db.query.xAccounts.findFirst({
-        where: and(
-          eq(xAccounts.id, accountId),
-          eq(xAccounts.userId, session.user.id)
-        ),
+        where: and(eq(xAccounts.id, accountId), eq(xAccounts.userId, session.user.id)),
         columns: { id: true },
       });
 
       if (!account) {
-        return NextResponse.json(
-          { ok: false, error: "Account not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ ok: false, error: "Account not found" }, { status: 404 });
       }
 
       client = await XApiService.getClientForAccountId(accountId);
@@ -40,10 +34,7 @@ export async function GET(req: Request) {
     }
 
     if (!client) {
-      return NextResponse.json(
-        { ok: false, error: "No connected X account" },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "No connected X account" }, { status: 400 });
     }
 
     const me = await client.getUser();
@@ -58,8 +49,7 @@ export async function GET(req: Request) {
   } catch (err) {
     const code = (err as any)?.code;
     const message = err instanceof Error ? err.message : "Unknown error";
-    const status =
-      message === "X Session expired. Please reconnect your account." ? 401 : 500;
+    const status = message === "X Session expired. Please reconnect your account." ? 401 : 500;
     return NextResponse.json(
       {
         ok: false,

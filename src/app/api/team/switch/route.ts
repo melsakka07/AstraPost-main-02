@@ -5,11 +5,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { teamMembers } from "@/lib/schema";
-import {
-  signTeamCookie,
-  TEAM_COOKIE_NAME,
-  TEAM_COOKIE_MAX_AGE,
-} from "@/lib/team-cookie";
+import { signTeamCookie, TEAM_COOKIE_NAME, TEAM_COOKIE_MAX_AGE } from "@/lib/team-cookie";
 
 const bodySchema = z.object({
   /** UUID of the team (or the user's own ID for the personal workspace). */
@@ -46,10 +42,7 @@ export async function POST(req: Request) {
   // ── Team workspace ────────────────────────────────────────────────────────
   // Verify the requesting user is actually a member of the requested team.
   const membership = await db.query.teamMembers.findFirst({
-    where: and(
-      eq(teamMembers.teamId, teamId),
-      eq(teamMembers.userId, session.user.id)
-    ),
+    where: and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, session.user.id)),
   });
 
   if (!membership) {

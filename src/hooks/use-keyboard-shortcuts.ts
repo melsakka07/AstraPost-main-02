@@ -19,10 +19,7 @@ export interface KeyboardShortcut {
  * normal typing in textareas. Shortcuts work even when focus is inside an
  * input or textarea so composers can use Cmd+Enter to submit.
  */
-export function useKeyboardShortcuts(
-  shortcuts: KeyboardShortcut[],
-  disabled = false
-) {
+export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[], disabled = false) {
   useEffect(() => {
     if (disabled) return;
 

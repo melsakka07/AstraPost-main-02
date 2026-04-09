@@ -3,6 +3,7 @@
 ## Status: All 4 Phases Complete ✓
 
 ## Phase 1 — Foundation & Subscriber Management (Backend)
+
 - **Status:** Complete
 - **Files Created:**
   - `src/app/api/admin/subscribers/route.ts` — GET (list) + POST (create)
@@ -20,6 +21,7 @@
   - Migration: `0032_admin_dashboard_foundation`
 
 ## Phase 2 — Subscriber Management (Frontend)
+
 - **Status:** Complete
 - **Files Created:**
   - `src/components/admin/admin-page-wrapper.tsx` — shared page header wrapper for all admin pages
@@ -43,6 +45,7 @@
   - Edit dialog resets form values when `subscriber` prop changes (useEffect + form.reset)
 
 ## Phase 3 — Billing Management
+
 - **Status:** Complete
 - **Files Created:**
   - `src/app/api/admin/billing/overview/route.ts` — MRR + subscription stats (plan breakdown, churn, conversion rate)
@@ -70,6 +73,7 @@
   - Zod v4 + RHF v7.71 with `exactOptionalPropertyTypes: true`: avoid `.default()` in schemas; use `useForm<T, unknown, T>` explicit generics
 
 ## Phase 4 — Feature Management & Polish
+
 - **Status:** Complete
 - **Files Created:**
   - `src/lib/feature-flags.ts` — `isFeatureEnabled(key)` helper with 60s in-memory cache + `invalidateFeatureFlag(key)` + `DEFAULT_FLAGS` array
@@ -97,9 +101,10 @@
   - Banner dismissed per-session via `sessionStorage` keyed to the exact message text
 
 ## Changelog
-| Date | Phase | Change |
-|------|-------|--------|
-| 2026-03-26 | Phase 1 | Foundation complete — schema, helpers, all 6 subscriber API routes |
-| 2026-03-26 | Phase 2 | Subscriber management frontend — list page, detail page, add/edit/ban/delete, AdminPageWrapper, sidebar |
-| 2026-03-26 | Phase 3 | Billing management — overview API, transactions, promo code CRUD API+UI, Stripe coupon sync, checkout integration, sidebar restructured into sections |
+
+| Date       | Phase   | Change                                                                                                                                                                                                  |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-03-26 | Phase 1 | Foundation complete — schema, helpers, all 6 subscriber API routes                                                                                                                                      |
+| 2026-03-26 | Phase 2 | Subscriber management frontend — list page, detail page, add/edit/ban/delete, AdminPageWrapper, sidebar                                                                                                 |
+| 2026-03-26 | Phase 3 | Billing management — overview API, transactions, promo code CRUD API+UI, Stripe coupon sync, checkout integration, sidebar restructured into sections                                                   |
 | 2026-03-26 | Phase 4 | Feature flags toggle UI + isFeatureEnabled helper, platform stats dashboard, announcement banner (admin config + user-facing), metrics page wrapped in AdminPageWrapper, sidebar expanded to 4 sections |

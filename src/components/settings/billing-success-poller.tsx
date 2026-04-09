@@ -64,7 +64,7 @@ export function BillingSuccessPoller({ initialPlan }: BillingSuccessPollerProps)
 
       if (attemptsRef.current >= MAX_ATTEMPTS) {
         toast.info(
-          "Your subscription is still being processed. This page will update shortly — please refresh in a moment.",
+          "Your subscription is still being processed. This page will update shortly — please refresh in a moment."
         );
         clearParam();
         return;

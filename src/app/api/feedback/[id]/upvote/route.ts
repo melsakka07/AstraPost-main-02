@@ -30,15 +30,13 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     }
 
     const existingVote = await db.query.feedbackVotes.findFirst({
-      where: and(
-        eq(feedbackVotes.feedbackId, id),
-        eq(feedbackVotes.userId, session.user.id)
-      )
+      where: and(eq(feedbackVotes.feedbackId, id), eq(feedbackVotes.userId, session.user.id)),
     });
 
     if (existingVote) {
       await db.delete(feedbackVotes).where(eq(feedbackVotes.id, existingVote.id));
-      await db.update(feedback)
+      await db
+        .update(feedback)
         .set({ upvotes: sql`upvotes - 1` })
         .where(eq(feedback.id, id));
       return Response.json({ voted: false });
@@ -46,14 +44,14 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       await db.insert(feedbackVotes).values({
         id: crypto.randomUUID(),
         userId: session.user.id,
-        feedbackId: id
+        feedbackId: id,
       });
-      await db.update(feedback)
+      await db
+        .update(feedback)
         .set({ upvotes: sql`upvotes + 1` })
         .where(eq(feedback.id, id));
       return Response.json({ voted: true });
     }
-
   } catch (error) {
     console.error("Upvote Error:", error);
     return ApiError.internal();

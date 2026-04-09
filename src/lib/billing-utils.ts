@@ -18,21 +18,11 @@ export function priceToPlan(priceId: string | null | undefined): string {
     STRIPE_PRICE_ID_AGENCY_MONTHLY,
     STRIPE_PRICE_ID_AGENCY_ANNUAL,
   } = process.env;
-  if (STRIPE_PRICE_ID_MONTHLY && priceId === STRIPE_PRICE_ID_MONTHLY)
-    return "pro_monthly";
-  if (STRIPE_PRICE_ID_ANNUAL && priceId === STRIPE_PRICE_ID_ANNUAL)
-    return "pro_annual";
+  if (STRIPE_PRICE_ID_MONTHLY && priceId === STRIPE_PRICE_ID_MONTHLY) return "pro_monthly";
+  if (STRIPE_PRICE_ID_ANNUAL && priceId === STRIPE_PRICE_ID_ANNUAL) return "pro_annual";
   // Both agency billing cycles map to the single "agency" plan tier
-  if (
-    STRIPE_PRICE_ID_AGENCY_MONTHLY &&
-    priceId === STRIPE_PRICE_ID_AGENCY_MONTHLY
-  )
-    return "agency";
-  if (
-    STRIPE_PRICE_ID_AGENCY_ANNUAL &&
-    priceId === STRIPE_PRICE_ID_AGENCY_ANNUAL
-  )
-    return "agency";
+  if (STRIPE_PRICE_ID_AGENCY_MONTHLY && priceId === STRIPE_PRICE_ID_AGENCY_MONTHLY) return "agency";
+  if (STRIPE_PRICE_ID_AGENCY_ANNUAL && priceId === STRIPE_PRICE_ID_AGENCY_ANNUAL) return "agency";
   return "free";
 }
 

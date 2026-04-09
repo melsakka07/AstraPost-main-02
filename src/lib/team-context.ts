@@ -1,4 +1,3 @@
-
 import { headers, cookies } from "next/headers";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
@@ -58,10 +57,7 @@ export async function getTeamContext(): Promise<TeamContext | null> {
 
   // Check membership
   const membership = await db.query.teamMembers.findFirst({
-    where: and(
-      eq(teamMembers.teamId, requestedTeamId),
-      eq(teamMembers.userId, session.user.id)
-    ),
+    where: and(eq(teamMembers.teamId, requestedTeamId), eq(teamMembers.userId, session.user.id)),
   });
 
   if (!membership) {

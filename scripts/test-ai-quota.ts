@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/db";
 import { checkAiQuotaDetailed } from "@/lib/middleware/require-plan";
 import { user, aiGenerations } from "@/lib/schema";
@@ -65,4 +64,6 @@ async function main() {
   console.log("Test Finished");
 }
 
-main().catch(console.error).finally(() => process.exit(0));
+main()
+  .catch(console.error)
+  .finally(() => process.exit(0));

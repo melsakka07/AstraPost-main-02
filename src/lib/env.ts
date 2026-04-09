@@ -9,9 +9,7 @@ const serverEnvSchema = z.object({
   POSTGRES_URL: z.string().url("Invalid database URL"),
 
   // Authentication
-  BETTER_AUTH_SECRET: z
-    .string()
-    .min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
+  BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   BETTER_AUTH_URL: z.string().url().optional(),
 
   // OAuth
@@ -55,9 +53,7 @@ const serverEnvSchema = z.object({
   RESEND_FROM_EMAIL: z.string().email().optional(),
 
   // App
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
+  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 
 /**
@@ -79,10 +75,7 @@ export function getServerEnv(): ServerEnv {
   const parsed = serverEnvSchema.safeParse(process.env);
 
   if (!parsed.success) {
-    console.error(
-      "Invalid server environment variables:",
-      parsed.error.flatten().fieldErrors
-    );
+    console.error("Invalid server environment variables:", parsed.error.flatten().fieldErrors);
     throw new Error("Invalid server environment variables");
   }
 
@@ -99,10 +92,7 @@ export function getClientEnv(): ClientEnv {
   });
 
   if (!parsed.success) {
-    console.error(
-      "Invalid client environment variables:",
-      parsed.error.flatten().fieldErrors
-    );
+    console.error("Invalid client environment variables:", parsed.error.flatten().fieldErrors);
     throw new Error("Invalid client environment variables");
   }
 
@@ -148,10 +138,14 @@ export function checkEnv(): void {
   if (!process.env.STRIPE_WEBHOOK_SECRET) stripeMissing.push("STRIPE_WEBHOOK_SECRET");
   if (!process.env.STRIPE_PRICE_ID_MONTHLY) stripeMissing.push("STRIPE_PRICE_ID_MONTHLY");
   if (!process.env.STRIPE_PRICE_ID_ANNUAL) stripeMissing.push("STRIPE_PRICE_ID_ANNUAL");
-  if (!process.env.STRIPE_PRICE_ID_AGENCY_MONTHLY) stripeMissing.push("STRIPE_PRICE_ID_AGENCY_MONTHLY");
-  if (!process.env.STRIPE_PRICE_ID_AGENCY_ANNUAL) stripeMissing.push("STRIPE_PRICE_ID_AGENCY_ANNUAL");
+  if (!process.env.STRIPE_PRICE_ID_AGENCY_MONTHLY)
+    stripeMissing.push("STRIPE_PRICE_ID_AGENCY_MONTHLY");
+  if (!process.env.STRIPE_PRICE_ID_AGENCY_ANNUAL)
+    stripeMissing.push("STRIPE_PRICE_ID_AGENCY_ANNUAL");
   if (stripeMissing.length > 0) {
-    warnings.push(`Stripe billing is partially unconfigured. Missing: ${stripeMissing.join(", ")}. Checkout and webhooks will not work.`);
+    warnings.push(
+      `Stripe billing is partially unconfigured. Missing: ${stripeMissing.join(", ")}. Checkout and webhooks will not work.`
+    );
   }
 
   // Log warnings in development

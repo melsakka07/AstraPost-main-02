@@ -53,7 +53,12 @@ export async function POST(req: Request) {
 
         // Validate headers
         if (rows.length > 0 && (!rows[0].content || !rows[0].scheduledAt)) {
-          resolve(NextResponse.json({ error: "CSV must have 'content' and 'scheduledAt' columns" }, { status: 400 }));
+          resolve(
+            NextResponse.json(
+              { error: "CSV must have 'content' and 'scheduledAt' columns" },
+              { status: 400 }
+            )
+          );
           return;
         }
 
@@ -106,11 +111,13 @@ export async function POST(req: Request) {
 
         await Promise.all(promises);
 
-        resolve(NextResponse.json({
-          success: true,
-          count: rows.length - errors.length,
-          errors: errors.length > 0 ? errors : undefined,
-        }));
+        resolve(
+          NextResponse.json({
+            success: true,
+            count: rows.length - errors.length,
+            errors: errors.length > 0 ? errors : undefined,
+          })
+        );
       },
       error: (error: any) => {
         resolve(NextResponse.json({ error: error.message }, { status: 400 }));

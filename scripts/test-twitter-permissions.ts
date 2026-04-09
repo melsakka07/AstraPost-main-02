@@ -78,7 +78,8 @@ function logSection(title: string) {
 
 function logResult(result: TestResult) {
   const statusIcon = result.status === "PASS" ? "✓" : result.status === "FAIL" ? "✗" : "○";
-  const statusColor = result.status === "PASS" ? "green" : result.status === "FAIL" ? "red" : "yellow";
+  const statusColor =
+    result.status === "PASS" ? "green" : result.status === "FAIL" ? "red" : "yellow";
 
   log(`${statusIcon} ${result.name}: ${result.message}`, statusColor);
   if (result.details) {
@@ -214,10 +215,11 @@ async function testOAuth2Credentials(): Promise<void> {
 
   logResult({
     name: "OAuth 2.0 Credentials",
-    status: (clientIdValid && clientSecretValid) ? "PASS" : "FAIL",
-    message: (clientIdValid && clientSecretValid)
-      ? "OAuth 2.0 credentials appear valid"
-      : "OAuth 2.0 credentials may be invalid",
+    status: clientIdValid && clientSecretValid ? "PASS" : "FAIL",
+    message:
+      clientIdValid && clientSecretValid
+        ? "OAuth 2.0 credentials appear valid"
+        : "OAuth 2.0 credentials may be invalid",
     details: {
       clientIdFormat: clientIdValid ? "valid" : "invalid (should start with 'cl' and be >10 chars)",
       clientSecretFormat: clientSecretValid ? "valid" : "invalid (should be >10 chars)",
@@ -330,12 +332,18 @@ async function testUserTokenPermissions(): Promise<void> {
               headers: { Authorization: `Bearer ${testAccessToken}` },
             });
             log("  (test tweet deleted)", "gray");
-          } catch { /* best effort cleanup */ }
+          } catch {
+            /* best effort cleanup */
+          }
         }
       } else {
         const errBody = await rawRes.text().catch(() => "(empty)");
         let parsed: any = null;
-        try { parsed = JSON.parse(errBody); } catch { /* not JSON */ }
+        try {
+          parsed = JSON.parse(errBody);
+        } catch {
+          /* not JSON */
+        }
 
         logResult({
           name: "Write Permission",
@@ -344,22 +352,44 @@ async function testUserTokenPermissions(): Promise<void> {
           details: {
             status: rawRes.status,
             response: parsed || errBody,
-            fix: rawRes.status === 403
-              ? "Go to developer.x.com → App Settings → User authentication settings → Set permissions to 'Read and Write', then reconnect your X account"
-              : rawRes.status === 401
-                ? "Token expired or invalid — reconnect your X account"
-                : undefined,
+            fix:
+              rawRes.status === 403
+                ? "Go to developer.x.com → App Settings → User authentication settings → Set permissions to 'Read and Write', then reconnect your X account"
+                : rawRes.status === 401
+                  ? "Token expired or invalid — reconnect your X account"
+                  : undefined,
           },
         });
 
         if (rawRes.status === 403) {
-          log("\n" + colors.bright + colors.red + "═══════════════════════════════════════════════════════" + colors.reset);
+          log(
+            "\n" +
+              colors.bright +
+              colors.red +
+              "═══════════════════════════════════════════════════════" +
+              colors.reset
+          );
           log(colors.bright + colors.red + "  HOW TO FIX 403 ON TWEET POSTING:" + colors.reset);
-          log(colors.yellow + "  1. Go to: https://developer.x.com/en/portal/dashboard" + colors.reset);
-          log(colors.yellow + "  2. Select your app → Settings → User authentication settings" + colors.reset);
+          log(
+            colors.yellow + "  1. Go to: https://developer.x.com/en/portal/dashboard" + colors.reset
+          );
+          log(
+            colors.yellow +
+              "  2. Select your app → Settings → User authentication settings" +
+              colors.reset
+          );
           log(colors.yellow + "  3. Change App permissions to 'Read and Write'" + colors.reset);
-          log(colors.yellow + "  4. In AstraPost: disconnect + reconnect your X account" + colors.reset);
-          log(colors.bright + colors.red + "═══════════════════════════════════════════════════════\n" + colors.reset);
+          log(
+            colors.yellow +
+              "  4. In AstraPost: disconnect + reconnect your X account" +
+              colors.reset
+          );
+          log(
+            colors.bright +
+              colors.red +
+              "═══════════════════════════════════════════════════════\n" +
+              colors.reset
+          );
         }
       }
     } catch (error: any) {
@@ -390,7 +420,6 @@ async function testUserTokenPermissions(): Promise<void> {
         message: error.message,
       });
     }
-
   } catch (error: any) {
     logResult({
       name: "User Token Test",
@@ -471,8 +500,11 @@ async function testTokenRefreshEndpoint(): Promise<void> {
 
     log("Attempting to refresh access token...", "blue");
 
-    const { accessToken, refreshToken: _newRefreshToken, expiresIn } =
-      await client.refreshOAuth2Token(refreshToken);
+    const {
+      accessToken,
+      refreshToken: _newRefreshToken,
+      expiresIn,
+    } = await client.refreshOAuth2Token(refreshToken);
 
     logResult({
       name: "Token Refresh",
@@ -483,7 +515,6 @@ async function testTokenRefreshEndpoint(): Promise<void> {
 
     log("\n" + colors.green + "New Access Token (your account has been refreshed):" + colors.reset);
     log(colors.cyan + accessToken.substring(0, 30) + "..." + colors.reset + "\n");
-
   } catch (error: any) {
     const statusCode = error?.response?.status;
 
@@ -519,9 +550,9 @@ async function testTokenRefreshEndpoint(): Promise<void> {
 function printSummary(): void {
   logSection("Test Summary");
 
-  const passed = results.filter(r => r.status === "PASS").length;
-  const failed = results.filter(r => r.status === "FAIL").length;
-  const skipped = results.filter(r => r.status === "SKIP").length;
+  const passed = results.filter((r) => r.status === "PASS").length;
+  const failed = results.filter((r) => r.status === "FAIL").length;
+  const skipped = results.filter((r) => r.status === "SKIP").length;
 
   console.log(`\n  Total Tests: ${results.length}`);
   log(`  ✓ Passed: ${passed}`, "green");
@@ -529,8 +560,16 @@ function printSummary(): void {
   log(`  ○ Skipped: ${skipped}`, "yellow");
 
   if (failed > 0) {
-    console.log("\n" + colors.red + colors.bright + "❌ Some tests failed. Please review the errors above." + colors.reset);
-    console.log(colors.cyan + "📚 For help, see: https://docs.astrapost.com/troubleshooting" + colors.reset);
+    console.log(
+      "\n" +
+        colors.red +
+        colors.bright +
+        "❌ Some tests failed. Please review the errors above." +
+        colors.reset
+    );
+    console.log(
+      colors.cyan + "📚 For help, see: https://docs.astrapost.com/troubleshooting" + colors.reset
+    );
   } else {
     console.log("\n" + colors.green + colors.bright + "✅ All tests passed!" + colors.reset);
   }
@@ -542,9 +581,25 @@ function printSummary(): void {
  * Main test runner
  */
 async function main(): Promise<void> {
-  console.log("\n" + colors.cyan + colors.bright + "╔══════════════════════════════════════════════════════╗" + colors.reset);
-  console.log(colors.cyan + colors.bright + "║     Twitter API Permissions Test Suite             ║" + colors.reset);
-  console.log(colors.cyan + colors.bright + "╚══════════════════════════════════════════════════════╝" + colors.reset);
+  console.log(
+    "\n" +
+      colors.cyan +
+      colors.bright +
+      "╔══════════════════════════════════════════════════════╗" +
+      colors.reset
+  );
+  console.log(
+    colors.cyan +
+      colors.bright +
+      "║     Twitter API Permissions Test Suite             ║" +
+      colors.reset
+  );
+  console.log(
+    colors.cyan +
+      colors.bright +
+      "╚══════════════════════════════════════════════════════╝" +
+      colors.reset
+  );
 
   try {
     await testEnvironmentVariables();

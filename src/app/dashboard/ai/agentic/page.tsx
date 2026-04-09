@@ -53,10 +53,7 @@ export default async function AgenticPostingPage() {
       title="Agentic Posting"
       description="Drop a topic. AI handles the rest."
     >
-      <AgenticPostingClient
-        xAccounts={typedAccounts}
-        hasVoiceProfile={!!dbUser?.voiceProfile}
-      />
+      <AgenticPostingClient xAccounts={typedAccounts} hasVoiceProfile={!!dbUser?.voiceProfile} />
     </DashboardPageWrapper>
   );
 }

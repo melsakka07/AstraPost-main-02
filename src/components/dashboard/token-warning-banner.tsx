@@ -18,19 +18,19 @@ export function TokenWarningBanner({ username }: TokenWarningBannerProps) {
   };
 
   return (
-    <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
-      <div className="flex items-center gap-2 text-destructive">
+    <div className="bg-destructive/10 border-destructive/20 flex flex-col items-center justify-between gap-3 border-b px-4 py-3 text-sm sm:flex-row">
+      <div className="text-destructive flex items-center gap-2">
         <AlertTriangle className="h-5 w-5 shrink-0" />
         <p>
           <strong>Connection Expired:</strong> Your connection to X (Twitter){" "}
-          {username ? `@${username}` : ""} has expired. Scheduled posts will
-          fail until you reconnect.
+          {username ? `@${username}` : ""} has expired. Scheduled posts will fail until you
+          reconnect.
         </p>
       </div>
       <Button
         size="sm"
         variant="outline"
-        className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/20 hover:text-destructive w-full sm:w-auto"
+        className="border-destructive/40 text-destructive hover:bg-destructive/20 hover:text-destructive w-full shrink-0 sm:w-auto"
         onClick={handleReconnect}
       >
         <Twitter className="mr-2 h-4 w-4" />

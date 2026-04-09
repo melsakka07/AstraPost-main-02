@@ -89,16 +89,16 @@ export function ContactForm() {
 
   if (formState === "success") {
     return (
-      <Card className="border rounded-2xl shadow-sm">
-        <CardContent className="pt-12 pb-12 flex flex-col items-center text-center gap-4">
-          <div className="h-14 w-14 rounded-full bg-success/10 flex items-center justify-center">
-            <CheckCircle2 className="h-7 w-7 text-success" />
+      <Card className="rounded-2xl border shadow-sm">
+        <CardContent className="flex flex-col items-center gap-4 pt-12 pb-12 text-center">
+          <div className="bg-success/10 flex h-14 w-14 items-center justify-center rounded-full">
+            <CheckCircle2 className="text-success h-7 w-7" />
           </div>
           <div className="space-y-2">
             <h3 className="text-xl font-semibold">Message sent!</h3>
-            <p className="text-muted-foreground text-sm max-w-xs">
-              We&apos;ve received your message and will reply within 1–2 business days.
-              Check your inbox for a confirmation email.
+            <p className="text-muted-foreground max-w-xs text-sm">
+              We&apos;ve received your message and will reply within 1–2 business days. Check your
+              inbox for a confirmation email.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => setFormState("idle")}>
@@ -112,17 +112,15 @@ export function ContactForm() {
   const isSubmitting = formState === "submitting";
 
   return (
-    <Card className="border rounded-2xl shadow-sm">
+    <Card className="rounded-2xl border shadow-sm">
       <CardHeader className="pb-4">
         <CardTitle className="text-xl">Send us a message</CardTitle>
-        <CardDescription>
-          We typically respond within 1–2 business days.
-        </CardDescription>
+        <CardDescription>We typically respond within 1–2 business days.</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
           {/* Name + Email row */}
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="contact-name">Your name</Label>
               <Input
@@ -137,7 +135,7 @@ export function ContactForm() {
                 aria-invalid={!!fieldErrors.name}
               />
               {fieldErrors.name && (
-                <p id="contact-name-error" role="alert" className="text-xs text-destructive">
+                <p id="contact-name-error" role="alert" className="text-destructive text-xs">
                   {fieldErrors.name[0]}
                 </p>
               )}
@@ -156,7 +154,7 @@ export function ContactForm() {
                 aria-invalid={!!fieldErrors.email}
               />
               {fieldErrors.email && (
-                <p id="contact-email-error" role="alert" className="text-xs text-destructive">
+                <p id="contact-email-error" role="alert" className="text-destructive text-xs">
                   {fieldErrors.email[0]}
                 </p>
               )}
@@ -166,12 +164,7 @@ export function ContactForm() {
           {/* Category */}
           <div className="space-y-2">
             <Label htmlFor="contact-category">Category</Label>
-            <Select
-              required
-              value={category}
-              onValueChange={setCategory}
-              disabled={isSubmitting}
-            >
+            <Select required value={category} onValueChange={setCategory} disabled={isSubmitting}>
               <SelectTrigger
                 id="contact-category"
                 aria-describedby={fieldErrors.category ? "contact-category-error" : undefined}
@@ -188,7 +181,7 @@ export function ContactForm() {
               </SelectContent>
             </Select>
             {fieldErrors.category && (
-              <p id="contact-category-error" role="alert" className="text-xs text-destructive">
+              <p id="contact-category-error" role="alert" className="text-destructive text-xs">
                 {fieldErrors.category[0]}
               </p>
             )}
@@ -209,7 +202,7 @@ export function ContactForm() {
               aria-invalid={!!fieldErrors.subject}
             />
             {fieldErrors.subject && (
-              <p id="contact-subject-error" role="alert" className="text-xs text-destructive">
+              <p id="contact-subject-error" role="alert" className="text-destructive text-xs">
                 {fieldErrors.subject[0]}
               </p>
             )}
@@ -232,7 +225,7 @@ export function ContactForm() {
               className="resize-none"
             />
             {fieldErrors.message && (
-              <p id="contact-message-error" role="alert" className="text-xs text-destructive">
+              <p id="contact-message-error" role="alert" className="text-destructive text-xs">
                 {fieldErrors.message[0]}
               </p>
             )}
@@ -240,12 +233,12 @@ export function ContactForm() {
 
           {/* Global error */}
           {errorMessage && (
-            <p role="alert" aria-live="polite" className="text-sm text-destructive">
+            <p role="alert" aria-live="polite" className="text-destructive text-sm">
               {errorMessage}
             </p>
           )}
 
-          <Button type="submit" className="w-full group" disabled={isSubmitting || !category}>
+          <Button type="submit" className="group w-full" disabled={isSubmitting || !category}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

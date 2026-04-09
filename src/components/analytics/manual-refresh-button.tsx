@@ -38,4 +38,3 @@ export function ManualRefreshButton({ xAccountId }: { xAccountId: string }) {
     </Button>
   );
 }
-

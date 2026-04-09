@@ -22,7 +22,11 @@ function languageInstruction(language: string): string {
 
 // ── 5A: Research prompt ───────────────────────────────────────────────────────
 
-export function buildResearchPrompt(topic: string, language: string, audience = "general audience"): string {
+export function buildResearchPrompt(
+  topic: string,
+  language: string,
+  audience = "general audience"
+): string {
   return `You are a social media research analyst specializing in viral content for the MENA region and global markets.
 
 TASK: Analyze the topic below and identify the most engaging angles for a Twitter/X post.
@@ -74,7 +78,13 @@ export function buildStrategyPrompt(
   brief: ResearchBrief,
   tier: XSubscriptionTier,
   language: string,
-  preferences?: { tone?: string | undefined; audience?: string | undefined; includeImages?: boolean | undefined } | undefined,
+  preferences?:
+    | {
+        tone?: string | undefined;
+        audience?: string | undefined;
+        includeImages?: boolean | undefined;
+      }
+    | undefined
 ): string {
   const canUseLong = canPostLongContent(tier);
   const maxChars = getMaxCharacterLimit(tier);
@@ -147,9 +157,10 @@ export function buildWritingPrompt(
   brief: ResearchBrief,
   plan: ContentPlan,
   voiceProfile: string | null,
-  language: string,
+  language: string
 ): string {
-  const charLimit = plan.lengthOption === "long" ? 2000 : plan.lengthOption === "medium" ? 1000 : 280;
+  const charLimit =
+    plan.lengthOption === "long" ? 2000 : plan.lengthOption === "medium" ? 1000 : 280;
   const isThread = plan.format === "thread";
 
   const formatRule = isThread
@@ -226,12 +237,22 @@ RULES:
 export function buildReviewPrompt(
   brief: ResearchBrief,
   tweets: AgenticTweet[],
-  plan: ContentPlan,
+  plan: ContentPlan
 ): string {
-  const charLimit = plan.format === "thread" ? 280 : plan.lengthOption === "long" ? 2000 : plan.lengthOption === "medium" ? 1000 : 280;
-  const tweetSummaries = tweets.map((t, i) =>
-    `[${i}] (${t.charCount} chars) "${t.text.slice(0, 80)}${t.text.length > 80 ? "…" : ""}"`
-  ).join("\n");
+  const charLimit =
+    plan.format === "thread"
+      ? 280
+      : plan.lengthOption === "long"
+        ? 2000
+        : plan.lengthOption === "medium"
+          ? 1000
+          : 280;
+  const tweetSummaries = tweets
+    .map(
+      (t, i) =>
+        `[${i}] (${t.charCount} chars) "${t.text.slice(0, 80)}${t.text.length > 80 ? "…" : ""}"`
+    )
+    .join("\n");
 
   return `You are a senior editor and content quality reviewer for a social media publishing platform.
 

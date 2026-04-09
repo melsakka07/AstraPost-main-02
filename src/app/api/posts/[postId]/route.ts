@@ -37,12 +37,9 @@ async function checkPostOwnership(
   return null;
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ postId: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
-  
+
   if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -54,18 +51,18 @@ export async function GET(
     where: eq(posts.id, postId),
     with: {
       xAccount: {
-        columns: { userId: true }
+        columns: { userId: true },
       },
       linkedinAccount: {
-        columns: { userId: true }
+        columns: { userId: true },
       },
       tweets: {
         orderBy: (tweets, { asc }) => [asc(tweets.position)],
         with: {
-          media: true
-        }
-      }
-    }
+          media: true,
+        },
+      },
+    },
   });
 
   if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -75,12 +72,9 @@ export async function GET(
   return NextResponse.json(post);
 }
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ postId: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
-  
+
   if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -97,9 +91,9 @@ export async function PATCH(
   const existingPost = await db.query.posts.findFirst({
     where: eq(posts.id, postId),
     with: {
-        xAccount: { columns: { userId: true } },
-        linkedinAccount: { columns: { userId: true } }
-    }
+      xAccount: { columns: { userId: true } },
+      linkedinAccount: { columns: { userId: true } },
+    },
   });
 
   if (!existingPost) return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -114,44 +108,45 @@ export async function PATCH(
   let reviewerNotes = existingPost.reviewerNotes;
 
   if (body.action) {
-      if (body.action === "approve") {
-          // Role check
-          if (!ctx.isOwner && ctx.role !== "admin") {
-              return NextResponse.json({ error: "Only admins can approve posts" }, { status: 403 });
-          }
-          newStatus = "scheduled";
-          const session = await auth.api.getSession({ headers: await headers() });
-          approvedBy = session!.user.id;
-          approvedAt = new Date();
-          reviewerNotes = null; // Clear rejection notes if any
-      } else if (body.action === "reject") {
-          // Role check
-          if (!ctx.isOwner && ctx.role !== "admin") {
-              return NextResponse.json({ error: "Only admins can reject posts" }, { status: 403 });
-          }
-          newStatus = "draft";
-          reviewerNotes = body.reviewerNotes || "Rejected without reason";
-      } else if (body.action === "schedule") {
-          newStatus = "scheduled";
-          if (body.scheduledAt) newScheduledAt = new Date(body.scheduledAt);
-          else if (!newScheduledAt) return NextResponse.json({ error: "Scheduled date required" }, { status: 400 });
-      } else if (body.action === "publish_now") {
-          newStatus = "scheduled"; 
-          newScheduledAt = new Date();
-      } else if (body.action === "draft") {
-          newStatus = "draft";
-          newScheduledAt = null;
-      } else if (body.action === "cancel") {
-          newStatus = "cancelled";
+    if (body.action === "approve") {
+      // Role check
+      if (!ctx.isOwner && ctx.role !== "admin") {
+        return NextResponse.json({ error: "Only admins can approve posts" }, { status: 403 });
       }
-  } else if (body.status) {
-      newStatus = body.status;
+      newStatus = "scheduled";
+      const session = await auth.api.getSession({ headers: await headers() });
+      approvedBy = session!.user.id;
+      approvedAt = new Date();
+      reviewerNotes = null; // Clear rejection notes if any
+    } else if (body.action === "reject") {
+      // Role check
+      if (!ctx.isOwner && ctx.role !== "admin") {
+        return NextResponse.json({ error: "Only admins can reject posts" }, { status: 403 });
+      }
+      newStatus = "draft";
+      reviewerNotes = body.reviewerNotes || "Rejected without reason";
+    } else if (body.action === "schedule") {
+      newStatus = "scheduled";
       if (body.scheduledAt) newScheduledAt = new Date(body.scheduledAt);
+      else if (!newScheduledAt)
+        return NextResponse.json({ error: "Scheduled date required" }, { status: 400 });
+    } else if (body.action === "publish_now") {
+      newStatus = "scheduled";
+      newScheduledAt = new Date();
+    } else if (body.action === "draft") {
+      newStatus = "draft";
+      newScheduledAt = null;
+    } else if (body.action === "cancel") {
+      newStatus = "cancelled";
+    }
+  } else if (body.status) {
+    newStatus = body.status;
+    if (body.scheduledAt) newScheduledAt = new Date(body.scheduledAt);
   }
-  
+
   // If scheduledAt is passed but action is not explicit, assume update
   if (body.scheduledAt) {
-      newScheduledAt = new Date(body.scheduledAt);
+    newScheduledAt = new Date(body.scheduledAt);
   }
 
   // Clear failure metadata when a failed post is being re-scheduled
@@ -160,7 +155,8 @@ export async function PATCH(
     newStatus === "scheduled";
 
   // 2. Update Post
-  await db.update(posts)
+  await db
+    .update(posts)
     .set({
       scheduledAt: newScheduledAt,
       status: newStatus,
@@ -211,39 +207,39 @@ export async function PATCH(
   }
 
   // 4. Handle Queue
-  const needsReschedule = newStatus === "scheduled" && (
-      existingPost.status !== "scheduled" || 
-      (existingPost.scheduledAt?.getTime() !== newScheduledAt?.getTime()) ||
+  const needsReschedule =
+    newStatus === "scheduled" &&
+    (existingPost.status !== "scheduled" ||
+      existingPost.scheduledAt?.getTime() !== newScheduledAt?.getTime() ||
       body.action === "publish_now" ||
-      body.action === "approve" // Approval triggers scheduling
-  );
-  
+      body.action === "approve"); // Approval triggers scheduling
+
   const needsUnschedule = existingPost.status === "scheduled" && newStatus !== "scheduled";
 
   try {
     if (needsUnschedule) {
-        const job = await scheduleQueue.getJob(postId);
-        if (job) await job.remove();
+      const job = await scheduleQueue.getJob(postId);
+      if (job) await job.remove();
     }
 
     if (needsReschedule && newScheduledAt) {
-        // Remove any existing job regardless of BullMQ state (waiting, active, or failed).
-        // getJob() does not return failed-state jobs, so we use remove() directly.
-        try {
-          await scheduleQueue.remove(postId);
-        } catch {
-          // Safe to ignore — job may not exist
-        }
+      // Remove any existing job regardless of BullMQ state (waiting, active, or failed).
+      // getJob() does not return failed-state jobs, so we use remove() directly.
+      try {
+        await scheduleQueue.remove(postId);
+      } catch {
+        // Safe to ignore — job may not exist
+      }
 
-        const delay = Math.max(0, newScheduledAt.getTime() - Date.now());
-        await scheduleQueue.add(
-            "publish-post",
-            { postId, userId: ctx.currentTeamId },
-            { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
-        );
+      const delay = Math.max(0, newScheduledAt.getTime() - Date.now());
+      await scheduleQueue.add(
+        "publish-post",
+        { postId, userId: ctx.currentTeamId },
+        { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
+      );
     }
   } catch (e) {
-      console.error("Queue operation failed", e);
+    console.error("Queue operation failed", e);
   }
 
   return NextResponse.json({ success: true });
@@ -254,7 +250,7 @@ export async function DELETE(
   { params }: { params: Promise<{ postId: string }> }
 ) {
   const ctx = await getTeamContext();
-  
+
   if (!ctx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -270,9 +266,9 @@ export async function DELETE(
   const existingPost = await db.query.posts.findFirst({
     where: eq(posts.id, postId),
     with: {
-        xAccount: { columns: { userId: true } },
-        linkedinAccount: { columns: { userId: true } }
-    }
+      xAccount: { columns: { userId: true } },
+      linkedinAccount: { columns: { userId: true } },
+    },
   });
 
   if (!existingPost) return NextResponse.json({ error: "Post not found" }, { status: 404 });
@@ -281,12 +277,12 @@ export async function DELETE(
 
   // 2. Remove from Queue if scheduled
   try {
-      if (existingPost.status === "scheduled") {
-          const job = await scheduleQueue.getJob(postId);
-          if (job) await job.remove();
-      }
+    if (existingPost.status === "scheduled") {
+      const job = await scheduleQueue.getJob(postId);
+      if (job) await job.remove();
+    }
   } catch (e) {
-      console.error("Queue removal failed", e);
+    console.error("Queue removal failed", e);
   }
 
   // 3. Delete from DB

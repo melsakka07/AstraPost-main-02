@@ -8,15 +8,15 @@
 
 ## Feature Map
 
-| # | Feature | Route | Page | Plan |
-|---|---|---|---|---|
-| 1 | AI Content Calendar | `POST /api/ai/calendar` | `/dashboard/ai/calendar` | Pro/Agency |
-| 2 | URL → Thread Converter | `POST /api/ai/summarize` | `/dashboard/ai` (URL tab) | Pro/Agency |
-| 3 | A/B Variant Generator | `POST /api/ai/variants` | `/dashboard/ai` (Variants tab) | Pro/Agency |
-| 4 | Best Posting Time | `GET /api/analytics/best-time` | (API only — widget use) | Pro/Agency |
-| 5 | Competitor Analyzer | `POST /api/analytics/competitor` | `/dashboard/analytics/competitor` | Pro/Agency |
-| 6 | Reply Suggester | `POST /api/ai/reply` | `/dashboard/ai/reply` | Pro/Agency |
-| 7 | Bio Optimizer | `POST /api/ai/bio` | `/dashboard/ai/bio` | Pro/Agency |
+| #   | Feature                | Route                            | Page                              | Plan       |
+| --- | ---------------------- | -------------------------------- | --------------------------------- | ---------- |
+| 1   | AI Content Calendar    | `POST /api/ai/calendar`          | `/dashboard/ai/calendar`          | Pro/Agency |
+| 2   | URL → Thread Converter | `POST /api/ai/summarize`         | `/dashboard/ai` (URL tab)         | Pro/Agency |
+| 3   | A/B Variant Generator  | `POST /api/ai/variants`          | `/dashboard/ai` (Variants tab)    | Pro/Agency |
+| 4   | Best Posting Time      | `GET /api/analytics/best-time`   | (API only — widget use)           | Pro/Agency |
+| 5   | Competitor Analyzer    | `POST /api/analytics/competitor` | `/dashboard/analytics/competitor` | Pro/Agency |
+| 6   | Reply Suggester        | `POST /api/ai/reply`             | `/dashboard/ai/reply`             | Pro/Agency |
+| 7   | Bio Optimizer          | `POST /api/ai/bio`               | `/dashboard/ai/bio`               | Pro/Agency |
 
 All features count against the user's monthly AI quota (`aiGenerationsPerMonth`) and are blocked for free-plan users with a 402 upgrade response.
 
@@ -60,6 +60,7 @@ Content-Type: application/json
 ```
 
 ### UI Features
+
 - Items grouped by day of week
 - Click chevron → opens `/dashboard/compose?prefill=...&type=thread`
 - Tone badge + time chip per item
@@ -97,6 +98,7 @@ Content-Type: application/json
 ```
 
 ### How It Works
+
 1. Fetches URL with Googlebot user-agent (avoids blocking)
 2. Strips `<script>`, `<nav>`, `<footer>`, ads via Cheerio
 3. Prefers `<article>` / `<main>` content, falls back to `<body>`
@@ -104,6 +106,7 @@ Content-Type: application/json
 5. Returns translated thread if output language differs from source
 
 ### Error Conditions
+
 - `422` — URL unreachable or < 100 chars of content found
 - `400` — invalid URL format
 
@@ -185,6 +188,7 @@ GET /api/analytics/best-time
 Returns `insufficientData: true` when fewer than 5 published tweets with analytics exist. Top 3 time slots returned.
 
 ### Algorithm
+
 - Scans last 90 days of `tweet_analytics` joined to `posts`
 - Posts in the last 30 days weighted 2× (recency bias)
 - Aggregates engagement rate by `(day, hour)` bucket
@@ -234,6 +238,7 @@ Content-Type: application/json
 ```
 
 ### Flow
+
 1. Twitter v2 API: `GET /2/users/by/username/{username}` → resolve user ID
 2. Twitter v2 API: `GET /2/users/{id}/tweets?max_results=100` (excludes retweets/replies)
 3. Feeds tweet digest (first 50 tweets, truncated) to OpenRouter for AI pattern analysis
@@ -337,6 +342,7 @@ canUseBioOptimizer: boolean;
 Free plan: all `false`. Pro Monthly, Pro Annual, Agency: all `true`.
 
 New check functions in `src/lib/middleware/require-plan.ts`:
+
 - `checkContentCalendarAccessDetailed(userId)`
 - `checkUrlToThreadAccessDetailed(userId)`
 - `checkVariantGeneratorAccessDetailed(userId)`
@@ -353,14 +359,17 @@ All return a 402 with `upgrade_url: "/pricing"` and `suggested_plan: "pro_monthl
 Added to `src/components/dashboard/sidebar.tsx`:
 
 **AI Tools section:**
+
 - Content Calendar → `/dashboard/ai/calendar`
 - Reply Suggester → `/dashboard/ai/reply`
 - Bio Optimizer → `/dashboard/ai/bio`
 
 **Analytics section:**
+
 - Competitor → `/dashboard/analytics/competitor`
 
 **AI Writer page** (`/dashboard/ai`) now has 4 tabs:
+
 1. Thread Writer (existing)
 2. URL → Thread (new)
 3. Variants (new)
@@ -370,11 +379,11 @@ Added to `src/components/dashboard/sidebar.tsx`:
 
 ## Environment Variables Required
 
-| Feature | Required Env Var |
-|---|---|
-| All AI features | `OPENROUTER_API_KEY` |
-| Competitor Analyzer | `TWITTER_BEARER_TOKEN` |
-| Reply Suggester | `TWITTER_BEARER_TOKEN` |
-| URL → Thread | None extra (uses public fetch) |
+| Feature             | Required Env Var               |
+| ------------------- | ------------------------------ |
+| All AI features     | `OPENROUTER_API_KEY`           |
+| Competitor Analyzer | `TWITTER_BEARER_TOKEN`         |
+| Reply Suggester     | `TWITTER_BEARER_TOKEN`         |
+| URL → Thread        | None extra (uses public fetch) |
 
 No new database migrations were required. All features use existing tables (`ai_generations` for quota tracking, `tweet_analytics` + `posts` for Best Time).

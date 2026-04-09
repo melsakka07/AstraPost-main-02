@@ -17,8 +17,8 @@ import { scheduleProcessor } from "./processors";
 // ─── Hoisted mocks ────────────────────────────────────────────────────────────
 // vi.hoisted ensures these symbols are available before any module import.
 
-const { mockDb, mockPostTweet, mockPostTweetReply, mockSetFn, mockInsertValuesFn } =
-  vi.hoisted(() => {
+const { mockDb, mockPostTweet, mockPostTweetReply, mockSetFn, mockInsertValuesFn } = vi.hoisted(
+  () => {
     // Captured arg collectors — use vi.fn so .mock.calls is available.
     const mockSetFn = vi.fn(() => ({ where: vi.fn() }));
     const mockInsertValuesFn = vi.fn(() => ({ onConflictDoUpdate: vi.fn() }));
@@ -36,8 +36,12 @@ const { mockDb, mockPostTweet, mockPostTweetReply, mockSetFn, mockInsertValuesFn
         // Thenable: lets `await builder` work without wrapping in Promise.resolve().
         then: ((
           resolve?: ((value: unknown) => unknown) | null,
-          reject?: ((reason: unknown) => unknown) | null,
-        ) => Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined)) as unknown as PromiseLike<unknown>["then"],
+          reject?: ((reason: unknown) => unknown) | null
+        ) =>
+          Promise.resolve(result).then(
+            resolve ?? undefined,
+            reject ?? undefined
+          )) as unknown as PromiseLike<unknown>["then"],
       };
       return builder;
     }
@@ -58,7 +62,8 @@ const { mockDb, mockPostTweet, mockPostTweetReply, mockSetFn, mockInsertValuesFn
     const mockPostTweetReply = vi.fn();
 
     return { mockDb, mockPostTweet, mockPostTweetReply, mockSetFn, mockInsertValuesFn };
-  });
+  }
+);
 
 vi.mock("@/lib/db", () => ({ db: mockDb }));
 
@@ -98,7 +103,7 @@ function makeJob(
     userId: string;
     attempts: number;
     attemptsMade: number;
-  }> = {},
+  }> = {}
 ) {
   return {
     id: "job-1",
@@ -124,9 +129,7 @@ function makePost(overrides: Partial<Record<string, unknown>> = {}) {
     instagramAccountId: null,
     scheduledAt: new Date(),
     xAccount: null,
-    tweets: [
-      { id: "tw-1", content: "Hello world", position: 1, media: [], xTweetId: null },
-    ],
+    tweets: [{ id: "tw-1", content: "Hello world", position: 1, media: [], xTweetId: null }],
     ...overrides,
   };
 }
@@ -149,9 +152,7 @@ describe("scheduleProcessor — integration", () => {
     mockDb.insert.mockImplementation(() => ({ values: mockInsertValuesFn }));
     mockSetFn.mockImplementation(() => ({ where: vi.fn() }));
     mockInsertValuesFn.mockImplementation(() => ({ onConflictDoUpdate: vi.fn() }));
-    mockDb.transaction.mockImplementation(
-      async (fn: (tx: unknown) => unknown) => fn(mockDb),
-    );
+    mockDb.transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => fn(mockDb));
     // Restore the fully-chainable select builder for gamification helpers.
     function makeSelectBuilder(result: unknown[] = [{ count: 0 }]) {
       const builder: Record<string, unknown> & { then: PromiseLike<unknown>["then"] } = {
@@ -162,8 +163,12 @@ describe("scheduleProcessor — integration", () => {
         offset: () => builder,
         then: ((
           resolve?: ((value: unknown) => unknown) | null,
-          reject?: ((reason: unknown) => unknown) | null,
-        ) => Promise.resolve(result).then(resolve ?? undefined, reject ?? undefined)) as unknown as PromiseLike<unknown>["then"],
+          reject?: ((reason: unknown) => unknown) | null
+        ) =>
+          Promise.resolve(result).then(
+            resolve ?? undefined,
+            reject ?? undefined
+          )) as unknown as PromiseLike<unknown>["then"],
       };
       return builder;
     }
@@ -207,7 +212,7 @@ describe("scheduleProcessor — integration", () => {
           { id: "tw-2", content: "Second", position: 2, media: [], xTweetId: null },
           { id: "tw-3", content: "Third", position: 3, media: [], xTweetId: null },
         ],
-      }),
+      })
     );
     mockPostTweet.mockResolvedValue({ data: { id: "x-1" } });
     mockPostTweetReply.mockResolvedValue({ data: { id: "x-2" } });
@@ -226,7 +231,7 @@ describe("scheduleProcessor — integration", () => {
     mockPostTweet.mockRejectedValue(new Error("403 Forbidden"));
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const failedUpdate = allSetValues().find((v) => v.status === "failed");
@@ -238,7 +243,7 @@ describe("scheduleProcessor — integration", () => {
     mockPostTweet.mockRejectedValue(new Error("429 Too Many Requests"));
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const jobRunInsert = allInsertValues().find((v) => v.status === "failed");
@@ -263,9 +268,7 @@ describe("scheduleProcessor — integration", () => {
   });
 
   it("throws when xAccountId is null", async () => {
-    mockDb.query.posts.findFirst.mockResolvedValue(
-      makePost({ xAccountId: null }),
-    );
+    mockDb.query.posts.findFirst.mockResolvedValue(makePost({ xAccountId: null }));
 
     await expect(scheduleProcessor(makeJob() as any)).rejects.toThrow();
     expect(mockPostTweet).not.toHaveBeenCalled();
@@ -279,7 +282,7 @@ describe("scheduleProcessor — integration", () => {
     mockPostTweet.mockRejectedValue(new Error("X API permanently unavailable"));
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 3, attemptsMade: 2 }) as any),
+      scheduleProcessor(makeJob({ attempts: 3, attemptsMade: 2 }) as any)
     ).rejects.toThrow();
 
     const setValues = allSetValues();
@@ -296,7 +299,7 @@ describe("scheduleProcessor — integration", () => {
     mockPostTweet.mockRejectedValue(new Error("X API transient error"));
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 1 }) as any),
+      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 1 }) as any)
     ).rejects.toThrow();
 
     const setValues = allSetValues();
@@ -312,7 +315,7 @@ describe("scheduleProcessor — integration", () => {
     mockPostTweet.mockRejectedValue(new Error("Temporary failure"));
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const insertedValues = allInsertValues();
@@ -326,7 +329,7 @@ describe("scheduleProcessor — integration", () => {
     mockPostTweet.mockRejectedValue(new Error("Permanent X API error"));
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const insertedValues = allInsertValues();
@@ -340,7 +343,7 @@ describe("scheduleProcessor — integration", () => {
     mockPostTweet.mockRejectedValue(new Error("Transient failure"));
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 5, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const insertedValues = allInsertValues();
@@ -371,10 +374,16 @@ describe("scheduleProcessor — integration", () => {
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [
-          { id: "tw-1", content: "Already posted", position: 1, media: [], xTweetId: "existing-x-id" },
+          {
+            id: "tw-1",
+            content: "Already posted",
+            position: 1,
+            media: [],
+            xTweetId: "existing-x-id",
+          },
           { id: "tw-2", content: "New tweet", position: 2, media: [], xTweetId: null },
         ],
-      }),
+      })
     );
     mockPostTweetReply.mockResolvedValue({ data: { id: "new-x-id" } });
 
@@ -394,11 +403,11 @@ describe("scheduleProcessor — integration", () => {
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
         xAccount: { xSubscriptionTier: "None", xUsername: "freeuser" },
-      }),
+      })
     );
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const setValues = allSetValues();
@@ -420,11 +429,11 @@ describe("scheduleProcessor — integration", () => {
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
         xAccount: { xSubscriptionTier: "Premium", xUsername: "premiumuser" },
-      }),
+      })
     );
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const setValues = allSetValues();
@@ -441,7 +450,7 @@ describe("scheduleProcessor — integration", () => {
       makePost({
         tweets: [{ id: "tw-1", content: mediumContent, position: 1, media: [], xTweetId: null }],
         xAccount: { xSubscriptionTier: "Premium", xUsername: "premiumuser" },
-      }),
+      })
     );
     mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
 
@@ -460,7 +469,7 @@ describe("scheduleProcessor — integration", () => {
       makePost({
         tweets: [{ id: "tw-1", content: shortContent, position: 1, media: [], xTweetId: null }],
         xAccount: { xSubscriptionTier: "None", xUsername: "freeuser" },
-      }),
+      })
     );
     mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
 
@@ -479,7 +488,7 @@ describe("scheduleProcessor — integration", () => {
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
         xAccount: { xSubscriptionTier: "Basic", xUsername: "basicuser" },
-      }),
+      })
     );
     mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
 
@@ -498,11 +507,11 @@ describe("scheduleProcessor — integration", () => {
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
         xAccount: { xSubscriptionTier: null, xUsername: "unknownuser" },
-      }),
+      })
     );
 
     await expect(
-      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any),
+      scheduleProcessor(makeJob({ attempts: 1, attemptsMade: 0 }) as any)
     ).rejects.toThrow();
 
     const setValues = allSetValues();

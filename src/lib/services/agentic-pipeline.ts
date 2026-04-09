@@ -1,6 +1,11 @@
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
-import { buildResearchPrompt, buildStrategyPrompt, buildWritingPrompt, buildReviewPrompt } from "@/lib/ai/agentic-prompts";
+import {
+  buildResearchPrompt,
+  buildStrategyPrompt,
+  buildWritingPrompt,
+  buildReviewPrompt,
+} from "@/lib/ai/agentic-prompts";
 import type {
   AgenticPost,
   AgenticTweet,
@@ -28,19 +33,22 @@ interface RunAgenticPipelineParams {
   userId: string;
   correlationId: string;
   agenticPostId: string;
-  preferences?: {
-    tone?: string | undefined;
-    includeImages?: boolean | undefined;
-    audience?: string | undefined;
-  } | undefined;
+  preferences?:
+    | {
+        tone?: string | undefined;
+        includeImages?: boolean | undefined;
+        audience?: string | undefined;
+      }
+    | undefined;
   onProgress: (event: PipelineProgressEvent) => void;
 }
 
 function safeJsonParse<T>(text: string, fallback: T): T {
   try {
     // Extract JSON from markdown code blocks if present
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
-    const raw = jsonMatch ? jsonMatch[1] ?? jsonMatch[0] : text;
+    const jsonMatch =
+      text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+    const raw = jsonMatch ? (jsonMatch[1] ?? jsonMatch[0]) : text;
     return JSON.parse(raw.trim()) as T;
   } catch {
     return fallback;
@@ -99,7 +107,10 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     // Re-throw TOPIC_TOO_BROAD as-is; wrap all other errors
     if (err instanceof Error && err.message === "TOPIC_TOO_BROAD") throw err;
     emit("research", "failed");
-    logger.error("agentic_research_failed", { error: err instanceof Error ? err.message : String(err), correlationId });
+    logger.error("agentic_research_failed", {
+      error: err instanceof Error ? err.message : String(err),
+      correlationId,
+    });
     throw err;
   }
 
@@ -115,7 +126,10 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     throw err;
   }
 
-  emit("research", "complete", { angles: research.angles, recommendedAngle: research.recommendedAngle });
+  emit("research", "complete", {
+    angles: research.angles,
+    recommendedAngle: research.recommendedAngle,
+  });
   log("agentic_research_done", { angleCount: research.angles.length });
 
   // ── Step 2: Strategy ────────────────────────────────────────────────────────
@@ -146,7 +160,10 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     });
   } catch (err) {
     emit("strategy", "failed");
-    logger.error("agentic_strategy_failed", { error: err instanceof Error ? err.message : String(err), correlationId });
+    logger.error("agentic_strategy_failed", {
+      error: err instanceof Error ? err.message : String(err),
+      correlationId,
+    });
     throw err;
   }
 
@@ -175,7 +192,10 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     tweets = safeJsonParse<AgenticTweet[]>(writeResult.text, []);
   } catch (err) {
     emit("writing", "failed");
-    logger.error("agentic_writing_failed", { error: err instanceof Error ? err.message : String(err), correlationId });
+    logger.error("agentic_writing_failed", {
+      error: err instanceof Error ? err.message : String(err),
+      correlationId,
+    });
     throw err;
   }
 
@@ -184,9 +204,7 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
   //   content = text + " " + "#tag1 #tag2"
   // so we include hashtag length to prevent silent TIER_LIMIT_EXCEEDED at publish time.
   tweets = tweets.map((t, i) => {
-    const hashtagStr = t.hashtags?.length
-      ? " " + t.hashtags.map((h) => `#${h}`).join(" ")
-      : "";
+    const hashtagStr = t.hashtags?.length ? " " + t.hashtags.map((h) => `#${h}`).join(" ") : "";
     const combined = (t.text ?? "") + hashtagStr;
     return {
       ...t,
@@ -256,10 +274,17 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     maxOutputTokens: 400,
     abortSignal: AbortSignal.timeout(30_000),
   });
-  const review = safeJsonParse<{ qualityScore: number; summary: string; issues: string[]; passed: boolean }>(
-    reviewResult.text,
-    { qualityScore: 7, summary: `AI-generated content about ${topic}`, issues: [], passed: true }
-  );
+  const review = safeJsonParse<{
+    qualityScore: number;
+    summary: string;
+    issues: string[];
+    passed: boolean;
+  }>(reviewResult.text, {
+    qualityScore: 7,
+    summary: `AI-generated content about ${topic}`,
+    issues: [],
+    passed: true,
+  });
 
   emit("review", "complete", { qualityScore: review.qualityScore, summary: review.summary });
   log("agentic_review_done", { qualityScore: review.qualityScore });

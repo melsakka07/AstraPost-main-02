@@ -15,8 +15,14 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ items, className }: BreadcrumbProps) {
   return (
-    <nav aria-label="Breadcrumb" className={cn("flex items-center gap-1 text-sm text-muted-foreground", className)}>
-      <Link href="/dashboard/ai" className="flex items-center gap-1 hover:text-foreground transition-colors">
+    <nav
+      aria-label="Breadcrumb"
+      className={cn("text-muted-foreground flex items-center gap-1 text-sm", className)}
+    >
+      <Link
+        href="/dashboard/ai"
+        className="hover:text-foreground flex items-center gap-1 transition-colors"
+      >
         <Home className="h-3.5 w-3.5" />
         <span className="sr-only">AI Tools</span>
       </Link>
@@ -28,7 +34,10 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
               {item.label}
             </Link>
           ) : (
-            <span className="text-foreground font-medium" aria-current={idx === items.length - 1 ? "page" : undefined}>
+            <span
+              className="text-foreground font-medium"
+              aria-current={idx === items.length - 1 ? "page" : undefined}
+            >
               {item.label}
             </span>
           )}

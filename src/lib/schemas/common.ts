@@ -44,7 +44,7 @@ export type AiLengthOptionId = z.infer<typeof aiLengthOptionEnum>;
  *   );
  */
 export const paginationSchema = z.object({
-  page:  z.coerce.number().int().min(1).default(1),
+  page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
@@ -53,7 +53,13 @@ export type PaginationParams = z.infer<typeof paginationSchema>;
 // ─── Trending Topics ──────────────────────────────────────────────────────────
 
 export const trendCategoryEnum = z.enum([
-  "all", "technology", "business", "news", "lifestyle", "sports", "entertainment",
+  "all",
+  "technology",
+  "business",
+  "news",
+  "lifestyle",
+  "sports",
+  "entertainment",
 ]);
 export type TrendCategory = z.infer<typeof trendCategoryEnum>;
 
@@ -89,7 +95,7 @@ export const isoDateSchema = z.string().datetime({ offset: true });
 export const dateRangeSchema = z
   .object({
     from: isoDateSchema,
-    to:   isoDateSchema,
+    to: isoDateSchema,
   })
   .refine((r) => new Date(r.from) <= new Date(r.to), {
     message: "'from' must not be after 'to'",

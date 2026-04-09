@@ -138,14 +138,22 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
   const togglePlan = (plan: string) => {
     const current = form.getValues("applicablePlans");
     if (current.includes(plan)) {
-      form.setValue("applicablePlans", current.filter((p) => p !== plan));
+      form.setValue(
+        "applicablePlans",
+        current.filter((p) => p !== plan)
+      );
     } else {
       form.setValue("applicablePlans", [...current, plan]);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!form.formState.isSubmitting) onOpenChange(v); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!form.formState.isSubmitting) onOpenChange(v);
+      }}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Edit promo code — {promo?.code}</DialogTitle>
@@ -207,9 +215,15 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description <span className="text-muted-foreground">(optional)</span></FormLabel>
+                  <FormLabel>
+                    Description <span className="text-muted-foreground">(optional)</span>
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Launch week discount" {...field} value={field.value ?? ""} />
+                    <Input
+                      placeholder="Launch week discount"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -222,7 +236,9 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                 name="validFrom"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valid from <span className="text-muted-foreground">(optional)</span></FormLabel>
+                    <FormLabel>
+                      Valid from <span className="text-muted-foreground">(optional)</span>
+                    </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
                     </FormControl>
@@ -236,7 +252,9 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                 name="validTo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valid to <span className="text-muted-foreground">(optional)</span></FormLabel>
+                    <FormLabel>
+                      Valid to <span className="text-muted-foreground">(optional)</span>
+                    </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
                     </FormControl>
@@ -251,14 +269,19 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
               name="maxRedemptions"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Max redemptions <span className="text-muted-foreground">(leave blank for unlimited)</span></FormLabel>
+                  <FormLabel>
+                    Max redemptions{" "}
+                    <span className="text-muted-foreground">(leave blank for unlimited)</span>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min="1"
                       placeholder="Unlimited"
                       value={field.value ?? ""}
-                      onChange={(e) => field.onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))}
+                      onChange={(e) =>
+                        field.onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -267,7 +290,10 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
             />
 
             <FormItem>
-              <FormLabel>Applicable plans <span className="text-muted-foreground">(leave unselected for all plans)</span></FormLabel>
+              <FormLabel>
+                Applicable plans{" "}
+                <span className="text-muted-foreground">(leave unselected for all plans)</span>
+              </FormLabel>
               <div className="flex flex-wrap gap-2 pt-1">
                 {PLANS.map((plan) => (
                   <Button
@@ -293,7 +319,9 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                   </FormControl>
                   <div>
                     <FormLabel className="cursor-pointer">Active</FormLabel>
-                    <p className="text-xs text-muted-foreground">Inactive codes cannot be redeemed</p>
+                    <p className="text-muted-foreground text-xs">
+                      Inactive codes cannot be redeemed
+                    </p>
                   </div>
                 </FormItem>
               )}

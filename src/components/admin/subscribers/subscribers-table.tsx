@@ -42,7 +42,15 @@ import { EditSubscriberDialog } from "./edit-subscriber-dialog";
 import { PlanBadge, StatusBadge } from "./subscriber-badges";
 import type { PaginatedResponse, SubscriberRow } from "./types";
 
-type FilterOption = "all" | "free" | "trial" | "pro_monthly" | "pro_annual" | "agency" | "banned" | "deleted";
+type FilterOption =
+  | "all"
+  | "free"
+  | "trial"
+  | "pro_monthly"
+  | "pro_annual"
+  | "agency"
+  | "banned"
+  | "deleted";
 type SortOption = "createdAt" | "lastLogin" | "plan";
 
 const FILTER_PILLS: { value: FilterOption; label: string }[] = [
@@ -112,11 +120,16 @@ export function SubscribersTable() {
   }, [fetchData]);
 
   // Reset to page 1 when filter/sort changes
-  useEffect(() => { setPage(1); }, [filter, sort, order]);
+  useEffect(() => {
+    setPage(1);
+  }, [filter, sort, order]);
 
   const toggleSort = (col: SortOption) => {
     if (sort === col) setOrder((o) => (o === "asc" ? "desc" : "asc"));
-    else { setSort(col); setOrder("desc"); }
+    else {
+      setSort(col);
+      setOrder("desc");
+    }
   };
 
   return (
@@ -124,7 +137,7 @@ export function SubscribersTable() {
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs flex-1">
-          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search by name or email…"
             value={search}
@@ -156,14 +169,14 @@ export function SubscribersTable() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="bg-card rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Subscriber</TableHead>
               <TableHead>
                 <button
-                  className="flex items-center gap-1 hover:text-foreground"
+                  className="hover:text-foreground flex items-center gap-1"
                   onClick={() => toggleSort("plan")}
                 >
                   Plan <ArrowUpDown className="h-3.5 w-3.5" />
@@ -173,7 +186,7 @@ export function SubscribersTable() {
               <TableHead>Platforms</TableHead>
               <TableHead>
                 <button
-                  className="flex items-center gap-1 hover:text-foreground"
+                  className="hover:text-foreground flex items-center gap-1"
                   onClick={() => toggleSort("createdAt")}
                 >
                   Joined <ArrowUpDown className="h-3.5 w-3.5" />
@@ -195,7 +208,7 @@ export function SubscribersTable() {
               ))
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-muted-foreground h-32 text-center">
                   No subscribers found
                 </TableCell>
               </TableRow>
@@ -212,7 +225,7 @@ export function SubscribersTable() {
                           </Badge>
                         )}
                       </div>
-                      <span className="text-xs text-muted-foreground">{sub.email}</span>
+                      <span className="text-muted-foreground text-xs">{sub.email}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -229,7 +242,7 @@ export function SubscribersTable() {
                   <TableCell>
                     <span className="text-sm tabular-nums">{sub.connectedPlatforms}</span>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(sub.createdAt), "d MMM yyyy")}
                   </TableCell>
                   <TableCell>
@@ -256,9 +269,13 @@ export function SubscribersTable() {
                               className={sub.bannedAt ? "text-green-600" : "text-amber-600"}
                             >
                               {sub.bannedAt ? (
-                                <><ShieldCheck className="mr-2 h-4 w-4" /> Unban</>
+                                <>
+                                  <ShieldCheck className="mr-2 h-4 w-4" /> Unban
+                                </>
                               ) : (
-                                <><ShieldOff className="mr-2 h-4 w-4" /> Ban</>
+                                <>
+                                  <ShieldOff className="mr-2 h-4 w-4" /> Ban
+                                </>
                               )}
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -282,9 +299,10 @@ export function SubscribersTable() {
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <div className="text-muted-foreground flex items-center justify-between text-sm">
           <span>
-            {(page - 1) * pagination.limit + 1}–{Math.min(page * pagination.limit, pagination.total)} of {pagination.total}
+            {(page - 1) * pagination.limit + 1}–
+            {Math.min(page * pagination.limit, pagination.total)} of {pagination.total}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -296,7 +314,9 @@ export function SubscribersTable() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="px-2">{page} / {pagination.totalPages}</span>
+            <span className="px-2">
+              {page} / {pagination.totalPages}
+            </span>
             <Button
               variant="outline"
               size="icon"
@@ -311,15 +331,13 @@ export function SubscribersTable() {
       )}
 
       {/* Dialogs */}
-      <AddSubscriberDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onSuccess={fetchData}
-      />
+      <AddSubscriberDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={fetchData} />
       {editTarget && (
         <EditSubscriberDialog
           open={!!editTarget}
-          onOpenChange={(v) => { if (!v) setEditTarget(null); }}
+          onOpenChange={(v) => {
+            if (!v) setEditTarget(null);
+          }}
           subscriber={editTarget}
           onSuccess={fetchData}
         />
@@ -327,7 +345,9 @@ export function SubscribersTable() {
       {banTarget && (
         <BanDialog
           open={!!banTarget}
-          onOpenChange={(v) => { if (!v) setBanTarget(null); }}
+          onOpenChange={(v) => {
+            if (!v) setBanTarget(null);
+          }}
           subscriberId={banTarget.id}
           subscriberName={banTarget.name}
           isBanned={!!banTarget.bannedAt}
@@ -337,7 +357,9 @@ export function SubscribersTable() {
       {deleteTarget && (
         <DeleteDialog
           open={!!deleteTarget}
-          onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
+          onOpenChange={(v) => {
+            if (!v) setDeleteTarget(null);
+          }}
           subscriberId={deleteTarget.id}
           subscriberName={deleteTarget.name}
           onSuccess={fetchData}

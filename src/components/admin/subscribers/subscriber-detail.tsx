@@ -36,22 +36,30 @@ import type { SubscriberDetail, SubscriberRow } from "./types";
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2">
-      <span className="shrink-0 text-sm text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
       <span className="text-right text-sm">{children}</span>
     </div>
   );
 }
 
-function StatCard({ label, value, icon: Icon }: { label: string; value: number | string; icon: React.ElementType }) {
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ElementType;
+}) {
   return (
     <Card>
       <CardContent className="flex items-center gap-3 pt-5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Icon className="h-4 w-4 text-primary" />
+        <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+          <Icon className="text-primary h-4 w-4" />
         </div>
         <div>
           <p className="text-2xl font-bold tabular-nums">{value}</p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-muted-foreground text-xs">{label}</p>
         </div>
       </CardContent>
     </Card>
@@ -84,14 +92,18 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
     }
   }, [subscriberId, router]);
 
-  useEffect(() => { void fetchDetail(); }, [fetchDetail]);
+  useEffect(() => {
+    void fetchDetail();
+  }, [fetchDetail]);
 
   if (loading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-24 w-full rounded-xl" />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
         </div>
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -116,11 +128,19 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
     trialEndsAt: sub.trialEndsAt,
     stripeCustomerId: sub.stripeCustomerId,
     createdAt: sub.createdAt,
-    connectedPlatforms: connectedAccounts.x.length + connectedAccounts.linkedin.length + connectedAccounts.instagram.length,
+    connectedPlatforms:
+      connectedAccounts.x.length +
+      connectedAccounts.linkedin.length +
+      connectedAccounts.instagram.length,
     subscriptionStatus: subscription?.status ?? null,
   };
 
-  const initials = sub.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+  const initials = sub.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="space-y-6">
@@ -142,9 +162,17 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
               variant="outline"
               size="sm"
               onClick={() => setBanOpen(true)}
-              className={sub.bannedAt ? "text-green-600 hover:text-green-600" : "text-amber-600 hover:text-amber-600"}
+              className={
+                sub.bannedAt
+                  ? "text-green-600 hover:text-green-600"
+                  : "text-amber-600 hover:text-amber-600"
+              }
             >
-              {sub.bannedAt ? <ShieldCheck className="mr-2 h-4 w-4" /> : <ShieldOff className="mr-2 h-4 w-4" />}
+              {sub.bannedAt ? (
+                <ShieldCheck className="mr-2 h-4 w-4" />
+              ) : (
+                <ShieldOff className="mr-2 h-4 w-4" />
+              )}
               {sub.bannedAt ? "Unban" : "Ban"}
             </Button>
             <Button
@@ -171,7 +199,11 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
             <div className="flex-1 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-xl font-bold">{sub.name}</h2>
-                {sub.isAdmin && <Badge variant="outline" className="text-xs">Admin</Badge>}
+                {sub.isAdmin && (
+                  <Badge variant="outline" className="text-xs">
+                    Admin
+                  </Badge>
+                )}
                 <PlanBadge plan={sub.plan} />
                 <StatusBadge
                   isSuspended={sub.isSuspended}
@@ -180,14 +212,14 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
                   trialEndsAt={sub.trialEndsAt}
                 />
               </div>
-              <p className="text-sm text-muted-foreground">{sub.email}</p>
+              <p className="text-muted-foreground text-sm">{sub.email}</p>
             </div>
           </div>
 
           <Separator className="my-4" />
 
           <div className="grid gap-0 divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-            <div className="pb-4 sm:pb-0 sm:pr-6">
+            <div className="pb-4 sm:pr-6 sm:pb-0">
               <DetailRow label="User ID">{sub.id}</DetailRow>
               <DetailRow label="Joined">{format(new Date(sub.createdAt), "d MMM yyyy")}</DetailRow>
               <DetailRow label="Timezone">{sub.timezone ?? "—"}</DetailRow>
@@ -199,18 +231,26 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
               )}
               {sub.bannedAt && (
                 <DetailRow label="Banned at">
-                  <span className="text-destructive">{format(new Date(sub.bannedAt), "d MMM yyyy HH:mm")}</span>
+                  <span className="text-destructive">
+                    {format(new Date(sub.bannedAt), "d MMM yyyy HH:mm")}
+                  </span>
                 </DetailRow>
               )}
             </div>
-            <div className="pt-4 sm:pl-6 sm:pt-0">
+            <div className="pt-4 sm:pt-0 sm:pl-6">
               <DetailRow label="Referral code">
-                {sub.referralCode ? <code className="font-mono text-xs">{sub.referralCode}</code> : "—"}
+                {sub.referralCode ? (
+                  <code className="font-mono text-xs">{sub.referralCode}</code>
+                ) : (
+                  "—"
+                )}
               </DetailRow>
               <DetailRow label="Stripe customer">
                 {sub.stripeCustomerId ? (
                   <code className="font-mono text-xs">{sub.stripeCustomerId}</code>
-                ) : "—"}
+                ) : (
+                  "—"
+                )}
               </DetailRow>
               {subscription && (
                 <>
@@ -224,7 +264,9 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
                   )}
                   {subscription.cancelAtPeriodEnd && (
                     <DetailRow label="">
-                      <Badge variant="outline" className="text-amber-600">Cancels at period end</Badge>
+                      <Badge variant="outline" className="text-amber-600">
+                        Cancels at period end
+                      </Badge>
                     </DetailRow>
                   )}
                 </>
@@ -243,7 +285,9 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
       </div>
 
       {/* Connected accounts */}
-      {(connectedAccounts.x.length > 0 || connectedAccounts.linkedin.length > 0 || connectedAccounts.instagram.length > 0) && (
+      {(connectedAccounts.x.length > 0 ||
+        connectedAccounts.linkedin.length > 0 ||
+        connectedAccounts.instagram.length > 0) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Connected accounts</CardTitle>
@@ -251,21 +295,27 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
           <CardContent className="space-y-3">
             {connectedAccounts.x.map((acc) => (
               <div key={acc.id} className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
                   <Twitter className="h-4 w-4" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">@{acc.xUsername}</p>
                   {acc.followersCount != null && (
-                    <p className="text-xs text-muted-foreground">{acc.followersCount.toLocaleString()} followers</p>
+                    <p className="text-muted-foreground text-xs">
+                      {acc.followersCount.toLocaleString()} followers
+                    </p>
                   )}
                 </div>
-                {acc.isDefault && <Badge variant="secondary" className="ml-auto text-xs">Default</Badge>}
+                {acc.isDefault && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    Default
+                  </Badge>
+                )}
               </div>
             ))}
             {connectedAccounts.linkedin.map((acc) => (
               <div key={acc.id} className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
                   <Linkedin className="h-4 w-4" />
                 </div>
                 <p className="text-sm font-medium">{acc.linkedinName}</p>
@@ -273,7 +323,7 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
             ))}
             {connectedAccounts.instagram.map((acc) => (
               <div key={acc.id} className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
                   <Instagram className="h-4 w-4" />
                 </div>
                 <p className="text-sm font-medium">@{acc.instagramUsername}</p>
@@ -290,25 +340,31 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
         </CardHeader>
         <CardContent>
           {recentSessions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sessions found</p>
+            <p className="text-muted-foreground text-sm">No sessions found</p>
           ) : (
             <div className="space-y-2">
               {recentSessions.map((s) => (
                 <div key={s.id} className="flex items-start gap-3 rounded-md border p-2.5">
-                  <Monitor className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Monitor className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs text-muted-foreground">
+                    <p className="text-muted-foreground truncate text-xs">
                       {s.userAgent ?? "Unknown device"}
                     </p>
-                    <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                      <span><AtSign className="mr-0.5 inline h-3 w-3" />{s.ipAddress ?? "—"}</span>
-                      <span><CreditCard className="mr-0.5 inline h-3 w-3" />
+                    <div className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+                      <span>
+                        <AtSign className="mr-0.5 inline h-3 w-3" />
+                        {s.ipAddress ?? "—"}
+                      </span>
+                      <span>
+                        <CreditCard className="mr-0.5 inline h-3 w-3" />
                         {format(new Date(s.createdAt), "d MMM yyyy HH:mm")}
                       </span>
                     </div>
                   </div>
                   {new Date(s.expiresAt) < new Date() && (
-                    <Badge variant="outline" className="shrink-0 text-xs text-muted-foreground">Expired</Badge>
+                    <Badge variant="outline" className="text-muted-foreground shrink-0 text-xs">
+                      Expired
+                    </Badge>
                   )}
                 </div>
               ))}

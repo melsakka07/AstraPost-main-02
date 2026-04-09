@@ -29,22 +29,23 @@ export async function GET(
 
   // Fire and forget (in a real serverless env, use waitUntil or a queue)
   try {
-      await db.transaction(async (tx) => {
-          await tx.insert(affiliateClicks).values({
-            id: nanoid(),
-            affiliateLinkId: link.id,
-            ipAddress: ip,
-            userAgent: userAgent,
-            country: country,
-            referer: referer,
-          });
-
-          await tx.update(affiliateLinks)
-            .set({ clicks: sql`${affiliateLinks.clicks} + 1` })
-            .where(eq(affiliateLinks.id, link.id));
+    await db.transaction(async (tx) => {
+      await tx.insert(affiliateClicks).values({
+        id: nanoid(),
+        affiliateLinkId: link.id,
+        ipAddress: ip,
+        userAgent: userAgent,
+        country: country,
+        referer: referer,
       });
+
+      await tx
+        .update(affiliateLinks)
+        .set({ clicks: sql`${affiliateLinks.clicks} + 1` })
+        .where(eq(affiliateLinks.id, link.id));
+    });
   } catch (error) {
-      console.error("Failed to track click", error);
+    console.error("Failed to track click", error);
   }
 
   return NextResponse.redirect(link.destinationUrl);

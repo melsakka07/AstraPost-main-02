@@ -1,14 +1,14 @@
 import { AnalyticsEngine } from "./analytics-engine";
 
 export interface TimeSlot {
-  day: number;   // 0=Sun, 6=Sat
-  hour: number;  // 0-23
+  day: number; // 0=Sun, 6=Sat
+  hour: number; // 0-23
   score: number; // 0-100 normalized engagement score
 }
 
 const FALLBACK_TIMES: TimeSlot[] = [
   { day: 0, hour: 20, score: 80 }, // Sun 8PM
-  { day: 2, hour: 9,  score: 75 }, // Tue 9AM
+  { day: 2, hour: 9, score: 75 }, // Tue 9AM
   { day: 4, hour: 19, score: 70 }, // Thu 7PM
 ];
 

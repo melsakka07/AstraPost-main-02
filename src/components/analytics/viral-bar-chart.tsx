@@ -45,11 +45,11 @@ function CustomTooltip({
   if (!active || !payload?.length) return null;
   const item = payload[0];
   return (
-    <div className="rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-md backdrop-blur-sm">
+    <div className="bg-background/95 rounded-lg border px-3 py-2 text-xs shadow-md backdrop-blur-sm">
       <p className="font-medium">{item.payload.name}</p>
       <p className="text-muted-foreground">
         Engagement:{" "}
-        <span className="font-semibold text-foreground">
+        <span className="text-foreground font-semibold">
           {formatValue ? formatValue(item.value) : item.value}
         </span>
       </p>
@@ -70,7 +70,7 @@ export function ViralBarChart({
 }: ViralBarChartProps) {
   if (!data.length) {
     return (
-      <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
         {emptyText}
       </div>
     );
@@ -143,22 +143,14 @@ export function ViralBarChart({
           </>
         )}
         <Tooltip
-          content={
-            <CustomTooltip
-              {...(formatValue !== undefined && { formatValue })}
-            />
-          }
+          content={<CustomTooltip {...(formatValue !== undefined && { formatValue })} />}
           cursor={{ fill: "hsl(var(--muted) / 0.5)" }}
         />
         <Bar dataKey="value" radius={[3, 3, 3, 3]} maxBarSize={32}>
           {data.map((entry) => (
             <Cell
               key={entry.name}
-              fill={
-                topValues.has(entry.name)
-                  ? "hsl(var(--primary))"
-                  : "hsl(var(--primary) / 0.3)"
-              }
+              fill={topValues.has(entry.name) ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.3)"}
             />
           ))}
         </Bar>

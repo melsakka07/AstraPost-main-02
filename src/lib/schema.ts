@@ -1,6 +1,17 @@
-
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable, text, timestamp, boolean, integer, jsonb, decimal, index, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import {
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  integer,
+  jsonb,
+  decimal,
+  index,
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/pg-core";
 
 // ── Admin / Billing enums ────────────────────────────────────────────────────
 export const discountTypeEnum = pgEnum("discount_type", ["percentage", "fixed"]);
@@ -18,12 +29,7 @@ export const postStatusEnum = pgEnum("post_status", [
   "paused_needs_reconnect",
 ]);
 
-export const planEnum = pgEnum("plan", [
-  "free",
-  "pro_monthly",
-  "pro_annual",
-  "agency",
-]);
+export const planEnum = pgEnum("plan", ["free", "pro_monthly", "pro_annual", "agency"]);
 
 export const subscriptionStatusEnum = pgEnum("subscription_status", [
   "active",
@@ -42,11 +48,7 @@ export const jobRunStatusEnum = pgEnum("job_run_status", [
 // ── New enums (migration required) ─────────────────────────────────────────
 
 /** Platform a post targets. Shared by posts and analytics_refresh_runs. */
-export const platformEnum = pgEnum("platform", [
-  "twitter",
-  "linkedin",
-  "instagram",
-]);
+export const platformEnum = pgEnum("platform", ["twitter", "linkedin", "instagram"]);
 
 /** Structural type of a post (single tweet vs thread vs platform-native). */
 export const postTypeEnum = pgEnum("post_type", [
@@ -65,18 +67,10 @@ export const recurrencePatternEnum = pgEnum("recurrence_pattern", [
 ]);
 
 /** Role a team member holds in a workspace. 'owner' is derived, never stored. */
-export const teamRoleEnum = pgEnum("team_role", [
-  "admin",
-  "editor",
-  "viewer",
-]);
+export const teamRoleEnum = pgEnum("team_role", ["admin", "editor", "viewer"]);
 
 /** Lifecycle state of a team invitation. */
-export const invitationStatusEnum = pgEnum("invitation_status", [
-  "pending",
-  "accepted",
-  "expired",
-]);
+export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "expired"]);
 
 /** Status of a background analytics refresh run. */
 export const analyticsRunStatusEnum = pgEnum("analytics_run_status", [
@@ -86,21 +80,13 @@ export const analyticsRunStatusEnum = pgEnum("analytics_run_status", [
 ]);
 
 /** Lifecycle state of a feedback item. */
-export const feedbackStatusEnum = pgEnum("feedback_status", [
-  "pending",
-  "approved",
-  "rejected",
-]);
+export const feedbackStatusEnum = pgEnum("feedback_status", ["pending", "approved", "rejected"]);
 
 /** Category of a feedback submission. */
-export const feedbackCategoryEnum = pgEnum("feedback_category", [
-  "feature",
-  "bug",
-  "other",
-]);
+export const feedbackCategoryEnum = pgEnum("feedback_category", ["feature", "bug", "other"]);
 
 // IMPORTANT! ID fields should ALWAYS use UUID types, EXCEPT the BetterAuth tables.
-// However, to maintain consistency with the existing user table which uses text IDs, 
+// However, to maintain consistency with the existing user table which uses text IDs,
 // we will use text for IDs in related tables as well, or ensure type compatibility.
 
 export const user = pgTable(
@@ -116,7 +102,7 @@ export const user = pgTable(
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
-    
+
     // AstraPost specific fields
     isAdmin: boolean("is_admin").default(false),
     isSuspended: boolean("is_suspended").default(false),
@@ -129,7 +115,7 @@ export const user = pgTable(
     onboardingCompleted: boolean("onboarding_completed").default(false),
     voiceProfile: jsonb("voice_profile"),
     requiresApproval: boolean("requires_approval").default(false), // For Agency plan team workflows
-    
+
     // Referral System
     referralCode: text("referral_code").unique(),
     referredBy: text("referred_by"), // ID of the user who referred this user
@@ -144,12 +130,10 @@ export const user = pgTable(
     preferredImageModel: text("preferred_image_model").default("nano-banana-2"), // 'nano-banana-2', 'banana-pro', 'gemini-imagen4'
 
     // Admin fields
-    bannedAt: timestamp("banned_at"),     // set when admin bans; null = not banned
-    deletedAt: timestamp("deleted_at"),   // soft-delete; null = active account
+    bannedAt: timestamp("banned_at"), // set when admin bans; null = not banned
+    deletedAt: timestamp("deleted_at"), // soft-delete; null = active account
   },
-  (table) => [
-    index("user_referral_code_idx").on(table.referralCode)
-  ]
+  (table) => [index("user_referral_code_idx").on(table.referralCode)]
 );
 
 export const session = pgTable(
@@ -215,154 +199,218 @@ export const verification = pgTable("verification", {
 
 // AstraPost Tables
 
-export const xAccounts = pgTable("x_accounts", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xUserId: text("x_user_id").notNull().unique(),
-  xUsername: text("x_username").notNull(),
-  xDisplayName: text("x_display_name"),
-  xAvatarUrl: text("x_avatar_url"),
-  accessToken: text("access_token").notNull(),
-  refreshTokenEnc: text("refresh_token_enc"),
-  tokenExpiresAt: timestamp("token_expires_at"),
-  followersCount: integer("followers_count").default(0),
-  isDefault: boolean("is_default").default(false),
-  isActive: boolean("is_active").default(true),
-  xSubscriptionTier: text("x_subscription_tier").default("None"),
-  xSubscriptionTierUpdatedAt: timestamp("x_subscription_tier_updated_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-}, (table) => [
-  index("x_accounts_user_id_idx").on(table.userId)
-]);
+export const xAccounts = pgTable(
+  "x_accounts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    xUserId: text("x_user_id").notNull().unique(),
+    xUsername: text("x_username").notNull(),
+    xDisplayName: text("x_display_name"),
+    xAvatarUrl: text("x_avatar_url"),
+    accessToken: text("access_token").notNull(),
+    refreshTokenEnc: text("refresh_token_enc"),
+    tokenExpiresAt: timestamp("token_expires_at"),
+    followersCount: integer("followers_count").default(0),
+    isDefault: boolean("is_default").default(false),
+    isActive: boolean("is_active").default(true),
+    xSubscriptionTier: text("x_subscription_tier").default("None"),
+    xSubscriptionTierUpdatedAt: timestamp("x_subscription_tier_updated_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("x_accounts_user_id_idx").on(table.userId)]
+);
 
-export const linkedinAccounts = pgTable("linkedin_accounts", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  linkedinUserId: text("linkedin_user_id").notNull().unique(),
-  linkedinName: text("linkedin_name").notNull(),
-  linkedinAvatarUrl: text("linkedin_avatar_url"),
-  accessToken: text("access_token").notNull(),
-  refreshTokenEnc: text("refresh_token_enc"),
-  tokenExpiresAt: timestamp("token_expires_at"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-}, (table) => [
-  index("linkedin_accounts_user_id_idx").on(table.userId)
-]);
+export const linkedinAccounts = pgTable(
+  "linkedin_accounts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    linkedinUserId: text("linkedin_user_id").notNull().unique(),
+    linkedinName: text("linkedin_name").notNull(),
+    linkedinAvatarUrl: text("linkedin_avatar_url"),
+    accessToken: text("access_token").notNull(),
+    refreshTokenEnc: text("refresh_token_enc"),
+    tokenExpiresAt: timestamp("token_expires_at"),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("linkedin_accounts_user_id_idx").on(table.userId)]
+);
 
-export const instagramAccounts = pgTable("instagram_accounts", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  instagramUserId: text("instagram_user_id").notNull().unique(),
-  instagramUsername: text("instagram_username").notNull(),
-  instagramAvatarUrl: text("instagram_avatar_url"),
-  accessToken: text("access_token").notNull(),
-  // Instagram Graph API tokens are long-lived (60 days)
-  tokenExpiresAt: timestamp("token_expires_at"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-}, (table) => [
-  index("instagram_accounts_user_id_idx").on(table.userId)
-]);
+export const instagramAccounts = pgTable(
+  "instagram_accounts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    instagramUserId: text("instagram_user_id").notNull().unique(),
+    instagramUsername: text("instagram_username").notNull(),
+    instagramAvatarUrl: text("instagram_avatar_url"),
+    accessToken: text("access_token").notNull(),
+    // Instagram Graph API tokens are long-lived (60 days)
+    tokenExpiresAt: timestamp("token_expires_at"),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("instagram_accounts_user_id_idx").on(table.userId)]
+);
 
-export const posts = pgTable("posts", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
-  linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, { onDelete: "cascade" }),
-  instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, { onDelete: "cascade" }),
-  platform: platformEnum("platform").default("twitter"),
-  groupId: text("group_id"),
-  type: postTypeEnum("type").default("tweet"),
-  status: postStatusEnum("status").default("draft"),
-  scheduledAt: timestamp("scheduled_at"),
-  publishedAt: timestamp("published_at"),
-  failReason: text("fail_reason"),
-  lastErrorCode: integer("last_error_code"),
-  lastErrorAt: timestamp("last_error_at"),
-  retryCount: integer("retry_count").default(0),
-  aiGenerated: boolean("ai_generated").default(false),
-  requiresApproval: boolean("requires_approval").default(false),
-  approvedBy: text("approved_by").references(() => user.id, { onDelete: "set null" }),
-  approvedAt: timestamp("approved_at"),
-  reviewerNotes: text("reviewer_notes"),
-  inspiredByTweetId: text("inspired_by_tweet_id"), // ID of the source tweet from Inspiration feature
-  recurrencePattern: recurrencePatternEnum("recurrence_pattern"),
-  recurrenceEndDate: timestamp("recurrence_end_date"),
-  idempotencyKey: text("idempotency_key").unique(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-}, (table) => [
-  index("posts_user_id_idx").on(table.userId),
-  index("posts_status_idx").on(table.status),
-  index("posts_scheduled_at_idx").on(table.scheduledAt),
-  index("posts_group_id_idx").on(table.groupId),
-  // Composite index for the analytics processor query pattern:
-  //   WHERE userId = ? AND status = 'published' AND publishedAt > ?
-  // Without this, Postgres must intersect the individual single-column indexes
-  // or do a full userId scan filtered by status/date.  With it, the planner
-  // satisfies the entire predicate from one B-tree scan ordered by publishedAt.
-  index("posts_user_status_published_idx").on(table.userId, table.status, table.publishedAt),
-]);
+export const posts = pgTable(
+  "posts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
+    linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, {
+      onDelete: "cascade",
+    }),
+    instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, {
+      onDelete: "cascade",
+    }),
+    platform: platformEnum("platform").default("twitter"),
+    groupId: text("group_id"),
+    type: postTypeEnum("type").default("tweet"),
+    status: postStatusEnum("status").default("draft"),
+    scheduledAt: timestamp("scheduled_at"),
+    publishedAt: timestamp("published_at"),
+    failReason: text("fail_reason"),
+    lastErrorCode: integer("last_error_code"),
+    lastErrorAt: timestamp("last_error_at"),
+    retryCount: integer("retry_count").default(0),
+    aiGenerated: boolean("ai_generated").default(false),
+    requiresApproval: boolean("requires_approval").default(false),
+    approvedBy: text("approved_by").references(() => user.id, { onDelete: "set null" }),
+    approvedAt: timestamp("approved_at"),
+    reviewerNotes: text("reviewer_notes"),
+    inspiredByTweetId: text("inspired_by_tweet_id"), // ID of the source tweet from Inspiration feature
+    recurrencePattern: recurrencePatternEnum("recurrence_pattern"),
+    recurrenceEndDate: timestamp("recurrence_end_date"),
+    idempotencyKey: text("idempotency_key").unique(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("posts_user_id_idx").on(table.userId),
+    index("posts_status_idx").on(table.status),
+    index("posts_scheduled_at_idx").on(table.scheduledAt),
+    index("posts_group_id_idx").on(table.groupId),
+    // Composite index for the analytics processor query pattern:
+    //   WHERE userId = ? AND status = 'published' AND publishedAt > ?
+    // Without this, Postgres must intersect the individual single-column indexes
+    // or do a full userId scan filtered by status/date.  With it, the planner
+    // satisfies the entire predicate from one B-tree scan ordered by publishedAt.
+    index("posts_user_status_published_idx").on(table.userId, table.status, table.publishedAt),
+  ]
+);
 
-export const followerSnapshots = pgTable("follower_snapshots", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xAccountId: text("x_account_id").notNull().references(() => xAccounts.id, { onDelete: "cascade" }),
-  followersCount: integer("followers_count").notNull(),
-  capturedAt: timestamp("captured_at").defaultNow().notNull(),
-}, (table) => [
-  index("follower_snapshots_user_id_idx").on(table.userId),
-  index("follower_snapshots_account_time_idx").on(table.xAccountId, table.capturedAt),
-]);
+export const followerSnapshots = pgTable(
+  "follower_snapshots",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    xAccountId: text("x_account_id")
+      .notNull()
+      .references(() => xAccounts.id, { onDelete: "cascade" }),
+    followersCount: integer("followers_count").notNull(),
+    capturedAt: timestamp("captured_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("follower_snapshots_user_id_idx").on(table.userId),
+    index("follower_snapshots_account_time_idx").on(table.xAccountId, table.capturedAt),
+  ]
+);
 
-export const analyticsRefreshRuns = pgTable("analytics_refresh_runs", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
-  linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, { onDelete: "cascade" }),
-  instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, { onDelete: "cascade" }),
-  platform: platformEnum("platform").default("twitter"),
-  status: analyticsRunStatusEnum("status").default("running"),
-  error: text("error"),
-  startedAt: timestamp("started_at").defaultNow().notNull(),
-  finishedAt: timestamp("finished_at"),
-}, (table) => [
-  index("analytics_refresh_runs_user_id_idx").on(table.userId),
-  index("analytics_refresh_runs_account_time_idx").on(table.xAccountId, table.startedAt),
-]);
+export const analyticsRefreshRuns = pgTable(
+  "analytics_refresh_runs",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    xAccountId: text("x_account_id").references(() => xAccounts.id, { onDelete: "cascade" }),
+    linkedinAccountId: text("linkedin_account_id").references(() => linkedinAccounts.id, {
+      onDelete: "cascade",
+    }),
+    instagramAccountId: text("instagram_account_id").references(() => instagramAccounts.id, {
+      onDelete: "cascade",
+    }),
+    platform: platformEnum("platform").default("twitter"),
+    status: analyticsRunStatusEnum("status").default("running"),
+    error: text("error"),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    finishedAt: timestamp("finished_at"),
+  },
+  (table) => [
+    index("analytics_refresh_runs_user_id_idx").on(table.userId),
+    index("analytics_refresh_runs_account_time_idx").on(table.xAccountId, table.startedAt),
+  ]
+);
 
-export const teamMembers = pgTable("team_members", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  teamId: text("team_id").notNull().references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
-  role: teamRoleEnum("role").notNull().default("viewer"),
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-}, (table) => [
-  index("team_members_user_id_idx").on(table.userId),
-  index("team_members_team_id_idx").on(table.teamId),
-  uniqueIndex("team_members_user_team_unique").on(table.userId, table.teamId),
-]);
+export const teamMembers = pgTable(
+  "team_members",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
+    role: teamRoleEnum("role").notNull().default("viewer"),
+    joinedAt: timestamp("joined_at").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("team_members_user_id_idx").on(table.userId),
+    index("team_members_team_id_idx").on(table.teamId),
+    uniqueIndex("team_members_user_team_unique").on(table.userId, table.teamId),
+  ]
+);
 
-export const teamInvitations = pgTable("team_invitations", {
-  id: text("id").primaryKey(),
-  teamId: text("team_id").notNull().references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
-  email: text("email").notNull(),
-  role: teamRoleEnum("role").notNull().default("viewer"),
-  token: text("token").notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  status: invitationStatusEnum("status").default("pending"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("team_invitations_team_id_idx").on(table.teamId),
-  index("team_invitations_email_idx").on(table.email),
-  index("team_invitations_token_idx").on(table.token),
-]);
+export const teamInvitations = pgTable(
+  "team_invitations",
+  {
+    id: text("id").primaryKey(),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }), // The owner's user ID
+    email: text("email").notNull(),
+    role: teamRoleEnum("role").notNull().default("viewer"),
+    token: text("token").notNull().unique(),
+    expiresAt: timestamp("expires_at").notNull(),
+    status: invitationStatusEnum("status").default("pending"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("team_invitations_team_id_idx").on(table.teamId),
+    index("team_invitations_email_idx").on(table.email),
+    index("team_invitations_token_idx").on(table.token),
+  ]
+);
 
 export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
   user: one(user, {
@@ -384,23 +432,33 @@ export const teamInvitationsRelations = relations(teamInvitations, ({ one }) => 
   }),
 }));
 
-export const tweets = pgTable("tweets", {
-  id: text("id").primaryKey(),
-  postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
-  content: text("content").notNull(),
-  position: integer("position").default(1).notNull(),
-  xTweetId: text("x_tweet_id"),
-  mediaIds: jsonb("media_ids").default([]),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("tweets_post_id_idx").on(table.postId),
-  uniqueIndex("tweets_post_position_idx").on(table.postId, table.position)
-]);
+export const tweets = pgTable(
+  "tweets",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    position: integer("position").default(1).notNull(),
+    xTweetId: text("x_tweet_id"),
+    mediaIds: jsonb("media_ids").default([]),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("tweets_post_id_idx").on(table.postId),
+    uniqueIndex("tweets_post_position_idx").on(table.postId, table.position),
+  ]
+);
 
 export const media = pgTable("media", {
   id: text("id").primaryKey(),
-  postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  postId: text("post_id")
+    .notNull()
+    .references(() => posts.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   tweetId: text("tweet_id").references(() => tweets.id, { onDelete: "cascade" }),
   fileUrl: text("file_url").notNull(),
   fileType: text("file_type"), // 'image', 'video', 'gif'
@@ -409,91 +467,121 @@ export const media = pgTable("media", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const tweetAnalytics = pgTable("tweet_analytics", {
-  id: text("id").primaryKey(),
-  tweetId: text("tweet_id").notNull().references(() => tweets.id, { onDelete: "cascade" }),
-  xTweetId: text("x_tweet_id").notNull(),
-  impressions: integer("impressions").default(0),
-  likes: integer("likes").default(0),
-  retweets: integer("retweets").default(0),
-  replies: integer("replies").default(0),
-  linkClicks: integer("link_clicks").default(0),
-  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
-  performanceScore: integer("performance_score").default(0),
-  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex("analytics_tweet_id_unique").on(table.tweetId),
-  index("analytics_fetched_at_idx").on(table.fetchedAt)
-]);
+export const tweetAnalytics = pgTable(
+  "tweet_analytics",
+  {
+    id: text("id").primaryKey(),
+    tweetId: text("tweet_id")
+      .notNull()
+      .references(() => tweets.id, { onDelete: "cascade" }),
+    xTweetId: text("x_tweet_id").notNull(),
+    impressions: integer("impressions").default(0),
+    likes: integer("likes").default(0),
+    retweets: integer("retweets").default(0),
+    replies: integer("replies").default(0),
+    linkClicks: integer("link_clicks").default(0),
+    engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
+    performanceScore: integer("performance_score").default(0),
+    fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("analytics_tweet_id_unique").on(table.tweetId),
+    index("analytics_fetched_at_idx").on(table.fetchedAt),
+  ]
+);
 
-export const tweetAnalyticsSnapshots = pgTable("tweet_analytics_snapshots", {
-  id: text("id").primaryKey(),
-  tweetId: text("tweet_id").notNull().references(() => tweets.id, { onDelete: "cascade" }),
-  xTweetId: text("x_tweet_id").notNull(),
-  impressions: integer("impressions").default(0),
-  likes: integer("likes").default(0),
-  retweets: integer("retweets").default(0),
-  replies: integer("replies").default(0),
-  linkClicks: integer("link_clicks").default(0),
-  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
-  performanceScore: integer("performance_score").default(0),
-  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
-}, (table) => [
-  index("analytics_snapshots_tweet_id_idx").on(table.tweetId),
-  index("analytics_snapshots_fetched_at_idx").on(table.fetchedAt),
-  // Compound index for time-series queries: WHERE tweetId = ? ORDER BY fetchedAt DESC
-  index("analytics_snapshots_tweet_id_fetched_at_idx").on(table.tweetId, table.fetchedAt),
-]);
+export const tweetAnalyticsSnapshots = pgTable(
+  "tweet_analytics_snapshots",
+  {
+    id: text("id").primaryKey(),
+    tweetId: text("tweet_id")
+      .notNull()
+      .references(() => tweets.id, { onDelete: "cascade" }),
+    xTweetId: text("x_tweet_id").notNull(),
+    impressions: integer("impressions").default(0),
+    likes: integer("likes").default(0),
+    retweets: integer("retweets").default(0),
+    replies: integer("replies").default(0),
+    linkClicks: integer("link_clicks").default(0),
+    engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
+    performanceScore: integer("performance_score").default(0),
+    fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("analytics_snapshots_tweet_id_idx").on(table.tweetId),
+    index("analytics_snapshots_fetched_at_idx").on(table.fetchedAt),
+    // Compound index for time-series queries: WHERE tweetId = ? ORDER BY fetchedAt DESC
+    index("analytics_snapshots_tweet_id_fetched_at_idx").on(table.tweetId, table.fetchedAt),
+  ]
+);
 
-export const socialAnalytics = pgTable("social_analytics", {
-  id: text("id").primaryKey(),
-  postId: text("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
-  impressions: integer("impressions").default(0),
-  likes: integer("likes").default(0),
-  comments: integer("comments").default(0),
-  shares: integer("shares").default(0),
-  clicks: integer("clicks").default(0),
-  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
-  fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex("social_analytics_post_id_unique").on(table.postId),
-  index("social_analytics_fetched_at_idx").on(table.fetchedAt)
-]);
+export const socialAnalytics = pgTable(
+  "social_analytics",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    impressions: integer("impressions").default(0),
+    likes: integer("likes").default(0),
+    comments: integer("comments").default(0),
+    shares: integer("shares").default(0),
+    clicks: integer("clicks").default(0),
+    engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0.00"),
+    fetchedAt: timestamp("fetched_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("social_analytics_post_id_unique").on(table.postId),
+    index("social_analytics_fetched_at_idx").on(table.fetchedAt),
+  ]
+);
 
-export const aiGenerations = pgTable("ai_generations", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  type: text("type"), // 'thread', 'tweet_improve', 'affiliate', 'image', 'inspiration', 'inspire'
-  inputPrompt: text("input_prompt"),
-  outputContent: jsonb("output_content"),
-  tone: text("tone"),
-  language: text("language").default("ar"),
-  tokensUsed: integer("tokens_used"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("ai_gen_user_id_idx").on(table.userId)
-]);
+export const aiGenerations = pgTable(
+  "ai_generations",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text("type"), // 'thread', 'tweet_improve', 'affiliate', 'image', 'inspiration', 'inspire'
+    inputPrompt: text("input_prompt"),
+    outputContent: jsonb("output_content"),
+    tone: text("tone"),
+    language: text("language").default("ar"),
+    tokensUsed: integer("tokens_used"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("ai_gen_user_id_idx").on(table.userId)]
+);
 
-export const inspirationBookmarks = pgTable("inspiration_bookmarks", {
-  id: text("id").primaryKey(), // Will use UUID like other tables
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  sourceTweetId: text("source_tweet_id").notNull(),
-  sourceTweetUrl: text("source_tweet_url").notNull(),
-  sourceAuthorHandle: text("source_author_handle").notNull(),
-  sourceText: text("source_text").notNull(),
-  adaptedText: text("adapted_text"),
-  action: text("action"), // 'rephrase', 'change_tone', 'expand_thread', 'add_take', 'translate', 'counter_point'
-  tone: text("tone"),
-  language: text("language"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("inspiration_bookmarks_user_id_idx").on(table.userId),
-  index("inspiration_bookmarks_source_tweet_id_idx").on(table.sourceTweetId),
-]);
+export const inspirationBookmarks = pgTable(
+  "inspiration_bookmarks",
+  {
+    id: text("id").primaryKey(), // Will use UUID like other tables
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    sourceTweetId: text("source_tweet_id").notNull(),
+    sourceTweetUrl: text("source_tweet_url").notNull(),
+    sourceAuthorHandle: text("source_author_handle").notNull(),
+    sourceText: text("source_text").notNull(),
+    adaptedText: text("adapted_text"),
+    action: text("action"), // 'rephrase', 'change_tone', 'expand_thread', 'add_take', 'translate', 'counter_point'
+    tone: text("tone"),
+    language: text("language"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("inspiration_bookmarks_user_id_idx").on(table.userId),
+    index("inspiration_bookmarks_source_tweet_id_idx").on(table.sourceTweetId),
+  ]
+);
 
 export const subscriptions = pgTable("subscriptions", {
   id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
   stripePriceId: text("stripe_price_id"),
   plan: planEnum("plan"),
@@ -503,7 +591,9 @@ export const subscriptions = pgTable("subscriptions", {
   cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
   cancelledAt: timestamp("cancelled_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 });
 
 /**
@@ -526,127 +616,184 @@ export const processedWebhookEvents = pgTable("processed_webhook_events", {
   processedAt: timestamp("processed_at").defaultNow().notNull(),
 });
 
-export const jobRuns = pgTable("job_runs", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  queueName: text("queue_name").notNull(),
-  jobId: text("job_id").notNull(),
-  correlationId: text("correlation_id"),
-  postId: text("post_id").references(() => posts.id, { onDelete: "set null" }),
-  status: jobRunStatusEnum("status").notNull(),
-  attempts: integer("attempts"),
-  attemptsMade: integer("attempts_made"),
-  error: text("error"),
-  startedAt: timestamp("started_at").defaultNow().notNull(),
-  finishedAt: timestamp("finished_at"),
-}, (table) => [
-  uniqueIndex("job_runs_queue_job_unique").on(table.queueName, table.jobId),
-  index("job_runs_user_id_idx").on(table.userId),
-  index("job_runs_status_idx").on(table.status),
-  index("job_runs_started_at_idx").on(table.startedAt),
-]);
+export const jobRuns = pgTable(
+  "job_runs",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    queueName: text("queue_name").notNull(),
+    jobId: text("job_id").notNull(),
+    correlationId: text("correlation_id"),
+    postId: text("post_id").references(() => posts.id, { onDelete: "set null" }),
+    status: jobRunStatusEnum("status").notNull(),
+    attempts: integer("attempts"),
+    attemptsMade: integer("attempts_made"),
+    error: text("error"),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    finishedAt: timestamp("finished_at"),
+  },
+  (table) => [
+    uniqueIndex("job_runs_queue_job_unique").on(table.queueName, table.jobId),
+    index("job_runs_user_id_idx").on(table.userId),
+    index("job_runs_status_idx").on(table.status),
+    index("job_runs_started_at_idx").on(table.startedAt),
+  ]
+);
 
-export const affiliateLinks = pgTable("affiliate_links", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  destinationUrl: text("destination_url").notNull(),
-  shortCode: text("short_code").unique(),
-  platform: text("platform").default("amazon"),
-  clicks: integer("clicks").default(0),
-  amazonAsin: text("amazon_asin"),
-  productTitle: text("product_title"),
-  productImageUrl: text("product_image_url"),
-  productPrice: decimal("product_price", { precision: 10, scale: 2 }),
-  productCurrency: text("product_currency").default("USD"),
-  affiliateTag: text("affiliate_tag"),
-  generatedTweet: text("generated_tweet"),
-  wasScheduled: boolean("was_scheduled").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("affiliate_links_user_id_idx").on(table.userId),
-  uniqueIndex("affiliate_links_short_code_idx").on(table.shortCode),
-]);
+export const affiliateLinks = pgTable(
+  "affiliate_links",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    destinationUrl: text("destination_url").notNull(),
+    shortCode: text("short_code").unique(),
+    platform: text("platform").default("amazon"),
+    clicks: integer("clicks").default(0),
+    amazonAsin: text("amazon_asin"),
+    productTitle: text("product_title"),
+    productImageUrl: text("product_image_url"),
+    productPrice: decimal("product_price", { precision: 10, scale: 2 }),
+    productCurrency: text("product_currency").default("USD"),
+    affiliateTag: text("affiliate_tag"),
+    generatedTweet: text("generated_tweet"),
+    wasScheduled: boolean("was_scheduled").default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("affiliate_links_user_id_idx").on(table.userId),
+    uniqueIndex("affiliate_links_short_code_idx").on(table.shortCode),
+  ]
+);
 
-export const affiliateClicks = pgTable("affiliate_clicks", {
-  id: text("id").primaryKey(),
-  affiliateLinkId: text("affiliate_link_id").notNull().references(() => affiliateLinks.id, { onDelete: "cascade" }),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  country: text("country"),
-  referer: text("referer"),
-  clickedAt: timestamp("clicked_at").defaultNow().notNull(),
-}, (table) => [
-  index("affiliate_clicks_link_id_idx").on(table.affiliateLinkId),
-  index("affiliate_clicks_clicked_at_idx").on(table.clickedAt),
-]);
+export const affiliateClicks = pgTable(
+  "affiliate_clicks",
+  {
+    id: text("id").primaryKey(),
+    affiliateLinkId: text("affiliate_link_id")
+      .notNull()
+      .references(() => affiliateLinks.id, { onDelete: "cascade" }),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    country: text("country"),
+    referer: text("referer"),
+    clickedAt: timestamp("clicked_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("affiliate_clicks_link_id_idx").on(table.affiliateLinkId),
+    index("affiliate_clicks_clicked_at_idx").on(table.clickedAt),
+  ]
+);
 
-export const notifications = pgTable("notifications", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  type: text("type").notNull(),
-  title: text("title"),
-  message: text("message"),
-  isRead: boolean("is_read").default(false),
-  metadata: jsonb("metadata").default({}),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  index("notifications_user_id_idx").on(table.userId),
-  index("notifications_is_read_idx").on(table.isRead)
-]);
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    title: text("title"),
+    message: text("message"),
+    isRead: boolean("is_read").default(false),
+    metadata: jsonb("metadata").default({}),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("notifications_user_id_idx").on(table.userId),
+    index("notifications_is_read_idx").on(table.isRead),
+  ]
+);
 
-export const templates = pgTable("templates", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description"),
-  content: jsonb("content").notNull().$type<string[]>(),
-  category: text("category").default("Personal"),
-  aiMeta: jsonb("ai_meta").$type<{ templateId: string; tone: string; language: string; outputFormat: string } | null>(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-}, (table) => [
-  index("templates_user_id_idx").on(table.userId),
-]);
+export const templates = pgTable(
+  "templates",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    content: jsonb("content").notNull().$type<string[]>(),
+    category: text("category").default("Personal"),
+    aiMeta: jsonb("ai_meta").$type<{
+      templateId: string;
+      tone: string;
+      language: string;
+      outputFormat: string;
+    } | null>(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("templates_user_id_idx").on(table.userId)]
+);
 
 // Milestones
-export const milestones = pgTable("milestones", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  milestoneId: text("milestone_id").notNull(), // e.g. 'first_post', '100_followers'
-  unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
-  metadata: jsonb("metadata"), // e.g. { count: 105 }
-}, (table) => [
-  index("milestones_user_id_idx").on(table.userId),
-  uniqueIndex("milestones_user_milestone_unique").on(table.userId, table.milestoneId),
-]);
+export const milestones = pgTable(
+  "milestones",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    milestoneId: text("milestone_id").notNull(), // e.g. 'first_post', '100_followers'
+    unlockedAt: timestamp("unlocked_at").defaultNow().notNull(),
+    metadata: jsonb("metadata"), // e.g. { count: 105 }
+  },
+  (table) => [
+    index("milestones_user_id_idx").on(table.userId),
+    uniqueIndex("milestones_user_milestone_unique").on(table.userId, table.milestoneId),
+  ]
+);
 
-export const feedback = pgTable("feedback", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  category: feedbackCategoryEnum("category").default("feature"),
-  status: feedbackStatusEnum("status").default("pending"),
-  upvotes: integer("upvotes").default(0),
-  adminNotes: text("admin_notes"),
-  reviewedAt: timestamp("reviewed_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()),
-}, (table) => [
-  index("feedback_user_id_idx").on(table.userId),
-  index("feedback_status_idx").on(table.status),
-  index("feedback_upvotes_idx").on(table.upvotes),
-]);
+export const feedback = pgTable(
+  "feedback",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    category: feedbackCategoryEnum("category").default("feature"),
+    status: feedbackStatusEnum("status").default("pending"),
+    upvotes: integer("upvotes").default(0),
+    adminNotes: text("admin_notes"),
+    reviewedAt: timestamp("reviewed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("feedback_user_id_idx").on(table.userId),
+    index("feedback_status_idx").on(table.status),
+    index("feedback_upvotes_idx").on(table.upvotes),
+  ]
+);
 
-export const feedbackVotes = pgTable("feedback_votes", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  feedbackId: text("feedback_id").notNull().references(() => feedback.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex("feedback_votes_user_feedback_unique").on(table.userId, table.feedbackId),
-  index("feedback_votes_feedback_id_idx").on(table.feedbackId),
-]);
+export const feedbackVotes = pgTable(
+  "feedback_votes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    feedbackId: text("feedback_id")
+      .notNull()
+      .references(() => feedback.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("feedback_votes_user_feedback_unique").on(table.userId, table.feedbackId),
+    index("feedback_votes_feedback_id_idx").on(table.feedbackId),
+  ]
+);
 
 export const affiliateLinksRelations = relations(affiliateLinks, ({ one, many }) => ({
   user: one(user, {
@@ -877,56 +1024,76 @@ export const milestonesRelations = relations(milestones, ({ one }) => ({
  * Promotional codes that can be applied at checkout for discounts.
  * Soft-deleted via deletedAt; hard deletes are intentionally not supported.
  */
-export const promoCodes = pgTable("promo_codes", {
-  id: text("id").primaryKey(),
-  code: text("code").notNull().unique(),
-  description: text("description"),
-  discountType: discountTypeEnum("discount_type").notNull(),
-  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
-  validFrom: timestamp("valid_from"),
-  validTo: timestamp("valid_to"),
-  maxRedemptions: integer("max_redemptions"), // null = unlimited
-  redemptionsCount: integer("redemptions_count").default(0).notNull(),
-  applicablePlans: jsonb("applicable_plans").default([]).$type<string[]>(), // [] = all plans
-  isActive: boolean("is_active").default(true).notNull(),
-  stripeCouponId: text("stripe_coupon_id"),  // set when a Stripe coupon is created for this code
-  createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
-  deletedAt: timestamp("deleted_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
-}, (table) => [
-  index("promo_codes_code_idx").on(table.code),
-  index("promo_codes_is_active_idx").on(table.isActive),
-]);
+export const promoCodes = pgTable(
+  "promo_codes",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull().unique(),
+    description: text("description"),
+    discountType: discountTypeEnum("discount_type").notNull(),
+    discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(),
+    validFrom: timestamp("valid_from"),
+    validTo: timestamp("valid_to"),
+    maxRedemptions: integer("max_redemptions"), // null = unlimited
+    redemptionsCount: integer("redemptions_count").default(0).notNull(),
+    applicablePlans: jsonb("applicable_plans").default([]).$type<string[]>(), // [] = all plans
+    isActive: boolean("is_active").default(true).notNull(),
+    stripeCouponId: text("stripe_coupon_id"), // set when a Stripe coupon is created for this code
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    deletedAt: timestamp("deleted_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("promo_codes_code_idx").on(table.code),
+    index("promo_codes_is_active_idx").on(table.isActive),
+  ]
+);
 
 /** Tracks each time a promo code was successfully redeemed at checkout. */
-export const promoCodeRedemptions = pgTable("promo_code_redemptions", {
-  id: text("id").primaryKey(),
-  promoCodeId: text("promo_code_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  stripeSessionId: text("stripe_session_id"),
-  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }),
-  redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
-}, (table) => [
-  index("promo_redemptions_code_id_idx").on(table.promoCodeId),
-  index("promo_redemptions_user_id_idx").on(table.userId),
-]);
+export const promoCodeRedemptions = pgTable(
+  "promo_code_redemptions",
+  {
+    id: text("id").primaryKey(),
+    promoCodeId: text("promo_code_id")
+      .notNull()
+      .references(() => promoCodes.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    stripeSessionId: text("stripe_session_id"),
+    discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }),
+    redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("promo_redemptions_code_id_idx").on(table.promoCodeId),
+    index("promo_redemptions_user_id_idx").on(table.userId),
+  ]
+);
 
 /**
  * Simple key-value feature flag system.
  * Admin UI provides toggle switches; `isFeatureEnabled()` reads from this table
  * with a 60-second in-memory cache.
  */
-export const featureFlags = pgTable("feature_flags", {
-  id: text("id").primaryKey(),
-  key: text("key").notNull().unique(),
-  enabled: boolean("enabled").default(false).notNull(),
-  description: text("description"),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => [
-  uniqueIndex("feature_flags_key_unique").on(table.key),
-]);
+export const featureFlags = pgTable(
+  "feature_flags",
+  {
+    id: text("id").primaryKey(),
+    key: text("key").notNull().unique(),
+    enabled: boolean("enabled").default(false).notNull(),
+    description: text("description"),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("feature_flags_key_unique").on(table.key)]
+);
 
 // ── Relations for new admin tables ──────────────────────────────────────────
 
@@ -956,26 +1123,37 @@ export const promoCodeRedemptionsRelations = relations(promoCodeRedemptions, ({ 
  * Each row represents one pipeline run: research → strategy → write → images → review.
  * The actual published content lives in the standard posts/tweets tables after approval.
  */
-export const agenticPosts = pgTable("agentic_posts", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xAccountId: text("x_account_id").notNull().references(() => xAccounts.id, { onDelete: "cascade" }),
-  topic: text("topic").notNull(),
-  researchBrief: jsonb("research_brief"),
-  contentPlan: jsonb("content_plan"),
-  tweets: jsonb("tweets"),
-  qualityScore: integer("quality_score"),
-  summary: text("summary"),
-  status: varchar("status", { length: 30 }).default("generating").notNull(),
-  postId: text("post_id").references(() => posts.id),
-  correlationId: varchar("correlation_id", { length: 36 }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
-}, (table) => [
-  index("agentic_posts_user_id_idx").on(table.userId),
-  index("agentic_posts_status_idx").on(table.status),
-  index("agentic_posts_x_account_id_idx").on(table.xAccountId),
-]);
+export const agenticPosts = pgTable(
+  "agentic_posts",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    xAccountId: text("x_account_id")
+      .notNull()
+      .references(() => xAccounts.id, { onDelete: "cascade" }),
+    topic: text("topic").notNull(),
+    researchBrief: jsonb("research_brief"),
+    contentPlan: jsonb("content_plan"),
+    tweets: jsonb("tweets"),
+    qualityScore: integer("quality_score"),
+    summary: text("summary"),
+    status: varchar("status", { length: 30 }).default("generating").notNull(),
+    postId: text("post_id").references(() => posts.id),
+    correlationId: varchar("correlation_id", { length: 36 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("agentic_posts_user_id_idx").on(table.userId),
+    index("agentic_posts_status_idx").on(table.status),
+    index("agentic_posts_x_account_id_idx").on(table.xAccountId),
+  ]
+);
 
 export const agenticPostsRelations = relations(agenticPosts, ({ one }) => ({
   user: one(user, {

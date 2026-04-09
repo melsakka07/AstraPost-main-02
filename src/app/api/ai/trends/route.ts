@@ -7,7 +7,12 @@ import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { checkAgenticPostingAccessDetailed } from "@/lib/middleware/require-plan";
 import { redis } from "@/lib/rate-limiter";
-import { trendCategoryEnum, trendItemSchema, type TrendCategory, type TrendItem } from "@/lib/schemas/common";
+import {
+  trendCategoryEnum,
+  trendItemSchema,
+  type TrendCategory,
+  type TrendItem,
+} from "@/lib/schemas/common";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 // NOTE: A web-search-capable model produces significantly better results here.
@@ -45,7 +50,9 @@ export async function GET(req: Request) {
     const rawCategory = searchParams.get("category") ?? "all";
     const categoryParsed = trendCategoryEnum.safeParse(rawCategory);
     if (!categoryParsed.success) {
-      return ApiError.badRequest(`Invalid category. Must be one of: ${trendCategoryEnum.options.join(", ")}`);
+      return ApiError.badRequest(
+        `Invalid category. Must be one of: ${trendCategoryEnum.options.join(", ")}`
+      );
     }
     const category = categoryParsed.data;
 
@@ -57,7 +64,11 @@ export async function GET(req: Request) {
     try {
       const cached = await redis.get(cacheKey);
       if (cached) {
-        const parsed = JSON.parse(cached) as { trends: TrendItem[]; cachedAt: string; expiresAt: string };
+        const parsed = JSON.parse(cached) as {
+          trends: TrendItem[];
+          cachedAt: string;
+          expiresAt: string;
+        };
         logger.info("trends_cache_hit", { category, userId: session.user.id });
         return Response.json(parsed);
       }
@@ -78,7 +89,10 @@ export async function GET(req: Request) {
     // ── AI call ──────────────────────────────────────────────────────────────
     logger.info("trends_fetch_start", { category, userId: session.user.id });
 
-    const modelId = process.env.OPENROUTER_MODEL_TRENDS ?? process.env.OPENROUTER_MODEL_AGENTIC ?? process.env.OPENROUTER_MODEL!;
+    const modelId =
+      process.env.OPENROUTER_MODEL_TRENDS ??
+      process.env.OPENROUTER_MODEL_AGENTIC ??
+      process.env.OPENROUTER_MODEL!;
     const model = openrouter(modelId);
 
     const result = await generateText({
@@ -91,7 +105,8 @@ export async function GET(req: Request) {
     // ── Parse & validate response ────────────────────────────────────────────
     let trends: TrendItem[] = [];
     try {
-      const jsonMatch = result.text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? result.text.match(/(\[[\s\S]*\])/);
+      const jsonMatch =
+        result.text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? result.text.match(/(\[[\s\S]*\])/);
       const raw = jsonMatch ? (jsonMatch[1] ?? jsonMatch[0]) : result.text;
       const parsed = JSON.parse(raw.trim()) as unknown;
       const validated = trendItemSchema.array().safeParse(parsed);
@@ -110,7 +125,14 @@ export async function GET(req: Request) {
 
     // ── Record AI quota usage ─────────────────────────────────────────────────
     try {
-      await recordAiUsage(session.user.id, "trends_discovery", 0, category, `Trending topics: ${category}`, "en");
+      await recordAiUsage(
+        session.user.id,
+        "trends_discovery",
+        0,
+        category,
+        `Trending topics: ${category}`,
+        "en"
+      );
     } catch (quotaErr) {
       logger.warn("trends_quota_record_failed", {
         error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),

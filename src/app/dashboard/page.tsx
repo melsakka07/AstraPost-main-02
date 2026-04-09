@@ -1,4 +1,3 @@
-
 import { headers } from "next/headers";
 import Link from "next/link";
 import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
@@ -36,7 +35,7 @@ async function getDashboardData(userId: string) {
     hasXAccount,
     hasScheduledPost,
     hasUsedAI,
-    userInfo
+    userInfo,
   ] = await Promise.all([
     // Today's posts (published or scheduled for today)
     db.query.posts.findMany({
@@ -44,14 +43,21 @@ async function getDashboardData(userId: string) {
         eq(posts.userId, userId),
         gte(posts.scheduledAt, startOfDay),
         lte(posts.scheduledAt, endOfDay)
-      )
+      ),
     }),
     // Scheduled posts count
-    db.select({ count: sql<number>`count(*)` }).from(posts).where(and(eq(posts.userId, userId), eq(posts.status, "scheduled"))),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(and(eq(posts.userId, userId), eq(posts.status, "scheduled"))),
     // Published posts count
-    db.select({ count: sql<number>`count(*)` }).from(posts).where(and(eq(posts.userId, userId), eq(posts.status, "published"))),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(and(eq(posts.userId, userId), eq(posts.status, "published"))),
     // Avg Engagement Rate
-    db.select({ avg: sql<number>`avg(${tweetAnalytics.engagementRate})` })
+    db
+      .select({ avg: sql<number>`avg(${tweetAnalytics.engagementRate})` })
       .from(tweetAnalytics)
       .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
       .innerJoin(posts, eq(tweets.postId, posts.id))
@@ -63,27 +69,27 @@ async function getDashboardData(userId: string) {
       orderBy: [asc(posts.scheduledAt)],
       limit: 5,
       with: {
-        tweets: true
-      }
+        tweets: true,
+      },
     }),
 
     // Checklist Checks
     db.query.xAccounts.findFirst({
       where: eq(xAccounts.userId, userId),
-      columns: { id: true }
+      columns: { id: true },
     }),
     db.query.posts.findFirst({
       where: eq(posts.userId, userId),
-      columns: { id: true }
+      columns: { id: true },
     }),
     db.query.aiGenerations.findFirst({
       where: eq(aiGenerations.userId, userId),
-      columns: { id: true }
+      columns: { id: true },
     }),
     db.query.user.findFirst({
       where: eq(user.id, userId),
-      columns: { plan: true }
-    })
+      columns: { plan: true },
+    }),
   ]);
 
   return {
@@ -96,8 +102,8 @@ async function getDashboardData(userId: string) {
       hasXAccount: !!hasXAccount,
       hasScheduledPost: !!hasScheduledPost,
       hasUsedAI: !!hasUsedAI,
-      hasProPlan: userInfo?.plan !== "free"
-    }
+      hasProPlan: userInfo?.plan !== "free",
+    },
   };
 }
 
@@ -138,10 +144,21 @@ const STAT_CARDS = [
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
-  const data = session ? await getDashboardData(session.user.id) : {
-    todayCount: 0, scheduledCount: 0, publishedCount: 0, avgEngagement: "0.00", upcomingPosts: [],
-    checklist: { hasXAccount: false, hasScheduledPost: false, hasUsedAI: false, hasProPlan: false }
-  };
+  const data = session
+    ? await getDashboardData(session.user.id)
+    : {
+        todayCount: 0,
+        scheduledCount: 0,
+        publishedCount: 0,
+        avgEngagement: "0.00",
+        upcomingPosts: [],
+        checklist: {
+          hasXAccount: false,
+          hasScheduledPost: false,
+          hasUsedAI: false,
+          hasProPlan: false,
+        },
+      };
 
   const statValues: Record<string, { value: string; sub: string }> = {
     today: { value: String(data.todayCount), sub: "Scheduled for today" },
@@ -176,18 +193,18 @@ export default async function DashboardPage() {
               className={`border-l-4 ${card.accent} transition-shadow hover:shadow-md`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
                   {card.label}
                 </CardTitle>
-                <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.iconBg}`}>
+                <div
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.iconBg}`}
+                >
                   <card.icon className={`h-4 w-4 ${card.iconColor}`} />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold tracking-tight">
-                  {stat.value}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{stat.sub}</p>
+                <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+                <p className="text-muted-foreground mt-1 text-xs">{stat.sub}</p>
               </CardContent>
             </Card>
           );
@@ -207,14 +224,12 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {data.upcomingPosts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border/60 py-10">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                  <Send className="h-5 w-5 text-muted-foreground" />
+              <div className="border-border/60 flex flex-col items-center justify-center rounded-lg border border-dashed py-10">
+                <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
+                  <Send className="text-muted-foreground h-5 w-5" />
                 </div>
-                <p className="mt-4 text-sm font-medium">
-                  Your queue is empty
-                </p>
-                <p className="mt-1 max-w-[240px] text-center text-xs text-muted-foreground">
+                <p className="mt-4 text-sm font-medium">Your queue is empty</p>
+                <p className="text-muted-foreground mt-1 max-w-[240px] text-center text-xs">
                   Schedule your first post and it will appear here.
                 </p>
                 <Button size="sm" asChild className="mt-4">
@@ -229,22 +244,18 @@ export default async function DashboardPage() {
                 {data.upcomingPosts.map((post) => (
                   <div
                     key={post.id}
-                    className="flex min-w-0 items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                    className="hover:bg-muted/50 flex min-w-0 items-start gap-3 rounded-lg border p-3 transition-colors"
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                      <Calendar className="h-4 w-4 text-primary" />
+                    <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                      <Calendar className="text-primary h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="break-words text-sm font-medium leading-relaxed">
+                      <p className="text-sm leading-relaxed font-medium break-words">
                         {(post.tweets[0]?.content ?? "").substring(0, 80)}
-                        {(post.tweets[0]?.content?.length ?? 0) > 80
-                          ? "..."
-                          : ""}
+                        {(post.tweets[0]?.content?.length ?? 0) > 80 ? "..." : ""}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground" suppressHydrationWarning>
-                        {post.scheduledAt
-                          ? new Date(post.scheduledAt).toLocaleString()
-                          : "No date"}
+                      <p className="text-muted-foreground mt-1 text-xs" suppressHydrationWarning>
+                        {post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : "No date"}
                       </p>
                     </div>
                   </div>

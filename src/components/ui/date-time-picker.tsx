@@ -5,11 +5,7 @@ import { format, parseISO } from "date-fns";
 import { CalendarIcon, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 // ── Time slot definitions (same data previously in composer.tsx) ─────────
@@ -59,22 +55,12 @@ interface DateTimePickerProps {
   className?: string;
 }
 
-export function DateTimePicker({
-  value,
-  onChange,
-  disabled,
-  id,
-  className,
-}: DateTimePickerProps) {
+export function DateTimePicker({ value, onChange, disabled, id, className }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
 
   // Internal temp state — only committed to parent on Apply
-  const [tempDate, setTempDate] = React.useState<string>(
-    value ? value.slice(0, 10) : ""
-  );
-  const [tempTime, setTempTime] = React.useState<string>(
-    value ? value.slice(11, 16) : ""
-  );
+  const [tempDate, setTempDate] = React.useState<string>(value ? value.slice(0, 10) : "");
+  const [tempTime, setTempTime] = React.useState<string>(value ? value.slice(11, 16) : "");
 
   // Sync temp state when external value changes or popover opens
   React.useEffect(() => {
@@ -133,7 +119,7 @@ export function DateTimePicker({
         {value && (
           <button
             type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm opacity-70 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="focus-visible:ring-ring absolute top-1/2 right-2 -translate-y-1/2 rounded-sm opacity-70 hover:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
             onClick={(e) => {
               e.stopPropagation();
               onChange("");
@@ -146,14 +132,14 @@ export function DateTimePicker({
         )}
       </div>
       <PopoverContent
-        className="w-auto p-0 overflow-hidden"
+        className="w-auto overflow-hidden p-0"
         align="start"
         // Wide enough for calendar + time grid side-by-side on desktop,
         // stacks vertically on small viewports
       >
         <div className="flex flex-col sm:flex-row">
           {/* Calendar */}
-          <div className="p-3 border-b sm:border-b-0 sm:border-r">
+          <div className="border-b p-3 sm:border-r sm:border-b-0">
             <Calendar
               mode="single"
               selected={tempDate ? parseISO(tempDate) : undefined}
@@ -165,29 +151,22 @@ export function DateTimePicker({
                   setTempTime("12:00");
                 }
               }}
-              disabled={(day) =>
-                day < new Date(new Date().setHours(0, 0, 0, 0))
-              }
+              disabled={(day) => day < new Date(new Date().setHours(0, 0, 0, 0))}
               initialFocus
             />
           </div>
 
           {/* Time grid */}
-          <div className="p-3 w-full sm:w-48 max-h-[320px] overflow-y-auto">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-2">
+          <div className="max-h-[320px] w-full overflow-y-auto p-3 sm:w-48">
+            <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
               <Clock className="h-3.5 w-3.5" />
               {tempDate ? format(parseISO(tempDate), "EEE, MMM d") : "Select a date first"}
             </div>
 
-            <div
-              className={cn(
-                "space-y-3",
-                !tempDate && "opacity-50 pointer-events-none"
-              )}
-            >
+            <div className={cn("space-y-3", !tempDate && "pointer-events-none opacity-50")}>
               {TIME_GROUPS.map((group) => (
                 <div key={group.label}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-1">
+                  <p className="text-muted-foreground/60 mb-1 text-[10px] font-semibold tracking-wider uppercase">
                     {group.label}
                   </p>
                   <div className="grid grid-cols-3 gap-1">
@@ -216,16 +195,11 @@ export function DateTimePicker({
 
         {/* Footer: Clear + Apply */}
         {(tempDate || value) && (
-          <div className="flex items-center justify-between border-t px-3 py-2 bg-muted/30">
+          <div className="bg-muted/30 flex items-center justify-between border-t px-3 py-2">
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleClear}>
               Clear
             </Button>
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              disabled={!canApply}
-              onClick={handleApply}
-            >
+            <Button size="sm" className="h-7 text-xs" disabled={!canApply} onClick={handleApply}>
               {tempDate && tempTime
                 ? `Apply · ${format(parseISO(`${tempDate}T${tempTime}`), "MMM d, h:mm a")}`
                 : "Apply"}

@@ -30,36 +30,46 @@ export async function GET() {
 
   const [postsCount, accountsCount, aiCount, aiImagesCount] = await Promise.all([
     // Monthly posts
-    db.select({ count: sql<number>`count(*)` })
+    db
+      .select({ count: sql<number>`count(*)` })
       .from(posts)
-      .where(and(
-        eq(posts.userId, session.user.id),
-        ne(posts.status, "draft"),
-        gte(posts.createdAt, startOfMonth)
-      )),
+      .where(
+        and(
+          eq(posts.userId, session.user.id),
+          ne(posts.status, "draft"),
+          gte(posts.createdAt, startOfMonth)
+        )
+      ),
 
     // Connected accounts
-    db.select({ count: sql<number>`count(*)` })
+    db
+      .select({ count: sql<number>`count(*)` })
       .from(xAccounts)
       .where(and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true))),
 
     // Monthly AI text generations (excluding images — images tracked separately)
-    db.select({ count: sql<number>`count(*)` })
+    db
+      .select({ count: sql<number>`count(*)` })
       .from(aiGenerations)
-      .where(and(
-        eq(aiGenerations.userId, session.user.id),
-        ne(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, startOfMonth)
-      )),
+      .where(
+        and(
+          eq(aiGenerations.userId, session.user.id),
+          ne(aiGenerations.type, "image"),
+          gte(aiGenerations.createdAt, startOfMonth)
+        )
+      ),
 
     // Monthly AI image generations
-    db.select({ count: sql<number>`count(*)::int` })
+    db
+      .select({ count: sql<number>`count(*)::int` })
       .from(aiGenerations)
-      .where(and(
-        eq(aiGenerations.userId, session.user.id),
-        eq(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, startOfMonth),
-      )),
+      .where(
+        and(
+          eq(aiGenerations.userId, session.user.id),
+          eq(aiGenerations.type, "image"),
+          gte(aiGenerations.createdAt, startOfMonth)
+        )
+      ),
   ]);
 
   const usage = {
@@ -72,7 +82,9 @@ export async function GET() {
   const serializableLimits = {
     postsPerMonth: Number.isFinite(limits.postsPerMonth) ? limits.postsPerMonth : null,
     maxXAccounts: Number.isFinite(limits.maxXAccounts) ? limits.maxXAccounts : null,
-    aiGenerationsPerMonth: Number.isFinite(limits.aiGenerationsPerMonth) ? limits.aiGenerationsPerMonth : null,
+    aiGenerationsPerMonth: Number.isFinite(limits.aiGenerationsPerMonth)
+      ? limits.aiGenerationsPerMonth
+      : null,
     aiImagesPerMonth: limits.aiImagesPerMonth === -1 ? null : limits.aiImagesPerMonth,
   };
 

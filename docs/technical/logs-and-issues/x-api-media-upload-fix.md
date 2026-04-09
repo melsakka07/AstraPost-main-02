@@ -9,6 +9,7 @@
 ## Problem Description
 
 When attempting to upload media (images, videos, GIFs) to X (Twitter), the application consistently received `403 Forbidden` errors. This occurred despite having:
+
 - Valid OAuth 2.0 access tokens
 - "Read and Write" app permissions in the Twitter Developer Portal
 - Successfully posting text-only tweets
@@ -28,14 +29,17 @@ The `target: "tweet_image"` parameter in the request body was the smoking gun â€
 The issue had **three contributing factors** â€” all three needed to be fixed simultaneously:
 
 ### 1. Deprecated Endpoint Usage
+
 - **Old (Broken):** `upload.twitter.com/1.1/media/upload.json` via `twitter-api-v2` v1 client
 - **New (Fixed):** `api.x.com/2/media/upload/initialize`, `append`, `finalize` endpoints
 
 ### 2. Missing OAuth Scope
+
 - **Old (Broken):** `tweet.read`, `tweet.write`, `users.read`, `offline.access`, `users.email`
 - **New (Fixed):** Added `media.write` scope to the OAuth configuration
 
 ### 3. Incorrect Request Body Format
+
 - **Old (Broken):** JSON body with `{ mimeType, target: "tweet_image" }`
 - **New (Fixed):** Raw multipart/form-data with binary chunks
 
@@ -119,11 +123,7 @@ async uploadMedia(
 The APPEND endpoint requires raw binary data in a specific multipart format:
 
 ```typescript
-function buildMultipartBody(
-  boundary: string,
-  chunk: Buffer,
-  segmentIndex: number
-): Buffer {
+function buildMultipartBody(boundary: string, chunk: Buffer, segmentIndex: number): Buffer {
   const CRLF = "\r\n";
   const enc = new TextEncoder();
 
@@ -162,6 +162,7 @@ function buildMultipartBody(
 ```
 
 ### Performance Metrics
+
 - **Upload Time:** ~2.95 seconds for a 1 MB image
 - **API Calls:** 3 (INITIALIZE, APPEND, FINALIZE)
 - **Success Rate:** 100% after fix
@@ -183,14 +184,15 @@ After deploying this fix, **all existing users must reconnect their X accounts**
 
 ## X API v2 Media Upload Endpoints Reference
 
-| Step | Method | Endpoint | Description |
-|------|--------|----------|-------------|
-| INITIALIZE | POST | `https://api.x.com/2/media/upload/initialize` | Creates a media upload session |
-| APPEND | POST | `https://api.x.com/2/media/upload/{id}/append` | Uploads a chunk of binary data |
-| FINALIZE | POST | `https://api.x.com/2/media/upload/{id}/finalize` | Marks upload as complete |
-| STATUS | GET | `https://api.x.com/2/media/upload/{id}` | Polls processing status (for video/gif) |
+| Step       | Method | Endpoint                                         | Description                             |
+| ---------- | ------ | ------------------------------------------------ | --------------------------------------- |
+| INITIALIZE | POST   | `https://api.x.com/2/media/upload/initialize`    | Creates a media upload session          |
+| APPEND     | POST   | `https://api.x.com/2/media/upload/{id}/append`   | Uploads a chunk of binary data          |
+| FINALIZE   | POST   | `https://api.x.com/2/media/upload/{id}/finalize` | Marks upload as complete                |
+| STATUS     | GET    | `https://api.x.com/2/media/upload/{id}`          | Polls processing status (for video/gif) |
 
 ### Required Headers
+
 ```
 Authorization: Bearer <oauth2_token>
 Content-Type: application/json  (for INITIALIZE and FINALIZE)
@@ -202,14 +204,17 @@ Content-Type: multipart/form-data; boundary=<boundary>  (for APPEND)
 ## Troubleshooting
 
 ### Error: 403 Forbidden on INITIALIZE
+
 **Cause:** Missing `media.write` scope in OAuth token
 **Fix:** Reconnect X account after adding `media.write` to scope configuration
 
 ### Error: 400 Bad Request on APPEND
+
 **Cause:** Incorrect multipart body format
 **Fix:** Use `buildMultipartBody()` helper function with proper boundary
 
 ### Error: Processing Timeout
+
 **Cause:** Video/GIF processing takes longer than expected
 **Fix:** Increase `MAX_POLL_ATTEMPTS` or check video encoding format
 
@@ -233,7 +238,7 @@ Content-Type: multipart/form-data; boundary=<boundary>  (for APPEND)
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
-| 2026-03-14 | Fixed 403 media upload errors by migrating to v2 endpoints and adding `media.write` scope |
+| Date       | Change                                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-03-14 | Fixed 403 media upload errors by migrating to v2 endpoints and adding `media.write` scope                                      |
 | 2026-03-14 | Updated `next.config.ts` to use `serverExternalPackages` instead of deprecated `experimental.serverComponentsExternalPackages` |

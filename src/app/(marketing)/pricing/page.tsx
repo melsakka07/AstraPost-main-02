@@ -33,42 +33,43 @@ export default async function PricingPage() {
     <div className="relative min-h-dvh">
       {/* Background gradient */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 rounded-full blur-3xl" />
+        <div className="from-primary/5 absolute top-0 left-1/2 h-[800px] w-[800px] -translate-x-1/2 rounded-full bg-gradient-to-br via-purple-500/5 to-pink-500/5 blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 py-16 md:py-24 space-y-16">
+      <div className="container mx-auto space-y-16 px-4 py-16 md:py-24">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-6">
-          <Badge variant="outline" className="px-4 py-1">Pricing</Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+        <div className="mx-auto max-w-3xl space-y-6 text-center">
+          <Badge variant="outline" className="px-4 py-1">
+            Pricing
+          </Badge>
+          <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
             Simple, transparent pricing
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
             Choose the plan that fits your needs. Upgrade or cancel anytime.
           </p>
         </div>
 
         {/* Trial Banner */}
-        <div className="mx-auto max-w-2xl text-center rounded-lg border border-primary/20 bg-primary/5 p-4 -mt-8">
-          <p className="text-sm font-medium text-primary">
+        <div className="border-primary/20 bg-primary/5 mx-auto -mt-8 max-w-2xl rounded-lg border p-4 text-center">
+          <p className="text-primary text-sm font-medium">
             🎉 Start your 14-day free trial — access all Pro features, no credit card required.
           </p>
         </div>
 
         {/* Pricing Table */}
         <div className="flex justify-center">
-          <PricingTable
-            currentPlan={currentPlan}
-            isLoggedIn={!!session}
-          />
+          <PricingTable currentPlan={currentPlan} isLoggedIn={!!session} />
         </div>
 
         {/* Features Section */}
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="mx-auto max-w-5xl">
+          <div className="grid items-center gap-12 md:grid-cols-2">
             <div className="space-y-6">
-              <Badge variant="outline" className="px-4 py-1">Features</Badge>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+              <Badge variant="outline" className="px-4 py-1">
+                Features
+              </Badge>
+              <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
                 All plans include these core features
               </h2>
               <p className="text-muted-foreground text-lg">
@@ -88,11 +89,11 @@ export default async function PricingPage() {
                 "AI Content Generation with multiple models",
                 "Detailed Analytics and performance tracking",
                 "Team Collaboration (Agency plan)",
-                "Community & Email Support for all users"
+                "Community & Email Support for all users",
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check className="h-3.5 w-3.5 text-primary" />
+                  <div className="bg-primary/10 mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full">
+                    <Check className="text-primary h-3.5 w-3.5" />
                   </div>
                   <span className="text-foreground/90">{item}</span>
                 </div>
@@ -102,16 +103,14 @@ export default async function PricingPage() {
         </div>
 
         {/* FAQ CTA */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-muted/50 to-muted/20 p-8 md:p-12 text-center">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5" />
+        <div className="border-border/50 from-muted/50 to-muted/20 relative overflow-hidden rounded-2xl border bg-gradient-to-br p-8 text-center md:p-12">
+          <div className="from-primary/5 absolute inset-0 bg-gradient-to-r via-purple-500/5 to-pink-500/5" />
           <div className="relative">
-            <h3 className="text-2xl md:text-3xl font-bold mb-4">
-              Questions about pricing?
-            </h3>
-            <p className="text-muted-foreground max-w-xl mx-auto mb-8">
+            <h3 className="mb-4 text-2xl font-bold md:text-3xl">Questions about pricing?</h3>
+            <p className="text-muted-foreground mx-auto mb-8 max-w-xl">
               Our team is here to help you find the right plan for your needs.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button size="lg" variant="outline" asChild>
                 <Link href="/community">Contact Sales</Link>
               </Button>

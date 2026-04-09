@@ -29,7 +29,9 @@ export async function POST(req: Request) {
     const result = scoreRequestSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), { status: 400 });
+      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
+        status: 400,
+      });
     }
 
     const { content } = result.data;

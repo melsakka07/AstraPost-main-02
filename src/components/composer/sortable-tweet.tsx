@@ -1,4 +1,3 @@
-
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { XSubscriptionTier } from "@/components/ui/x-subscription-badge";
@@ -26,23 +25,37 @@ interface SortableTweetProps {
   selectedTier?: XSubscriptionTier | undefined;
 }
 
-export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, updateTweetPreview, removeTweet, removeTweetMedia, triggerFileUpload, openAiImage, onMove, onClearTweet, suggestedHashtags, onHashtagClick, tier, isAiTarget = false, onConvertToThread, selectedTier }: SortableTweetProps) {
+export function SortableTweet({
+  id,
+  tweet,
+  index,
+  totalTweets,
+  updateTweet,
+  updateTweetPreview,
+  removeTweet,
+  removeTweetMedia,
+  triggerFileUpload,
+  openAiImage,
+  onMove,
+  onClearTweet,
+  suggestedHashtags,
+  onHashtagClick,
+  tier,
+  isAiTarget = false,
+  onConvertToThread,
+  selectedTier,
+}: SortableTweetProps) {
   const isFirst = index === 0;
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 1 : 0,
-    position: 'relative' as const,
+    position: "relative" as const,
   };
 
   return (
@@ -55,28 +68,28 @@ export function SortableTweet({ id, tweet, index, totalTweets, updateTweet, upda
         "aria-label": `Tweet ${index + 1} of ${totalTweets}`,
       })}
     >
-        <TweetCard
-            tweet={tweet}
-            index={index}
-            totalTweets={totalTweets}
-            updateTweet={updateTweet}
-            updateTweetPreview={updateTweetPreview}
-            removeTweet={removeTweet}
-            removeTweetMedia={removeTweetMedia}
-            triggerFileUpload={triggerFileUpload}
-            {...(openAiImage !== undefined && { openAiImage })}
-            dragHandleProps={{...attributes, ...listeners}}
-            isFirst={isFirst}
-            {...(index > 0 && { onMoveUp: () => onMove(index, index - 1) })}
-            {...(index < totalTweets - 1 && { onMoveDown: () => onMove(index, index + 1) })}
-            {...(onClearTweet !== undefined && { onClearTweet })}
-            {...(suggestedHashtags !== undefined && { suggestedHashtags })}
-            {...(onHashtagClick !== undefined && { onHashtagClick })}
-            {...(tier !== undefined && { tier })}
-            isAiTarget={isAiTarget}
-            {...(onConvertToThread !== undefined && { onConvertToThread })}
-            {...(selectedTier !== undefined && { selectedTier })}
-        />
+      <TweetCard
+        tweet={tweet}
+        index={index}
+        totalTweets={totalTweets}
+        updateTweet={updateTweet}
+        updateTweetPreview={updateTweetPreview}
+        removeTweet={removeTweet}
+        removeTweetMedia={removeTweetMedia}
+        triggerFileUpload={triggerFileUpload}
+        {...(openAiImage !== undefined && { openAiImage })}
+        dragHandleProps={{ ...attributes, ...listeners }}
+        isFirst={isFirst}
+        {...(index > 0 && { onMoveUp: () => onMove(index, index - 1) })}
+        {...(index < totalTweets - 1 && { onMoveDown: () => onMove(index, index + 1) })}
+        {...(onClearTweet !== undefined && { onClearTweet })}
+        {...(suggestedHashtags !== undefined && { suggestedHashtags })}
+        {...(onHashtagClick !== undefined && { onHashtagClick })}
+        {...(tier !== undefined && { tier })}
+        isAiTarget={isAiTarget}
+        {...(onConvertToThread !== undefined && { onConvertToThread })}
+        {...(selectedTier !== undefined && { selectedTier })}
+      />
     </div>
   );
 }

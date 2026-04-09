@@ -28,20 +28,18 @@ export async function POST(req: Request) {
     const parsed = requestSchema.safeParse(json);
 
     if (!parsed.success) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request", details: parsed.error }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: "Invalid request", details: parsed.error }), {
+        status: 400,
+      });
     }
 
     const { templateId, topic, language } = parsed.data;
 
     const config = getTemplatePrompt(templateId);
     if (!config) {
-      return new Response(
-        JSON.stringify({ error: `Unknown template: ${templateId}` }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: `Unknown template: ${templateId}` }), {
+        status: 400,
+      });
     }
 
     const tone = parsed.data.tone ?? config.defaultTone;
@@ -83,12 +81,9 @@ export async function POST(req: Request) {
           // Flush the last tweet (no trailing delimiter)
           const remaining = buffer.trim();
           if (remaining.length > 0) {
-            const content =
-              remaining.length > 1000 ? remaining.slice(0, 997) + "..." : remaining;
+            const content = remaining.length > 1000 ? remaining.slice(0, 997) + "..." : remaining;
             controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ index: tweetIndex, tweet: content })}\n\n`
-              )
+              encoder.encode(`data: ${JSON.stringify({ index: tweetIndex, tweet: content })}\n\n`)
             );
           }
 
@@ -97,8 +92,7 @@ export async function POST(req: Request) {
           // Record usage — non-critical, fire after responding
           try {
             const usage = await streamResult.usage;
-            const langLabel =
-              LANGUAGES.find((l) => l.code === language)?.label ?? language;
+            const langLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
             await recordAiUsage(
               userId,
               "template",
@@ -114,9 +108,7 @@ export async function POST(req: Request) {
           controller.close();
         } catch {
           controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({ error: "Generation failed" })}\n\n`
-            )
+            encoder.encode(`data: ${JSON.stringify({ error: "Generation failed" })}\n\n`)
           );
           controller.close();
         }
@@ -133,9 +125,8 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("AI Template Generate Error:", error);
-    return new Response(
-      JSON.stringify({ error: "Failed to generate template content" }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: "Failed to generate template content" }), {
+      status: 500,
+    });
   }
 }

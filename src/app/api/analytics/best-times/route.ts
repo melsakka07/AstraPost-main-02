@@ -1,6 +1,9 @@
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { checkBestTimesAccessDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import {
+  checkBestTimesAccessDetailed,
+  createPlanLimitResponse,
+} from "@/lib/middleware/require-plan";
 import { getBestTimes } from "@/lib/services/best-time";
 
 export async function GET() {

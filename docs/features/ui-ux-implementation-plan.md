@@ -1,4 +1,5 @@
 # AstraPost — UI/UX Implementation Plan
+
 > Landing Page & Footer Links Review
 > Created: 2026-03-14 | Status: In Progress
 
@@ -16,55 +17,56 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 
 ### Landing Page (`/`)
 
-| Issue | Severity | Location |
-|-------|----------|----------|
-| Hero text is left-aligned on mobile — h1/p tags lack `text-center` | Medium | `page.tsx` hero section |
-| Badge label has a leading space `" ✨ AI-Powered..."` | Low | `page.tsx` line 20 |
-| No product screenshot or UI mockup in the hero | High | `page.tsx` hero section |
-| Hero CTA buttons not centered on mobile | Medium | `page.tsx` line 29 |
-| Company logos in social proof are plain text strings | High | `social-proof.tsx` |
-| Testimonial avatars are single-letter placeholders | Medium | `social-proof.tsx` |
-| Only 3 features shown; product has 6+ actual features | Medium | `page.tsx` features grid |
-| No scroll-to-features smooth scroll from hero CTA | Low | `page.tsx` |
+| Issue                                                              | Severity | Location                 |
+| ------------------------------------------------------------------ | -------- | ------------------------ |
+| Hero text is left-aligned on mobile — h1/p tags lack `text-center` | Medium   | `page.tsx` hero section  |
+| Badge label has a leading space `" ✨ AI-Powered..."`              | Low      | `page.tsx` line 20       |
+| No product screenshot or UI mockup in the hero                     | High     | `page.tsx` hero section  |
+| Hero CTA buttons not centered on mobile                            | Medium   | `page.tsx` line 29       |
+| Company logos in social proof are plain text strings               | High     | `social-proof.tsx`       |
+| Testimonial avatars are single-letter placeholders                 | Medium   | `social-proof.tsx`       |
+| Only 3 features shown; product has 6+ actual features              | Medium   | `page.tsx` features grid |
+| No scroll-to-features smooth scroll from hero CTA                  | Low      | `page.tsx`               |
 
 ### Header (`/components/site-header.tsx`)
 
-| Issue | Severity | Location |
-|-------|----------|----------|
-| No mobile hamburger menu — nav links just disappear on mobile | High | `site-header.tsx` |
-| No active/current-page indicator on nav links | Medium | `site-header.tsx` |
-| Header only shows 3 links (Features, Pricing, Blog) — Changelog and Resources missing | Low | `site-header.tsx` |
-| No hover underline or visual affordance on nav links | Low | `site-header.tsx` |
+| Issue                                                                                 | Severity | Location          |
+| ------------------------------------------------------------------------------------- | -------- | ----------------- |
+| No mobile hamburger menu — nav links just disappear on mobile                         | High     | `site-header.tsx` |
+| No active/current-page indicator on nav links                                         | Medium   | `site-header.tsx` |
+| Header only shows 3 links (Features, Pricing, Blog) — Changelog and Resources missing | Low      | `site-header.tsx` |
+| No hover underline or visual affordance on nav links                                  | Low      | `site-header.tsx` |
 
 ### Footer (`/components/site-footer.tsx`)
 
-| Issue | Severity | Location |
-|-------|----------|----------|
-| `/resources` page exists but is NOT linked anywhere in the footer | High | `site-footer.tsx` |
-| Footer link hovers are missing `transition-colors` CSS | Medium | `site-footer.tsx` |
-| No social media links (X/Twitter, Discord) | Medium | `site-footer.tsx` |
-| Footer has no newsletter CTA or social proof element | Low | `site-footer.tsx` |
-| Logo in footer lacks `aria-label` | Low | `site-footer.tsx` |
-| Footer category headings lack `text-xs uppercase tracking-wider` visual hierarchy | Low | `site-footer.tsx` |
-| Copyright bar could benefit from a status page or build trust signals | Low | `site-footer.tsx` |
+| Issue                                                                             | Severity | Location          |
+| --------------------------------------------------------------------------------- | -------- | ----------------- |
+| `/resources` page exists but is NOT linked anywhere in the footer                 | High     | `site-footer.tsx` |
+| Footer link hovers are missing `transition-colors` CSS                            | Medium   | `site-footer.tsx` |
+| No social media links (X/Twitter, Discord)                                        | Medium   | `site-footer.tsx` |
+| Footer has no newsletter CTA or social proof element                              | Low      | `site-footer.tsx` |
+| Logo in footer lacks `aria-label`                                                 | Low      | `site-footer.tsx` |
+| Footer category headings lack `text-xs uppercase tracking-wider` visual hierarchy | Low      | `site-footer.tsx` |
+| Copyright bar could benefit from a status page or build trust signals             | Low      | `site-footer.tsx` |
 
 ### Footer Link Pages
 
-| Page | Route | Status | Issues Found |
-|------|-------|--------|--------------|
-| Features | `/features` | ✅ Working | Consistent with design system. Minor: no hero image |
-| Pricing | `/pricing` | ✅ Working | Good. Server-rendered with plan data |
-| Changelog | `/changelog` | ✅ Working | Good timeline UI. Missing RSS feed link |
-| Documentation | `/docs` | ✅ Working | Article links go to non-existent `/docs/intro` etc. (404s) |
-| Blog | `/blog` | ✅ Working | Good design. Missing category filters |
-| Community | `/community` | ✅ Working | Stats section well done. External Discord link OK |
-| Resources | `/resources` | ✅ Working | **NOT linked from footer** — users can't find this page |
-| Privacy Policy | `/legal/privacy` | ✅ Working | Minimal sections — real policy needs more content |
-| Terms of Service | `/legal/terms` | ✅ Working | Minimal sections — real ToS needs more content |
+| Page             | Route            | Status     | Issues Found                                               |
+| ---------------- | ---------------- | ---------- | ---------------------------------------------------------- |
+| Features         | `/features`      | ✅ Working | Consistent with design system. Minor: no hero image        |
+| Pricing          | `/pricing`       | ✅ Working | Good. Server-rendered with plan data                       |
+| Changelog        | `/changelog`     | ✅ Working | Good timeline UI. Missing RSS feed link                    |
+| Documentation    | `/docs`          | ✅ Working | Article links go to non-existent `/docs/intro` etc. (404s) |
+| Blog             | `/blog`          | ✅ Working | Good design. Missing category filters                      |
+| Community        | `/community`     | ✅ Working | Stats section well done. External Discord link OK          |
+| Resources        | `/resources`     | ✅ Working | **NOT linked from footer** — users can't find this page    |
+| Privacy Policy   | `/legal/privacy` | ✅ Working | Minimal sections — real policy needs more content          |
+| Terms of Service | `/legal/terms`   | ✅ Working | Minimal sections — real ToS needs more content             |
 
 ---
 
 ## Phase 1 — Footer Fixes & Accessibility ✅ COMPLETE
+
 **Priority:** P0 — These are functional gaps and broken discoverability.
 **Files:** `src/components/site-footer.tsx`
 **Completed:** 2026-03-14
@@ -99,6 +101,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
    - Keep copyright text, add a small separator, then the trust signal on the same line on desktop
 
 ### Acceptance Criteria
+
 - [x] `/resources` is accessible via footer link
 - [x] All footer links have smooth hover transitions (`transition-colors duration-200`)
 - [x] Social media links visible in footer (X/Twitter + Discord with inline brand SVGs)
@@ -114,11 +117,13 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 - [x] `pnpm run check` passes — 0 errors, 0 new warnings
 
 ### Notes
+
 - Hydration warning observed during testing is **pre-existing** (present before these changes). Root cause: `next-themes` + Next.js 16 script injection order. Only `src/components/site-footer.tsx` was modified (confirmed via `git diff --stat HEAD`). Flagged for Phase 6 investigation.
 
 ---
 
 ## Phase 2 — Header Mobile Navigation ✅ COMPLETE
+
 **Priority:** P1 — Mobile users have zero navigation access.
 **Files:** `src/components/site-header.tsx`, `src/components/header-nav.tsx` (new), `src/components/mobile-menu.tsx` (new)
 **Completed:** 2026-03-14
@@ -150,6 +155,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
    - Uses `<HeaderNav />` for desktop nav links
 
 ### Acceptance Criteria
+
 - [x] Hamburger menu visible on mobile (< md breakpoint) — `md:hidden`
 - [x] All nav links accessible on mobile (Features, Pricing, Blog, Changelog)
 - [x] Active page highlighted in nav — desktop: `font-semibold text-foreground`, mobile: `bg-primary/10`
@@ -167,6 +173,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 ---
 
 ## Phase 3 — Landing Page Hero Enhancement ✅ COMPLETE
+
 **Priority:** P1 — First impression and conversion rate directly impacted.
 **Files:** `src/app/page.tsx`, `src/components/marketing/social-proof.tsx`, `src/components/marketing/hero-mockup.tsx` (new)
 **Completed:** 2026-03-14
@@ -206,6 +213,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 8. **Features CTA** — `mt-12` → `mt-16`
 
 ### Acceptance Criteria
+
 - [x] No leading space in badge text — `✨ AI-Powered Social Media Growth`
 - [x] Hero content is centered on all viewport sizes (375px, 1280px verified)
 - [x] Product dashboard mockup visible below CTA buttons with browser chrome
@@ -221,6 +229,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 ---
 
 ## Phase 4 — Page-Level Consistency Audit ✅ COMPLETE
+
 **Priority:** P2 — Ensures all footer-linked pages meet quality bar.
 **Files:** All pages in `src/app/(marketing)/`
 **Completed:** 2026-03-14
@@ -254,6 +263,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
    - Add `export const metadata: Metadata` to each page with title + description
 
 ### Acceptance Criteria
+
 - [x] No broken links on documentation page — all `/docs/*` show "Soon" badge; `/legal/privacy` remains a real link
 - [x] Blog newsletter uses shadcn `Input` + `Button` components
 - [x] All 8 marketing pages export `metadata: Metadata` with title + description
@@ -266,6 +276,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 ---
 
 ## Phase 5 — Visual Polish & Micro-interactions ✅ COMPLETE
+
 **Priority:** P2 — Elevates perceived quality and user delight.
 **Files:** `src/app/(marketing)/features/page.tsx`, `src/components/site-footer.tsx`, `src/app/page.tsx`, `src/app/(marketing)/docs/page.tsx`, `src/app/(marketing)/resources/page.tsx`, `src/app/(marketing)/changelog/page.tsx`
 **Completed:** 2026-03-14
@@ -291,6 +302,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 9. **Scroll-to-top** — Verified: Next.js App Router handles this by default ✓
 
 ### Acceptance Criteria
+
 - [x] Feature cards lift slightly on hover (`-translate-y-1 duration-200`) — `/features` page
 - [x] Docs and Resources cards have matching `hover:-translate-y-0.5` micro-lift
 - [x] Footer uses gradient separator instead of hard border — consistent with page section dividers
@@ -304,6 +316,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
 ---
 
 ## Phase 6 — SEO & Accessibility ✅ COMPLETE (2026-03-14)
+
 **Priority:** P3 — Critical before public launch.
 **Files:** Root layout, all marketing pages, sitemap, robots
 **Estimated Effort:** Medium (2–4 hours)
@@ -341,6 +354,7 @@ This plan addresses UI/UX improvements across the landing page and all footer-li
    - `metadataBase` set for absolute OG URLs ✓
 
 ### Acceptance Criteria
+
 - [x] All pages have unique `<title>` tags (no duplication)
 - [x] All pages have `<meta name="description">` tags
 - [x] All pages have `openGraph` for social sharing
@@ -370,17 +384,17 @@ Phase 6 — SEO & Accessibility   [IMPORTANT]    ~3h   → ✅ COMPLETE 2026-03-
 
 ## File Impact Summary
 
-| File | Phases | Type of Change |
-|------|--------|----------------|
-| `src/components/site-footer.tsx` | 1, 5 | Add links, styles, social icons |
-| `src/components/site-header.tsx` | 2 | Add mobile menu (client component) |
-| `src/app/page.tsx` | 3 | Hero alignment, badge fix, mockup |
-| `src/components/marketing/social-proof.tsx` | 3 | Logo/testimonial visual polish |
-| `src/app/(marketing)/docs/page.tsx` | 4 | Fix broken article links |
-| `src/app/(marketing)/blog/page.tsx` | 4 | Refactor newsletter form |
-| `src/app/(marketing)/resources/page.tsx` | 4 | Fix duplicate h1 |
-| All marketing pages | 6 | Add metadata exports |
-| `src/app/layout.tsx` | 6 | Verify lang attribute |
+| File                                        | Phases | Type of Change                     |
+| ------------------------------------------- | ------ | ---------------------------------- |
+| `src/components/site-footer.tsx`            | 1, 5   | Add links, styles, social icons    |
+| `src/components/site-header.tsx`            | 2      | Add mobile menu (client component) |
+| `src/app/page.tsx`                          | 3      | Hero alignment, badge fix, mockup  |
+| `src/components/marketing/social-proof.tsx` | 3      | Logo/testimonial visual polish     |
+| `src/app/(marketing)/docs/page.tsx`         | 4      | Fix broken article links           |
+| `src/app/(marketing)/blog/page.tsx`         | 4      | Refactor newsletter form           |
+| `src/app/(marketing)/resources/page.tsx`    | 4      | Fix duplicate h1                   |
+| All marketing pages                         | 6      | Add metadata exports               |
+| `src/app/layout.tsx`                        | 6      | Verify lang attribute              |
 
 ---
 
@@ -400,6 +414,7 @@ Throughout all phases, adhere to these constraints:
 ## Tracking Progress
 
 Update this file as phases are completed. Mark each phase with one of:
+
 - `[ ] Pending`
 - `[~] In Progress`
 - `[x] Complete`

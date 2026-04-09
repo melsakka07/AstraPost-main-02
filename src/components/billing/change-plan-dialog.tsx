@@ -119,7 +119,9 @@ export function ChangePlanDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Change to {planLabel}</AlertDialogTitle>
           <AlertDialogDescription>
-            {loading ? "Loading preview..." : preview ? (
+            {loading ? (
+              "Loading preview..."
+            ) : preview ? (
               <>
                 Your plan will change from <strong>{preview.currentPlan.toUpperCase()}</strong> to{" "}
                 <strong>{preview.targetPlan.toUpperCase()}</strong>.
@@ -135,10 +137,10 @@ export function ChangePlanDialog({
             {/* Features lost/gained */}
             {preview.featuresLost.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm font-medium text-destructive">Features you'll lose:</div>
+                <div className="text-destructive text-sm font-medium">Features you'll lose:</div>
                 <ul className="space-y-1">
                   {preview.featuresLost.map((feature) => (
-                    <li key={feature} className="text-sm flex items-start gap-2">
+                    <li key={feature} className="flex items-start gap-2 text-sm">
                       <span className="text-destructive">✗</span>
                       <span>{feature}</span>
                     </li>
@@ -149,10 +151,12 @@ export function ChangePlanDialog({
 
             {preview.featuresGained.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm font-medium text-green-600 dark:text-green-400">Features you'll gain:</div>
+                <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                  Features you'll gain:
+                </div>
                 <ul className="space-y-1">
                   {preview.featuresGained.map((feature) => (
-                    <li key={feature} className="text-sm flex items-start gap-2">
+                    <li key={feature} className="flex items-start gap-2 text-sm">
                       <span className="text-green-600 dark:text-green-400">✓</span>
                       <span>{feature}</span>
                     </li>
@@ -169,18 +173,21 @@ export function ChangePlanDialog({
                   <div className="flex-1 space-y-1">
                     {preview.overLimits.xAccounts && (
                       <p className="text-sm">
-                        You have <strong>{preview.overLimits.xAccounts.current}</strong> connected X accounts.
-                        Your new plan allows <strong>{preview.overLimits.xAccounts.newLimit}</strong>.
+                        You have <strong>{preview.overLimits.xAccounts.current}</strong> connected X
+                        accounts. Your new plan allows{" "}
+                        <strong>{preview.overLimits.xAccounts.newLimit}</strong>.
                       </p>
                     )}
                     {preview.overLimits.scheduledPosts && (
                       <p className="text-sm">
-                        You have <strong>{preview.overLimits.scheduledPosts.current}</strong> scheduled posts.
-                        Your new plan allows <strong>{preview.overLimits.scheduledPosts.newLimit}</strong>.
+                        You have <strong>{preview.overLimits.scheduledPosts.current}</strong>{" "}
+                        scheduled posts. Your new plan allows{" "}
+                        <strong>{preview.overLimits.scheduledPosts.newLimit}</strong>.
                       </p>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      Please deactivate excess accounts in Settings. Scheduled posts will be moved to Drafts.
+                    <p className="text-muted-foreground text-xs">
+                      Please deactivate excess accounts in Settings. Scheduled posts will be moved
+                      to Drafts.
                     </p>
                   </div>
                 </div>
@@ -204,7 +211,9 @@ export function ChangePlanDialog({
               {preview.proratedCredit && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Prorated credit:</span>
-                  <span className="font-medium text-green-600 dark:text-green-400">{preview.proratedCredit}</span>
+                  <span className="font-medium text-green-600 dark:text-green-400">
+                    {preview.proratedCredit}
+                  </span>
                 </div>
               )}
             </div>
@@ -223,7 +232,11 @@ export function ChangePlanDialog({
             onClick={handleConfirm}
             disabled={loading || !preview}
             variant={isDowngrade ? "destructive" : "default"}
-            className={isDowngrade ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            className={
+              isDowngrade
+                ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                : ""
+            }
           >
             {loading ? "Processing..." : isDowngrade ? "Confirm Downgrade" : "Confirm Plan Change"}
           </AlertDialogAction>

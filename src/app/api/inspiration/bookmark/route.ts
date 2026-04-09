@@ -10,10 +10,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import {
-  checkBookmarkLimitDetailed,
-  createPlanLimitResponse,
-} from "@/lib/middleware/require-plan";
+import { checkBookmarkLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { inspirationBookmarks, user } from "@/lib/schema";
 
@@ -96,7 +93,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Bookmark creation error:", error);
     return NextResponse.json(
-      { error: "Failed to create bookmark", message: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to create bookmark",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
@@ -137,7 +137,10 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Bookmark fetch error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch bookmarks", message: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to fetch bookmarks",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

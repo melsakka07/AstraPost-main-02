@@ -17,10 +17,7 @@ import { POST } from "./route";
 
 // ─── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const {
-  mockFindFirst,
-  mockTransaction,
-} = vi.hoisted(() => {
+const { mockFindFirst, mockTransaction } = vi.hoisted(() => {
   const mockTxInsertValues = vi.fn().mockResolvedValue(undefined);
   const mockTxUpdateSet = vi.fn(() => ({
     where: vi.fn().mockResolvedValue(undefined),
@@ -28,11 +25,9 @@ const {
   const mockTxInsert = vi.fn(() => ({ values: mockTxInsertValues }));
   const mockTxUpdate = vi.fn(() => ({ set: mockTxUpdateSet }));
 
-  const mockTransaction = vi.fn(
-    async (fn: (tx: unknown) => Promise<void>) => {
-      await fn({ insert: mockTxInsert, update: mockTxUpdate });
-    }
-  );
+  const mockTransaction = vi.fn(async (fn: (tx: unknown) => Promise<void>) => {
+    await fn({ insert: mockTxInsert, update: mockTxUpdate });
+  });
 
   const mockFindFirst = vi.fn();
 
@@ -96,14 +91,11 @@ const TWEETS_PAYLOAD = [
 ];
 
 function makeRequest(body: object) {
-  return new Request(
-    "http://localhost/api/ai/agentic/agentic-1/approve",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }
-  );
+  return new Request("http://localhost/api/ai/agentic/agentic-1/approve", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────────────────
@@ -118,13 +110,12 @@ describe("POST /api/ai/agentic/[id]/approve", () => {
   });
 
   it("post_now: returns 200 with action and calls transaction", async () => {
-    const res = await POST(
-      makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }),
-      { params: Promise.resolve({ id: "agentic-1" }) }
-    );
+    const res = await POST(makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }), {
+      params: Promise.resolve({ id: "agentic-1" }),
+    });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { action: string };
+    const body = (await res.json()) as { action: string };
     expect(body.action).toBe("post_now");
     expect(mockTransaction).toHaveBeenCalledTimes(1);
   });
@@ -140,29 +131,27 @@ describe("POST /api/ai/agentic/[id]/approve", () => {
     );
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { action: string };
+    const body = (await res.json()) as { action: string };
     expect(body.action).toBe("schedule");
     expect(mockTransaction).toHaveBeenCalledTimes(1);
   });
 
   it("save_draft: returns 200 with action", async () => {
-    const res = await POST(
-      makeRequest({ action: "save_draft", tweets: TWEETS_PAYLOAD }),
-      { params: Promise.resolve({ id: "agentic-1" }) }
-    );
+    const res = await POST(makeRequest({ action: "save_draft", tweets: TWEETS_PAYLOAD }), {
+      params: Promise.resolve({ id: "agentic-1" }),
+    });
 
     expect(res.status).toBe(200);
-    const body = await res.json() as { action: string };
+    const body = (await res.json()) as { action: string };
     expect(body.action).toBe("save_draft");
   });
 
   it("unauthorized: returns 401 when no session", async () => {
     vi.mocked(auth.api.getSession).mockResolvedValue(null as never);
 
-    const res = await POST(
-      makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }),
-      { params: Promise.resolve({ id: "agentic-1" }) }
-    );
+    const res = await POST(makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }), {
+      params: Promise.resolve({ id: "agentic-1" }),
+    });
 
     expect(res.status).toBe(401);
   });
@@ -171,10 +160,9 @@ describe("POST /api/ai/agentic/[id]/approve", () => {
     // findFirst returns null → ownership fails or post doesn't exist
     mockFindFirst.mockResolvedValue(null);
 
-    const res = await POST(
-      makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }),
-      { params: Promise.resolve({ id: "agentic-1" }) }
-    );
+    const res = await POST(makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }), {
+      params: Promise.resolve({ id: "agentic-1" }),
+    });
 
     expect(res.status).toBe(404);
   });
@@ -182,19 +170,17 @@ describe("POST /api/ai/agentic/[id]/approve", () => {
   it("wrong status: returns 400 when post status is not 'ready'", async () => {
     mockFindFirst.mockResolvedValue({ ...READY_POST, status: "generating" });
 
-    const res = await POST(
-      makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }),
-      { params: Promise.resolve({ id: "agentic-1" }) }
-    );
+    const res = await POST(makeRequest({ action: "post_now", tweets: TWEETS_PAYLOAD }), {
+      params: Promise.resolve({ id: "agentic-1" }),
+    });
 
     expect(res.status).toBe(400);
   });
 
   it("schedule without scheduledAt: returns 400", async () => {
-    const res = await POST(
-      makeRequest({ action: "schedule", tweets: TWEETS_PAYLOAD }),
-      { params: Promise.resolve({ id: "agentic-1" }) }
-    );
+    const res = await POST(makeRequest({ action: "schedule", tweets: TWEETS_PAYLOAD }), {
+      params: Promise.resolve({ id: "agentic-1" }),
+    });
 
     expect(res.status).toBe(400);
   });

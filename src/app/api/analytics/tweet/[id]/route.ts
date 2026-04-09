@@ -5,10 +5,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tweetAnalytics, tweetAnalyticsSnapshots, tweets } from "@/lib/schema";
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -36,8 +33,8 @@ export async function GET(
   // Fetch history (last 30 days)
   const history = await db.query.tweetAnalyticsSnapshots.findMany({
     where: and(
-        eq(tweetAnalyticsSnapshots.tweetId, id),
-        gte(tweetAnalyticsSnapshots.fetchedAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+      eq(tweetAnalyticsSnapshots.tweetId, id),
+      gte(tweetAnalyticsSnapshots.fetchedAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
     ),
     orderBy: [desc(tweetAnalyticsSnapshots.fetchedAt)],
   });

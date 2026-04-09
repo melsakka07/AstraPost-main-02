@@ -7,7 +7,13 @@ import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { posts, user, xAccounts } from "@/lib/schema";
 
-const CHANGE_PLAN_OPTIONS = ["free", "pro_monthly", "pro_annual", "agency_monthly", "agency_annual"] as const;
+const CHANGE_PLAN_OPTIONS = [
+  "free",
+  "pro_monthly",
+  "pro_annual",
+  "agency_monthly",
+  "agency_annual",
+] as const;
 const changePlanSchema = z.object({
   plan: z.enum(CHANGE_PLAN_OPTIONS),
 });
@@ -60,7 +66,9 @@ export async function POST(req: Request) {
   }
 
   // Normalized plan for comparison (agency_monthly/agency_annual both map to "agency" for limits)
-  const normalizedTargetPlan = targetPlan.startsWith("agency") ? "agency" : targetPlan.replace("_annual", "_monthly").replace("_monthly", "");
+  const normalizedTargetPlan = targetPlan.startsWith("agency")
+    ? "agency"
+    : targetPlan.replace("_annual", "_monthly").replace("_monthly", "");
   const normalizedCurrentPlan = currentPlan.startsWith("agency") ? "agency" : currentPlan;
 
   const currentLimits = getPlanLimits(currentPlan);
@@ -116,9 +124,15 @@ export async function POST(req: Request) {
   }
 
   // Numeric limits
-  if (currentLimits.aiGenerationsPerMonth === Infinity && targetLimits.aiGenerationsPerMonth !== Infinity) {
+  if (
+    currentLimits.aiGenerationsPerMonth === Infinity &&
+    targetLimits.aiGenerationsPerMonth !== Infinity
+  ) {
     featuresLost.push(`Unlimited AI Generations (→ ${targetLimits.aiGenerationsPerMonth}/month)`);
-  } else if (currentLimits.aiGenerationsPerMonth !== Infinity && targetLimits.aiGenerationsPerMonth === Infinity) {
+  } else if (
+    currentLimits.aiGenerationsPerMonth !== Infinity &&
+    targetLimits.aiGenerationsPerMonth === Infinity
+  ) {
     featuresGained.push("Unlimited AI Generations");
   }
 
@@ -131,12 +145,16 @@ export async function POST(req: Request) {
   if (currentLimits.maxXAccounts > targetLimits.maxXAccounts) {
     featuresLost.push(`${currentLimits.maxXAccounts} X Accounts (→ ${targetLimits.maxXAccounts})`);
   } else if (currentLimits.maxXAccounts < targetLimits.maxXAccounts) {
-    featuresGained.push(`${targetLimits.maxXAccounts} X Accounts (was ${currentLimits.maxXAccounts})`);
+    featuresGained.push(
+      `${targetLimits.maxXAccounts} X Accounts (was ${currentLimits.maxXAccounts})`
+    );
   }
 
   if (currentLimits.analyticsRetentionDays !== targetLimits.analyticsRetentionDays) {
     if (currentLimits.analyticsRetentionDays > targetLimits.analyticsRetentionDays) {
-      featuresLost.push(`${currentLimits.analyticsRetentionDays}-day Analytics Retention (→ ${targetLimits.analyticsRetentionDays} days)`);
+      featuresLost.push(
+        `${currentLimits.analyticsRetentionDays}-day Analytics Retention (→ ${targetLimits.analyticsRetentionDays} days)`
+      );
     } else {
       featuresGained.push(`${targetLimits.analyticsRetentionDays}-day Analytics Retention`);
     }
@@ -172,11 +190,12 @@ export async function POST(req: Request) {
 
   // ── Determine effective date ───────────────────────────────────────────────────
 
-  const effectiveDate = targetPlan === "free"
-    ? "End of current billing period"
-    : currentPlan === "free"
-    ? "Immediate"
-    : "Immediate";
+  const effectiveDate =
+    targetPlan === "free"
+      ? "End of current billing period"
+      : currentPlan === "free"
+        ? "Immediate"
+        : "Immediate";
 
   // ── Price info ───────────────────────────────────────────────────────────────────
 

@@ -16,10 +16,7 @@ type AdminAuthApi = typeof auth.api & {
   }) => Promise<{ token?: string; session?: { token?: string } } | null>;
 };
 
-export async function POST(
-  _req: NextRequest,
-  { params }: { params: Promise<{ userId: string }> }
-) {
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -39,10 +36,7 @@ export async function POST(
       return new NextResponse("User ID required", { status: 400 });
     }
 
-    const [targetUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, userId));
+    const [targetUser] = await db.select().from(user).where(eq(user.id, userId));
 
     if (!targetUser) {
       return new NextResponse("User not found", { status: 404 });

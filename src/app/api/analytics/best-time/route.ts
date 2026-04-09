@@ -33,7 +33,18 @@ export async function GET(_req: Request) {
         day: DAY_NAMES[s.day],
         hour: s.hour,
         label: `${DAY_NAMES[s.day]} at ${displayHour}:00 ${ampm}`,
-        confidence: Math.min(100, Math.round((s.count / Math.max(buckets.reduce((sum, b) => sum + b.count, 0), 1)) * 100 * 3)),
+        confidence: Math.min(
+          100,
+          Math.round(
+            (s.count /
+              Math.max(
+                buckets.reduce((sum, b) => sum + b.count, 0),
+                1
+              )) *
+              100 *
+              3
+          )
+        ),
         avgEngagement: s.score,
       };
     });

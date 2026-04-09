@@ -8,12 +8,12 @@ import type { TrendCategory, TrendItem } from "@/lib/schemas/common";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES: { id: TrendCategory; label: string }[] = [
-  { id: "all",           label: "All" },
-  { id: "technology",    label: "Technology" },
-  { id: "business",      label: "Business" },
-  { id: "news",          label: "News" },
-  { id: "lifestyle",     label: "Lifestyle" },
-  { id: "sports",        label: "Sports" },
+  { id: "all", label: "All" },
+  { id: "technology", label: "Technology" },
+  { id: "business", label: "Business" },
+  { id: "news", label: "News" },
+  { id: "lifestyle", label: "Lifestyle" },
+  { id: "sports", label: "Sports" },
   { id: "entertainment", label: "Entertainment" },
 ];
 
@@ -50,7 +50,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
         return;
       }
 
-      const data = await res.json() as { trends: TrendItem[]; cachedAt?: string };
+      const data = (await res.json()) as { trends: TrendItem[]; cachedAt?: string };
       setTrends(data.trends ?? []);
       setCachedAt(data.cachedAt ?? null);
     } catch (err) {
@@ -88,17 +88,15 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
   return (
     <div className="mt-6">
       {/* Section header */}
-      <div className="flex items-center gap-2 mb-3">
-        <TrendingUp className="h-4 w-4 text-primary shrink-0" />
-        <span className="text-sm font-medium text-foreground">Trending on X</span>
-        {timeAgo && (
-          <span className="text-xs text-muted-foreground">· Updated {timeAgo}</span>
-        )}
+      <div className="mb-3 flex items-center gap-2">
+        <TrendingUp className="text-primary h-4 w-4 shrink-0" />
+        <span className="text-foreground text-sm font-medium">Trending on X</span>
+        {timeAgo && <span className="text-muted-foreground text-xs">· Updated {timeAgo}</span>}
         {/* Mobile toggle */}
         <button
           type="button"
           onClick={() => setMobileExpanded((v) => !v)}
-          className="ml-auto sm:hidden flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="text-muted-foreground hover:text-foreground ml-auto flex items-center gap-1 text-xs transition-colors sm:hidden"
           aria-expanded={mobileExpanded}
           aria-label={mobileExpanded ? "Collapse trending topics" : "Show trending topics"}
         >
@@ -117,7 +115,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
       <div className={cn("sm:block", !mobileExpanded && "hidden sm:block")}>
         {/* Category tabs */}
         <div
-          className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
+          className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto pb-2"
           role="tablist"
           aria-label="Trend categories"
         >
@@ -142,7 +140,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
 
         {/* Loading skeletons */}
         {loading && (
-          <div className="space-y-2 mt-3" aria-label="Loading trends" aria-busy="true">
+          <div className="mt-3 space-y-2" aria-label="Loading trends" aria-busy="true">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-16 w-full rounded-lg" />
             ))}
@@ -151,12 +149,12 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
 
         {/* Error state */}
         {!loading && error && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground py-3">
+          <div className="text-muted-foreground mt-3 flex items-center gap-2 py-3 text-xs">
             <span>Couldn&apos;t load trends right now.</span>
             <button
               type="button"
               onClick={() => void fetchTrends(selectedCategory)}
-              className="inline-flex items-center gap-1 text-primary hover:underline"
+              className="text-primary inline-flex items-center gap-1 hover:underline"
             >
               <RefreshCw className="h-3 w-3" />
               Retry
@@ -166,17 +164,17 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
 
         {/* Trend cards */}
         {!loading && !error && trends.length > 0 && (
-          <div className="space-y-2 mt-3" role="list" aria-label="Trending topics">
+          <div className="mt-3 space-y-2" role="list" aria-label="Trending topics">
             {trends.map((trend, i) => (
               <div
                 key={i}
                 role="listitem"
-                className="group flex items-start justify-between gap-3 rounded-lg border border-border p-3.5 hover:bg-muted/30 transition-colors cursor-pointer"
+                className="group border-border hover:bg-muted/30 flex cursor-pointer items-start justify-between gap-3 rounded-lg border p-3.5 transition-colors"
                 onClick={() => onSelectTrend(trend.title)}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground truncate">
+                    <span className="text-foreground truncate text-sm font-medium">
                       {trend.title}
                     </span>
                     <span
@@ -190,7 +188,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
                       {trend.postCount}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                  <p className="text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed">
                     {trend.description}
                   </p>
                 </div>
@@ -198,7 +196,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 px-3 text-xs gap-1.5"
+                  className="h-8 shrink-0 gap-1.5 px-3 text-xs transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     onSelectTrend(trend.suggestedAngle);

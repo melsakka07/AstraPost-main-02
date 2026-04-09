@@ -65,6 +65,7 @@ Document every **distinct user flow / use case** from entry to completion. At mi
 15. **Any other flow discovered during codebase analysis**
 
 For each flow, document:
+
 - **Entry point(s)** — how does the user initiate this flow?
 - **Step-by-step walkthrough** — every screen, modal, state change, and user decision
 - **Happy path** — the ideal, uninterrupted journey
@@ -104,7 +105,7 @@ For each flow and interaction pattern documented, **annotate** with relevant ind
 - Use **present tense** ("The button opens a modal" not "The button will open a modal")
 - Be **exhaustive but scannable** — use tables, collapsible sections, and consistent formatting
 - **Do not editorialize or recommend changes** in this document — this is a pure "as-is" state capture
-- Where behavior is ambiguous from code alone, note it explicitly: *"[Requires runtime verification]"*
+- Where behavior is ambiguous from code alone, note it explicitly: _"[Requires runtime verification]"_
 - Preserve any existing content in the document that remains accurate; update or expand where the codebase reveals additional detail
 
 ### Execution Approach

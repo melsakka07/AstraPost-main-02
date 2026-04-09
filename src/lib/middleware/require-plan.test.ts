@@ -49,13 +49,21 @@ describe("Trial System", () => {
   });
 
   it("trial user gets Pro feature access (agentic posting)", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "free",
+      trialEndsAt: futureDate,
+      createdAt: new Date(),
+    });
     const result = await checkAgenticPostingAccessDetailed("user-1");
     expect(result.allowed).toBe(true);
   });
 
   it("trial user is capped at 3 X accounts (Pro limit)", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "free",
+      trialEndsAt: futureDate,
+      createdAt: new Date(),
+    });
     // Simulate already having 3 accounts
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -67,7 +75,11 @@ describe("Trial System", () => {
   });
 
   it("trial user AI quota is capped at Pro limit (100)", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "free",
+      trialEndsAt: futureDate,
+      createdAt: new Date(),
+    });
     // Simulate 100 AI generations used
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -82,13 +94,21 @@ describe("Trial System", () => {
   });
 
   it("trial user CANNOT access LinkedIn (Agency-only)", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "free",
+      trialEndsAt: futureDate,
+      createdAt: new Date(),
+    });
     const result = await checkLinkedinAccessDetailed("user-1");
     expect(result.allowed).toBe(false);
   });
 
   it("trial user gets csv_pdf analytics export (not white_label_pdf)", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "free", trialEndsAt: futureDate, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "free",
+      trialEndsAt: futureDate,
+      createdAt: new Date(),
+    });
     const result = await checkAnalyticsExportLimitDetailed("user-1");
     expect(result.allowed).toBe(true); // csv_pdf is allowed (not "none")
   });
@@ -114,7 +134,11 @@ describe("Trial System", () => {
   });
 
   it("paid Pro user can use agentic posting (unaffected by trial logic)", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "pro_monthly", trialEndsAt: null, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "pro_monthly",
+      trialEndsAt: null,
+      createdAt: new Date(),
+    });
     const result = await checkAgenticPostingAccessDetailed("user-1");
     expect(result.allowed).toBe(true);
   });
@@ -147,7 +171,11 @@ describe("Multi-Account Limits", () => {
   });
 
   it("Pro user allowed up to 3 accounts", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "pro_monthly", trialEndsAt: null, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "pro_monthly",
+      trialEndsAt: null,
+      createdAt: new Date(),
+    });
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 2 }]),
@@ -158,7 +186,11 @@ describe("Multi-Account Limits", () => {
   });
 
   it("Pro user blocked at 4th account (limit is 3)", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "pro_monthly", trialEndsAt: null, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "pro_monthly",
+      trialEndsAt: null,
+      createdAt: new Date(),
+    });
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 3 }]),
@@ -191,7 +223,11 @@ describe("Multi-Account Limits", () => {
   });
 
   it("Pro Annual user has same 3-account limit as Pro Monthly", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "pro_annual", trialEndsAt: null, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "pro_annual",
+      trialEndsAt: null,
+      createdAt: new Date(),
+    });
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 2 }]),
@@ -202,7 +238,11 @@ describe("Multi-Account Limits", () => {
   });
 
   it("Pro Annual user blocked at 4th account", async () => {
-    mockFindFirst.mockResolvedValue({ plan: "pro_annual", trialEndsAt: null, createdAt: new Date() });
+    mockFindFirst.mockResolvedValue({
+      plan: "pro_annual",
+      trialEndsAt: null,
+      createdAt: new Date(),
+    });
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 3 }]),

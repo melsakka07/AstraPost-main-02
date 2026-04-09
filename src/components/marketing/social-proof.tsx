@@ -9,8 +9,7 @@ const testimonials = [
     role: "Tech Content Creator",
     content:
       "AstraPost completely changed how I manage my X account. The AI thread writer is a game changer for my productivity.",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
   },
   {
     name: "David Chen",
@@ -18,8 +17,7 @@ const testimonials = [
     role: "Indie Developer",
     content:
       "I used to spend hours scheduling tweets. Now I do it in 15 minutes a week. The analytics help me know exactly what works.",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
   },
   {
     name: "Amira Khalid",
@@ -27,8 +25,7 @@ const testimonials = [
     role: "Marketing Specialist",
     content:
       "The best tool for Arabic content creation. The multi-language support is actually usable unlike other tools.",
-    avatar:
-      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&h=100&fit=crop",
   },
 ];
 
@@ -43,9 +40,8 @@ export function SocialProof() {
           <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
             Trusted by creators worldwide
           </h2>
-          <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-            Join 10,000+ creators, developers, and brands who use AstraPost to
-            grow their audience.
+          <p className="text-muted-foreground mx-auto max-w-[700px] md:text-xl">
+            Join 10,000+ creators, developers, and brands who use AstraPost to grow their audience.
           </p>
         </div>
 
@@ -56,7 +52,7 @@ export function SocialProof() {
         >
           {companies.map((company) => (
             <div key={company} className="flex items-center justify-center">
-              <span className="rounded-lg border border-border/40 bg-card px-5 py-2.5 text-base font-bold tracking-tight text-muted-foreground transition-colors duration-200 hover:border-border hover:text-foreground">
+              <span className="border-border/40 bg-card text-muted-foreground hover:border-border hover:text-foreground rounded-lg border px-5 py-2.5 text-base font-bold tracking-tight transition-colors duration-200">
                 {company}
               </span>
             </div>
@@ -68,19 +64,19 @@ export function SocialProof() {
           {testimonials.map((t) => (
             <Card
               key={t.handle}
-              className="relative overflow-hidden border border-border/50 bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              className="border-border/50 bg-card relative overflow-hidden border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
             >
               {/* Left accent border */}
               <div
                 aria-hidden="true"
-                className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-primary/60 via-primary/30 to-transparent"
+                className="from-primary/60 via-primary/30 absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b to-transparent"
               />
 
               <CardContent className="p-6">
                 {/* Large opening quote mark */}
                 <div
                   aria-hidden="true"
-                  className="mb-1 font-serif text-5xl leading-none text-primary/20 select-none"
+                  className="text-primary/20 mb-1 font-serif text-5xl leading-none select-none"
                 >
                   &ldquo;
                 </div>
@@ -88,32 +84,25 @@ export function SocialProof() {
                 {/* Star rating */}
                 <div className="mb-3 flex gap-0.5" aria-label="5 stars">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 fill-amber-400 text-amber-400"
-                    />
+                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
 
                 {/* Quote */}
-                <p className="mb-6 leading-relaxed text-muted-foreground">
-                  {t.content}
-                </p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">{t.content}</p>
 
                 {/* Author */}
-                <div className="flex items-center gap-3 border-t border-border/40 pt-4">
-                  <Avatar className="ring-2 ring-primary/15 ring-offset-1 ring-offset-background">
+                <div className="border-border/40 flex items-center gap-3 border-t pt-4">
+                  <Avatar className="ring-primary/15 ring-offset-background ring-2 ring-offset-1">
                     <AvatarImage src={t.avatar} alt={t.name} />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/80 to-purple-500/80 font-semibold text-white">
+                    <AvatarFallback className="from-primary/80 bg-gradient-to-br to-purple-500/80 font-semibold text-white">
                       {t.name[0]}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {t.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{t.handle}</p>
-                    <p className="text-xs text-muted-foreground/60">{t.role}</p>
+                    <p className="text-foreground text-sm font-semibold">{t.name}</p>
+                    <p className="text-muted-foreground text-xs">{t.handle}</p>
+                    <p className="text-muted-foreground/60 text-xs">{t.role}</p>
                   </div>
                 </div>
               </CardContent>

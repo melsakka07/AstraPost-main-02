@@ -88,7 +88,7 @@ describe("AI Thread API — Tier Validation", () => {
 
   // Zod v4 requires RFC-4122-compliant UUIDs: version [1-8] in position 3,
   // variant [89ab] in position 4. Simple all-zero IDs fail the validator.
-  const ACCOUNT_ID_FREE    = "550e8400-e29b-41d4-a716-446655440001";
+  const ACCOUNT_ID_FREE = "550e8400-e29b-41d4-a716-446655440001";
   const ACCOUNT_ID_PREMIUM = "550e8400-e29b-41d4-a716-446655440002";
   const ACCOUNT_ID_MISSING = "550e8400-e29b-41d4-a716-446655440099";
 

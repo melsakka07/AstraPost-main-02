@@ -5,7 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 function JoinTeamContent() {
   const router = useRouter();
@@ -48,17 +55,15 @@ function JoinTeamContent() {
   if (!token) return null;
 
   return (
-    <Card className="w-full max-w-md mx-auto mt-20">
+    <Card className="mx-auto mt-20 w-full max-w-md">
       <CardHeader className="text-center">
-        <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit mb-4">
-            <Users className="h-8 w-8 text-primary" />
+        <div className="bg-primary/10 mx-auto mb-4 w-fit rounded-full p-3">
+          <Users className="text-primary h-8 w-8" />
         </div>
         <CardTitle className="text-2xl">Join Team Workspace</CardTitle>
-        <CardDescription>
-          You have been invited to join a team on AstraPost.
-        </CardDescription>
+        <CardDescription>You have been invited to join a team on AstraPost.</CardDescription>
       </CardHeader>
-      <CardContent className="text-center text-muted-foreground">
+      <CardContent className="text-muted-foreground text-center">
         Click the button below to accept the invitation and access the team workspace.
       </CardContent>
       <CardFooter>
@@ -72,16 +77,18 @@ function JoinTeamContent() {
 }
 
 export default function JoinTeamPage() {
-    return (
-        <div className="container flex h-dvh w-screen flex-col items-center justify-center">
-            <Suspense fallback={
-              <div role="status" aria-label="Loading page">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-                <span className="sr-only">Loading...</span>
-              </div>
-            }>
-                <JoinTeamContent />
-            </Suspense>
-        </div>
-    )
+  return (
+    <div className="container flex h-dvh w-screen flex-col items-center justify-center">
+      <Suspense
+        fallback={
+          <div role="status" aria-label="Loading page">
+            <Loader2 className="text-primary h-8 w-8 animate-spin" aria-hidden="true" />
+            <span className="sr-only">Loading...</span>
+          </div>
+        }
+      >
+        <JoinTeamContent />
+      </Suspense>
+    </div>
+  );
 }

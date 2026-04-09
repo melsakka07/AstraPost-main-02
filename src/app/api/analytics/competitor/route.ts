@@ -49,7 +49,15 @@ interface TwitterApiTweet {
 }
 
 type TwitterFetchResult =
-  | { ok: true; tweets: TwitterApiTweet[]; user: { name: string; username: string; public_metrics?: { tweet_count: number; followers_count: number } } }
+  | {
+      ok: true;
+      tweets: TwitterApiTweet[];
+      user: {
+        name: string;
+        username: string;
+        public_metrics?: { tweet_count: number; followers_count: number };
+      };
+    }
   | { ok: false; status: number; message: string };
 
 async function fetchUserTweets(username: string): Promise<TwitterFetchResult> {
@@ -66,13 +74,39 @@ async function fetchUserTweets(username: string): Promise<TwitterFetchResult> {
   );
 
   if (!userRes.ok) {
-    if (userRes.status === 429) return { ok: false, status: 429, message: "Twitter API rate limit reached. Please wait a few minutes and try again." };
-    if (userRes.status === 401) return { ok: false, status: 503, message: "Twitter API authentication failed. Please check TWITTER_BEARER_TOKEN." };
-    if (userRes.status === 404) return { ok: false, status: 404, message: `Account @${username} not found. Please check the username.` };
-    return { ok: false, status: 422, message: `Could not look up @${username}. The account may be private or suspended.` };
+    if (userRes.status === 429)
+      return {
+        ok: false,
+        status: 429,
+        message: "Twitter API rate limit reached. Please wait a few minutes and try again.",
+      };
+    if (userRes.status === 401)
+      return {
+        ok: false,
+        status: 503,
+        message: "Twitter API authentication failed. Please check TWITTER_BEARER_TOKEN.",
+      };
+    if (userRes.status === 404)
+      return {
+        ok: false,
+        status: 404,
+        message: `Account @${username} not found. Please check the username.`,
+      };
+    return {
+      ok: false,
+      status: 422,
+      message: `Could not look up @${username}. The account may be private or suspended.`,
+    };
   }
 
-  const userData = await userRes.json() as { data?: { id: string; name: string; username: string; public_metrics?: { tweet_count: number; followers_count: number } } };
+  const userData = (await userRes.json()) as {
+    data?: {
+      id: string;
+      name: string;
+      username: string;
+      public_metrics?: { tweet_count: number; followers_count: number };
+    };
+  };
   if (!userData.data) return { ok: false, status: 404, message: `Account @${username} not found.` };
 
   const userId = userData.data.id;
@@ -87,11 +121,16 @@ async function fetchUserTweets(username: string): Promise<TwitterFetchResult> {
   );
 
   if (!tweetsRes.ok) {
-    if (tweetsRes.status === 429) return { ok: false, status: 429, message: "Twitter API rate limit reached. Please wait a few minutes and try again." };
+    if (tweetsRes.status === 429)
+      return {
+        ok: false,
+        status: 429,
+        message: "Twitter API rate limit reached. Please wait a few minutes and try again.",
+      };
     return { ok: false, status: 422, message: `Could not fetch tweets for @${username}.` };
   }
 
-  const tweetsData = await tweetsRes.json() as { data?: TwitterApiTweet[] };
+  const tweetsData = (await tweetsRes.json()) as { data?: TwitterApiTweet[] };
   return { ok: true, tweets: tweetsData.data ?? [], user: userData.data };
 }
 
@@ -129,7 +168,9 @@ export async function POST(req: Request) {
 
     const twitterData = await fetchUserTweets(username);
     if (!twitterData.ok) {
-      return new Response(JSON.stringify({ error: twitterData.message }), { status: twitterData.status });
+      return new Response(JSON.stringify({ error: twitterData.message }), {
+        status: twitterData.status,
+      });
     }
     if (twitterData.tweets.length === 0) {
       return new Response(

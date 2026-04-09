@@ -104,7 +104,10 @@ async function main() {
   console.log(
     JSON.stringify(
       {
-        ok: runRow?.status === "success" && postRow?.status === "published" && Boolean(tweetRow?.xTweetId),
+        ok:
+          runRow?.status === "success" &&
+          postRow?.status === "published" &&
+          Boolean(tweetRow?.xTweetId),
         correlationId,
         jobRuns: runRow,
         post: postRow,
@@ -124,4 +127,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-

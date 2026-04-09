@@ -28,7 +28,7 @@ export function CopyIdButton({ value }: { value: string }) {
             {copied ? (
               <Check className="h-3 w-3 text-emerald-500" />
             ) : (
-              <Copy className="h-3 w-3 text-muted-foreground" />
+              <Copy className="text-muted-foreground h-3 w-3" />
             )}
           </Button>
         </TooltipTrigger>

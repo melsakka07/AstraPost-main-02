@@ -32,11 +32,7 @@ function getHintServerSnapshot() {
  */
 export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: number }) {
   const [dismissed, setDismissed] = useState(false);
-  const seenHint = useSyncExternalStore(
-    subscribeToHint,
-    hasSeenHint,
-    getHintServerSnapshot
-  );
+  const seenHint = useSyncExternalStore(subscribeToHint, hasSeenHint, getHintServerSnapshot);
   const visible = !seenHint && !dismissed;
 
   const dismiss = () => {
@@ -51,33 +47,39 @@ export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: nu
   if (!visible) return null;
 
   return (
-    <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+    <div className="border-primary/20 bg-primary/5 rounded-lg border px-4 py-3 text-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-2 flex-1">
-          <p className="font-medium text-foreground">Welcome to the Composer 👋</p>
-          <ul className="space-y-1.5 text-muted-foreground">
+        <div className="flex-1 space-y-2">
+          <p className="text-foreground font-medium">Welcome to the Composer 👋</p>
+          <ul className="text-muted-foreground space-y-1.5">
             <li className="flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span>Use <strong>AI Writer</strong> in the sidebar to generate full threads in seconds.</span>
+              <Sparkles className="text-primary h-3.5 w-3.5 shrink-0" />
+              <span>
+                Use <strong>AI Writer</strong> in the sidebar to generate full threads in seconds.
+              </span>
             </li>
             <li className="flex items-center gap-2">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary" />
-              <span>Pick a <strong>date &amp; time</strong> to schedule, or click <strong>Post to X</strong> to publish now.</span>
+              <CalendarDays className="text-primary h-3.5 w-3.5 shrink-0" />
+              <span>
+                Pick a <strong>date &amp; time</strong> to schedule, or click{" "}
+                <strong>Post to X</strong> to publish now.
+              </span>
             </li>
             <li className="flex items-center gap-2">
-              <Keyboard className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <Keyboard className="text-primary h-3.5 w-3.5 shrink-0" />
               <span>
                 Keyboard shortcuts:{" "}
-                <kbd className="rounded bg-muted px-1 py-0.5 text-xs font-mono">⌘↵</kbd> publish,{" "}
-                <kbd className="rounded bg-muted px-1 py-0.5 text-xs font-mono">⌘D</kbd> draft,{" "}
-                <kbd className="rounded bg-muted px-1 py-0.5 text-xs font-mono">⌘K</kbd> open AI.
+                <kbd className="bg-muted rounded px-1 py-0.5 font-mono text-xs">⌘↵</kbd> publish,{" "}
+                <kbd className="bg-muted rounded px-1 py-0.5 font-mono text-xs">⌘D</kbd> draft,{" "}
+                <kbd className="bg-muted rounded px-1 py-0.5 font-mono text-xs">⌘K</kbd> open AI.
               </span>
             </li>
             {accountCount >= 2 && (
               <li className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <Users className="text-primary h-3.5 w-3.5 shrink-0" />
                 <span>
-                  Posting to multiple accounts? Use the account selector above to choose which X accounts this post goes to.
+                  Posting to multiple accounts? Use the account selector above to choose which X
+                  accounts this post goes to.
                 </span>
               </li>
             )}
@@ -86,7 +88,7 @@ export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: nu
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground h-6 w-6 shrink-0"
           onClick={dismiss}
           aria-label="Dismiss hint"
         >

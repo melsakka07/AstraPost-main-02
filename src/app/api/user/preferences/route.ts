@@ -16,10 +16,7 @@ function isValidIANATimezone(tz: string): boolean {
 }
 
 const preferencesSchema = z.object({
-  timezone: z
-    .string()
-    .min(1)
-    .refine(isValidIANATimezone, { message: "Invalid IANA timezone" }),
+  timezone: z.string().min(1).refine(isValidIANATimezone, { message: "Invalid IANA timezone" }),
   language: z.string().min(2).max(10),
 });
 
@@ -36,10 +33,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { timezone, language } = preferencesSchema.parse(body);
 
-    await db
-      .update(user)
-      .set({ timezone, language })
-      .where(eq(user.id, session.user.id));
+    await db.update(user).set({ timezone, language }).where(eq(user.id, session.user.id));
 
     // Persist locale cookie so layout lang/dir attributes update immediately
     const cookieStore = await cookies();

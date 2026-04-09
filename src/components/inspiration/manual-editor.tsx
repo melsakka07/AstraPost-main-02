@@ -44,8 +44,8 @@ function levenshteinDistance(a: string, b: string): number {
       } else {
         row[j] = Math.min(
           prevRow[j - 1]! + 1, // substitution
-          row[j - 1]! + 1,     // insertion
-          prevRow[j]! + 1      // deletion
+          row[j - 1]! + 1, // insertion
+          prevRow[j]! + 1 // deletion
         );
       }
     }
@@ -83,10 +83,13 @@ export function ManualEditor({
   const isOverLimit = charCount > maxChars;
   const isTooSimilar = similarity > 80;
 
-  const handleChange = useCallback((value: string) => {
-    setText(value);
-    onChangeText?.(value);
-  }, [onChangeText]);
+  const handleChange = useCallback(
+    (value: string) => {
+      setText(value);
+      onChangeText?.(value);
+    },
+    [onChangeText]
+  );
 
   const handleSendToComposer = useCallback(() => {
     onSendToComposer?.(text);
@@ -97,17 +100,17 @@ export function ManualEditor({
       <CardHeader className="p-3 sm:p-6">
         <CardTitle className="text-base sm:text-lg">Manual Editor</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0 sm:pt-0">
+      <CardContent className="space-y-3 p-3 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
         {/* Character Counter */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <span className="text-xs sm:text-sm text-muted-foreground">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+          <span className="text-muted-foreground text-xs sm:text-sm">
             {charCount} / {maxChars} characters
           </span>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive gap-1"
+              className="text-muted-foreground hover:text-destructive h-7 gap-1 px-2 text-xs"
               onClick={() => handleChange("")}
               disabled={text === ""}
               aria-label="Clear text"
@@ -118,7 +121,7 @@ export function ManualEditor({
             </Button>
             <span
               className={cn(
-                "text-xs sm:text-sm font-medium",
+                "text-xs font-medium sm:text-sm",
                 isOverLimit ? "text-destructive" : "text-muted-foreground"
               )}
             >
@@ -132,7 +135,7 @@ export function ManualEditor({
           value={text}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Edit the tweet to make it your own..."
-          className="min-h-[120px] sm:min-h-[150px] resize-none text-sm"
+          className="min-h-[120px] resize-none text-sm sm:min-h-[150px]"
         />
 
         {/* Similarity Warning */}
@@ -148,31 +151,32 @@ export function ManualEditor({
             {isTooSimilar ? (
               <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             ) : (
-              <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-600 dark:text-yellow-500" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-yellow-600 sm:h-4 sm:w-4 dark:text-yellow-500" />
             )}
             <AlertDescription className="text-xs sm:text-sm">
               {isTooSimilar ? (
                 <>
-                  <strong>Too similar!</strong> This content is {similarity.toFixed(0)}% similar to the
-                  source. Please make more changes to create original content.
+                  <strong>Too similar!</strong> This content is {similarity.toFixed(0)}% similar to
+                  the source. Please make more changes to create original content.
                 </>
               ) : (
                 <>
-                  Similarity: {similarity.toFixed(0)}%. {similarity < 70 ? "Good progress!" : "Keep editing to add your unique voice."}
+                  Similarity: {similarity.toFixed(0)}%.{" "}
+                  {similarity < 70 ? "Good progress!" : "Keep editing to add your unique voice."}
                 </>
               )}
             </AlertDescription>
           </Alert>
         )}
       </CardContent>
-      <CardFooter className="flex flex-col items-center gap-2 sm:gap-3 p-3 sm:p-6 pt-0 sm:pt-0">
-        <span className="text-[10px] sm:text-xs text-muted-foreground text-center">
+      <CardFooter className="flex flex-col items-center gap-2 p-3 pt-0 sm:gap-3 sm:p-6 sm:pt-0">
+        <span className="text-muted-foreground text-center text-[10px] sm:text-xs">
           Make substantial changes to create original content
         </span>
         <Button
           onClick={handleSendToComposer}
           disabled={isOverLimit || isTooSimilar || text.trim().length === 0}
-          className="h-9 sm:h-10 text-sm"
+          className="h-9 text-sm sm:h-10"
         >
           Send to Composer
         </Button>

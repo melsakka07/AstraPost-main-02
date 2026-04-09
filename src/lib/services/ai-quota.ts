@@ -22,11 +22,16 @@ export async function getMonthlyAiUsage(userId: string): Promise<MonthlyAiUsage>
   const usage = await db
     .select({ count: sql<number>`count(*)` })
     .from(aiGenerations)
-    .where(and(eq(aiGenerations.userId, userId), ne(aiGenerations.type, "image"), gte(aiGenerations.createdAt, start)));
+    .where(
+      and(
+        eq(aiGenerations.userId, userId),
+        ne(aiGenerations.type, "image"),
+        gte(aiGenerations.createdAt, start)
+      )
+    );
 
   const used = Number(usage[0]?.count ?? 0);
-  const limit =
-    limits.aiGenerationsPerMonth === Infinity ? null : limits.aiGenerationsPerMonth;
+  const limit = limits.aiGenerationsPerMonth === Infinity ? null : limits.aiGenerationsPerMonth;
 
   return {
     used,
@@ -51,8 +56,8 @@ export async function getMonthlyImageUsage(userId: string): Promise<MonthlyAiUsa
       and(
         eq(aiGenerations.userId, userId),
         eq(aiGenerations.type, "image"),
-        gte(aiGenerations.createdAt, start),
-      ),
+        gte(aiGenerations.createdAt, start)
+      )
     );
 
   const used = Number(usage[0]?.count ?? 0);
@@ -66,8 +71,8 @@ export async function getMonthlyImageUsage(userId: string): Promise<MonthlyAiUsa
 }
 
 export async function recordAiUsage(
-  userId: string, 
-  type: string, 
+  userId: string,
+  type: string,
   tokens: number = 0,
   input: string,
   output: unknown,
@@ -83,4 +88,3 @@ export async function recordAiUsage(
     language,
   });
 }
-

@@ -16,8 +16,7 @@ What I fundamentally changed:
 5. Single page, three states — not three routes. Your sample didn't specify routing. I made a deliberate call: one page at /dashboard/ai/agentic with state-driven rendering ("input" | "processing" | "review"). This enables smooth transitions between screens and keeps the URL stable.
 6. SSE streaming with structured progress events. Rather than leaving the streaming format vague, I defined the exact SSE event format for each pipeline step — including partial progress events for writing and image generation. This gives Claude an unambiguous spec to implement.
 7. Prompt engineering is its own phase (Phase 5). The prompts are what make or break this feature. I dedicated an entire phase to the four prompt templates with specific instructions about JSON output format, language handling (critical for your Arabic/MENA users), and quality standards.
-This is your fourth prompt in the series. The full implementation chain is now: Tier Detection → Badge UI → Dynamic Limits → Agentic Posting — each building on the previous one.
-
+   This is your fourth prompt in the series. The full implementation chain is now: Tier Detection → Badge UI → Dynamic Limits → Agentic Posting — each building on the previous one.
 
 ## Prerequisites — Verify Before Starting
 
@@ -40,24 +39,25 @@ You are working on **AstraPost**, a production-ready AI-powered social media sch
 
 **Infrastructure you MUST reuse — do not rebuild these:**
 
-| Capability | Existing Implementation | How Agentic Posting Uses It |
-|---|---|---|
-| **AI text generation** | OpenRouter via `@openrouter/ai-sdk-provider` + Vercel AI SDK 5, streaming SSE | All copywriting and strategy calls |
-| **AI image generation** | Replicate API via `src/lib/services/ai-image.ts` | Image agent generates visuals for thread tweets |
-| **AI preamble pipeline** | `src/lib/api/ai-preamble.ts` — auth → rate-limit → plan gate → quota → model | Every AI route in the pipeline |
-| **Thread writer** | `POST /api/ai/thread` — streaming thread generation | Reuse prompt patterns, not the endpoint directly |
-| **Voice profile** | `src/lib/ai/voice-profile.ts` | Personalize generated content to user's writing style |
-| **AI quota tracking** | `src/lib/services/ai-quota.ts` | Count agentic generation as AI usage |
-| **Draft system** | `posts` + `tweets` tables, existing draft CRUD | "Save as Draft" stores agentic output here |
-| **Scheduling** | BullMQ `publish-post` job, existing scheduling flow | "Schedule" uses the same pipeline |
-| **Image upload/storage** | `src/lib/storage.ts` — local (dev) / Vercel Blob (prod) | Store generated images |
-| **X subscription tier** | `x_accounts.x_subscription_tier`, `canPostLongContent()` | Determines single-post length vs. thread format |
-| **Best posting time** | `GET /api/analytics/best-time` | Suggest optimal schedule time |
-| **Composer bridge** | `src/lib/composer-bridge.ts` | Hand off to Compose page for manual editing |
-| **Notifications** | `src/lib/services/notifications.ts` | Notify user when agentic post is ready (if processing takes long) |
-| **Correlation IDs** | `src/lib/correlation.ts` | Track the full pipeline for observability |
+| Capability               | Existing Implementation                                                       | How Agentic Posting Uses It                                       |
+| ------------------------ | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **AI text generation**   | OpenRouter via `@openrouter/ai-sdk-provider` + Vercel AI SDK 5, streaming SSE | All copywriting and strategy calls                                |
+| **AI image generation**  | Replicate API via `src/lib/services/ai-image.ts`                              | Image agent generates visuals for thread tweets                   |
+| **AI preamble pipeline** | `src/lib/api/ai-preamble.ts` — auth → rate-limit → plan gate → quota → model  | Every AI route in the pipeline                                    |
+| **Thread writer**        | `POST /api/ai/thread` — streaming thread generation                           | Reuse prompt patterns, not the endpoint directly                  |
+| **Voice profile**        | `src/lib/ai/voice-profile.ts`                                                 | Personalize generated content to user's writing style             |
+| **AI quota tracking**    | `src/lib/services/ai-quota.ts`                                                | Count agentic generation as AI usage                              |
+| **Draft system**         | `posts` + `tweets` tables, existing draft CRUD                                | "Save as Draft" stores agentic output here                        |
+| **Scheduling**           | BullMQ `publish-post` job, existing scheduling flow                           | "Schedule" uses the same pipeline                                 |
+| **Image upload/storage** | `src/lib/storage.ts` — local (dev) / Vercel Blob (prod)                       | Store generated images                                            |
+| **X subscription tier**  | `x_accounts.x_subscription_tier`, `canPostLongContent()`                      | Determines single-post length vs. thread format                   |
+| **Best posting time**    | `GET /api/analytics/best-time`                                                | Suggest optimal schedule time                                     |
+| **Composer bridge**      | `src/lib/composer-bridge.ts`                                                  | Hand off to Compose page for manual editing                       |
+| **Notifications**        | `src/lib/services/notifications.ts`                                           | Notify user when agentic post is ready (if processing takes long) |
+| **Correlation IDs**      | `src/lib/correlation.ts`                                                      | Track the full pipeline for observability                         |
 
 **Key architectural constraints:**
+
 - AI provider is **OpenRouter** — never import from `openai` directly
 - Error responses use **`ApiError`** from `@/lib/api/errors` — never inline `Response` or `NextResponse`
 - Multi-table writes in **`db.transaction()`**
@@ -75,6 +75,7 @@ You are working on **AstraPost**, a production-ready AI-powered social media sch
 This is **not** a multi-agent framework with autonomous agents negotiating with each other. It is a **sequential AI pipeline** — a chain of structured AI calls where each step's output feeds the next step's input. The "agentic" quality comes from the user experience: the user provides a single input and the system autonomously handles everything else, making decisions at each step without user intervention.
 
 Technically, this is implemented as:
+
 1. A single API route (`POST /api/ai/agentic`) that orchestrates the pipeline
 2. Each "agent" is a call to OpenRouter with a specialized system prompt
 3. The pipeline streams progress updates to the frontend via SSE
@@ -197,17 +198,20 @@ interface AgenticPost {
 The Strategy step (Step 2) uses the user's X tier to make format decisions. This logic is **fully automatic** — the user never thinks about character limits:
 
 **Free X account (`None`):**
+
 - Strategy agent decides between: single Short tweet (≤280) OR a thread (each tweet ≤280)
 - If the topic is simple/punchy → single tweet
 - If the topic requires depth → thread (3–7 tweets, each ≤280)
 - The user is never told "you're limited" — the AI simply produces the right format
 
 **Premium X account (`Basic` / `Premium` / `PremiumPlus`):**
+
 - Strategy agent has full flexibility: single Short (≤280), Medium (281–1,000), Long (1,001–2,000), OR thread
 - The AI picks the format that will perform best for the topic
 - Longer single posts for thought leadership, threads for educational content, short for punchy takes
 
 **Thread Mode rules (both tiers):**
+
 - Every individual tweet in a thread is ≤280 characters, regardless of tier
 - Thread mode is the universal way to express longer ideas
 - The strategy agent includes numbering format (1/N), hook optimization, and CTA placement
@@ -229,8 +233,12 @@ Create a new table to store agentic generation sessions (separate from the exist
 ```typescript
 export const agenticPosts = pgTable("agentic_posts", {
   id: varchar("id", { length: 36 }).primaryKey(), // nanoid
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  xAccountId: text("x_account_id").notNull().references(() => xAccounts.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  xAccountId: text("x_account_id")
+    .notNull()
+    .references(() => xAccounts.id, { onDelete: "cascade" }),
   topic: text("topic").notNull(),
   researchBrief: jsonb("research_brief"), // ResearchBrief JSON
   contentPlan: jsonb("content_plan"), // ContentPlan JSON
@@ -238,7 +246,7 @@ export const agenticPosts = pgTable("agentic_posts", {
   qualityScore: integer("quality_score"),
   summary: text("summary"),
   status: varchar("status", { length: 20 }).default("generating").notNull(),
-    // "generating" | "ready" | "approved" | "posted" | "scheduled" | "failed" | "discarded"
+  // "generating" | "ready" | "approved" | "posted" | "scheduled" | "failed" | "discarded"
   postId: text("post_id").references(() => posts.id), // linked post after approval
   correlationId: varchar("correlation_id", { length: 36 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -247,6 +255,7 @@ export const agenticPosts = pgTable("agentic_posts", {
 ```
 
 Generate and apply migration:
+
 ```bash
 pnpm run db:generate
 pnpm run db:migrate
@@ -267,7 +276,7 @@ export async function runAgenticPipeline(params: {
   language: string;
   userId: string;
   onProgress: (step: PipelineStep, status: StepStatus, data?: unknown) => void;
-}): Promise<AgenticPost>
+}): Promise<AgenticPost>;
 ```
 
 **Implementation structure:**
@@ -283,6 +292,7 @@ export async function runAgenticPipeline(params: {
 5. **Step 5 — Review:** Single `generateText()` call. System prompt asks for a QA review of the complete output — grammar, character limit compliance, factual alignment with research, and a quality score (1–10). Returns a summary and score. Call `onProgress("review", "complete", result)`.
 
 **Critical implementation details:**
+
 - Every AI call uses the `openrouter()` function from `@openrouter/ai-sdk-provider`
 - Every AI call logs via the structured logger with the `correlationId`
 - If any step fails, store the partial state in the `agentic_posts` row (set status to `"failed"`) and include the error. The user can retry from the failed step, not from scratch.
@@ -298,6 +308,7 @@ POST /api/ai/agentic
 ```
 
 **Request body:**
+
 ```json
 {
   "topic": "AI coding tools replacing traditional IDEs",
@@ -358,6 +369,7 @@ POST /api/ai/agentic/{id}/approve
 ```
 
 **Request body:**
+
 ```json
 {
   "action": "post_now" | "schedule" | "save_draft",
@@ -387,6 +399,7 @@ POST /api/ai/agentic/{id}/regenerate
 ```
 
 **Request body:**
+
 ```json
 {
   "tweetIndex": 2,
@@ -493,7 +506,7 @@ Use `useState` (or a small Zustand store if the state becomes complex). Do not u
    - User's recent agentic topics (from `agentic_posts` table)
    - Trending topics from the user's analytics (if viral analyzer data exists)
    - Hardcoded fallbacks relevant to MENA content creators (e.g., "AI tools", "startup funding", "content creation tips")
-   
+
    Tapping a chip fills the input and immediately starts the pipeline (no need to click Generate).
 
 4. **Generate Button:** Large, primary style, centered below the input. Disabled until input has ≥3 characters. Shows `Sparkles` icon. On click → transition to Screen 2.
@@ -503,12 +516,13 @@ Use `useState` (or a small Zustand store if the state becomes complex). Do not u
    - **Language:** Dropdown using the existing language constants. Default: user's profile language.
    - **Include Images:** Toggle switch, ON by default. When OFF, the image generation step is skipped.
    - **Audience hint:** Small text input, placeholder `"e.g., developers, marketers, students"`. Optional — the AI infers audience from the topic if not provided.
-   
+
    These are progressive disclosure — power users can customize, but the defaults produce excellent results.
 
 6. **Account Selector:** Below the input area, a compact account badge showing the selected X account's avatar, `@username`, and `XSubscriptionBadge`. If the user has multiple X accounts, it's tappable to switch. The tier badge tells the user at a glance which account is selected — they never need to think about character limits.
 
 **What happens on submit:**
+
 1. Validate: topic length ≥ 3 characters, X account selected.
 2. Smooth transition animation: the input area slides up and compresses into a compact header bar showing the topic text. The processing screen appears below.
 3. Fire `POST /api/ai/agentic` with SSE streaming.
@@ -652,6 +666,7 @@ Reuse and extend existing tweet card patterns from the composer (`src/components
 **Research Insights Panel:**
 
 A collapsible section below the thread preview (collapsed by default). When expanded, shows:
+
 - The recommended angle and why it was chosen
 - Trending hashtags found during research
 - Key facts/stats used in the content
@@ -667,6 +682,7 @@ This builds trust — the user can see the research that informed the content.
 - **Discard** — Small text link. Confirm: `"Discard this thread? This can't be undone."` Marks the `agentic_posts` row as `"discarded"`.
 
 **After approval:** Transition to a brief success state — the action bar transforms to show:
+
 - `"✓ Thread posted"` or `"✓ Scheduled for Apr 10, 9:00 AM"`
 - Three quick links: `"Create Another"` (back to Screen 1), `"View in Queue"`, `"Go to Calendar"`
 
@@ -687,10 +703,11 @@ export async function generateAgenticImage(params: {
   prompt: string;
   style?: "photorealistic" | "digital-art" | "infographic" | "editorial";
   aspectRatio?: "16:9" | "1:1";
-}): Promise<{ url: string } | { error: string }>
+}): Promise<{ url: string } | { error: string }>;
 ```
 
 **Requirements:**
+
 - Default aspect ratio: `16:9` (1200×675px) — optimal for X timeline display
 - Default style: `"editorial"` — clean, professional, attention-grabbing
 - The prompt should be enhanced by prepending a quality prefix: `"Professional social media image, high quality, modern design: "` + the AI-generated image prompt from Step 3
@@ -703,7 +720,7 @@ In the pipeline service (`agentic-pipeline.ts`), Step 4 generates images in para
 
 ```typescript
 const imagePromises = tweets
-  .filter(t => t.hasImage && t.imagePrompt)
+  .filter((t) => t.hasImage && t.imagePrompt)
   .map(async (tweet) => {
     const result = await generateAgenticImage({
       prompt: tweet.imagePrompt!,
@@ -720,6 +737,7 @@ Stream progress updates as each image completes (`"images progress: 2/3"`).
 #### 3C: Image Preview in Review Cards
 
 In the tweet card on the Review screen, render the generated image:
+
 - Full-width within the card, below the text
 - Subtle rounded corners (`rounded-lg`)
 - Loading skeleton while images are still generating (if the user reaches the review screen before all images are done — which shouldn't happen, but handle gracefully)
@@ -793,10 +811,11 @@ Create structured prompt templates for each pipeline step. Each template is a fu
 #### 5A: Research Prompt
 
 ```typescript
-export function buildResearchPrompt(topic: string, language: string): string
+export function buildResearchPrompt(topic: string, language: string): string;
 ```
 
 The system prompt should instruct the AI to:
+
 - Analyze the topic and identify 3–5 specific angles with viral potential
 - Consider what's currently driving engagement on X/Twitter for this topic
 - Return structured JSON matching the `ResearchBrief` type
@@ -812,10 +831,11 @@ export function buildStrategyPrompt(
   tier: XSubscriptionTier,
   language: string,
   preferences?: { tone?: string; audience?: string }
-): string
+): string;
 ```
 
 The system prompt should:
+
 - Explain the available formats based on tier (pass the exact character limits)
 - Instruct the AI to choose the format that will generate the highest engagement for this specific topic
 - For threads: decide length (3–7 tweets optimal, 10 max), hook strategy, CTA placement
@@ -831,10 +851,11 @@ export function buildWritingPrompt(
   plan: ContentPlan,
   voiceProfile: string | null,
   language: string
-): string
+): string;
 ```
 
 The system prompt should:
+
 - Generate content that follows the content plan exactly
 - Enforce character limits strictly (per-tweet for threads, total for single posts)
 - If a voice profile exists, match the user's writing style
@@ -851,10 +872,11 @@ export function buildReviewPrompt(
   brief: ResearchBrief,
   tweets: AgenticTweet[],
   plan: ContentPlan
-): string
+): string;
 ```
 
 The system prompt should:
+
 - Check each tweet for: character limit compliance, grammar, clarity, factual alignment with the research brief
 - Verify the thread flows logically and the hook is compelling
 - Score the overall quality (1–10) with brief justification
@@ -863,6 +885,7 @@ The system prompt should:
 - Return structured JSON with `qualityScore`, `summary`, and `issues[]`
 
 **Critical prompt engineering rules:**
+
 - Every prompt must specify the output format as JSON with the exact field names
 - Every prompt must include `"Return ONLY valid JSON. No markdown, no explanation, no preamble."`
 - Add a `"language"` instruction to every prompt — content must be in the user's language, but the JSON keys must always be in English
@@ -966,7 +989,7 @@ Run `pnpm test`.
 
 ## Summary
 
-Agentic Posting transforms AstraPost from a tool where users *write and schedule* content into one where they *approve and publish* AI-generated content. The user's workflow changes from:
+Agentic Posting transforms AstraPost from a tool where users _write and schedule_ content into one where they _approve and publish_ AI-generated content. The user's workflow changes from:
 
 **Before:** Think of topic → Research → Write tweet → Edit → Find image → Attach → Schedule → Post
 **After:** Enter topic → Wait 30 seconds → Review → Post

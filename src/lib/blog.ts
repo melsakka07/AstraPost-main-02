@@ -37,16 +37,18 @@ function extractFrontmatter(content: string) {
   const frontmatter: Record<string, string> = {};
 
   // Simple YAML parser for frontmatter
-  const lines = frontmatterText.split('\n');
+  const lines = frontmatterText.split("\n");
   for (const line of lines) {
-    const colonIndex = line.indexOf(':');
+    const colonIndex = line.indexOf(":");
     if (colonIndex > 0) {
       const key = line.slice(0, colonIndex).trim();
       let value = line.slice(colonIndex + 1).trim();
 
       // Remove quotes if present
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
         value = value.slice(1, -1);
       }
 
@@ -67,17 +69,17 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
       mdxOptions: {
         development: process.env.NODE_ENV === "development",
         jsx: false,
-        format: 'mdx',
+        format: "mdx",
         remarkPlugins: [remarkGfm],
         rehypePlugins: [
           rehypeSlug,
           [
             rehypeAutolinkHeadings,
             {
-              behavior: 'prepend',
+              behavior: "prepend",
               properties: {
-                className: ['anchor-link'],
-                ariaHidden: 'true',
+                className: ["anchor-link"],
+                ariaHidden: "true",
                 tabIndex: -1,
               },
             },

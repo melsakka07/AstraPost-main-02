@@ -23,12 +23,25 @@ const TIER_STALENESS_MS = 24 * 60 * 60 * 1_000;
 const threadRequestSchema = z.object({
   topic: z.string().min(1).max(500),
   hook: z.string().max(1000).optional(),
-  tone: z.enum(["professional", "casual", "educational", "inspirational", "humorous", "viral", "controversial"]).default("professional"),
+  tone: z
+    .enum([
+      "professional",
+      "casual",
+      "educational",
+      "inspirational",
+      "humorous",
+      "viral",
+      "controversial",
+    ])
+    .default("professional"),
   tweetCount: z.number().min(3).max(15).optional().default(5),
   language: LANGUAGE_ENUM.optional().default("en"),
   mode: z.enum(["thread", "single"]).default("thread"),
   lengthOption: aiLengthOptionEnum.default("short"),
-  targetAccountId: z.string().optional().transform((v) => v?.replace(/^twitter:/, "")),
+  targetAccountId: z
+    .string()
+    .optional()
+    .transform((v) => v?.replace(/^twitter:/, "")),
 });
 
 export async function POST(req: Request) {
@@ -44,7 +57,8 @@ export async function POST(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { topic, hook, tone, tweetCount, language, mode, lengthOption, targetAccountId } = parsed.data;
+    const { topic, hook, tone, tweetCount, language, mode, lengthOption, targetAccountId } =
+      parsed.data;
 
     // ── Tier validation for single-post mode ──────────────────────────────────
     if (mode === "single" && lengthOption !== "short" && targetAccountId) {
@@ -168,7 +182,14 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
             // Record AI usage
             try {
               const usage = await streamResult.usage;
-              await recordAiUsage(userId, "thread", usage?.totalTokens ?? 0, prompt, null, language);
+              await recordAiUsage(
+                userId,
+                "thread",
+                usage?.totalTokens ?? 0,
+                prompt,
+                null,
+                language
+              );
             } catch {
               // Usage recording failure should not affect the user
             }
@@ -183,7 +204,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           "Cache-Control": "no-cache, no-transform",
-          "Connection": "keep-alive",
+          Connection: "keep-alive",
           "X-Accel-Buffering": "no",
           ...(accumulated.length > getLengthMaxChars(lengthOption)
             ? { "X-Content-Overflow": "true" }
@@ -209,7 +230,8 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
               buffer = buffer.slice(delimIdx + TWEET_DELIMITER.length);
 
               if (tweetText.length > 0) {
-                const content = tweetText.length > 1000 ? tweetText.slice(0, 997) + "..." : tweetText;
+                const content =
+                  tweetText.length > 1000 ? tweetText.slice(0, 997) + "..." : tweetText;
                 const event = JSON.stringify({ index: tweetIndex, tweet: content });
                 controller.enqueue(encoder.encode(`data: ${event}\n\n`));
                 tweetIndex++;
@@ -249,7 +271,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache, no-transform",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
         "X-Accel-Buffering": "no",
       },
     });

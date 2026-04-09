@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         .update(teamInvitations)
         .set({ status: "accepted" })
         .where(eq(teamInvitations.id, invitation.id));
-      
+
       return Response.json({ success: true, message: "You are already a member of this team." });
     }
 
@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
       .where(eq(teamInvitations.id, invitation.id));
 
     return Response.json({ success: true, message: "Joined team successfully" });
-
   } catch (error) {
     console.error("Join Team Error:", error);
     return new Response("Internal Server Error", { status: 500 });

@@ -13,9 +13,7 @@ export async function POST() {
   }
 
   try {
-    await db.update(user)
-      .set({ onboardingCompleted: true })
-      .where(eq(user.id, session.user.id));
+    await db.update(user).set({ onboardingCompleted: true }).where(eq(user.id, session.user.id));
 
     return Response.json({ success: true });
   } catch (error) {

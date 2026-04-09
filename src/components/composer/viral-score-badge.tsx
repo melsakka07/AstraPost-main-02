@@ -31,7 +31,7 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const fetchScore = useCallback(async (contentToAnalyze: string) => {
-    setData(prev => ({ ...prev, state: "loading", errorMessage: null }));
+    setData((prev) => ({ ...prev, state: "loading", errorMessage: null }));
     try {
       const res = await fetch("/api/ai/score", {
         method: "POST",
@@ -40,22 +40,34 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
       });
 
       if (res.status === 402) {
-        setData(prev => ({ ...prev, state: "restricted" }));
+        setData((prev) => ({ ...prev, state: "restricted" }));
         return;
       }
 
       if (res.status === 429) {
-        setData(prev => ({ ...prev, state: "rate_limited", errorMessage: "Rate limit reached. Try again in a few minutes." }));
+        setData((prev) => ({
+          ...prev,
+          state: "rate_limited",
+          errorMessage: "Rate limit reached. Try again in a few minutes.",
+        }));
         return;
       }
 
       if (res.status === 503) {
-        setData(prev => ({ ...prev, state: "error", errorMessage: "Service temporarily unavailable." }));
+        setData((prev) => ({
+          ...prev,
+          state: "error",
+          errorMessage: "Service temporarily unavailable.",
+        }));
         return;
       }
 
       if (!res.ok) {
-        setData(prev => ({ ...prev, state: "error", errorMessage: "Failed to analyze content." }));
+        setData((prev) => ({
+          ...prev,
+          state: "error",
+          errorMessage: "Failed to analyze content.",
+        }));
         return;
       }
 
@@ -68,7 +80,7 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
       });
     } catch (e) {
       console.error(e);
-      setData(prev => ({ ...prev, state: "error", errorMessage: "Network error." }));
+      setData((prev) => ({ ...prev, state: "error", errorMessage: "Network error." }));
     }
   }, []);
 
@@ -106,19 +118,21 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className="relative group cursor-pointer"
-              onClick={() => openWithContext({
-                feature: "viral_score",
-                message: "Unlock AI Viral Score to predict tweet performance before you post.",
-                suggestedPlan: "pro_monthly"
-              })}
+              className="group relative cursor-pointer"
+              onClick={() =>
+                openWithContext({
+                  feature: "viral_score",
+                  message: "Unlock AI Viral Score to predict tweet performance before you post.",
+                  suggestedPlan: "pro_monthly",
+                })
+              }
             >
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted blur-[2px] opacity-50 select-none border">
-                <Sparkles className="w-4 h-4" />
+              <div className="bg-muted flex items-center gap-2 rounded-full border px-3 py-1.5 opacity-50 blur-[2px] select-none">
+                <Sparkles className="h-4 w-4" />
                 <span className="font-bold">85</span>
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-primary" />
+                <Lock className="text-primary h-4 w-4" />
               </div>
             </div>
           </TooltipTrigger>
@@ -135,13 +149,15 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-orange-200 dark:border-orange-900 text-orange-600 dark:text-orange-400">
-              <AlertCircle className="w-4 h-4" />
+            <div className="bg-muted/50 flex items-center gap-2 rounded-full border border-orange-200 px-3 py-1.5 text-orange-600 dark:border-orange-900 dark:text-orange-400">
+              <AlertCircle className="h-4 w-4" />
               <span className="text-xs font-medium">Rate limited</span>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs">{errorMessage || "Too many requests. Please wait a few minutes."}</p>
+            <p className="text-xs">
+              {errorMessage || "Too many requests. Please wait a few minutes."}
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -153,8 +169,8 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400">
-              <AlertCircle className="w-4 h-4" />
+            <div className="bg-muted/50 flex items-center gap-2 rounded-full border border-red-200 px-3 py-1.5 text-red-600 dark:border-red-900 dark:text-red-400">
+              <AlertCircle className="h-4 w-4" />
               <span className="text-xs font-medium">Error</span>
             </div>
           </TooltipTrigger>
@@ -168,34 +184,47 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
 
   if (state === "loading") {
     return (
-      <div role="status" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-transparent">
-        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" aria-hidden="true" />
-        <span className="text-xs text-muted-foreground">Analyzing...</span>
+      <div
+        role="status"
+        className="bg-muted/50 flex items-center gap-2 rounded-full border border-transparent px-3 py-1.5"
+      >
+        <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" aria-hidden="true" />
+        <span className="text-muted-foreground text-xs">Analyzing...</span>
       </div>
     );
   }
 
   if (state === "idle" || score === null) return null;
 
-  let color = "text-red-600 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-900";
-  if (score >= 40) color = "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-900";
-  if (score >= 70) color = "text-green-600 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-900";
+  let color =
+    "text-red-600 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-900";
+  if (score >= 40)
+    color =
+      "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-900";
+  if (score >= 70)
+    color =
+      "text-green-600 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-900";
 
   return (
     <TooltipProvider>
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>
-          <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full font-bold text-sm cursor-help transition-colors select-none", color)}>
-            <Sparkles className="w-4 h-4" />
+          <div
+            className={cn(
+              "flex cursor-help items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold transition-colors select-none",
+              color
+            )}
+          >
+            <Sparkles className="h-4 w-4" />
             <span>{score}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs p-4 space-y-2 z-50">
-          <p className="font-semibold mb-1 flex items-center gap-2">
-            <Sparkles className="w-3 h-3 text-primary" />
+        <TooltipContent className="z-50 max-w-xs space-y-2 p-4">
+          <p className="mb-1 flex items-center gap-2 font-semibold">
+            <Sparkles className="text-primary h-3 w-3" />
             Viral Potential: {score}/100
           </p>
-          <ul className="list-disc pl-4 text-xs space-y-1 text-muted-foreground">
+          <ul className="text-muted-foreground list-disc space-y-1 pl-4 text-xs">
             {feedback.map((f, i) => (
               <li key={i}>{f}</li>
             ))}

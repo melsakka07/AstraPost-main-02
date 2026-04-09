@@ -3,13 +3,7 @@ import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
-import {
-  subscriptions,
-  user,
-  xAccounts,
-  linkedinAccounts,
-  instagramAccounts,
-} from "@/lib/schema";
+import { subscriptions, user, xAccounts, linkedinAccounts, instagramAccounts } from "@/lib/schema";
 
 // ── Query params schema ───────────────────────────────────────────────────────
 
@@ -17,7 +11,9 @@ const listQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(25),
   search: z.string().max(200).optional(),
-  filter: z.enum(["all", "free", "trial", "pro_monthly", "pro_annual", "agency", "banned", "deleted"]).default("all"),
+  filter: z
+    .enum(["all", "free", "trial", "pro_monthly", "pro_annual", "agency", "banned", "deleted"])
+    .default("all"),
   sort: z.enum(["createdAt", "lastLogin", "plan"]).default("createdAt"),
   order: z.enum(["asc", "desc"]).default("desc"),
 });
@@ -63,12 +59,7 @@ export async function GET(request: Request) {
   }
 
   if (search) {
-    conditions.push(
-      or(
-        ilike(user.name, `%${search}%`),
-        ilike(user.email, `%${search}%`)
-      )!
-    );
+    conditions.push(or(ilike(user.name, `%${search}%`), ilike(user.email, `%${search}%`))!);
   }
 
   const where = and(...conditions);
@@ -84,10 +75,7 @@ export async function GET(request: Request) {
         : desc(user.createdAt);
 
   // Count
-  const countResult = await db
-    .select({ total: count() })
-    .from(user)
-    .where(where);
+  const countResult = await db.select({ total: count() }).from(user).where(where);
   const total = countResult[0]?.total ?? 0;
 
   // Fetch page
@@ -116,10 +104,23 @@ export async function GET(request: Request) {
   const enriched = await Promise.all(
     rows.map(async (u) => {
       const [xCount, liCount, igCount, subRow] = await Promise.all([
-        db.select({ c: count() }).from(xAccounts).where(and(eq(xAccounts.userId, u.id), eq(xAccounts.isActive, true))),
-        db.select({ c: count() }).from(linkedinAccounts).where(and(eq(linkedinAccounts.userId, u.id), eq(linkedinAccounts.isActive, true))),
-        db.select({ c: count() }).from(instagramAccounts).where(and(eq(instagramAccounts.userId, u.id), eq(instagramAccounts.isActive, true))),
-        db.select({ status: subscriptions.status, plan: subscriptions.plan }).from(subscriptions).where(eq(subscriptions.userId, u.id)).limit(1),
+        db
+          .select({ c: count() })
+          .from(xAccounts)
+          .where(and(eq(xAccounts.userId, u.id), eq(xAccounts.isActive, true))),
+        db
+          .select({ c: count() })
+          .from(linkedinAccounts)
+          .where(and(eq(linkedinAccounts.userId, u.id), eq(linkedinAccounts.isActive, true))),
+        db
+          .select({ c: count() })
+          .from(instagramAccounts)
+          .where(and(eq(instagramAccounts.userId, u.id), eq(instagramAccounts.isActive, true))),
+        db
+          .select({ status: subscriptions.status, plan: subscriptions.plan })
+          .from(subscriptions)
+          .where(eq(subscriptions.userId, u.id))
+          .limit(1),
       ]);
 
       return {
@@ -177,16 +178,9 @@ export async function POST(request: Request) {
   const newUserId = signUpResult.user.id;
 
   // Apply extra fields (plan, admin)
-  await db
-    .update(user)
-    .set({ plan, isAdmin: makeAdmin })
-    .where(eq(user.id, newUserId));
+  await db.update(user).set({ plan, isAdmin: makeAdmin }).where(eq(user.id, newUserId));
 
-  const [created] = await db
-    .select()
-    .from(user)
-    .where(eq(user.id, newUserId))
-    .limit(1);
+  const [created] = await db.select().from(user).where(eq(user.id, newUserId)).limit(1);
 
   return Response.json({ data: created }, { status: 201 });
 }

@@ -32,7 +32,7 @@ The pricing audit revealed that the multi-account feature (Pro: 3 accounts, Agen
 
 - At line 69-70, replace `"No accounts connected"` text with a Link to `/dashboard/settings`:
   ```tsx
-  <Link href="/dashboard/settings" className="text-sm text-primary hover:underline px-2 py-2">
+  <Link href="/dashboard/settings" className="text-primary px-2 py-2 text-sm hover:underline">
     Connect an X account to start posting →
   </Link>
   ```
@@ -70,7 +70,9 @@ The pricing audit revealed that the multi-account feature (Pro: 3 accounts, Agen
 
 - In the "Connected X Accounts" section (lines 75-82), when `usage.accounts < limits.maxXAccounts`, add a small link:
   ```tsx
-  <span className="text-xs text-primary cursor-pointer">{remaining} slot{remaining > 1 ? 's' : ''} available</span>
+  <span className="text-primary cursor-pointer text-xs">
+    {remaining} slot{remaining > 1 ? "s" : ""} available
+  </span>
   ```
 - This provides a visual nudge without being intrusive
 
@@ -95,6 +97,7 @@ The pricing audit revealed that the multi-account feature (Pro: 3 accounts, Agen
 **File:** `src/app/api/x/accounts/[id]/route.ts`
 
 The existing DELETE handler (lines 7-29) needs:
+
 - **Prevent deleting last account:** Count user's active accounts before deletion. If count === 1, return 400 with message "Cannot remove your only connected account."
 - **Handle default promotion:** If the deleted account was `isDefault = true`, update the next remaining active account to `isDefault = true`
 - **Cancel orphaned posts:** Update any posts with `xAccountId = deletedId` and status `scheduled` or `paused_needs_reconnect` to status `draft` (don't delete them, let user reassign)
@@ -108,7 +111,10 @@ The existing DELETE handler (lines 7-29) needs:
   ```typescript
   await db.transaction(async (tx) => {
     await tx.update(xAccounts).set({ isDefault: false }).where(eq(xAccounts.userId, userId));
-    await tx.update(xAccounts).set({ isDefault: true }).where(and(eq(xAccounts.id, xAccountId), eq(xAccounts.userId, userId)));
+    await tx
+      .update(xAccounts)
+      .set({ isDefault: true })
+      .where(and(eq(xAccounts.id, xAccountId), eq(xAccounts.userId, userId)));
   });
   ```
 - This prevents multiple defaults from existing simultaneously (race condition fix)
@@ -122,10 +128,12 @@ The existing DELETE handler (lines 7-29) needs:
 **File:** `src/app/api/billing/webhook/route.ts`
 
 - In `handleSubscriptionUpdated` (around lines 301-312), after updating `user.plan`:
+
   ```typescript
   // After plan update, check if accounts exceed new limit
   const newLimits = getPlanLimits(newPlan);
-  const activeAccounts = await tx.select({ count: sql<number>`count(*)` })
+  const activeAccounts = await tx
+    .select({ count: sql<number>`count(*)` })
     .from(xAccounts)
     .where(and(eq(xAccounts.userId, userId), eq(xAccounts.isActive, true)));
   const accountCount = Number(activeAccounts[0]?.count ?? 0);
@@ -143,6 +151,7 @@ The existing DELETE handler (lines 7-29) needs:
     });
   }
   ```
+
 - Import `getPlanLimits` from `@/lib/plan-limits` and `notifications` from `@/lib/schema`
 - Same check needed in `handleSubscriptionDeleted` (lines 419-473) when plan resets to "free"
 
@@ -191,10 +200,12 @@ The existing DELETE handler (lines 7-29) needs:
 **File:** `src/lib/middleware/require-plan.test.ts`
 
 Add to existing "Multi-Account Limits" describe block:
+
 - "Downgraded user: over-limit detection returns correct counts"
 - "Default account uniqueness after transaction"
 
 **New test file:** `src/app/api/x/accounts/[id]/route.test.ts`
+
 - "Cannot delete last remaining account → 400"
 - "Deleting default account promotes next account"
 - "Scheduled posts moved to draft on account deletion"
@@ -207,26 +218,27 @@ pnpm lint && pnpm typecheck
 
 ### Manual Testing Checklist
 
-| # | Scenario | Expected |
-|---|----------|----------|
-| 1 | New user → Settings → "Connect X Account" button visible | Button shown |
-| 2 | Free user (expired trial, 1 account) clicks "Connect X Account" | Upgrade modal appears |
-| 3 | Pro user (2 accounts) clicks "Connect X Account" | OAuth flow starts |
-| 4 | Pro user (3 accounts) → button disabled with "Limit reached" | Correct |
-| 5 | Composer with 0 accounts | Link to Settings shown |
-| 6 | Composer with 3 accounts | Dropdown with all accounts |
-| 7 | Remove account with scheduled posts | Confirmation dialog, posts moved to draft |
-| 8 | Remove default account | Next account auto-promoted |
-| 9 | Try to remove last account | Button disabled |
-| 10 | Downgrade Pro → Free with 3 accounts | Notification created |
-| 11 | Settings after downgrade | Over-limit banner shown |
-| 12 | Onboarding Step 1 | Connected account shown with green check |
+| #   | Scenario                                                        | Expected                                  |
+| --- | --------------------------------------------------------------- | ----------------------------------------- |
+| 1   | New user → Settings → "Connect X Account" button visible        | Button shown                              |
+| 2   | Free user (expired trial, 1 account) clicks "Connect X Account" | Upgrade modal appears                     |
+| 3   | Pro user (2 accounts) clicks "Connect X Account"                | OAuth flow starts                         |
+| 4   | Pro user (3 accounts) → button disabled with "Limit reached"    | Correct                                   |
+| 5   | Composer with 0 accounts                                        | Link to Settings shown                    |
+| 6   | Composer with 3 accounts                                        | Dropdown with all accounts                |
+| 7   | Remove account with scheduled posts                             | Confirmation dialog, posts moved to draft |
+| 8   | Remove default account                                          | Next account auto-promoted                |
+| 9   | Try to remove last account                                      | Button disabled                           |
+| 10  | Downgrade Pro → Free with 3 accounts                            | Notification created                      |
+| 11  | Settings after downgrade                                        | Over-limit banner shown                   |
+| 12  | Onboarding Step 1                                               | Connected account shown with green check  |
 
 ---
 
 ## Verification
 
 After all phases:
+
 1. `pnpm lint && pnpm typecheck` — zero errors
 2. `pnpm test` — all existing + new tests pass
 3. Manual walkthrough of scenarios 1-12 above
@@ -267,24 +279,24 @@ After all phases:
 
 ## Files Modified Summary
 
-| Phase | File | Change |
-|-------|------|--------|
-| 1 | `src/components/settings/connected-x-accounts.tsx` | Add "Connect" button, guidance banner, fix empty state |
-| 1 | `src/components/composer/target-accounts-select.tsx` | Link to Settings on empty state |
-| 1 | `src/components/composer/composer-onboarding-hint.tsx` | 4th hint about account selector |
-| 1 | `src/components/onboarding/onboarding-wizard.tsx` | New Step 1: "Account" confirmation |
-| 1 | `src/components/settings/plan-usage.tsx` | Remaining slots text |
-| 2 | `src/components/settings/connected-x-accounts.tsx` | Remove button + AlertDialog |
-| 2 | `src/app/api/x/accounts/[id]/route.ts` | Harden DELETE: last-account guard, default promotion, orphan cleanup |
-| 2 | `src/app/api/x/accounts/default/route.ts` | Transaction-based default enforcement |
-| 3 | `src/app/api/billing/webhook/route.ts` | Over-limit detection + notification |
-| 3 | `src/components/settings/connected-x-accounts.tsx` | Over-limit warning banner |
-| 4 | `src/lib/queue/processors.ts` or new file | Token health check job |
-| 4 | `src/lib/queue/client.ts` | Register token-health-check job |
-| 4 | `src/components/composer/target-accounts-select.tsx` | Token expiry badge |
-| 5 | `src/lib/middleware/require-plan.test.ts` | Downgrade test |
-| 5 | `src/app/api/x/accounts/[id]/route.test.ts` | New test file |
+| Phase | File                                                   | Change                                                               |
+| ----- | ------------------------------------------------------ | -------------------------------------------------------------------- |
+| 1     | `src/components/settings/connected-x-accounts.tsx`     | Add "Connect" button, guidance banner, fix empty state               |
+| 1     | `src/components/composer/target-accounts-select.tsx`   | Link to Settings on empty state                                      |
+| 1     | `src/components/composer/composer-onboarding-hint.tsx` | 4th hint about account selector                                      |
+| 1     | `src/components/onboarding/onboarding-wizard.tsx`      | New Step 1: "Account" confirmation                                   |
+| 1     | `src/components/settings/plan-usage.tsx`               | Remaining slots text                                                 |
+| 2     | `src/components/settings/connected-x-accounts.tsx`     | Remove button + AlertDialog                                          |
+| 2     | `src/app/api/x/accounts/[id]/route.ts`                 | Harden DELETE: last-account guard, default promotion, orphan cleanup |
+| 2     | `src/app/api/x/accounts/default/route.ts`              | Transaction-based default enforcement                                |
+| 3     | `src/app/api/billing/webhook/route.ts`                 | Over-limit detection + notification                                  |
+| 3     | `src/components/settings/connected-x-accounts.tsx`     | Over-limit warning banner                                            |
+| 4     | `src/lib/queue/processors.ts` or new file              | Token health check job                                               |
+| 4     | `src/lib/queue/client.ts`                              | Register token-health-check job                                      |
+| 4     | `src/components/composer/target-accounts-select.tsx`   | Token expiry badge                                                   |
+| 5     | `src/lib/middleware/require-plan.test.ts`              | Downgrade test                                                       |
+| 5     | `src/app/api/x/accounts/[id]/route.test.ts`            | New test file                                                        |
 
 ---
 
-*Implementation plan generated 2026-04-06. Based on [Multi-Account Gap Analysis](./multi-account-gap-analysis-2026-04-06.md).*
+_Implementation plan generated 2026-04-06. Based on [Multi-Account Gap Analysis](./multi-account-gap-analysis-2026-04-06.md)._

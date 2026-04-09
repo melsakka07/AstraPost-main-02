@@ -45,11 +45,11 @@ No additional action is needed — the profile is injected into every AI prompt 
 
 ## Plan Requirements
 
-| Plan | Access |
-|------|--------|
-| Free | Not available (shows Pro badge + upgrade prompt) |
-| Pro | Full access |
-| Agency | Full access |
+| Plan   | Access                                           |
+| ------ | ------------------------------------------------ |
+| Free   | Not available (shows Pro badge + upgrade prompt) |
+| Pro    | Full access                                      |
+| Agency | Full access                                      |
 
 ---
 
@@ -86,13 +86,13 @@ Defined in `src/lib/ai/voice-profile.ts`:
 
 ```typescript
 export const voiceProfileSchema = z.object({
-  tone:              noNewline("tone").max(200),
-  styleKeywords:     z.array(noNewline("styleKeywords item").max(50)),
-  emojiUsage:        noNewline("emojiUsage").max(200),
+  tone: noNewline("tone").max(200),
+  styleKeywords: z.array(noNewline("styleKeywords item").max(50)),
+  emojiUsage: noNewline("emojiUsage").max(200),
   sentenceStructure: noNewline("sentenceStructure").max(200),
-  vocabularyLevel:   noNewline("vocabularyLevel").max(200),
-  formattingHabits:  noNewline("formattingHabits").max(200),
-  doAndDonts:        z.array(noNewline("doAndDonts item").max(150)),
+  vocabularyLevel: noNewline("vocabularyLevel").max(200),
+  formattingHabits: noNewline("formattingHabits").max(200),
+  doAndDonts: z.array(noNewline("doAndDonts item").max(150)),
 });
 ```
 
@@ -107,6 +107,7 @@ The voice profile is user-controlled text that gets interpolated into AI prompts
 ### Layer 1: Write-Time Schema Validation
 
 The Zod schema enforces:
+
 - **No newlines** — `noNewline()` refinement rejects `\n` and `\r` characters
 - **Max lengths** — every field has strict character limits
 - **Array bounds** — keywords (max 10) and rules (max 10) are bounded
@@ -120,7 +121,7 @@ The Zod schema enforces:
 export function buildVoiceInstructions(raw: unknown): string {
   if (!raw) return "";
   const parsed = voiceProfileSchema.safeParse(raw);
-  if (!parsed.success) return "";  // Reject corrupted/legacy data
+  if (!parsed.success) return ""; // Reject corrupted/legacy data
   // ... build prompt
 }
 ```
@@ -134,8 +135,8 @@ Every field value is sanitized via `sanitizeFieldValue()` before being interpola
 ```typescript
 export function sanitizeFieldValue(text: string, maxLength: number): string {
   return text
-    .replace(/[\x00-\x1f\x7f]/g, " ")  // Strip ALL control characters
-    .replace(/ {2,}/g, " ")              // Collapse multiple spaces
+    .replace(/[\x00-\x1f\x7f]/g, " ") // Strip ALL control characters
+    .replace(/ {2,}/g, " ") // Collapse multiple spaces
     .trim()
     .slice(0, maxLength);
 }
@@ -172,7 +173,7 @@ ADHERE STRICTLY TO THIS WRITING STYLE. Mimic the user's voice perfectly.
 
 ```typescript
 // src/lib/ai/voice-profile.ts
-export function buildVoiceInstructions(raw: unknown): string
+export function buildVoiceInstructions(raw: unknown): string;
 ```
 
 - Input: raw `voiceProfile` value from database (`unknown` type for safety)
@@ -188,6 +189,7 @@ export function buildVoiceInstructions(raw: unknown): string
 Analyzes sample tweets and creates a voice profile.
 
 **Request:**
+
 ```json
 {
   "tweets": [
@@ -201,6 +203,7 @@ Analyzes sample tweets and creates a voice profile.
 **Validation:** 3-10 tweets, each 10-560 characters.
 
 **Process:**
+
 1. Authenticate session
 2. Check Pro/Agency plan (returns 402 for Free users)
 3. Send tweets to AI (OpenRouter) with analysis prompt
@@ -209,6 +212,7 @@ Analyzes sample tweets and creates a voice profile.
 6. Store in `user.voiceProfile` jsonb column
 
 **Response:**
+
 ```json
 {
   "tone": "...",
@@ -239,23 +243,24 @@ Clears the voice profile (sets `voice_profile` to `NULL` in database).
 
 ### Routes That Use Voice Profile
 
-| Route | File | Integration |
-|-------|------|-------------|
-| Thread Writer | `src/app/api/ai/thread/route.ts` | `buildVoiceInstructions(dbUser?.voiceProfile)` injected into prompt |
-| AI Tools (Hook, CTA, Rewrite) | `src/app/api/ai/tools/route.ts` | `buildVoiceInstructions(dbUser?.voiceProfile)` injected into prompt |
+| Route                         | File                             | Integration                                                         |
+| ----------------------------- | -------------------------------- | ------------------------------------------------------------------- |
+| Thread Writer                 | `src/app/api/ai/thread/route.ts` | `buildVoiceInstructions(dbUser?.voiceProfile)` injected into prompt |
+| AI Tools (Hook, CTA, Rewrite) | `src/app/api/ai/tools/route.ts`  | `buildVoiceInstructions(dbUser?.voiceProfile)` injected into prompt |
 
 ### Routes That Do NOT Use Voice Profile
 
-| Route | File | Reason |
-|-------|------|--------|
-| Translate | `src/app/api/ai/translate/route.ts` | Translation should preserve source meaning, not impose user's style |
-| Affiliate | `src/app/api/ai/affiliate/route.ts` | Affiliate tweets have specific promotional style requirements |
-| Chat | `src/app/api/chat/route.ts` | Chat is conversational, not tweet-style writing |
-| Inspiration | `src/app/api/ai/inspire/route.ts` | Inspiration generates ideas, not user-voiced content |
+| Route       | File                                | Reason                                                              |
+| ----------- | ----------------------------------- | ------------------------------------------------------------------- |
+| Translate   | `src/app/api/ai/translate/route.ts` | Translation should preserve source meaning, not impose user's style |
+| Affiliate   | `src/app/api/ai/affiliate/route.ts` | Affiliate tweets have specific promotional style requirements       |
+| Chat        | `src/app/api/chat/route.ts`         | Chat is conversational, not tweet-style writing                     |
+| Inspiration | `src/app/api/ai/inspire/route.ts`   | Inspiration generates ideas, not user-voiced content                |
 
 ### Shared Preamble Helper
 
 All AI routes call `aiPreamble()` from `src/lib/api/ai-preamble.ts`, which:
+
 1. Authenticates the session
 2. Fetches `dbUser` with `plan` and `voiceProfile` fields
 3. Checks rate limits and plan access
@@ -271,12 +276,14 @@ The `voiceProfile` is available on `dbUser` for any route that wants to use it.
 ### Settings Form (`src/components/settings/voice-profile-form.tsx`)
 
 **States:**
+
 - `samples: string[]` — Array of tweet text areas (default: 3 empty)
 - `profile: VoiceProfile | null` — Current active profile
 - `isLoading: boolean` — Initial profile fetch
 - `isAnalyzing: boolean` — AI analysis in progress
 
 **Features:**
+
 - Dynamic tweet sample inputs (3 minimum, 10 maximum)
 - "Add another sample" button
 - Validation: minimum 3 non-empty samples with 10+ characters
@@ -299,16 +306,16 @@ The `voiceProfile` is available on `dbUser` for any route that wants to use it.
 
 ## File Reference
 
-| File | Purpose |
-|------|---------|
-| `src/lib/ai/voice-profile.ts` | Core module: schema, sanitization, `buildVoiceInstructions()` |
-| `src/lib/schema.ts` | Database schema (`voiceProfile` jsonb column, line 130) |
-| `src/lib/api/ai-preamble.ts` | Shared AI route helper (fetches `voiceProfile` on `dbUser`) |
-| `src/app/api/user/voice-profile/route.ts` | API endpoint (POST/GET/DELETE) |
-| `src/components/settings/voice-profile-form.tsx` | Settings UI component |
-| `src/app/dashboard/settings/page.tsx` | Settings page (renders form) |
-| `src/app/api/ai/thread/route.ts` | Thread writer (uses voice profile) |
-| `src/app/api/ai/tools/route.ts` | AI tools — Hook, CTA, Rewrite (uses voice profile) |
+| File                                             | Purpose                                                       |
+| ------------------------------------------------ | ------------------------------------------------------------- |
+| `src/lib/ai/voice-profile.ts`                    | Core module: schema, sanitization, `buildVoiceInstructions()` |
+| `src/lib/schema.ts`                              | Database schema (`voiceProfile` jsonb column, line 130)       |
+| `src/lib/api/ai-preamble.ts`                     | Shared AI route helper (fetches `voiceProfile` on `dbUser`)   |
+| `src/app/api/user/voice-profile/route.ts`        | API endpoint (POST/GET/DELETE)                                |
+| `src/components/settings/voice-profile-form.tsx` | Settings UI component                                         |
+| `src/app/dashboard/settings/page.tsx`            | Settings page (renders form)                                  |
+| `src/app/api/ai/thread/route.ts`                 | Thread writer (uses voice profile)                            |
+| `src/app/api/ai/tools/route.ts`                  | AI tools — Hook, CTA, Rewrite (uses voice profile)            |
 
 ---
 

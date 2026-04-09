@@ -20,8 +20,8 @@ Add a **"Now"** button to the "Best times to post" section in the Composer page 
 
 ## Affected Files
 
-| File | Change |
-|------|--------|
+| File                                                | Change                                 |
+| --------------------------------------------------- | -------------------------------------- |
 | `src/components/composer/best-time-suggestions.tsx` | Add "Now" button to the time slots row |
 
 ---
@@ -56,6 +56,7 @@ Add a **"Now"** button to the "Best times to post" section in the Composer page 
 ### Phase 3 — Testing
 
 **Manual testing steps:**
+
 1. Navigate to `/dashboard/compose`
 2. Observe "Best times to post" row shows "Now" button at the left
 3. Click "Now" → datetime input populates with current date/time (within ±1 minute)
@@ -75,13 +76,13 @@ No backend changes, no migrations, no new dependencies required.
 
 ## Design Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| Button placed **first** (leftmost) | Most frequently used; users who want to post now shouldn't scroll past future suggestions |
-| Same styling as time slot buttons | Visual consistency per the feature request |
-| Uses `date-fns/format` (already imported) | No new dependencies; consistent with existing date formatting in same file |
-| Seconds set to current value (not zero) | `new Date()` captures full current time; acceptable for "post now" semantics |
-| Only shown when not restricted | Consistent with existing gate; "Now" without scheduling context is covered by the main "Post Now" button |
+| Decision                                  | Rationale                                                                                                |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Button placed **first** (leftmost)        | Most frequently used; users who want to post now shouldn't scroll past future suggestions                |
+| Same styling as time slot buttons         | Visual consistency per the feature request                                                               |
+| Uses `date-fns/format` (already imported) | No new dependencies; consistent with existing date formatting in same file                               |
+| Seconds set to current value (not zero)   | `new Date()` captures full current time; acceptable for "post now" semantics                             |
+| Only shown when not restricted            | Consistent with existing gate; "Now" without scheduling context is covered by the main "Post Now" button |
 
 ---
 

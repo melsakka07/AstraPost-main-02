@@ -3,6 +3,7 @@
 ## Your Role
 
 You are a senior front-end engineer and UI/UX specialist with deep expertise in:
+
 - Next.js App Router with React 19 server/client component architecture
 - Tailwind CSS 4 responsive design systems (mobile-first methodology)
 - shadcn/ui component library customization and responsive overrides
@@ -27,6 +28,7 @@ devices. **Mobile usability is critical** — many MENA users are mobile-primary
 often on mid-range Android devices with limited bandwidth.
 
 ### Important Constraints
+
 - Keep the existing tech stack (Tailwind CSS 4, shadcn/ui, Next.js App Router)
 - Maintain full RTL support — every fix must work in both LTR and RTL directions
 - Maintain dark mode compatibility — every fix must work in both themes
@@ -78,6 +80,7 @@ well-implemented — reinforce good patterns the team should maintain.
 ### 1.1 — Viewport & Global Configuration
 
 Check these foundational items:
+
 - Is `<meta name="viewport" content="width=device-width, initial-scale=1">` correctly set in the root layout or Next.js metadata config? Any conflicting viewport tags?
 - Is `-webkit-text-size-adjust: 100%` set to prevent iOS text inflation?
 - Are `dvh` (dynamic viewport height) units used instead of `vh` where appropriate? (Critical for mobile browsers with collapsing URL bars)
@@ -91,6 +94,7 @@ Check these foundational items:
 ### 1.2 — Layout Architecture (Every Route)
 
 For EACH page/layout in the `app/` directory:
+
 - Does the layout use a responsive navigation strategy (sidebar on desktop → bottom nav or hamburger drawer on mobile)?
 - Is the mobile navigation implemented as a proper Sheet/Drawer (not just a `hidden` div with no animation or focus trapping)?
 - Are there any `fixed` or `absolute` positioned elements that overlap content on small screens?
@@ -106,7 +110,7 @@ For EACH page/layout in the `app/` directory:
 
 Audit every shadcn/ui component usage for mobile behavior:
 
-- **Dialog/Modal:** Does it become a full-screen `Drawer` (via Vaul) on mobile? Or does it render as a tiny centered box? *This is the #1 most common shadcn/ui mobile failure.* If Vaul/Drawer is not installed, flag this as critical and recommend the responsive dialog pattern.
+- **Dialog/Modal:** Does it become a full-screen `Drawer` (via Vaul) on mobile? Or does it render as a tiny centered box? _This is the #1 most common shadcn/ui mobile failure._ If Vaul/Drawer is not installed, flag this as critical and recommend the responsive dialog pattern.
 - **DropdownMenu:** Does it work with touch? Is the hit target ≥ 44px? Does it position correctly near screen edges?
 - **Table:** Are data tables horizontally scrollable on mobile, or do they overflow/break the layout? Consider card-based layouts for mobile.
 - **Popover:** Does it reposition correctly on small screens? Does it obscure critical content?
@@ -257,10 +261,12 @@ The plan document MUST follow this exact structure:
 > Priority: Critical — Mobile-primary user base in MENA region
 
 ## Executive Summary
+
 [3-4 paragraphs: current state assessment, critical gaps found,
 remediation strategy, expected outcome after implementation]
 
 ## Guiding Principles
+
 - Mobile-first: all CSS starts at mobile and scales up with `md:` and `lg:`
 - RTL-native: every change uses CSS logical properties and works in both directions
 - Dark mode compatible: every change tested in both light and dark themes
@@ -269,9 +275,11 @@ remediation strategy, expected outcome after implementation]
 - No regressions: all changes verified against existing functionality
 
 ## Phase 1: Foundation & Critical Fixes (Days 1–3)
+
 ### Priority: CRITICAL — Fix what's broken now
 
 #### Task 1.1: [Title]
+
 - **Files to modify:** [exact file paths]
 - **What to do:** [step-by-step with complete code snippets]
 - **RTL consideration:** [how this change works in RTL]
@@ -282,40 +290,52 @@ remediation strategy, expected outcome after implementation]
 [Continue for all Phase 1 tasks...]
 
 ## Phase 2: Component-Level Responsive Overhaul (Days 4–8)
+
 ### Priority: HIGH — Systematic component fixes
+
 [Same task format...]
 
 ## Phase 3: User Flow Optimization (Days 9–12)
+
 ### Priority: HIGH — End-to-end mobile experience
+
 [Same task format...]
 
 ## Phase 4: Dynamic Behavior & Advanced Mobile UX (Days 13–15)
+
 ### Priority: MEDIUM — Polish and delight
+
 [Same task format...]
 
 ## Phase 5: Accessibility Hardening (Days 16–18)
+
 ### Priority: HIGH — Compliance and inclusion
+
 [Same task format...]
 
 ## Phase 6: Performance Optimization (Days 19–20)
+
 ### Priority: MEDIUM — Speed on mobile networks
+
 [Same task format...]
 
 ## Testing Strategy
 
 ### Device Matrix
-| Device             | OS          | Browser          | Screen    | Priority |
-|--------------------|-------------|------------------|-----------|----------|
-| iPhone 15 Pro      | iOS 18      | Safari           | 393×852   | P0       |
-| iPhone SE (3rd)    | iOS 18      | Safari           | 375×667   | P0       |
-| Samsung Galaxy S24 | Android 15  | Chrome           | 360×780   | P0       |
-| Samsung Galaxy A14 | Android 14  | Chrome           | 360×800   | P0       |
-| iPad Air           | iPadOS 18   | Safari           | 820×1180  | P1       |
-| Huawei P30 Lite    | Android 12  | Huawei Browser   | 360×780   | P1       |
-| Xiaomi Redmi Note  | Android 13  | Chrome           | 393×873   | P1       |
-| Samsung Galaxy Tab | Android 14  | Samsung Internet | 800×1280  | P2       |
+
+| Device             | OS         | Browser          | Screen   | Priority |
+| ------------------ | ---------- | ---------------- | -------- | -------- |
+| iPhone 15 Pro      | iOS 18     | Safari           | 393×852  | P0       |
+| iPhone SE (3rd)    | iOS 18     | Safari           | 375×667  | P0       |
+| Samsung Galaxy S24 | Android 15 | Chrome           | 360×780  | P0       |
+| Samsung Galaxy A14 | Android 14 | Chrome           | 360×800  | P0       |
+| iPad Air           | iPadOS 18  | Safari           | 820×1180 | P1       |
+| Huawei P30 Lite    | Android 12 | Huawei Browser   | 360×780  | P1       |
+| Xiaomi Redmi Note  | Android 13 | Chrome           | 393×873  | P1       |
+| Samsung Galaxy Tab | Android 14 | Samsung Internet | 800×1280 | P2       |
 
 ### Testing Checklist per Page
+
 - [ ] No horizontal scroll at 320px, 375px, 428px
 - [ ] All touch targets ≥ 44px
 - [ ] All text readable without zoom (≥ 16px base)
@@ -331,6 +351,7 @@ remediation strategy, expected outcome after implementation]
 - [ ] Orientation change doesn't break layout
 
 ### Browser Testing
+
 - iOS Safari (latest + latest-1)
 - Chrome Android (latest + latest-1)
 - Samsung Internet Browser (significant MENA market share)
@@ -338,15 +359,19 @@ remediation strategy, expected outcome after implementation]
 - Chrome Desktop responsive mode (for development)
 
 ## Responsive Breakpoint System
+
 [Document the Tailwind breakpoints and what layout changes happen at each]
 
 ## Files Modified (Summary)
+
 [Complete list grouped by phase]
 
 ## Dependencies & New Packages
+
 [Any new packages needed, with justification and bundle size impact]
 
 ## Risks & Mitigations
+
 [Potential issues: RTL regressions, dark mode breakage, performance impact, etc.]
 ```
 
@@ -364,6 +389,7 @@ After generating the plan, **IMMEDIATELY implement all Phase 1 (Critical) fixes*
 6. **Do not remove or alter any existing functionality** — only add responsive behavior
 
 After implementing, output a summary:
+
 - List of every file modified with a 1-line description of what changed
 - Any files that were created (e.g., new responsive utility components)
 - Known items that could not be auto-fixed and need manual testing
@@ -372,12 +398,12 @@ After implementing, output a summary:
 
 ## Output Expectations
 
-| Phase | Deliverable |
-|-------|-------------|
-| Step 0 | Brief repository structure summary |
-| Phase 1 | Complete audit findings organized by sections 1.1–1.10, using the exact format specified |
+| Phase   | Deliverable                                                                                    |
+| ------- | ---------------------------------------------------------------------------------------------- |
+| Step 0  | Brief repository structure summary                                                             |
+| Phase 1 | Complete audit findings organized by sections 1.1–1.10, using the exact format specified       |
 | Phase 2 | Full implementation plan saved to `docs/features/mobile-responsiveness-implementation-plan.md` |
-| Phase 3 | All critical fixes implemented in the codebase + summary of changes |
+| Phase 3 | All critical fixes implemented in the codebase + summary of changes                            |
 
 **Be specific throughout** — reference actual file paths, component names, line
 numbers, and Tailwind classes found in the code. Do not give generic responsive

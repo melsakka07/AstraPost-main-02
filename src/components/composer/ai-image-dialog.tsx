@@ -7,15 +7,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import {
-  Wand2,
-  Loader2,
-  Sparkles,
-  RefreshCw,
-  Check,
-  AlertCircle,
-  RotateCcw,
-} from "lucide-react";
+import { Wand2, Loader2, Sparkles, RefreshCw, Check, AlertCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,9 +98,7 @@ export function AiImageDialog({
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [style, setStyle] = useState<ImageStyle | undefined>();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(
-    null
-  );
+  const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(null);
   const [imageHistory, setImageHistory] = useState<GeneratedImage[]>([]);
 
   // Inline error shown when a generation fails (null = no error / cleared).
@@ -172,7 +162,9 @@ export function AiImageDialog({
 
   // Clean up rAF on unmount
   useEffect(() => {
-    return () => { stopProgressAnimation(); };
+    return () => {
+      stopProgressAnimation();
+    };
   }, [stopProgressAnimation]);
 
   // Cancel any in-flight poll when the dialog closes.
@@ -226,7 +218,9 @@ export function AiImageDialog({
             activePollingIdRef.current = null;
             toast.info("Service busy — retrying automatically…", { duration: 3000 });
             // Short delay so the user sees the retrying message before we re-fire.
-            pollTimerRef.current = setTimeout(() => { void handleGenerate(); }, 3500);
+            pollTimerRef.current = setTimeout(() => {
+              void handleGenerate();
+            }, 3500);
             return;
           }
 
@@ -284,15 +278,12 @@ export function AiImageDialog({
   // Auto-generate prompt from tweet content if prompt is empty
   const handleGenerate = async () => {
     if (remainingQuota === 0) {
-      toast.error(
-        "You've reached your monthly AI image quota. Please upgrade to continue.",
-        {
-          action: {
-            label: "Upgrade",
-            onClick: () => (window.location.href = "/pricing"),
-          },
-        }
-      );
+      toast.error("You've reached your monthly AI image quota. Please upgrade to continue.", {
+        action: {
+          label: "Upgrade",
+          onClick: () => (window.location.href = "/pricing"),
+        },
+      });
       return;
     }
 
@@ -382,15 +373,14 @@ export function AiImageDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Wand2 className="h-5 w-5 text-primary" />
+            <Wand2 className="text-primary h-5 w-5" />
             Generate AI Image
           </DialogTitle>
           <DialogDescription>
-            Create an AI-generated image for your tweet using the power of
-            multiple image models.
+            Create an AI-generated image for your tweet using the power of multiple image models.
           </DialogDescription>
         </DialogHeader>
 
@@ -408,9 +398,7 @@ export function AiImageDialog({
                     : "text-green-600"
               )}
             >
-              {remainingQuota === -1
-                ? "Unlimited"
-                : `${remainingQuota} remaining`}
+              {remainingQuota === -1 ? "Unlimited" : `${remainingQuota} remaining`}
             </span>
           </div>
 
@@ -431,15 +419,15 @@ export function AiImageDialog({
               disabled={isGenerating}
             />
             {!prompt && tweetContent && (
-              <p className="text-xs text-muted-foreground">
-                <Sparkles className="h-3 w-3 inline mr-1" />
+              <p className="text-muted-foreground text-xs">
+                <Sparkles className="mr-1 inline h-3 w-3" />
                 Leave empty to auto-generate from tweet content
               </p>
             )}
           </div>
 
           {/* Options Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Model Selection */}
             <div className="space-y-2">
               <Label htmlFor="model">Model</Label>
@@ -513,7 +501,7 @@ export function AiImageDialog({
           {generatedImage && (
             <div className="space-y-3">
               <Label>Generated Image</Label>
-              <div className="relative rounded-lg overflow-hidden border bg-muted">
+              <div className="bg-muted relative overflow-hidden rounded-lg border">
                 <div className="relative aspect-square w-full">
                   <Image
                     src={generatedImage.imageUrl}
@@ -523,17 +511,15 @@ export function AiImageDialog({
                     sizes="(max-width: 768px) 100vw, 512px"
                   />
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                  <p className="text-white text-xs line-clamp-2">
-                    {generatedImage.prompt}
-                  </p>
+                <div className="absolute right-0 bottom-0 left-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                  <p className="line-clamp-2 text-xs text-white">{generatedImage.prompt}</p>
                 </div>
               </div>
 
               {/* Image History */}
               {imageHistory.length > 1 && (
                 <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">
+                  <Label className="text-muted-foreground text-sm">
                     History ({imageHistory.length})
                   </Label>
                   <div className="flex gap-2 overflow-x-auto pb-2">
@@ -543,7 +529,7 @@ export function AiImageDialog({
                         onClick={() => handleSelectHistoryImage(img)}
                         aria-label={`Select generated image ${idx + 1}`}
                         className={cn(
-                          "relative flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden",
+                          "relative h-16 w-16 flex-shrink-0 overflow-hidden rounded border-2",
                           generatedImage.imageUrl === img.imageUrl
                             ? "border-primary"
                             : "border-muted"
@@ -569,29 +555,25 @@ export function AiImageDialog({
             <div role="status" aria-label="Generating image" className="space-y-4 py-4">
               {/* Progress bar */}
               <div className="space-y-2">
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-300 ease-out",
-                      progressPercent >= 100
-                        ? "bg-green-500"
-                        : "bg-primary"
+                      progressPercent >= 100 ? "bg-green-500" : "bg-primary"
                     )}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="text-muted-foreground flex items-center justify-between text-xs">
                   <span className="flex items-center gap-1.5">
                     <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-                    {isLongWait
-                      ? "Taking longer than usual..."
-                      : "Generating your image..."}
+                    {isLongWait ? "Taking longer than usual..." : "Generating your image..."}
                   </span>
                   <span>{progressPercent}%</span>
                 </div>
               </div>
               {/* Hint text */}
-              <p className="text-center text-xs text-muted-foreground/70">
+              <p className="text-muted-foreground/70 text-center text-xs">
                 {isLongWait
                   ? "Still working — this sometimes happens with complex prompts."
                   : "Usually takes 10–20 seconds."}
@@ -604,7 +586,7 @@ export function AiImageDialog({
             <div
               role="alert"
               className={cn(
-                "rounded-lg border p-4 space-y-3",
+                "space-y-3 rounded-lg border p-4",
                 generationError.retryable
                   ? "border-orange-500/40 bg-orange-500/5"
                   : generationError.code === "CONTENT_BLOCKED"
@@ -615,7 +597,7 @@ export function AiImageDialog({
               <div className="flex items-start gap-3">
                 <AlertCircle
                   className={cn(
-                    "h-5 w-5 mt-0.5 shrink-0",
+                    "mt-0.5 h-5 w-5 shrink-0",
                     generationError.retryable
                       ? "text-orange-500"
                       : generationError.code === "CONTENT_BLOCKED"
@@ -624,7 +606,7 @@ export function AiImageDialog({
                   )}
                   aria-hidden="true"
                 />
-                <div className="space-y-1 min-w-0">
+                <div className="min-w-0 space-y-1">
                   <p className="text-sm font-medium">
                     {generationError.retryable
                       ? "Service temporarily unavailable"
@@ -632,11 +614,11 @@ export function AiImageDialog({
                         ? "Prompt blocked by safety filters"
                         : "Image generation failed"}
                   </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-muted-foreground text-xs leading-relaxed">
                     {generationError.message}
                   </p>
                   {generationError.retryable && (
-                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                    <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
                       ✓ No credits were used — you can try again freely.
                     </p>
                   )}
@@ -646,10 +628,12 @@ export function AiImageDialog({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => { void handleGenerate(); }}
+                  onClick={() => {
+                    void handleGenerate();
+                  }}
                   className="w-full"
                 >
-                  <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                  <RotateCcw className="mr-2 h-3.5 w-3.5" />
                   {generationError.code === "CONTENT_BLOCKED"
                     ? "Try with adjusted prompt"
                     : "Try Again"}
@@ -669,20 +653,25 @@ export function AiImageDialog({
               >
                 Cancel
               </Button>
-              <Button onClick={() => { void handleGenerate(); }} disabled={isGenerating}>
+              <Button
+                onClick={() => {
+                  void handleGenerate();
+                }}
+                disabled={isGenerating}
+              >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Generating...
                   </>
                 ) : generationError ? (
                   <>
-                    <RotateCcw className="h-4 w-4 mr-2" />
+                    <RotateCcw className="mr-2 h-4 w-4" />
                     Try Again
                   </>
                 ) : (
                   <>
-                    <Wand2 className="h-4 w-4 mr-2" />
+                    <Wand2 className="mr-2 h-4 w-4" />
                     Generate
                   </>
                 )}
@@ -690,16 +679,12 @@ export function AiImageDialog({
             </>
           ) : (
             <>
-              <Button
-                variant="outline"
-                onClick={handleRegenerate}
-                disabled={isGenerating}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={handleRegenerate} disabled={isGenerating}>
+                <RefreshCw className="mr-2 h-4 w-4" />
                 Regenerate
               </Button>
               <Button onClick={handleAttach} disabled={isGenerating}>
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="mr-2 h-4 w-4" />
                 Attach to Tweet
               </Button>
             </>

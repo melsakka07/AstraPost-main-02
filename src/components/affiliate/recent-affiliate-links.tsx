@@ -78,7 +78,7 @@ export function RecentAffiliateLinks() {
         </CardHeader>
         <CardContent className="flex justify-center p-8">
           <div role="status" aria-label="Loading recent generations">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden="true" />
+            <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" aria-hidden="true" />
             <span className="sr-only">Loading recent generations...</span>
           </div>
         </CardContent>
@@ -91,18 +91,18 @@ export function RecentAffiliateLinks() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Generations</CardTitle>
         <Button variant="ghost" size="sm" onClick={fetchLinks}>
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </CardHeader>
       <CardContent>
         {links.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <Package className="h-6 w-6 text-muted-foreground/50" />
+            <div className="bg-muted mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+              <Package className="text-muted-foreground/50 h-6 w-6" />
             </div>
             <h3 className="text-sm font-semibold">No affiliate links yet</h3>
-            <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 max-w-xs text-xs">
               Generate your first affiliate tweet above to start tracking clicks and conversions.
             </p>
           </div>
@@ -122,7 +122,7 @@ export function RecentAffiliateLinks() {
             <TableBody>
               {links.map((link) => (
                 <TableRow key={link.id}>
-                  <TableCell className="font-medium max-w-[200px]">
+                  <TableCell className="max-w-[200px] font-medium">
                     <div className="flex items-center gap-3">
                       {link.productImageUrl && (
                         <Image
@@ -130,19 +130,22 @@ export function RecentAffiliateLinks() {
                           alt="Product thumbnail"
                           width={40}
                           height={40}
-                          className="rounded object-cover border"
+                          className="rounded border object-cover"
                           unoptimized
                         />
                       )}
                       <div className="truncate">
-                        <div className="truncate font-semibold" title={link.productTitle || "Unknown"}>
+                        <div
+                          className="truncate font-semibold"
+                          title={link.productTitle || "Unknown"}
+                        >
                           {link.productTitle || "Unknown Product"}
                         </div>
-                        <a 
-                          href={link.destinationUrl} 
-                          target="_blank" 
+                        <a
+                          href={link.destinationUrl}
+                          target="_blank"
                           rel="noreferrer"
-                          className="text-xs text-muted-foreground hover:underline flex items-center gap-1"
+                          className="text-muted-foreground flex items-center gap-1 text-xs hover:underline"
                         >
                           View Product <ExternalLink className="h-3 w-3" />
                         </a>
@@ -150,13 +153,18 @@ export function RecentAffiliateLinks() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="capitalize">{link.platform || "Amazon"}</Badge>
+                    <Badge variant="outline" className="capitalize">
+                      {link.platform || "Amazon"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="font-mono text-sm">{link.clicks || 0}</div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell max-w-[300px]">
-                    <div className="truncate text-sm text-muted-foreground" title={link.generatedTweet || ""}>
+                  <TableCell className="hidden max-w-[300px] md:table-cell">
+                    <div
+                      className="text-muted-foreground truncate text-sm"
+                      title={link.generatedTweet || ""}
+                    >
                       {link.generatedTweet}
                     </div>
                   </TableCell>
@@ -165,7 +173,10 @@ export function RecentAffiliateLinks() {
                   </TableCell>
                   <TableCell>
                     {link.wasScheduled ? (
-                      <Badge variant="default" className="bg-green-500/15 text-green-700 hover:bg-green-500/25 border-green-200">
+                      <Badge
+                        variant="default"
+                        className="border-green-200 bg-green-500/15 text-green-700 hover:bg-green-500/25"
+                      >
                         Scheduled
                       </Badge>
                     ) : (
@@ -174,17 +185,17 @@ export function RecentAffiliateLinks() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => handleCopy(link.generatedTweet || "")}
                         title="Copy Tweet"
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleSchedule(link)}
                         className="gap-2"
                       >

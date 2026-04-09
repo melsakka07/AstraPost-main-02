@@ -24,7 +24,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,7 +106,8 @@ function AIWriterContent() {
         const res = await fetch("/api/accounts");
         if (!res.ok || cancelled) return;
         const data = await res.json();
-        const accounts: Array<{ platform: string; xSubscriptionTier?: string | null; id: string }> = data.accounts || [];
+        const accounts: Array<{ platform: string; xSubscriptionTier?: string | null; id: string }> =
+          data.accounts || [];
         const xAccount = accounts.find((a) => a.platform === "twitter");
         if (xAccount && !cancelled) {
           setXTier(xAccount.xSubscriptionTier ?? null);
@@ -110,7 +117,9 @@ function AIWriterContent() {
         // Silently degrade — length options default to short-only
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- URL → Thread State ---
@@ -155,18 +164,27 @@ function AIWriterContent() {
       if (!res.ok) {
         if (res.status === 402) {
           let payload: PlanLimitPayload | null = null;
-          try { payload = await res.json() as PlanLimitPayload; } catch {}
+          try {
+            payload = (await res.json()) as PlanLimitPayload;
+          } catch {}
           openWithContext({
-            error: payload?.error, code: payload?.code, message: payload?.message,
-            feature: payload?.feature, plan: payload?.plan, limit: payload?.limit,
-            used: payload?.used, remaining: payload?.remaining,
-            upgradeUrl: payload?.upgrade_url, suggestedPlan: payload?.suggested_plan,
-            trialActive: payload?.trial_active, resetAt: payload?.reset_at,
+            error: payload?.error,
+            code: payload?.code,
+            message: payload?.message,
+            feature: payload?.feature,
+            plan: payload?.plan,
+            limit: payload?.limit,
+            used: payload?.used,
+            remaining: payload?.remaining,
+            upgradeUrl: payload?.upgrade_url,
+            suggestedPlan: payload?.suggested_plan,
+            trialActive: payload?.trial_active,
+            resetAt: payload?.reset_at,
           });
           return;
         }
         if (res.status === 403) {
-          const body = await res.json().catch(() => ({})) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
           toast.error(body.error ?? "X Premium required for this length option.");
           return;
         }
@@ -258,7 +276,9 @@ function AIWriterContent() {
   };
 
   const updateUrlTweet = (idx: number, text: string) => {
-    setUrlResult((prev) => prev ? { ...prev, tweets: prev.tweets.map((t, i) => (i === idx ? text : t)) } : null);
+    setUrlResult((prev) =>
+      prev ? { ...prev, tweets: prev.tweets.map((t, i) => (i === idx ? text : t)) } : null
+    );
   };
 
   // ── URL → Thread ───────────────────────────────────────────────────────────
@@ -271,26 +291,40 @@ function AIWriterContent() {
       const res = await fetch("/api/ai/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: articleUrl, language: urlLanguage, tweetCount: urlTweetCount, tone: urlTone }),
+        body: JSON.stringify({
+          url: articleUrl,
+          language: urlLanguage,
+          tweetCount: urlTweetCount,
+          tone: urlTone,
+        }),
       });
       if (!res.ok) {
         if (res.status === 402) {
           let payload: PlanLimitPayload | null = null;
-          try { payload = await res.json() as PlanLimitPayload; } catch {}
+          try {
+            payload = (await res.json()) as PlanLimitPayload;
+          } catch {}
           openWithContext({
-            error: payload?.error, code: payload?.code, message: payload?.message,
-            feature: payload?.feature, plan: payload?.plan, limit: payload?.limit,
-            used: payload?.used, remaining: payload?.remaining,
-            upgradeUrl: payload?.upgrade_url, suggestedPlan: payload?.suggested_plan,
-            trialActive: payload?.trial_active, resetAt: payload?.reset_at,
+            error: payload?.error,
+            code: payload?.code,
+            message: payload?.message,
+            feature: payload?.feature,
+            plan: payload?.plan,
+            limit: payload?.limit,
+            used: payload?.used,
+            remaining: payload?.remaining,
+            upgradeUrl: payload?.upgrade_url,
+            suggestedPlan: payload?.suggested_plan,
+            trialActive: payload?.trial_active,
+            resetAt: payload?.reset_at,
           });
           return;
         }
-        const err = await res.json().catch(() => ({})) as { error?: string };
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
         toast.error(err.error ?? "Failed to convert URL");
         return;
       }
-      const data = await res.json() as { tweets: string[]; title: string };
+      const data = (await res.json()) as { tweets: string[]; title: string };
       setUrlResult(data);
     } catch {
       toast.error("Failed to convert URL to thread");
@@ -322,19 +356,28 @@ function AIWriterContent() {
       if (!res.ok) {
         if (res.status === 402) {
           let payload: PlanLimitPayload | null = null;
-          try { payload = await res.json() as PlanLimitPayload; } catch {}
+          try {
+            payload = (await res.json()) as PlanLimitPayload;
+          } catch {}
           openWithContext({
-            error: payload?.error, code: payload?.code, message: payload?.message,
-            feature: payload?.feature, plan: payload?.plan, limit: payload?.limit,
-            used: payload?.used, remaining: payload?.remaining,
-            upgradeUrl: payload?.upgrade_url, suggestedPlan: payload?.suggested_plan,
-            trialActive: payload?.trial_active, resetAt: payload?.reset_at,
+            error: payload?.error,
+            code: payload?.code,
+            message: payload?.message,
+            feature: payload?.feature,
+            plan: payload?.plan,
+            limit: payload?.limit,
+            used: payload?.used,
+            remaining: payload?.remaining,
+            upgradeUrl: payload?.upgrade_url,
+            suggestedPlan: payload?.suggested_plan,
+            trialActive: payload?.trial_active,
+            resetAt: payload?.reset_at,
           });
           return;
         }
         throw new Error("Failed to generate variants");
       }
-      const data = await res.json() as { variants: Variant[] };
+      const data = (await res.json()) as { variants: Variant[] };
       setVariants(data.variants);
     } catch {
       toast.error("Failed to generate variants");
@@ -356,25 +399,29 @@ function AIWriterContent() {
   };
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ActiveTab)} className="space-y-6">
+    <Tabs
+      value={activeTab}
+      onValueChange={(v) => setActiveTab(v as ActiveTab)}
+      className="space-y-6"
+    >
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="thread">
-          <PenTool className="h-3.5 w-3.5 me-1.5" />
+          <PenTool className="me-1.5 h-3.5 w-3.5" />
           <span className="hidden sm:inline">Thread Writer</span>
           <span className="sm:hidden">Thread</span>
         </TabsTrigger>
         <TabsTrigger value="url">
-          <Link2 className="h-3.5 w-3.5 me-1.5" />
+          <Link2 className="me-1.5 h-3.5 w-3.5" />
           <span className="hidden sm:inline">URL → Thread</span>
           <span className="sm:hidden">URL</span>
         </TabsTrigger>
         <TabsTrigger value="variants">
-          <Shuffle className="h-3.5 w-3.5 me-1.5" />
+          <Shuffle className="me-1.5 h-3.5 w-3.5" />
           <span className="hidden sm:inline">A/B Variants</span>
           <span className="sm:hidden">Variants</span>
         </TabsTrigger>
         <TabsTrigger value="hashtags">
-          <Hash className="h-3.5 w-3.5 me-1.5" />
+          <Hash className="me-1.5 h-3.5 w-3.5" />
           Hashtags
         </TabsTrigger>
       </TabsList>
@@ -385,7 +432,7 @@ function AIWriterContent() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <PenTool className="h-5 w-5 text-primary" />
+                <PenTool className="text-primary h-5 w-5" />
                 Configuration
               </CardTitle>
             </CardHeader>
@@ -404,7 +451,9 @@ function AIWriterContent() {
                 <div className="space-y-2">
                   <Label>Tone</Label>
                   <Select value={tone} onValueChange={setTone}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="professional">Professional</SelectItem>
                       <SelectItem value="casual">Casual</SelectItem>
@@ -417,9 +466,14 @@ function AIWriterContent() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label><Globe className="inline h-3.5 w-3.5 me-1" />Language</Label>
+                  <Label>
+                    <Globe className="me-1 inline h-3.5 w-3.5" />
+                    Language
+                  </Label>
                   <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ar">Arabic</SelectItem>
                       <SelectItem value="en">English</SelectItem>
@@ -439,14 +493,14 @@ function AIWriterContent() {
               {/* Mode toggle: Thread vs Single Post */}
               <div className="space-y-2">
                 <Label>Output Mode</Label>
-                <div className="grid grid-cols-2 gap-1 rounded-lg border bg-muted/50 p-1">
+                <div className="bg-muted/50 grid grid-cols-2 gap-1 rounded-lg border p-1">
                   <button
                     type="button"
                     className={cn(
                       "rounded-md px-3 py-2 text-sm font-medium transition-all",
                       mode === "thread"
                         ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                     onClick={() => setMode("thread")}
                   >
@@ -458,7 +512,7 @@ function AIWriterContent() {
                       "rounded-md px-3 py-2 text-sm font-medium transition-all",
                       mode === "single"
                         ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                     onClick={() => setMode("single")}
                   >
@@ -481,15 +535,42 @@ function AIWriterContent() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <Label>Thread Length</Label>
-                    <span className="text-sm font-medium tabular-nums text-muted-foreground">{tweetCount} tweets</span>
+                    <span className="text-muted-foreground text-sm font-medium tabular-nums">
+                      {tweetCount} tweets
+                    </span>
                   </div>
-                  <Slider value={[tweetCount]} onValueChange={(v) => setTweetCount(v[0] ?? 5)} min={3} max={15} step={1} aria-label="Thread length" />
-                  <div className="flex justify-between text-xs text-muted-foreground"><span>Short (3)</span><span>Long (15)</span></div>
+                  <Slider
+                    value={[tweetCount]}
+                    onValueChange={(v) => setTweetCount(v[0] ?? 5)}
+                    min={3}
+                    max={15}
+                    step={1}
+                    aria-label="Thread length"
+                  />
+                  <div className="text-muted-foreground flex justify-between text-xs">
+                    <span>Short (3)</span>
+                    <span>Long (15)</span>
+                  </div>
                 </div>
               )}
 
-              <Button className="w-full" onClick={handleGenerate} disabled={isGenerating || !topic} size="lg">
-                {isGenerating ? <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({threadElapsed}s)</> : <><Sparkles className="me-2 h-4 w-4" />{mode === "single" ? "Generate Post" : "Generate Thread"}</>}
+              <Button
+                className="w-full"
+                onClick={handleGenerate}
+                disabled={isGenerating || !topic}
+                size="lg"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    Generating... ({threadElapsed}s)
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="me-2 h-4 w-4" />
+                    {mode === "single" ? "Generate Post" : "Generate Thread"}
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -501,29 +582,57 @@ function AIWriterContent() {
                   /* ── Single-post result ── */
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">
+                      <span className="text-muted-foreground text-sm font-medium">
                         {isGenerating ? "Generating..." : "Generated post"}
                       </span>
                       {!isGenerating && (
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(generatedTweets[0] ?? ""); setCopiedAll(true); setTimeout(() => setCopiedAll(false), 2000); toast.success("Copied to clipboard"); }} aria-label="Copy post">
-                            {copiedAll ? <><Check className="h-3.5 w-3.5 me-1.5" />Copied</> : <><Copy className="h-3.5 w-3.5 me-1.5" />Copy</>}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(generatedTweets[0] ?? "");
+                              setCopiedAll(true);
+                              setTimeout(() => setCopiedAll(false), 2000);
+                              toast.success("Copied to clipboard");
+                            }}
+                            aria-label="Copy post"
+                          >
+                            {copiedAll ? (
+                              <>
+                                <Check className="me-1.5 h-3.5 w-3.5" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="me-1.5 h-3.5 w-3.5" />
+                                Copy
+                              </>
+                            )}
                           </Button>
-                          <Button size="sm" onClick={() => sendToComposer(generatedTweets, { source: "ai-writer", tone })}>
-                            <PenSquare className="h-3.5 w-3.5 me-1.5" />Open in Composer
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              sendToComposer(generatedTweets, { source: "ai-writer", tone })
+                            }
+                          >
+                            <PenSquare className="me-1.5 h-3.5 w-3.5" />
+                            Open in Composer
                           </Button>
                         </div>
                       )}
                     </div>
-                    <Card className="border focus-within:border-primary/40 transition-colors">
+                    <Card className="focus-within:border-primary/40 border transition-colors">
                       <CardContent className="p-4">
                         <Textarea
-                          className="resize-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-sm leading-relaxed min-h-[120px] w-full"
+                          className="min-h-[120px] w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                           value={generatedTweets[0] ?? ""}
                           onChange={(e) => updateGeneratedTweet(0, e.target.value)}
                           aria-label="Edit generated post"
                         />
-                        <p className={`mt-2 text-xs tabular-nums ${(generatedTweets[0]?.length ?? 0) > getMaxCharacterLimit(xTier as any) ? "text-destructive" : (generatedTweets[0]?.length ?? 0) >= getMaxCharacterLimit(xTier as any) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}>
+                        <p
+                          className={`mt-2 text-xs tabular-nums ${(generatedTweets[0]?.length ?? 0) > getMaxCharacterLimit(xTier as any) ? "text-destructive" : (generatedTweets[0]?.length ?? 0) >= getMaxCharacterLimit(xTier as any) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
+                        >
                           {generatedTweets[0]?.length ?? 0}/{getMaxCharacterLimit(xTier as any)}
                         </p>
                       </CardContent>
@@ -533,44 +642,76 @@ function AIWriterContent() {
                   /* ── Thread results ── */
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">
+                      <span className="text-muted-foreground text-sm font-medium">
                         {isGenerating
                           ? `Generating ${generatedTweets.length} / ${tweetCount}…`
                           : `${generatedTweets.length} tweets`}
                       </span>
                       {!isGenerating && (
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={copyAllTweets} aria-label="Copy all tweets">
-                            {copiedAll ? <><Check className="h-3.5 w-3.5 me-1.5" />Copied</> : <><Copy className="h-3.5 w-3.5 me-1.5" />Copy All</>}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={copyAllTweets}
+                            aria-label="Copy all tweets"
+                          >
+                            {copiedAll ? (
+                              <>
+                                <Check className="me-1.5 h-3.5 w-3.5" />
+                                Copied
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="me-1.5 h-3.5 w-3.5" />
+                                Copy All
+                              </>
+                            )}
                           </Button>
-                          <Button size="sm" onClick={() => sendToComposer(generatedTweets, { source: "ai-writer", tone })}>
-                            <PenSquare className="h-3.5 w-3.5 me-1.5" />Open in Composer
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              sendToComposer(generatedTweets, { source: "ai-writer", tone })
+                            }
+                          >
+                            <PenSquare className="me-1.5 h-3.5 w-3.5" />
+                            Open in Composer
                           </Button>
                         </div>
                       )}
                     </div>
                     {generatedTweets.map((tweet, idx) => (
-                      <Card key={idx} className="border focus-within:border-primary/40 transition-colors">
+                      <Card
+                        key={idx}
+                        className="focus-within:border-primary/40 border transition-colors"
+                      >
                         <CardContent className="p-4">
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <Badge variant="secondary" className="shrink-0 tabular-nums">#{idx + 1}</Badge>
+                          <div className="mb-2 flex items-start justify-between gap-3">
+                            <Badge variant="secondary" className="shrink-0 tabular-nums">
+                              #{idx + 1}
+                            </Badge>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0 shrink-0"
+                              className="h-6 w-6 shrink-0 p-0"
                               onClick={() => copyTweet(tweet, idx)}
                               aria-label={`Copy tweet ${idx + 1}`}
                             >
-                              {copiedTweetIdx === idx ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                              {copiedTweetIdx === idx ? (
+                                <Check className="h-3.5 w-3.5" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5" />
+                              )}
                             </Button>
                           </div>
                           <Textarea
-                            className="resize-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-sm leading-relaxed min-h-[60px] w-full"
+                            className="min-h-[60px] w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                             value={tweet}
                             onChange={(e) => updateGeneratedTweet(idx, e.target.value)}
                             aria-label={`Edit tweet ${idx + 1}`}
                           />
-                          <p className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}>
+                          <p
+                            className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}
+                          >
                             {tweet.length}/280
                           </p>
                         </CardContent>
@@ -578,14 +719,14 @@ function AIWriterContent() {
                     ))}
                     {/* Pulsing skeleton for the next incoming tweet while streaming */}
                     {isGenerating && (
-                      <Card className="border border-dashed border-primary/20 animate-pulse">
-                        <CardContent className="p-4 space-y-2">
+                      <Card className="border-primary/20 animate-pulse border border-dashed">
+                        <CardContent className="space-y-2 p-4">
                           <div className="flex items-center gap-2">
-                            <div className="h-5 w-8 rounded bg-muted" />
+                            <div className="bg-muted h-5 w-8 rounded" />
                           </div>
-                          <div className="h-3 rounded bg-muted w-full" />
-                          <div className="h-3 rounded bg-muted w-4/5" />
-                          <div className="h-3 rounded bg-muted w-3/5" />
+                          <div className="bg-muted h-3 w-full rounded" />
+                          <div className="bg-muted h-3 w-4/5 rounded" />
+                          <div className="bg-muted h-3 w-3/5 rounded" />
                         </CardContent>
                       </Card>
                     )}
@@ -593,21 +734,30 @@ function AIWriterContent() {
                 )}
               </>
             ) : (
-              <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-4">
+              <div className="border-border bg-muted/20 space-y-4 rounded-xl border border-dashed p-5">
                 {/* Blurred thread preview */}
-                <div className="space-y-2 opacity-30 pointer-events-none select-none blur-[1px]" aria-hidden="true">
-                  {[["1/3", "w-full", "w-4/5", "w-3/5"], ["2/3", "w-full", "w-2/3", "w-4/5"], ["3/3", "w-full", "w-3/4", "w-1/2"]].map(([label, ...bars]) => (
-                    <div key={label} className="rounded-lg border bg-card p-3 space-y-1.5">
-                      <span className="text-xs text-muted-foreground font-medium">{label}</span>
+                <div
+                  className="pointer-events-none space-y-2 opacity-30 blur-[1px] select-none"
+                  aria-hidden="true"
+                >
+                  {[
+                    ["1/3", "w-full", "w-4/5", "w-3/5"],
+                    ["2/3", "w-full", "w-2/3", "w-4/5"],
+                    ["3/3", "w-full", "w-3/4", "w-1/2"],
+                  ].map(([label, ...bars]) => (
+                    <div key={label} className="bg-card space-y-1.5 rounded-lg border p-3">
+                      <span className="text-muted-foreground text-xs font-medium">{label}</span>
                       {bars.map((w, i) => (
-                        <div key={i} className={`h-2.5 bg-muted-foreground/30 rounded ${w}`} />
+                        <div key={i} className={`bg-muted-foreground/30 h-2.5 rounded ${w}`} />
                       ))}
                     </div>
                   ))}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-sm">Your thread will appear here</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Enter a topic above and click Generate Thread</p>
+                  <p className="text-sm font-medium">Your thread will appear here</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Enter a topic above and click Generate Thread
+                  </p>
                 </div>
               </div>
             )}
@@ -621,7 +771,7 @@ function AIWriterContent() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Link2 className="h-5 w-5 text-primary" />
+                <Link2 className="text-primary h-5 w-5" />
                 Article / URL to Thread
               </CardTitle>
             </CardHeader>
@@ -634,13 +784,17 @@ function AIWriterContent() {
                   value={articleUrl}
                   onChange={(e) => setArticleUrl(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">Paste any publicly accessible article, blog post, or news URL.</p>
+                <p className="text-muted-foreground text-xs">
+                  Paste any publicly accessible article, blog post, or news URL.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Tone</Label>
                   <Select value={urlTone} onValueChange={setUrlTone}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="educational">Educational</SelectItem>
                       <SelectItem value="casual">Casual</SelectItem>
@@ -653,7 +807,9 @@ function AIWriterContent() {
                 <div className="space-y-2">
                   <Label>Output Language</Label>
                   <Select value={urlLanguage} onValueChange={setUrlLanguage}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ar">Arabic</SelectItem>
                       <SelectItem value="en">English</SelectItem>
@@ -672,12 +828,36 @@ function AIWriterContent() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label>Thread Length</Label>
-                  <span className="text-sm font-medium tabular-nums text-muted-foreground">{urlTweetCount} tweets</span>
+                  <span className="text-muted-foreground text-sm font-medium tabular-nums">
+                    {urlTweetCount} tweets
+                  </span>
                 </div>
-                <Slider value={[urlTweetCount]} onValueChange={(v) => setUrlTweetCount(v[0] ?? 5)} min={3} max={12} step={1} aria-label="URL thread length" />
+                <Slider
+                  value={[urlTweetCount]}
+                  onValueChange={(v) => setUrlTweetCount(v[0] ?? 5)}
+                  min={3}
+                  max={12}
+                  step={1}
+                  aria-label="URL thread length"
+                />
               </div>
-              <Button className="w-full" onClick={handleUrlGenerate} disabled={urlLoading || !articleUrl.trim()} size="lg">
-                {urlLoading ? <><Loader2 className="me-2 h-4 w-4 animate-spin" />Converting... ({urlElapsed}s)</> : <><Sparkles className="me-2 h-4 w-4" />Convert to Thread</>}
+              <Button
+                className="w-full"
+                onClick={handleUrlGenerate}
+                disabled={urlLoading || !articleUrl.trim()}
+                size="lg"
+              >
+                {urlLoading ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    Converting... ({urlElapsed}s)
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="me-2 h-4 w-4" />
+                    Convert to Thread
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -687,33 +867,65 @@ function AIWriterContent() {
               <>
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-sm font-medium text-muted-foreground">{urlResult.tweets.length} tweets</span>
+                    <span className="text-muted-foreground text-sm font-medium">
+                      {urlResult.tweets.length} tweets
+                    </span>
                     {urlResult.title && (
-                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">{urlResult.title}</p>
+                      <p className="text-muted-foreground max-w-[200px] truncate text-xs">
+                        {urlResult.title}
+                      </p>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={copyUrlThread} aria-label="Copy all URL thread tweets">
-                      {urlCopied ? <><Check className="h-3.5 w-3.5 me-1.5" />Copied</> : <><Copy className="h-3.5 w-3.5 me-1.5" />Copy All</>}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyUrlThread}
+                      aria-label="Copy all URL thread tweets"
+                    >
+                      {urlCopied ? (
+                        <>
+                          <Check className="me-1.5 h-3.5 w-3.5" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="me-1.5 h-3.5 w-3.5" />
+                          Copy All
+                        </>
+                      )}
                     </Button>
-                    <Button size="sm" onClick={() => sendToComposer(urlResult.tweets, { source: "url-to-thread", tone: urlTone })}>
-                      <PenSquare className="h-3.5 w-3.5 me-1.5" />Open in Composer
+                    <Button
+                      size="sm"
+                      onClick={() =>
+                        sendToComposer(urlResult.tweets, { source: "url-to-thread", tone: urlTone })
+                      }
+                    >
+                      <PenSquare className="me-1.5 h-3.5 w-3.5" />
+                      Open in Composer
                     </Button>
                   </div>
                 </div>
                 {urlResult.tweets.map((tweet, idx) => (
-                  <Card key={idx} className="border focus-within:border-primary/40 transition-colors">
+                  <Card
+                    key={idx}
+                    className="focus-within:border-primary/40 border transition-colors"
+                  >
                     <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <Badge variant="secondary" className="shrink-0 tabular-nums">#{idx + 1}</Badge>
+                      <div className="mb-2 flex items-start justify-between gap-3">
+                        <Badge variant="secondary" className="shrink-0 tabular-nums">
+                          #{idx + 1}
+                        </Badge>
                       </div>
                       <Textarea
-                        className="resize-none border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent p-0 text-sm leading-relaxed min-h-[60px] w-full"
+                        className="min-h-[60px] w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                         value={tweet}
                         onChange={(e) => updateUrlTweet(idx, e.target.value)}
                         aria-label={`Edit URL tweet ${idx + 1}`}
                       />
-                      <p className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}>
+                      <p
+                        className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}
+                      >
                         {tweet.length}/280
                       </p>
                     </CardContent>
@@ -721,24 +933,35 @@ function AIWriterContent() {
                 ))}
               </>
             ) : (
-              <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-4">
+              <div className="border-border bg-muted/20 space-y-4 rounded-xl border border-dashed p-5">
                 {/* Article → thread preview */}
-                <div className="opacity-30 pointer-events-none select-none blur-[1px] space-y-2" aria-hidden="true">
-                  <div className="rounded-lg border bg-card p-3 flex items-center gap-2">
-                    <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="h-2.5 bg-muted-foreground/30 rounded w-3/4" />
+                <div
+                  className="pointer-events-none space-y-2 opacity-30 blur-[1px] select-none"
+                  aria-hidden="true"
+                >
+                  <div className="bg-card flex items-center gap-2 rounded-lg border p-3">
+                    <Link2 className="text-muted-foreground h-4 w-4 shrink-0" />
+                    <div className="bg-muted-foreground/30 h-2.5 w-3/4 rounded" />
                   </div>
-                  <div className="text-xs text-muted-foreground text-center">↓ converts to</div>
-                  {[["1/4", "w-full", "w-4/5"], ["2/4", "w-full", "w-2/3"], ["3/4", "w-3/4", "w-full"]].map(([label, ...bars]) => (
-                    <div key={label} className="rounded-lg border bg-card p-2.5 space-y-1.5">
-                      <span className="text-xs text-muted-foreground font-medium">{label}</span>
-                      {bars.map((w, i) => <div key={i} className={`h-2.5 bg-muted-foreground/30 rounded ${w}`} />)}
+                  <div className="text-muted-foreground text-center text-xs">↓ converts to</div>
+                  {[
+                    ["1/4", "w-full", "w-4/5"],
+                    ["2/4", "w-full", "w-2/3"],
+                    ["3/4", "w-3/4", "w-full"],
+                  ].map(([label, ...bars]) => (
+                    <div key={label} className="bg-card space-y-1.5 rounded-lg border p-2.5">
+                      <span className="text-muted-foreground text-xs font-medium">{label}</span>
+                      {bars.map((w, i) => (
+                        <div key={i} className={`bg-muted-foreground/30 h-2.5 rounded ${w}`} />
+                      ))}
                     </div>
                   ))}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-sm">Paste a URL to convert</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Any article, blog post, or newsletter — we&apos;ll extract and thread it</p>
+                  <p className="text-sm font-medium">Paste a URL to convert</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Any article, blog post, or newsletter — we&apos;ll extract and thread it
+                  </p>
                 </div>
               </div>
             )}
@@ -752,7 +975,7 @@ function AIWriterContent() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shuffle className="h-5 w-5 text-primary" />
+                <Shuffle className="text-primary h-5 w-5" />
                 A/B Variant Generator
               </CardTitle>
             </CardHeader>
@@ -766,12 +989,14 @@ function AIWriterContent() {
                   value={variantTweet}
                   onChange={(e) => setVariantTweet(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">{variantTweet.length} chars</p>
+                <p className="text-muted-foreground text-xs">{variantTweet.length} chars</p>
               </div>
               <div className="space-y-2">
                 <Label>Language</Label>
                 <Select value={variantLanguage} onValueChange={setVariantLanguage}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ar">Arabic</SelectItem>
                     <SelectItem value="en">English</SelectItem>
@@ -786,38 +1011,62 @@ function AIWriterContent() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button className="w-full" onClick={handleVariants} disabled={variantLoading || !variantTweet.trim()} size="lg">
-                {variantLoading ? <><Loader2 className="me-2 h-4 w-4 animate-spin" />Generating... ({variantElapsed}s)</> : <><Shuffle className="me-2 h-4 w-4" />Generate 3 Variants</>}
+              <Button
+                className="w-full"
+                onClick={handleVariants}
+                disabled={variantLoading || !variantTweet.trim()}
+                size="lg"
+              >
+                {variantLoading ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    Generating... ({variantElapsed}s)
+                  </>
+                ) : (
+                  <>
+                    <Shuffle className="me-2 h-4 w-4" />
+                    Generate 3 Variants
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
 
           <div className="space-y-3">
             {variants.length === 0 && !variantLoading ? (
-              <div className="rounded-xl border border-dashed border-border bg-muted/20 p-5 space-y-4 h-full">
-                <div className="space-y-2 opacity-30 pointer-events-none select-none blur-[1px]" aria-hidden="true">
-                  {[["Emotional", "border-rose-500/30 bg-rose-500/5"], ["Factual", "border-blue-500/30 bg-blue-500/5"], ["Question", "border-amber-500/30 bg-amber-500/5"]].map(([label, cls]) => (
-                    <div key={label} className={`rounded-lg border p-2.5 space-y-1.5 ${cls}`}>
+              <div className="border-border bg-muted/20 h-full space-y-4 rounded-xl border border-dashed p-5">
+                <div
+                  className="pointer-events-none space-y-2 opacity-30 blur-[1px] select-none"
+                  aria-hidden="true"
+                >
+                  {[
+                    ["Emotional", "border-rose-500/30 bg-rose-500/5"],
+                    ["Factual", "border-blue-500/30 bg-blue-500/5"],
+                    ["Question", "border-amber-500/30 bg-amber-500/5"],
+                  ].map(([label, cls]) => (
+                    <div key={label} className={`space-y-1.5 rounded-lg border p-2.5 ${cls}`}>
                       <span className="text-xs font-semibold capitalize">{label}</span>
-                      <div className="h-2.5 bg-current/20 rounded w-full opacity-30" />
-                      <div className="h-2.5 bg-current/20 rounded w-4/5 opacity-30" />
+                      <div className="h-2.5 w-full rounded bg-current/20 opacity-30" />
+                      <div className="h-2.5 w-4/5 rounded bg-current/20 opacity-30" />
                     </div>
                   ))}
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-sm">3 variants will appear here</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Each uses a different angle: emotional, factual, and question</p>
+                  <p className="text-sm font-medium">3 variants will appear here</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Each uses a different angle: emotional, factual, and question
+                  </p>
                 </div>
               </div>
             ) : variantLoading ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-12 gap-3 h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Generating variants...</p>
+              <div className="border-border bg-muted/20 flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12">
+                <Loader2 className="text-primary h-8 w-8 animate-spin" />
+                <p className="text-muted-foreground text-sm">Generating variants...</p>
               </div>
             ) : (
               variants.map((v, idx) => (
                 <Card key={idx} className="hover:border-primary/30 transition-colors">
-                  <CardContent className="p-4 space-y-2">
+                  <CardContent className="space-y-2 p-4">
                     <div className="flex items-center justify-between gap-2">
                       <span
                         className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${ANGLE_COLORS[v.angle] ?? ""}`}
@@ -825,19 +1074,33 @@ function AIWriterContent() {
                         {v.angle}
                       </span>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => copyVariant(v.text, idx)} aria-label={`Copy variant ${idx + 1}`}>
-                          {variantCopied === idx ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => copyVariant(v.text, idx)}
+                          aria-label={`Copy variant ${idx + 1}`}
+                        >
+                          {variantCopied === idx ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => applyVariant(v.text)}>
                           Use
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => sendToComposer([v.text], { source: "ai-writer" })} aria-label={`Open variant ${idx + 1} in Composer`}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => sendToComposer([v.text], { source: "ai-writer" })}
+                          aria-label={`Open variant ${idx + 1} in Composer`}
+                        >
                           <PenSquare className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
                     <p className="text-sm leading-relaxed">{v.text}</p>
-                    <p className="text-xs text-muted-foreground italic">{v.rationale}</p>
+                    <p className="text-muted-foreground text-xs italic">{v.rationale}</p>
                   </CardContent>
                 </Card>
               ))

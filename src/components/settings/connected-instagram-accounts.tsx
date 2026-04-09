@@ -4,13 +4,7 @@ import Image from "next/image";
 import { Instagram, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface InstagramAccount {
   id: string;
@@ -29,8 +23,8 @@ export function ConnectedInstagramAccounts({
   };
 
   const handleDisconnect = async (_accountId: string) => {
-      // Implement disconnect logic if needed
-      toast.info("Disconnect feature coming soon");
+    // Implement disconnect logic if needed
+    toast.info("Disconnect feature coming soon");
   };
 
   return (
@@ -44,7 +38,7 @@ export function ConnectedInstagramAccounts({
       </CardHeader>
       <CardContent className="space-y-4">
         {initialAccounts.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground text-sm">
+          <div className="text-muted-foreground py-4 text-center text-sm">
             No Instagram accounts connected.
           </div>
         ) : (
@@ -52,10 +46,10 @@ export function ConnectedInstagramAccounts({
             {initialAccounts.map((account) => (
               <div
                 key={account.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-muted rounded-full overflow-hidden relative shrink-0">
+                  <div className="bg-muted relative h-10 w-10 shrink-0 overflow-hidden rounded-full">
                     {account.instagramAvatarUrl ? (
                       <Image
                         src={account.instagramAvatarUrl}
@@ -64,36 +58,27 @@ export function ConnectedInstagramAccounts({
                         className="object-cover"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-muted">
-                        <Instagram className="h-5 w-5 text-muted-foreground" />
+                      <div className="bg-muted flex h-full w-full items-center justify-center">
+                        <Instagram className="text-muted-foreground h-5 w-5" />
                       </div>
                     )}
                   </div>
                   <div>
                     <div className="font-medium">@{account.instagramUsername}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       {account.isActive ? "Active" : "Inactive"}
                     </div>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDisconnect(account.id)}
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                <Button variant="ghost" size="icon" onClick={() => handleDisconnect(account.id)}>
+                  <Trash2 className="text-muted-foreground hover:text-destructive h-4 w-4" />
                 </Button>
               </div>
             ))}
           </div>
         )}
 
-        <Button
-          variant="outline"
-          className="w-full gap-2"
-          onClick={handleConnect}
-          disabled
-        >
+        <Button variant="outline" className="w-full gap-2" onClick={handleConnect} disabled>
           <Plus className="h-4 w-4" />
           Connect Instagram Account
         </Button>

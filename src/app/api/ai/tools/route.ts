@@ -32,15 +32,14 @@ export async function POST(req: Request) {
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request", details: parsed.error }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: "Invalid request", details: parsed.error }), {
+        status: 400,
+      });
     }
 
     const { tool, language, tone, topic, input, context } = parsed.data;
 
-    const langLabel = LANGUAGES.find(l => l.code === language)?.label || 'English';
+    const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
 
     // Validate the stored voiceProfile against the strict schema and sanitize
     // every field before interpolation. Returns "" for null/invalid profiles.
@@ -63,9 +62,7 @@ Constraints:
       }
 
       if (tool === "cta") {
-        const contextPrompt = context
-          ? `\n\nThread context for relevance:\n${context}`
-          : "";
+        const contextPrompt = context ? `\n\nThread context for relevance:\n${context}` : "";
         return `Write a short call-to-action for the END of an X thread.
 Tone: ${tone}.
 Language: ${langLabel}.
@@ -98,14 +95,7 @@ ${input || ""}`;
       prompt,
     });
 
-    await recordAiUsage(
-        session.user.id, 
-        tool, 
-        0, 
-        prompt, 
-        object,
-        language
-    );
+    await recordAiUsage(session.user.id, tool, 0, prompt, object, language);
 
     return Response.json(object);
   } catch (err) {

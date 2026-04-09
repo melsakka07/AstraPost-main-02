@@ -2,7 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Verified, MessageCircle, Repeat2, Heart, Eye, ChevronDown, ChevronUp, Play, ExternalLink } from "lucide-react";
+import {
+  Verified,
+  MessageCircle,
+  Repeat2,
+  Heart,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  Play,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Tweet } from "@/lib/services/tweet-importer";
@@ -29,7 +39,7 @@ function formatNumber(num: number): string {
 
 function formatRelativeTime(date: Date | string): string {
   const now = new Date();
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const dateObj = typeof date === "string" ? new Date(date) : date;
   const diff = now.getTime() - dateObj.getTime();
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -106,7 +116,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
     <div className={cn("flex gap-2 sm:gap-3", isReply && "ml-8 sm:ml-12")}>
       {/* Avatar */}
       <div className="flex-shrink-0">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-muted overflow-hidden">
+        <div className="bg-muted h-10 w-10 overflow-hidden rounded-full sm:h-12 sm:w-12">
           {tweet.author.avatarUrl ? (
             <Image
               src={tweet.author.avatarUrl}
@@ -116,7 +126,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-base sm:text-lg font-medium">
+            <div className="text-muted-foreground flex h-full w-full items-center justify-center text-base font-medium sm:text-lg">
               {tweet.author.name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -124,20 +134,24 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         {/* Header */}
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-          <span className="font-bold text-foreground truncate text-sm sm:text-base">{tweet.author.name}</span>
+        <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+          <span className="text-foreground truncate text-sm font-bold sm:text-base">
+            {tweet.author.name}
+          </span>
           {tweet.author.verified && (
-            <Verified className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary fill-primary" />
+            <Verified className="text-primary fill-primary h-3.5 w-3.5 sm:h-4 sm:w-4" />
           )}
           <span className="text-muted-foreground text-xs sm:text-sm">@{tweet.author.username}</span>
           <span className="text-muted-foreground text-xs sm:text-sm">·</span>
-          <span className="text-muted-foreground text-xs sm:text-sm">{formatRelativeTime(tweet.createdAt)}</span>
+          <span className="text-muted-foreground text-xs sm:text-sm">
+            {formatRelativeTime(tweet.createdAt)}
+          </span>
         </div>
 
         {/* Tweet Text */}
-        <div className="mt-1 text-sm sm:text-[15px] leading-normal whitespace-pre-wrap break-words text-foreground">
+        <div className="text-foreground mt-1 text-sm leading-normal break-words whitespace-pre-wrap sm:text-[15px]">
           {highlightEntities(tweet.text)}
         </div>
 
@@ -145,13 +159,13 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
         {tweet.media.length > 0 && (
           <div className="mt-3 grid gap-2">
             {tweet.media.length === 1 && (
-              <div className="relative rounded-2xl overflow-hidden border border-border max-w-md">
-                {(tweet.media[0]?.type === "video" || tweet.media[0]?.type === "gif") ? (
+              <div className="border-border relative max-w-md overflow-hidden rounded-2xl border">
+                {tweet.media[0]?.type === "video" || tweet.media[0]?.type === "gif" ? (
                   <a
                     href={`https://x.com/${tweet.author.username}/status/${tweet.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block relative aspect-video w-full group cursor-pointer"
+                    className="group relative block aspect-video w-full cursor-pointer"
                   >
                     <Image
                       src={tweet.media[0]?.thumbnailUrl ?? tweet.media[0]?.url ?? ""}
@@ -160,12 +174,12 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                      <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                        <Play className="h-8 w-8 text-gray-900 ml-1" fill="currentColor" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg">
+                        <Play className="ml-1 h-8 w-8 text-gray-900" fill="currentColor" />
                       </div>
                     </div>
-                    <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                    <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-xs text-white">
                       <ExternalLink className="h-3 w-3" />
                       <span>View on X</span>
                     </div>
@@ -184,9 +198,12 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
               </div>
             )}
             {tweet.media.length === 2 && (
-              <div className="grid grid-cols-2 gap-2 max-w-md">
+              <div className="grid max-w-md grid-cols-2 gap-2">
                 {tweet.media.map((media, i) => (
-                  <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-border">
+                  <div
+                    key={i}
+                    className="border-border relative aspect-square overflow-hidden rounded-2xl border"
+                  >
                     <Image
                       src={media.url}
                       alt={`Tweet media ${i + 1}`}
@@ -199,9 +216,12 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
               </div>
             )}
             {tweet.media.length === 3 && (
-              <div className="grid grid-cols-2 gap-2 max-w-md">
+              <div className="grid max-w-md grid-cols-2 gap-2">
                 {tweet.media.slice(0, 2).map((media, i) => (
-                  <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-border">
+                  <div
+                    key={i}
+                    className="border-border relative aspect-square overflow-hidden rounded-2xl border"
+                  >
                     <Image
                       src={media.url}
                       alt={`Tweet media ${i + 1}`}
@@ -212,7 +232,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                   </div>
                 ))}
                 {tweet.media[2] && (
-                  <div className="relative aspect-square rounded-2xl overflow-hidden border border-border">
+                  <div className="border-border relative aspect-square overflow-hidden rounded-2xl border">
                     <Image
                       src={tweet.media[2].url}
                       alt="Tweet media 3"
@@ -225,9 +245,12 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
               </div>
             )}
             {tweet.media.length >= 4 && (
-              <div className="grid grid-cols-2 gap-2 max-w-md">
+              <div className="grid max-w-md grid-cols-2 gap-2">
                 {tweet.media.map((media, i) => (
-                  <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border border-border">
+                  <div
+                    key={i}
+                    className="border-border relative aspect-square overflow-hidden rounded-2xl border"
+                  >
                     <Image
                       src={media.url}
                       alt={`Tweet media ${i + 1}`}
@@ -243,20 +266,20 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
         )}
 
         {/* Metrics */}
-        <div className="mt-2 sm:mt-3 flex items-center gap-3 sm:gap-5 text-muted-foreground text-xs sm:text-sm">
-          <div className="flex items-center gap-1 sm:gap-1.5 hover:text-primary transition-colors">
+        <div className="text-muted-foreground mt-2 flex items-center gap-3 text-xs sm:mt-3 sm:gap-5 sm:text-sm">
+          <div className="hover:text-primary flex items-center gap-1 transition-colors sm:gap-1.5">
             <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span>{formatNumber(tweet.metrics.replies)}</span>
           </div>
-          <div className="flex items-center gap-1 sm:gap-1.5 hover:text-primary transition-colors">
+          <div className="hover:text-primary flex items-center gap-1 transition-colors sm:gap-1.5">
             <Repeat2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span>{formatNumber(tweet.metrics.retweets)}</span>
           </div>
-          <div className="flex items-center gap-1 sm:gap-1.5 hover:text-primary transition-colors">
+          <div className="hover:text-primary flex items-center gap-1 transition-colors sm:gap-1.5">
             <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span>{formatNumber(tweet.metrics.likes)}</span>
           </div>
-          <div className="flex items-center gap-1 sm:gap-1.5 hover:text-primary transition-colors">
+          <div className="hover:text-primary flex items-center gap-1 transition-colors sm:gap-1.5">
             <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             <span>{formatNumber(tweet.metrics.impressions)}</span>
           </div>
@@ -279,16 +302,18 @@ export function ImportedTweetCard({
       <CardContent className="p-3 sm:p-4">
         {/* Quoted Tweet */}
         {quotedTweet && (
-          <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-border">
-            <div className="text-[10px] sm:text-xs text-muted-foreground mb-1.5 sm:mb-2">Quoted Tweet</div>
+          <div className="border-border mb-3 border-b pb-3 sm:mb-4 sm:pb-4">
+            <div className="text-muted-foreground mb-1.5 text-[10px] sm:mb-2 sm:text-xs">
+              Quoted Tweet
+            </div>
             <TweetContent tweet={quotedTweet} />
           </div>
         )}
 
         {/* Parent Tweets (Thread Context) */}
         {showThreadContext && parentTweets.length > 0 && (
-          <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-border space-y-3 sm:space-y-4">
-            <div className="text-[10px] sm:text-xs text-muted-foreground">Thread Context</div>
+          <div className="border-border mb-3 space-y-3 border-b pb-3 sm:mb-4 sm:space-y-4 sm:pb-4">
+            <div className="text-muted-foreground text-[10px] sm:text-xs">Thread Context</div>
             {[...parentTweets].reverse().map((parentTweet) => (
               <TweetContent key={parentTweet.id} tweet={parentTweet} />
             ))}
@@ -300,23 +325,24 @@ export function ImportedTweetCard({
 
         {/* Thread Toggle */}
         {(parentTweets.length > 0 || topReplies.length > 0) && (
-          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
+          <div className="border-border mt-3 border-t pt-3 sm:mt-4 sm:pt-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={onToggleThread}
-              className="text-muted-foreground hover:text-foreground h-8 sm:h-9 text-xs sm:text-sm"
+              className="text-muted-foreground hover:text-foreground h-8 text-xs sm:h-9 sm:text-sm"
             >
               {showThreadContext ? (
                 <>
-                  <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                  <ChevronUp className="mr-0.5 h-3.5 w-3.5 sm:mr-1 sm:h-4 sm:w-4" />
                   Hide Thread
                 </>
               ) : (
                 <>
-                  <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                  <ChevronDown className="mr-0.5 h-3.5 w-3.5 sm:mr-1 sm:h-4 sm:w-4" />
                   View Thread {parentTweets.length > 0 && `(${parentTweets.length})`}
-                  {topReplies.length > 0 && ` · ${topReplies.length} repl${topReplies.length > 1 ? "ies" : "y"}`}
+                  {topReplies.length > 0 &&
+                    ` · ${topReplies.length} repl${topReplies.length > 1 ? "ies" : "y"}`}
                 </>
               )}
             </Button>
@@ -325,8 +351,8 @@ export function ImportedTweetCard({
 
         {/* Top Replies (shown when thread is expanded) */}
         {showThreadContext && topReplies.length > 0 && (
-          <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border space-y-3 sm:space-y-4">
-            <div className="text-[10px] sm:text-xs text-muted-foreground">Top Replies</div>
+          <div className="border-border mt-3 space-y-3 border-t pt-3 sm:mt-4 sm:space-y-4 sm:pt-4">
+            <div className="text-muted-foreground text-[10px] sm:text-xs">Top Replies</div>
             {topReplies.slice(0, 3).map((reply) => (
               <TweetContent key={reply.id} tweet={reply} isReply />
             ))}

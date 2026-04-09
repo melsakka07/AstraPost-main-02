@@ -4,7 +4,6 @@ import { aiPreamble } from "@/lib/api/ai-preamble";
 import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
-
 const requestSchema = z.object({
   tweets: z.array(z.string()).min(1).max(15),
   targetLanguage: LANGUAGE_ENUM,
@@ -23,10 +22,9 @@ export async function POST(req: Request) {
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request", details: parsed.error }),
-        { status: 400 }
-      );
+      return new Response(JSON.stringify({ error: "Invalid request", details: parsed.error }), {
+        status: 400,
+      });
     }
 
     const { tweets, targetLanguage } = parsed.data;
@@ -39,7 +37,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const prompt = `Translate this X thread into ${LANGUAGES.find(l => l.code === targetLanguage)?.label || 'English'}.
+    const prompt = `Translate this X thread into ${LANGUAGES.find((l) => l.code === targetLanguage)?.label || "English"}.
 
 Constraints:
 - Keep each translated tweet under 280 characters. If a translation would exceed 280 characters, split it into multiple shorter tweets to stay within the limit.
@@ -56,14 +54,7 @@ ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${t}`).join("\n\n")}`;
       prompt,
     });
 
-    await recordAiUsage(
-        session.user.id, 
-        "translate", 
-        0, 
-        prompt, 
-        object,
-        targetLanguage
-    );
+    await recordAiUsage(session.user.id, "translate", 0, prompt, object, targetLanguage);
 
     return Response.json(object);
   } catch (error) {

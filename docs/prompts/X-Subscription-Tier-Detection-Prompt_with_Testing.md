@@ -19,7 +19,7 @@ You are working on **AstraPost**, a production-ready AI-powered social media sch
 - **Multi-table writes:** Must be wrapped in `db.transaction()`
 - **X API service:** `src/lib/services/x-api.ts` — handles OAuth tokens, encrypted at rest via AES-256-GCM (`src/lib/security/token-encryption.ts`)
 - **X accounts table:** `x_accounts` in `src/lib/schema.ts` — stores connected X accounts with encrypted tokens, follower count, default flag, token expiry
-- **Existing character limit:** Currently hardcoded to 280 characters for ALL users regardless of their X subscription status. When exceeded, the app shows: *"X Premium required for long posts. One or more of your tweets exceeds 280 characters..."*
+- **Existing character limit:** Currently hardcoded to 280 characters for ALL users regardless of their X subscription status. When exceeded, the app shows: _"X Premium required for long posts. One or more of your tweets exceeds 280 characters..."_
 - **UI components:** shadcn/ui + Tailwind CSS 4, dark mode support required
 - **State management:** Zustand
 - **Validation:** Zod — route-specific schemas in the route file, shared schemas in `src/lib/schemas/common.ts`
@@ -57,16 +57,16 @@ GET https://api.twitter.com/2/users/me?user.fields=subscription_type
 
 ### Possible Values for `subscription_type`
 
-| API Value       | Tier         | Long Posts (25K chars) | Blue Checkmark |
-|-----------------|--------------|------------------------|----------------|
-| `"None"`        | Free         | ❌ No                  | ❌ No          |
-| `"Basic"`       | Basic ($3/mo)| ✅ Yes                 | ❌ No          |
-| `"Premium"`     | Premium ($8/mo)| ✅ Yes               | ✅ Yes         |
-| `"PremiumPlus"` | Premium+ ($16–40/mo)| ✅ Yes          | ✅ Yes         |
+| API Value       | Tier                 | Long Posts (25K chars) | Blue Checkmark |
+| --------------- | -------------------- | ---------------------- | -------------- |
+| `"None"`        | Free                 | ❌ No                  | ❌ No          |
+| `"Basic"`       | Basic ($3/mo)        | ✅ Yes                 | ❌ No          |
+| `"Premium"`     | Premium ($8/mo)      | ✅ Yes                 | ✅ Yes         |
+| `"PremiumPlus"` | Premium+ ($16–40/mo) | ✅ Yes                 | ✅ Yes         |
 
 ### Critical Limitations
 
-1. **Privacy constraint:** The field only returns a value for the *authenticated* user's own token. You cannot look up another user's subscription tier.
+1. **Privacy constraint:** The field only returns a value for the _authenticated_ user's own token. You cannot look up another user's subscription tier.
 2. **Propagation delay:** There may be a short delay between a user purchasing a subscription on X and the API reflecting it. Account for this with appropriate UI messaging.
 3. **Token validity:** The access token must be valid and not expired. Handle 401 responses gracefully and prompt reconnection if needed.
 
@@ -86,10 +86,12 @@ xSubscriptionTierUpdatedAt: timestamp("x_subscription_tier_updated_at"),
 ```
 
 **Column design rationale:**
+
 - `x_subscription_tier` — stores the raw API value: `"None"`, `"Basic"`, `"Premium"`, or `"PremiumPlus"`. Defaults to `"None"` so existing rows are safe.
 - `x_subscription_tier_updated_at` — tracks when the tier was last fetched, enabling staleness checks and refresh logic.
 
 **After modifying the schema:**
+
 ```bash
 pnpm run db:generate
 pnpm run db:migrate
@@ -109,7 +111,7 @@ Add a new method to the existing X API service class/module:
 async function fetchXSubscriptionTier(xAccountId: string): Promise<{
   subscriptionTier: "None" | "Basic" | "Premium" | "PremiumPlus";
   username: string;
-}>
+}>;
 ```
 
 **Implementation requirements:**
@@ -141,10 +143,12 @@ GET /api/x/subscription-tier?accountId={xAccountId}
 ```
 
 **Request:**
+
 - Query parameter: `accountId` (UUID of the connected X account from `x_accounts`)
 - Validate with Zod
 
 **Response (200):**
+
 ```json
 {
   "subscriptionTier": "Premium",
@@ -180,6 +184,7 @@ POST /api/x/subscription-tier/refresh
 ```
 
 **Request body:**
+
 ```json
 {
   "accountIds": ["uuid-1", "uuid-2"]
@@ -189,6 +194,7 @@ POST /api/x/subscription-tier/refresh
 **Purpose:** Allow the settings page to refresh subscription tiers for all connected X accounts at once. This is useful when a user upgrades their X subscription and wants to see the change reflected.
 
 **Implementation:**
+
 1. Authenticate and validate ownership of all account IDs.
 2. Fetch subscription tier for each account (sequentially to respect rate limits).
 3. Return updated tiers for all accounts.
@@ -214,14 +220,15 @@ interface XSubscriptionBadgeProps {
 ```
 
 **Visual design:**
-| Tier         | Circle Color | Tooltip Text               |
+| Tier | Circle Color | Tooltip Text |
 |--------------|-------------|----------------------------|
-| `None`/`null`| Gray        | "Free X account"           |
-| `Basic`      | Yellow      | "X Basic subscriber"       |
-| `Premium`    | Blue        | "X Premium subscriber ✓"   |
+| `None`/`null`| Gray | "Free X account" |
+| `Basic` | Yellow | "X Basic subscriber" |
+| `Premium` | Blue | "X Premium subscriber ✓" |
 | `PremiumPlus`| Blue (gold ring) | "X Premium+ subscriber ✓✓" |
 
 **Requirements:**
+
 - Render as a small filled circle (8px for `sm`, 12px for `md`) using Tailwind classes.
 - Use a `Tooltip` from shadcn/ui to show the label on hover.
 - Support dark mode — colors should be visible on both light and dark backgrounds.
@@ -398,15 +405,15 @@ Implement all phases in order. After each phase, run `pnpm lint && pnpm typechec
 
 ### Phase-by-Phase Findings
 
-| Phase | Status | Evidence |
-|-------|--------|----------|
-| Phase 1 — Schema | ✅ | `src/lib/schema.ts` lines 231–232: `xSubscriptionTier` + `xSubscriptionTierUpdatedAt` columns present. Migration file `drizzle/0037_naive_dreaming_celestial.sql` exists and was applied. |
-| Phase 2 — X API Method | ✅ | `src/lib/services/x-api.ts`: `getSubscriptionTier()` (instance) + `fetchXSubscriptionTier(accountId)` (static) both present with 401/429/error handling and DB update logic. |
-| Phase 3 — GET route | ✅ | `src/app/api/x/subscription-tier/route.ts` exists. Auth, ownership check, Zod validation, `ApiError` usage, 24h caching with stale-refresh logic all confirmed. |
-| Phase 4 — POST refresh route | ✅ | `src/app/api/x/subscription-tier/refresh/route.ts` exists. Batch processing, 15-min cooldown, sequential execution, and per-account status reporting confirmed. |
-| Phase 5 — Frontend badge & integration | ✅ | `src/components/settings/x-subscription-badge.tsx` exists with all 4 tier colors + null, tooltip, loading pulse. `connected-x-accounts.tsx` updated with badge + refresh button + auto-fetch on mount. `GET /api/x/accounts` returns `xSubscriptionTier` + `xSubscriptionTierUpdatedAt` fields. |
-| Phase 6 — Type safety | ✅ | `src/lib/schemas/common.ts`: `xSubscriptionTierEnum` + `XSubscriptionTier` type exported. `src/lib/services/x-subscription.ts`: `canPostLongContent()`, `getMaxCharacterLimit()`, `getTierLabel()` all exported. |
-| Phase 7 — Tests | ✅ | `src/lib/services/x-subscription.test.ts`: **26/26 tests pass** (canPostLongContent × 6, getMaxCharacterLimit × 6, getTierLabel × 6, xSubscriptionTierEnum Zod × 8). `src/lib/services/x-api.test.ts` subscription section: **8/8 tests pass** (5 tier-parsing tests + 3 error-handling tests). |
+| Phase                                  | Status | Evidence                                                                                                                                                                                                                                                                                        |
+| -------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1 — Schema                       | ✅     | `src/lib/schema.ts` lines 231–232: `xSubscriptionTier` + `xSubscriptionTierUpdatedAt` columns present. Migration file `drizzle/0037_naive_dreaming_celestial.sql` exists and was applied.                                                                                                       |
+| Phase 2 — X API Method                 | ✅     | `src/lib/services/x-api.ts`: `getSubscriptionTier()` (instance) + `fetchXSubscriptionTier(accountId)` (static) both present with 401/429/error handling and DB update logic.                                                                                                                    |
+| Phase 3 — GET route                    | ✅     | `src/app/api/x/subscription-tier/route.ts` exists. Auth, ownership check, Zod validation, `ApiError` usage, 24h caching with stale-refresh logic all confirmed.                                                                                                                                 |
+| Phase 4 — POST refresh route           | ✅     | `src/app/api/x/subscription-tier/refresh/route.ts` exists. Batch processing, 15-min cooldown, sequential execution, and per-account status reporting confirmed.                                                                                                                                 |
+| Phase 5 — Frontend badge & integration | ✅     | `src/components/settings/x-subscription-badge.tsx` exists with all 4 tier colors + null, tooltip, loading pulse. `connected-x-accounts.tsx` updated with badge + refresh button + auto-fetch on mount. `GET /api/x/accounts` returns `xSubscriptionTier` + `xSubscriptionTierUpdatedAt` fields. |
+| Phase 6 — Type safety                  | ✅     | `src/lib/schemas/common.ts`: `xSubscriptionTierEnum` + `XSubscriptionTier` type exported. `src/lib/services/x-subscription.ts`: `canPostLongContent()`, `getMaxCharacterLimit()`, `getTierLabel()` all exported.                                                                                |
+| Phase 7 — Tests                        | ✅     | `src/lib/services/x-subscription.test.ts`: **26/26 tests pass** (canPostLongContent × 6, getMaxCharacterLimit × 6, getTierLabel × 6, xSubscriptionTierEnum Zod × 8). `src/lib/services/x-api.test.ts` subscription section: **8/8 tests pass** (5 tier-parsing tests + 3 error-handling tests). |
 
 ### Automated Check Results
 
@@ -439,58 +446,58 @@ pnpm test        → 26 new subscription tests PASS
 
 ### Phase-by-Phase Findings
 
-| Phase | Status | Evidence |
-|-------|--------|----------|
-| Phase 1 — Badge Relocation | ✅ | `src/components/ui/x-subscription-badge.tsx` exists with `size` prop (`"sm"` \| `"md"`), `loading` state, `showUnknown` prop, and `aria-label` for all tier values. Import in `connected-x-accounts.tsx` updated to `@/components/ui/x-subscription-badge`. |
-| Phase 2 — Settings Enhancements | ✅ | `connected-x-accounts.tsx` has: (1) "last checked" timestamp via `relativeTime()` function, (2) refresh feedback with highlight transition (`transition-all duration-300`), (3) null state handling with `showUnknown` prop showing "Subscription status unknown — click Refresh to check", (4) auto-fetch on mount for accounts with missing tier data. |
-| Phase 3 — Composer Integration | ✅ | **3A:** `target-accounts-select.tsx` displays badge in dropdown items and selected label for Twitter accounts. **3B:** `tweet-card.tsx` has `tier` prop, uses `getMaxCharacterLimit(tier)` for dynamic character limit, shows badge next to character counter for paid accounts via `canPostLongContent(tier)`. **3C:** Data flow verified — `xSubscriptionTier` passed from composer to tweet-card via props. |
-| Phase 4 — Sidebar Account Switcher | ✅ N/A | Prompt correctly notes: "no X account switcher in sidebar - only team/workspace switcher". Verified `sidebar.tsx` contains navigation sections but no X account switching UI. Mobile drawer also has no X account switcher. |
-| Phase 5 — Queue Contextual Error Enhancement | ✅ | `queue-content.tsx` has `getFailureTip()` function with `isCharLimit` flag. When character-limit failures occur: (1) Badge shown via `<XSubscriptionBadge tier={tier} size="sm" />` inside failure tip banner, (2) Different messaging for paid vs free accounts, (3) Paid accounts get "refresh subscription status" suggestion, (4) Free accounts get "upgrade to X Premium" suggestion. Normal queue items (scheduled/pending) do NOT show badge — only failure banners. |
-| Phase 6 — Data Flow End-to-End | ✅ | **Database:** `x_accounts` table has `xSubscriptionTier` (text, default "None") and `xSubscriptionTierUpdatedAt` (timestamp) columns. **API Routes:** `GET /api/x/subscription-tier` returns tier with 24h stale check, `POST /api/x/subscription-tier/refresh` handles batch refresh with 15-min cooldown. **Components:** All surfaces import from `@/components/ui/x-subscription-badge`, use same `XSubscriptionTier` type from `@/lib/services/x-subscription`. |
+| Phase                                        | Status | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1 — Badge Relocation                   | ✅     | `src/components/ui/x-subscription-badge.tsx` exists with `size` prop (`"sm"` \| `"md"`), `loading` state, `showUnknown` prop, and `aria-label` for all tier values. Import in `connected-x-accounts.tsx` updated to `@/components/ui/x-subscription-badge`.                                                                                                                                                                                                                 |
+| Phase 2 — Settings Enhancements              | ✅     | `connected-x-accounts.tsx` has: (1) "last checked" timestamp via `relativeTime()` function, (2) refresh feedback with highlight transition (`transition-all duration-300`), (3) null state handling with `showUnknown` prop showing "Subscription status unknown — click Refresh to check", (4) auto-fetch on mount for accounts with missing tier data.                                                                                                                    |
+| Phase 3 — Composer Integration               | ✅     | **3A:** `target-accounts-select.tsx` displays badge in dropdown items and selected label for Twitter accounts. **3B:** `tweet-card.tsx` has `tier` prop, uses `getMaxCharacterLimit(tier)` for dynamic character limit, shows badge next to character counter for paid accounts via `canPostLongContent(tier)`. **3C:** Data flow verified — `xSubscriptionTier` passed from composer to tweet-card via props.                                                              |
+| Phase 4 — Sidebar Account Switcher           | ✅ N/A | Prompt correctly notes: "no X account switcher in sidebar - only team/workspace switcher". Verified `sidebar.tsx` contains navigation sections but no X account switching UI. Mobile drawer also has no X account switcher.                                                                                                                                                                                                                                                 |
+| Phase 5 — Queue Contextual Error Enhancement | ✅     | `queue-content.tsx` has `getFailureTip()` function with `isCharLimit` flag. When character-limit failures occur: (1) Badge shown via `<XSubscriptionBadge tier={tier} size="sm" />` inside failure tip banner, (2) Different messaging for paid vs free accounts, (3) Paid accounts get "refresh subscription status" suggestion, (4) Free accounts get "upgrade to X Premium" suggestion. Normal queue items (scheduled/pending) do NOT show badge — only failure banners. |
+| Phase 6 — Data Flow End-to-End               | ✅     | **Database:** `x_accounts` table has `xSubscriptionTier` (text, default "None") and `xSubscriptionTierUpdatedAt` (timestamp) columns. **API Routes:** `GET /api/x/subscription-tier` returns tier with 24h stale check, `POST /api/x/subscription-tier/refresh` handles batch refresh with 15-min cooldown. **Components:** All surfaces import from `@/components/ui/x-subscription-badge`, use same `XSubscriptionTier` type from `@/lib/services/x-subscription`.        |
 
 ### Deliverables Checklist Verification
 
-| Deliverable | Status | Notes |
-|-------------|--------|-------|
-| Badge relocated to `src/components/ui/x-subscription-badge.tsx` | ✅ | File exists, all imports updated |
-| `aria-label` added for all tier values | ✅ | `aria-label` prop implemented with tier-specific text |
-| Settings: "last checked" timestamp | ✅ | Uses `relativeTime()` helper |
-| Settings: refresh feedback transition | ✅ | `transition-all duration-300` on refresh |
-| Settings: null-state tooltip | ✅ | `showUnknown` prop handles null tier |
-| Composer: badge in account selector dropdown | ✅ | `target-accounts-select.tsx` line 167+ |
-| Composer: badge in collapsed/selected view | ✅ | `target-accounts-select.tsx` line 140+ |
-| Composer: tier hint near character counter | ✅ | `tweet-card.tsx` shows badge for paid accounts |
-| Sidebar: account switcher | ✅ N/A | No X account switcher exists |
-| Mobile drawer: account switcher | ✅ N/A | No X account switcher exists |
-| Queue: character-limit failure banners | ✅ | `queue-content.tsx` `getFailureTip()` with `isCharLimit` |
-| Queue: normal items clean (no badge) | ✅ | Badge only in failure tip banners |
-| Dark mode support | ✅ | Colors use Tailwind tokens visible on dark backgrounds |
-| `pnpm lint && pnpm typecheck` | ✅ | Per `0-MY-LATEST-UPDATES.md`, both pass |
+| Deliverable                                                     | Status | Notes                                                    |
+| --------------------------------------------------------------- | ------ | -------------------------------------------------------- |
+| Badge relocated to `src/components/ui/x-subscription-badge.tsx` | ✅     | File exists, all imports updated                         |
+| `aria-label` added for all tier values                          | ✅     | `aria-label` prop implemented with tier-specific text    |
+| Settings: "last checked" timestamp                              | ✅     | Uses `relativeTime()` helper                             |
+| Settings: refresh feedback transition                           | ✅     | `transition-all duration-300` on refresh                 |
+| Settings: null-state tooltip                                    | ✅     | `showUnknown` prop handles null tier                     |
+| Composer: badge in account selector dropdown                    | ✅     | `target-accounts-select.tsx` line 167+                   |
+| Composer: badge in collapsed/selected view                      | ✅     | `target-accounts-select.tsx` line 140+                   |
+| Composer: tier hint near character counter                      | ✅     | `tweet-card.tsx` shows badge for paid accounts           |
+| Sidebar: account switcher                                       | ✅ N/A | No X account switcher exists                             |
+| Mobile drawer: account switcher                                 | ✅ N/A | No X account switcher exists                             |
+| Queue: character-limit failure banners                          | ✅     | `queue-content.tsx` `getFailureTip()` with `isCharLimit` |
+| Queue: normal items clean (no badge)                            | ✅     | Badge only in failure tip banners                        |
+| Dark mode support                                               | ✅     | Colors use Tailwind tokens visible on dark backgrounds   |
+| `pnpm lint && pnpm typecheck`                                   | ✅     | Per `0-MY-LATEST-UPDATES.md`, both pass                  |
 
 ### Key Code Locations
 
-| Feature | File | Key Lines |
-|---------|------|-----------|
-| Badge Component | `src/components/ui/x-subscription-badge.tsx` | Full file |
-| Settings Integration | `src/components/settings/connected-x-accounts.tsx` | Import + badge rendering |
-| Composer Account Selector | `src/components/composer/target-accounts-select.tsx` | Lines 140, 167+ |
-| Composer Tweet Card | `src/components/composer/tweet-card.tsx` | `tier` prop, `getMaxCharacterLimit()` |
-| Queue Failure Tips | `src/components/queue/queue-content.tsx` | `getFailureTip()` function |
-| Helper Functions | `src/lib/services/x-subscription.ts` | `canPostLongContent()`, `getMaxCharacterLimit()` |
-| Database Schema | `src/lib/schema.ts` | Lines 231-232 |
-| GET Tier API | `src/app/api/x/subscription-tier/route.ts` | Full file |
-| Refresh API | `src/app/api/x/subscription-tier/refresh/route.ts` | Full file |
+| Feature                   | File                                                 | Key Lines                                        |
+| ------------------------- | ---------------------------------------------------- | ------------------------------------------------ |
+| Badge Component           | `src/components/ui/x-subscription-badge.tsx`         | Full file                                        |
+| Settings Integration      | `src/components/settings/connected-x-accounts.tsx`   | Import + badge rendering                         |
+| Composer Account Selector | `src/components/composer/target-accounts-select.tsx` | Lines 140, 167+                                  |
+| Composer Tweet Card       | `src/components/composer/tweet-card.tsx`             | `tier` prop, `getMaxCharacterLimit()`            |
+| Queue Failure Tips        | `src/components/queue/queue-content.tsx`             | `getFailureTip()` function                       |
+| Helper Functions          | `src/lib/services/x-subscription.ts`                 | `canPostLongContent()`, `getMaxCharacterLimit()` |
+| Database Schema           | `src/lib/schema.ts`                                  | Lines 231-232                                    |
+| GET Tier API              | `src/app/api/x/subscription-tier/route.ts`           | Full file                                        |
+| Refresh API               | `src/app/api/x/subscription-tier/refresh/route.ts`   | Full file                                        |
 
 ### UX Principles Compliance
 
-| Principle | Status | Evidence |
-|-----------|--------|----------|
-| Progressive Disclosure | ✅ | Badge is small colored dot (8-12px), tier name only in tooltip |
-| Contextual Relevance | ✅ | Badge in composer (posting decisions), queue (failures only), settings (management) |
-| Consistency | ✅ | Same `XSubscriptionBadge` component used everywhere |
-| Non-Intrusive | ✅ | No modals, banners, or animations at rest |
-| Accessibility | ✅ | `aria-label` on badge, keyboard-accessible tooltips via shadcn/ui |
-| Mobile-Friendly | ✅ | Touch targets via Tooltip trigger wrapper |
+| Principle              | Status | Evidence                                                                            |
+| ---------------------- | ------ | ----------------------------------------------------------------------------------- |
+| Progressive Disclosure | ✅     | Badge is small colored dot (8-12px), tier name only in tooltip                      |
+| Contextual Relevance   | ✅     | Badge in composer (posting decisions), queue (failures only), settings (management) |
+| Consistency            | ✅     | Same `XSubscriptionBadge` component used everywhere                                 |
+| Non-Intrusive          | ✅     | No modals, banners, or animations at rest                                           |
+| Accessibility          | ✅     | `aria-label` on badge, keyboard-accessible tooltips via shadcn/ui                   |
+| Mobile-Friendly        | ✅     | Touch targets via Tooltip trigger wrapper                                           |
 
 ### Summary
 

@@ -9,7 +9,13 @@ import { subscriptions, user } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
 // Extend VALID_CHECKOUT_PLANS to include "free" for cancellations
-const CHANGE_PLAN_OPTIONS = ["free", "pro_monthly", "pro_annual", "agency_monthly", "agency_annual"] as const;
+const CHANGE_PLAN_OPTIONS = [
+  "free",
+  "pro_monthly",
+  "pro_annual",
+  "agency_monthly",
+  "agency_annual",
+] as const;
 
 const changePlanSchema = z.object({
   plan: z.enum(CHANGE_PLAN_OPTIONS),
@@ -67,14 +73,17 @@ export async function POST(req: Request) {
       return Response.json({
         effectiveDate: currentPeriodEnd?.toISOString(),
         action: "cancel_scheduled",
-        message: "Your subscription will cancel at the end of your current billing period. You'll keep full access until then.",
+        message:
+          "Your subscription will cancel at the end of your current billing period. You'll keep full access until then.",
       });
     }
 
     // ── Handle plan change (upgrade, downgrade, or cycle switch) ──────────────
     const newPriceId = planToPrice(plan);
     if (!newPriceId) {
-      return ApiError.serviceUnavailable(`Price ID for plan "${plan}" is not configured. Contact support.`);
+      return ApiError.serviceUnavailable(
+        `Price ID for plan "${plan}" is not configured. Contact support.`
+      );
     }
 
     // Get the subscription item ID (first item in the subscription)
@@ -95,15 +104,20 @@ export async function POST(req: Request) {
     let proratedCredit: string | null = null;
     try {
       if (updatedSubscription.latest_invoice) {
-        const latestInvoice = await stripe.invoices.retrieve(updatedSubscription.latest_invoice as string);
+        const latestInvoice = await stripe.invoices.retrieve(
+          updatedSubscription.latest_invoice as string
+        );
         if (latestInvoice) {
           // Sum up all proration line items
           const prorations = latestInvoice.lines.data.filter(
-            (line) => line.description?.toLowerCase().includes("proration") || line.period.start !== line.period.end
+            (line) =>
+              line.description?.toLowerCase().includes("proration") ||
+              line.period.start !== line.period.end
           );
           const totalProration = prorations.reduce((sum, line) => sum + (line.amount || 0), 0);
           // Format as dollars (Stripe amounts are in cents)
-          proratedCredit = totalProration < 0 ? `$${Math.abs(totalProration / 100).toFixed(2)}` : null;
+          proratedCredit =
+            totalProration < 0 ? `$${Math.abs(totalProration / 100).toFixed(2)}` : null;
         }
       }
     } catch {
@@ -130,7 +144,9 @@ export async function POST(req: Request) {
   } catch (error) {
     if (error instanceof TypeError && error.message.includes("Stripe API error")) {
       console.error("[billing] change-plan Stripe API error:", error);
-      return ApiError.internal("Failed to update subscription. Please try again or contact support.");
+      return ApiError.internal(
+        "Failed to update subscription. Please try again or contact support."
+      );
     }
     console.error("[billing] change-plan error:", error);
     return ApiError.internal("Failed to change plan. Please try again or contact support.");

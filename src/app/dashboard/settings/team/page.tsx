@@ -91,10 +91,7 @@ export default async function TeamSettingsPage() {
 
   // Fetch invitations
   const invitations = await db.query.teamInvitations.findMany({
-    where: (ti, { eq, and }) => and(
-      eq(ti.teamId, ctx.currentTeamId),
-      eq(ti.status, "pending")
-    ),
+    where: (ti, { eq, and }) => and(eq(ti.teamId, ctx.currentTeamId), eq(ti.status, "pending")),
     orderBy: (ti, { desc }) => [desc(ti.createdAt)],
   });
 
@@ -114,49 +111,47 @@ export default async function TeamSettingsPage() {
     <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
       <div className="flex items-center justify-between">
         <div>
-            <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
-            <p className="text-muted-foreground mt-2">
-                Manage your team members and their access levels.
-            </p>
+          <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your team members and their access levels.
+          </p>
         </div>
-        {canManage && canInvite && (
-            <InviteMemberDialog />
-        )}
+        {canManage && canInvite && <InviteMemberDialog />}
       </div>
 
       {!canInvite && (
         <Alert variant="destructive">
-            <Shield className="h-4 w-4" />
-            <AlertTitle>Upgrade Required</AlertTitle>
-            <AlertDescription>
-                Team management is only available on the Agency plan. 
-                <Button variant="link" className="p-0 h-auto font-semibold ml-1" asChild>
-                    <a href="/pricing">Upgrade now</a>
-                </Button>
-            </AlertDescription>
+          <Shield className="h-4 w-4" />
+          <AlertTitle>Upgrade Required</AlertTitle>
+          <AlertDescription>
+            Team management is only available on the Agency plan.
+            <Button variant="link" className="ml-1 h-auto p-0 font-semibold" asChild>
+              <a href="/pricing">Upgrade now</a>
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
       {canInvite && (
         <Card>
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle>Members ({currentCount} / {maxMembers})</CardTitle>
-                        <CardDescription>
-                            People with access to this workspace.
-                        </CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <TeamMembersList 
-                    members={formattedMembers} 
-                    invitations={formattedInvitations}
-                    currentUserId={session.user.id}
-                    isOwner={isOwner}
-                />
-            </CardContent>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>
+                  Members ({currentCount} / {maxMembers})
+                </CardTitle>
+                <CardDescription>People with access to this workspace.</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <TeamMembersList
+              members={formattedMembers}
+              invitations={formattedInvitations}
+              currentUserId={session.user.id}
+              isOwner={isOwner}
+            />
+          </CardContent>
         </Card>
       )}
     </div>

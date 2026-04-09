@@ -11,11 +11,11 @@
 
 This plan follows the feedback review's categorization of every redesign proposal:
 
-| Category | Count | Action |
-|----------|-------|--------|
-| **Adopt** (high value, low cost) | 5 | Ship immediately |
-| **Modify before adopting** | 3 | Adjust per feedback, then ship |
-| **Skip** | 4 | Do NOT implement |
+| Category                         | Count | Action                         |
+| -------------------------------- | ----- | ------------------------------ |
+| **Adopt** (high value, low cost) | 5     | Ship immediately               |
+| **Modify before adopting**       | 3     | Adjust per feedback, then ship |
+| **Skip**                         | 4     | Do NOT implement               |
 
 No ground-up layout restructuring. All changes are additive or CSS-level, preserving existing systems: auto-save, undo, SSE streaming, cross-page bridges, recurrence, multi-account posting, viral scoring, draft editing, and overwrite confirmation.
 
@@ -79,19 +79,21 @@ All 5 items ship together. Zero architectural changes. Zero risk to existing fea
 - **Implementation:**
   1. In `TweetCard`, after the `<Textarea>`, add a conditional block:
      ```tsx
-     {tweets.length === 1 && isOverLimit(tweet.content) && !canPostLongContent(selectedTier) && (
-       <div className="mt-1.5 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
-         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-         <span>This exceeds 280 characters.</span>
-         <button
-           type="button"
-           className="font-medium text-primary hover:underline"
-           onClick={onConvertToThread}
-         >
-           Convert to thread?
-         </button>
-       </div>
-     )}
+     {
+       tweets.length === 1 && isOverLimit(tweet.content) && !canPostLongContent(selectedTier) && (
+         <div className="mt-1.5 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+           <span>This exceeds 280 characters.</span>
+           <button
+             type="button"
+             className="text-primary font-medium hover:underline"
+             onClick={onConvertToThread}
+           >
+             Convert to thread?
+           </button>
+         </div>
+       );
+     }
      ```
   2. Add `onConvertToThread` prop to `TweetCardProps` (callback that calls `addTweet()` in composer).
   3. Use `isOverLimit()` helper already defined in `tweet-card.tsx` and `canPostLongContent()` from `@/lib/services/x-subscription`.
@@ -246,12 +248,12 @@ No database migrations needed.
 
 These items from the original redesign are **not implemented** per the feedback review. Do not create tickets or plans for them.
 
-| # | Original Proposal | Why Skipped |
-|---|-------------------|-------------|
-| C1 | "Center Stage" 55-60% + 280px right rail | Sidebar controls (AI panel, recurrence, multi-account, best-time) require >280px. Current 67%/33% already gives textarea dominant weight. Needs prototype validation before committing engineering time. |
-| C2 | Sticky "Post to X" button | Button is already visible in normal sidebar scroll on standard viewports (1080px+). Z-index and overflow complexity within Card structure is not justified. |
-| C3 | Removing "Now" chip | It serves a legitimate scheduling-pipeline workflow: clicking "Now" routes through BullMQ queue (with job history, retry capability), while "Post to X" without a date publishes immediately via direct API. Different observability guarantees. |
-| C4 | Removing "Compose" heading | Rendered by `DashboardPageWrapper`, the mandatory shell component for all dashboard pages. Removing it breaks the dashboard consistency pattern and violates the UI/UX Navigation Rules documented in CLAUDE.md. |
+| #   | Original Proposal                        | Why Skipped                                                                                                                                                                                                                                      |
+| --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C1  | "Center Stage" 55-60% + 280px right rail | Sidebar controls (AI panel, recurrence, multi-account, best-time) require >280px. Current 67%/33% already gives textarea dominant weight. Needs prototype validation before committing engineering time.                                         |
+| C2  | Sticky "Post to X" button                | Button is already visible in normal sidebar scroll on standard viewports (1080px+). Z-index and overflow complexity within Card structure is not justified.                                                                                      |
+| C3  | Removing "Now" chip                      | It serves a legitimate scheduling-pipeline workflow: clicking "Now" routes through BullMQ queue (with job history, retry capability), while "Post to X" without a date publishes immediately via direct API. Different observability guarantees. |
+| C4  | Removing "Compose" heading               | Rendered by `DashboardPageWrapper`, the mandatory shell component for all dashboard pages. Removing it breaks the dashboard consistency pattern and violates the UI/UX Navigation Rules documented in CLAUDE.md.                                 |
 
 ---
 
@@ -279,31 +281,31 @@ Week 2: Phase B (3 separate PRs, can be parallelized)
 
 Every change must be verified against these critical systems. If any test fails, the change must be reverted or adjusted before merge.
 
-| Feature | Verification | Applies to |
-|---------|-------------|------------|
-| **Auto-save** | Write content, wait 1s, reload page → content restored | All phases |
-| **Undo system** | Generate AI thread, click undo in toast → previous content restored | A5, B2 |
-| **SSE streaming** | Click "Generate Thread" → tweets stream in real-time with progress bar | B2 (button layout change) |
-| **Cross-page bridges** | Navigate from AI Writer/Inspiration/Calendar with `?draft=` or `?prefill=` → content populates | B1 (preview move) |
-| **Recurrence scheduling** | Set schedule + recurrence pattern + end date → persists on submit | B1, B3 |
-| **Multi-account posting** | Select multiple accounts with mixed tiers → warnings show | B1 |
-| **Viral Score Badge** | Write content → badge appears in preview header with score | A4, B1 |
-| **Draft editing mode** | Load via `?draft=<id>` → PATCH updates work | All phases |
-| **Overwrite confirmation** | Generate AI with >50 chars existing → AlertDialog triggers | B2 |
-| **beforeunload guard** | Edit content, close tab → browser confirmation dialog | All phases |
-| **Mobile AI Sheet** | On mobile, click AI tool → bottom sheet opens at 60dvh | B2 |
-| **Hashtag chips inline** | Generate hashtags → chips appear under active tweet, click to add | B2 |
-| **Link preview** | Paste URL → skeleton → preview card renders | A4, B1 |
+| Feature                    | Verification                                                                                   | Applies to                |
+| -------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------- |
+| **Auto-save**              | Write content, wait 1s, reload page → content restored                                         | All phases                |
+| **Undo system**            | Generate AI thread, click undo in toast → previous content restored                            | A5, B2                    |
+| **SSE streaming**          | Click "Generate Thread" → tweets stream in real-time with progress bar                         | B2 (button layout change) |
+| **Cross-page bridges**     | Navigate from AI Writer/Inspiration/Calendar with `?draft=` or `?prefill=` → content populates | B1 (preview move)         |
+| **Recurrence scheduling**  | Set schedule + recurrence pattern + end date → persists on submit                              | B1, B3                    |
+| **Multi-account posting**  | Select multiple accounts with mixed tiers → warnings show                                      | B1                        |
+| **Viral Score Badge**      | Write content → badge appears in preview header with score                                     | A4, B1                    |
+| **Draft editing mode**     | Load via `?draft=<id>` → PATCH updates work                                                    | All phases                |
+| **Overwrite confirmation** | Generate AI with >50 chars existing → AlertDialog triggers                                     | B2                        |
+| **beforeunload guard**     | Edit content, close tab → browser confirmation dialog                                          | All phases                |
+| **Mobile AI Sheet**        | On mobile, click AI tool → bottom sheet opens at 60dvh                                         | B2                        |
+| **Hashtag chips inline**   | Generate hashtags → chips appear under active tweet, click to add                              | B2                        |
+| **Link preview**           | Paste URL → skeleton → preview card renders                                                    | A4, B1                    |
 
 ---
 
 ## Files Modified (Summary)
 
-| File | Phase | Changes |
-|------|-------|---------|
-| `src/components/composer/tweet-card.tsx` | A1, A2, A5 | `min-h-[160px]`, placeholder text, auto-suggest thread hint |
-| `src/components/composer/composer.tsx` | A3, A4, B1, B2, B3 | Sentence case labels, thread preview, preview reposition, content tools layout, best-time styling |
-| `src/components/composer/best-time-suggestions.tsx` | B3 | `hideHeader` prop, visual integration |
+| File                                                | Phase              | Changes                                                                                           |
+| --------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------- |
+| `src/components/composer/tweet-card.tsx`            | A1, A2, A5         | `min-h-[160px]`, placeholder text, auto-suggest thread hint                                       |
+| `src/components/composer/composer.tsx`              | A3, A4, B1, B2, B3 | Sentence case labels, thread preview, preview reposition, content tools layout, best-time styling |
+| `src/components/composer/best-time-suggestions.tsx` | B3                 | `hideHeader` prop, visual integration                                                             |
 
 **New files:** None
 **Deleted files:** None

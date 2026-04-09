@@ -22,7 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/login`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
     { url: `${baseUrl}/register`, lastModified: now, changeFrequency: "yearly", priority: 0.5 },
     // Legal pages
-    { url: `${baseUrl}/legal/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    {
+      url: `${baseUrl}/legal/privacy`,
+      lastModified: now,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
     { url: `${baseUrl}/legal/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 

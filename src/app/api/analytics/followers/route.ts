@@ -25,7 +25,9 @@ export async function GET(req: Request) {
     return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
   }
 
-  const from = parsed.data.from ? new Date(parsed.data.from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const from = parsed.data.from
+    ? new Date(parsed.data.from)
+    : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const to = parsed.data.to ? new Date(parsed.data.to) : new Date();
 
   const points = await db.query.followerSnapshots.findMany({

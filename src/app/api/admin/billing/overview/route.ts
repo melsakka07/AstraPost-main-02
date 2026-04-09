@@ -41,7 +41,9 @@ export async function GET() {
     db
       .select({ total: count() })
       .from(subscriptions)
-      .where(and(eq(subscriptions.status, "cancelled"), gte(subscriptions.cancelledAt, monthStart))),
+      .where(
+        and(eq(subscriptions.status, "cancelled"), gte(subscriptions.cancelledAt, monthStart))
+      ),
 
     // Cancelled LAST month (for comparison)
     db
@@ -56,16 +58,16 @@ export async function GET() {
       ),
 
     // Trialing
-    db
-      .select({ total: count() })
-      .from(subscriptions)
-      .where(eq(subscriptions.status, "trialing")),
+    db.select({ total: count() }).from(subscriptions).where(eq(subscriptions.status, "trialing")),
   ]);
 
   // ── User counts ────────────────────────────────────────────────────────────
 
   const [totalUsers, newUsersThisMonth] = await Promise.all([
-    db.select({ total: count() }).from(user).where(sql`${user.deletedAt} IS NULL`),
+    db
+      .select({ total: count() })
+      .from(user)
+      .where(sql`${user.deletedAt} IS NULL`),
     db
       .select({ total: count() })
       .from(user)

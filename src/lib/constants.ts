@@ -13,7 +13,7 @@ export const LANGUAGES = [
   { code: "hi", label: "Hindi" },
 ] as const;
 
-export type LanguageCode = typeof LANGUAGES[number]["code"];
+export type LanguageCode = (typeof LANGUAGES)[number]["code"];
 
 /** Full 10-language enum — use in schemas that support all supported languages. */
 export const LANGUAGE_ENUM = z.enum(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"]);

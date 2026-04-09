@@ -33,28 +33,17 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
 
     // 2. Check if bookmark exists and belongs to user
     const existing = await db.query.inspirationBookmarks.findFirst({
-      where: and(
-        eq(inspirationBookmarks.id, id),
-        eq(inspirationBookmarks.userId, userId)
-      ),
+      where: and(eq(inspirationBookmarks.id, id), eq(inspirationBookmarks.userId, userId)),
     });
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Bookmark not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Bookmark not found" }, { status: 404 });
     }
 
     // 3. Delete bookmark
     await db
       .delete(inspirationBookmarks)
-      .where(
-        and(
-          eq(inspirationBookmarks.id, id),
-          eq(inspirationBookmarks.userId, userId)
-        )
-      );
+      .where(and(eq(inspirationBookmarks.id, id), eq(inspirationBookmarks.userId, userId)));
 
     return NextResponse.json({
       success: true,

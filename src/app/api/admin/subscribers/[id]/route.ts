@@ -28,29 +28,18 @@ const patchSubscriberSchema = z.object({
 
 // ── GET /api/admin/subscribers/[id] ─────────────────────────────────────────
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
   const { id } = await params;
 
-  const [subscriber] = await db
-    .select()
-    .from(user)
-    .where(eq(user.id, id))
-    .limit(1);
+  const [subscriber] = await db.select().from(user).where(eq(user.id, id)).limit(1);
 
   if (!subscriber) return ApiError.notFound("Subscriber");
 
   // Subscription info
-  const [sub] = await db
-    .select()
-    .from(subscriptions)
-    .where(eq(subscriptions.userId, id))
-    .limit(1);
+  const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, id)).limit(1);
 
   // Connected accounts
   const [xAccs, liAccs, igAccs] = await Promise.all([
@@ -65,11 +54,18 @@ export async function GET(
 
   const [totalPosts, publishedPosts, draftCount, aiThisMonth] = await Promise.all([
     db.select({ c: count() }).from(posts).where(eq(posts.userId, id)),
-    db.select({ c: count() }).from(posts).where(and(eq(posts.userId, id), eq(posts.status, "published"))),
-    db.select({ c: count() }).from(posts).where(and(eq(posts.userId, id), eq(posts.status, "draft"))),
-    db.select({ c: count() }).from(aiGenerations).where(
-      and(eq(aiGenerations.userId, id), gte(aiGenerations.createdAt, monthStart))
-    ),
+    db
+      .select({ c: count() })
+      .from(posts)
+      .where(and(eq(posts.userId, id), eq(posts.status, "published"))),
+    db
+      .select({ c: count() })
+      .from(posts)
+      .where(and(eq(posts.userId, id), eq(posts.status, "draft"))),
+    db
+      .select({ c: count() })
+      .from(aiGenerations)
+      .where(and(eq(aiGenerations.userId, id), gte(aiGenerations.createdAt, monthStart))),
   ]);
 
   // Last 10 sessions
@@ -108,10 +104,7 @@ export async function GET(
 
 // ── PATCH /api/admin/subscribers/[id] ───────────────────────────────────────
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
@@ -149,10 +142,7 @@ export async function PATCH(
 
 // ── DELETE /api/admin/subscribers/[id] ──────────────────────────────────────
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
