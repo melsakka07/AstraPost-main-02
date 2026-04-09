@@ -84,8 +84,8 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
         body: JSON.stringify({
           ...values,
           code: values.code.toUpperCase(),
-          validFrom: values.validFrom || undefined,
-          validTo: values.validTo || undefined,
+          validFrom: values.validFrom ? new Date(values.validFrom).toISOString() : undefined,
+          validTo: values.validTo ? new Date(values.validTo).toISOString() : undefined,
           maxRedemptions: values.maxRedemptions ?? undefined,
         }),
       });

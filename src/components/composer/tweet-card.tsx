@@ -351,9 +351,9 @@ export function TweetCard({
           )}
         </CardContent>
 
-        <CardFooter className="flex items-center justify-between border-t pt-2 sm:pt-3">
+        <CardFooter className="flex flex-wrap items-center justify-between gap-y-2 border-t pt-2 sm:pt-3">
           <TooltipProvider delayDuration={300}>
-            <div className="flex gap-0.5 sm:gap-1">
+            <div className="flex flex-wrap gap-0.5 sm:gap-1">
               {/* P4-C: Reorder buttons visible on all screen sizes for keyboard accessibility.
                   Desktop users can use these as a keyboard alternative to the drag handle. */}
               {totalTweets > 1 && (
@@ -510,7 +510,7 @@ export function TweetCard({
             </div>
           </TooltipProvider>
 
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="ml-auto flex items-center gap-2 sm:gap-4">
             <div className="flex flex-col items-end gap-0.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* P4-B: Visual counter — no aria-live (updates every keystroke, too noisy) */}

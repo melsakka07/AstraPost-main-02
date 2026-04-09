@@ -740,7 +740,7 @@ function InputScreen({
   isEnhancing,
   onEnhanceTopic,
 }: InputScreenProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -748,7 +748,7 @@ function InputScreen({
   const canSubmit = topic.trim().length >= 3 && !!selectedAccountId;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && canSubmit) onSubmit();
+    if (e.key === "Enter" && !e.shiftKey && canSubmit) onSubmit();
   };
 
   return (
@@ -770,15 +770,15 @@ function InputScreen({
 
       {/* ── Topic input ────────────────────────────────────────────────────── */}
       <div className="mt-8 sm:mt-10">
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="e.g., AI coding tools, sustainable fashion, Web3 gaming..."
-          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring w-full rounded-xl border px-5 py-4 text-lg shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2"
+          className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring max-h-[10rem] min-h-[3.5rem] w-full resize-none overflow-y-auto rounded-xl border px-5 py-4 text-[15px] leading-relaxed shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2 sm:max-h-[12rem]"
           maxLength={500}
+          rows={1}
           aria-label="Topic for your post"
         />
       </div>
