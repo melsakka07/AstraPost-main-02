@@ -1,5 +1,6 @@
 import { TrendingUp } from "lucide-react";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
+import { AnalyticsPagination } from "@/components/admin/billing/analytics-pagination";
 
 export const metadata = { title: "Billing Analytics — Admin" };
 
@@ -22,9 +23,14 @@ const REASON_LABELS: Record<string, string> = {
   sync_failsafe_plan_change: "Sync Failsafe",
 };
 
-export default async function BillingAnalyticsPage() {
+export default async function BillingAnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}/api/admin/billing/analytics`, {
+  const currentPage = Number((await searchParams).page) || 1;
+  const res = await fetch(`${baseUrl}/api/admin/billing/analytics?page=${currentPage}`, {
     cache: "no-store",
   });
 
@@ -200,11 +206,11 @@ export default async function BillingAnalyticsPage() {
             </tbody>
           </table>
         </div>
-        {pagination.totalPages > 1 && (
-          <p className="text-muted-foreground mt-2 text-sm">
-            Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
-          </p>
-        )}
+        <AnalyticsPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          total={pagination.total}
+        />
       </div>
     </AdminPageWrapper>
   );

@@ -1,5 +1,12 @@
 import { headers } from "next/headers";
 import { eq, and, inArray, sql } from "drizzle-orm";
+import { CancelScheduledEmail } from "@/components/email/billing/cancel-scheduled-email";
+import { PaymentFailedEmail } from "@/components/email/billing/payment-failed-email";
+import { PaymentSucceededEmail } from "@/components/email/billing/payment-succeeded-email";
+import { ReactivatedEmail } from "@/components/email/billing/reactivated-email";
+import { SubscriptionCancelledEmail } from "@/components/email/billing/subscription-cancelled-email";
+import { TrialEndingSoonEmail } from "@/components/email/billing/trial-ending-soon-email";
+import { TrialExpiredEmail } from "@/components/email/billing/trial-expired-email";
 import { db } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { awardReferralCredit, REFERRAL_CREDIT_AMOUNT } from "@/lib/referral/utils";
@@ -370,6 +377,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             to: expiredUser.email,
             subject: "Your AstraPost trial has expired",
             text: `Hi ${expiredUser.name || "there"},\n\nYour free trial has ended without a payment method on file. Your account has been moved to the Free plan.\n\nYou can upgrade anytime from your account settings to regain access to all features.\n\nThank you,\nThe AstraPost Team`,
+            react: TrialExpiredEmail({ userName: expiredUser.name || "there" }),
             metadata: {
               event: "incomplete_expired",
               userId: existingRecord.userId,
@@ -555,6 +563,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             to: lifecycleUser.email,
             subject: "Your AstraPost subscription cancellation is scheduled",
             text: `Hi ${lifecycleUser.name || "there"},\n\nYour AstraPost subscription has been scheduled for cancellation on ${periodEndDate}.\n\nYou'll continue to have full access to all features until that date. After that, your account will be moved to the Free plan.\n\nIf you change your mind, you can reactivate at any time from your account settings before the cancellation date.\n\nThank you for being an AstraPost customer.`,
+            react: CancelScheduledEmail({ userName: lifecycleUser.name || "there", periodEndDate }),
             metadata: {
               event: "cancel_scheduled",
               userId: existingRecord.userId,
@@ -588,6 +597,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
             to: lifecycleUser.email,
             subject: "Your AstraPost subscription has been reactivated",
             text: `Hi ${lifecycleUser.name || "there"},\n\nGreat news — your AstraPost subscription has been reactivated and will continue on its normal billing schedule.\n\nThank you for staying with AstraPost!`,
+            react: ReactivatedEmail({ userName: lifecycleUser.name || "there" }),
             metadata: {
               event: "reactivated",
               userId: existingRecord.userId,
@@ -690,6 +700,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
           to: dbUser.email,
           subject: "Your AstraPost subscription has been cancelled",
           text: `Hi ${dbUser.name || "there"},\n\nYour AstraPost subscription has been cancelled and your account has been moved to the Free plan.\n\nYou can resubscribe at any time from your account settings.\n\nThank you for being an AstraPost customer.`,
+          react: SubscriptionCancelledEmail({ userName: dbUser.name || "there" }),
           metadata: {
             event: "customer.subscription.deleted",
             userId: subRecord.userId,
@@ -765,6 +776,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
           to: dbUser.email,
           subject: "Payment failed — action required",
           text: `Hi ${dbUser.name || "there"}, your payment failed. Please update your billing method within 7 days to avoid service interruption.`,
+          react: PaymentFailedEmail({ userName: dbUser.name || "there" }),
           metadata: {
             event: "invoice.payment_failed",
             userId: subRecord.userId,
@@ -824,6 +836,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
           to: dbUser.email,
           subject: "Payment succeeded",
           text: `Hi ${dbUser.name || "there"}, your subscription payment was successful.`,
+          react: PaymentSucceededEmail({ userName: dbUser.name || "there" }),
           metadata: {
             event: "invoice.payment_succeeded",
             userId: subRecord.userId,
@@ -866,6 +879,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
           to: dbUser.email,
           subject: "Your trial ends soon",
           text: `Hi ${dbUser.name || "there"}, your trial ends in 3 days. Add a payment method to keep your access.`,
+          react: TrialEndingSoonEmail({ userName: dbUser.name || "there" }),
           metadata: {
             event: "customer.subscription.trial_will_end",
             userId: subRecord.userId,

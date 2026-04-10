@@ -309,6 +309,13 @@
       "when": 1775838218518,
       "tag": "0043_odd_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1775839586162,
+      "tag": "0044_smiling_radioactive_man",
+      "breakpoints": true
     }
   ]
 }
