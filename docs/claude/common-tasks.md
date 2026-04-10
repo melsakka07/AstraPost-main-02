@@ -6,6 +6,7 @@
 2. Use Server Components by default; `"use client"` only if needed
 3. Wrap in `<DashboardPageWrapper icon={...} title="..." description="...">`
 4. Add to `sidebarSections` in `src/components/dashboard/sidebar.tsx`
+5. If admin-only: set `isAdmin: true` on the nav item, and use `requireAdmin()` from `@/lib/admin` as the page guard
 
 ## Adding a new API route
 

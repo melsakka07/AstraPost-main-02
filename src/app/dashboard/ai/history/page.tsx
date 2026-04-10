@@ -1,19 +1,16 @@
-import { headers } from "next/headers";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { eq, desc } from "drizzle-orm";
 import { History, RefreshCcw, Sparkles } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { aiGenerations } from "@/lib/schema";
 
 export default async function AiHistoryPage() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login?callbackUrl=/dashboard/ai/history");
+  const session = await requireAdmin();
 
   const history = await db.query.aiGenerations.findMany({
     where: eq(aiGenerations.userId, session.user.id),

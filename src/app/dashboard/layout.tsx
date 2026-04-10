@@ -102,6 +102,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         aiUsage={aiUsage}
         user={{ name: session.user.name, image: session.user.image || null }}
         referralsEnabled={referralsEnabled}
+        isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader

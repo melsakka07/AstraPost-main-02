@@ -1,5 +1,9 @@
 # Recent Fixes & Changes
 
+## 2026-04-11
+
+- **Admin-Only Pages**: `/dashboard/jobs` and `/dashboard/ai/history` now restricted to admin users only. Sidebar hides these items for non-admins. Page-level `requireAdmin()` guard redirects non-admins to `/dashboard`. Uses existing `isAdmin` field on user table via Better Auth session.
+
 ## 2026-04-10
 
 - **Billing Phase 6**: Shared IP rate limiting (`checkIpRateLimit()`), billing analytics admin page (`/admin/billing/analytics`), webhook retry monitoring with admin alerts, `subscriptions.plan` NOT NULL constraint, `plan_change_log` 1-year retention policy

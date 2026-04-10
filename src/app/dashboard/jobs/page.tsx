@@ -1,6 +1,4 @@
-import { headers } from "next/headers";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { Settings2 as Settings2Icon } from "lucide-react";
@@ -18,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { jobRuns, tweets } from "@/lib/schema";
 
@@ -32,8 +30,7 @@ export default async function JobsPage({
     page?: string | string[];
   }>;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/login?callbackUrl=/dashboard/jobs");
+  const session = await requireAdmin();
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   const params = resolvedSearchParams || {};

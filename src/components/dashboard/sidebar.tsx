@@ -45,6 +45,8 @@ interface NavItem {
   href: string;
   isPro?: boolean;
   isNew?: boolean;
+  /** Only visible to admin users */
+  isAdmin?: boolean;
 }
 
 interface SidebarSection {
@@ -97,7 +99,7 @@ const sidebarSections: SidebarSection[] = [
       },
       { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply", isPro: true },
       { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio", isPro: true },
-      { icon: History, label: "AI History", href: "/dashboard/ai/history" },
+      { icon: History, label: "AI History", href: "/dashboard/ai/history", isAdmin: true },
       { icon: Lightbulb, label: "Inspiration", href: "/dashboard/inspiration" },
       { icon: ShoppingCart, label: "AI Affiliate", href: "/dashboard/affiliate" },
     ],
@@ -121,7 +123,7 @@ const sidebarSections: SidebarSection[] = [
   {
     label: "System",
     items: [
-      { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs" },
+      { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true },
       { icon: Settings, label: "Settings", href: "/dashboard/settings" },
     ],
   },
@@ -239,6 +241,8 @@ interface SidebarContentProps {
   isMobile?: boolean;
   /** M7 — user info shown in mobile drawer header */
   user?: { name: string; image: string | null };
+  /** Show admin-only nav items */
+  isAdmin?: boolean;
 }
 
 function SidebarContent({
@@ -248,6 +252,7 @@ function SidebarContent({
   isMobile = false,
   user,
   referralsEnabled = true,
+  isAdmin = false,
 }: SidebarContentProps & { referralsEnabled?: boolean }) {
   const aiProgress =
     aiUsage && typeof aiUsage.limit === "number" && aiUsage.limit > 0
@@ -267,16 +272,19 @@ function SidebarContent({
       },
     });
 
-  // Filter sidebar sections based on feature flags
+  // Filter sidebar sections based on feature flags and admin access
   const filteredSections = sidebarSections
     .map((section) => {
-      if (section.label === "Growth" && !referralsEnabled) {
-        return {
-          ...section,
-          items: section.items.filter((item) => item.label !== "Referrals"),
-        };
+      let items = section.items;
+      // Hide admin-only items from non-admins
+      if (!isAdmin) {
+        items = items.filter((item) => !item.isAdmin);
       }
-      return section;
+      // Hide Referrals when feature flag is off
+      if (section.label === "Growth" && !referralsEnabled) {
+        items = items.filter((item) => item.label !== "Referrals");
+      }
+      return { ...section, items };
     })
     .filter((section) => section.items.length > 0);
 
@@ -460,9 +468,11 @@ interface SidebarProps {
   /** M7 — user info for mobile Drawer header */
   user?: { name: string; image: string | null };
   referralsEnabled?: boolean;
+  /** Show admin-only nav items */
+  isAdmin?: boolean;
 }
 
-export function Sidebar({ aiUsage, user, referralsEnabled = true }: SidebarProps) {
+export function Sidebar({ aiUsage, user, referralsEnabled = true, isAdmin = false }: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [sheetSide, setSheetSide] = useState<"left" | "right">("left");
@@ -495,6 +505,7 @@ export function Sidebar({ aiUsage, user, referralsEnabled = true }: SidebarProps
           aiUsage={aiUsage}
           isMobile={false}
           referralsEnabled={referralsEnabled}
+          isAdmin={isAdmin}
         />
       </div>
 
@@ -520,6 +531,7 @@ export function Sidebar({ aiUsage, user, referralsEnabled = true }: SidebarProps
               aiUsage={aiUsage}
               isMobile={true}
               referralsEnabled={referralsEnabled}
+              isAdmin={isAdmin}
               {...(user !== undefined && { user })}
             />
           </DrawerPrimitive.Content>

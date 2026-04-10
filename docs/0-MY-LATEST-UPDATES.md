@@ -1,5 +1,26 @@
 # Latest Updates
 
+## 2026-04-11: Admin-Only Access for Jobs & AI History Pages ✅
+
+**Summary:** Restricted `/dashboard/jobs` and `/dashboard/ai/history` to admin users only. Non-admin users can no longer see these pages in the sidebar or access them via direct URL.
+
+**Changes:**
+
+1. **Sidebar Filtering** — Added `isAdmin` flag to `NavItem` interface in `sidebar.tsx`. Jobs and AI History entries are marked `isAdmin: true`. Sidebar filters out admin-only items for non-admin users, alongside existing feature flag filtering.
+2. **Dashboard Layout** — Passes `isAdmin` from `session.user` to `<Sidebar>` component in `dashboard/layout.tsx`.
+3. **Page-Level Guards** — Both pages now use `requireAdmin()` from `@/lib/admin` instead of basic session checks, redirecting non-admins to `/dashboard`.
+
+**Files Modified:**
+
+- `src/components/dashboard/sidebar.tsx` — `isAdmin` flag on NavItem, SidebarProps, SidebarContentProps; filtering logic
+- `src/app/dashboard/layout.tsx` — passes `isAdmin` to Sidebar
+- `src/app/dashboard/jobs/page.tsx` — `requireAdmin()` guard
+- `src/app/dashboard/ai/history/page.tsx` — `requireAdmin()` guard
+
+**Status:** `pnpm run check` ✅
+
+---
+
 ## 2026-04-10: Audit Fixes — Rate Limiting, Email Templates, Pagination, Schema ✅
 
 **Summary:** Fixed 4 confirmed codebase audit issues: missing rate limiting on AI inspiration endpoint, plain-text billing emails upgraded to HTML templates, admin analytics pagination navigation, and subscriptions.status NOT NULL constraint.
