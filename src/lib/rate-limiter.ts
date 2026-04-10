@@ -135,3 +135,32 @@ export function createRateLimitResponse(result: RateLimitResult): Response {
     },
   });
 }
+
+/**
+ * IP-based rate limiter for low-cost endpoints (billing, auth).
+ * Uses the shared BullMQ Redis connection.
+ *
+ * Returns null when Redis is unavailable (fail-open).
+ * Returns { limited: true, retryAfter } when the limit is exceeded.
+ * Returns { limited: false } when the request is allowed.
+ */
+export async function checkIpRateLimit(
+  ip: string,
+  key: string,
+  limit: number,
+  windowSec: number
+): Promise<{ limited: boolean; retryAfter?: number } | null> {
+  try {
+    const fullKey = `rl:ip:${key}:${ip}`;
+    const results = await redis.multi().incr(fullKey).expire(fullKey, windowSec, "NX").exec();
+
+    const count = (results?.[0]?.[1] as number) ?? 0;
+    if (count > limit) {
+      return { limited: true, retryAfter: windowSec };
+    }
+    return { limited: false };
+  } catch {
+    // Fail open — don't block requests when Redis is down
+    return null;
+  }
+}

@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   Tag,
   ToggleLeft,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const sidebarSections = [
     label: "Billing",
     items: [
       { href: "/admin/billing", label: "Billing Overview", icon: CreditCard },
+      { href: "/admin/billing/analytics", label: "Analytics", icon: TrendingUp },
       { href: "/admin/billing/promo-codes", label: "Promo Codes", icon: Tag },
     ],
   },

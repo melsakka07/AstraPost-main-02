@@ -1,15 +1,62 @@
 # Latest Updates
 
+## 2026-04-10: Billing Phase 6 — Rate Limiting, Analytics, Monitoring, Schema Hardening ✅
+
+**Summary:** Completed 5 hardening improvements: shared IP rate limiting, billing analytics admin page, webhook retry monitoring with admin alerts, subscriptions.plan NOT NULL constraint, and audit log retention policy.
+
+**Changes:**
+
+1. **Shared IP Rate Limiting** — Extracted inline Redis rate limit from 4 billing routes into `checkIpRateLimit()` in `src/lib/rate-limiter.ts`. Added rate limiting to `billing/status` (30/min) and `ai/inspiration`.
+2. **Billing Analytics Admin Page** — New page at `/admin/billing/analytics` with plan distribution, churn rate, grace recovery rate, failed webhooks table, and recent plan changes. New API endpoint at `/api/admin/billing/analytics`.
+3. **Webhook Retry Monitoring** — `processedWebhookEvents` table now tracks retry count, event type, and error message. Admins receive in-app notifications when a webhook fails 3+ times.
+4. **subscriptions.plan NOT NULL** — Column now has `.notNull().default("free")`. Removed 5 `?? "free"` workarounds across webhook, status, and admin routes.
+5. **Audit Log Retention** — Cron cleanup now prunes `plan_change_log` entries older than 1 year alongside the existing 90-day webhook event cleanup.
+
+**Schema Changes (migration 0043):**
+
+| Table                      | Change                                                                |
+| -------------------------- | --------------------------------------------------------------------- |
+| `subscriptions`            | `plan` column: `SET DEFAULT 'free'` + `SET NOT NULL`                  |
+| `processed_webhook_events` | New columns: `event_type`, `retry_count` (default 0), `error_message` |
+
+**Files Modified:**
+
+- `src/lib/schema.ts` — subscriptions.plan NOT NULL + processedWebhookEvents new columns
+- `src/lib/rate-limiter.ts` — new `checkIpRateLimit()` helper
+- `src/app/api/billing/webhook/route.ts` — retry tracking + admin alerts
+- `src/app/api/billing/status/route.ts` — rate limiting + removed `?? "free"`
+- `src/app/api/billing/checkout/route.ts` — refactored to shared rate limiter
+- `src/app/api/billing/change-plan/route.ts` — refactored to shared rate limiter
+- `src/app/api/billing/portal/route.ts` — refactored to shared rate limiter
+- `src/app/api/billing/validate-promo/route.ts` — refactored to shared rate limiter
+- `src/app/api/admin/billing/analytics/route.ts` — NEW analytics API
+- `src/app/admin/billing/analytics/page.tsx` — NEW analytics page
+- `src/app/admin/billing/analytics/loading.tsx` — NEW loading skeleton
+- `src/components/admin/sidebar.tsx` — added Analytics sidebar entry
+- `src/app/api/cron/billing-cleanup/route.ts` — plan_change_log 1-year retention
+- `src/app/api/admin/billing/overview/route.ts` — removed `?? "free"` workaround
+
+**Verification:** lint + typecheck clean, 196/196 tests pass
+
+**Migration:** `drizzle/0043_odd_justin_hammer.sql` — NOT YET APPLIED (requires manual production SQL)
+
+---
+
 ## 2026-04-10: Billing System — Final Gaps Implementation & Production Deployment ✅
 
-**Summary:** Completed the remaining 3 billing gaps (audit trail, grace period enforcement, trial end persistence) and deployed to production. All 22 billing audit items are now resolved.
+**Summary:** Completed the remaining 3 billing gaps (audit trail, grace period enforcement, trial end persistence) and deployed to production. All 22 billing audit items are now resolved. Post-deployment review caught and fixed 2 additional hardening items.
 
 **Requirements Addressed:**
 
-1. **Plan Change Audit Trail** — New `plan_change_log` table records every plan transition (who, from, to, when, why) across 7 code paths
+1. **Plan Change Audit Trail** — New `plan_change_log` table records every plan transition (who, from, to, when, why) across 8 code paths (was 7, added payment_failed_grace_period)
 2. **Grace Period Auto-Enforcement** — Cron job now checks for expired grace periods and downgrades users to free, cancels Stripe subscriptions, and sends notifications
 3. **Trial End Persistence** — Stripe `trial_end` timestamp now persisted to `subscriptions.trial_end` column in webhook handlers
 4. **Cron Infrastructure** — Vercel cron job configured (daily 2am UTC), `CRON_SECRET` set in dev and production
+
+**Post-Deployment Hardening (code review):**
+
+- Wrapped `handleSubscriptionUpdated` plan change + audit log in `db.transaction()` — was 3 separate DB calls, now atomic (rule #5)
+- Added `plan_change_log` entry for `handleInvoicePaymentFailed` — complete paper trail of grace period triggers
 
 **Schema Changes:**
 
@@ -20,14 +67,14 @@
 
 **Files Modified:**
 
-| File                                        | Changes                                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------------------- |
-| `src/lib/schema.ts`                         | Added `plan_change_log` table + `subscriptions.trialEnd` column                 |
-| `src/app/api/cron/billing-cleanup/route.ts` | Grace period enforcement: query expired users, downgrade, cancel Stripe, notify |
-| `src/app/api/billing/webhook/route.ts`      | Trial end persistence (3 locations) + audit log inserts (4 locations)           |
-| `src/app/api/billing/status/route.ts`       | Audit log inserts (2 locations)                                                 |
-| `src/app/api/admin/subscribers/route.ts`    | Audit log insert (1 location)                                                   |
-| `vercel.json`                               | Cron job configuration                                                          |
+| File                                        | Changes                                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `src/lib/schema.ts`                         | Added `plan_change_log` table + `subscriptions.trialEnd` column                               |
+| `src/app/api/cron/billing-cleanup/route.ts` | Grace period enforcement: query expired users, downgrade, cancel Stripe, notify               |
+| `src/app/api/billing/webhook/route.ts`      | Trial end persistence (3 locations) + audit log inserts (5 locations) + transaction hardening |
+| `src/app/api/billing/status/route.ts`       | Audit log inserts (2 locations)                                                               |
+| `src/app/api/admin/subscribers/route.ts`    | Audit log insert (1 location)                                                                 |
+| `vercel.json`                               | Cron job configuration                                                                        |
 
 **Verification:**
 

@@ -590,7 +590,7 @@ export const subscriptions = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
     stripePriceId: text("stripe_price_id"),
-    plan: planEnum("plan"),
+    plan: planEnum("plan").notNull().default("free"),
     status: subscriptionStatusEnum("status"),
     currentPeriodStart: timestamp("current_period_start"),
     currentPeriodEnd: timestamp("current_period_end"),
@@ -625,6 +625,9 @@ export const subscriptions = pgTable(
 export const processedWebhookEvents = pgTable("processed_webhook_events", {
   id: text("id").primaryKey(),
   stripeEventId: text("stripe_event_id").notNull().unique(),
+  eventType: text("event_type"),
+  retryCount: integer("retry_count").default(0).notNull(),
+  errorMessage: text("error_message"),
   processedAt: timestamp("processed_at").defaultNow().notNull(),
 });
 

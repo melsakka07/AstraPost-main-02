@@ -2,9 +2,12 @@
 
 ## 2026-04-10
 
+- **Billing Phase 6**: Shared IP rate limiting (`checkIpRateLimit()`), billing analytics admin page (`/admin/billing/analytics`), webhook retry monitoring with admin alerts, `subscriptions.plan` NOT NULL constraint, `plan_change_log` 1-year retention policy
+- **Migration**: `drizzle/0043_odd_justin_hammer.sql` — generated, NOT YET APPLIED (subscriptions.plan NOT NULL + processedWebhookEvents retry tracking columns)
 - **Billing Final Gaps**: `plan_change_log` audit table, grace period auto-enforcement cron, `subscriptions.trialEnd` persistence
 - **Cron Infrastructure**: Vercel cron job at `/api/cron/billing-cleanup` (daily 2am UTC), `CRON_SECRET` env var
 - **Migration**: `drizzle/0042_right_swarm.sql` — applied to dev and production
+- **Post-review hardening**: `handleSubscriptionUpdated` plan change wrapped in `db.transaction()`, `handleInvoicePaymentFailed` now logs grace period trigger to `plan_change_log` (8 audit locations total)
 
 ## 2026-04-09
 

@@ -119,10 +119,10 @@ All 22 audit items (19 hardening + 3 schema gaps) have been implemented, verifie
 
 **Issues:**
 
-- `handleCheckoutCompleted` executes two separate DB writes (`db.update(user)` then `db.insert(subscriptions)`) without wrapping them in `db.transaction()` — violates CLAUDE.md §15.
-- `handleInvoicePaymentFailed` executes two separate DB writes (`db.update(subscriptions)` then `db.update(user)`) without `db.transaction()`.
-- `handleSubscriptionDeleted` executes two separate DB writes without `db.transaction()`.
-- `handleSubscriptionDeleted` does NOT send a cancellation email, despite the spec requiring it.
+- `handleCheckoutCompleted` executes two separate DB writes (`db.update(user)` then `db.insert(subscriptions)`) without wrapping them in `db.transaction()` — violates CLAUDE.md §15. **FIXED** in Phase 4.
+- `handleInvoicePaymentFailed` executes two separate DB writes (`db.update(subscriptions)` then `db.update(user)`) without `db.transaction()`. **FIXED** in Phase 4. Also now logs grace period trigger to `plan_change_log`.
+- `handleSubscriptionDeleted` executes two separate DB writes without `db.transaction()`. **FIXED** in Phase 4.
+- `handleSubscriptionDeleted` does NOT send a cancellation email, despite the spec requiring it. **FIXED** in Phase 4.
 - No `stripeCustomerId` stored in the subscriptions insert (not a bug — stored on `user` — but means you can't look up subscriptions by customer without joining user).
 
 ### `GET /api/billing/usage`
@@ -278,19 +278,19 @@ Unknown — not yet verified. Likely not configured for AstraPost plans.
 
 ### Code Quality Issues
 
-| #   | Issue                                                                                           | Severity |
-| --- | ----------------------------------------------------------------------------------------------- | -------- |
-| Q1  | `handleCheckoutCompleted` — two separate DB writes without `db.transaction()`                   | High     |
-| Q2  | `handleInvoicePaymentFailed` — two separate DB writes without `db.transaction()`                | High     |
-| Q3  | `handleSubscriptionDeleted` — two separate DB writes without `db.transaction()`                 | High     |
-| Q4  | `handleSubscriptionDeleted` — no cancellation email sent                                        | Medium   |
-| Q5  | `checkout/route.ts` — uses raw `new Response()` instead of `ApiError`                           | Medium   |
-| Q6  | `portal/route.ts` — uses `NextResponse.json` instead of `ApiError`                              | Low      |
-| Q7  | No `src/lib/stripe.ts` singleton — checkout and portal each create new `Stripe()`               | Low      |
-| Q8  | No `src/lib/billing-utils.ts` — `priceToPlan`/`planToPrice` helpers missing as standalone utils | Low      |
-| Q9  | All Stripe env vars are `.optional()` in `env.ts` — no fail-fast at startup                     | Medium   |
-| Q10 | Checkout `cancel_url` points to `/dashboard/settings` not `/pricing`                            | Low      |
-| Q11 | Mock price ID fallback in checkout is silently broken in production                             | High     |
+| #   | Issue                                                                                           | Severity | Status |
+| --- | ----------------------------------------------------------------------------------------------- | -------- | ------ |
+| Q1  | `handleCheckoutCompleted` — two separate DB writes without `db.transaction()`                   | High     | Fixed  |
+| Q2  | `handleInvoicePaymentFailed` — two separate DB writes without `db.transaction()`                | High     | Fixed  |
+| Q3  | `handleSubscriptionDeleted` — two separate DB writes without `db.transaction()`                 | High     | Fixed  |
+| Q4  | `handleSubscriptionDeleted` — no cancellation email sent                                        | Medium   | Fixed  |
+| Q5  | `checkout/route.ts` — uses raw `new Response()` instead of `ApiError`                           | Medium   | Fixed  |
+| Q6  | `portal/route.ts` — uses `NextResponse.json` instead of `ApiError`                              | Low      | Fixed  |
+| Q7  | No `src/lib/stripe.ts` singleton — checkout and portal each create new `Stripe()`               | Low      | Fixed  |
+| Q8  | No `src/lib/billing-utils.ts` — `priceToPlan`/`planToPrice` helpers missing as standalone utils | Low      | Fixed  |
+| Q9  | All Stripe env vars are `.optional()` in `env.ts` — no fail-fast at startup                     | Medium   | Fixed  |
+| Q10 | Checkout `cancel_url` points to `/dashboard/settings` not `/pricing`                            | Low      | Fixed  |
+| Q11 | Mock price ID fallback in checkout is silently broken in production                             | High     | Fixed  |
 
 ### Frontend / UX Gaps
 

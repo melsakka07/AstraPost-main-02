@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
-import { redis } from "@/lib/rate-limiter";
+import { checkIpRateLimit } from "@/lib/rate-limiter";
 import { promoCodes } from "@/lib/schema";
 
 const schema = z.object({
@@ -12,26 +12,16 @@ const schema = z.object({
     .optional(),
 });
 
-// Simple IP-based rate limit: 20 attempts per minute
-async function checkRateLimit(ip: string): Promise<boolean> {
-  try {
-    const key = `rl:validate-promo:${ip}`;
-    const current = await redis.incr(key);
-    if (current === 1) await redis.expire(key, 60);
-    return current <= 20;
-  } catch {
-    return true; // fail open if Redis is unavailable
-  }
-}
-
 // ── POST /api/billing/validate-promo ─────────────────────────────────────────
 
 export async function POST(request: Request) {
-  // Rate limit by IP
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const allowed = await checkRateLimit(ip);
-  if (!allowed) {
-    return Response.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  const rlResult = await checkIpRateLimit(ip, "billing:validate-promo", 20, 60);
+  if (rlResult?.limited) {
+    return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+      status: 429,
+      headers: { "Retry-After": String(rlResult.retryAfter) },
+    });
   }
 
   const body = await request.json().catch(() => null);

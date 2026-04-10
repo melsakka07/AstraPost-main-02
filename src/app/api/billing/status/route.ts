@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { getBillingRedis } from "@/lib/billing-redis";
 import { priceToPlan } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
+import { checkIpRateLimit } from "@/lib/rate-limiter";
 import { planChangeLog, subscriptions, user } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
@@ -36,6 +37,15 @@ function stripeStatusToDb(s: string): DbStatus {
  * the two have drifted apart (e.g. a webhook was missed during a server outage).
  */
 export async function GET() {
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rlResult = await checkIpRateLimit(ip, "billing:status", 30, 60);
+  if (rlResult?.limited) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: { "Retry-After": String(rlResult.retryAfter) },
+    });
+  }
+
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return ApiError.unauthorized();
 
@@ -134,13 +144,8 @@ export async function GET() {
               await tx.insert(planChangeLog).values({
                 id: crypto.randomUUID(),
                 userId: session.user.id,
-                oldPlan: (latestSub.plan ?? null) as
-                  | "free"
-                  | "pro_monthly"
-                  | "pro_annual"
-                  | "agency"
-                  | null,
-                newPlan: "free",
+                oldPlan: latestSub.plan,
+                newPlan: "free" as const,
                 reason: "sync_failsafe_cancelled",
                 stripeSubscriptionId: latestSub.stripeSubscriptionId,
               });
@@ -156,12 +161,7 @@ export async function GET() {
               await tx.insert(planChangeLog).values({
                 id: crypto.randomUUID(),
                 userId: session.user.id,
-                oldPlan: (latestSub.plan ?? null) as
-                  | "free"
-                  | "pro_monthly"
-                  | "pro_annual"
-                  | "agency"
-                  | null,
+                oldPlan: latestSub.plan,
                 newPlan: newPlan as "free" | "pro_monthly" | "pro_annual" | "agency",
                 reason: "sync_failsafe_plan_change",
                 stripeSubscriptionId: latestSub.stripeSubscriptionId,

@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { awardReferralCredit, REFERRAL_CREDIT_AMOUNT } from "@/lib/referral/utils";
@@ -386,18 +386,21 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // ── 3.2 Plan upgrades / downgrades — sync user.plan ──────────────────────
   // Only update when the plan actually changed — avoids spurious user table writes.
   if (newPlan && existingRecord.plan !== newPlan) {
-    await db
-      .update(user)
-      .set({ plan: newPlan, planExpiresAt: null })
-      .where(eq(user.id, existingRecord.userId));
+    // Multi-table write — must be atomic.
+    await db.transaction(async (tx) => {
+      await tx
+        .update(user)
+        .set({ plan: newPlan, planExpiresAt: null })
+        .where(eq(user.id, existingRecord.userId));
 
-    await db.insert(planChangeLog).values({
-      id: crypto.randomUUID(),
-      userId: existingRecord.userId,
-      oldPlan: existingRecord.plan,
-      newPlan,
-      reason: "webhook_plan_change",
-      stripeSubscriptionId: subscription.id,
+      await tx.insert(planChangeLog).values({
+        id: crypto.randomUUID(),
+        userId: existingRecord.userId,
+        oldPlan: existingRecord.plan,
+        newPlan,
+        reason: "webhook_plan_change",
+        stripeSubscriptionId: subscription.id,
+      });
     });
 
     console.warn("webhook_subscription_plan_synced", {
@@ -454,7 +457,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
     // ── 3.2.2 Scheduled posts cleanup on downgrade ─────────────────────
     // When downgrading to a plan with lower postsPerMonth, move excess scheduled posts to draft
-    const oldPlan = existingRecord.plan ?? "free";
+    const oldPlan = existingRecord.plan;
     const oldPostsLimit = PLAN_LIMITS[oldPlan].postsPerMonth;
     const newPostsLimit = PLAN_LIMITS[newPlan].postsPerMonth;
 
@@ -722,6 +725,16 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
         planExpiresAt: graceUntil,
       })
       .where(eq(user.id, subRecord.userId));
+
+    const currentPlan = subRecord.plan;
+    await tx.insert(planChangeLog).values({
+      id: crypto.randomUUID(),
+      userId: subRecord.userId,
+      oldPlan: currentPlan,
+      newPlan: currentPlan, // plan unchanged — this records the grace period trigger
+      reason: "payment_failed_grace_period",
+      stripeSubscriptionId: stripeSubscriptionId,
+    });
   });
 
   const dbUser = await db.query.user.findFirst({
@@ -916,7 +929,7 @@ export async function POST(req: Request) {
   // This atomic pattern prevents duplicate processing even under race conditions.
   const [inserted] = await db
     .insert(processedWebhookEvents)
-    .values({ id: crypto.randomUUID(), stripeEventId: event.id })
+    .values({ id: crypto.randomUUID(), stripeEventId: event.id, eventType: event.type })
     .onConflictDoNothing()
     .returning({ id: processedWebhookEvents.id });
 
@@ -957,13 +970,45 @@ export async function POST(req: Request) {
       eventId: event.id,
       error,
     });
-    // Delete the idempotency record so Stripe retries this event
+    // Update retry count instead of deleting — allows monitoring repeated failures
     try {
-      await db
-        .delete(processedWebhookEvents)
-        .where(eq(processedWebhookEvents.stripeEventId, event.id));
+      const [updated] = await db
+        .update(processedWebhookEvents)
+        .set({
+          retryCount: sql`${processedWebhookEvents.retryCount} + 1`,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        })
+        .where(eq(processedWebhookEvents.stripeEventId, event.id))
+        .returning({ retryCount: processedWebhookEvents.retryCount });
+
+      // Alert admins when a webhook has failed 3+ times
+      if (updated && updated.retryCount >= 3) {
+        const admins = await db
+          .select({ id: user.id })
+          .from(user)
+          .where(eq(user.isAdmin, true))
+          .limit(5);
+
+        for (const admin of admins) {
+          await runSideEffect(
+            () =>
+              notifyBillingEvent({
+                userId: admin.id,
+                type: "webhook_processing_failed",
+                title: "Webhook retry alert",
+                message: `Stripe webhook ${event.type} (event ${event.id}) has failed ${updated.retryCount} times. Manual investigation may be needed.`,
+                metadata: {
+                  eventType: event.type,
+                  eventId: event.id,
+                  retryCount: updated.retryCount,
+                },
+              }),
+            `webhook_alert_${event.id}`
+          );
+        }
+      }
     } catch {
-      // Ignore cleanup failure — the event is still recorded but processing failed
+      // Ignore update failure
     }
     return new Response("Webhook Processing Error", { status: 500 });
   }

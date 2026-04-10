@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { redis } from "@/lib/rate-limiter";
+import { checkIpRateLimit } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
@@ -11,20 +11,13 @@ export async function POST() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return ApiError.unauthorized();
 
-  // Simple IP-based rate limit: 10 attempts per minute
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-  try {
-    const key = `rl:billing-portal:${ip}`;
-    const current = await redis.incr(key);
-    if (current === 1) await redis.expire(key, 60);
-    if (current > 10) {
-      return new Response(JSON.stringify({ error: "Too many requests" }), {
-        status: 429,
-        headers: { "Retry-After": "60" },
-      });
-    }
-  } catch {
-    // fail open if Redis unavailable
+  const rlResult = await checkIpRateLimit(ip, "billing:portal", 10, 60);
+  if (rlResult?.limited) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: { "Retry-After": String(rlResult.retryAfter) },
+    });
   }
 
   if (!stripe) {

@@ -85,7 +85,7 @@ export async function GET() {
     const unitCents = getPlanMonthlyCents(row.plan);
     const totalCents = cnt * unitCents;
     mrrCents += totalCents;
-    planBreakdown[row.plan ?? "free"] = { count: cnt, mrrCents: totalCents };
+    planBreakdown[row.plan] = { count: cnt, mrrCents: totalCents };
   }
 
   // ── Trial-to-paid conversion rate ─────────────────────────────────────────

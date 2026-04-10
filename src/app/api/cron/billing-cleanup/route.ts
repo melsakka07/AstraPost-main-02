@@ -30,6 +30,20 @@ export async function POST(req: Request) {
     return Response.json({ error: "Cleanup failed" }, { status: 500 });
   }
 
+  // Clean up plan_change_log entries older than 1 year
+  let planChangesDeleted = 0;
+  try {
+    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    const deletedChanges = await db
+      .delete(planChangeLog)
+      .where(lt(planChangeLog.createdAt, oneYearAgo))
+      .returning({ id: planChangeLog.id });
+
+    planChangesDeleted = deletedChanges.length;
+  } catch (error) {
+    console.error("[cron] plan_change_log cleanup failed", error);
+  }
+
   // Enforce grace period expiration
   try {
     const now = new Date();
@@ -112,6 +126,7 @@ export async function POST(req: Request) {
 
   return Response.json({
     webhookEventsDeleted,
+    planChangesDeleted,
     gracePeriodsExpired,
   });
 }

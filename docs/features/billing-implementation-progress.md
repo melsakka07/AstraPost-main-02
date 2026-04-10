@@ -6,14 +6,33 @@ All billing phases are complete, audited, and deployed to production.
 
 ---
 
+## Phase 6 — Hardening & Observability (2026-04-10) ✅
+
+1. **Shared IP Rate Limiting** — `checkIpRateLimit()` helper in `rate-limiter.ts`, applied to 6 routes
+2. **Billing Analytics** — Admin page at `/admin/billing/analytics` + API endpoint with plan distribution, churn, recovery, failed webhooks
+3. **Webhook Retry Monitoring** — Tracks retry count + error message, alerts admins at 3+ failures
+4. **subscriptions.plan NOT NULL** — Schema constraint + migration, removed 5 `?? "free"` workarounds
+5. **Audit Log Retention** — 1-year cleanup in billing-cleanup cron
+
+**Migration:** `drizzle/0043_odd_justin_hammer.sql` (NOT YET APPLIED to production)
+
+**Verification:** lint + typecheck clean, 196/196 tests pass
+
+---
+
 ## Phase 5 — Final Gaps (2026-04-10) ✅
 
 Completed the 3 remaining items from the billing audit:
 
-1. **Plan Change Audit Trail** — New `plan_change_log` table + inserts at all 7 plan update locations
+1. **Plan Change Audit Trail** — New `plan_change_log` table + inserts at all 8 plan update locations
 2. **Grace Period Auto-Enforcement** — Cron job downgrades expired grace period users to free
 3. **Trial End Persistence** — `subscriptions.trialEnd` column + webhook handler persistence
 4. **Cron Infrastructure** — Vercel cron config + `CRON_SECRET` env var
+
+**Post-deployment hardening (code review):**
+
+- Wrapped `handleSubscriptionUpdated` plan change path in `db.transaction()` for atomicity
+- Added `payment_failed_grace_period` audit log entry in `handleInvoicePaymentFailed`
 
 **Files changed:** schema.ts, billing-cleanup/route.ts, webhook/route.ts, status/route.ts, admin/subscribers/route.ts, vercel.json
 
