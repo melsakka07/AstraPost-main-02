@@ -1,5 +1,43 @@
 # Latest Updates
 
+## 2026-04-10: Audit Fixes — Rate Limiting, Email Templates, Pagination, Schema ✅
+
+**Summary:** Fixed 4 confirmed codebase audit issues: missing rate limiting on AI inspiration endpoint, plain-text billing emails upgraded to HTML templates, admin analytics pagination navigation, and subscriptions.status NOT NULL constraint.
+
+**Changes:**
+
+1. **AI Inspiration Rate Limiting** — Refactored `ai/inspiration` route to use the shared `aiPreamble()` helper, adding rate limiting (20/200/1000 per hour for free/pro/agency), AI access check, and quota enforcement. Previously had no rate limit — free users could make unlimited requests.
+2. **Billing Email HTML Templates** — Created 7 React Email templates in `src/components/email/billing/` using BaseLayout branding. Updated Stripe webhook handler to send HTML emails alongside existing text fallbacks for: trial expired, cancel scheduled, reactivated, subscription cancelled, payment failed, payment succeeded, trial ending soon.
+3. **Admin Analytics Pagination** — Added Previous/Next navigation buttons to `/admin/billing/analytics`. New client component `AnalyticsPagination` with URL-based page state. API already supported `page` param; page now passes it through.
+4. **subscriptions.status NOT NULL** — Column now has `.notNull().default("active")`. All insert/update points already provided a value; this adds data integrity at the schema level.
+
+**Schema Change (migration 0044):**
+
+| Table           | Change                                                   |
+| --------------- | -------------------------------------------------------- |
+| `subscriptions` | `status` column: `SET DEFAULT 'active'` + `SET NOT NULL` |
+
+**Files Modified:**
+
+- `src/app/api/ai/inspiration/route.ts` — refactored to use `aiPreamble()`
+- `src/app/api/billing/webhook/route.ts` — added `react:` prop to 7 billing email calls
+- `src/app/admin/billing/analytics/page.tsx` — searchParams + pagination component
+- `src/lib/schema.ts` — subscriptions.status NOT NULL
+
+**Files Created:**
+
+- `src/components/admin/billing/analytics-pagination.tsx`
+- `src/components/email/billing/trial-expired-email.tsx`
+- `src/components/email/billing/cancel-scheduled-email.tsx`
+- `src/components/email/billing/reactivated-email.tsx`
+- `src/components/email/billing/subscription-cancelled-email.tsx`
+- `src/components/email/billing/payment-failed-email.tsx`
+- `src/components/email/billing/payment-succeeded-email.tsx`
+- `src/components/email/billing/trial-ending-soon-email.tsx`
+- `drizzle/0044_smiling_radioactive_man.sql`
+
+---
+
 ## 2026-04-10: Billing Phase 6 — Rate Limiting, Analytics, Monitoring, Schema Hardening ✅
 
 **Summary:** Completed 5 hardening improvements: shared IP rate limiting, billing analytics admin page, webhook retry monitoring with admin alerts, subscriptions.plan NOT NULL constraint, and audit log retention policy.
