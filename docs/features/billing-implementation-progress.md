@@ -1,27 +1,59 @@
 # Billing System — Implementation Progress
 
-## Last Update
+## Last Update: 2026-04-10
 
-All billing phases are complete and verified:
-
-Test results:
-
-- webhook/route.test.ts — 12/12 passing ✅
-- pnpm lint && pnpm typecheck — clean ✅
-
-The 6 remaining test failures are all pre-existing non-billing issues (BullMQ processor mock, AI quota limit mismatch, live X API call, image route 403 vs 402). None are regressions from the billing work
+All billing phases are complete, audited, and deployed to production.
 
 ---
 
-All phases 0–4 are complete. There is no next billing phase in the prompt. The remaining work before billing goes live in production is all manual Stripe configuration (no code changes needed):
+## Phase 5 — Final Gaps (2026-04-10) ✅
 
-1. Register the webhook endpoint in Stripe Dashboard → https://[your-domain]/api/billing/webhook with the 8 events listed in the progress doc
-2. Copy the webhook signing secret to STRIPE_WEBHOOK_SECRET in your env
-3. Configure Stripe Customer Portal to cancel at period end (not immediately), allow plan switching, and allow updating payment method
+Completed the 3 remaining items from the billing audit:
+
+1. **Plan Change Audit Trail** — New `plan_change_log` table + inserts at all 7 plan update locations
+2. **Grace Period Auto-Enforcement** — Cron job downgrades expired grace period users to free
+3. **Trial End Persistence** — `subscriptions.trialEnd` column + webhook handler persistence
+4. **Cron Infrastructure** — Vercel cron config + `CRON_SECRET` env var
+
+**Files changed:** schema.ts, billing-cleanup/route.ts, webhook/route.ts, status/route.ts, admin/subscribers/route.ts, vercel.json
+
+**Verification:** lint + typecheck clean, 196/196 tests pass, production deployed with zero errors
+
+**Migration:** `drizzle/0042_right_swarm.sql` (plan_change_log table + subscriptions.trial_end + indexes)
 
 ---
 
-## Status: ✅ All Phases Complete (2026-03-26)
+## Phase 4 — Hardening (2026-04-09) ✅
+
+Fixed 19 items across 2 batches (Critical/High + Medium/Low):
+
+- AbortController in billing-success-poller (rule #10)
+- Subscription table indexes
+- Webhook idempotency race condition
+- Stale closure in change-plan-dialog
+- Checkout race condition on customer creation
+- Referral credits double-apply prevention
+- Agency plan in change-plan options
+- Metadata fallback security fix
+- Success detection false positive fix
+- Rate limiting on all billing endpoints
+- Pricing page error handling
+- Plan usage + billing status error states
+- Variable shadowing fix
+- Plan labels in settings
+- Re-subscription edge case
+- Webhook event cleanup cron
+- Loading flash fix
+- Semantic HTML in pricing cards
+
+---
+
+## Phases 0–3: Original Implementation (2026-03-25–26) ✅
+
+- Phase 0: Audit
+- Phase 1: Stripe integration (checkout, webhook, portal)
+- Phase 2: Plan enforcement (gates, limits, quotas)
+- Phase 3: UI (pricing page, settings, upgrade modals)
 
 ---
 

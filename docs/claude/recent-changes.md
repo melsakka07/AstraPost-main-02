@@ -1,5 +1,15 @@
 # Recent Fixes & Changes
 
+## 2026-04-10
+
+- **Billing Final Gaps**: `plan_change_log` audit table, grace period auto-enforcement cron, `subscriptions.trialEnd` persistence
+- **Cron Infrastructure**: Vercel cron job at `/api/cron/billing-cleanup` (daily 2am UTC), `CRON_SECRET` env var
+- **Migration**: `drizzle/0042_right_swarm.sql` — applied to dev and production
+
+## 2026-04-09
+
+- **Billing Hardening**: 19 fixes across security, race conditions, error handling, rate limiting, accessibility (see billing-implementation-progress.md)
+
 ## 2026-04-08
 
 - **AI Usage Double-Counting**: Added `ne(aiGenerations.type, "image")` to billing usage query

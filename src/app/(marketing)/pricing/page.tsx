@@ -23,30 +23,35 @@ export default async function PricingPage() {
   let currentBillingCycle: "monthly" | "annual" | null = null;
 
   if (session?.user?.id) {
-    const dbUser = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      columns: { plan: true },
-    });
-    currentPlan = dbUser?.plan || "free";
-
-    // Fetch current subscription price ID for billing cycle detection
-    if (dbUser?.plan && dbUser.plan !== "free") {
-      const sub = await db.query.subscriptions.findFirst({
-        where: eq(subscriptions.userId, session.user.id),
-        columns: { stripePriceId: true },
-        orderBy: desc(subscriptions.createdAt),
+    try {
+      const dbUser = await db.query.user.findFirst({
+        where: eq(user.id, session.user.id),
+        columns: { plan: true },
       });
+      currentPlan = dbUser?.plan || "free";
 
-      // Resolve the price ID to a billing cycle for agency tier
-      if (dbUser.plan === "agency" && sub?.stripePriceId) {
-        const monthlyPriceId = process.env.STRIPE_PRICE_ID_AGENCY_MONTHLY;
-        const annualPriceId = process.env.STRIPE_PRICE_ID_AGENCY_ANNUAL;
-        if (sub.stripePriceId === monthlyPriceId) {
-          currentBillingCycle = "monthly";
-        } else if (sub.stripePriceId === annualPriceId) {
-          currentBillingCycle = "annual";
+      // Fetch current subscription price ID for billing cycle detection
+      if (dbUser?.plan && dbUser.plan !== "free") {
+        const sub = await db.query.subscriptions.findFirst({
+          where: eq(subscriptions.userId, session.user.id),
+          columns: { stripePriceId: true },
+          orderBy: desc(subscriptions.createdAt),
+        });
+
+        // Resolve the price ID to a billing cycle for agency tier
+        if (dbUser.plan === "agency" && sub?.stripePriceId) {
+          const monthlyPriceId = process.env.STRIPE_PRICE_ID_AGENCY_MONTHLY;
+          const annualPriceId = process.env.STRIPE_PRICE_ID_AGENCY_ANNUAL;
+          if (sub.stripePriceId === monthlyPriceId) {
+            currentBillingCycle = "monthly";
+          } else if (sub.stripePriceId === annualPriceId) {
+            currentBillingCycle = "annual";
+          }
         }
       }
+    } catch (error) {
+      console.error("[pricing] Failed to load user plan data", error);
+      // Gracefully degrade — show pricing page without personalized state
     }
   }
 

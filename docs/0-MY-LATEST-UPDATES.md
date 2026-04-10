@@ -1,5 +1,45 @@
 # Latest Updates
 
+## 2026-04-10: Billing System — Final Gaps Implementation & Production Deployment ✅
+
+**Summary:** Completed the remaining 3 billing gaps (audit trail, grace period enforcement, trial end persistence) and deployed to production. All 22 billing audit items are now resolved.
+
+**Requirements Addressed:**
+
+1. **Plan Change Audit Trail** — New `plan_change_log` table records every plan transition (who, from, to, when, why) across 7 code paths
+2. **Grace Period Auto-Enforcement** — Cron job now checks for expired grace periods and downgrades users to free, cancels Stripe subscriptions, and sends notifications
+3. **Trial End Persistence** — Stripe `trial_end` timestamp now persisted to `subscriptions.trial_end` column in webhook handlers
+4. **Cron Infrastructure** — Vercel cron job configured (daily 2am UTC), `CRON_SECRET` set in dev and production
+
+**Schema Changes:**
+
+| Change     | Table                     | Details                                                                                               |
+| ---------- | ------------------------- | ----------------------------------------------------------------------------------------------------- |
+| New table  | `plan_change_log`         | `id`, `user_id`, `old_plan`, `new_plan`, `reason`, `stripe_subscription_id`, `created_at` + 2 indexes |
+| New column | `subscriptions.trial_end` | `timestamp` (nullable)                                                                                |
+
+**Files Modified:**
+
+| File                                        | Changes                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------- |
+| `src/lib/schema.ts`                         | Added `plan_change_log` table + `subscriptions.trialEnd` column                 |
+| `src/app/api/cron/billing-cleanup/route.ts` | Grace period enforcement: query expired users, downgrade, cancel Stripe, notify |
+| `src/app/api/billing/webhook/route.ts`      | Trial end persistence (3 locations) + audit log inserts (4 locations)           |
+| `src/app/api/billing/status/route.ts`       | Audit log inserts (2 locations)                                                 |
+| `src/app/api/admin/subscribers/route.ts`    | Audit log insert (1 location)                                                   |
+| `vercel.json`                               | Cron job configuration                                                          |
+
+**Verification:**
+
+- `pnpm run check` (lint + typecheck) — clean
+- `pnpm test` — 196/196 tests passing
+- Production deployment — zero runtime errors
+- Cron endpoint — correctly rejects bad auth, processes with correct auth
+
+**Migration:** `drizzle/0042_right_swarm.sql` — applied to both dev and production databases
+
+---
+
 ## 2026-04-09: UI/UX Improvement — Compose Page Preview Card Layout Fix ✅
 
 **Summary:** Fixed the text overflow layout in the Preview card component on the Compose page, which caused long account names and handles to break outside of the layout bounds on narrow screens or sidebar views.

@@ -27,6 +27,7 @@ export function BillingStatus() {
   const router = useRouter();
   const [data, setData] = useState<BillingStatusData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [undoingCancellation, setUndoingCancellation] = useState(false);
 
   const handleUndoCancellation = async () => {
@@ -42,8 +43,8 @@ export function BillingStatus() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to undo cancellation");
+        const responseData = await res.json();
+        throw new Error(responseData.error || "Failed to undo cancellation");
       }
 
       const result = await res.json();
@@ -62,7 +63,7 @@ export function BillingStatus() {
     fetch("/api/billing/status")
       .then((r) => r.json())
       .then((d: BillingStatusData) => setData(d))
-      .catch(console.error)
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -74,7 +75,17 @@ export function BillingStatus() {
       </div>
     );
   }
-  if (!data) return null;
+
+  if (error || !data) {
+    return (
+      <div className="text-muted-foreground text-sm">
+        Failed to load billing status.{" "}
+        <button onClick={() => window.location.reload()} className="text-primary hover:underline">
+          Refresh
+        </button>
+      </div>
+    );
+  }
 
   const { plan, status, trialEndsAt, currentPeriodEnd, cancelAtPeriodEnd } = data;
   const isTrialing = status === "trialing";

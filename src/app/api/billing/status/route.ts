@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { getBillingRedis } from "@/lib/billing-redis";
 import { priceToPlan } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
-import { subscriptions, user } from "@/lib/schema";
+import { planChangeLog, subscriptions, user } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
 type DbStatus = "active" | "past_due" | "cancelled" | "trialing";
@@ -131,6 +131,19 @@ export async function GET() {
                 .update(user)
                 .set({ plan: "free", planExpiresAt: null })
                 .where(eq(user.id, session.user.id));
+              await tx.insert(planChangeLog).values({
+                id: crypto.randomUUID(),
+                userId: session.user.id,
+                oldPlan: (latestSub.plan ?? null) as
+                  | "free"
+                  | "pro_monthly"
+                  | "pro_annual"
+                  | "agency"
+                  | null,
+                newPlan: "free",
+                reason: "sync_failsafe_cancelled",
+                stripeSubscriptionId: latestSub.stripeSubscriptionId,
+              });
               reconciledPlan = "free";
             } else if (planMismatch && newPlan) {
               await tx
@@ -140,6 +153,19 @@ export async function GET() {
                   planExpiresAt: null,
                 })
                 .where(eq(user.id, session.user.id));
+              await tx.insert(planChangeLog).values({
+                id: crypto.randomUUID(),
+                userId: session.user.id,
+                oldPlan: (latestSub.plan ?? null) as
+                  | "free"
+                  | "pro_monthly"
+                  | "pro_annual"
+                  | "agency"
+                  | null,
+                newPlan: newPlan as "free" | "pro_monthly" | "pro_annual" | "agency",
+                reason: "sync_failsafe_plan_change",
+                stripeSubscriptionId: latestSub.stripeSubscriptionId,
+              });
               reconciledPlan = newPlan;
             }
           });

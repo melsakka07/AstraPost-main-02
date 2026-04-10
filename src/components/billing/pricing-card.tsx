@@ -167,14 +167,14 @@ export function PricingCard({
             )}
           </div>
         )}
-        <div className="space-y-2 text-sm">
+        <ul className="space-y-2 text-sm">
           {plan.features.map((feature) => (
-            <div key={feature} className="flex items-center gap-2">
+            <li key={feature} className="flex items-center gap-2">
               <Check className="text-primary h-4 w-4" />
               <span className="text-muted-foreground">{feature}</span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </CardContent>
       <CardFooter>
         <Button

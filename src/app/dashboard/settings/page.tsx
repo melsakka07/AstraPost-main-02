@@ -22,6 +22,13 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user, xAccounts, linkedinAccounts, instagramAccounts } from "@/lib/schema";
 
+const PLAN_LABELS: Record<string, string> = {
+  free: "Free",
+  pro_monthly: "Pro Monthly",
+  pro_annual: "Pro Annual",
+  agency: "Agency",
+};
+
 export default async function SettingsPage({
   searchParams,
 }: {
@@ -120,8 +127,8 @@ export default async function SettingsPage({
                 <div>
                   <div className="text-muted-foreground mb-1 text-sm font-medium">Current Plan</div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="px-3 py-1 text-base uppercase">
-                      {currentPlan}
+                    <Badge variant="secondary" className="px-3 py-1 text-base">
+                      {PLAN_LABELS[currentPlan] ?? currentPlan}
                     </Badge>
                   </div>
                 </div>

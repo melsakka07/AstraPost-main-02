@@ -581,24 +581,32 @@ export const inspirationBookmarks = pgTable(
   ]
 );
 
-export const subscriptions = pgTable("subscriptions", {
-  id: text("id").primaryKey(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
-  stripePriceId: text("stripe_price_id"),
-  plan: planEnum("plan"),
-  status: subscriptionStatusEnum("status"),
-  currentPeriodStart: timestamp("current_period_start"),
-  currentPeriodEnd: timestamp("current_period_end"),
-  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
-  cancelledAt: timestamp("cancelled_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-});
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+    stripePriceId: text("stripe_price_id"),
+    plan: planEnum("plan"),
+    status: subscriptionStatusEnum("status"),
+    currentPeriodStart: timestamp("current_period_start"),
+    currentPeriodEnd: timestamp("current_period_end"),
+    cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+    cancelledAt: timestamp("cancelled_at"),
+    trialEnd: timestamp("trial_end"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("subscriptions_user_id_idx").on(table.userId),
+    index("subscriptions_user_created_idx").on(table.userId, table.createdAt),
+  ]
+);
 
 /**
  * Tracks processed Stripe webhook event IDs to prevent duplicate side-effects.
@@ -619,6 +627,32 @@ export const processedWebhookEvents = pgTable("processed_webhook_events", {
   stripeEventId: text("stripe_event_id").notNull().unique(),
   processedAt: timestamp("processed_at").defaultNow().notNull(),
 });
+
+/**
+ * Audit trail for every plan transition.
+ *
+ * Each row records who changed plans, from what to what, when, and why.
+ * Inserted at every code path that mutates `user.plan` (webhook handlers,
+ * change-plan route, grace period cron, admin API, sync failsafe).
+ */
+export const planChangeLog = pgTable(
+  "plan_change_log",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    oldPlan: planEnum("old_plan"),
+    newPlan: planEnum("new_plan").notNull(),
+    reason: text("reason").notNull(),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("plan_change_log_user_id_idx").on(table.userId),
+    index("plan_change_log_created_at_idx").on(table.createdAt),
+  ]
+);
 
 export const jobRuns = pgTable(
   "job_runs",

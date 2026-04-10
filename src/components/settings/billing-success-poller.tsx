@@ -32,6 +32,10 @@ export function BillingSuccessPoller({ initialPlan }: BillingSuccessPollerProps)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    const abortRef = new AbortController();
+    const timeoutId = setTimeout(() => abortRef.abort(), 8000); // 8s hard timeout
+    let cancelled = false;
+
     const clearParam = () => {
       const url = new URL(window.location.href);
       url.searchParams.delete("billing");
@@ -39,18 +43,15 @@ export function BillingSuccessPoller({ initialPlan }: BillingSuccessPollerProps)
     };
 
     const poll = async () => {
+      if (cancelled) return;
       attemptsRef.current += 1;
 
       try {
-        const res = await fetch("/api/billing/status");
-        if (res.ok) {
+        const res = await fetch("/api/billing/status", { signal: abortRef.signal });
+        if (!cancelled && res.ok) {
           const data = (await res.json()) as { plan: string; status: string };
-          const planUpdated = data.plan !== "free" && data.plan !== initialPlan;
-          // Also catch the case where initialPlan was already paid (upgrade scenario):
-          // treat "active" status on any paid plan as confirmation.
-          const isActiveNow = data.status === "active" || data.status === "trialing";
-
-          if (planUpdated || (data.plan !== "free" && isActiveNow)) {
+          // Only trigger success when the plan actually changed from initialPlan
+          if (data.plan !== initialPlan && data.plan !== "free") {
             const label = PLAN_LABELS[data.plan] ?? data.plan;
             toast.success(`Welcome to ${label}! Your subscription is now active.`);
             clearParam();
@@ -58,10 +59,12 @@ export function BillingSuccessPoller({ initialPlan }: BillingSuccessPollerProps)
             return;
           }
         }
-      } catch {
+      } catch (err) {
+        if (abortRef.signal.aborted) return; // Aborted — cleanup will handle
         // silent — retry on next tick
       }
 
+      if (cancelled) return;
       if (attemptsRef.current >= MAX_ATTEMPTS) {
         toast.info(
           "Your subscription is still being processed. This page will update shortly — please refresh in a moment."
@@ -73,13 +76,15 @@ export function BillingSuccessPoller({ initialPlan }: BillingSuccessPollerProps)
       timerRef.current = setTimeout(poll, POLL_INTERVAL_MS);
     };
 
-    // Kick off immediately
     void poll();
 
     return () => {
+      cancelled = true;
+      abortRef.abort();
+      clearTimeout(timeoutId);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialPlan, router]);
 
   return null;
 }

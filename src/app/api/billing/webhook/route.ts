@@ -3,7 +3,14 @@ import { eq, and, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { awardReferralCredit, REFERRAL_CREDIT_AMOUNT } from "@/lib/referral/utils";
-import { processedWebhookEvents, subscriptions, user, xAccounts, posts } from "@/lib/schema";
+import {
+  processedWebhookEvents,
+  planChangeLog,
+  subscriptions,
+  user,
+  xAccounts,
+  posts,
+} from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 import { stripe } from "@/lib/stripe";
@@ -70,13 +77,6 @@ async function getSubscriptionRecord(stripeSubscriptionId: string) {
   return db.query.subscriptions.findFirst({
     where: eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId),
   });
-}
-
-function normalizeCheckoutPlan(plan: string | undefined) {
-  if (!plan) return "pro_monthly";
-  if (plan === "agency_monthly" || plan === "agency_annual") return "agency";
-  if (plan === "pro_monthly" || plan === "pro_annual" || plan === "agency") return plan;
-  return "pro_monthly";
 }
 
 /**
@@ -149,17 +149,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (planFromPriceId) {
     plan = planFromPriceId;
   } else {
-    const metadataPlan = normalizeCheckoutPlan(session.metadata?.plan);
-    console.warn("webhook_checkout_plan_metadata_fallback", {
+    console.error("webhook_checkout_unknown_price_id", {
       userId,
       purchasedPriceId: purchasedPriceId ?? null,
-      metadataPlan,
+      metadataPlan: session.metadata?.plan ?? null,
       message:
-        "Price ID not matched by any configured env var — falling back to session metadata. " +
-        "Set STRIPE_PRICE_ID_MONTHLY, STRIPE_PRICE_ID_ANNUAL, " +
-        "STRIPE_PRICE_ID_AGENCY_MONTHLY, and STRIPE_PRICE_ID_AGENCY_ANNUAL to eliminate this warning.",
+        "Price ID not matched by any configured env var. Plan NOT updated. Set STRIPE_PRICE_ID_* env vars.",
     });
-    plan = metadataPlan as PlanValue;
+    // Use metadata as display-only, but default to pro_monthly to avoid giving away higher plans
+    plan = "pro_monthly";
   }
 
   const subStatus = toSubscriptionStatus(subscription.status);
@@ -175,6 +173,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       })
       .where(eq(user.id, userId));
 
+    await tx.insert(planChangeLog).values({
+      id: crypto.randomUUID(),
+      userId,
+      oldPlan: null,
+      newPlan: plan,
+      reason: "checkout",
+      stripeSubscriptionId: subscription.id,
+    });
+
     await tx
       .insert(subscriptions)
       .values({
@@ -188,6 +195,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         currentPeriodEnd: period.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
         cancelledAt: unixToDate(subscription.canceled_at),
+        trialEnd: unixToDate(subscription.trial_end),
       })
       .onConflictDoUpdate({
         target: subscriptions.stripeSubscriptionId,
@@ -199,6 +207,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           currentPeriodEnd: period.currentPeriodEnd,
           cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
           cancelledAt: unixToDate(subscription.canceled_at),
+          trialEnd: unixToDate(subscription.trial_end),
         },
       });
   });
@@ -305,6 +314,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       currentPeriodEnd: period.currentPeriodEnd,
       cancelAtPeriodEnd: newCancelAtPeriodEnd,
       cancelledAt: unixToDate(subscription.canceled_at),
+      trialEnd: unixToDate(subscription.trial_end),
       ...(newPlan && newPriceId ? { plan: newPlan, stripePriceId: newPriceId } : {}),
     })
     .where(eq(subscriptions.stripeSubscriptionId, subscription.id));
@@ -320,6 +330,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       .update(user)
       .set({ plan: "free", planExpiresAt: null })
       .where(eq(user.id, existingRecord.userId));
+
+    await db.insert(planChangeLog).values({
+      id: crypto.randomUUID(),
+      userId: existingRecord.userId,
+      oldPlan: existingRecord.plan,
+      newPlan: "free",
+      reason: "incomplete_expired",
+      stripeSubscriptionId: subscription.id,
+    });
 
     console.warn("webhook_subscription_incomplete_expired_downgrade", {
       userId: existingRecord.userId,
@@ -371,6 +390,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       .update(user)
       .set({ plan: newPlan, planExpiresAt: null })
       .where(eq(user.id, existingRecord.userId));
+
+    await db.insert(planChangeLog).values({
+      id: crypto.randomUUID(),
+      userId: existingRecord.userId,
+      oldPlan: existingRecord.plan,
+      newPlan,
+      reason: "webhook_plan_change",
+      stripeSubscriptionId: subscription.id,
+    });
 
     console.warn("webhook_subscription_plan_synced", {
       userId: existingRecord.userId,
@@ -594,6 +622,15 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
         planExpiresAt: null,
       })
       .where(eq(user.id, subRecord.userId));
+
+    await tx.insert(planChangeLog).values({
+      id: crypto.randomUUID(),
+      userId: subRecord.userId,
+      oldPlan: subRecord.plan,
+      newPlan: "free",
+      reason: "subscription_deleted",
+      stripeSubscriptionId: subscription.id,
+    });
   });
 
   // ── Over-limit account detection on subscription deletion ─────────────
@@ -875,13 +912,16 @@ export async function POST(req: Request) {
 
   // ── Idempotency guard ────────────────────────────────────────────────────
   // Stripe retries webhooks on non-2xx responses and occasionally on timeouts.
-  // We skip processing and return 200 immediately if we have already recorded
-  // this event ID — preventing duplicate billing emails and notifications.
-  const alreadyProcessed = await db.query.processedWebhookEvents.findFirst({
-    where: eq(processedWebhookEvents.stripeEventId, event.id),
-    columns: { id: true },
-  });
-  if (alreadyProcessed) {
+  // We INSERT first — ON CONFLICT DO NOTHING means we only process if this is new.
+  // This atomic pattern prevents duplicate processing even under race conditions.
+  const [inserted] = await db
+    .insert(processedWebhookEvents)
+    .values({ id: crypto.randomUUID(), stripeEventId: event.id })
+    .onConflictDoNothing()
+    .returning({ id: processedWebhookEvents.id });
+
+  if (!inserted) {
+    // Event already processed — skip
     return new Response(null, { status: 200 });
   }
 
@@ -911,21 +951,20 @@ export async function POST(req: Request) {
       default:
         break;
     }
-
-    // Record the event as successfully processed.
-    // This insert is intentionally placed AFTER the switch so that any
-    // processing failure (thrown exception) leaves the event unrecorded,
-    // allowing Stripe's retry to re-attempt it.
-    await db.insert(processedWebhookEvents).values({
-      id: crypto.randomUUID(),
-      stripeEventId: event.id,
-    });
   } catch (error) {
     console.error("Stripe webhook processing failed", {
       eventType: event.type,
       eventId: event.id,
       error,
     });
+    // Delete the idempotency record so Stripe retries this event
+    try {
+      await db
+        .delete(processedWebhookEvents)
+        .where(eq(processedWebhookEvents.stripeEventId, event.id));
+    } catch {
+      // Ignore cleanup failure — the event is still recorded but processing failed
+    }
     return new Response("Webhook Processing Error", { status: 500 });
   }
 

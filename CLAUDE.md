@@ -80,6 +80,7 @@ Next.js 16 (App Router), React 19, TypeScript, PostgreSQL 18 (pgvector), Drizzle
 - Plan gates: `src/lib/middleware/require-plan.ts`
 - Plan limits: `src/lib/plan-limits.ts`
 - Errors: `src/lib/api/errors.ts`
+- Billing cron: `src/app/api/cron/billing-cleanup/route.ts` (webhook cleanup + grace period enforcement)
 
 ## Agent Orchestration
 

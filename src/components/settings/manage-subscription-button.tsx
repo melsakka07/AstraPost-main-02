@@ -28,17 +28,18 @@ export function ManageSubscriptionButton() {
 
         if (res.status === 401) {
           window.location.href = "/login?redirect=/dashboard/settings";
-          return;
+          return; // Don't reset loading — navigating away
         }
 
         if (res.status === 400 && payload?.code === "no_subscription") {
           toast.error("No active billing profile was found. Choose a plan to continue.");
           window.location.href = "/pricing?billing=restore";
-          return;
+          return; // Don't reset loading — navigating away
         }
 
         if (res.status === 503) {
           toast.error("Billing service is temporarily unavailable. Please try again.");
+          setLoading(false);
           return;
         }
 
@@ -47,11 +48,11 @@ export function ManageSubscriptionButton() {
 
       const { url } = await res.json();
       window.location.href = url;
+      // Don't reset loading — page is navigating away
     } catch (error) {
       console.error(error);
       toast.error("Something went wrong");
-    } finally {
-      setLoading(false);
+      setLoading(false); // Only reset on error
     }
   };
 

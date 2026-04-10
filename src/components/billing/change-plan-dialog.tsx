@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -49,30 +49,6 @@ export function ChangePlanDialog({
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<ChangePlanPreview | null>(null);
 
-  const fetchPreview = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/billing/change-plan/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to load preview");
-      }
-
-      const data = await res.json();
-      setPreview(data);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load plan preview");
-      onOpenChange(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleConfirm = async () => {
     setLoading(true);
     try {
@@ -104,10 +80,49 @@ export function ChangePlanDialog({
     }
   };
 
+  // Fetch preview when dialog opens, and refetch when plan changes
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setPreview(null);
+
+    (async () => {
+      try {
+        const res = await fetch("/api/billing/change-plan/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Failed to load preview");
+        }
+
+        const data = await res.json();
+        if (!cancelled) {
+          setPreview(data);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(error instanceof Error ? error.message : "Failed to load plan preview");
+          onOpenChange(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, plan, onOpenChange]);
+
   const handleOpenChange = (open: boolean) => {
-    if (open && !preview) {
-      fetchPreview();
-    }
     onOpenChange(open);
   };
 

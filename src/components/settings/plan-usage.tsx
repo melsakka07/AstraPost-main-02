@@ -32,6 +32,7 @@ function getPercentage(used: number, limit: number | null) {
 export function PlanUsage() {
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     fetch("/api/billing/usage")
@@ -41,7 +42,9 @@ export function PlanUsage() {
           setData(payload as UsageData);
         }
       })
-      .catch(console.error)
+      .catch(() => {
+        setError(true);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -56,7 +59,16 @@ export function PlanUsage() {
     );
   }
 
-  if (!data) return null;
+  if (error || !data) {
+    return (
+      <div className="text-muted-foreground mt-4 border-t pt-4 text-sm">
+        Failed to load usage data.{" "}
+        <button onClick={() => window.location.reload()} className="text-primary hover:underline">
+          Refresh
+        </button>
+      </div>
+    );
+  }
 
   const { limits, usage, plan } = data;
   const postPercentage = getPercentage(usage.posts, limits.postsPerMonth);

@@ -3,7 +3,14 @@ import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
-import { subscriptions, user, xAccounts, linkedinAccounts, instagramAccounts } from "@/lib/schema";
+import {
+  planChangeLog,
+  subscriptions,
+  user,
+  xAccounts,
+  linkedinAccounts,
+  instagramAccounts,
+} from "@/lib/schema";
 
 // ── Query params schema ───────────────────────────────────────────────────────
 
@@ -179,6 +186,14 @@ export async function POST(request: Request) {
 
   // Apply extra fields (plan, admin)
   await db.update(user).set({ plan, isAdmin: makeAdmin }).where(eq(user.id, newUserId));
+
+  await db.insert(planChangeLog).values({
+    id: crypto.randomUUID(),
+    userId: newUserId,
+    oldPlan: null,
+    newPlan: plan,
+    reason: "admin",
+  });
 
   const [created] = await db.select().from(user).where(eq(user.id, newUserId)).limit(1);
 
