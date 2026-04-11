@@ -1,5 +1,37 @@
 # Latest Updates
 
+## 2026-04-12: Fix Admin Sidebar Hydration Mismatch ✅
+
+**Summary:** Fixed hydration mismatch error on admin pages caused by Radix UI generating different random IDs on server vs client for the mobile sheet menu.
+
+**Root Cause:** The `aria-controls` attribute in the Sheet component (Radix UI) was generating different random IDs on the server (`radix-_R_4qbmqlb_`) vs client (`radix-_R_16itmlb_`), causing React hydration mismatch warnings.
+
+**Fix:** Wrapped the mobile sheet menu in a `{hydrated && ...}` conditional to only render it after the component has hydrated on the client, ensuring consistent IDs.
+
+**Files Modified:**
+
+- `src/components/admin/sidebar.tsx` — added `hydrated` check before rendering mobile sheet
+
+**Status:** `pnpm run check` ✅
+
+---
+
+## 2026-04-12: Fix Admin Referrals Page SQL Error ✅
+
+**Summary:** Fixed `Failed to fetch referral data` error on `/admin/referrals` page caused by invalid SQL subqueries with raw table aliases.
+
+**Root Cause:** The API endpoint `/api/admin/referrals` used raw SQL subqueries with table aliases like `referred.referred_by` which don't work with Drizzle's automatic table aliasing. Drizzle aliases tables (e.g., `"user"` → `"user"` with different references), causing PostgreSQL `invalid reference to FROM-clause entry` errors.
+
+**Fix:** Rewrote the referrers query to use proper Drizzle queries instead of raw SQL subqueries. Now fetches referrers and referred counts separately, then combines them in JavaScript with proper pagination.
+
+**Files Modified:**
+
+- `src/app/api/admin/referrals/route.ts` — replaced SQL subqueries with Drizzle queries
+
+**Status:** `pnpm run check` ✅
+
+---
+
 ## 2026-04-12: Fix Admin Notifications Page Runtime Error ✅
 
 **Summary:** Fixed `Cannot read properties of undefined (reading 'toLocaleString')` error on `/admin/notifications` page caused by missing `targetCount` field in API response.

@@ -141,34 +141,36 @@ export function AdminSidebar() {
         </div>
       </div>
 
-      {/* Mobile Menu Button & Drawer */}
-      <div className="fixed top-4 left-4 z-50 md:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Open admin menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <div className="flex h-14 items-center border-b px-4">
-              <Link href="/admin" className="flex items-center gap-2">
-                <ShieldCheck className="text-primary h-6 w-6" />
-                <span className="text-lg font-semibold">Admin</span>
-              </Link>
-            </div>
-            <AdminSidebarContent sections={sidebarSections} collapsed={false} pathname={pathname} />
-            <div className="mt-auto border-t p-3">
-              <Link href="/dashboard">
-                <Button variant="outline" className="w-full justify-start">
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  Back to App
-                </Button>
-              </Link>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
+      {/* Mobile Menu Button & Drawer - only render after hydration to avoid ID mismatch */}
+      {hydrated && (
+        <div className="fixed top-4 left-4 z-50 md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open admin menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <div className="flex h-14 items-center border-b px-4">
+                <Link href="/admin" className="flex items-center gap-2">
+                  <ShieldCheck className="text-primary h-6 w-6" />
+                  <span className="text-lg font-semibold">Admin</span>
+                </Link>
+              </div>
+              <AdminSidebarContent sections={sidebarSections} collapsed={false} pathname={pathname} />
+              <div className="mt-auto border-t p-3">
+                <Link href="/dashboard">
+                  <Button variant="outline" className="w-full justify-start">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Back to App
+                  </Button>
+                </Link>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      )}
     </>
   );
 }
