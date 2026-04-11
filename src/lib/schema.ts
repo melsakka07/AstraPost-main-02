@@ -177,6 +177,7 @@ export const session = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     impersonatedBy: text("impersonated_by").references(() => user.id, { onDelete: "set null" }),
+    impersonationStartedAt: timestamp("impersonation_started_at", { withTimezone: true }),
   },
   (table) => [
     index("session_user_id_idx").on(table.userId),
@@ -1267,3 +1268,10 @@ export const agenticPostsRelations = relations(agenticPosts, ({ one }) => ({
     references: [posts.id],
   }),
 }));
+
+// ── Type Exports ────────────────────────────────────────────────────────────
+export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
+export type InsertAdminAuditLog = typeof adminAuditLog.$inferInsert;
+export type SessionWithImpersonation = typeof session.$inferSelect & {
+  impersonatedByUser?: typeof user.$inferSelect;
+};

@@ -1,5 +1,5 @@
 import { desc, isNotNull, eq } from "drizzle-orm";
-import { UserCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { ImpersonationTable } from "@/components/admin/impersonation/impersonation-table";
 import { requireAdmin } from "@/lib/admin";
@@ -47,9 +47,9 @@ export default async function AdminImpersonationPage() {
 
   return (
     <AdminPageWrapper
-      icon={UserCheck}
-      title="Active Impersonations"
-      description="View and manage active impersonation sessions"
+      icon={ShieldCheck}
+      title="Impersonation Sessions"
+      description="Monitor and manage active impersonation sessions"
     >
       <ImpersonationTable sessions={enrichedSessions} />
     </AdminPageWrapper>

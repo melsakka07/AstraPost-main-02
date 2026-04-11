@@ -330,6 +330,13 @@
       "when": 1775924132505,
       "tag": "0046_rare_vision",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1775942573097,
+      "tag": "0047_soft_brother_voodoo",
+      "breakpoints": true
     }
   ]
 }

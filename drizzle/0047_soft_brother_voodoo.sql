@@ -1,0 +1,1 @@
+ALTER TABLE "session" ADD COLUMN "impersonation_started_at" timestamp with time zone;
