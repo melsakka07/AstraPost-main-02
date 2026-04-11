@@ -1,14 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
-  BarChart,
-  BarChart2,
+  Bell,
+  Bot,
   CreditCard,
+  FileText,
+  Gift,
+  HeartPulse,
   LayoutDashboard,
   Lightbulb,
+  Menu,
   Megaphone,
   ShieldCheck,
   Tag,
@@ -17,19 +22,26 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { AdminSidebarContent } from "./sidebar-content";
 
 const sidebarSections = [
   {
     label: "Overview",
     items: [
-      { href: "/admin/metrics", label: "Metrics", icon: BarChart },
-      { href: "/admin/stats", label: "Platform Stats", icon: BarChart2 },
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/admin/health", label: "System Health", icon: HeartPulse },
     ],
   },
   {
     label: "Users",
-    items: [{ href: "/admin/subscribers", label: "Subscribers", icon: Users }],
+    items: [
+      { href: "/admin/subscribers", label: "Subscribers", icon: Users },
+      { href: "/admin/ai-usage", label: "AI Usage", icon: Bot },
+      { href: "/admin/teams", label: "Teams", icon: Users },
+      { href: "/admin/impersonation", label: "Impersonation", icon: ShieldCheck },
+    ],
   },
   {
     label: "Billing",
@@ -42,6 +54,9 @@ const sidebarSections = [
   {
     label: "Product",
     items: [
+      { href: "/admin/content", label: "Content Performance", icon: FileText },
+      { href: "/admin/agentic", label: "Agentic Posts", icon: Bot },
+      { href: "/admin/affiliate", label: "Affiliate", icon: Gift },
       { href: "/admin/announcement", label: "Announcement", icon: Megaphone },
       { href: "/admin/roadmap", label: "Roadmap", icon: Lightbulb },
     ],
@@ -49,57 +64,109 @@ const sidebarSections = [
   {
     label: "System",
     items: [
+      { href: "/admin/audit", label: "Audit Log", icon: FileText },
       { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
       { href: "/admin/jobs", label: "Jobs (BullMQ)", icon: Activity },
+      { href: "/admin/notifications", label: "Notifications", icon: Bell },
     ],
   },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Initialize from localStorage after hydration
+  useEffect(() => {
+    const saved = localStorage.getItem("admin-sidebar-collapsed");
+    if (saved) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCollapsed(JSON.parse(saved));
+    }
+    setHydrated(true);
+  }, []);
+
+  // Persist collapsed state to localStorage
+  useEffect(() => {
+    if (hydrated) {
+      localStorage.setItem("admin-sidebar-collapsed", JSON.stringify(collapsed));
+    }
+  }, [collapsed, hydrated]);
 
   return (
-    <div className="bg-muted/30 fixed top-0 bottom-0 left-0 flex h-dvh w-64 flex-col border-r">
-      <div className="flex h-14 items-center border-b px-6">
-        <Link href="/admin" className="flex items-center gap-2 text-lg font-semibold">
-          <ShieldCheck className="text-primary h-6 w-6" />
-          <span>Admin Panel</span>
-        </Link>
+    <>
+      {/* Desktop Sidebar */}
+      <div
+        className={cn(
+          "bg-muted/30 fixed top-0 bottom-0 left-0 flex h-dvh flex-col border-r transition-all duration-300",
+          collapsed ? "w-20" : "w-64"
+        )}
+      >
+        <div className="flex h-14 items-center border-b px-4">
+          <Link href="/admin" className="flex items-center gap-2">
+            <ShieldCheck className="text-primary h-6 w-6 shrink-0" />
+            {!collapsed && <span className="text-lg font-semibold">Admin</span>}
+          </Link>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="hover:bg-muted ml-auto hidden rounded-lg p-1 md:flex"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+        </div>
+
+        <AdminSidebarContent sections={sidebarSections} collapsed={collapsed} pathname={pathname} />
+
+        <div className="mt-auto border-t p-3">
+          <Link href="/dashboard">
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(collapsed && "w-full justify-center")}
+            >
+              {collapsed ? (
+                <LayoutDashboard className="h-4 w-4" />
+              ) : (
+                <>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Back to App
+                </>
+              )}
+            </Button>
+          </Link>
+        </div>
       </div>
-      <div className="flex-1 overflow-auto px-4 py-4">
-        <nav className="space-y-5">
-          {sidebarSections.map((section) => (
-            <div key={section.label}>
-              <p className="text-muted-foreground/60 mb-1 px-3 text-xs font-semibold tracking-wider uppercase">
-                {section.label}
-              </p>
-              <div className="grid gap-0.5">
-                {section.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "text-muted-foreground hover:text-primary hover:bg-muted flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-                      pathname === item.href && "bg-primary/10 text-primary font-medium"
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+
+      {/* Mobile Menu Button & Drawer */}
+      <div className="fixed top-4 left-4 z-50 md:hidden">
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Open admin menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64 p-0">
+            <div className="flex h-14 items-center border-b px-4">
+              <Link href="/admin" className="flex items-center gap-2">
+                <ShieldCheck className="text-primary h-6 w-6" />
+                <span className="text-lg font-semibold">Admin</span>
+              </Link>
             </div>
-          ))}
-        </nav>
+            <AdminSidebarContent sections={sidebarSections} collapsed={false} pathname={pathname} />
+            <div className="mt-auto border-t p-3">
+              <Link href="/dashboard">
+                <Button variant="outline" className="w-full justify-start">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  Back to App
+                </Button>
+              </Link>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
-      <div className="mt-auto border-t p-4">
-        <Link href="/dashboard">
-          <Button variant="outline" className="w-full justify-start">
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            Back to App
-          </Button>
-        </Link>
-      </div>
-    </div>
+    </>
   );
 }

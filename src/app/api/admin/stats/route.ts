@@ -1,5 +1,6 @@
 import { count, eq, gte, and, sql } from "drizzle-orm";
 import { requireAdminApi } from "@/lib/admin";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { db } from "@/lib/db";
 import { user, posts, aiGenerations, jobRuns } from "@/lib/schema";
 
@@ -8,6 +9,9 @@ import { user, posts, aiGenerations, jobRuns } from "@/lib/schema";
 export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("read");
+  if (rl) return rl;
 
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

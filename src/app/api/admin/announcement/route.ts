@@ -2,6 +2,8 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { featureFlags } from "@/lib/schema";
@@ -31,6 +33,9 @@ export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
+  const rl = await checkAdminRateLimit("read");
+  if (rl) return rl;
+
   const flag = await getAnnouncementFlag();
   if (!flag) {
     return Response.json({ data: { text: "", type: "info", enabled: false } });
@@ -51,6 +56,9 @@ export async function GET() {
 export async function PUT(request: Request) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("write");
+  if (rl) return rl;
 
   const body = await request.json().catch(() => null);
   if (!body) return ApiError.badRequest("Invalid JSON body");
@@ -76,6 +84,14 @@ export async function PUT(request: Request) {
       enabled,
     });
   }
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: "announcement_update",
+    targetType: "feature_flag",
+    targetId: ANNOUNCEMENT_KEY,
+    details: { text, type, enabled },
+  });
 
   return Response.json({ data: { text, type, enabled } });
 }

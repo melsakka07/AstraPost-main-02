@@ -72,6 +72,27 @@ export const teamRoleEnum = pgEnum("team_role", ["admin", "editor", "viewer"]);
 /** Lifecycle state of a team invitation. */
 export const invitationStatusEnum = pgEnum("invitation_status", ["pending", "accepted", "expired"]);
 
+/** Admin actions that are tracked in the audit log. */
+export const adminAuditActionEnum = pgEnum("admin_audit_action", [
+  "ban",
+  "unban",
+  "delete_user",
+  "suspend",
+  "unsuspend",
+  "impersonate_start",
+  "impersonate_end",
+  "plan_change",
+  "feature_flag_toggle",
+  "promo_create",
+  "promo_update",
+  "promo_delete",
+  "announcement_update",
+  "subscriber_create",
+  "subscriber_update",
+  "roadmap_update",
+  "bulk_operation",
+]);
+
 /** Status of a background analytics refresh run. */
 export const analyticsRunStatusEnum = pgEnum("analytics_run_status", [
   "running",
@@ -155,10 +176,12 @@ export const session = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    impersonatedBy: text("impersonated_by").references(() => user.id, { onDelete: "set null" }),
   },
   (table) => [
     index("session_user_id_idx").on(table.userId),
     index("session_token_idx").on(table.token),
+    index("session_impersonated_by_idx").on(table.impersonatedBy),
   ]
 );
 
@@ -878,6 +901,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   feedback: many(feedback),
   feedbackVotes: many(feedbackVotes),
   socialAnalytics: many(socialAnalytics),
+  auditLogEntries: many(adminAuditLog),
 }));
 
 export const socialAnalyticsRelations = relations(socialAnalytics, ({ one }) => ({
@@ -1156,6 +1180,39 @@ export const promoCodeRedemptionsRelations = relations(promoCodeRedemptions, ({ 
     references: [user.id],
   }),
 }));
+
+// ── Admin Audit Log ──────────────────────────────────────────────────────────
+
+/**
+ * Immutable audit trail for every admin action.
+ *
+ * Each row records which admin performed what action, on which target,
+ * when, and from where. Rows are never updated or deleted — append-only.
+ *
+ * Retention: consider pruning rows older than 1 year via a periodic job.
+ */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: text("id").primaryKey(),
+    adminId: text("admin_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    action: adminAuditActionEnum("action").notNull(),
+    targetType: text("target_type"), // e.g. 'user', 'feature_flag', 'promo_code'
+    targetId: text("target_id"), // e.g. user ID, flag key, promo code ID
+    details: jsonb("details").$type<Record<string, unknown>>(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("admin_audit_log_admin_id_idx").on(table.adminId),
+    index("admin_audit_log_action_idx").on(table.action),
+    index("admin_audit_log_created_at_idx").on(table.createdAt),
+    index("admin_audit_log_target_idx").on(table.targetType, table.targetId),
+  ]
+);
 
 // ── Agentic Posts ────────────────────────────────────────────────────────────
 

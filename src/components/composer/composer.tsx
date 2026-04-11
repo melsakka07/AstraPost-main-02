@@ -2239,7 +2239,7 @@ export function Composer() {
                   onToolChange={(tool) => {
                     setAiTool(tool);
                     setGeneratedHashtags([]);
-                    if (tool === "hashtags") {
+                    if (tool === "hashtags" || tool === "hook" || tool === "rewrite") {
                       setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
                     }
                     if (tool === "template" && !templateConfig) {
@@ -2601,7 +2601,7 @@ export function Composer() {
                 onToolChange={(tool) => {
                   setAiTool(tool);
                   setGeneratedHashtags([]);
-                  if (tool === "hashtags") {
+                  if (tool === "hashtags" || tool === "hook" || tool === "rewrite") {
                     setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
                   }
                   if (tool === "template" && !templateConfig) {

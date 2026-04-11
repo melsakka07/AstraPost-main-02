@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { promoCodes } from "@/lib/schema";
@@ -21,6 +23,9 @@ const patchSchema = z.object({
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("write");
+  if (rl) return rl;
 
   const { id } = await params;
 
@@ -61,6 +66,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .where(eq(promoCodes.id, id))
     .returning();
 
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: "promo_update",
+    targetType: "promo_code",
+    targetId: id,
+    details: data,
+  });
+
   return Response.json({ data: updated });
 }
 
@@ -69,6 +82,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("destructive");
+  if (rl) return rl;
 
   const { id } = await params;
 
@@ -86,6 +102,14 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     .update(promoCodes)
     .set({ deletedAt: new Date(), isActive: false })
     .where(eq(promoCodes.id, id));
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: "promo_delete",
+    targetType: "promo_code",
+    targetId: id,
+    details: { code: existing.code },
+  });
 
   return Response.json({ success: true });
 }

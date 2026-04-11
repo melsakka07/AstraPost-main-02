@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { CreditCard, DollarSign, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { CreditCard, DollarSign, TrendingDown, TrendingUp, Users, FileDown } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { fetchAndDownloadCsv } from "@/lib/export";
 
 interface OverviewData {
   mrr: { cents: number; configured: boolean };
@@ -124,6 +127,7 @@ export function BillingOverview() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -136,6 +140,25 @@ export function BillingOverview() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleExportTransactions = async () => {
+    setExporting(true);
+    try {
+      await fetchAndDownloadCsv(
+        "/api/admin/billing/transactions/export",
+        `transactions-${new Date().toISOString().split("T")[0]}.csv`,
+        {
+          success: () =>
+            toast.success(
+              `Exported ${transactions.length > 0 ? transactions.length : "all"} transactions`
+            ),
+          error: (msg) => toast.error(msg),
+        }
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (loading) return <LoadingSkeleton />;
   if (!overview) return null;
@@ -210,8 +233,17 @@ export function BillingOverview() {
 
       {/* Recent transactions */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Recent subscription events</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportTransactions}
+            disabled={exporting || transactions.length === 0}
+          >
+            <FileDown className="mr-2 h-4 w-4" />
+            {exporting ? "Exporting…" : "Export CSV"}
+          </Button>
         </CardHeader>
         <CardContent className="p-0">
           <Table>

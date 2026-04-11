@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/dashboard/sidebar";
 import { TokenWarningBanner } from "@/components/dashboard/token-warning-banner";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { ReferralCookieProcessor } from "@/components/referral/referral-cookie-processor";
+import { ImpersonationBanner } from "@/components/ui/impersonation-banner";
 import { TrialBanner } from "@/components/ui/trial-banner";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/feature-flags";
@@ -105,6 +106,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}
       />
       <div className="flex min-w-0 flex-1 flex-col">
+        {session.session.impersonatedBy && (
+          <ImpersonationBanner
+            sessionId={session.session.id}
+            impersonatedBy={session.session.impersonatedBy as string}
+            targetUserEmail={session.user.email}
+          />
+        )}
         <DashboardHeader
           user={{
             id: session.user.id,

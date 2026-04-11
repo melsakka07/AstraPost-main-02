@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { invalidateFeatureFlag } from "@/lib/feature-flags";
@@ -15,6 +17,9 @@ const patchSchema = z.object({
 export async function PATCH(request: Request, { params }: { params: Promise<{ key: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("write");
+  if (rl) return rl;
 
   const { key } = await params;
 
@@ -40,6 +45,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
 
   // Bust the in-process cache so the change is reflected immediately
   invalidateFeatureFlag(key);
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: "feature_flag_toggle",
+    targetType: "feature_flag",
+    targetId: key,
+    details: { enabled: parsed.data.enabled },
+  });
 
   return Response.json({ data: updated });
 }

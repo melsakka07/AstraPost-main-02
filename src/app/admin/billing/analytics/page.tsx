@@ -1,6 +1,11 @@
 import { TrendingUp } from "lucide-react";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { AnalyticsPagination } from "@/components/admin/billing/analytics-pagination";
+import {
+  MRRTrendChart,
+  LTVEstimatesTable,
+  CohortRetentionTable,
+} from "@/components/admin/billing/revenue-charts";
 
 export const metadata = { title: "Billing Analytics — Admin" };
 
@@ -47,7 +52,16 @@ export default async function BillingAnalyticsPage({
   }
 
   const data = await res.json();
-  const { planDistribution, recentChanges, pagination, metrics, failedWebhooks } = data;
+  const {
+    planDistribution,
+    recentChanges,
+    pagination,
+    metrics,
+    failedWebhooks,
+    mrrTrends,
+    ltvEstimates,
+    cohortData,
+  } = data;
 
   return (
     <AdminPageWrapper
@@ -80,6 +94,14 @@ export default async function BillingAnalyticsPage({
           description="Events with retry attempts"
           trend={failedWebhooks?.length > 0 ? "warning" : "healthy"}
         />
+      </div>
+
+      {/* Revenue Trends Section */}
+      {mrrTrends && <MRRTrendChart mrrTrends={mrrTrends} />}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {ltvEstimates && <LTVEstimatesTable ltvEstimates={ltvEstimates} />}
+        {cohortData && <CohortRetentionTable cohortData={cohortData} />}
       </div>
 
       {/* Plan Distribution */}

@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { requireAdminApi } from "@/lib/admin";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { db } from "@/lib/db";
 import { DEFAULT_FLAGS } from "@/lib/feature-flags";
 import { featureFlags } from "@/lib/schema";
@@ -9,6 +10,9 @@ import { featureFlags } from "@/lib/schema";
 export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("read");
+  if (rl) return rl;
 
   // Auto-seed defaults if table is empty
   const existing = await db.select().from(featureFlags);

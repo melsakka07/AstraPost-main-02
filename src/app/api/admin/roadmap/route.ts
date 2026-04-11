@@ -1,6 +1,7 @@
 import { and, count, desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { feedback } from "@/lib/schema";
@@ -15,6 +16,9 @@ const listQuerySchema = z.object({
 export async function GET(request: Request) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("read");
+  if (rl) return rl;
 
   const { searchParams } = new URL(request.url);
   const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));

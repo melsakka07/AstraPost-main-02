@@ -1,5 +1,6 @@
 import { and, count, eq, gte, lt, sql } from "drizzle-orm";
 import { requireAdminApi } from "@/lib/admin";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { db } from "@/lib/db";
 import { subscriptions, user } from "@/lib/schema";
 
@@ -21,6 +22,9 @@ function getPlanMonthlyCents(plan: string | null): number {
 export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("read");
+  if (rl) return rl;
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);

@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { session, user } from "@/lib/schema";
@@ -14,6 +16,9 @@ const banSchema = z.object({
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("destructive");
+  if (rl) return rl;
 
   const { id } = await params;
 
@@ -50,6 +55,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Unban: clear bannedAt + restore suspended flag
     await db.update(user).set({ bannedAt: null, isSuspended: false }).where(eq(user.id, id));
   }
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: ban ? "ban" : "unban",
+    targetType: "user",
+    targetId: id,
+  });
 
   return Response.json({ success: true, banned: ban });
 }

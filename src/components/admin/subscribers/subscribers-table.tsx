@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +38,10 @@ import {
 } from "@/components/ui/table";
 import { AddSubscriberDialog } from "./add-subscriber-dialog";
 import { BanDialog } from "./ban-dialog";
+import { BulkActionToolbar } from "./bulk-action-toolbar";
+import { BulkBanDialog } from "./bulk-ban-dialog";
+import { BulkChangePlanDialog } from "./bulk-change-plan-dialog";
+import { BulkDeleteDialog } from "./bulk-delete-dialog";
 import { DeleteDialog } from "./delete-dialog";
 import { EditSubscriberDialog } from "./edit-subscriber-dialog";
 import { PlanBadge, StatusBadge } from "./subscriber-badges";
@@ -74,11 +79,19 @@ export function SubscribersTable() {
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+
   // Dialog state
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<SubscriberRow | null>(null);
   const [banTarget, setBanTarget] = useState<SubscriberRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SubscriberRow | null>(null);
+  const [bulkBanOpen, setBulkBanOpen] = useState(false);
+  const [bulkBanMode, setBulkBanMode] = useState<"ban" | "unban">("ban");
+  const [bulkChangePlanOpen, setBulkChangePlanOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -90,6 +103,82 @@ export function SubscribersTable() {
       setDebouncedSearch(value);
       setPage(1);
     }, 350);
+  };
+
+  const handleSelectAll = (checked: boolean | string) => {
+    if (checked === true) {
+      setSelectedIds(new Set(data.map((d) => d.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkBan = () => {
+    setBulkBanMode("ban");
+    setBulkBanOpen(true);
+  };
+
+  const handleBulkUnban = () => {
+    setBulkBanMode("unban");
+    setBulkBanOpen(true);
+  };
+
+  const handleBulkSuccess = () => {
+    void fetchData();
+    handleClearSelection();
+  };
+
+  const handleExport = async () => {
+    setBulkLoading(true);
+    try {
+      const response = await fetch("/api/admin/subscribers/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "export",
+          userIds: Array.from(selectedIds),
+        }),
+        signal: AbortSignal.timeout(60000),
+      });
+
+      if (!response.ok) {
+        const { errors } = await response.json().catch(() => ({ errors: ["Export failed"] }));
+        throw new Error(errors?.[0] || "Export failed");
+      }
+
+      const { data: csv } = await response.json();
+      if (!csv) {
+        throw new Error("No CSV data returned");
+      }
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `subscribers-export-${new Date().toISOString().split("T")[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+
+      toast.success(`Exported ${selectedIds.size} user(s)`);
+      handleClearSelection();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
   const fetchData = useCallback(async () => {
@@ -168,11 +257,38 @@ export function SubscribersTable() {
         ))}
       </div>
 
+      {/* Bulk action toolbar */}
+      <BulkActionToolbar
+        selectedCount={selectedIds.size}
+        loading={bulkLoading}
+        onClearSelection={handleClearSelection}
+        onBan={handleBulkBan}
+        onUnban={handleBulkUnban}
+        onChangePlan={() => setBulkChangePlanOpen(true)}
+        onDelete={() => setBulkDeleteOpen(true)}
+        onExport={handleExport}
+        hasBannedUsers={Array.from(selectedIds).some((id) => {
+          const sub = data.find((d) => d.id === id);
+          return sub?.bannedAt != null;
+        })}
+      />
+
       {/* Table */}
       <div className="bg-card rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={
+                    selectedIds.size > 0 && selectedIds.size === data.length && data.length > 0
+                  }
+                  indeterminate={selectedIds.size > 0 && selectedIds.size < data.length}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all"
+                  disabled={bulkLoading || data.length === 0}
+                />
+              </TableHead>
               <TableHead>Subscriber</TableHead>
               <TableHead>
                 <button
@@ -199,7 +315,7 @@ export function SubscribersTable() {
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((__, j) => (
+                  {Array.from({ length: 7 }).map((__, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -208,13 +324,28 @@ export function SubscribersTable() {
               ))
             ) : data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground h-32 text-center">
+                <TableCell colSpan={7} className="text-muted-foreground h-32 text-center">
                   No subscribers found
                 </TableCell>
               </TableRow>
             ) : (
               data.map((sub) => (
-                <TableRow key={sub.id} className={sub.deletedAt ? "opacity-50" : ""}>
+                <TableRow
+                  key={sub.id}
+                  className={`${sub.deletedAt ? "opacity-50" : ""} ${
+                    selectedIds.has(sub.id) ? "bg-muted/50" : ""
+                  }`}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(sub.id)}
+                      onCheckedChange={(checked: boolean | string) =>
+                        handleSelectOne(sub.id, checked === true)
+                      }
+                      aria-label={`Select ${sub.name}`}
+                      disabled={bulkLoading}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
                       <div className="flex items-center gap-1.5">
@@ -365,6 +496,33 @@ export function SubscribersTable() {
           onSuccess={fetchData}
         />
       )}
+
+      {/* Bulk dialogs */}
+      <BulkBanDialog
+        open={bulkBanOpen}
+        onOpenChange={setBulkBanOpen}
+        selectedIds={Array.from(selectedIds)}
+        selectedNames={data
+          .filter((d) => selectedIds.has(d.id))
+          .slice(0, 3)
+          .map((d) => d.name)}
+        isBanning={bulkBanMode === "ban"}
+        onSuccess={handleBulkSuccess}
+      />
+      <BulkChangePlanDialog
+        open={bulkChangePlanOpen}
+        onOpenChange={setBulkChangePlanOpen}
+        selectedIds={Array.from(selectedIds)}
+        selectedCount={selectedIds.size}
+        onSuccess={handleBulkSuccess}
+      />
+      <BulkDeleteDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        selectedIds={Array.from(selectedIds)}
+        selectedCount={selectedIds.size}
+        onSuccess={handleBulkSuccess}
+      />
     </div>
   );
 }

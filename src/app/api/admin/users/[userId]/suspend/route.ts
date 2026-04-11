@@ -1,38 +1,49 @@
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { z } from "zod";
+import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+const suspendSchema = z.object({
+  suspend: z.boolean(),
+});
 
-    // @ts-ignore
-    if (!session || !session.user.isAdmin) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+export async function POST(req: Request, { params }: { params: Promise<{ userId: string }> }) {
+  const auth = await requireAdminApi();
+  if (!auth.ok) return auth.response;
 
-    const { suspend } = await req.json();
-    const { userId } = await params;
+  const rl = await checkAdminRateLimit("destructive");
+  if (rl) return rl;
 
-    if (!userId) {
-      return new NextResponse("User ID required", { status: 400 });
-    }
+  const body = await req.json().catch(() => null);
+  if (!body) return ApiError.badRequest("Invalid JSON body");
 
-    // Prevent suspending self
-    if (userId === session.user.id) {
-      return new NextResponse("Cannot suspend yourself", { status: 400 });
-    }
+  const parsed = suspendSchema.safeParse(body);
+  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
-    await db.update(user).set({ isSuspended: suspend }).where(eq(user.id, userId));
+  const { suspend } = parsed.data;
+  const { userId } = await params;
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("[ADMIN_SUSPEND]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+  if (!userId) {
+    return ApiError.badRequest("User ID required");
   }
+
+  // Prevent suspending self
+  if (userId === auth.session.user.id) {
+    return ApiError.badRequest("Cannot suspend yourself");
+  }
+
+  await db.update(user).set({ isSuspended: suspend }).where(eq(user.id, userId));
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: suspend ? "suspend" : "unsuspend",
+    targetType: "user",
+    targetId: userId,
+  });
+
+  return Response.json({ success: true });
 }

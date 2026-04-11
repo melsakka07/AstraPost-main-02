@@ -94,11 +94,21 @@ Use sub-agents for multi-file tasks. Split by concern, run independent work in p
 - Each agent gets scoped file boundaries — no overlapping writes
 - Wait for dependent agent output before spawning the next — never use placeholders
 - Always run verification (lint + typecheck + test) as parallel agents as the final step
-- Use GLM-4.7 (subagent model) for exploration, GLM-5-Turbo (sonnet) for implementation, GLM-5.1 (opus) for architecture
+- Use Claude Haiku 4.5 (subagent model) for exploration, Claude Sonnet 4.6 (subagent model) for implementation, GLM-5.1 (opus) for architecture
 
 **Custom agents:** `.claude/agents/` — backend-dev, frontend-dev, ai-specialist, db-migrator, test-runner, researcher, code-reviewer
 **Orchestration rules:** `.claude/rules/agent-orchestration.md`
 **Team patterns:** `docs/claude/agent-patterns.md`
+
+## Plans
+
+When creating plans in Plan Mode, always rename the plan file from the auto-generated name to a descriptive name following this format: `YYYY-MM-DD-<short-kebab-case-description>.md`. Examples:
+
+- `2026-04-11-add-user-authentication.md`
+- `2026-04-11-refactor-payment-processing.md`
+- `2026-04-11-fix-session-timeout-bug.md`
+
+Do not leave plan files with auto-generated random names like `calm-silver-fox.md`.
 
 ## Reference Docs (read on demand when needed)
 

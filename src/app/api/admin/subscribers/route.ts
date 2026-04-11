@@ -1,6 +1,8 @@
 import { and, asc, count, desc, eq, gt, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import {
@@ -40,6 +42,9 @@ const createSubscriberSchema = z.object({
 export async function GET(request: Request) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("read");
+  if (rl) return rl;
 
   const { searchParams } = new URL(request.url);
   const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
@@ -155,6 +160,9 @@ export async function POST(request: Request) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
+  const rl = await checkAdminRateLimit("write");
+  if (rl) return rl;
+
   const body = await request.json().catch(() => null);
   if (!body) return ApiError.badRequest("Invalid JSON body");
 
@@ -196,6 +204,14 @@ export async function POST(request: Request) {
   });
 
   const [created] = await db.select().from(user).where(eq(user.id, newUserId)).limit(1);
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: "subscriber_create",
+    targetType: "user",
+    targetId: newUserId,
+    details: { name, email, plan, isAdmin: makeAdmin },
+  });
 
   return Response.json({ data: created }, { status: 201 });
 }

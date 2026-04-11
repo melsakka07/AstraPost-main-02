@@ -3,6 +3,8 @@
 // Never wrap an admin page in a raw <div>.
 // ─────────────────────────────────────────────────────────────────────────────
 import type { ReactNode } from "react";
+import { AdminBreadcrumbs } from "./breadcrumbs";
+import type { BreadcrumbItem } from "./breadcrumbs";
 import type { LucideIcon } from "lucide-react";
 
 interface AdminPageWrapperProps {
@@ -10,6 +12,7 @@ interface AdminPageWrapperProps {
   title: string;
   description?: string;
   actions?: ReactNode;
+  breadcrumbs?: BreadcrumbItem[];
   children: ReactNode;
 }
 
@@ -18,10 +21,12 @@ export function AdminPageWrapper({
   title,
   description,
   actions,
+  breadcrumbs,
   children,
 }: AdminPageWrapperProps) {
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6">
+      {breadcrumbs && breadcrumbs.length > 0 && <AdminBreadcrumbs items={breadcrumbs} />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <div className="border-primary/20 bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border">

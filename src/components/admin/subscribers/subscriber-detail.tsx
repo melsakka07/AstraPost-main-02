@@ -11,13 +11,10 @@ import {
   CreditCard,
   Globe,
   Hash,
-  Instagram,
-  Linkedin,
   Monitor,
   ShieldCheck,
   ShieldOff,
   Trash2,
-  Twitter,
   UserPen,
   Zap,
 } from "lucide-react";
@@ -27,10 +24,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ActivityTimelineSection } from "./activity-timeline-section";
+import { AiUsageSection } from "./ai-usage-section";
 import { BanDialog } from "./ban-dialog";
+import { ConnectedAccountsHealthSection } from "./connected-accounts-health-section";
 import { DeleteDialog } from "./delete-dialog";
 import { EditSubscriberDialog } from "./edit-subscriber-dialog";
+import { ReferralSection } from "./referral-section";
 import { PlanBadge, StatusBadge, SubscriptionStatusBadge } from "./subscriber-badges";
+import { TeamMembershipSection } from "./team-membership-section";
 import type { SubscriberDetail, SubscriberRow } from "./types";
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -284,54 +286,121 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
         <StatCard label="AI this month" value={usage.aiGenerationsThisMonth} icon={Zap} />
       </div>
 
-      {/* Connected accounts */}
-      {(connectedAccounts.x.length > 0 ||
-        connectedAccounts.linkedin.length > 0 ||
-        connectedAccounts.instagram.length > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Connected accounts</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {connectedAccounts.x.map((acc) => (
-              <div key={acc.id} className="flex items-center gap-3">
-                <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
-                  <Twitter className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">@{acc.xUsername}</p>
-                  {acc.followersCount != null && (
-                    <p className="text-muted-foreground text-xs">
-                      {acc.followersCount.toLocaleString()} followers
+      {/* Enhanced sections grid */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* AI Usage Section */}
+        {detail.aiQuota && (
+          <AiUsageSection
+            quota={{
+              used: usage.aiGenerationsThisMonth,
+              limit: detail.aiQuota.limit,
+              percentage: detail.aiQuota.percentage,
+            }}
+            plan={sub.plan ?? "free"}
+          />
+        )}
+
+        {/* Referrals Section */}
+        {detail.referrals && (
+          <ReferralSection
+            referralCode={sub.referralCode ?? null}
+            referredUsers={detail.referrals.referredUsers.map((item) => ({
+              ...item,
+              createdAt: new Date(item.createdAt),
+            }))}
+            referralCredits={detail.referrals.creditsEarned}
+            referralCount={detail.referrals.totalCount}
+          />
+        )}
+
+        {/* Team Memberships Section */}
+        {detail.teamMemberships && detail.teamMemberships.length > 0 && (
+          <TeamMembershipSection
+            teams={detail.teamMemberships.map((membership) => ({
+              ...membership,
+              joinedAt: new Date(membership.joinedAt),
+            }))}
+          />
+        )}
+
+        {/* Connected Accounts Health Section */}
+        {(connectedAccounts.x.length > 0 ||
+          connectedAccounts.linkedin.length > 0 ||
+          connectedAccounts.instagram.length > 0) && (
+          <ConnectedAccountsHealthSection
+            accounts={[
+              ...connectedAccounts.x.map((acc) => ({
+                id: acc.id,
+                username: acc.xUsername,
+                tokenExpiry: acc.tokenExpiry ? new Date(acc.tokenExpiry) : null,
+                isHealthy: acc.isHealthy ?? true,
+              })),
+              ...connectedAccounts.linkedin.map((acc) => ({
+                id: acc.id,
+                username: acc.linkedinName || "unknown",
+                tokenExpiry: acc.tokenExpiry ? new Date(acc.tokenExpiry) : null,
+                isHealthy: acc.isHealthy ?? true,
+              })),
+              ...connectedAccounts.instagram.map((acc) => ({
+                id: acc.id,
+                username: acc.instagramUsername,
+                tokenExpiry: acc.tokenExpiry ? new Date(acc.tokenExpiry) : null,
+                isHealthy: acc.isHealthy ?? true,
+              })),
+            ]}
+          />
+        )}
+      </div>
+
+      {/* Activity Timeline Section - Full Width */}
+      {detail.recentActivity && detail.recentActivity.length > 0 && (
+        <ActivityTimelineSection
+          activities={detail.recentActivity.map((activity) => ({
+            ...activity,
+            createdAt: new Date(activity.createdAt),
+          }))}
+        />
+      )}
+
+      {/* Recent sessions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Recent sessions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentSessions.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No sessions found</p>
+          ) : (
+            <div className="space-y-2">
+              {recentSessions.map((s) => (
+                <div key={s.id} className="flex items-start gap-3 rounded-md border p-2.5">
+                  <Monitor className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-muted-foreground truncate text-xs">
+                      {s.userAgent ?? "Unknown device"}
                     </p>
+                    <div className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+                      <span>
+                        <AtSign className="mr-0.5 inline h-3 w-3" />
+                        {s.ipAddress ?? "—"}
+                      </span>
+                      <span>
+                        <CreditCard className="mr-0.5 inline h-3 w-3" />
+                        {format(new Date(s.createdAt), "d MMM yyyy HH:mm")}
+                      </span>
+                    </div>
+                  </div>
+                  {new Date(s.expiresAt) < new Date() && (
+                    <Badge variant="outline" className="text-muted-foreground shrink-0 text-xs">
+                      Expired
+                    </Badge>
                   )}
                 </div>
-                {acc.isDefault && (
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    Default
-                  </Badge>
-                )}
-              </div>
-            ))}
-            {connectedAccounts.linkedin.map((acc) => (
-              <div key={acc.id} className="flex items-center gap-3">
-                <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
-                  <Linkedin className="h-4 w-4" />
-                </div>
-                <p className="text-sm font-medium">{acc.linkedinName}</p>
-              </div>
-            ))}
-            {connectedAccounts.instagram.map((acc) => (
-              <div key={acc.id} className="flex items-center gap-3">
-                <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
-                  <Instagram className="h-4 w-4" />
-                </div>
-                <p className="text-sm font-medium">@{acc.instagramUsername}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent sessions */}
       <Card>

@@ -29,6 +29,14 @@ export const auth = betterAuth({
       },
     },
   },
+  session: {
+    additionalFields: {
+      impersonatedBy: {
+        type: "string",
+        required: false,
+      },
+    },
+  },
   databaseHooks: {
     user: {
       create: {

@@ -1,6 +1,8 @@
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { promoCodes } from "@/lib/schema";
@@ -28,6 +30,9 @@ const createSchema = z.object({
 export async function GET() {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("read");
+  if (rl) return rl;
 
   const rows = await db
     .select()
@@ -104,6 +109,18 @@ export async function POST(request: Request) {
       createdBy: auth.session.user.id,
     })
     .returning();
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: "promo_create",
+    targetType: "promo_code",
+    targetId: created!.id,
+    details: {
+      code: data.code,
+      discountType: data.discountType,
+      discountValue: data.discountValue,
+    },
+  });
 
   return Response.json({ data: created }, { status: 201 });
 }

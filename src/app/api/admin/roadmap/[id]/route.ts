@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { feedback } from "@/lib/schema";
@@ -13,6 +15,9 @@ const updateSchema = z.object({
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
+
+  const rl = await checkAdminRateLimit("write");
+  if (rl) return rl;
 
   const { id } = await params;
 
@@ -42,6 +47,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     })
     .where(eq(feedback.id, id))
     .returning();
+
+  logAdminAction({
+    adminId: auth.session.user.id,
+    action: "roadmap_update",
+    targetType: "feedback",
+    targetId: id,
+    details: { status, adminNotes },
+  });
 
   return Response.json(updated[0]);
 }
