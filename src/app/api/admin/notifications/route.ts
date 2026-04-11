@@ -70,13 +70,15 @@ export async function GET(request: Request) {
   // Transform to admin notification format
   const notifs = rows.map((n) => {
     const meta = (n.metadata as any) ?? {};
+    const targetUserIds = meta.targetUserIds ?? [];
     return {
       id: n.id,
       title: n.title ?? "",
       body: n.message ?? "",
       targetType: meta.targetType ?? "all",
+      targetCount: targetUserIds.length,
       targetSegment: meta.targetSegment,
-      targetUserIds: meta.targetUserIds,
+      targetUserIds,
       status: meta.adminStatus ?? "draft",
       sentAt: meta.sentAt,
       deliveredCount: meta.deliveredCount,

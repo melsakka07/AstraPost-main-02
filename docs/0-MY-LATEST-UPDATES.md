@@ -1,5 +1,37 @@
 # Latest Updates
 
+## 2026-04-12: Fix Admin Notifications Page Runtime Error ✅
+
+**Summary:** Fixed `Cannot read properties of undefined (reading 'toLocaleString')` error on `/admin/notifications` page caused by missing `targetCount` field in API response.
+
+**Root Cause:** The API endpoint `/api/admin/notifications` was returning notifications without the `targetCount` field, but the frontend expected this field to display the target count in the table.
+
+**Fix:** Added `targetCount` field to the API response, calculated from the `targetUserIds` array length.
+
+**Files Modified:**
+
+- `src/app/api/admin/notifications/route.ts` — added `targetCount` field to notification response
+
+**Status:** `pnpm run check` ✅
+
+---
+
+## 2026-04-12: Fix Admin Teams Page Runtime Error ✅
+
+**Summary:** Fixed `Cannot read properties of undefined (reading 'totalTeams')` error on `/admin/teams` page caused by API response structure mismatch.
+
+**Root Cause:** The API endpoint `/api/admin/teams` was wrapping the response in a `data` property (`{ data: { summary, teams, invitations } }`), but the frontend `TeamsResponse` interface expected the properties at the top level (`{ summary, teams, invitations }`).
+
+**Fix:** Removed the extra `data` wrapper from the API response to match the frontend's expected structure.
+
+**Files Modified:**
+
+- `src/app/api/admin/teams/route.ts` — removed `data` wrapper from `Response.json()`
+
+**Status:** `pnpm run check` ✅
+
+---
+
 ## 2026-04-11: Admin-Only Access for Jobs & AI History Pages ✅
 
 **Summary:** Restricted `/dashboard/jobs` and `/dashboard/ai/history` to admin users only. Non-admin users can no longer see these pages in the sidebar or access them via direct URL.

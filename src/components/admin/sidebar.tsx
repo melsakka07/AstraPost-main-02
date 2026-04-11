@@ -20,6 +20,7 @@ import {
   ToggleLeft,
   TrendingUp,
   Users,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -55,6 +56,7 @@ const sidebarSections = [
     label: "Product",
     items: [
       { href: "/admin/content", label: "Content Performance", icon: FileText },
+      { href: "/admin/referrals", label: "Referrals", icon: UserPlus },
       { href: "/admin/agentic", label: "Agentic Posts", icon: Bot },
       { href: "/admin/affiliate", label: "Affiliate", icon: Gift },
       { href: "/admin/announcement", label: "Announcement", icon: Megaphone },

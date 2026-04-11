@@ -139,25 +139,23 @@ export async function GET(request: Request) {
   );
 
   return Response.json({
-    data: {
-      summary,
-      teams: {
-        data: teamsData,
-        pagination: {
-          page,
-          limit,
-          total: totalTeams,
-          totalPages: Math.ceil(totalTeams / limit),
-        },
+    summary,
+    teams: {
+      data: teamsData,
+      pagination: {
+        page,
+        limit,
+        total: totalTeams,
+        totalPages: Math.ceil(totalTeams / limit),
       },
-      invitations: {
-        data: invitationsData,
-        pagination: {
-          page,
-          limit,
-          total: totalPendingInvites,
-          totalPages: Math.ceil(totalPendingInvites / limit),
-        },
+    },
+    invitations: {
+      data: invitationsData,
+      pagination: {
+        page,
+        limit,
+        total: totalPendingInvites,
+        totalPages: Math.ceil(totalPendingInvites / limit),
       },
     },
   });
