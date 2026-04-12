@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Bot, BarChart3, Users, Zap } from "lucide-react";
+import { useState } from "react";
+import { subDays } from "date-fns";
+import { Bot, BarChart3, Users, Zap, Calendar } from "lucide-react";
+import { DateRangePicker, type DateRange } from "@/components/admin/date-range-picker";
+import { EmptyState } from "@/components/admin/empty-state";
+import { useAdminPolling } from "@/components/admin/use-admin-polling";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +42,10 @@ interface AiUsageData {
   };
   dailyTrend: Array<{ date: string; count: number }>;
   typeBreakdown: Array<{ type: string | null; count: number }>;
+  dateRange?: {
+    from: string;
+    to: string;
+  };
 }
 
 function StatCard({
@@ -96,55 +104,98 @@ function LoadingSkeleton() {
 }
 
 export function AiUsageDashboard() {
-  const [data, setData] = useState<AiUsageData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
 
-  useEffect(() => {
-    fetch("/api/admin/ai-usage")
-      .then((r) => r.json())
-      .then((json) => setData(json.data ?? null))
-      .finally(() => setLoading(false));
-  }, []);
+  const fetchUsage = async (signal: AbortSignal): Promise<AiUsageData> => {
+    const params = new URLSearchParams();
+    if (dateRange?.from) {
+      params.set("from", dateRange.from.toISOString());
+    }
+    if (dateRange?.to) {
+      params.set("to", dateRange.to.toISOString());
+    }
 
-  if (loading) return <LoadingSkeleton />;
+    const response = await fetch(`/api/admin/ai-usage?${params.toString()}`, { signal });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch AI usage: ${response.status}`);
+    }
+    const json = await response.json();
+    return json.data ?? null;
+  };
+
+  const { data, loading, error, refresh } = useAdminPolling<AiUsageData | null>({
+    fetchFn: fetchUsage,
+    intervalMs: 60_000,
+    enabled: true,
+  });
+
+  const handleDateRangeChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+    refresh();
+  };
+
+  if (loading && !data) return <LoadingSkeleton />;
+  if (error && !data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-destructive text-sm font-medium">{error}</p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Please ensure you are logged in as an admin.
+        </p>
+      </div>
+    );
+  }
   if (!data) return null;
 
   return (
     <div className="space-y-6">
-      {/* Summary KPI Cards */}
-      <div>
-        <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
           Overview
         </h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            label="Total Generations"
-            value={data.summary.totalGenerations.toLocaleString()}
-            sub="All time"
-            icon={Bot}
-          />
-          <StatCard
-            label="This Month"
-            value={data.summary.thisMonth.toLocaleString()}
-            sub="Generations this month"
-            icon={BarChart3}
-          />
-          <StatCard
-            label="Active Users"
-            value={data.summary.activeUsersThisMonth.toLocaleString()}
-            sub="Used AI this month"
-            icon={Users}
-          />
-          <StatCard
-            label="Tokens Used"
-            value={data.summary.tokensThisMonth.toLocaleString()}
-            sub="This month"
-            icon={Zap}
+        <div className="flex items-center gap-2">
+          <Calendar className="text-muted-foreground h-4 w-4" />
+          <DateRangePicker
+            value={dateRange ?? { from: subDays(new Date(), 30), to: new Date() }}
+            onChange={handleDateRangeChange}
           />
         </div>
       </div>
 
-      {/* Top Consumers Table */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="Total Generations"
+          value={data.summary.totalGenerations.toLocaleString()}
+          sub="All time"
+          icon={Bot}
+        />
+        <StatCard
+          label="In Range"
+          value={data.summary.thisMonth.toLocaleString()}
+          sub={
+            data.dateRange
+              ? `${new Date(data.dateRange.from).toLocaleDateString()} - ${new Date(data.dateRange.to).toLocaleDateString()}`
+              : "Selected period"
+          }
+          icon={BarChart3}
+        />
+        <StatCard
+          label="Active Users"
+          value={data.summary.activeUsersThisMonth.toLocaleString()}
+          sub="Used AI in range"
+          icon={Users}
+        />
+        <StatCard
+          label="Tokens Used"
+          value={data.summary.tokensThisMonth.toLocaleString()}
+          sub="In selected range"
+          icon={Zap}
+        />
+      </div>
+
       <div>
         <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
           Top AI Consumers
@@ -152,7 +203,7 @@ export function AiUsageDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">
-              Users by Generations (This Month)
+              Users by Generations
               {data.topConsumers.pagination.total > 0 && (
                 <span className="text-muted-foreground ml-2 text-sm font-normal">
                   {data.topConsumers.pagination.total.toLocaleString()} total users
@@ -162,9 +213,11 @@ export function AiUsageDashboard() {
           </CardHeader>
           <CardContent>
             {data.topConsumers.data.length === 0 ? (
-              <p className="text-muted-foreground py-8 text-center text-sm">
-                No AI usage this month
-              </p>
+              <EmptyState
+                title="No AI usage in this period"
+                description="No users have generated AI content in the selected date range."
+                variant="ai"
+              />
             ) : (
               <Table>
                 <TableHeader>
@@ -199,7 +252,6 @@ export function AiUsageDashboard() {
         </Card>
       </div>
 
-      {/* Usage by Type */}
       <div>
         <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
           Usage by Type
@@ -210,9 +262,11 @@ export function AiUsageDashboard() {
           </CardHeader>
           <CardContent>
             {data.typeBreakdown.length === 0 ? (
-              <p className="text-muted-foreground py-8 text-center text-sm">
-                No usage data available
-              </p>
+              <EmptyState
+                title="No usage data available"
+                description="No AI generation types have been recorded yet."
+                variant="analytics"
+              />
             ) : (
               <div className="space-y-3">
                 {data.typeBreakdown.map((item) => (
@@ -222,10 +276,12 @@ export function AiUsageDashboard() {
                     </Badge>
                     <div className="bg-muted h-6 flex-1 overflow-hidden rounded-full">
                       <div
-                        className="bg-primary h-full rounded-full transition-all"
-                        style={{
-                          width: `${(item.count / Math.max(...data.typeBreakdown.map((b) => b.count))) * 100}%`,
-                        }}
+                        className="bg-primary h-full [width:var(--bar-width)] rounded-full transition-all"
+                        style={
+                          {
+                            "--bar-width": `${(item.count / Math.max(...data.typeBreakdown.map((b) => b.count))) * 100}%`,
+                          } as React.CSSProperties
+                        }
                       />
                     </div>
                     <span className="min-w-20 text-right text-sm font-medium tabular-nums">

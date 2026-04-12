@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { CreditCard, DollarSign, TrendingDown, TrendingUp, Users, FileDown } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchAndDownloadCsv } from "@/lib/export";
+import { useAdminPolling } from "@/components/admin/use-admin-polling";
+import { EmptyState } from "@/components/admin/empty-state";
 
 interface OverviewData {
   mrr: { cents: number; configured: boolean };
@@ -123,23 +125,34 @@ function LoadingSkeleton() {
   );
 }
 
+interface BillingData {
+  overview: OverviewData;
+  transactions: Transaction[];
+}
+
 export function BillingOverview() {
-  const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/admin/billing/overview").then((r) => r.json()),
-      fetch("/api/admin/billing/transactions").then((r) => r.json()),
-    ])
-      .then(([ov, tx]) => {
-        setOverview(ov.data);
-        setTransactions(tx.data ?? []);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error } = useAdminPolling<BillingData>({
+    fetchFn: async (signal) => {
+      const [ov, tx] = await Promise.all([
+        fetch("/api/admin/billing/overview", { signal }).then((r) => {
+          if (!r.ok) throw new Error(`Overview API error: ${r.status}`);
+          return r.json();
+        }),
+        fetch("/api/admin/billing/transactions", { signal }).then((r) => {
+          if (!r.ok) throw new Error(`Transactions API error: ${r.status}`);
+          return r.json();
+        }),
+      ]);
+      if (!ov.data) throw new Error("No billing data returned");
+      return {
+        overview: ov.data as OverviewData,
+        transactions: (tx.data ?? []) as Transaction[],
+      };
+    },
+    intervalMs: 60_000,
+  });
 
   const handleExportTransactions = async () => {
     setExporting(true);
@@ -150,7 +163,7 @@ export function BillingOverview() {
         {
           success: () =>
             toast.success(
-              `Exported ${transactions.length > 0 ? transactions.length : "all"} transactions`
+              `Exported ${(data?.transactions.length ?? 0) > 0 ? (data?.transactions.length ?? 0) : "all"} transactions`
             ),
           error: (msg) => toast.error(msg),
         }
@@ -160,9 +173,17 @@ export function BillingOverview() {
     }
   };
 
-  if (loading) return <LoadingSkeleton />;
-  if (!overview) return null;
+  if (loading && !data) return <LoadingSkeleton />;
+  if (error || !data?.overview)
+    return (
+      <EmptyState
+        variant="billing"
+        title="Failed to load billing data"
+        description={error ?? "No data returned from server. Check terminal for details."}
+      />
+    );
 
+  const { overview, transactions } = data;
   const { mrr, subscriptions: subs, users, planBreakdown, trialToPaidRate } = overview;
 
   const mrrDisplay = mrr.configured

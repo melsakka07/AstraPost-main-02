@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminPolling } from "../use-admin-polling";
 
 interface FunnelStage {
   name: string;
@@ -32,16 +32,15 @@ function LoadingSkeleton() {
 }
 
 export function AffiliateConversionFunnel() {
-  const [data, setData] = useState<ConversionData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/admin/affiliate/funnel")
-      .then((r) => r.json())
-      .then((json) => setData(json.data ?? null))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading } = useAdminPolling<ConversionData>({
+    fetchFn: async (signal) => {
+      const r = await fetch("/api/admin/affiliate/funnel", { signal });
+      if (!r.ok) throw new Error("Failed to fetch conversion funnel");
+      const json = await r.json();
+      return json.data as ConversionData;
+    },
+    intervalMs: 60_000,
+  });
 
   if (loading) return <LoadingSkeleton />;
   if (!data || data.stages.length === 0) return null;

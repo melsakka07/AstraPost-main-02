@@ -8,7 +8,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="bg-background flex min-h-dvh">
       <AdminSidebar />
-      <main className="ms-64 flex-1 p-4 md:p-8">{children}</main>
+      <main className="flex-1 p-4 md:p-8 lg:ms-64">{children}</main>
       <GlobalAdminSearch />
     </div>
   );

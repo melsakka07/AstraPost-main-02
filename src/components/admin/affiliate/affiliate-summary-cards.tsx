@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Users, TrendingUp, DollarSign, Activity } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminPolling } from "../use-admin-polling";
 
 interface AffiliateSummary {
   totalAffiliates: number;
@@ -59,16 +59,15 @@ function LoadingSkeleton() {
 }
 
 export function AffiliateSummaryCards() {
-  const [summary, setSummary] = useState<AffiliateSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/admin/affiliate/summary")
-      .then((r) => r.json())
-      .then((json) => setSummary(json.data ?? null))
-      .catch(() => setSummary(null))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: summary, loading } = useAdminPolling<AffiliateSummary>({
+    fetchFn: async (signal) => {
+      const r = await fetch("/api/admin/affiliate/summary", { signal });
+      if (!r.ok) throw new Error("Failed to fetch affiliate summary");
+      const json = await r.json();
+      return json.data as AffiliateSummary;
+    },
+    intervalMs: 60_000,
+  });
 
   if (loading) return <LoadingSkeleton />;
   if (!summary) return null;

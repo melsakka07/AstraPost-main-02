@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAdminPolling } from "../use-admin-polling";
 
 interface AffiliateLeaderboardRow {
   id: string;
@@ -46,18 +47,18 @@ function LoadingSkeleton() {
 }
 
 export function AffiliateLeaderboard() {
-  const [data, setData] = useState<AffiliateLeaderboardRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>("earnings");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
-  useEffect(() => {
-    fetch("/api/admin/affiliate/leaderboard")
-      .then((r) => r.json())
-      .then((json) => setData(json.data ?? []))
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading } = useAdminPolling<AffiliateLeaderboardRow[]>({
+    fetchFn: async (signal) => {
+      const r = await fetch("/api/admin/affiliate/leaderboard", { signal });
+      if (!r.ok) throw new Error("Failed to fetch affiliate leaderboard");
+      const json = await r.json();
+      return json.data ?? [];
+    },
+    intervalMs: 60_000,
+  });
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -68,7 +69,7 @@ export function AffiliateLeaderboard() {
     }
   };
 
-  const sortedData = [...data].sort((a, b) => {
+  const sortedData = [...(data ?? [])].sort((a, b) => {
     let aVal: number, bVal: number;
 
     switch (sortField) {

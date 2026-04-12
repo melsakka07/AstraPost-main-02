@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -13,6 +12,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
+import { useAdminPolling } from "@/components/admin/use-admin-polling";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -37,6 +37,11 @@ interface BillingData {
   };
   users: { total: number; newThisMonth: number };
   trialToPaidRate: number;
+}
+
+interface DashboardData {
+  stats: StatsData | null;
+  billing: BillingData | null;
 }
 
 interface KpiCard {
@@ -114,37 +119,28 @@ function getNewUsersVariant(newUsers: number): "default" | "success" {
 }
 
 export function AdminDashboard() {
-  const [stats, setStats] = useState<StatsData | null>(null);
-  const [billing, setBilling] = useState<BillingData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const fetchDashboardData = async (signal: AbortSignal): Promise<DashboardData> => {
+    const [statsRes, billingRes] = await Promise.all([
+      fetch("/api/admin/stats", { signal }).then((r) => r.json()),
+      fetch("/api/admin/billing/overview", { signal }).then((r) => r.json()),
+    ]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    Promise.all([
-      fetch("/api/admin/stats", { signal: controller.signal }).then((r) => r.json()),
-      fetch("/api/admin/billing/overview", { signal: controller.signal }).then((r) => r.json()),
-    ])
-      .then(([statsJson, billingJson]) => {
-        setStats(statsJson.data ?? null);
-        setBilling(billingJson.data ?? null);
-      })
-      .catch(() => {
-        // Silently fail - individual stat cards show empty state
-      })
-      .finally(() => {
-        clearTimeout(timeout);
-        setLoading(false);
-      });
-
-    return () => {
-      clearTimeout(timeout);
-      controller.abort();
+    return {
+      stats: statsRes.data ?? null,
+      billing: billingRes.data ?? null,
     };
-  }, []);
+  };
 
-  if (loading) return <LoadingSkeleton />;
+  const { data, loading } = useAdminPolling<DashboardData>({
+    fetchFn: fetchDashboardData,
+    intervalMs: 60_000,
+    enabled: true,
+  });
+
+  if (loading && !data) return <LoadingSkeleton />;
+
+  const stats = data?.stats ?? null;
+  const billing = data?.billing ?? null;
 
   const mrrDollars = billing ? (billing.mrr.cents / 100).toFixed(2) : "--";
 
@@ -217,7 +213,7 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <KpiCard key={kpi.label} {...kpi} />
         ))}

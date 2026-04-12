@@ -31,6 +31,10 @@ interface AiUsageResponse {
     };
     dailyTrend: Array<{ date: string; count: number }>;
     typeBreakdown: Array<{ type: string | null; count: number }>;
+    dateRange?: {
+      from: string;
+      to: string;
+    };
   };
 }
 
@@ -46,49 +50,37 @@ export async function GET(request: Request) {
   const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 10));
   const offset = (page - 1) * limit;
 
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Run all queries in parallel for performance
+  const rangeFrom = fromParam ? new Date(fromParam) : startOfMonth;
+  const rangeTo = toParam ? new Date(toParam) : now;
+
   const [
-    // Summary stats
     [totalGenerationsRow],
-    [thisMonthGenerationsRow],
-    [activeUsersThisMonthRow],
-    [tokensThisMonthRow],
-
-    // Top consumers (paginated)
+    [rangeGenerationsRow],
+    [activeUsersInRangeRow],
+    [tokensInRangeRow],
     topConsumersData,
-
-    // Daily trend (last 30 days)
     dailyTrendData,
-
-    // Type breakdown
     typeBreakdownData,
   ] = await Promise.all([
-    // Summary: total generations all-time
     db.select({ value: count(aiGenerations.id) }).from(aiGenerations),
-
-    // Summary: generations this month
     db
       .select({ value: count(aiGenerations.id) })
       .from(aiGenerations)
-      .where(gte(aiGenerations.createdAt, startOfMonth)),
-
-    // Summary: active users this month (distinct userId)
+      .where(gte(aiGenerations.createdAt, rangeFrom)),
     db
       .select({ value: sql<number>`count(distinct ${aiGenerations.userId})` })
       .from(aiGenerations)
-      .where(gte(aiGenerations.createdAt, startOfMonth)),
-
-    // Summary: total tokens used this month
+      .where(gte(aiGenerations.createdAt, rangeFrom)),
     db
       .select({ value: sql<number>`coalesce(sum(${aiGenerations.tokensUsed}), 0)` })
       .from(aiGenerations)
-      .where(gte(aiGenerations.createdAt, startOfMonth)),
-
-    // Top consumers: users with most generations this month
+      .where(gte(aiGenerations.createdAt, rangeFrom)),
     db
       .select({
         userId: aiGenerations.userId,
@@ -99,24 +91,20 @@ export async function GET(request: Request) {
       })
       .from(aiGenerations)
       .leftJoin(user, eq(aiGenerations.userId, user.id))
-      .where(gte(aiGenerations.createdAt, startOfMonth))
+      .where(gte(aiGenerations.createdAt, rangeFrom))
       .groupBy(aiGenerations.userId, user.name, user.email)
       .orderBy(desc(sql`count(${aiGenerations.id})`))
       .limit(limit)
       .offset(offset),
-
-    // Daily trend: generations per day for last 30 days
     db
       .select({
         date: sql<string>`date(${aiGenerations.createdAt})`,
         count: sql<number>`count(${aiGenerations.id})`,
       })
       .from(aiGenerations)
-      .where(gte(aiGenerations.createdAt, thirtyDaysAgo))
+      .where(gte(aiGenerations.createdAt, rangeFrom))
       .groupBy(sql`date(${aiGenerations.createdAt})`)
       .orderBy(sql`date(${aiGenerations.createdAt})`),
-
-    // Type breakdown: count by generation type
     db
       .select({
         type: aiGenerations.type,
@@ -127,13 +115,12 @@ export async function GET(request: Request) {
       .orderBy(desc(count(aiGenerations.id))),
   ]);
 
-  // Get total count for pagination
   const [topConsumersCountRow] = await db
     .select({
       value: sql<number>`count(distinct ${aiGenerations.userId})`,
     })
     .from(aiGenerations)
-    .where(gte(aiGenerations.createdAt, startOfMonth));
+    .where(gte(aiGenerations.createdAt, rangeFrom));
 
   const totalTopConsumers = Number(topConsumersCountRow?.value ?? 0);
   const totalPages = Math.ceil(totalTopConsumers / limit);
@@ -142,9 +129,9 @@ export async function GET(request: Request) {
     data: {
       summary: {
         totalGenerations: Number(totalGenerationsRow?.value ?? 0),
-        thisMonth: Number(thisMonthGenerationsRow?.value ?? 0),
-        activeUsersThisMonth: Number(activeUsersThisMonthRow?.value ?? 0),
-        tokensThisMonth: Number(tokensThisMonthRow?.value ?? 0),
+        thisMonth: Number(rangeGenerationsRow?.value ?? 0),
+        activeUsersThisMonth: Number(activeUsersInRangeRow?.value ?? 0),
+        tokensThisMonth: Number(tokensInRangeRow?.value ?? 0),
       },
       topConsumers: {
         data: topConsumersData.map((row) => ({
@@ -169,6 +156,10 @@ export async function GET(request: Request) {
         type: row.type,
         count: Number(row.count),
       })),
+      dateRange: {
+        from: rangeFrom.toISOString(),
+        to: rangeTo.toISOString(),
+      },
     },
   };
 

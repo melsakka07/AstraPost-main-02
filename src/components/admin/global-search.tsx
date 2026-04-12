@@ -124,8 +124,8 @@ export function GlobalAdminSearch() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-20">
-      <div className="bg-background mx-4 w-full max-w-2xl overflow-hidden rounded-lg border shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-12 sm:pt-20">
+      <div className="bg-background mx-2 w-full max-w-2xl overflow-hidden rounded-lg border shadow-lg sm:mx-4">
         {/* Search Input */}
         <div className="flex items-center gap-3 border-b px-4 py-3">
           <Search className="text-muted-foreground h-4 w-4" />
@@ -183,16 +183,17 @@ export function GlobalAdminSearch() {
 
         {/* Footer */}
         <div className="bg-muted/30 text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
-          <div className="flex gap-4">
-            <span>
+          <div className="flex flex-wrap gap-2 sm:gap-4">
+            <span className="hidden sm:inline">
               <span className="font-semibold">↑↓</span> Navigate
             </span>
-            <span>
+            <span className="hidden sm:inline">
               <span className="font-semibold">Enter</span> Select
             </span>
-            <span>
+            <span className="hidden sm:inline">
               <span className="font-semibold">Esc</span> Close
             </span>
+            <span className="sm:hidden">Tap to select results</span>
           </div>
           <span>
             <span className="font-semibold">Ctrl+K</span> Toggle

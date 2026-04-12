@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from "date-fns";
+import { EmptyState } from "@/components/admin/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,7 +31,7 @@ async function getQueueData(queueName: string, queue: any) {
 
 function QueueStats({ counts }: { counts: any }) {
   return (
-    <div className="mb-6 grid gap-4 md:grid-cols-5">
+    <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Active</CardTitle>
@@ -78,9 +79,11 @@ function QueueStats({ counts }: { counts: any }) {
 function JobsList({ jobs }: { jobs: any[] }) {
   if (jobs.length === 0) {
     return (
-      <div className="text-muted-foreground flex h-[200px] items-center justify-center rounded-md border border-dashed">
-        No active jobs found
-      </div>
+      <EmptyState
+        variant="default"
+        title="No active jobs"
+        description="All jobs have been processed"
+      />
     );
   }
 

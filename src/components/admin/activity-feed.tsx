@@ -189,7 +189,7 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">
                           <span className="text-foreground">
                             {activity.adminName || activity.adminEmail || "Unknown Admin"}
@@ -197,7 +197,7 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
                           {actionLabel}
                         </p>
                         {activity.targetId && activity.targetType && (
-                          <p className="text-muted-foreground text-xs">
+                          <p className="text-muted-foreground truncate text-xs">
                             {activity.targetType}: {activity.targetId}
                           </p>
                         )}

@@ -79,8 +79,8 @@ export function DateRangePicker({
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <div className="flex flex-col gap-4 p-4 sm:flex-row">
+      <PopoverContent className="w-auto max-w-[calc(100vw-2rem)] p-0" align="start">
+        <div className="flex flex-col gap-4 p-4">
           {/* Presets */}
           <div className="flex flex-col gap-2">
             {presets.map((preset) => {
@@ -100,7 +100,7 @@ export function DateRangePicker({
                 <Button
                   key={preset}
                   variant={isActive ? "default" : "outline"}
-                  className="justify-start text-sm"
+                  className="h-10 justify-start text-sm"
                   onClick={() => onChange(presetConfig.getValue())}
                 >
                   {presetConfig.label}

@@ -59,6 +59,11 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/queue/client", () => ({
+  scheduleQueue: { add: vi.fn().mockResolvedValue({ id: "job-1" }) },
+  SCHEDULE_JOB_OPTIONS: { attempts: 5 },
+}));
+
 // ─── Test fixtures ─────────────────────────────────────────────────────────────
 
 const SESSION = { user: { id: "user-1" } };

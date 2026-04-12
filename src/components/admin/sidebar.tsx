@@ -146,19 +146,23 @@ export function AdminSidebar() {
         <div className="fixed top-4 left-4 z-50 md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="outline" size="icon" className="h-11 w-11">
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Open admin menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
+            <SheetContent side="left" className="w-72 max-w-[calc(100vw-2rem)] p-0">
               <div className="flex h-14 items-center border-b px-4">
                 <Link href="/admin" className="flex items-center gap-2">
                   <ShieldCheck className="text-primary h-6 w-6" />
                   <span className="text-lg font-semibold">Admin</span>
                 </Link>
               </div>
-              <AdminSidebarContent sections={sidebarSections} collapsed={false} pathname={pathname} />
+              <AdminSidebarContent
+                sections={sidebarSections}
+                collapsed={false}
+                pathname={pathname}
+              />
               <div className="mt-auto border-t p-3">
                 <Link href="/dashboard">
                   <Button variant="outline" className="w-full justify-start">

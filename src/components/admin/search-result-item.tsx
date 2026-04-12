@@ -24,7 +24,7 @@ export function SearchResultItem({
     <button
       onClick={onClick}
       className={cn(
-        "flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
+        "flex min-h-[44px] w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors",
         isHighlighted ? "bg-primary text-primary-foreground" : "hover:bg-muted text-foreground"
       )}
     >

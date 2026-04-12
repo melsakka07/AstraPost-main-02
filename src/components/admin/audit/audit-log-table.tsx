@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Search, FileDown } from "lucide-react";
 import { toast } from "sonner";
@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchAndDownloadCsv } from "@/lib/export";
+import { useAdminPolling } from "../use-admin-polling";
 import type { adminAuditActionEnum } from "@/lib/schema";
 
 type AuditAction = (typeof adminAuditActionEnum.enumValues)[number];
@@ -99,9 +100,6 @@ function getActionColor(action: AuditAction): string {
 }
 
 export function AuditLogTable() {
-  const [data, setData] = useState<AuditLogRow[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [action, setAction] = useState<string>("all");
   const [fromDate, setFromDate] = useState("");
@@ -122,9 +120,8 @@ export function AuditLogTable() {
     }, 350);
   };
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data: response, loading } = useAdminPolling<PaginatedResponse<AuditLogRow>>({
+    fetchFn: async (signal: AbortSignal) => {
       const params = new URLSearchParams({
         page: String(page),
         limit: "25",
@@ -133,21 +130,12 @@ export function AuditLogTable() {
         ...(fromDate && { fromDate }),
         ...(toDate && { toDate }),
       });
-      const res = await fetch(`/api/admin/audit?${params}`);
+      const res = await fetch(`/api/admin/audit?${params}`, { signal });
       if (!res.ok) throw new Error("Failed to fetch audit logs");
-      const json: PaginatedResponse<AuditLogRow> = await res.json();
-      setData(json.data);
-      setPagination(json.pagination);
-    } catch {
-      toast.error("Failed to load audit logs");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, action, debouncedSearch, fromDate, toDate]);
-
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+      return (await res.json()) as PaginatedResponse<AuditLogRow>;
+    },
+    intervalMs: 60_000,
+  });
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -190,7 +178,7 @@ export function AuditLogTable() {
         `/api/admin/audit/export?${params}`,
         `audit-log-${new Date().toISOString().split("T")[0]}.csv`,
         {
-          success: () => toast.success(`Exported ${pagination.total} audit entries`),
+          success: () => toast.success(`Exported ${response?.pagination.total ?? 0} audit entries`),
           error: (msg) => toast.error(msg),
         }
       );
@@ -255,7 +243,7 @@ export function AuditLogTable() {
             variant="outline"
             size="sm"
             onClick={handleExportAuditLog}
-            disabled={exporting || pagination.total === 0}
+            disabled={exporting || (response?.pagination.total ?? 0) === 0}
           >
             <FileDown className="mr-2 h-4 w-4" />
             {exporting ? "Exporting…" : "Export CSV"}
@@ -288,16 +276,16 @@ export function AuditLogTable() {
                   ))}
                 </TableRow>
               ))
-            ) : data.length === 0 ? (
+            ) : (response?.data.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-muted-foreground h-32 text-center">
                   No audit logs found
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((log) => (
-                <>
-                  <TableRow key={log.id}>
+              response?.data.map((log: AuditLogRow) => (
+                <React.Fragment key={log.id}>
+                  <TableRow>
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDate(log.createdAt)}
                     </TableCell>
@@ -336,7 +324,7 @@ export function AuditLogTable() {
                     </TableCell>
                   </TableRow>
                   {expandedDetails.has(log.id) && (
-                    <TableRow key={`${log.id}-details`}>
+                    <TableRow>
                       <TableCell colSpan={7} className="bg-muted/30">
                         <div className="py-2">
                           <p className="text-muted-foreground mb-1 text-xs font-semibold">
@@ -359,7 +347,7 @@ export function AuditLogTable() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </React.Fragment>
               ))
             )}
           </TableBody>
@@ -367,11 +355,12 @@ export function AuditLogTable() {
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {response?.pagination.totalPages && response.pagination.totalPages > 1 && (
         <div className="text-muted-foreground flex items-center justify-between text-sm">
           <span>
-            {(page - 1) * pagination.limit + 1}–
-            {Math.min(page * pagination.limit, pagination.total)} of {pagination.total}
+            {(page - 1) * response.pagination.limit + 1}–
+            {Math.min(page * response.pagination.limit, response.pagination.total)} of{" "}
+            {response.pagination.total}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -384,13 +373,13 @@ export function AuditLogTable() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="px-2">
-              {page} / {pagination.totalPages}
+              {page} / {response.pagination.totalPages}
             </span>
             <Button
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              disabled={page >= pagination.totalPages}
+              disabled={page >= response.pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
               <ChevronRight className="h-4 w-4" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import {
@@ -16,6 +16,7 @@ import {
   UserPen,
 } from "lucide-react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/admin/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAdminPolling } from "../use-admin-polling";
 import { AddSubscriberDialog } from "./add-subscriber-dialog";
 import { BanDialog } from "./ban-dialog";
 import { BulkActionToolbar } from "./bulk-action-toolbar";
@@ -70,9 +72,6 @@ const FILTER_PILLS: { value: FilterOption; label: string }[] = [
 ];
 
 export function SubscribersTable() {
-  const [data, setData] = useState<SubscriberRow[]>([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterOption>("all");
   const [sort, setSort] = useState<SortOption>("createdAt");
@@ -96,6 +95,27 @@ export function SubscribersTable() {
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
+  const {
+    data: response,
+    loading,
+    refresh,
+  } = useAdminPolling<PaginatedResponse<SubscriberRow>>({
+    fetchFn: async (signal: AbortSignal) => {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: "25",
+        filter,
+        sort,
+        order,
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      });
+      const res = await fetch(`/api/admin/subscribers?${params}`, { signal });
+      if (!res.ok) throw new Error("Failed to fetch subscribers");
+      return (await res.json()) as PaginatedResponse<SubscriberRow>;
+    },
+    intervalMs: 60_000,
+  });
+
   const handleSearchChange = (value: string) => {
     setSearch(value);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -107,7 +127,7 @@ export function SubscribersTable() {
 
   const handleSelectAll = (checked: boolean | string) => {
     if (checked === true) {
-      setSelectedIds(new Set(data.map((d) => d.id)));
+      setSelectedIds(new Set(response?.data.map((d: SubscriberRow) => d.id) ?? []));
     } else {
       setSelectedIds(new Set());
     }
@@ -138,7 +158,7 @@ export function SubscribersTable() {
   };
 
   const handleBulkSuccess = () => {
-    void fetchData();
+    refresh();
     handleClearSelection();
   };
 
@@ -180,33 +200,6 @@ export function SubscribersTable() {
       setBulkLoading(false);
     }
   };
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: "25",
-        filter,
-        sort,
-        order,
-        ...(debouncedSearch ? { search: debouncedSearch } : {}),
-      });
-      const res = await fetch(`/api/admin/subscribers?${params}`);
-      if (!res.ok) throw new Error("Failed to fetch subscribers");
-      const json: PaginatedResponse<SubscriberRow> = await res.json();
-      setData(json.data);
-      setPagination(json.pagination);
-    } catch {
-      toast.error("Failed to load subscribers");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, filter, sort, order, debouncedSearch]);
-
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
 
   // Reset to page 1 when filter/sort changes
   useEffect(() => {
@@ -268,172 +261,193 @@ export function SubscribersTable() {
         onDelete={() => setBulkDeleteOpen(true)}
         onExport={handleExport}
         hasBannedUsers={Array.from(selectedIds).some((id) => {
-          const sub = data.find((d) => d.id === id);
+          const sub = response?.data.find((d: SubscriberRow) => d.id === id);
           return sub?.bannedAt != null;
         })}
       />
 
       {/* Table */}
       <div className="bg-card rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={
-                    selectedIds.size > 0 && selectedIds.size === data.length && data.length > 0
-                  }
-                  indeterminate={selectedIds.size > 0 && selectedIds.size < data.length}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="Select all"
-                  disabled={bulkLoading || data.length === 0}
-                />
-              </TableHead>
-              <TableHead>Subscriber</TableHead>
-              <TableHead>
-                <button
-                  className="hover:text-foreground flex items-center gap-1"
-                  onClick={() => toggleSort("plan")}
-                >
-                  Plan <ArrowUpDown className="h-3.5 w-3.5" />
-                </button>
-              </TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Platforms</TableHead>
-              <TableHead>
-                <button
-                  className="hover:text-foreground flex items-center gap-1"
-                  onClick={() => toggleSort("createdAt")}
-                >
-                  Joined <ArrowUpDown className="h-3.5 w-3.5" />
-                </button>
-              </TableHead>
-              <TableHead className="w-10" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((__, j) => (
-                    <TableCell key={j}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : data.length === 0 ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={7} className="text-muted-foreground h-32 text-center">
-                  No subscribers found
-                </TableCell>
-              </TableRow>
-            ) : (
-              data.map((sub) => (
-                <TableRow
-                  key={sub.id}
-                  className={`${sub.deletedAt ? "opacity-50" : ""} ${
-                    selectedIds.has(sub.id) ? "bg-muted/50" : ""
-                  }`}
-                >
-                  <TableCell>
+                <TableHead className="w-12">
+                  <div className="flex items-center justify-center">
                     <Checkbox
-                      checked={selectedIds.has(sub.id)}
-                      onCheckedChange={(checked: boolean | string) =>
-                        handleSelectOne(sub.id, checked === true)
+                      checked={
+                        selectedIds.size > 0 &&
+                        selectedIds.size === (response?.data.length ?? 0) &&
+                        (response?.data.length ?? 0) > 0
                       }
-                      aria-label={`Select ${sub.name}`}
-                      disabled={bulkLoading}
+                      indeterminate={
+                        selectedIds.size > 0 && selectedIds.size < (response?.data.length ?? 0)
+                      }
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all"
+                      disabled={bulkLoading || (response?.data.length ?? 0) === 0}
+                      className="h-5 w-5"
                     />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-medium">{sub.name}</span>
-                        {sub.isAdmin && (
-                          <Badge variant="outline" className="h-4 px-1 py-0 text-[10px]">
-                            admin
-                          </Badge>
-                        )}
-                      </div>
-                      <span className="text-muted-foreground text-xs">{sub.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <PlanBadge plan={sub.plan} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge
-                      isSuspended={sub.isSuspended}
-                      bannedAt={sub.bannedAt}
-                      deletedAt={sub.deletedAt}
-                      trialEndsAt={sub.trialEndsAt}
+                  </div>
+                </TableHead>
+                <TableHead>Subscriber</TableHead>
+                <TableHead>
+                  <button
+                    className="hover:text-foreground flex items-center gap-1"
+                    onClick={() => toggleSort("plan")}
+                  >
+                    Plan <ArrowUpDown className="h-3.5 w-3.5" />
+                  </button>
+                </TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Platforms</TableHead>
+                <TableHead>
+                  <button
+                    className="hover:text-foreground flex items-center gap-1"
+                    onClick={() => toggleSort("createdAt")}
+                  >
+                    Joined <ArrowUpDown className="h-3.5 w-3.5" />
+                  </button>
+                </TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 7 }).map((__, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (response?.data.length ?? 0) === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0">
+                    <EmptyState
+                      variant={debouncedSearch ? "search" : "users"}
+                      title={debouncedSearch ? "No results found" : "No subscribers yet"}
+                      description={
+                        debouncedSearch
+                          ? "Try adjusting your search or filters"
+                          : "Add your first subscriber to get started"
+                      }
                     />
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm tabular-nums">{sub.connectedPlatforms}</span>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {format(new Date(sub.createdAt), "d MMM yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/subscribers/${sub.id}`}>View details</Link>
-                        </DropdownMenuItem>
-                        {!sub.deletedAt && (
-                          <>
-                            <DropdownMenuItem onClick={() => setEditTarget(sub)}>
-                              <UserPen className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setBanTarget(sub)}
-                              className={sub.bannedAt ? "text-green-600" : "text-amber-600"}
-                            >
-                              {sub.bannedAt ? (
-                                <>
-                                  <ShieldCheck className="mr-2 h-4 w-4" /> Unban
-                                </>
-                              ) : (
-                                <>
-                                  <ShieldOff className="mr-2 h-4 w-4" /> Ban
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setDeleteTarget(sub)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                response?.data.map((sub: SubscriberRow) => (
+                  <TableRow
+                    key={sub.id}
+                    className={`${sub.deletedAt ? "opacity-50" : ""} ${
+                      selectedIds.has(sub.id) ? "bg-muted/50" : ""
+                    }`}
+                  >
+                    <TableCell>
+                      <div className="flex items-center justify-center">
+                        <Checkbox
+                          checked={selectedIds.has(sub.id)}
+                          onCheckedChange={(checked: boolean | string) =>
+                            handleSelectOne(sub.id, checked === true)
+                          }
+                          aria-label={`Select ${sub.name}`}
+                          disabled={bulkLoading}
+                          className="h-5 w-5"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium">{sub.name}</span>
+                          {sub.isAdmin && (
+                            <Badge variant="outline" className="h-4 px-1 py-0 text-[10px]">
+                              admin
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-muted-foreground text-xs">{sub.email}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <PlanBadge plan={sub.plan} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge
+                        isSuspended={sub.isSuspended}
+                        bannedAt={sub.bannedAt}
+                        deletedAt={sub.deletedAt}
+                        trialEndsAt={sub.trialEndsAt}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm tabular-nums">{sub.connectedPlatforms}</span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {format(new Date(sub.createdAt), "d MMM yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/subscribers/${sub.id}`}>View details</Link>
+                          </DropdownMenuItem>
+                          {!sub.deletedAt && (
+                            <>
+                              <DropdownMenuItem onClick={() => setEditTarget(sub)}>
+                                <UserPen className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setBanTarget(sub)}
+                                className={sub.bannedAt ? "text-green-600" : "text-amber-600"}
+                              >
+                                {sub.bannedAt ? (
+                                  <>
+                                    <ShieldCheck className="mr-2 h-4 w-4" /> Unban
+                                  </>
+                                ) : (
+                                  <>
+                                    <ShieldOff className="mr-2 h-4 w-4" /> Ban
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => setDeleteTarget(sub)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {response?.pagination.totalPages && response.pagination.totalPages > 1 && (
         <div className="text-muted-foreground flex items-center justify-between text-sm">
           <span>
-            {(page - 1) * pagination.limit + 1}–
-            {Math.min(page * pagination.limit, pagination.total)} of {pagination.total}
+            {(page - 1) * response.pagination.limit + 1}–
+            {Math.min(page * response.pagination.limit, response.pagination.total)} of{" "}
+            {response.pagination.total}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -446,13 +460,13 @@ export function SubscribersTable() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="px-2">
-              {page} / {pagination.totalPages}
+              {page} / {response.pagination.totalPages}
             </span>
             <Button
               variant="outline"
               size="icon"
               className="h-8 w-8"
-              disabled={page >= pagination.totalPages}
+              disabled={page >= response.pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
               <ChevronRight className="h-4 w-4" />
@@ -462,7 +476,7 @@ export function SubscribersTable() {
       )}
 
       {/* Dialogs */}
-      <AddSubscriberDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={fetchData} />
+      <AddSubscriberDialog open={addOpen} onOpenChange={setAddOpen} onSuccess={refresh} />
       {editTarget && (
         <EditSubscriberDialog
           open={!!editTarget}
@@ -470,7 +484,7 @@ export function SubscribersTable() {
             if (!v) setEditTarget(null);
           }}
           subscriber={editTarget}
-          onSuccess={fetchData}
+          onSuccess={refresh}
         />
       )}
       {banTarget && (
@@ -482,7 +496,7 @@ export function SubscribersTable() {
           subscriberId={banTarget.id}
           subscriberName={banTarget.name}
           isBanned={!!banTarget.bannedAt}
-          onSuccess={fetchData}
+          onSuccess={refresh}
         />
       )}
       {deleteTarget && (
@@ -493,7 +507,7 @@ export function SubscribersTable() {
           }}
           subscriberId={deleteTarget.id}
           subscriberName={deleteTarget.name}
-          onSuccess={fetchData}
+          onSuccess={refresh}
         />
       )}
 
@@ -502,10 +516,12 @@ export function SubscribersTable() {
         open={bulkBanOpen}
         onOpenChange={setBulkBanOpen}
         selectedIds={Array.from(selectedIds)}
-        selectedNames={data
-          .filter((d) => selectedIds.has(d.id))
-          .slice(0, 3)
-          .map((d) => d.name)}
+        selectedNames={
+          response?.data
+            .filter((d: SubscriberRow) => selectedIds.has(d.id))
+            .slice(0, 3)
+            .map((d: SubscriberRow) => d.name) ?? []
+        }
         isBanning={bulkBanMode === "ban"}
         onSuccess={handleBulkSuccess}
       />

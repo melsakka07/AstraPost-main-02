@@ -1,4 +1,4 @@
-import { eq, and, sql, desc, count, gte } from "drizzle-orm";
+import { eq, and, sql, desc, count, gte, gt, lt, lte, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   const planDistRows = await db
     .select({ plan: user.plan, count: count() })
     .from(user)
-    .where(sql`${user.deletedAt} IS NULL`)
+    .where(isNull(user.deletedAt))
     .groupBy(user.plan);
 
   const planDistribution: Record<string, number> = {};
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
     db
       .select({ count: count() })
       .from(user)
-      .where(and(sql`${user.deletedAt} IS NULL`, sql`${user.plan} != 'free'`)),
+      .where(and(isNull(user.deletedAt), ne(user.plan, "free"))),
   ]);
 
   const churnedCount = Number(churnedRows[0]?.count ?? 0);
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
       processedAt: processedWebhookEvents.processedAt,
     })
     .from(processedWebhookEvents)
-    .where(sql`${processedWebhookEvents.retryCount} > 0`)
+    .where(gt(processedWebhookEvents.retryCount, 0))
     .orderBy(desc(processedWebhookEvents.retryCount))
     .limit(10);
 
@@ -185,13 +185,7 @@ async function calculateMRRTrends(): Promise<
     const planCounts = await db
       .select({ plan: user.plan, count: count() })
       .from(user)
-      .where(
-        and(
-          sql`${user.deletedAt} IS NULL`,
-          sql`${user.plan} != 'free'`,
-          sql`${user.createdAt} < ${monthEnd}` // Created before month end
-        )
-      )
+      .where(and(isNull(user.deletedAt), ne(user.plan, "free"), lt(user.createdAt, monthEnd)))
       .groupBy(user.plan);
 
     let mrr = 0;
@@ -302,10 +296,10 @@ async function calculateCohortRetention(): Promise<
       totalCount: count(),
     })
     .from(user)
-    .where(sql`${user.deletedAt} IS NULL`)
+    .where(isNull(user.deletedAt))
     .groupBy(sql`DATE_TRUNC('month', ${user.createdAt})`)
     .orderBy(sql`DATE_TRUNC('month', ${user.createdAt}) DESC`)
-    .limit(6); // Last 6 months only for performance
+    .limit(6);
 
   const cohortData: Array<{
     cohort: string;
@@ -336,9 +330,9 @@ async function calculateCohortRetention(): Promise<
         .where(
           and(
             sql`DATE_TRUNC('month', ${user.createdAt})::text = ${cohort.cohortMonth}`,
-            sql`${user.deletedAt} IS NULL`,
-            sql`${user.plan} != 'free'`,
-            sql`${user.createdAt} <= ${checkDate}`
+            isNull(user.deletedAt),
+            ne(user.plan, "free"),
+            lte(user.createdAt, checkDate)
           )
         );
 

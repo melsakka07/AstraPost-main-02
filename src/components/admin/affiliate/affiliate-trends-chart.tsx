@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Line,
   XAxis,
@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminPolling } from "../use-admin-polling";
 
 interface TrendDataPoint {
   date: string;
@@ -37,19 +38,17 @@ function LoadingSkeleton() {
 }
 
 export function AffiliateTrendsChart() {
-  const [data, setData] = useState<TrendDataPoint[]>([]);
-  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<DateRange>("30d");
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLoading(true);
-    fetch(`/api/admin/affiliate/trends?period=${period}`)
-      .then((r) => r.json())
-      .then((json) => setData(json.data?.data ?? []))
-      .catch(() => setData([]))
-      .finally(() => setLoading(false));
-  }, [period]);
+  const { data, loading } = useAdminPolling<TrendDataPoint[]>({
+    fetchFn: async (signal) => {
+      const r = await fetch(`/api/admin/affiliate/trends?period=${period}`, { signal });
+      if (!r.ok) throw new Error("Failed to fetch trends data");
+      const json = await r.json();
+      return json.data?.data ?? [];
+    },
+    intervalMs: 60_000,
+  });
 
   if (loading) return <LoadingSkeleton />;
 
@@ -72,7 +71,7 @@ export function AffiliateTrendsChart() {
         </div>
       </CardHeader>
       <CardContent>
-        {data.length === 0 ? (
+        {!data || data.length === 0 ? (
           <div className="text-muted-foreground flex h-80 items-center justify-center">
             No data available for this period
           </div>
