@@ -71,30 +71,35 @@ export async function GET() {
   const rl = await checkAdminRateLimit("read");
   if (rl) return rl;
 
-  // Last 20 subscription records, newest first, with subscriber name/email
-  const rows = await db
-    .select({
-      id: subscriptions.id,
-      plan: subscriptions.plan,
-      status: subscriptions.status,
-      stripePriceId: subscriptions.stripePriceId,
-      stripeSubscriptionId: subscriptions.stripeSubscriptionId,
-      currentPeriodStart: subscriptions.currentPeriodStart,
-      currentPeriodEnd: subscriptions.currentPeriodEnd,
-      cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
-      cancelledAt: subscriptions.cancelledAt,
-      createdAt: subscriptions.createdAt,
-      updatedAt: subscriptions.updatedAt,
-      userId: subscriptions.userId,
-      userName: user.name,
-      userEmail: user.email,
-    })
-    .from(subscriptions)
-    .leftJoin(user, eq(subscriptions.userId, user.id))
-    .orderBy(desc(subscriptions.updatedAt))
-    .limit(20);
+  try {
+    // Last 20 subscription records, newest first, with subscriber name/email
+    const rows = await db
+      .select({
+        id: subscriptions.id,
+        plan: subscriptions.plan,
+        status: subscriptions.status,
+        stripePriceId: subscriptions.stripePriceId,
+        stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+        currentPeriodStart: subscriptions.currentPeriodStart,
+        currentPeriodEnd: subscriptions.currentPeriodEnd,
+        cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
+        cancelledAt: subscriptions.cancelledAt,
+        createdAt: subscriptions.createdAt,
+        updatedAt: subscriptions.updatedAt,
+        userId: subscriptions.userId,
+        userName: user.name,
+        userEmail: user.email,
+      })
+      .from(subscriptions)
+      .leftJoin(user, eq(subscriptions.userId, user.id))
+      .orderBy(desc(subscriptions.updatedAt))
+      .limit(20);
 
-  return Response.json({ data: rows });
+    return Response.json({ data: rows });
+  } catch (err) {
+    console.error("[billing/transactions] Error:", err);
+    return ApiError.internal("Failed to load transactions");
+  }
 }
 
 // ── POST /api/admin/billing/transactions ───────────────────────────────────
@@ -106,17 +111,22 @@ export async function POST(request: Request): Promise<Response> {
   const rl = await checkAdminRateLimit("read");
   if (rl) return rl;
 
-  const body = await request.json().catch(() => null);
-  if (!body) return ApiError.badRequest("Invalid JSON body");
+  try {
+    const body = await request.json().catch(() => null);
+    if (!body) return ApiError.badRequest("Invalid JSON body");
 
-  const parsed = exportRequestSchema.safeParse(body);
-  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+    const parsed = exportRequestSchema.safeParse(body);
+    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
-  if (parsed.data.action === "export") {
-    return handleTransactionExport();
+    if (parsed.data.action === "export") {
+      return handleTransactionExport();
+    }
+
+    return ApiError.badRequest("Unknown action");
+  } catch (err) {
+    console.error("[billing/transactions] Error:", err);
+    return ApiError.internal("Failed to process transaction request");
   }
-
-  return ApiError.badRequest("Unknown action");
 }
 
 // ── Handler: Export all transactions ───────────────────────────────────────

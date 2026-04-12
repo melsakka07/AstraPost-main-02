@@ -36,19 +36,24 @@ export async function GET() {
   const rl = await checkAdminRateLimit("read");
   if (rl) return rl;
 
-  const flag = await getAnnouncementFlag();
-  if (!flag) {
-    return Response.json({ data: { text: "", type: "info", enabled: false } });
-  }
-
-  let config: AnnouncementConfig = { text: "", type: "info", enabled: false };
   try {
-    config = { ...JSON.parse(flag.description ?? "{}"), enabled: flag.enabled };
-  } catch {
-    config = { text: flag.description ?? "", type: "info", enabled: flag.enabled };
-  }
+    const flag = await getAnnouncementFlag();
+    if (!flag) {
+      return Response.json({ data: { text: "", type: "info", enabled: false } });
+    }
 
-  return Response.json({ data: config });
+    let config: AnnouncementConfig = { text: "", type: "info", enabled: false };
+    try {
+      config = { ...JSON.parse(flag.description ?? "{}"), enabled: flag.enabled };
+    } catch {
+      config = { text: flag.description ?? "", type: "info", enabled: flag.enabled };
+    }
+
+    return Response.json({ data: config });
+  } catch (err) {
+    console.error("[announcement] GET Error:", err);
+    return ApiError.internal("Failed to load announcement");
+  }
 }
 
 // ── PUT /api/admin/announcement ───────────────────────────────────────────────
@@ -60,38 +65,43 @@ export async function PUT(request: Request) {
   const rl = await checkAdminRateLimit("write");
   if (rl) return rl;
 
-  const body = await request.json().catch(() => null);
-  if (!body) return ApiError.badRequest("Invalid JSON body");
+  try {
+    const body = await request.json().catch(() => null);
+    if (!body) return ApiError.badRequest("Invalid JSON body");
 
-  const parsed = putSchema.safeParse(body);
-  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+    const parsed = putSchema.safeParse(body);
+    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
-  const { text, type, enabled } = parsed.data;
-  const description = JSON.stringify({ text, type });
+    const { text, type, enabled } = parsed.data;
+    const description = JSON.stringify({ text, type });
 
-  const flag = await getAnnouncementFlag();
+    const flag = await getAnnouncementFlag();
 
-  if (flag) {
-    await db
-      .update(featureFlags)
-      .set({ description, enabled })
-      .where(eq(featureFlags.key, ANNOUNCEMENT_KEY));
-  } else {
-    await db.insert(featureFlags).values({
-      id: nanoid(),
-      key: ANNOUNCEMENT_KEY,
-      description,
-      enabled,
+    if (flag) {
+      await db
+        .update(featureFlags)
+        .set({ description, enabled })
+        .where(eq(featureFlags.key, ANNOUNCEMENT_KEY));
+    } else {
+      await db.insert(featureFlags).values({
+        id: nanoid(),
+        key: ANNOUNCEMENT_KEY,
+        description,
+        enabled,
+      });
+    }
+
+    logAdminAction({
+      adminId: auth.session.user.id,
+      action: "announcement_update",
+      targetType: "feature_flag",
+      targetId: ANNOUNCEMENT_KEY,
+      details: { text, type, enabled },
     });
+
+    return Response.json({ data: { text, type, enabled } });
+  } catch (err) {
+    console.error("[announcement] PUT Error:", err);
+    return ApiError.internal("Failed to update announcement");
   }
-
-  logAdminAction({
-    adminId: auth.session.user.id,
-    action: "announcement_update",
-    targetType: "feature_flag",
-    targetId: ANNOUNCEMENT_KEY,
-    details: { text, type, enabled },
-  });
-
-  return Response.json({ data: { text, type, enabled } });
 }

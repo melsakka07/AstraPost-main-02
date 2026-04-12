@@ -20,48 +20,58 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const rl = await checkAdminRateLimit("destructive");
   if (rl) return rl;
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  if (id === auth.session.user.id) {
-    return ApiError.badRequest("Cannot ban your own account");
-  }
+    const body = await request.json().catch(() => null);
+    if (!body) return ApiError.badRequest("Invalid JSON body");
 
-  const [existing] = await db
-    .select({ id: user.id, deletedAt: user.deletedAt, bannedAt: user.bannedAt })
-    .from(user)
-    .where(eq(user.id, id))
-    .limit(1);
+    const parsed = banSchema.safeParse(body);
+    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
-  if (!existing) return ApiError.notFound("Subscriber");
-  if (existing.deletedAt) return ApiError.badRequest("Cannot ban a deleted subscriber");
+    const { ban } = parsed.data;
 
-  const body = await request.json().catch(() => null);
-  if (!body) return ApiError.badRequest("Invalid JSON body");
+    if (id === auth.session.user.id) {
+      return ApiError.badRequest("Cannot ban your own account");
+    }
 
-  const parsed = banSchema.safeParse(body);
-  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+    const [existing] = await db
+      .select({
+        id: user.id,
+        deletedAt: user.deletedAt,
+        bannedAt: user.bannedAt,
+        email: user.email,
+      })
+      .from(user)
+      .where(eq(user.id, id))
+      .limit(1);
 
-  const { ban } = parsed.data;
+    if (!existing) return ApiError.notFound("Subscriber");
+    if (existing.deletedAt) return ApiError.badRequest("Cannot ban a deleted subscriber");
 
-  if (ban) {
-    // Ban: set bannedAt + suspend + invalidate all sessions
+    const now = new Date();
+
     await db.transaction(async (tx) => {
-      await tx.update(user).set({ bannedAt: new Date(), isSuspended: true }).where(eq(user.id, id));
+      if (ban) {
+        await tx.update(user).set({ bannedAt: now, isSuspended: true }).where(eq(user.id, id));
+      } else {
+        await tx.update(user).set({ bannedAt: null, isSuspended: false }).where(eq(user.id, id));
+      }
 
-      // Invalidate all active sessions
       await tx.delete(session).where(eq(session.userId, id));
     });
-  } else {
-    // Unban: clear bannedAt + restore suspended flag
-    await db.update(user).set({ bannedAt: null, isSuspended: false }).where(eq(user.id, id));
+
+    logAdminAction({
+      adminId: auth.session.user.id,
+      action: ban ? "ban" : "unban",
+      targetType: "user",
+      targetId: id,
+      details: { email: existing.email },
+    });
+
+    return Response.json({ success: true, banned: ban });
+  } catch (err) {
+    console.error("[subscribers/ban] Error:", err);
+    return ApiError.internal("Failed to update ban status");
   }
-
-  logAdminAction({
-    adminId: auth.session.user.id,
-    action: ban ? "ban" : "unban",
-    targetType: "user",
-    targetId: id,
-  });
-
-  return Response.json({ success: true, banned: ban });
 }

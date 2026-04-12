@@ -86,30 +86,35 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const rl = await checkAdminRateLimit("destructive");
   if (rl) return rl;
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const [existing] = await db
-    .select({ id: promoCodes.id, deletedAt: promoCodes.deletedAt, code: promoCodes.code })
-    .from(promoCodes)
-    .where(eq(promoCodes.id, id))
-    .limit(1);
+    const [existing] = await db
+      .select({ id: promoCodes.id, deletedAt: promoCodes.deletedAt, code: promoCodes.code })
+      .from(promoCodes)
+      .where(eq(promoCodes.id, id))
+      .limit(1);
 
-  if (!existing) return ApiError.notFound("Promo code");
-  if (existing.deletedAt) return ApiError.conflict("Promo code is already deleted");
+    if (!existing) return ApiError.notFound("Promo code");
+    if (existing.deletedAt) return ApiError.conflict("Promo code is already deleted");
 
-  // Soft-delete: mark inactive + set deletedAt
-  await db
-    .update(promoCodes)
-    .set({ deletedAt: new Date(), isActive: false })
-    .where(eq(promoCodes.id, id));
+    // Soft-delete: mark inactive + set deletedAt
+    await db
+      .update(promoCodes)
+      .set({ deletedAt: new Date(), isActive: false })
+      .where(eq(promoCodes.id, id));
 
-  logAdminAction({
-    adminId: auth.session.user.id,
-    action: "promo_delete",
-    targetType: "promo_code",
-    targetId: id,
-    details: { code: existing.code },
-  });
+    logAdminAction({
+      adminId: auth.session.user.id,
+      action: "promo_delete",
+      targetType: "promo_code",
+      targetId: id,
+      details: { code: existing.code },
+    });
 
-  return Response.json({ success: true });
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error("[promo-codes/[id]] Error:", err);
+    return ApiError.internal("Failed to delete promo code");
+  }
 }

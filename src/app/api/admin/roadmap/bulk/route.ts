@@ -19,29 +19,34 @@ export async function POST(request: Request) {
   const rl = await checkAdminRateLimit("write");
   if (rl) return rl;
 
-  const body = await request.json().catch(() => null);
-  const result = bulkUpdateSchema.safeParse(body);
+  try {
+    const body = await request.json().catch(() => null);
+    const result = bulkUpdateSchema.safeParse(body);
 
-  if (!result.success) {
-    return ApiError.badRequest(result.error.issues);
+    if (!result.success) {
+      return ApiError.badRequest(result.error.issues);
+    }
+
+    const { ids, status } = result.data;
+
+    await db
+      .update(feedback)
+      .set({
+        status,
+        reviewedAt: new Date(),
+      })
+      .where(inArray(feedback.id, ids));
+
+    logAdminAction({
+      adminId: auth.session.user.id,
+      action: "bulk_operation",
+      targetType: "feedback",
+      details: { status, count: ids.length, ids },
+    });
+
+    return Response.json({ success: true, updatedCount: ids.length });
+  } catch (err) {
+    console.error("[roadmap/bulk] Error:", err);
+    return ApiError.internal("Failed to update feedback items");
   }
-
-  const { ids, status } = result.data;
-
-  await db
-    .update(feedback)
-    .set({
-      status,
-      reviewedAt: new Date(),
-    })
-    .where(inArray(feedback.id, ids));
-
-  logAdminAction({
-    adminId: auth.session.user.id,
-    action: "bulk_operation",
-    targetType: "feedback",
-    details: { status, count: ids.length, ids },
-  });
-
-  return Response.json({ success: true, updatedCount: ids.length });
 }

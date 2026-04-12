@@ -115,7 +115,7 @@ export function GlobalAdminSearch() {
           setOpen(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className="group text-muted-foreground hover:text-foreground transition-colors"
+        className="group text-muted-foreground hover:text-foreground fixed top-4 right-4 transition-colors"
         title="Search (Ctrl+K)"
       >
         <Search className="h-5 w-5" />
@@ -145,6 +145,7 @@ export function GlobalAdminSearch() {
               setQuery("");
             }}
             className="text-muted-foreground hover:text-foreground transition-colors"
+            title="Close search"
           >
             <X className="h-4 w-4" />
           </button>

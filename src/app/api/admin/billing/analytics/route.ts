@@ -19,143 +19,148 @@ export async function GET(request: Request) {
   const rl = await checkAdminRateLimit("read");
   if (rl) return rl;
 
-  const { searchParams } = new URL(request.url);
-  const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
-  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
-  const { page, limit } = parsed.data;
-  const offset = (page - 1) * limit;
+  try {
+    const { searchParams } = new URL(request.url);
+    const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
+    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+    const { page, limit } = parsed.data;
+    const offset = (page - 1) * limit;
 
-  // 1. Plan distribution
-  const planDistRows = await db
-    .select({ plan: user.plan, count: count() })
-    .from(user)
-    .where(isNull(user.deletedAt))
-    .groupBy(user.plan);
+    // 1. Plan distribution
+    const planDistRows = await db
+      .select({ plan: user.plan, count: count() })
+      .from(user)
+      .where(isNull(user.deletedAt))
+      .groupBy(user.plan);
 
-  const planDistribution: Record<string, number> = {};
-  for (const row of planDistRows) {
-    if (row.plan !== null) {
-      planDistribution[row.plan] = Number(row.count);
+    const planDistribution: Record<string, number> = {};
+    for (const row of planDistRows) {
+      if (row.plan !== null) {
+        planDistribution[row.plan] = Number(row.count);
+      }
     }
-  }
 
-  // 2. Recent plan changes (paginated)
-  const [changes, totalCountResult] = await Promise.all([
-    db
+    // 2. Recent plan changes (paginated)
+    const [changes, totalCountResult] = await Promise.all([
+      db
+        .select({
+          id: planChangeLog.id,
+          userId: planChangeLog.userId,
+          oldPlan: planChangeLog.oldPlan,
+          newPlan: planChangeLog.newPlan,
+          reason: planChangeLog.reason,
+          createdAt: planChangeLog.createdAt,
+          userName: user.name,
+          userEmail: user.email,
+        })
+        .from(planChangeLog)
+        .leftJoin(user, eq(planChangeLog.userId, user.id))
+        .orderBy(desc(planChangeLog.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ total: count() }).from(planChangeLog),
+    ]);
+
+    const totalChanges = Number(totalCountResult[0]?.total ?? 0);
+
+    // 3. Churn rate (subscriptions deleted in last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [churnedRows, totalPaidRows] = await Promise.all([
+      db
+        .select({ count: count() })
+        .from(planChangeLog)
+        .where(
+          and(
+            eq(planChangeLog.reason, "subscription_deleted"),
+            gte(planChangeLog.createdAt, thirtyDaysAgo)
+          )
+        ),
+      db
+        .select({ count: count() })
+        .from(user)
+        .where(and(isNull(user.deletedAt), ne(user.plan, "free"))),
+    ]);
+
+    const churnedCount = Number(churnedRows[0]?.count ?? 0);
+    const totalPaid = Number(totalPaidRows[0]?.count ?? 0);
+    const churnRate = totalPaid > 0 ? (churnedCount / totalPaid) * 100 : 0;
+
+    // 4. Grace period recovery rate
+    // Count users who had payment_failed_grace_period followed by a plan change to paid within 7 days
+    // Use a single query with EXISTS subquery to avoid N+1 problem
+    const graceMetrics = await db
       .select({
-        id: planChangeLog.id,
         userId: planChangeLog.userId,
-        oldPlan: planChangeLog.oldPlan,
-        newPlan: planChangeLog.newPlan,
-        reason: planChangeLog.reason,
-        createdAt: planChangeLog.createdAt,
-        userName: user.name,
-        userEmail: user.email,
+        failedAt: planChangeLog.createdAt,
+        recovered: sql<boolean>`EXISTS(
+          SELECT 1 FROM ${planChangeLog} AS recovery
+          WHERE recovery.user_id = ${planChangeLog.userId}
+          AND recovery.reason = 'webhook_plan_change'
+          AND recovery.created_at >= ${planChangeLog.createdAt}
+          AND recovery.created_at < (${planChangeLog.createdAt} + INTERVAL '7 days')
+          LIMIT 1
+        )`,
       })
       .from(planChangeLog)
-      .leftJoin(user, eq(planChangeLog.userId, user.id))
-      .orderBy(desc(planChangeLog.createdAt))
-      .limit(limit)
-      .offset(offset),
-    db.select({ total: count() }).from(planChangeLog),
-  ]);
+      .where(eq(planChangeLog.reason, "payment_failed_grace_period"))
+      .orderBy(desc(planChangeLog.createdAt));
 
-  const totalChanges = Number(totalCountResult[0]?.total ?? 0);
+    const graceFailedRows = graceMetrics;
+    const graceRecoveryCount = graceMetrics.filter((m) => m.recovered).length;
 
-  // 3. Churn rate (subscriptions deleted in last 30 days)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const [churnedRows, totalPaidRows] = await Promise.all([
-    db
-      .select({ count: count() })
-      .from(planChangeLog)
-      .where(
-        and(
-          eq(planChangeLog.reason, "subscription_deleted"),
-          gte(planChangeLog.createdAt, thirtyDaysAgo)
-        )
-      ),
-    db
-      .select({ count: count() })
-      .from(user)
-      .where(and(isNull(user.deletedAt), ne(user.plan, "free"))),
-  ]);
+    const graceRecoveryRate =
+      graceFailedRows.length > 0 ? (graceRecoveryCount / graceFailedRows.length) * 100 : 0;
 
-  const churnedCount = Number(churnedRows[0]?.count ?? 0);
-  const totalPaid = Number(totalPaidRows[0]?.count ?? 0);
-  const churnRate = totalPaid > 0 ? (churnedCount / totalPaid) * 100 : 0;
+    // 5. Failed webhooks (retry count > 0)
+    const failedWebhooks = await db
+      .select({
+        id: processedWebhookEvents.id,
+        stripeEventId: processedWebhookEvents.stripeEventId,
+        eventType: processedWebhookEvents.eventType,
+        retryCount: processedWebhookEvents.retryCount,
+        errorMessage: processedWebhookEvents.errorMessage,
+        processedAt: processedWebhookEvents.processedAt,
+      })
+      .from(processedWebhookEvents)
+      .where(gt(processedWebhookEvents.retryCount, 0))
+      .orderBy(desc(processedWebhookEvents.retryCount))
+      .limit(10);
 
-  // 4. Grace period recovery rate
-  // Count users who had payment_failed_grace_period followed by a plan change to paid within 7 days
-  // Use a single query with EXISTS subquery to avoid N+1 problem
-  const graceMetrics = await db
-    .select({
-      userId: planChangeLog.userId,
-      failedAt: planChangeLog.createdAt,
-      recovered: sql<boolean>`EXISTS(
-        SELECT 1 FROM ${planChangeLog} AS recovery
-        WHERE recovery.user_id = ${planChangeLog.userId}
-        AND recovery.reason = 'webhook_plan_change'
-        AND recovery.created_at >= ${planChangeLog.createdAt}
-        AND recovery.created_at < (${planChangeLog.createdAt} + INTERVAL '7 days')
-        LIMIT 1
-      )`,
-    })
-    .from(planChangeLog)
-    .where(eq(planChangeLog.reason, "payment_failed_grace_period"))
-    .orderBy(desc(planChangeLog.createdAt));
+    // 6. MRR Trends (12 months)
+    const mrrTrends = await calculateMRRTrends();
 
-  const graceFailedRows = graceMetrics;
-  const graceRecoveryCount = graceMetrics.filter((m) => m.recovered).length;
+    // 7. LTV Estimates
+    const ltvEstimates = calculateLTVEstimates();
 
-  const graceRecoveryRate =
-    graceFailedRows.length > 0 ? (graceRecoveryCount / graceFailedRows.length) * 100 : 0;
+    // 8. Cohort Retention Data
+    const cohortData = await calculateCohortRetention();
 
-  // 5. Failed webhooks (retry count > 0)
-  const failedWebhooks = await db
-    .select({
-      id: processedWebhookEvents.id,
-      stripeEventId: processedWebhookEvents.stripeEventId,
-      eventType: processedWebhookEvents.eventType,
-      retryCount: processedWebhookEvents.retryCount,
-      errorMessage: processedWebhookEvents.errorMessage,
-      processedAt: processedWebhookEvents.processedAt,
-    })
-    .from(processedWebhookEvents)
-    .where(gt(processedWebhookEvents.retryCount, 0))
-    .orderBy(desc(processedWebhookEvents.retryCount))
-    .limit(10);
-
-  // 6. MRR Trends (12 months)
-  const mrrTrends = await calculateMRRTrends();
-
-  // 7. LTV Estimates
-  const ltvEstimates = calculateLTVEstimates();
-
-  // 8. Cohort Retention Data
-  const cohortData = await calculateCohortRetention();
-
-  return Response.json({
-    planDistribution,
-    recentChanges: changes,
-    pagination: {
-      page,
-      limit,
-      total: totalChanges,
-      totalPages: Math.ceil(totalChanges / limit),
-    },
-    metrics: {
-      churnRate: Math.round(churnRate * 10) / 10,
-      churnedCount,
-      totalPaid,
-      graceRecoveryRate: Math.round(graceRecoveryRate * 10) / 10,
-      graceFailedCount: graceFailedRows.length,
-      graceRecoveryCount,
-    },
-    failedWebhooks,
-    mrrTrends,
-    ltvEstimates,
-    cohortData,
-  });
+    return Response.json({
+      planDistribution,
+      recentChanges: changes,
+      pagination: {
+        page,
+        limit,
+        total: totalChanges,
+        totalPages: Math.ceil(totalChanges / limit),
+      },
+      metrics: {
+        churnRate: Math.round(churnRate * 10) / 10,
+        churnedCount,
+        totalPaid,
+        graceRecoveryRate: Math.round(graceRecoveryRate * 10) / 10,
+        graceFailedCount: graceFailedRows.length,
+        graceRecoveryCount,
+      },
+      failedWebhooks,
+      mrrTrends,
+      ltvEstimates,
+      cohortData,
+    });
+  } catch (err) {
+    console.error("[billing/analytics] Error:", err);
+    return ApiError.internal("Failed to load billing analytics");
+  }
 }
 
 /**

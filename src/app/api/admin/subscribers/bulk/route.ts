@@ -71,62 +71,67 @@ export async function POST(request: Request): Promise<Response> {
   const rl = await checkAdminRateLimit("destructive");
   if (rl) return rl;
 
-  const body = await request.json().catch(() => null);
-  if (!body) return ApiError.badRequest("Invalid JSON body");
-
-  const parsed = bulkSubscriberSchema.safeParse(body);
-  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
-
-  const { userIds, action, details } = parsed.data;
-
-  // Validate changePlan requires plan
-  if (action === "changePlan" && !details?.plan) {
-    return ApiError.badRequest("plan is required for changePlan action");
-  }
-
-  const response: BulkActionResponse = {
-    success: true,
-    action,
-    processed: 0,
-    skipped: 0,
-    errors: [],
-    data: null,
-  };
-
   try {
-    if (action === "ban") {
-      const result = await handleBulkBan(userIds, auth.session.user.id);
-      response.processed = result.processed;
-      response.skipped = result.skipped;
-      response.errors = result.errors;
-    } else if (action === "unban") {
-      const result = await handleBulkUnban(userIds, auth.session.user.id);
-      response.processed = result.processed;
-      response.skipped = result.skipped;
-      response.errors = result.errors;
-    } else if (action === "changePlan") {
-      const result = await handleBulkChangePlan(userIds, details!.plan!, auth.session.user.id);
-      response.processed = result.processed;
-      response.skipped = result.skipped;
-      response.errors = result.errors;
-    } else if (action === "delete") {
-      const result = await handleBulkDelete(userIds, auth.session.user.id);
-      response.processed = result.processed;
-      response.skipped = result.skipped;
-      response.errors = result.errors;
-    } else if (action === "export") {
-      const result = await handleBulkExport(userIds);
-      response.processed = result.rows.length;
-      response.skipped = userIds.length - result.rows.length;
-      response.data = result.csv;
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    response.errors.push(errorMessage);
-    console.error("[BULK_SUBSCRIBERS] Error:", error);
-  }
+    const body = await request.json().catch(() => null);
+    if (!body) return ApiError.badRequest("Invalid JSON body");
 
-  return Response.json(response);
+    const parsed = bulkSubscriberSchema.safeParse(body);
+    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+
+    const { userIds, action, details } = parsed.data;
+
+    // Validate changePlan requires plan
+    if (action === "changePlan" && !details?.plan) {
+      return ApiError.badRequest("plan is required for changePlan action");
+    }
+
+    const response: BulkActionResponse = {
+      success: true,
+      action,
+      processed: 0,
+      skipped: 0,
+      errors: [],
+      data: null,
+    };
+
+    try {
+      if (action === "ban") {
+        const result = await handleBulkBan(userIds, auth.session.user.id);
+        response.processed = result.processed;
+        response.skipped = result.skipped;
+        response.errors = result.errors;
+      } else if (action === "unban") {
+        const result = await handleBulkUnban(userIds, auth.session.user.id);
+        response.processed = result.processed;
+        response.skipped = result.skipped;
+        response.errors = result.errors;
+      } else if (action === "changePlan") {
+        const result = await handleBulkChangePlan(userIds, details!.plan!, auth.session.user.id);
+        response.processed = result.processed;
+        response.skipped = result.skipped;
+        response.errors = result.errors;
+      } else if (action === "delete") {
+        const result = await handleBulkDelete(userIds, auth.session.user.id);
+        response.processed = result.processed;
+        response.skipped = result.skipped;
+        response.errors = result.errors;
+      } else if (action === "export") {
+        const result = await handleBulkExport(userIds);
+        response.processed = result.rows.length;
+        response.skipped = userIds.length - result.rows.length;
+        response.data = result.csv;
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      response.errors.push(errorMessage);
+      console.error("[BULK_SUBSCRIBERS] Error:", error);
+    }
+
+    return Response.json(response);
+  } catch (err) {
+    console.error("[BULK_SUBSCRIBERS] Error:", err);
+    return ApiError.internal("Failed to perform bulk action");
+  }
 }
 
 // ── Result type ─────────────────────────────────────────────────────────────

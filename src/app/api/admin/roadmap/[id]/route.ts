@@ -19,42 +19,47 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const rl = await checkAdminRateLimit("write");
   if (rl) return rl;
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const body = await request.json().catch(() => null);
-  const result = updateSchema.safeParse(body);
+    const body = await request.json().catch(() => null);
+    const result = updateSchema.safeParse(body);
 
-  if (!result.success) {
-    return ApiError.badRequest(result.error.issues);
+    if (!result.success) {
+      return ApiError.badRequest(result.error.issues);
+    }
+
+    const { status, adminNotes } = result.data;
+
+    const existing = await db.query.feedback.findFirst({
+      where: eq(feedback.id, id),
+    });
+
+    if (!existing) {
+      return ApiError.notFound("Feedback");
+    }
+
+    const updated = await db
+      .update(feedback)
+      .set({
+        status,
+        adminNotes: adminNotes ?? null,
+        reviewedAt: new Date(),
+      })
+      .where(eq(feedback.id, id))
+      .returning();
+
+    logAdminAction({
+      adminId: auth.session.user.id,
+      action: "roadmap_update",
+      targetType: "feedback",
+      targetId: id,
+      details: { status, adminNotes },
+    });
+
+    return Response.json(updated[0]);
+  } catch (err) {
+    console.error("[roadmap/[id]] Error:", err);
+    return ApiError.internal("Failed to update feedback");
   }
-
-  const { status, adminNotes } = result.data;
-
-  const existing = await db.query.feedback.findFirst({
-    where: eq(feedback.id, id),
-  });
-
-  if (!existing) {
-    return ApiError.notFound("Feedback");
-  }
-
-  const updated = await db
-    .update(feedback)
-    .set({
-      status,
-      adminNotes: adminNotes ?? null,
-      reviewedAt: new Date(),
-    })
-    .where(eq(feedback.id, id))
-    .returning();
-
-  logAdminAction({
-    adminId: auth.session.user.id,
-    action: "roadmap_update",
-    targetType: "feedback",
-    targetId: id,
-    details: { status, adminNotes },
-  });
-
-  return Response.json(updated[0]);
 }

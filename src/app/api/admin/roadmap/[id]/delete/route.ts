@@ -13,27 +13,32 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const rl = await checkAdminRateLimit("destructive");
   if (rl) return rl;
 
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const existing = await db.query.feedback.findFirst({
-    where: eq(feedback.id, id),
-  });
+    const existing = await db.query.feedback.findFirst({
+      where: eq(feedback.id, id),
+    });
 
-  if (!existing) {
-    return ApiError.notFound("Feedback");
+    if (!existing) {
+      return ApiError.notFound("Feedback");
+    }
+
+    await db.delete(feedbackVotes).where(eq(feedbackVotes.feedbackId, id));
+
+    await db.delete(feedback).where(eq(feedback.id, id));
+
+    logAdminAction({
+      adminId: auth.session.user.id,
+      action: "roadmap_update",
+      targetType: "feedback",
+      targetId: id,
+      details: { action: "delete" },
+    });
+
+    return Response.json({ success: true });
+  } catch (err) {
+    console.error("[roadmap/[id]/delete] Error:", err);
+    return ApiError.internal("Failed to delete feedback");
   }
-
-  await db.delete(feedbackVotes).where(eq(feedbackVotes.feedbackId, id));
-
-  await db.delete(feedback).where(eq(feedback.id, id));
-
-  logAdminAction({
-    adminId: auth.session.user.id,
-    action: "roadmap_update",
-    targetType: "feedback",
-    targetId: id,
-    details: { action: "delete" },
-  });
-
-  return Response.json({ success: true });
 }

@@ -20,70 +20,75 @@ export async function GET(request: Request) {
   const rl = await checkAdminRateLimit("read");
   if (rl) return rl;
 
-  const { searchParams } = new URL(request.url);
-  const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
-  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+  try {
+    const { searchParams } = new URL(request.url);
+    const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
+    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
-  const { status, page, limit, search } = parsed.data;
-  const offset = (page - 1) * limit;
+    const { status, page, limit, search } = parsed.data;
+    const offset = (page - 1) * limit;
 
-  const conditions = [];
+    const conditions = [];
 
-  if (status !== "all") {
-    conditions.push(eq(feedback.status, status));
-  }
+    if (status !== "all") {
+      conditions.push(eq(feedback.status, status));
+    }
 
-  if (search) {
-    conditions.push(
-      or(ilike(feedback.title, `%${search}%`), ilike(feedback.description, `%${search}%`))!
-    );
-  }
+    if (search) {
+      conditions.push(
+        or(ilike(feedback.title, `%${search}%`), ilike(feedback.description, `%${search}%`))!
+      );
+    }
 
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const countResult = await db.select({ total: count() }).from(feedback).where(where);
-  const total = countResult[0]?.total ?? 0;
+    const countResult = await db.select({ total: count() }).from(feedback).where(where);
+    const total = countResult[0]?.total ?? 0;
 
-  const items = await db.query.feedback.findMany({
-    where,
-    orderBy: [desc(feedback.createdAt)],
-    with: {
-      user: {
-        columns: {
-          id: true,
-          name: true,
-          image: true,
-          email: true,
+    const items = await db.query.feedback.findMany({
+      where,
+      orderBy: [desc(feedback.createdAt)],
+      with: {
+        user: {
+          columns: {
+            id: true,
+            name: true,
+            image: true,
+            email: true,
+          },
         },
       },
-    },
-    limit,
-    offset,
-  });
+      limit,
+      offset,
+    });
 
-  const pendingCount = await db
-    .select({ count: count() })
-    .from(feedback)
-    .where(eq(feedback.status, "pending"));
-  const approvedCount = await db
-    .select({ count: count() })
-    .from(feedback)
-    .where(eq(feedback.status, "approved"));
-  const rejectedCount = await db
-    .select({ count: count() })
-    .from(feedback)
-    .where(eq(feedback.status, "rejected"));
+    const pendingCount = await db
+      .select({ count: count() })
+      .from(feedback)
+      .where(eq(feedback.status, "pending"));
+    const approvedCount = await db
+      .select({ count: count() })
+      .from(feedback)
+      .where(eq(feedback.status, "approved"));
+    const rejectedCount = await db
+      .select({ count: count() })
+      .from(feedback)
+      .where(eq(feedback.status, "rejected"));
 
-  return Response.json({
-    items,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-    counts: {
-      pending: pendingCount[0]?.count ?? 0,
-      approved: approvedCount[0]?.count ?? 0,
-      rejected: rejectedCount[0]?.count ?? 0,
-    },
-  });
+    return Response.json({
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      counts: {
+        pending: pendingCount[0]?.count ?? 0,
+        approved: approvedCount[0]?.count ?? 0,
+        rejected: rejectedCount[0]?.count ?? 0,
+      },
+    });
+  } catch (err) {
+    console.error("[feedback] Error:", err);
+    return ApiError.internal("Failed to load feedback");
+  }
 }

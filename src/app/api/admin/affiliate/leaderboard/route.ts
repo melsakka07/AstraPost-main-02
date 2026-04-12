@@ -1,19 +1,25 @@
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
+import { ApiError } from "@/lib/api/errors";
 import { getTopAffiliates, getStartDate } from "@/lib/services/affiliate-stats";
 
 export async function GET() {
-  const auth = await requireAdminApi();
-  if (!auth.ok) return auth.response;
+  try {
+    const auth = await requireAdminApi();
+    if (!auth.ok) return auth.response;
 
-  const rl = await checkAdminRateLimit("read");
-  if (rl) return rl;
+    const rl = await checkAdminRateLimit("read");
+    if (rl) return rl;
 
-  const startDate = getStartDate("30d");
+    const startDate = getStartDate("30d");
 
-  const topAffiliates = await getTopAffiliates(startDate, 20);
+    const topAffiliates = await getTopAffiliates(startDate, 20);
 
-  return Response.json({
-    data: topAffiliates,
-  });
+    return Response.json({
+      data: topAffiliates,
+    });
+  } catch (err) {
+    console.error("[affiliate/leaderboard] Error:", err);
+    return ApiError.internal("Failed to load affiliate leaderboard");
+  }
 }

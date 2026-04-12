@@ -20,73 +20,78 @@ export async function GET(request: Request) {
   const rl = await checkAdminRateLimit("read");
   if (rl) return rl;
 
-  const { searchParams } = new URL(request.url);
-  const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
-  if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+  try {
+    const { searchParams } = new URL(request.url);
+    const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
+    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
-  const { limit, offset, status, topic } = parsed.data;
+    const { limit, offset, status, topic } = parsed.data;
 
-  const conditions: any[] = [];
+    const conditions: any[] = [];
 
-  if (status) {
-    const statusMap: Record<string, string> = {
-      completed: "completed",
-      failed: "failed",
-      pending: "generating",
-      running: "processing",
-    };
-    const dbStatus = statusMap[status] ?? status;
-    conditions.push(eq(agenticPosts.status, dbStatus));
-  }
-
-  if (topic) {
-    conditions.push(ilike(agenticPosts.topic, `%${topic}%`));
-  }
-
-  const where = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const sessions = await db
-    .select({
-      id: agenticPosts.id,
-      topic: agenticPosts.topic,
-      status: agenticPosts.status,
-      qualityScore: agenticPosts.qualityScore,
-      startedAt: agenticPosts.createdAt,
-      completedAt: agenticPosts.updatedAt,
-      createdAt: agenticPosts.createdAt,
-    })
-    .from(agenticPosts)
-    .where(where)
-    .orderBy(desc(agenticPosts.createdAt))
-    .limit(limit)
-    .offset(offset);
-
-  const enriched = await Promise.all(
-    sessions.map(async (session) => {
-      const [tweetCount] = await db
-        .select({ c: count() })
-        .from(tweets)
-        .where(eq(tweets.postId, session.id));
-
-      const statusMap: Record<string, "pending" | "running" | "completed" | "failed"> = {
-        generating: "pending",
-        processing: "running",
+    if (status) {
+      const statusMap: Record<string, string> = {
         completed: "completed",
         failed: "failed",
-        ready: "completed",
-        posted: "completed",
-        scheduled: "completed",
-        approved: "completed",
+        pending: "generating",
+        running: "processing",
       };
+      const dbStatus = statusMap[status] ?? status;
+      conditions.push(eq(agenticPosts.status, dbStatus));
+    }
 
-      return {
-        ...session,
-        status: statusMap[session.status] ?? "pending",
-        postsGenerated: tweetCount?.c ?? 0,
-        qualityScore: session.qualityScore ?? 0,
-      };
-    })
-  );
+    if (topic) {
+      conditions.push(ilike(agenticPosts.topic, `%${topic}%`));
+    }
 
-  return Response.json({ data: enriched });
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const sessions = await db
+      .select({
+        id: agenticPosts.id,
+        topic: agenticPosts.topic,
+        status: agenticPosts.status,
+        qualityScore: agenticPosts.qualityScore,
+        startedAt: agenticPosts.createdAt,
+        completedAt: agenticPosts.updatedAt,
+        createdAt: agenticPosts.createdAt,
+      })
+      .from(agenticPosts)
+      .where(where)
+      .orderBy(desc(agenticPosts.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const enriched = await Promise.all(
+      sessions.map(async (session) => {
+        const [tweetCount] = await db
+          .select({ c: count() })
+          .from(tweets)
+          .where(eq(tweets.postId, session.id));
+
+        const statusMap: Record<string, "pending" | "running" | "completed" | "failed"> = {
+          generating: "pending",
+          processing: "running",
+          completed: "completed",
+          failed: "failed",
+          ready: "completed",
+          posted: "completed",
+          scheduled: "completed",
+          approved: "completed",
+        };
+
+        return {
+          ...session,
+          status: statusMap[session.status] ?? "pending",
+          postsGenerated: tweetCount?.c ?? 0,
+          qualityScore: session.qualityScore ?? 0,
+        };
+      })
+    );
+
+    return Response.json({ data: enriched });
+  } catch (err) {
+    console.error("[agentic/sessions] Error:", err);
+    return ApiError.internal("Failed to load agentic sessions");
+  }
 }
