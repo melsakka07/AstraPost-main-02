@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import {
   ChevronLeft,
@@ -125,6 +126,7 @@ export function RoadmapTable() {
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const pathname = usePathname();
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -157,7 +159,6 @@ export function RoadmapTable() {
       });
     } catch (error) {
       toast.error("Failed to load roadmap submissions");
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -165,7 +166,7 @@ export function RoadmapTable() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, pathname]);
 
   useEffect(() => {
     setSelectedIds(new Set());

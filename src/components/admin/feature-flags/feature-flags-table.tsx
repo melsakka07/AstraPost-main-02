@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +38,7 @@ export function FeatureFlagsTable() {
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
+  const pathname = usePathname();
 
   const fetchFlags = useCallback(async () => {
     setLoading(true);
@@ -53,7 +55,7 @@ export function FeatureFlagsTable() {
 
   useEffect(() => {
     fetchFlags();
-  }, [fetchFlags]);
+  }, [fetchFlags, pathname]);
 
   const toggle = async (flag: FeatureFlag) => {
     setToggling(flag.key);

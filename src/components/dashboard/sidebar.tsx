@@ -57,6 +57,24 @@ interface SidebarSection {
   collapsible?: boolean;
 }
 
+function isItemActive(itemHref: string, pathname: string, allItems: NavItem[]): boolean {
+  if (pathname === itemHref) return true;
+
+  const isPrefixOf = (prefix: string, path: string) =>
+    path === prefix || path.startsWith(`${prefix}/`);
+
+  const hasMoreSpecificMatch = allItems.some(
+    (other) =>
+      other.href !== itemHref &&
+      other.href.length > itemHref.length &&
+      isPrefixOf(other.href, pathname)
+  );
+
+  if (hasMoreSpecificMatch) return false;
+
+  return pathname.startsWith(`${itemHref}/`);
+}
+
 // ── Navigation Rules ──────────────────────────────────────────────────────────
 // 1. Every /dashboard/* route MUST have an entry here or be reachable from a
 //    page that does. Never ship a dashboard page without a sidebar path.
@@ -130,6 +148,9 @@ const sidebarSections: SidebarSection[] = [
   },
 ];
 
+// Flattened array of all nav items for active state checking
+const allNavItems = sidebarSections.flatMap((section) => section.items);
+
 // ── CollapsibleSection ────────────────────────────────────────────────────────
 // Wraps a nav section in a toggle for the mobile Sheet (M2).
 // Default open when any child matches the current pathname.
@@ -199,7 +220,7 @@ function CollapsibleSection({
         )}
       >
         {section.items.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = isItemActive(item.href, pathname, allNavItems);
           return (
             <Link
               key={item.href}
@@ -380,7 +401,7 @@ function SidebarContent({
               // Overview — no label, always visible, no collapse
               <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const isActive = isItemActive(item.href, pathname, allNavItems);
                   return (
                     <Link
                       key={item.href}
@@ -420,7 +441,7 @@ function SidebarContent({
                 </p>
                 <div className="space-y-0.5">
                   {section.items.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const isActive = isItemActive(item.href, pathname, allNavItems);
                     return (
                       <Link
                         key={item.href}

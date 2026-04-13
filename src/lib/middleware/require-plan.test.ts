@@ -222,22 +222,7 @@ describe("Multi-Account Limits", () => {
     expect(result.allowed).toBe(false);
   });
 
-  it("Pro Annual user has same 3-account limit as Pro Monthly", async () => {
-    mockFindFirst.mockResolvedValue({
-      plan: "pro_annual",
-      trialEndsAt: null,
-      createdAt: new Date(),
-    });
-    mockSelect.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue([{ count: 2 }]),
-      }),
-    });
-    const result = await checkAccountLimitDetailed("user-1", 1);
-    expect(result.allowed).toBe(true);
-  });
-
-  it("Pro Annual user blocked at 4th account", async () => {
+  it("Pro Annual user allowed up to 4 accounts", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "pro_annual",
       trialEndsAt: null,
@@ -246,6 +231,21 @@ describe("Multi-Account Limits", () => {
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 3 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(true);
+  });
+
+  it("Pro Annual user blocked at 5th account (limit is 4)", async () => {
+    mockFindFirst.mockResolvedValue({
+      plan: "pro_annual",
+      trialEndsAt: null,
+      createdAt: new Date(),
+    });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 4 }]),
       }),
     });
     const result = await checkAccountLimitDetailed("user-1", 1);

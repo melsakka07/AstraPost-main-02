@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   Database,
   Key,
@@ -92,6 +93,7 @@ export function HealthDashboard() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/health")
@@ -105,7 +107,7 @@ export function HealthDashboard() {
       .then((json) => setHealth(json.data ?? null))
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to fetch health data"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   if (loading) return <LoadingSkeleton />;
   if (error) {

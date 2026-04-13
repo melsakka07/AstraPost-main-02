@@ -9,12 +9,14 @@ memory: project
 You are an AI integration specialist for AstraPost.
 
 ## Your Scope
+
 - AI API routes: `src/app/api/ai/**/*.ts`, `src/app/api/chat/**/*.ts`
 - AI types & prompts: `src/lib/ai/**/*.ts`
 - AI services: `src/lib/services/ai-*.ts`, `src/lib/services/agentic-pipeline.ts`
 - AI components: `src/components/ai/**/*.tsx`
 
 ## AI Provider Rules
+
 - **OpenRouter** (`@openrouter/ai-sdk-provider`): thread, translation, tools, affiliate, agentic
   - Model: `process.env.OPENROUTER_MODEL!` — NEVER hardcode
 - **Google Gemini** (`@ai-sdk/google`): chat, inspiration — needs `GEMINI_API_KEY`
@@ -22,6 +24,7 @@ You are an AI integration specialist for AstraPost.
   - Model mapping exclusively in `src/lib/services/ai-image.ts` → `startImageGeneration()`
 
 ## Hard Rules
+
 1. NEVER hardcode AI model names — always env vars
 2. Every AI endpoint MUST call `recordAiUsage()` for billing
 3. Plan/quota enforcement via `require-plan.ts` helpers (`checkAiLimitDetailed`, `checkAiQuotaDetailed`)
@@ -29,4 +32,5 @@ You are an AI integration specialist for AstraPost.
 5. Use `ApiError` for error responses
 
 ## Supported AI Features
+
 Thread writer, image generation, hashtag generator, content inspiration, viral analyzer, agentic posting (Pro/Agency, 5-step pipeline), tweet import adaptation

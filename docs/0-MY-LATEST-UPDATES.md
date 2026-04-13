@@ -1,5 +1,273 @@
 # Latest Updates
 
+## 2026-04-13: Fix Admin Pages Not Loading Data on Sidebar Navigation ✅
+
+**Summary:** Admin sub-pages (Subscribers, AI Usage, Teams, Billing, etc.) showed no data when navigating via sidebar `<Link>` clicks — users had to manually refresh the browser. Root cause was Next.js App Router client-side navigation caching stale React Server Component payloads, preventing client component `useEffect` hooks (used by `useAdminPolling`) from properly re-triggering on route change.
+
+**Changes:**
+
+- **Created:** [route-key.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/admin/route-key.tsx)
+  - Small `"use client"` wrapper that reads `usePathname()` and passes it as a React `key` to its children
+  - Forces React to fully unmount and remount the page component tree on every pathname change
+
+- **Updated:** [layout.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/admin/layout.tsx)
+  - Wrapped `{children}` in `<RouteKey>` so all admin pages remount on navigation
+  - Ensures `useAdminPolling` refs, `useState` initializers, and `useEffect` hooks re-initialize cleanly
+
+**Root Cause:**
+
+Next.js App Router performs soft navigation between routes that share a layout. During soft navigation, the layout persists and only the page segment changes. Next.js caches the React Server Component payload for each route segment. When navigating back to a previously visited admin page, Next.js may reconcile the cached component tree instead of fully remounting it. This means:
+
+- `useState` values persist from the stale cached state
+- `useEffect` cleanup + re-run may not fire as expected
+- `useRef` values (like `inFlightRef`, `mountedRef` in `useAdminPolling`) retain stale values
+
+A hard refresh destroys the entire React tree and rebuilds from scratch, which is why refreshing always worked.
+
+**Solution:**
+
+The `<RouteKey>` wrapper uses the pathname as a React `key`. When the key changes, React treats it as a completely new component instance — it unmounts the old tree (triggering all cleanups) and mounts a fresh one (triggering all `useEffect` hooks and resetting all refs). This is the standard Next.js pattern for forcing remount on route change.
+
+**Next Steps:**
+
+- Consider applying the same `<RouteKey>` pattern to the dashboard layout (`src/app/(dashboard)/layout.tsx`) if similar stale-data issues are observed there
+- Evaluate whether `useAdminPolling` should add an extra `useEffect` that resets all refs on mount as a defensive measure
+
+## 2026-04-13: Sidebar Parent-Child Route Active State Fix (Round 2) ✅
+
+**Summary:** Fixed a remaining bug in `isItemActive()` where parent routes (e.g., "AI Tools" at `/dashboard/ai`) still appeared highlighted alongside child routes (e.g., "Agentic Posting" at `/dashboard/ai/agentic`). The root cause was that the `hasMoreSpecificMatch` check used `pathname.startsWith(\`${otherItem.href}/\`)`which fails when the pathname **exactly equals** the other item's href (no trailing`/`). This meant exact child matches were never detected as "more specific," so the parent's fallback `startsWith`check still returned`true`.
+
+**Changes:**
+
+- **File:** [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx)
+  - Introduced `isPrefixOf(prefix, path)` helper that matches both exact equality AND `startsWith(prefix + "/")`
+  - Used `isPrefixOf` in the `hasMoreSpecificMatch` check so exact child matches are correctly recognized as more specific
+  - Affects all parent-child route pairs: `/dashboard/ai` ↔ children, `/dashboard/analytics` ↔ children, `/dashboard` ↔ all routes
+
+**Added Flattened Nav Items Array:**
+
+- **Created `allNavItems` array:** Flattened all navigation items for active state checking
+  - File: [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L154)
+  - Used by `isItemActive` to check all possible matches
+
+**Updated Active State Logic (3 locations):**
+
+- **Updated `CollapsibleSection` component:** Replaced inline logic with `isItemActive()` helper
+  - File: [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L222)
+  - Changed: `pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(\`${item.href}/\`))`
+  - To: `isItemActive(item.href, pathname, allNavItems)`
+
+- **Updated Overview section:** Replaced inline logic with `isItemActive()` helper
+  - File: [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L406)
+
+- **Updated regular sections:** Replaced inline logic with `isItemActive()` helper
+  - File: [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L446)
+
+**Root Cause:**
+
+The previous fix only handled the root `/dashboard` route, but didn't address general parent-child route relationships. When on `/dashboard/analytics/viral`, both "Analytics" (parent) and "Viral Analyzer" (child) appeared selected because:
+
+- "Analytics" matched via `pathname.startsWith("/dashboard/analytics/")`
+- "Viral Analyzer" matched via exact path
+
+The logic didn't check if there was a more specific match before marking a route as active.
+
+**Solution:**
+
+Implemented a smart `isItemActive()` function that:
+
+1. Returns true if the pathname exactly matches the item's href
+2. Checks if any other nav item is a more specific match (longer path that also matches)
+3. If a more specific match exists, returns false for this item
+4. Otherwise, returns true if the pathname starts with this item's href followed by a slash
+
+This ensures only the most specific route is highlighted at any time.
+
+**Verification:**
+
+- ✅ `pnpm run lint` — 0 errors, 0 warnings
+- ✅ `pnpm run typecheck` — 0 errors
+
+**Manual Testing Required:**
+
+Please verify the following scenarios in the Analytics section:
+
+1. On `/dashboard/analytics` — Only "Analytics" is selected
+2. On `/dashboard/analytics/viral` — Only "Viral Analyzer" is selected (NOT "Analytics")
+3. On `/dashboard/analytics/competitor` — Only "Competitor" is selected (NOT "Analytics")
+
+Also verify other sections work correctly: 4. On `/dashboard/ai` — Only "AI Tools" is selected 5. On `/dashboard/ai/agentic` — Only "Agentic Posting" is selected (NOT "AI Tools") 6. On `/dashboard` — Only "Dashboard" is selected
+
+**Impact:**
+
+- ✅ Sidebar navigation now correctly highlights only the most specific active page
+- ✅ Parent routes (Analytics, AI Tools) no longer appear selected when on child routes
+- ✅ Improved UX by eliminating confusing multi-selection state in parent-child route scenarios
+- ✅ Consistent behavior across all navigation items with hierarchical relationships
+
+**Next Steps:**
+
+- Test the fix manually in the browser to verify all parent-child route combinations work correctly
+- Monitor for any edge cases where nested routes might still have issues
+
+---
+
+## 2026-04-13: Sidebar Navigation Selection State Fix ✅
+
+**Summary:** Fixed sidebar navigation issue where multiple items would appear selected simultaneously. The root cause was incorrect active state logic that matched the `/dashboard` route with all child routes using `startsWith()`.
+
+**Changes:**
+
+**Sidebar Active State Logic Fix (3 locations):**
+
+- **Updated `CollapsibleSection` component:** Fixed active state check for collapsible sections
+  - File: [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L203)
+  - Changed: `pathname === item.href || pathname.startsWith(\`${item.href}/\`)`
+  - To: `pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(\`${item.href}/\`))`
+
+- **Updated Overview section:** Fixed active state check for Dashboard item
+  - File: [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L384)
+
+- **Updated regular sections:** Fixed active state check for all other nav items
+  - File: [sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L424)
+
+**Root Cause:**
+
+The original logic used `pathname.startsWith(`${item.href}/`)` to match child routes, which caused the `/dashboard` route to incorrectly match all its child routes (e.g., `/dashboard/compose`, `/dashboard/drafts`, etc.). This resulted in both the Dashboard item and the actual child route item appearing selected simultaneously.
+
+**Solution:**
+
+Added a condition to exclude the root `/dashboard` route from the `startsWith()` check. Now:
+
+- `/dashboard` is only active when exactly on the dashboard home page
+- Child routes are only matched with their specific parent routes
+- Only one navigation item appears selected at a time
+
+**Verification:**
+
+- ✅ `pnpm run lint` — 0 errors, 0 warnings
+- ✅ `pnpm run typecheck` — 0 errors
+
+**Manual Testing Required:**
+
+Please verify the following scenarios:
+
+1. On `/dashboard` — Only "Dashboard" is selected
+2. On `/dashboard/compose` — Only "Compose" is selected
+3. On `/dashboard/drafts` — Only "Drafts" is selected
+4. On `/dashboard/queue` — Only "Queue" is selected
+5. On `/dashboard/calendar` — Only "Calendar" is selected
+6. On `/dashboard/ai` — Only "AI Tools" is selected
+7. On `/dashboard/ai/agentic` — Only "Agentic Posting" is selected
+8. On `/dashboard/analytics` — Only "Analytics" is selected
+9. On `/dashboard/analytics/viral` — Only "Viral Analyzer" is selected
+10. On `/dashboard/settings` — Only "Settings" is selected
+
+**Impact:**
+
+- ✅ Sidebar navigation now correctly highlights only the active page
+- ✅ Improved UX by eliminating confusing multi-selection state
+- ✅ Consistent behavior across all navigation items
+
+**Next Steps:**
+
+- Test the fix manually in the browser to verify all navigation items work correctly
+- Monitor for any edge cases where nested routes might still have issues
+
+---
+
+## 2026-04-13: Pricing Page Bookmark Limit Fix ✅
+
+**Summary:** Added missing bookmark limit information to the Free plan on the pricing page to match actual implementation.
+
+**Changes:**
+
+**Pricing Table Updates (2 locations):**
+
+- **Added "5 Bookmarks" to Free plan (monthly view):** Updated Free plan features to explicitly state the 5-bookmark limit
+  - File: [pricing-table.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/billing/pricing-table.tsx#L28)
+
+- **Added "5 Bookmarks" to Free plan (annual view):** Updated Free plan features to explicitly state the 5-bookmark limit
+  - File: [pricing-table.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/billing/pricing-table.tsx#L92)
+
+**Codebase Investigation Findings:**
+
+- Free plan has a 5-bookmark limit enforced by [plan-limits.ts](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/lib/plan-limits.ts#L53)
+- All paid plans (Pro Monthly, Pro Annual, Agency) have unlimited bookmarks (-1)
+- Pricing page previously listed "Tweet Inspiration & Import" but did not mention the bookmark limit
+- All other pricing page features correctly match the implementation in plan-limits.ts
+
+**Verification:**
+
+- ✅ `pnpm run lint` — 0 errors, 0 warnings
+- ✅ `pnpm run typecheck` — 0 errors
+
+**Impact:**
+
+- ✅ Pricing page now accurately reflects actual bookmark limits for Free plan
+- ✅ Users will have clear expectations about the 5-bookmark limit on Free plan
+
+---
+
+## 2026-04-13: README.md and env.example Corrections ✅
+
+**Summary:** Updated README.md and env.example files to match the actual codebase implementation. Fixed multiple discrepancies between documentation and actual code.
+
+**Changes:**
+
+**README.md Updates (5 corrections):**
+
+- **Updated overview line:** Changed "LinkedIn and Instagram integration coming soon" to "LinkedIn integration available on Agency plan"
+  - File: [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L3)
+
+- **Fixed AI Image Generation description:** Changed "Flux models" to "Nano Banana models"
+  - Files: [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L65), [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L114)
+
+- **Updated migration count:** Changed "0000–0038" to "0000–0047" (48 migration files)
+  - File: [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L152)
+
+- **Removed Google Gemini references:** Updated AI Inspiration and Overview sections to remove mentions of Google Gemini, as all AI features now use OpenRouter
+  - Files: [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L40), [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L65), [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L112)
+
+- **Updated Environment Variables Reference:**
+  - Removed `GEMINI_API_KEY` and `GOOGLE_AI_API_KEY` (not used in codebase)
+  - Added `FACEBOOK_APP_ID` for Instagram OAuth
+  - File: [README.md](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/README.md#L402-L410)
+
+**env.example Updates (1 addition):**
+
+- **Added Instagram OAuth variables:** Added FACEBOOK_APP_ID, FACEBOOK_APP_SECRET, and FACEBOOK_REDIRECT_URI for Instagram integration
+  - File: [env.example](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/env.example#L23-L28)
+
+**Verification:**
+
+- ✅ `pnpm run lint` — 0 errors, 0 warnings
+- ✅ `pnpm run typecheck` — 0 errors
+
+**Codebase Investigation Findings:**
+
+- LinkedIn integration exists and is available on Agency plan (confirmed in pricing-table.tsx)
+- Instagram integration exists but is not yet publicly announced (implementation complete)
+- All AI features (chat, inspire, thread writer) use OpenRouter, not Google Gemini
+- 48 migration files exist (0000 through 0047)
+- AI image generation uses Replicate's Nano Banana models (google/nano-banana-2, google/nano-banana-pro)
+- Instagram OAuth uses Facebook App ID (Meta for Developers)
+
+**Impact:**
+
+- ✅ Documentation now accurately reflects actual codebase implementation
+- ✅ Users will not be confused by missing environment variables
+- ✅ Correct feature availability information for each platform
+- ✅ Accurate migration count for developers
+
+**Next Steps:**
+
+- Consider publicly announcing Instagram integration when ready
+- Continue monitoring codebase for any other documentation discrepancies
+- Regularly review and update README.md after major feature changes
+
+---
+
 ## 2026-04-13: Feature Improvements Phase 5 — RTL/Arabic Hardening ✅
 
 **Summary:** Completed Phase 5 of the existing feature improvements plan. Implemented locale-aware date and number formatting across all dashboard pages and components to support Arabic and other RTL languages for MENA users.

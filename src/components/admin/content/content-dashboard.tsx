@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Bot, CheckCircle2, Clock, FileText, TrendingUp, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,6 +128,7 @@ export function ContentDashboard() {
   const [data, setData] = useState<ContentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const pathname = usePathname();
 
   const fetchData = async (pageNum: number) => {
     setLoading(true);
@@ -141,7 +143,7 @@ export function ContentDashboard() {
 
   useEffect(() => {
     fetchData(page);
-  }, [page]);
+  }, [page, pathname]);
 
   if (loading && !data) return <LoadingSkeleton />;
   if (!data) return null;

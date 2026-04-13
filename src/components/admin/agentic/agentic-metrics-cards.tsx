@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Activity, CheckCircle2, Zap, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -61,6 +62,7 @@ function LoadingSkeleton() {
 export function AgenticMetricsCards() {
   const [metrics, setMetrics] = useState<AgenticMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/agentic/metrics")
@@ -68,7 +70,7 @@ export function AgenticMetricsCards() {
       .then((json) => setMetrics(json.data ?? null))
       .catch(() => setMetrics(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   if (loading) return <LoadingSkeleton />;
   if (!metrics) return null;

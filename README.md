@@ -1,6 +1,6 @@
 # AstraPost
 
-> **AI-powered social media scheduling & content platform** — schedule tweets, threads, and posts on X (Twitter). Publish reliably via a background worker, track analytics, and generate content with AI. **LinkedIn and Instagram integration coming soon.**
+> **AI-powered social media scheduling & content platform** — schedule tweets, threads, and posts on X (Twitter). Publish reliably via a background worker, track analytics, and generate content with AI. **LinkedIn integration available on Agency plan.**
 
 [![CI](https://github.com/your-org/astrapost/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/astrapost/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -39,7 +39,7 @@
 
 ## Overview
 
-**AstraPost** is a production-ready social media management platform built for X (Twitter), with LinkedIn available on the Agency plan. It combines a polished Next.js 16 frontend with a Redis-backed BullMQ job queue for reliable publishing, encrypted credential storage, AI-assisted content writing (via OpenRouter + Google Gemini), AI image generation (via Replicate), and Stripe billing.
+**AstraPost** is a production-ready social media management platform built for X (Twitter), with LinkedIn available on the Agency plan. It combines a polished Next.js 16 frontend with a Redis-backed BullMQ job queue for reliable publishing, encrypted credential storage, AI-assisted content writing (via OpenRouter), AI image generation (via Replicate), and Stripe billing.
 
 It targets Arabic-speaking content creators and social media managers in the MENA region — filling the gap left by English-first tools like Buffer and Hootsuite — while being fully extensible for English-language markets.
 
@@ -62,9 +62,9 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **A/B Variant Generator**     | Generate 3 tweet angle variants (emotional/factual/question) for A/B testing (Pro/Agency)                                         |
 | **Reply Suggester**           | Paste a tweet URL; get 5 contextually-relevant reply options with tone control (Pro/Agency)                                       |
 | **Bio Optimizer**             | Generate 3 X bio variants under 160 chars optimized for a chosen goal (Pro/Agency)                                                |
-| **AI Image Generation**       | Generate images via Replicate (Flux models) directly from the composer                                                            |
+| **AI Image Generation**       | Generate images via Replicate (Nano Banana models) directly from the composer                                                     |
 | **AI Hashtag Generator**      | Language-aware, region-aware hashtag suggestions with inline chip UX (MENA priority)                                              |
-| **AI Inspiration**            | Content ideas and rephrase suggestions powered by Google Gemini                                                                   |
+| **AI Inspiration**            | Content ideas and rephrase suggestions powered by OpenRouter                                                                      |
 | **Tweet Inspiration**         | Import public tweets from X, adapt with AI or manually, bookmark for later                                                        |
 | **AI Generation History**     | Browse and reuse past AI-generated content                                                                                        |
 | **Viral Score**               | Real-time viral potential scoring for tweets as you compose                                                                       |
@@ -100,38 +100,37 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ## Tech Stack
 
-| Layer                     | Technology                                                                                                                                                                      |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Framework**             | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + [React 19](https://react.dev/)                                                                                      |
-| **Language**              | [TypeScript 5](https://www.typescriptlang.org/) (strict mode, `exactOptionalPropertyTypes`)                                                                                     |
-| **Database**              | [PostgreSQL 18](https://www.postgresql.org/) (`pgvector` image)                                                                                                                 |
-| **ORM**                   | [Drizzle ORM](https://orm.drizzle.team/)                                                                                                                                        |
-| **Auth**                  | [Better Auth](https://www.better-auth.com/) — Email/Password + X OAuth 2.0 + 2FA                                                                                                |
-| **Queue**                 | [BullMQ](https://bullmq.io/) + [Redis](https://redis.io/) (Alpine)                                                                                                              |
-| **Queue UI**              | [Bull Board](https://github.com/felixmosh/bull-board) — web-based queue monitoring                                                                                              |
-| **AI (Primary)**          | [OpenRouter](https://openrouter.ai/) via [`@openrouter/ai-sdk-provider`](https://www.npmjs.com/package/@openrouter/ai-sdk-provider) + [Vercel AI SDK 5](https://sdk.vercel.ai/) |
-| **AI (Chat/Inspiration)** | [Google Gemini](https://ai.google.dev/) via `@google/genai`                                                                                                                     |
-| **AI Image Generation**   | [Replicate](https://replicate.com/) — Flux / Nano Banana models                                                                                                                 |
-| **UI**                    | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Radix UI)                                                                                     |
-| **Charts**                | [Recharts](https://recharts.org/)                                                                                                                                               |
-| **Forms**                 | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)                                                                                                       |
-| **Date Picker**           | [react-day-picker v9](https://daypicker.dev/) + [date-fns v4](https://date-fns.org/)                                                                                            |
-| **Drag & Drop**           | [@dnd-kit/core](https://dndkit.com/)                                                                                                                                            |
-| **Mobile Gestures**       | [vaul](https://vaul.emilkowal.ski/) (swipe-to-close drawer)                                                                                                                     |
-| **Onboarding Tour**       | [driver.js](https://driverjs.com/)                                                                                                                                              |
-| **State**                 | [Zustand](https://zustand-demo.pmnd.rs/)                                                                                                                                        |
-| **Billing**               | [Stripe](https://stripe.com/)                                                                                                                                                   |
-| **Email**                 | [Resend](https://resend.com/) + [React Email](https://react.email/)                                                                                                             |
-| **Error Monitoring**      | [Sentry](https://sentry.io/) (`@sentry/nextjs`)                                                                                                                                 |
-| **Storage**               | Local filesystem (dev) / [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (production)                                                                                |
-| **PDF Export**            | [@react-pdf/renderer](https://react-pdf.org/)                                                                                                                                   |
-| **MDX Blog**              | [next-mdx-remote](https://github.com/hashicorp/next-mdx-remote)                                                                                                                 |
-| **Emoji Picker**          | [emoji-picker-react](https://github.com/ealush/emoji-picker-react)                                                                                                              |
-| **CSV Parsing**           | [papaparse](https://www.papaparse.com/)                                                                                                                                         |
-| **PWA**                   | [@ducanh2912/next-pwa](https://github.com/DuCanhGH/next-pwa)                                                                                                                    |
-| **Testing**               | [Vitest](https://vitest.dev/) + [Playwright](https://playwright.dev/)                                                                                                           |
-| **Package Manager**       | [pnpm](https://pnpm.io/)                                                                                                                                                        |
-| **Containerisation**      | [Docker Compose](https://docs.docker.com/compose/)                                                                                                                              |
+| Layer                   | Technology                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Framework**           | [Next.js 16](https://nextjs.org/) (App Router, Turbopack) + [React 19](https://react.dev/)                                                                                      |
+| **Language**            | [TypeScript 5](https://www.typescriptlang.org/) (strict mode, `exactOptionalPropertyTypes`)                                                                                     |
+| **Database**            | [PostgreSQL 18](https://www.postgresql.org/) (`pgvector` image)                                                                                                                 |
+| **ORM**                 | [Drizzle ORM](https://orm.drizzle.team/)                                                                                                                                        |
+| **Auth**                | [Better Auth](https://www.better-auth.com/) — Email/Password + X OAuth 2.0 + 2FA                                                                                                |
+| **Queue**               | [BullMQ](https://bullmq.io/) + [Redis](https://redis.io/) (Alpine)                                                                                                              |
+| **Queue UI**            | [Bull Board](https://github.com/felixmosh/bull-board) — web-based queue monitoring                                                                                              |
+| **AI (Primary)**        | [OpenRouter](https://openrouter.ai/) via [`@openrouter/ai-sdk-provider`](https://www.npmjs.com/package/@openrouter/ai-sdk-provider) + [Vercel AI SDK 5](https://sdk.vercel.ai/) |
+| **AI Image Generation** | [Replicate](https://replicate.com/) — Nano Banana models                                                                                                                        |
+| **UI**                  | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Radix UI)                                                                                     |
+| **Charts**              | [Recharts](https://recharts.org/)                                                                                                                                               |
+| **Forms**               | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)                                                                                                       |
+| **Date Picker**         | [react-day-picker v9](https://daypicker.dev/) + [date-fns v4](https://date-fns.org/)                                                                                            |
+| **Drag & Drop**         | [@dnd-kit/core](https://dndkit.com/)                                                                                                                                            |
+| **Mobile Gestures**     | [vaul](https://vaul.emilkowal.ski/) (swipe-to-close drawer)                                                                                                                     |
+| **Onboarding Tour**     | [driver.js](https://driverjs.com/)                                                                                                                                              |
+| **State**               | [Zustand](https://zustand-demo.pmnd.rs/)                                                                                                                                        |
+| **Billing**             | [Stripe](https://stripe.com/)                                                                                                                                                   |
+| **Email**               | [Resend](https://resend.com/) + [React Email](https://react.email/)                                                                                                             |
+| **Error Monitoring**    | [Sentry](https://sentry.io/) (`@sentry/nextjs`)                                                                                                                                 |
+| **Storage**             | Local filesystem (dev) / [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) (production)                                                                                |
+| **PDF Export**          | [@react-pdf/renderer](https://react-pdf.org/)                                                                                                                                   |
+| **MDX Blog**            | [next-mdx-remote](https://github.com/hashicorp/next-mdx-remote)                                                                                                                 |
+| **Emoji Picker**        | [emoji-picker-react](https://github.com/ealush/emoji-picker-react)                                                                                                              |
+| **CSV Parsing**         | [papaparse](https://www.papaparse.com/)                                                                                                                                         |
+| **PWA**                 | [@ducanh2912/next-pwa](https://github.com/DuCanhGH/next-pwa)                                                                                                                    |
+| **Testing**             | [Vitest](https://vitest.dev/) + [Playwright](https://playwright.dev/)                                                                                                           |
+| **Package Manager**     | [pnpm](https://pnpm.io/)                                                                                                                                                        |
+| **Containerisation**    | [Docker Compose](https://docs.docker.com/compose/)                                                                                                                              |
 
 ---
 
@@ -149,7 +148,7 @@ astrapost/
 │   ├── features/               # Feature implementation documentation
 │   └── technical/              # AI, X API, react-markdown, BetterAuth docs
 │
-├── drizzle/                    # Generated SQL migration files (0000–0038)
+├── drizzle/                    # Generated SQL migration files (0000–0047)
 │
 ├── scripts/                    # Operational scripts
 │   ├── worker.ts               # BullMQ worker entry point
@@ -402,13 +401,12 @@ Open **http://localhost:3000** in your browser.
 | `BETTER_AUTH_URL`                | ✅                               | Base URL of the app (e.g. `http://localhost:3000`)                                                                                                    |
 | `TWITTER_CLIENT_ID`              | ✅                               | X (Twitter) OAuth 2.0 Client ID                                                                                                                       |
 | `TWITTER_CLIENT_SECRET`          | ✅                               | X (Twitter) OAuth 2.0 Client Secret                                                                                                                   |
+| `FACEBOOK_APP_ID`                | ⚠️ Instagram only                | Facebook App ID for Instagram OAuth (required for Instagram integration)                                                                              |
 | `TOKEN_ENCRYPTION_KEYS`          | ✅                               | Comma-separated 32-byte keys (base64/hex). First key is primary.                                                                                      |
 | `NEXT_PUBLIC_APP_URL`            | ✅                               | Public URL of the app                                                                                                                                 |
 | `TWITTER_BEARER_TOKEN`           | ⚠️ Inspiration + Competitor only | Bearer token for importing public tweets and competitor analysis. Get from [developer.twitter.com](https://developer.twitter.com/en/portal/dashboard) |
 | `OPENROUTER_API_KEY`             | ⚠️ AI only                       | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                                                                           |
 | `OPENROUTER_MODEL`               | ⚠️ AI only                       | Default: `openai/gpt-4o`. Browse at [openrouter.ai/models](https://openrouter.ai/models)                                                              |
-| `GEMINI_API_KEY`                 | ⚠️ AI only                       | Google Gemini API key (for chat & inspiration features)                                                                                               |
-| `GOOGLE_AI_API_KEY`              | ⚠️ AI only                       | Alias for `GEMINI_API_KEY`                                                                                                                            |
 | `REPLICATE_API_TOKEN`            | ⚠️ AI Image only                 | Replicate token for AI image generation                                                                                                               |
 | `STRIPE_SECRET_KEY`              | ⚠️ Billing only                  | Stripe secret key                                                                                                                                     |
 | `STRIPE_WEBHOOK_SECRET`          | ⚠️ Billing only                  | Stripe webhook signing secret                                                                                                                         |

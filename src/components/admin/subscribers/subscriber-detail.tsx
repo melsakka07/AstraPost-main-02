@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -74,6 +74,7 @@ interface SubscriberDetailViewProps {
 
 export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [detail, setDetail] = useState<SubscriberDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
@@ -96,7 +97,7 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
 
   useEffect(() => {
     void fetchDetail();
-  }, [fetchDetail]);
+  }, [fetchDetail, pathname]);
 
   if (loading) {
     return (

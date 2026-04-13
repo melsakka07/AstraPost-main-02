@@ -18,12 +18,8 @@
       "Bash(git add:*)",
       "Bash(git log:*)"
     ],
-    "additionalDirectories": [
-      "C:\\c\\Projects\\nextjs-better-auth-postgresql-starter-kit"
-    ]
+    "additionalDirectories": ["C:\\c\\Projects\\nextjs-better-auth-postgresql-starter-kit"]
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": [
-    "context7"
-  ]
+  "enabledMcpjsonServers": ["context7"]
 }

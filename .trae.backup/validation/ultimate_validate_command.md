@@ -31,6 +31,7 @@ Analyze this codebase deeply and create `validation/validate.md` that comprehens
 Explore the codebase to understand:
 
 **What validation tools already exist:**
+
 - Linting config: `.eslintrc*`, `.pylintrc`, `ruff.toml`, etc.
 - Type checking: `tsconfig.json`, `mypy.ini`, etc.
 - Style/formatting: `.prettierrc*`, `black`, `.editorconfig`
@@ -38,12 +39,14 @@ Explore the codebase to understand:
 - Package manager scripts: `package.json` scripts, `Makefile`, `pyproject.toml` tools
 
 **What the application does:**
+
 - Frontend: Routes, pages, components, user flows
 - Backend: API endpoints, authentication, database operations
 - Database: Schema, migrations, models
 - Infrastructure: Docker services, dependencies
 
 **How things are currently tested:**
+
 - Existing test files and patterns
 - CI/CD workflows (`.github/workflows/`, etc.)
 - Test commands in package.json or scripts
@@ -53,15 +56,19 @@ Explore the codebase to understand:
 Create `.claude/commands/validate.md` with these phases (ONLY include phases that exist in the codebase):
 
 ### Phase 1: Linting
+
 Run the actual linter commands found in the project (e.g., `npm run lint`, `ruff check`, etc.)
 
 ### Phase 2: Type Checking
+
 Run the actual type checker commands found (e.g., `tsc --noEmit`, `mypy .`, etc.)
 
 ### Phase 3: Style Checking
+
 Run the actual formatter check commands found (e.g., `prettier --check`, `black --check`, etc.)
 
 ### Phase 4: Unit Testing
+
 Run the actual test commands found (e.g., `npm test`, `pytest`, etc.)
 
 ### Phase 5: End-to-End Testing (BE CREATIVE AND COMPREHENSIVE)
@@ -86,11 +93,13 @@ Test COMPLETE user workflows from documentation, not just internal APIs.
    - Test like a user would actually use the application in production
 
 **Examples of good vs. bad E2E tests:**
+
 - ❌ Bad: Tests that `/clone` command stores data in database
 - ✅ Good: Clone repo → Load commands → Execute command → Verify git commit created
 - ✅ Great: Create GitHub issue → Bot receives webhook → Analyzes issue → Creates PR → Comments on issue with PR link
 
 **Approach:**
+
 - Use Docker for isolated, reproducible testing
 - Create test data/repos/issues as needed
 - Verify outcomes in external systems (GitHub, database, file system)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { AlertTriangle, Ban, Clock, FileText, RefreshCw, Trash2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
 
   const inFlightRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -139,7 +141,7 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
       }
       inFlightRef.current = false;
     };
-  }, [mounted, fetchActivities]);
+  }, [mounted, fetchActivities, pathname]);
 
   if (!mounted) {
     return null;

@@ -10,6 +10,7 @@ type: project
 **Status:** Complete
 
 ### Task 1: Audit Log Viewer Page
+
 - **File:** `src/app/admin/audit/page.tsx`
 - **Icon:** FileText (updated from Shield)
 - **Title:** "Audit Log"
@@ -25,6 +26,7 @@ type: project
   - Responsive design
 
 ### Task 2: Impersonation Management Page
+
 - **File:** `src/app/admin/impersonation/page.tsx`
 - **Icon:** ShieldCheck
 - **Title:** "Impersonation Sessions"
@@ -40,6 +42,7 @@ type: project
   - Dark mode support
 
 ### Task 3: Sidebar Navigation
+
 - **File:** `src/components/admin/sidebar.tsx`
 - **Status:** Already integrated
 - **Entries:**
@@ -47,6 +50,7 @@ type: project
   - `/admin/impersonation` with ShieldCheck icon (in Users section)
 
 ### Task 4: Impersonation Banner in Dashboard Layout
+
 - **File:** `src/app/dashboard/layout.tsx`
 - **Status:** Already integrated
 - **Component:** ImpersonationBanner (from `src/components/ui/impersonation-banner.tsx`)
@@ -58,24 +62,30 @@ type: project
   - Works with dark mode
 
 ### Components Already Built
+
 All required components already existed in the codebase:
+
 1. `src/components/admin/audit/audit-log-table.tsx` — Full filter + table + pagination + export
 2. `src/components/admin/impersonation/impersonation-table.tsx` — Full session management
 3. `src/components/ui/impersonation-banner.tsx` — Integrated in dashboard layout
 4. `src/components/admin/admin-page-wrapper.tsx` — Page layout wrapper
 
 ### Changes Made
+
 Only updated page metadata and icons to match spec:
+
 1. Audit page: Changed icon from Shield → FileText, updated description
 2. Impersonation page: Changed icon from UserCheck → ShieldCheck, updated title and description
 
 ### API Routes (Backend)
+
 - `GET /api/admin/audit?page=1&limit=25&action=&search=&fromDate=&toDate=`
 - `GET /api/admin/audit/export?action=&search=&fromDate=&toDate=`
 - `DELETE /api/admin/impersonation/{sessionId}`
 - All routes require admin auth (handled by requireAdmin middleware)
 
 ### Styling Notes
+
 - Uses shadcn/ui components throughout
 - Dark mode: All components use Tailwind `dark:` utilities
 - Color tokens: bg-background, text-foreground, etc.
@@ -83,10 +93,12 @@ Only updated page metadata and icons to match spec:
 - Action badges use contextual colors (red for ban, green for unban, etc.)
 
 ### Testing Required
+
 - `pnpm run check` (lint + typecheck)
 - `pnpm test` (unit tests)
 - No new unit tests needed for these pages (UI-heavy, existing components)
 
 ### Files Modified
+
 1. `src/app/admin/audit/page.tsx` — Icon + metadata updates
 2. `src/app/admin/impersonation/page.tsx` — Icon + title/description updates

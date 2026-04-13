@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -52,6 +53,7 @@ export function PromoCodesTable() {
   const [editTarget, setEditTarget] = useState<PromoCode | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PromoCode | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const pathname = usePathname();
 
   const fetchCodes = useCallback(async () => {
     setLoading(true);
@@ -68,7 +70,7 @@ export function PromoCodesTable() {
 
   useEffect(() => {
     fetchCodes();
-  }, [fetchCodes]);
+  }, [fetchCodes, pathname]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

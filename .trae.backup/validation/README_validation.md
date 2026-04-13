@@ -5,6 +5,7 @@
 ## Quick Start
 
 ### 1. Generate Your Validation Command
+
 ```bash
 /ultimate_validate_command
 ```
@@ -12,6 +13,7 @@
 This analyzes your codebase and creates `validation/validate.md` tailored to your project.
 
 ### 2. Run Complete Validation
+
 ```bash
 /validate
 ```
@@ -21,12 +23,14 @@ This runs all validation: linting, type checking, style checking, unit tests, an
 ## What It Does
 
 ### Analyzes Your Codebase
+
 - Detects what validation tools you already have (ESLint, ruff, mypy, prettier, etc.)
 - Finds your test setup (pytest, jest, Playwright, etc.)
 - Understands your application architecture (routes, endpoints, database schema)
 - Examines existing test patterns and CI/CD configs
 
 ### Generates validate.md
+
 Creates a validation command with phases:
 
 1. **Linting** - Using your configured linter
@@ -40,7 +44,9 @@ Creates a validation command with phases:
 The generated E2E tests are designed to be SO comprehensive that you don't need to manually test.
 
 ### For Frontend Apps
+
 Uses Playwright to:
+
 - Test every user flow (registration, login, CRUD operations)
 - Interact with forms, buttons, navigation
 - Verify data persistence and UI updates
@@ -48,7 +54,9 @@ Uses Playwright to:
 - Cover all routes and features
 
 ### For Backend Apps
+
 Uses Docker and custom scripts to:
+
 - Spin up full stack in containers
 - Test all API endpoints with real requests
 - Interact directly with database to verify data
@@ -56,6 +64,7 @@ Uses Docker and custom scripts to:
 - Create test utilities or API endpoints if needed
 
 ### For Full-Stack Apps
+
 - Tests complete flows from UI through API to database
 - Verifies data consistency across all layers
 - Simulates real user behavior end-to-end
@@ -84,12 +93,14 @@ For a React + FastAPI app, the generated command might:
 ## How It's Different
 
 Traditional testing:
+
 - ❌ Unit tests in isolation
 - ❌ Manual E2E testing
 - ❌ Gaps in coverage
 - ❌ Time-consuming
 
 This approach:
+
 - ✅ Automated everything
 - ✅ Tests like a real user
 - ✅ Comprehensive E2E coverage

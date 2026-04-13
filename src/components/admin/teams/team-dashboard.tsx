@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Clock, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -154,6 +155,7 @@ export function TeamDashboard() {
   const [activeTab, setActiveTab] = useState<"teams" | "invitations">("teams");
   const [teamsPage, setTeamsPage] = useState(1);
   const [invitationsPage, setInvitationsPage] = useState(1);
+  const pathname = usePathname();
 
   const fetchData = useCallback(
     async (tab?: string, p?: number) => {
@@ -182,7 +184,7 @@ export function TeamDashboard() {
 
   useEffect(() => {
     void fetchData();
-  }, [fetchData]);
+  }, [fetchData, pathname]);
 
   // Reset page when switching tabs
   const handleTabChange = (value: string) => {

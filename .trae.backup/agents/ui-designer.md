@@ -15,6 +15,7 @@ Focus on:
   Build atmosphere and depth. Avoid flat, solid colors by default. Instead, layer CSS gradients, incorporate subtle geometric patterns, or introduce contextual visual effects that reinforce the overall theme.
 
 **Actively avoid generic AI-generated aesthetics**, including:
+
 - Overused font families (e.g., Inter, Roboto, Arial, system UI fonts)
 - Clichéd color schemes (especially purple-to-blue gradients on white)
 - Predictable layouts and cookie-cutter component patterns

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ChevronDown, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export function AgenticSessionsTable() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedSession, setSelectedSession] = useState<AgenticSession | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/agentic/sessions")
@@ -57,7 +59,7 @@ export function AgenticSessionsTable() {
       .then((json) => setSessions(json.data ?? []))
       .catch(() => setSessions([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   const filteredSessions = sessions.filter((session) =>
     session.topic.toLowerCase().includes(search.toLowerCase())

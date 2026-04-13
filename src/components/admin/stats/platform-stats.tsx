@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Activity, Bot, CheckCircle2, FileText, Users, XCircle, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -71,13 +72,14 @@ function LoadingSkeleton() {
 export function PlatformStats() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/stats")
       .then((r) => r.json())
       .then((json) => setStats(json.data ?? null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   if (loading) return <LoadingSkeleton />;
   if (!stats) return null;

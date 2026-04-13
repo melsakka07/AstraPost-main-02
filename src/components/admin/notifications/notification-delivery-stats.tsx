@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Activity, TrendingUp, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,6 +61,7 @@ function LoadingSkeleton() {
 export function NotificationDeliveryStats() {
   const [stats, setStats] = useState<DeliveryStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/notifications/stats")
@@ -67,7 +69,7 @@ export function NotificationDeliveryStats() {
       .then((json) => setStats(json.data ?? null))
       .catch(() => setStats(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   if (loading) return <LoadingSkeleton />;
   if (!stats) return null;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Gift, Users, CreditCard, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -114,6 +115,7 @@ export function ReferralDashboard() {
   const [data, setData] = useState<ReferralsResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const pathname = usePathname();
 
   const fetchData = useCallback(async (currentPage: number) => {
     setLoading(true);
@@ -126,8 +128,8 @@ export function ReferralDashboard() {
       if (!res.ok) throw new Error("Failed to fetch referral data");
       const json: ReferralsResponse = await res.json();
       setData(json.data);
-    } catch (error) {
-      console.error("Failed to load referral data:", error);
+    } catch {
+      // Error handled by empty state
     } finally {
       setLoading(false);
     }
@@ -135,7 +137,7 @@ export function ReferralDashboard() {
 
   useEffect(() => {
     void fetchData(page);
-  }, [fetchData, page]);
+  }, [fetchData, page, pathname]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);

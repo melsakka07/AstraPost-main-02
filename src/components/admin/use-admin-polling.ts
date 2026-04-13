@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 
 interface UseAdminPollingOptions<T> {
   fetchFn: (signal: AbortSignal) => Promise<T>;
@@ -34,11 +35,12 @@ export function useAdminPolling<T>({
   const inFlightRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mountedRef = useRef(false);
 
   const fetchFnRef = useRef(fetchFn);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
+
+  const pathname = usePathname();
 
   useEffect(() => {
     fetchFnRef.current = fetchFn;
@@ -47,7 +49,7 @@ export function useAdminPolling<T>({
   });
 
   const executeFetch = useCallback(async () => {
-    if (inFlightRef.current || !mountedRef.current) return;
+    if (inFlightRef.current) return;
 
     inFlightRef.current = true;
     const controller = new AbortController();
@@ -57,13 +59,13 @@ export function useAdminPolling<T>({
 
     try {
       const result = await fetchFnRef.current(controller.signal);
-      if (!inFlightRef.current || !mountedRef.current) return;
+      if (!inFlightRef.current) return;
 
       setData(result);
       setError(null);
       onSuccessRef.current?.(result);
     } catch (err) {
-      if (!inFlightRef.current || !mountedRef.current) return;
+      if (!inFlightRef.current) return;
 
       if ((err as Error)?.name === "AbortError") return;
 
@@ -86,14 +88,10 @@ export function useAdminPolling<T>({
   }, [executeFetch]);
 
   useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!enabled) return;
+
+    setLoading(true);
+    setError(null);
 
     void executeFetch();
 
@@ -108,7 +106,7 @@ export function useAdminPolling<T>({
         abortControllerRef.current.abort();
       }
     };
-  }, [enabled, intervalMs, executeFetch]);
+  }, [enabled, intervalMs, executeFetch, pathname]);
 
   return { data, loading, error, refresh };
 }

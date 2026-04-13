@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Trash2, Edit2, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -48,6 +49,7 @@ function LoadingSkeleton() {
 export function NotificationHistoryTable() {
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin/notifications")
@@ -55,7 +57,7 @@ export function NotificationHistoryTable() {
       .then((json) => setNotifications(json.data ?? []))
       .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [pathname]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this notification?")) return;

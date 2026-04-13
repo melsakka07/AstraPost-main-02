@@ -15,13 +15,13 @@ paths:
 
 ## AstraPost Domain Splits
 
-| Agent | File Scope |
-|-------|-----------|
-| backend-dev | `src/app/api/**/*.ts`, `src/lib/services/**/*.ts`, `src/lib/queue/**/*.ts` |
-| frontend-dev | `src/components/**/*.tsx`, `src/app/dashboard/**/*.tsx`, `src/app/(marketing)/**/*.tsx` |
+| Agent         | File Scope                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------ |
+| backend-dev   | `src/app/api/**/*.ts`, `src/lib/services/**/*.ts`, `src/lib/queue/**/*.ts`                             |
+| frontend-dev  | `src/components/**/*.tsx`, `src/app/dashboard/**/*.tsx`, `src/app/(marketing)/**/*.tsx`                |
 | ai-specialist | `src/app/api/ai/**/*.ts`, `src/app/api/chat/**/*.ts`, `src/lib/ai/**/*.ts`, `src/lib/services/ai-*.ts` |
-| db-migrator | `src/lib/schema.ts`, `src/lib/db.ts`, `drizzle/**/*` |
-| test-runner | `src/**/*.test.ts`, `vitest.config.ts` |
+| db-migrator   | `src/lib/schema.ts`, `src/lib/db.ts`, `drizzle/**/*`                                                   |
+| test-runner   | `src/**/*.test.ts`, `vitest.config.ts`                                                                 |
 
 ## Patterns
 
