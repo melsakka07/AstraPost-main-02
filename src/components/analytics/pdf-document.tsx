@@ -109,7 +109,13 @@ export interface AnalyticsPdfData {
   }>;
 }
 
-export const AnalyticsPdfDocument = ({ data }: { data: AnalyticsPdfData }) => (
+export const AnalyticsPdfDocument = ({
+  data,
+  userLocale = "en",
+}: {
+  data: AnalyticsPdfData;
+  userLocale?: string;
+}) => (
   <Document>
     <Page size="A4" style={styles.page}>
       {/* Header */}
@@ -118,23 +124,29 @@ export const AnalyticsPdfDocument = ({ data }: { data: AnalyticsPdfData }) => (
           <Text style={styles.title}>AstraPost Analytics</Text>
           <Text style={styles.subtitle}>Performance Report ({data.range})</Text>
         </View>
-        <Text style={styles.subtitle}>{new Date().toLocaleDateString()}</Text>
+        <Text style={styles.subtitle}>{new Date().toLocaleDateString(userLocale)}</Text>
       </View>
 
       {/* Summary Metrics */}
       <View style={styles.metricsContainer}>
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{data.totals.impressions.toLocaleString()}</Text>
+          <Text style={styles.metricValue}>
+            {data.totals.impressions.toLocaleString(userLocale)}
+          </Text>
           <Text style={styles.metricLabel}>Total Impressions</Text>
         </View>
         <View style={styles.metricCard}>
           <Text style={styles.metricValue}>
-            {(data.totals.likes + data.totals.retweets + data.totals.replies).toLocaleString()}
+            {(data.totals.likes + data.totals.retweets + data.totals.replies).toLocaleString(
+              userLocale
+            )}
           </Text>
           <Text style={styles.metricLabel}>Total Engagements</Text>
         </View>
         <View style={styles.metricCard}>
-          <Text style={styles.metricValue}>{data.totals.linkClicks.toLocaleString()}</Text>
+          <Text style={styles.metricValue}>
+            {data.totals.linkClicks.toLocaleString(userLocale)}
+          </Text>
           <Text style={styles.metricLabel}>Link Clicks</Text>
         </View>
       </View>
@@ -150,9 +162,13 @@ export const AnalyticsPdfDocument = ({ data }: { data: AnalyticsPdfData }) => (
           borderBottomColor: "#E5E7EB",
         }}
       >
-        <Text style={styles.tweetStat}>Likes: {data.totals.likes.toLocaleString()}</Text>
-        <Text style={styles.tweetStat}>Retweets: {data.totals.retweets.toLocaleString()}</Text>
-        <Text style={styles.tweetStat}>Replies: {data.totals.replies.toLocaleString()}</Text>
+        <Text style={styles.tweetStat}>Likes: {data.totals.likes.toLocaleString(userLocale)}</Text>
+        <Text style={styles.tweetStat}>
+          Retweets: {data.totals.retweets.toLocaleString(userLocale)}
+        </Text>
+        <Text style={styles.tweetStat}>
+          Replies: {data.totals.replies.toLocaleString(userLocale)}
+        </Text>
       </View>
 
       {/* Top Tweets */}
@@ -162,11 +178,11 @@ export const AnalyticsPdfDocument = ({ data }: { data: AnalyticsPdfData }) => (
         <View key={i} style={styles.tweetRow}>
           <Text style={styles.tweetContent}>{tweet.content}</Text>
           <View style={styles.tweetMeta}>
-            <Text style={styles.tweetStat}>👁 {tweet.impressions.toLocaleString()}</Text>
-            <Text style={styles.tweetStat}>❤️ {tweet.likes.toLocaleString()}</Text>
-            <Text style={styles.tweetStat}>🔁 {tweet.retweets.toLocaleString()}</Text>
+            <Text style={styles.tweetStat}>👁 {tweet.impressions.toLocaleString(userLocale)}</Text>
+            <Text style={styles.tweetStat}>❤️ {tweet.likes.toLocaleString(userLocale)}</Text>
+            <Text style={styles.tweetStat}>🔁 {tweet.retweets.toLocaleString(userLocale)}</Text>
             <Text style={styles.tweetStat}>
-              📅 {new Date(tweet.fetchedAt).toLocaleDateString()}
+              📅 {new Date(tweet.fetchedAt).toLocaleDateString(userLocale)}
             </Text>
           </View>
         </View>

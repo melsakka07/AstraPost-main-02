@@ -14,6 +14,11 @@ const AccountSwitcher = dynamic(
   { ssr: false }
 );
 
+const LanguageSwitcher = dynamic(
+  () => import("@/components/dashboard/language-switcher").then((m) => m.LanguageSwitcher),
+  { ssr: false }
+);
+
 const NotificationBell = dynamic(
   () => import("@/components/dashboard/notification-bell").then((m) => m.NotificationBell),
   { ssr: false }
@@ -60,6 +65,7 @@ export function DashboardHeader({ user, currentTeamId, memberships }: DashboardH
 
       <AccountSwitcher user={user} currentTeamId={currentTeamId} teams={memberships} />
       <div className="flex flex-1 items-center justify-end gap-x-3 lg:gap-x-6">
+        <LanguageSwitcher />
         <NotificationBell />
         <div className="bg-border hidden h-6 w-px lg:block" aria-hidden="true" />
         <UserProfile user={user} />

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Mic, Trash2, Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,12 +28,17 @@ interface VoiceProfile {
   doAndDonts: string[];
 }
 
-export function VoiceProfileForm() {
+interface VoiceProfileFormProps {
+  userPlan?: string;
+}
+
+export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
   const [samples, setSamples] = useState<string[]>(["", "", ""]);
   const [profile, setProfile] = useState<VoiceProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { openWithContext } = useUpgradeModal();
+  const isFree = userPlan === "free";
 
   useEffect(() => {
     fetchProfile();
@@ -149,101 +155,112 @@ export function VoiceProfileForm() {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {profile ? (
-          <div className="space-y-4">
-            <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
-              <div className="flex items-start justify-between">
-                <h3 className="text-muted-foreground text-sm font-semibold uppercase">
-                  Your Voice Analysis
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDelete}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Reset Profile
-                </Button>
-              </div>
+      <CardContent>
+        <BlurredOverlay
+          isLocked={isFree}
+          title="Voice Profile is a Pro feature"
+          description="Upgrade to Pro to create your custom AI voice profile."
+        >
+          <div className="space-y-6">
+            {profile ? (
+              <div className="space-y-4">
+                <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
+                  <div className="flex items-start justify-between">
+                    <h3 className="text-muted-foreground text-sm font-semibold uppercase">
+                      Your Voice Analysis
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleDelete}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Reset Profile
+                    </Button>
+                  </div>
 
-              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-                <div>
-                  <span className="text-foreground font-medium">Tone:</span>
-                  <p className="text-muted-foreground">{profile.tone}</p>
+                  <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                    <div>
+                      <span className="text-foreground font-medium">Tone:</span>
+                      <p className="text-muted-foreground">{profile.tone}</p>
+                    </div>
+                    <div>
+                      <span className="text-foreground font-medium">Structure:</span>
+                      <p className="text-muted-foreground">{profile.sentenceStructure}</p>
+                    </div>
+                    <div>
+                      <span className="text-foreground font-medium">Vocabulary:</span>
+                      <p className="text-muted-foreground">{profile.vocabularyLevel}</p>
+                    </div>
+                    <div>
+                      <span className="text-foreground font-medium">Emojis:</span>
+                      <p className="text-muted-foreground">{profile.emojiUsage}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <span className="text-foreground text-sm font-medium">Key Style Rules:</span>
+                    <ul className="text-muted-foreground mt-1 list-inside list-disc space-y-1 text-sm">
+                      {profile.doAndDonts.map((rule, i) => (
+                        <li key={i}>{rule}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-foreground font-medium">Structure:</span>
-                  <p className="text-muted-foreground">{profile.sentenceStructure}</p>
-                </div>
-                <div>
-                  <span className="text-foreground font-medium">Vocabulary:</span>
-                  <p className="text-muted-foreground">{profile.vocabularyLevel}</p>
-                </div>
-                <div>
-                  <span className="text-foreground font-medium">Emojis:</span>
-                  <p className="text-muted-foreground">{profile.emojiUsage}</p>
+
+                <div className="flex items-start gap-3 rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    Your Voice Profile is active! All AI-generated content (threads, hooks,
+                    rewrites) will now automatically match this style.
+                  </p>
                 </div>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="mb-4 flex items-start gap-3 rounded-md bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    Pro Feature: Paste 3-5 of your best-performing tweets below to create your
+                    unique voice profile.
+                  </p>
+                </div>
 
-              <div className="pt-2">
-                <span className="text-foreground text-sm font-medium">Key Style Rules:</span>
-                <ul className="text-muted-foreground mt-1 list-inside list-disc space-y-1 text-sm">
-                  {profile.doAndDonts.map((rule, i) => (
-                    <li key={i}>{rule}</li>
+                <div className="space-y-3">
+                  {samples.map((sample, i) => (
+                    <div key={i} className="space-y-1">
+                      <Label
+                        htmlFor={`sample-tweet-${i}`}
+                        className="text-muted-foreground text-xs"
+                      >
+                        Sample Tweet {i + 1}
+                      </Label>
+                      <Textarea
+                        id={`sample-tweet-${i}`}
+                        value={sample}
+                        onChange={(e) => updateSample(i, e.target.value)}
+                        placeholder="Paste one of your tweets here..."
+                        className="min-h-[80px] resize-none"
+                      />
+                    </div>
                   ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>
-                Your Voice Profile is active! All AI-generated content (threads, hooks, rewrites)
-                will now automatically match this style.
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="mb-4 flex items-start gap-3 rounded-md bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <p>
-                Pro Feature: Paste 3-5 of your best-performing tweets below to create your unique
-                voice profile.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {samples.map((sample, i) => (
-                <div key={i} className="space-y-1">
-                  <Label htmlFor={`sample-tweet-${i}`} className="text-muted-foreground text-xs">
-                    Sample Tweet {i + 1}
-                  </Label>
-                  <Textarea
-                    id={`sample-tweet-${i}`}
-                    value={sample}
-                    onChange={(e) => updateSample(i, e.target.value)}
-                    placeholder="Paste one of your tweets here..."
-                    className="min-h-[80px] resize-none"
-                  />
                 </div>
-              ))}
-            </div>
 
-            {samples.length < 5 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={addSampleField}
-                className="w-full border border-dashed"
-              >
-                + Add another sample
-              </Button>
+                {samples.length < 5 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={addSampleField}
+                    className="w-full border border-dashed"
+                  >
+                    + Add another sample
+                  </Button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </BlurredOverlay>
       </CardContent>
 
       {!profile && (

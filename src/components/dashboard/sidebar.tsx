@@ -28,6 +28,7 @@ import {
   Share2,
   ChevronDown,
   Wand2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -137,9 +138,16 @@ interface CollapsibleSectionProps {
   pathname: string;
   onNavigate?: () => void;
   isMobile: boolean;
+  userPlan?: string;
 }
 
-function CollapsibleSection({ section, pathname, onNavigate, isMobile }: CollapsibleSectionProps) {
+function CollapsibleSection({
+  section,
+  pathname,
+  onNavigate,
+  isMobile,
+  userPlan = "free",
+}: CollapsibleSectionProps) {
   const hasActiveChild = section.items.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
@@ -191,7 +199,7 @@ function CollapsibleSection({ section, pathname, onNavigate, isMobile }: Collaps
         )}
       >
         {section.items.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.href}
@@ -215,14 +223,25 @@ function CollapsibleSection({ section, pathname, onNavigate, isMobile }: Collaps
                   New
                 </Badge>
               )}
-              {item.isPro && !item.isNew && (
-                <Badge
-                  variant="outline"
-                  className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
-                >
-                  Pro
-                </Badge>
-              )}
+              {item.isPro &&
+                !item.isNew &&
+                (userPlan === "free" ? (
+                  <Link href="/pricing" onClick={(e) => e.stopPropagation()} className="ms-auto">
+                    <Badge
+                      variant="outline"
+                      className="border-primary/30 text-primary hover:bg-primary/10 h-4 cursor-pointer px-1.5 py-0 text-[10px]"
+                    >
+                      Pro
+                    </Badge>
+                  </Link>
+                ) : (
+                  <Badge
+                    variant="outline"
+                    className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
+                  >
+                    Pro
+                  </Badge>
+                ))}
             </Link>
           );
         })}
@@ -232,6 +251,12 @@ function CollapsibleSection({ section, pathname, onNavigate, isMobile }: Collaps
 }
 
 // ── SidebarContent ────────────────────────────────────────────────────────────
+
+interface ImageQuota {
+  used: number;
+  limit: number;
+  remaining: number;
+}
 
 interface SidebarContentProps {
   pathname: string;
@@ -243,6 +268,8 @@ interface SidebarContentProps {
   user?: { name: string; image: string | null };
   /** Show admin-only nav items */
   isAdmin?: boolean;
+  /** User plan for Pro badge link logic */
+  userPlan?: string;
 }
 
 function SidebarContent({
@@ -253,13 +280,39 @@ function SidebarContent({
   user,
   referralsEnabled = true,
   isAdmin = false,
+  userPlan = "free",
 }: SidebarContentProps & { referralsEnabled?: boolean }) {
+  const [imageQuota, setImageQuota] = useState<ImageQuota | null>(null);
+
+  useEffect(() => {
+    async function fetchImageQuota() {
+      try {
+        const res = await fetch("/api/ai/image/quota");
+        if (res.ok) {
+          const data = await res.json();
+          setImageQuota({ used: data.used, limit: data.limit, remaining: data.remainingImages });
+        }
+      } catch (e) {
+        console.error("Failed to fetch image quota:", e);
+      }
+    }
+    fetchImageQuota();
+  }, []);
+
   const aiProgress =
     aiUsage && typeof aiUsage.limit === "number" && aiUsage.limit > 0
       ? Math.min(100, Math.round((aiUsage.used / aiUsage.limit) * 100))
       : 0;
 
   const aiProgressLabel = aiUsage && aiUsage.limit === null ? "Unlimited" : `${aiProgress}%`;
+
+  const imageProgress =
+    imageQuota && typeof imageQuota.limit === "number" && imageQuota.limit > 0
+      ? Math.min(100, Math.round((imageQuota.used / imageQuota.limit) * 100))
+      : 0;
+
+  const imageProgressLabel =
+    imageQuota && imageQuota.limit === -1 ? "Unlimited" : `${imageProgress}%`;
 
   const linkPy = isMobile ? "py-3" : "py-2.5"; // M3
 
@@ -312,7 +365,7 @@ function SidebarContent({
       {/* Brand */}
       <Link
         href="/"
-        className="border-border flex h-16 shrink-0 items-center gap-2 border-b px-6 transition-opacity hover:opacity-80"
+        className="border-border flex h-16 shrink-0 items-center gap-2 border-b px-6 transition-opacity hover:opacity-80 rtl:flex-row-reverse"
         aria-label="Go to AstraPost home"
       >
         <Rocket className="text-primary h-6 w-6" />
@@ -327,7 +380,7 @@ function SidebarContent({
               // Overview — no label, always visible, no collapse
               <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const isActive = pathname === item.href;
+                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                   return (
                     <Link
                       key={item.href}
@@ -357,6 +410,7 @@ function SidebarContent({
                 pathname={pathname}
                 {...(onNavigate !== undefined && { onNavigate })}
                 isMobile={isMobile}
+                userPlan={userPlan}
               />
             ) : (
               // Regular section with label — always expanded
@@ -366,7 +420,7 @@ function SidebarContent({
                 </p>
                 <div className="space-y-0.5">
                   {section.items.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                     return (
                       <Link
                         key={item.href}
@@ -385,14 +439,28 @@ function SidebarContent({
                       >
                         <item.icon className="h-4.5 w-4.5 shrink-0" />
                         {item.label}
-                        {item.isPro && (
-                          <Badge
-                            variant="outline"
-                            className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
-                          >
-                            Pro
-                          </Badge>
-                        )}
+                        {item.isPro &&
+                          (userPlan === "free" ? (
+                            <Link
+                              href="/pricing"
+                              onClick={(e) => e.stopPropagation()}
+                              className="ms-auto"
+                            >
+                              <Badge
+                                variant="outline"
+                                className="border-primary/30 text-primary hover:bg-primary/10 h-4 cursor-pointer px-1.5 py-0 text-[10px]"
+                              >
+                                Pro
+                              </Badge>
+                            </Link>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
+                            >
+                              Pro
+                            </Badge>
+                          ))}
                       </Link>
                     );
                   })}
@@ -418,7 +486,7 @@ function SidebarContent({
         </div>
       </nav>
 
-      {/* Bottom: AI credits + sign out */}
+      {/* Bottom: AI credits + image quota + sign out */}
       <div className="border-border shrink-0 space-y-3 border-t p-4">
         <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
           {aiUsage ? (
@@ -438,6 +506,35 @@ function SidebarContent({
             <>
               <div className="flex items-center justify-between">
                 <Skeleton className="h-3.5 w-16" />
+                <Skeleton className="h-3.5 w-8" />
+              </div>
+              <Skeleton className="h-1.5 w-full" />
+              <Skeleton className="h-3 w-28" />
+            </>
+          )}
+        </div>
+
+        <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
+          {imageQuota ? (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <ImageIcon className="h-3 w-3" />
+                  <span className="text-foreground text-xs font-medium">Images</span>
+                </div>
+                <span className="text-muted-foreground text-xs">{imageProgressLabel}</span>
+              </div>
+              <Progress value={imageProgress} className="h-1.5" />
+              <p className="text-muted-foreground text-xs">
+                {typeof imageQuota.limit === "number" && imageQuota.limit !== -1
+                  ? `${imageQuota.used}/${imageQuota.limit} used this month`
+                  : `${imageQuota.used} used this month`}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3.5 w-12" />
                 <Skeleton className="h-3.5 w-8" />
               </div>
               <Skeleton className="h-1.5 w-full" />
@@ -470,9 +567,17 @@ interface SidebarProps {
   referralsEnabled?: boolean;
   /** Show admin-only nav items */
   isAdmin?: boolean;
+  /** User plan for Pro badge link logic */
+  userPlan?: string;
 }
 
-export function Sidebar({ aiUsage, user, referralsEnabled = true, isAdmin = false }: SidebarProps) {
+export function Sidebar({
+  aiUsage,
+  user,
+  referralsEnabled = true,
+  isAdmin = false,
+  userPlan = "free",
+}: SidebarProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [sheetSide, setSheetSide] = useState<"left" | "right">("left");
@@ -506,6 +611,7 @@ export function Sidebar({ aiUsage, user, referralsEnabled = true, isAdmin = fals
           isMobile={false}
           referralsEnabled={referralsEnabled}
           isAdmin={isAdmin}
+          userPlan={userPlan}
         />
       </div>
 
@@ -532,6 +638,7 @@ export function Sidebar({ aiUsage, user, referralsEnabled = true, isAdmin = fals
               isMobile={true}
               referralsEnabled={referralsEnabled}
               isAdmin={isAdmin}
+              userPlan={userPlan}
               {...(user !== undefined && { user })}
             />
           </DrawerPrimitive.Content>

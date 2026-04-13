@@ -89,10 +89,10 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
   },
   pro_annual: {
     postsPerMonth: Infinity,
-    aiGenerationsPerMonth: 100,
+    aiGenerationsPerMonth: 150,
     aiImagesPerMonth: 50,
     availableImageModels: ["nano-banana-2", "nano-banana-pro", "nano-banana"],
-    maxXAccounts: 3,
+    maxXAccounts: 4,
     canUseAi: true,
     canScheduleThreads: true,
     canUploadVideoGif: true,

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface ViralScoreBadgeProps {
   content: string;
+  userPlan?: string;
 }
 
 type BadgeState = "idle" | "loading" | "restricted" | "rate_limited" | "error" | "score";
@@ -19,7 +20,7 @@ interface BadgeData {
   errorMessage: string | null;
 }
 
-export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
+export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
   const [data, setData] = useState<BadgeData>({
     state: "idle",
     score: null,
@@ -97,16 +98,20 @@ export function ViralScoreBadge({ content }: ViralScoreBadgeProps) {
       clearTimeout(timerRef.current);
     }
 
+    const isProPlus =
+      userPlan === "pro_monthly" || userPlan === "pro_annual" || userPlan === "agency";
+    const debounceMs = isProPlus ? 3000 : 2000;
+
     timerRef.current = setTimeout(() => {
       fetchScore(content);
-    }, 2000);
+    }, debounceMs);
 
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
     };
-  }, [content, fetchScore]);
+  }, [content, fetchScore, userPlan]);
 
   if (!content || content.length < 10) return null;
 

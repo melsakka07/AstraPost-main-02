@@ -12,3 +12,8 @@ export const ImpressionsChart = dynamic(
   () => import("@/components/analytics/impressions-chart").then((m) => m.ImpressionsChart),
   { ssr: false, loading: () => <Skeleton className="h-[200px] w-full" /> }
 );
+
+export const EngagementRateChart = dynamic(
+  () => import("@/components/analytics/engagement-rate-chart").then((m) => m.EngagementRateChart),
+  { ssr: false, loading: () => <Skeleton className="h-[200px] w-full" /> }
+);

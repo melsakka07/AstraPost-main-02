@@ -11,6 +11,8 @@ import { aiGenerations } from "@/lib/schema";
 
 export default async function AiHistoryPage() {
   const session = await requireAdmin();
+  const userLocale =
+    session?.user && "language" in session.user ? (session.user as any).language : "en";
 
   const history = await db.query.aiGenerations.findMany({
     where: eq(aiGenerations.userId, session.user.id),
@@ -51,7 +53,7 @@ export default async function AiHistoryPage() {
                     {item.type}
                   </Badge>
                   <span className="text-muted-foreground text-xs">
-                    {new Date(item.createdAt).toLocaleString()}
+                    {new Date(item.createdAt).toLocaleString(userLocale)}
                   </span>
                 </div>
                 <div className="flex gap-2">

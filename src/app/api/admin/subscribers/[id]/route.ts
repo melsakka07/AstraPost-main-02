@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte } from "drizzle-orm";
+import { and, count, desc, eq, gte, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
@@ -65,21 +65,38 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalPosts, publishedPosts, draftCount, aiThisMonth] = await Promise.all([
-      db.select({ c: count() }).from(posts).where(eq(posts.userId, id)),
-      db
-        .select({ c: count() })
-        .from(posts)
-        .where(and(eq(posts.userId, id), eq(posts.status, "published"))),
-      db
-        .select({ c: count() })
-        .from(posts)
-        .where(and(eq(posts.userId, id), eq(posts.status, "draft"))),
-      db
-        .select({ c: count() })
-        .from(aiGenerations)
-        .where(and(eq(aiGenerations.userId, id), gte(aiGenerations.createdAt, monthStart))),
-    ]);
+    const [totalPosts, publishedPosts, draftCount, aiTextThisMonth, aiImagesThisMonth] =
+      await Promise.all([
+        db.select({ c: count() }).from(posts).where(eq(posts.userId, id)),
+        db
+          .select({ c: count() })
+          .from(posts)
+          .where(and(eq(posts.userId, id), eq(posts.status, "published"))),
+        db
+          .select({ c: count() })
+          .from(posts)
+          .where(and(eq(posts.userId, id), eq(posts.status, "draft"))),
+        db
+          .select({ c: count() })
+          .from(aiGenerations)
+          .where(
+            and(
+              eq(aiGenerations.userId, id),
+              ne(aiGenerations.type, "image"),
+              gte(aiGenerations.createdAt, monthStart)
+            )
+          ),
+        db
+          .select({ c: count() })
+          .from(aiGenerations)
+          .where(
+            and(
+              eq(aiGenerations.userId, id),
+              eq(aiGenerations.type, "image"),
+              gte(aiGenerations.createdAt, monthStart)
+            )
+          ),
+      ]);
 
     // Last 10 sessions
     const recentSessions = await db
@@ -99,12 +116,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
     // 1. AI quota status
     const limits = getPlanLimits(subscriber.plan);
-    const aiUsed = Number(aiThisMonth[0]?.c ?? 0);
+    const aiUsed = Number(aiTextThisMonth[0]?.c ?? 0);
+    const imagesUsed = Number(aiImagesThisMonth[0]?.c ?? 0);
     const aiLimit = limits.aiGenerationsPerMonth;
+    const imageLimit = limits.aiImagesPerMonth;
     const aiQuota = {
       used: aiUsed,
       limit: aiLimit === Infinity || aiLimit === -1 ? "unlimited" : aiLimit,
       percentage: aiLimit === Infinity || aiLimit === -1 ? 0 : Math.round((aiUsed / aiLimit) * 100),
+    };
+    const imageQuota = {
+      used: imagesUsed,
+      limit: imageLimit === -1 ? "unlimited" : imageLimit,
+      percentage: imageLimit === -1 ? 0 : Math.round((imagesUsed / imageLimit) * 100),
     };
 
     // 2. Referral data
@@ -261,10 +285,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           totalPosts: Number(totalPosts[0]?.c ?? 0),
           publishedPosts: Number(publishedPosts[0]?.c ?? 0),
           drafts: Number(draftCount[0]?.c ?? 0),
-          aiGenerationsThisMonth: Number(aiThisMonth[0]?.c ?? 0),
+          aiGenerationsThisMonth: Number(aiTextThisMonth[0]?.c ?? 0),
+          imageGenerationsThisMonth: Number(aiImagesThisMonth[0]?.c ?? 0),
         },
         recentSessions,
         aiQuota,
+        imageQuota,
         referrals,
         teams,
         activityTimeline,

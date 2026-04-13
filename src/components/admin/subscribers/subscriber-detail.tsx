@@ -289,13 +289,10 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
       {/* Enhanced sections grid */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* AI Usage Section */}
-        {detail.aiQuota && (
+        {detail.aiQuota && detail.imageQuota && (
           <AiUsageSection
-            quota={{
-              used: usage.aiGenerationsThisMonth,
-              limit: detail.aiQuota.limit,
-              percentage: detail.aiQuota.percentage,
-            }}
+            quota={detail.aiQuota}
+            imageQuota={detail.imageQuota}
             plan={sub.plan ?? "free"}
           />
         )}

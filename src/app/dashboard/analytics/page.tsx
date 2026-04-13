@@ -17,7 +17,11 @@ import {
 import { AccountSelector } from "@/components/analytics/account-selector";
 import { AnalyticsSectionNav } from "@/components/analytics/analytics-section-nav";
 import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
-import { FollowerChart, ImpressionsChart } from "@/components/analytics/charts-client";
+import {
+  FollowerChart,
+  ImpressionsChart,
+  EngagementRateChart,
+} from "@/components/analytics/charts-client";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { ExportButton } from "@/components/analytics/export-button";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
@@ -53,6 +57,9 @@ export default async function AnalyticsPage({
 }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login?callbackUrl=/dashboard/analytics");
+  const userLocale =
+    session?.user && "language" in session.user ? (session.user as any).language : "en";
+
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   // Params
@@ -144,6 +151,7 @@ export default async function AnalyticsPage({
           retweets: tweetAnalyticsSnapshots.retweets,
           replies: tweetAnalyticsSnapshots.replies,
           clicks: tweetAnalyticsSnapshots.linkClicks,
+          engagementRate: tweetAnalyticsSnapshots.engagementRate,
         })
         .from(tweetAnalyticsSnapshots)
         .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
@@ -263,6 +271,22 @@ export default async function AnalyticsPage({
     impressionsChartData.push({ date: d, value: byDay.get(d) || 0 });
   }
 
+  const byDayEngagement = new Map<string, { sumRate: number; count: number }>();
+  for (const s of snapshots) {
+    const day = new Date(s.fetchedAt).toISOString().slice(0, 10);
+    const existing = byDayEngagement.get(day) ?? { sumRate: 0, count: 0 };
+    byDayEngagement.set(day, {
+      sumRate: existing.sumRate + (Number(s.engagementRate) ?? 0),
+      count: existing.count + 1,
+    });
+  }
+  const engagementChartData = Array.from(byDayEngagement.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, { sumRate, count }]) => ({
+      date,
+      value: parseFloat((sumRate / count).toFixed(2)),
+    }));
+
   return (
     <DashboardPageWrapper
       icon={BarChart3}
@@ -305,15 +329,22 @@ export default async function AnalyticsPage({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Follower Tracking</CardTitle>
-          {selectedAccountId ? <ManualRefreshButton xAccountId={selectedAccountId} /> : null}
+          {selectedAccountId ? (
+            <ManualRefreshButton
+              xAccountId={selectedAccountId}
+              lastRefreshedAt={refreshRuns[0]?.finishedAt ?? refreshRuns[0]?.startedAt ?? null}
+            />
+          ) : null}
         </CardHeader>
         <CardContent className="space-y-4">
-          <AccountSelector
-            accounts={accounts}
-            selectedAccountId={selectedAccountId}
-            isCompact={isCompact}
-            range={effectiveRange}
-          />
+          {accounts.length > 1 && (
+            <AccountSelector
+              accounts={accounts}
+              selectedAccountId={selectedAccountId}
+              isCompact={isCompact}
+              range={effectiveRange}
+            />
+          )}
 
           <div className={`grid sm:grid-cols-2 md:grid-cols-3 ${isCompact ? "gap-3" : "gap-4"}`}>
             <Card>
@@ -322,7 +353,7 @@ export default async function AnalyticsPage({
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
-                  {latestFollowers?.toLocaleString() || "—"}
+                  {latestFollowers?.toLocaleString(userLocale) || "—"}
                 </div>
               </CardContent>
             </Card>
@@ -333,7 +364,7 @@ export default async function AnalyticsPage({
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
                   {followerGrowth > 0 ? "+" : ""}
-                  {followerGrowth.toLocaleString()}
+                  {followerGrowth.toLocaleString(userLocale)}
                 </div>
               </CardContent>
             </Card>
@@ -343,7 +374,7 @@ export default async function AnalyticsPage({
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
-                  {followersStart.toLocaleString()}
+                  {followersStart.toLocaleString(userLocale)}
                 </div>
               </CardContent>
             </Card>
@@ -411,7 +442,10 @@ export default async function AnalyticsPage({
                         className="flex flex-col gap-2 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="text-muted-foreground">
-                          {new Date(r.startedAt).toLocaleString()}
+                          {new Date(r.startedAt).toLocaleString(userLocale, {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          })}
                         </div>
                         <div className="flex items-center gap-2">
                           {statusIcon}
@@ -494,11 +528,12 @@ export default async function AnalyticsPage({
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
-                  {current.toLocaleString()}
+                  {current.toLocaleString(userLocale)}
                 </div>
                 {d !== null && (
                   <p className={`mt-1 text-xs ${d >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                    {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString()} vs prev {effectiveRange}
+                    {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString(userLocale)} vs prev{" "}
+                    {effectiveRange}
                   </p>
                 )}
               </CardContent>
@@ -518,55 +553,65 @@ export default async function AnalyticsPage({
         </BlurredOverlay>
       </div>
 
+      <div className="space-y-3">
+        <h2 className="text-xl font-semibold">Engagement Rate ({effectiveRange})</h2>
+        <BlurredOverlay
+          isLocked={isFree && rangeDays > 7}
+          title="Engagement Rate History"
+          description="Upgrade to Pro to see your engagement rate trends over time."
+        >
+          <EngagementRateChart data={engagementChartData} />
+        </BlurredOverlay>
+      </div>
+
       {/* ── Insights Section ── */}
       <div id="section-insights" className="flex items-center gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Insights</h2>
         <div className="bg-border h-px flex-1" />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Best Time to Post</h3>
-          <BlurredOverlay
-            isLocked={isFree}
-            title="Optimization Insights"
-            description="Upgrade to Pro to see when your audience is most active."
-          >
-            <BestTimeHeatmap data={bestTimeData} />
-          </BlurredOverlay>
-        </div>
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold">Best Time to Post</h3>
+        <BlurredOverlay
+          isLocked={isFree}
+          title="Optimization Insights"
+          description="Upgrade to Pro to see when your audience is most active."
+        >
+          <BestTimeHeatmap data={bestTimeData} />
+        </BlurredOverlay>
+      </div>
 
-        <div className="space-y-4">
-          <h3 className="text-xl font-semibold">Top Performing Tweets</h3>
-          <BlurredOverlay
-            isLocked={isFree}
-            title="Top Tweets"
-            description="See your best performing content with Pro analytics."
-          >
-            {topTweets.length === 0 ? (
-              <EmptyState
-                icon={<BarChart3 className="h-6 w-6" />}
-                title="No tweet analytics yet"
-                description="Once published posts are tracked by the analytics worker, your top tweets appear here."
-                primaryAction={
-                  <Button asChild>
-                    <Link href="/dashboard/compose">Publish a Post</Link>
-                  </Button>
-                }
-              />
-            ) : (
-              <TopTweetsList
-                // Narrow xTweetId from string|null to string — isNotNull() in the
-                // WHERE clause guarantees no nulls, but Drizzle's type inference
-                // can't reflect WHERE clause narrowing on selected columns.
-                tweets={topTweets.filter(
-                  (t): t is typeof t & { xTweetId: string } => t.xTweetId !== null
-                )}
-                isCompact={isCompact}
-              />
-            )}
-          </BlurredOverlay>
-        </div>
+      <div className="space-y-3">
+        <h3 className="text-xl font-semibold">Top Performing Tweets</h3>
+        <BlurredOverlay
+          isLocked={isFree}
+          title="Top Tweets"
+          description="See your best performing content with Pro analytics."
+        >
+          {topTweets.length === 0 ? (
+            <EmptyState
+              icon={<BarChart3 className="h-6 w-6" />}
+              title="No tweet analytics yet"
+              description="Once published posts are tracked by the analytics worker, your top tweets appear here."
+              primaryAction={
+                <Button asChild>
+                  <Link href="/dashboard/compose">Publish a Post</Link>
+                </Button>
+              }
+            />
+          ) : (
+            <TopTweetsList
+              // Narrow xTweetId from string|null to string — isNotNull() in the
+              // WHERE clause guarantees no nulls, but Drizzle's type inference
+              // can't reflect WHERE clause narrowing on selected columns.
+              tweets={topTweets.filter(
+                (t): t is typeof t & { xTweetId: string } => t.xTweetId !== null
+              )}
+              isCompact={isCompact}
+              userLocale={userLocale}
+            />
+          )}
+        </BlurredOverlay>
       </div>
     </DashboardPageWrapper>
   );

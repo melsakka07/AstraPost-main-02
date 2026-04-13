@@ -81,6 +81,7 @@ export interface SubscriberDetail {
     publishedPosts: number;
     drafts: number;
     aiGenerationsThisMonth: number;
+    imageGenerationsThisMonth: number;
   };
   recentSessions: Array<{
     id: string;
@@ -90,6 +91,12 @@ export interface SubscriberDetail {
     expiresAt: string;
   }>;
   aiQuota?: {
+    used: number;
+    limit: number | "unlimited";
+    percentage: number;
+  };
+  imageQuota?: {
+    used: number;
     limit: number | "unlimited";
     percentage: number;
   };

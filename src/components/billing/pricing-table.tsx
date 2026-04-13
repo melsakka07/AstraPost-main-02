@@ -99,8 +99,8 @@ const ANNUAL_PLANS: PricingPlan[] = [
     interval: "year",
     features: [
       "Unlimited Posts",
-      "3 X Accounts",
-      "100 AI Text Generations/month",
+      "4 X Accounts",
+      "150 AI Text Generations/month",
       "50 AI Image Generations/month",
       "Thread Scheduling",
       "AI Agentic Posting",
@@ -113,6 +113,7 @@ const ANNUAL_PLANS: PricingPlan[] = [
       "Video & GIF Uploads",
       "90-day Analytics + CSV/PDF Export",
       "Unlimited Bookmarks",
+      "Annual Bonus: +50 AI gens & extra X account",
       "2 Months Free",
     ],
     actionLabel: "Upgrade to Pro",

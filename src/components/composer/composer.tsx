@@ -224,7 +224,7 @@ export function Composer() {
   const [aiLengthOption, setAiLengthOption] = useState<"short" | "medium" | "long">("short");
   const [aiRewriteText, setAiRewriteText] = useState("");
 
-  // Sync AI language with user's preferred language once session loads (overrides localStorage)
+  // UI language ≠ content language; default to user's content preference
   useEffect(() => {
     if (session?.user && "language" in session.user && (session.user as any).language) {
       setAiLanguage((session.user as any).language);
@@ -273,6 +273,8 @@ export function Composer() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   // P0-A: Delay showing the saved label by 5s to avoid "just now" appearing prematurely
   const [showSavedLabel, setShowSavedLabel] = useState(false);
+  // Draft restore banner state
+  const [pendingDraftRestore, setPendingDraftRestore] = useState<TweetDraft[] | null>(null);
 
   // AI Image Dialog State
   const [isAiImageOpen, setIsAiImageOpen] = useState(false);
@@ -439,19 +441,18 @@ export function Composer() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-save
+  // Auto-save restore check - show banner instead of auto-restoring
   useEffect(() => {
     if (draftId) return; // Draft will be loaded from API — skip localStorage restore
-    if (bridgeLoadedRef.current) return; // Bridge content loaded — don't overwrite
+    if (bridgeLoadedRef.current) return; // Bridge content loaded — don't show banner
     const saved = localStorage.getItem("astra-post-drafts");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Only restore if we are at default state or empty
+          // Only show banner if we are at default state or empty
           if (tweets.length === 1 && tweets[0]?.content === "" && tweets[0]?.media.length === 0) {
-            setTweets(parsed);
-            toast.success("Draft restored from auto-save");
+            setPendingDraftRestore(parsed);
           }
         }
       } catch (e) {
@@ -460,6 +461,19 @@ export function Composer() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleAcceptDraftRestore = () => {
+    if (pendingDraftRestore) {
+      setTweets(pendingDraftRestore);
+      toast.success("Draft restored from auto-save");
+      setPendingDraftRestore(null);
+    }
+  };
+
+  const handleDiscardDraftRestore = () => {
+    localStorage.removeItem("astra-post-drafts");
+    setPendingDraftRestore(null);
+  };
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -470,7 +484,7 @@ export function Composer() {
       }));
       localStorage.setItem("astra-post-drafts", JSON.stringify(saveable));
       setLastSavedAt(new Date());
-    }, 1000);
+    }, 2000);
     return () => clearTimeout(timeout);
   }, [tweets]);
 
@@ -1752,6 +1766,25 @@ export function Composer() {
       <div className="space-y-3 sm:space-y-4 lg:col-span-2">
         {/* P3-E: First-time composer hint overlay */}
         <ComposerOnboardingHint />
+        {/* Draft restore banner */}
+        {pendingDraftRestore && (
+          <Alert className="border-primary/30 bg-primary/5">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm">
+                You have an unsaved draft from a previous session. Would you like to restore it?
+              </span>
+              <div className="flex shrink-0 gap-2">
+                <Button size="sm" variant="outline" onClick={handleDiscardDraftRestore}>
+                  Discard
+                </Button>
+                <Button size="sm" onClick={handleAcceptDraftRestore}>
+                  Restore
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
         {/* W4: Inspiration attribution banner */}
         {sourceAttribution && (
           <div className="border-border/50 bg-muted/30 flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">
@@ -1982,8 +2015,18 @@ export function Composer() {
             <div className="mb-1.5 flex items-center justify-between sm:mb-2">
               <p className="text-muted-foreground/70 text-xs font-medium">Preview</p>
               <div className="flex items-center gap-1">
-                {tweets.length > 1 && <ViralScoreBadge content={tweets[0]?.content || ""} />}
-                {tweets.length <= 1 && <ViralScoreBadge content={previewTweet?.content || ""} />}
+                {tweets.length > 1 && (
+                  <ViralScoreBadge
+                    content={tweets[0]?.content || ""}
+                    userPlan={(session?.user as any)?.plan || "free"}
+                  />
+                )}
+                {tweets.length <= 1 && (
+                  <ViralScoreBadge
+                    content={previewTweet?.content || ""}
+                    userPlan={(session?.user as any)?.plan || "free"}
+                  />
+                )}
               </div>
             </div>
             <div
@@ -2425,6 +2468,7 @@ export function Composer() {
                   <TooltipTrigger asChild>
                     <span tabIndex={0}>
                       <Button
+                        variant={scheduledDate ? "default" : "outline"}
                         className="h-10 w-full text-sm font-semibold sm:h-11 sm:text-base"
                         onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
                         disabled={isSubmitting || !hasContent}
@@ -2434,7 +2478,7 @@ export function Composer() {
                         ) : (
                           <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
                         )}
-                        Post to X
+                        {scheduledDate ? "Schedule" : "Post Now"}
                       </Button>
                     </span>
                   </TooltipTrigger>

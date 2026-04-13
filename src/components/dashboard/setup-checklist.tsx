@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, ChevronDown, Circle, Rocket, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -23,21 +24,36 @@ export function SetupChecklist({
   hasUsedAI,
   hasProPlan,
 }: SetupChecklistProps) {
+  const searchParams = useSearchParams();
   const [isVisible, setIsVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     const hidden = localStorage.getItem(STORAGE_KEY);
-    if (hidden === "true") {
-      setTimeout(() => setIsVisible(false), 0);
+    const checklistOpen = searchParams.get("checklist") === "open";
+
+    if (checklistOpen) {
+      localStorage.setItem(STORAGE_KEY, "false");
+      localStorage.setItem(COLLAPSED_KEY, "false");
+      setTimeout(() => {
+        setIsVisible(true);
+        setIsExpanded(true);
+        setIsMounted(true);
+      }, 0);
+    } else if (hidden === "true") {
+      setTimeout(() => {
+        setIsVisible(false);
+        setIsMounted(true);
+      }, 0);
+    } else {
+      const collapsed = localStorage.getItem(COLLAPSED_KEY);
+      setTimeout(() => {
+        if (collapsed !== "true") setIsExpanded(true);
+        setIsMounted(true);
+      }, 0);
     }
-    const collapsed = localStorage.getItem(COLLAPSED_KEY);
-    setTimeout(() => {
-      if (collapsed !== "true") setIsExpanded(true);
-      setIsMounted(true);
-    }, 0);
-  }, []);
+  }, [searchParams]);
 
   if (!isMounted) return null;
 

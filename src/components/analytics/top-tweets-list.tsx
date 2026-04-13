@@ -16,7 +16,15 @@ interface TopTweet {
   replies: number | null;
 }
 
-export function TopTweetsList({ tweets, isCompact }: { tweets: TopTweet[]; isCompact: boolean }) {
+export function TopTweetsList({
+  tweets,
+  isCompact,
+  userLocale = "en",
+}: {
+  tweets: TopTweet[];
+  isCompact: boolean;
+  userLocale?: string;
+}) {
   const [selectedTweetId, setSelectedTweetId] = useState<string | null>(null);
 
   return (
@@ -40,10 +48,10 @@ export function TopTweetsList({ tweets, isCompact }: { tweets: TopTweet[]; isCom
                 </Button>
               </div>
               <div className="text-muted-foreground flex flex-wrap gap-3 text-sm">
-                <span>Impressions: {(t.impressions || 0).toLocaleString()}</span>
-                <span>Likes: {(t.likes || 0).toLocaleString()}</span>
-                <span>Retweets: {(t.retweets || 0).toLocaleString()}</span>
-                <span>Replies: {(t.replies || 0).toLocaleString()}</span>
+                <span>Impressions: {(t.impressions || 0).toLocaleString(userLocale)}</span>
+                <span>Likes: {(t.likes || 0).toLocaleString(userLocale)}</span>
+                <span>Retweets: {(t.retweets || 0).toLocaleString(userLocale)}</span>
+                <span>Replies: {(t.replies || 0).toLocaleString(userLocale)}</span>
               </div>
             </CardContent>
           </Card>

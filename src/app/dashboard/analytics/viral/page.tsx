@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUserLocale } from "@/hooks/use-user-locale";
 
 interface ViralAnalysis {
   overall: {
@@ -62,6 +63,7 @@ function safeBold(text: string): React.ReactNode {
 }
 
 export default function ViralAnalyzerPage() {
+  const userLocale = useUserLocale();
   const [days, setDays] = useState("90");
   const [analysis, setAnalysis] = useState<ViralAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,13 +103,13 @@ export default function ViralAnalyzerPage() {
     if (!analysis) return;
     const lines: string[] = [
       `# Viral Content Analysis — Last ${days} Days`,
-      `_Generated: ${new Date().toLocaleDateString()}_`,
+      `_Generated: ${new Date().toLocaleDateString(userLocale)}_`,
       "",
       "## Overview",
       `- **Tweets Analyzed:** ${analysis.overall.tweetsAnalyzed}`,
       `- **Avg Engagement:** ${fmt(analysis.overall.avgEngagement)}`,
       `- **Top Engagement:** ${fmt(analysis.overall.topEngagement)}`,
-      `- **Total Impressions:** ${analysis.overall.totalImpressions.toLocaleString()}`,
+      `- **Total Impressions:** ${analysis.overall.totalImpressions.toLocaleString(userLocale)}`,
       "",
       "## AI Insights",
       ...analysis.insights.map((ins) => `- ${ins.replace(/\*\*/g, "**")}`),
@@ -334,7 +336,7 @@ export default function ViralAnalyzerPage() {
               },
               {
                 label: "Total Impressions",
-                value: analysis.overall.totalImpressions.toLocaleString(),
+                value: analysis.overall.totalImpressions.toLocaleString(userLocale),
               },
             ].map((s) => (
               <Card key={s.label} className="transition-shadow hover:shadow-md">

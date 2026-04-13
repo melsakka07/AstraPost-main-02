@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
 import {
+  AlertCircle,
   Calendar,
   CheckCircle2,
   Clock,
@@ -10,10 +11,13 @@ import {
   PlusCircle,
   Send,
   TrendingUp,
+  Wand2,
 } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
+import { PostUsageBar } from "@/components/dashboard/post-usage-bar";
 import { QuickCompose } from "@/components/dashboard/quick-compose";
 import { SetupChecklist } from "@/components/dashboard/setup-checklist";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth } from "@/lib/auth";
@@ -24,9 +28,12 @@ async function getDashboardData(userId: string) {
   const today = new Date();
   const startOfDay = new Date(today.setHours(0, 0, 0, 0));
   const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   const [
-    todayPosts,
+    publishedTodayPosts,
+    scheduledTodayPosts,
     scheduledPosts,
     publishedPosts,
     analytics,
@@ -36,15 +43,32 @@ async function getDashboardData(userId: string) {
     hasScheduledPost,
     hasUsedAI,
     userInfo,
+    failedPosts,
   ] = await Promise.all([
-    // Today's posts (published or scheduled for today)
-    db.query.posts.findMany({
-      where: and(
-        eq(posts.userId, userId),
-        gte(posts.scheduledAt, startOfDay),
-        lte(posts.scheduledAt, endOfDay)
+    // Published today (status = published + scheduledAt today)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.userId, userId),
+          eq(posts.status, "published"),
+          gte(posts.scheduledAt, startOfDay),
+          lte(posts.scheduledAt, endOfDay)
+        )
       ),
-    }),
+    // Scheduled today (status = scheduled + scheduledAt today)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.userId, userId),
+          eq(posts.status, "scheduled"),
+          gte(posts.scheduledAt, startOfDay),
+          lte(posts.scheduledAt, endOfDay)
+        )
+      ),
     // Scheduled posts count
     db
       .select({ count: sql<number>`count(*)` })
@@ -55,13 +79,13 @@ async function getDashboardData(userId: string) {
       .select({ count: sql<number>`count(*)` })
       .from(posts)
       .where(and(eq(posts.userId, userId), eq(posts.status, "published"))),
-    // Avg Engagement Rate
+    // Avg Engagement Rate (last 30 days)
     db
       .select({ avg: sql<number>`avg(${tweetAnalytics.engagementRate})` })
       .from(tweetAnalytics)
       .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
       .innerJoin(posts, eq(tweets.postId, posts.id))
-      .where(eq(posts.userId, userId)),
+      .where(and(eq(posts.userId, userId), gte(posts.scheduledAt, thirtyDaysAgo))),
 
     // Upcoming scheduled posts
     db.query.posts.findMany({
@@ -90,27 +114,43 @@ async function getDashboardData(userId: string) {
       where: eq(user.id, userId),
       columns: { plan: true },
     }),
+    // Failed posts count
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(and(eq(posts.userId, userId), eq(posts.status, "failed"))),
   ]);
 
   return {
-    todayCount: todayPosts.length,
+    publishedTodayCount: Number(publishedTodayPosts[0]?.count || 0),
+    scheduledTodayCount: Number(scheduledTodayPosts[0]?.count || 0),
     scheduledCount: Number(scheduledPosts[0]?.count || 0),
     publishedCount: Number(publishedPosts[0]?.count || 0),
     avgEngagement: Number(analytics[0]?.avg || 0).toFixed(2),
     upcomingPosts,
+    failedCount: Number(failedPosts[0]?.count || 0),
     checklist: {
       hasXAccount: !!hasXAccount,
       hasScheduledPost: !!hasScheduledPost,
       hasUsedAI: !!hasUsedAI,
       hasProPlan: userInfo?.plan !== "free",
     },
+    userPlan: userInfo?.plan || "free",
   };
 }
 
 const STAT_CARDS = [
   {
-    key: "today",
-    label: "Today's Posts",
+    key: "publishedToday",
+    label: "Published Today",
+    icon: CheckCircle2,
+    accent: "border-l-emerald-500",
+    iconColor: "text-emerald-500",
+    iconBg: "bg-emerald-500/10",
+  },
+  {
+    key: "scheduledToday",
+    label: "Scheduled Today",
     icon: Calendar,
     accent: "border-l-blue-500",
     iconColor: "text-blue-500",
@@ -125,14 +165,6 @@ const STAT_CARDS = [
     iconBg: "bg-amber-500/10",
   },
   {
-    key: "published",
-    label: "Published",
-    icon: CheckCircle2,
-    accent: "border-l-emerald-500",
-    iconColor: "text-emerald-500",
-    iconBg: "bg-emerald-500/10",
-  },
-  {
     key: "engagement",
     label: "Avg. Engagement",
     icon: TrendingUp,
@@ -144,27 +176,33 @@ const STAT_CARDS = [
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
+  const userLocale =
+    session?.user && "language" in session.user ? (session.user as any).language : "en";
+
   const data = session
     ? await getDashboardData(session.user.id)
     : {
-        todayCount: 0,
+        publishedTodayCount: 0,
+        scheduledTodayCount: 0,
         scheduledCount: 0,
         publishedCount: 0,
         avgEngagement: "0.00",
         upcomingPosts: [],
+        failedCount: 0,
         checklist: {
           hasXAccount: false,
           hasScheduledPost: false,
           hasUsedAI: false,
           hasProPlan: false,
         },
+        userPlan: "free",
       };
 
   const statValues: Record<string, { value: string; sub: string }> = {
-    today: { value: String(data.todayCount), sub: "Scheduled for today" },
+    publishedToday: { value: String(data.publishedTodayCount), sub: "Today" },
+    scheduledToday: { value: String(data.scheduledTodayCount), sub: "Today" },
     scheduled: { value: String(data.scheduledCount), sub: "Total in queue" },
-    published: { value: String(data.publishedCount), sub: "All time" },
-    engagement: { value: `${data.avgEngagement}%`, sub: "Average rate" },
+    engagement: { value: `${data.avgEngagement}%`, sub: "Last 30 days" },
   };
 
   return (
@@ -182,6 +220,22 @@ export default async function DashboardPage() {
       }
     >
       <SetupChecklist {...data.checklist} />
+
+      {data.failedCount > 0 && (
+        <Alert className="border-destructive/50 bg-destructive/5">
+          <AlertCircle className="text-destructive h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              {data.failedCount} post{data.failedCount > 1 ? "s" : ""} failed to publish.
+            </span>
+            <Button size="sm" variant="outline" asChild>
+              <Link href="/dashboard/queue">View & Retry</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <PostUsageBar />
 
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -238,27 +292,41 @@ export default async function DashboardPage() {
                     Create a Post
                   </Link>
                 </Button>
+                <Button size="sm" variant="outline" asChild className="mt-2">
+                  <Link href="/dashboard/ai/agentic">
+                    <Wand2 className="mr-2 h-3.5 w-3.5" />
+                    Generate with AI
+                  </Link>
+                </Button>
               </div>
             ) : (
               <div className="space-y-3">
                 {data.upcomingPosts.map((post) => (
-                  <div
+                  <Link
                     key={post.id}
-                    className="hover:bg-muted/50 flex min-w-0 items-start gap-3 rounded-lg border p-3 transition-colors"
+                    href="/dashboard/queue"
+                    className="hover:bg-muted/50 block min-w-0 items-start gap-3 rounded-lg border p-3 transition-colors"
                   >
-                    <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-                      <Calendar className="text-primary h-4 w-4" />
+                    <div className="flex gap-3">
+                      <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                        <Calendar className="text-primary h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm leading-relaxed font-medium break-words">
+                          {(post.tweets[0]?.content ?? "").substring(0, 80)}
+                          {(post.tweets[0]?.content?.length ?? 0) > 80 ? "..." : ""}
+                        </p>
+                        <p className="text-muted-foreground mt-1 text-xs" suppressHydrationWarning>
+                          {post.scheduledAt
+                            ? new Date(post.scheduledAt).toLocaleString(userLocale, {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              })
+                            : "No date"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm leading-relaxed font-medium break-words">
-                        {(post.tweets[0]?.content ?? "").substring(0, 80)}
-                        {(post.tweets[0]?.content?.length ?? 0) > 80 ? "..." : ""}
-                      </p>
-                      <p className="text-muted-foreground mt-1 text-xs" suppressHydrationWarning>
-                        {post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : "No date"}
-                      </p>
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

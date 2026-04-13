@@ -104,6 +104,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         user={{ name: session.user.name, image: session.user.image || null }}
         referralsEnabled={referralsEnabled}
         isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}
+        userPlan={dbUser?.plan ?? "free"}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         {session.session.impersonatedBy && (

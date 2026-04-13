@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useUserLocale } from "@/hooks/use-user-locale";
 
 /** Assign rank-decay scores: 1st item → 100, 2nd → 85, 3rd → 72 … */
 function rankToChartData(items: string[], prefix = ""): { name: string; value: number }[] {
@@ -82,6 +83,7 @@ interface SelfStats {
 
 export default function CompetitorAnalyzerPage() {
   const { openWithContext } = useUpgradeModal();
+  const userLocale = useUserLocale();
 
   const [username, setUsername] = useState("");
   const [language, setLanguage] = useState("en");
@@ -311,8 +313,8 @@ export default function CompetitorAnalyzerPage() {
             <p className="truncate text-sm font-medium">
               @{result.username}
               <span className="text-muted-foreground ms-2 text-xs font-normal">
-                {result.followerCount.toLocaleString()} followers · {result.tweetCount} tweets
-                analyzed
+                {result.followerCount.toLocaleString(userLocale)} followers · {result.tweetCount}{" "}
+                tweets analyzed
               </span>
             </p>
             <Button
@@ -334,7 +336,7 @@ export default function CompetitorAnalyzerPage() {
             <div>
               <h2 className="text-xl font-bold">@{result.username}</h2>
               <p className="text-muted-foreground text-sm">
-                {result.displayName} · {result.followerCount.toLocaleString()} followers ·{" "}
+                {result.displayName} · {result.followerCount.toLocaleString(userLocale)} followers ·{" "}
                 {result.tweetCount} tweets analyzed
               </p>
             </div>
@@ -346,7 +348,7 @@ export default function CompetitorAnalyzerPage() {
               <CardContent className="p-4">
                 <p className="text-muted-foreground mb-1 text-xs">Followers</p>
                 <p className="text-2xl font-bold tabular-nums">
-                  {result.followerCount.toLocaleString()}
+                  {result.followerCount.toLocaleString(userLocale)}
                 </p>
               </CardContent>
             </Card>

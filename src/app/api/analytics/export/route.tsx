@@ -31,6 +31,9 @@ export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
 
+  const userLocale =
+    session?.user && "language" in session.user ? (session.user as any).language : "en";
+
   const exportGate = await checkAnalyticsExportLimitDetailed(session.user.id);
   if (!exportGate.allowed) {
     return createPlanLimitResponse(exportGate);
@@ -110,7 +113,9 @@ export async function GET(req: Request) {
       topTweets,
     };
 
-    const stream = await renderToStream(<AnalyticsPdfDocument data={pdfData} />);
+    const stream = await renderToStream(
+      <AnalyticsPdfDocument data={pdfData} userLocale={userLocale} />
+    );
 
     // Cast stream to Readable because renderToStream returns NodeJS.ReadableStream
     // but Readable.toWeb expects stream.Readable (which is compatible but TS complains)

@@ -1216,7 +1216,7 @@ function ReviewScreen({
   return (
     <div className="animate-in fade-in mx-auto max-w-2xl space-y-4 pb-32 duration-300 lg:grid lg:max-w-5xl lg:grid-cols-[1fr_320px] lg:items-start lg:gap-6">
       {/* Main content column */}
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4">
         {/* Review header */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -1566,7 +1566,7 @@ function AgenticTweetCard({
             </div>
           </div>
         ) : (
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          <div className="text-sm leading-relaxed break-words whitespace-pre-wrap">
             {tweet.text}
             {tweet.hashtags.length > 0 && (
               <span className="text-primary"> {tweet.hashtags.map((h) => `#${h}`).join(" ")}</span>

@@ -37,6 +37,16 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
   const timezones = Intl.supportedValuesOf("timeZone");
 
+  const formatPreview = (timezone: string, language: string) => {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat(language === "ar" ? "ar-SA" : "en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: timezone,
+    });
+    return formatter.format(now);
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -124,6 +134,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="col-span-full">
+            <p className="text-muted-foreground text-sm">
+              Your posts will show as:{" "}
+              <strong>{formatPreview(formData.timezone, formData.language)}</strong>
+            </p>
           </div>
           <div className="flex justify-end">
             <Button type="submit" disabled={loading}>

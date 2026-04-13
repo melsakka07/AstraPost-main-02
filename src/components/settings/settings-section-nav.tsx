@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreditCard, Eye, Mic, Twitter, User } from "lucide-react";
+import { Bell, CreditCard, Eye, Mic, Twitter, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const sections = [
@@ -9,6 +9,7 @@ const sections = [
   { id: "subscription", label: "Subscription", icon: CreditCard },
   { id: "accounts", label: "Accounts", icon: Twitter },
   { id: "voice", label: "AI Voice", icon: Mic },
+  { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy", icon: Eye },
 ] as const;
 

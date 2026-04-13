@@ -31,6 +31,9 @@ export default async function JobsPage({
   }>;
 }) {
   const session = await requireAdmin();
+  const userLocale =
+    session?.user && "language" in session.user ? (session.user as any).language : "en";
+
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   const params = resolvedSearchParams || {};
@@ -194,7 +197,7 @@ export default async function JobsPage({
                     </div>
                     <div
                       className="text-muted-foreground text-xs"
-                      title={new Date(r.startedAt).toLocaleString()}
+                      title={new Date(r.startedAt).toLocaleString(userLocale)}
                     >
                       {formatDistanceToNow(new Date(r.startedAt), { addSuffix: true })}
                     </div>

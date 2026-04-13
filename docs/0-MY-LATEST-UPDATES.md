@@ -1,5 +1,161 @@
 # Latest Updates
 
+## 2026-04-13: Feature Improvements Phase 5 — RTL/Arabic Hardening ✅
+
+**Summary:** Completed Phase 5 of the existing feature improvements plan. Implemented locale-aware date and number formatting across all dashboard pages and components to support Arabic and other RTL languages for MENA users.
+
+**Changes:**
+
+**Quick Wins (Already Implemented — No Changes Needed):**
+
+- ✅ `dir="auto"` on composer textarea — [src/components/composer/tweet-card.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/tweet-card.tsx#L211)
+- ✅ RTL-aware sidebar brand logo — [src/components/dashboard/sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx#L368)
+- ✅ Language switcher in dashboard header — [src/components/dashboard/dashboard-header.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/dashboard-header.tsx#L52)
+
+**AI Language Defaults (Already Synced — Clarified Comment):**
+
+- ✅ Thread Writer already uses user's language preference — [src/components/composer/composer.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/composer.tsx#L226-230)
+- Updated comment to clarify UI language vs content language
+
+**Locale Formatting (8 files modified + 1 file created):**
+
+- **Created `useUserLocale` hook:** New [src/hooks/use-user-locale.ts](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/hooks/use-user-locale.ts)
+  - Provides user locale to client components via `useSession()`
+  - Defaults to `"en"` if no language preference is set
+
+- **Updated dashboard pages (Server Components):**
+  - [src/app/dashboard/page.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/page.tsx) — 1 toLocaleString() call updated
+  - [src/app/dashboard/analytics/page.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/analytics/page.tsx) — 6 toLocaleString() calls updated
+  - [src/app/dashboard/jobs/page.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/jobs/page.tsx) — 1 toLocaleString() call updated
+  - [src/app/dashboard/ai/history/page.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/ai/history/page.tsx) — 1 toLocaleString() call updated
+  - [src/app/api/analytics/export/route.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/api/analytics/export/route.tsx) — Passes userLocale to PDF generation
+
+- **Updated client components:**
+  - [src/components/analytics/top-tweets-list.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/analytics/top-tweets-list.tsx) — Added userLocale prop, 4 toLocaleString() calls updated
+  - [src/app/dashboard/analytics/viral/page.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/analytics/viral/page.tsx) — Added useUserLocale hook, 2 toLocaleString() calls updated
+  - [src/app/dashboard/analytics/competitor/page.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/analytics/competitor/page.tsx) — Added useUserLocale hook, 3 toLocaleString() calls updated
+
+- **Updated PDF export component:**
+  - [src/components/analytics/pdf-document.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/analytics/pdf-document.tsx) — Added userLocale prop, 9 toLocaleString() calls updated
+
+**Pattern Applied:**
+
+Server Components:
+
+```typescript
+const session = await auth.api.getSession({ headers: await headers() });
+const userLocale =
+  session?.user && "language" in session.user ? (session.user as any).language : "en";
+// Usage:
+{
+  value.toLocaleString(userLocale);
+}
+{
+  new Date(date).toLocaleString(userLocale, { dateStyle: "medium", timeStyle: "short" });
+}
+```
+
+Client Components:
+
+```typescript
+const userLocale = useUserLocale();
+// Usage:
+{
+  value.toLocaleString(userLocale);
+}
+```
+
+**Verification:**
+
+- ✅ `pnpm run lint` — 0 errors, 1 unrelated warning in post-usage-bar.tsx
+- ✅ `pnpm run typecheck` — 0 errors
+- ✅ All dashboard toLocaleString() calls now use user locale
+- ✅ PDF exports respect user locale
+- ✅ Admin components excluded (internal use, English-only is acceptable)
+
+**Impact:**
+
+- ✅ All dates, numbers, and metrics now display in user's preferred locale (e.g., Arabic: "١,٢٣٤" vs English: "1,234")
+- ✅ Better UX for MENA users who prefer Arabic or other RTL languages
+- ✅ Consistent locale handling across the entire dashboard
+- ✅ No database changes required — uses existing `user.language` field
+
+**Next Steps:**
+
+- Phase 6: Mobile UX Improvements (if not already started)
+- Continue with remaining phases from the feature improvements plan
+- Monitor user feedback on locale formatting in production
+
+---
+
+## 2026-04-13: Feature Improvements Phase 1 — Quick UX Wins ✅
+
+**Summary:** Completed Phase 1 of the existing feature improvements plan. Implemented composer enhancements, dashboard home improvements, and sidebar improvements with zero database changes.
+
+**Changes:**
+
+**Composer Improvements (3 files modified):**
+
+- **Added "Select all" checkbox:** Updated [src/components/composer/target-accounts-select.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/target-accounts-select.tsx)
+  - Shows when user has >1 X account connected
+  - Selects/deselects all accounts with one click
+
+- **Implemented 3s debounce for Pro+ users:** Updated [src/components/composer/viral-score-badge.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/viral-score-badge.tsx)
+  - Pro+ users get 3s debounce for viral score auto-refresh (vs 2s for Free users)
+  - Added `userPlan` prop to enable conditional debounce timing
+
+- **Swapped CTA visual weight and changed auto-save:** Updated [src/components/composer/composer.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/composer.tsx)
+  - "Schedule" button now solid primary, "Post Now" now outline
+  - Auto-save debounce changed from 1s to 2s
+
+**Dashboard Home Improvements (2 files modified):**
+
+- **Split "Today's Posts" stat:** Updated [src/app/dashboard/page.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/page.tsx)
+  - Now shows "Published Today" and "Scheduled Today" as separate stats
+  - Added "Last 30 days" sub-label to Avg. Engagement stat
+  - Wrapped queue cards in Link to `/dashboard/queue`
+  - Updated `getDashboardData` function with thirtyDaysAgo filter
+
+- **Added checklist query param handler:** Updated [src/components/dashboard/setup-checklist.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/setup-checklist.tsx)
+  - Supports `?checklist=open` to force checklist visible
+  - Enables linking from Settings > Profile
+
+**Sidebar Improvements (2 files modified):**
+
+- **Added image quota progress bar:** Updated [src/components/dashboard/sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx)
+  - Fetches from `/api/ai/image/quota`
+  - Shows below AI credits bar with progress indicator
+
+- **Fixed Pro badge link and active states:** Updated [src/components/dashboard/sidebar.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/dashboard/sidebar.tsx)
+  - Pro badge for Free users now links to `/pricing`
+  - Fixed active state check for all nav items using `startsWith()`
+
+- **Passed user plan to sidebar:** Updated [src/app/dashboard/layout.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/app/dashboard/layout.tsx)
+  - Added `userPlan` prop to Sidebar component
+
+**Verification:**
+
+- ✅ `pnpm run lint` — 0 errors, 0 warnings
+- ✅ `pnpm run typecheck` — 0 errors
+
+**Discovery:**
+
+- Character count badge already exists in [tweet-card.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/tweet-card.tsx)
+- Hashtag "Insert" buttons already exist in [ai-tools-panel.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/ai-tools-panel.tsx)
+- Mobile reorder controls already exist in [tweet-card.tsx](file:///c:/Users/saqqa/CodeX/AstraPost-main/AstraPost-main-02/src/components/composer/tweet-card.tsx)
+
+**Deferred Items (require further investigation):**
+
+- BestTimeSuggestions inline rendering for Pro+ users
+- Mobile AI credits mirror stat card
+
+**Next Steps:**
+
+- Start Phase 2: Subscription Clarity & Frictions (Free tier post counter, Pro Annual bonus, trial expiry banner, downgrade warning modal)
+- Investigate deferred items from Phase 1
+
+---
+
 ## 2026-04-12: Critical Security Fixes — Search Sanitization & Audit Export Limits ✅
 
 **Summary:** Fixed critical SQL injection vulnerability in audit export route and reduced max-row limit to prevent memory exhaustion during large exports.

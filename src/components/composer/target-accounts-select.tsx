@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import { ChevronDown, Linkedin, Twitter, Instagram, AlertTriangle } from "lucide-react";
+import {
+  ChevronDown,
+  Linkedin,
+  Twitter,
+  Instagram,
+  AlertTriangle,
+  CheckSquare2,
+  Square,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,6 +51,8 @@ export function TargetAccountsSelect({
   accounts: SocialAccountLite[];
   loading?: boolean;
 }) {
+  const allSelected = accounts.length > 0 && value.length === accounts.length;
+
   const selectedLabels = useMemo(() => {
     const selected = accounts.filter((a) => value.includes(a.id));
     if (selected.length === 0) return "Select accounts";
@@ -90,40 +100,63 @@ export function TargetAccountsSelect({
               </a>
             </div>
           ) : (
-            accounts.map((a) => (
-              <DropdownMenuCheckboxItem
-                key={a.id}
-                checked={value.includes(a.id)}
-                onCheckedChange={(checked) => {
-                  const next = checked
-                    ? Array.from(new Set([...value, a.id]))
-                    : value.filter((id) => id !== a.id);
-                  onChange(next);
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  {a.platform === "twitter" ? (
-                    <Twitter className="h-3 w-3 text-sky-500" />
-                  ) : a.platform === "linkedin" ? (
-                    <Linkedin className="h-3 w-3 text-[#0077b5]" />
-                  ) : (
-                    <Instagram className="h-3 w-3 text-pink-600" />
-                  )}
-                  <span className="truncate">{a.displayName || a.username}</span>
-                  {a.platform === "twitter" && a.xSubscriptionTier && (
-                    <XSubscriptionBadge tier={a.xSubscriptionTier} size="sm" />
-                  )}
-                  {isTokenExpiringSoon(a.tokenExpiresAt) && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <AlertTriangle className="h-3 w-3 text-amber-500" />
-                      </TooltipTrigger>
-                      <TooltipContent>Token expires soon</TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </DropdownMenuCheckboxItem>
-            ))
+            <>
+              {accounts.length > 1 && (
+                <>
+                  <DropdownMenuCheckboxItem
+                    checked={allSelected}
+                    onCheckedChange={(checked) => {
+                      onChange(checked ? accounts.map((a) => a.id) : []);
+                    }}
+                    className="font-medium"
+                  >
+                    <div className="flex items-center gap-2">
+                      {allSelected ? (
+                        <CheckSquare2 className="h-4 w-4" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                      <span>Select all</span>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {accounts.map((a) => (
+                <DropdownMenuCheckboxItem
+                  key={a.id}
+                  checked={value.includes(a.id)}
+                  onCheckedChange={(checked) => {
+                    const next = checked
+                      ? Array.from(new Set([...value, a.id]))
+                      : value.filter((id) => id !== a.id);
+                    onChange(next);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    {a.platform === "twitter" ? (
+                      <Twitter className="h-3 w-3 text-sky-500" />
+                    ) : a.platform === "linkedin" ? (
+                      <Linkedin className="h-3 w-3 text-[#0077b5]" />
+                    ) : (
+                      <Instagram className="h-3 w-3 text-pink-600" />
+                    )}
+                    <span className="truncate">{a.displayName || a.username}</span>
+                    {a.platform === "twitter" && a.xSubscriptionTier && (
+                      <XSubscriptionBadge tier={a.xSubscriptionTier} size="sm" />
+                    )}
+                    {isTokenExpiringSoon(a.tokenExpiresAt) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="h-3 w-3 text-amber-500" />
+                        </TooltipTrigger>
+                        <TooltipContent>Token expires soon</TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </DropdownMenuCheckboxItem>
+              ))}
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

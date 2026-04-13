@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { CreditCard, Twitter, Users, Settings as SettingsIcon } from "lucide-react";
+import { CreditCard, Download, Twitter, Users, Settings as SettingsIcon } from "lucide-react";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { BillingStatus } from "@/components/settings/billing-status";
 import { BillingSuccessPoller } from "@/components/settings/billing-success-poller";
@@ -10,14 +10,17 @@ import { ConnectedInstagramAccounts } from "@/components/settings/connected-inst
 import { ConnectedLinkedInAccounts } from "@/components/settings/connected-linkedin-accounts";
 import { ConnectedXAccounts } from "@/components/settings/connected-x-accounts";
 import { ManageSubscriptionButton } from "@/components/settings/manage-subscription-button";
+import { NotificationPreferences } from "@/components/settings/notification-preferences";
 import { PlanUsage } from "@/components/settings/plan-usage";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { ProfileForm } from "@/components/settings/profile-form";
+import { ReopenChecklistButton } from "@/components/settings/reopen-checklist-button";
 import { SettingsSectionNav } from "@/components/settings/settings-section-nav";
 import { VoiceProfileForm } from "@/components/settings/voice-profile-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user, xAccounts, linkedinAccounts, instagramAccounts } from "@/lib/schema";
@@ -89,7 +92,7 @@ export default async function SettingsPage({
 
       <div className="space-y-6">
         {/* Profile Section */}
-        <div id="profile" className="scroll-mt-24">
+        <div id="profile" className="scroll-mt-24 space-y-6">
           <ProfileForm
             initialData={{
               name: session.user.name,
@@ -98,6 +101,26 @@ export default async function SettingsPage({
               language: userRow?.language ?? null,
             }}
           />
+          <ReopenChecklistButton />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Download className="text-primary h-5 w-5" />
+                <CardTitle>Export Your Data</CardTitle>
+              </div>
+              <CardDescription>
+                Download a copy of your posts, analytics, and account data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4 text-sm">
+                Export your account data in JSON or CSV format for backup or analysis.
+              </p>
+              <Button variant="outline" asChild>
+                <a href="/api/user/export">Download Data</a>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Subscription Section */}
@@ -141,9 +164,19 @@ export default async function SettingsPage({
                       <ManageSubscriptionButton />
                     </>
                   ) : isPaidPlan ? (
-                    <Button variant="outline" className="w-full sm:w-auto" asChild>
-                      <Link href="/pricing?billing=restore">Restore Billing</Link>
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" className="w-full sm:w-auto" asChild>
+                            <Link href="/pricing?billing=restore">Restore Billing</Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Your account is on a paid plan but no active payment was found. This can
+                          happen after a failed renewal or manual plan assignment.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   ) : (
                     <Button className="w-full sm:w-auto" asChild>
                       <Link href="/pricing">Upgrade Plan</Link>
@@ -224,7 +257,19 @@ export default async function SettingsPage({
 
         {/* AI Voice Section */}
         <div id="voice" className="scroll-mt-24">
-          <VoiceProfileForm />
+          <VoiceProfileForm userPlan={currentPlan} />
+        </div>
+
+        {/* Notifications Section */}
+        <div id="notifications" className="scroll-mt-24">
+          <NotificationPreferences
+            initialSettings={{
+              postFailures: true,
+              aiQuotaWarning: true,
+              trialExpiry: true,
+              teamInvites: true,
+            }}
+          />
         </div>
 
         {/* Privacy Section */}
