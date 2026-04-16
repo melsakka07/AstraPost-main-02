@@ -3,6 +3,7 @@
  * Imports tweets from X/Twitter URLs with full context retrieval
  */
 
+import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
 
 // ============================================================================
@@ -222,7 +223,7 @@ async function fetchConversationContext(
 
   if (!response.ok) {
     // If context fetch fails, return empty arrays
-    console.warn("Failed to fetch conversation context");
+    logger.warn("tweet_conversation_context_failed");
     return { parentTweets: [], topReplies: [] };
   }
 
@@ -301,7 +302,7 @@ async function getCachedTweet(tweetId: string): Promise<ImportedTweetContext | n
       return JSON.parse(cached);
     }
   } catch (e) {
-    console.warn("Failed to get cached tweet:", e);
+    logger.warn("tweet_cache_get_failed", { error: e instanceof Error ? e.message : String(e) });
   }
   return null;
 }
@@ -314,7 +315,7 @@ async function setCachedTweet(tweetId: string, data: ImportedTweetContext): Prom
     // Cache for 1 hour
     await redis.setex(`tweet_lookup:${tweetId}`, 3600, JSON.stringify(data));
   } catch (e) {
-    console.warn("Failed to cache tweet:", e);
+    logger.warn("tweet_cache_set_failed", { error: e instanceof Error ? e.message : String(e) });
   }
 }
 
@@ -369,7 +370,9 @@ export async function importTweet(
 
     return result;
   } catch (error) {
-    console.error("Tweet import error:", error);
+    logger.error("tweet_import_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
 
     if (error instanceof Error) {
       if (error.message.includes("Rate limited")) {

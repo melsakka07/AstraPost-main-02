@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { feedback, feedbackVotes } from "@/lib/schema";
 
 const feedbackSchema = z.object({
@@ -59,7 +60,7 @@ export async function GET() {
 
     return Response.json({ items: formatted });
   } catch (error) {
-    console.error("Get Feedback Error:", error);
+    logger.error("Get Feedback Error", { error });
     return ApiError.internal();
   }
 }
@@ -122,7 +123,7 @@ export async function POST(req: Request) {
 
     return Response.json(createdFeedback);
   } catch (error) {
-    console.error("Create Feedback Error:", error);
+    logger.error("Create Feedback Error", { error });
     return ApiError.internal();
   }
 }

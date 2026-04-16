@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { agenticPosts, tweets } from "@/lib/schema";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -85,7 +86,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       },
     });
   } catch (err) {
-    console.error("[agentic/sessions/[id]] Error:", err);
+    logger.error("[agentic/sessions/[id]] Error", { error: err });
     return ApiError.internal("Failed to load agentic session details");
   }
 }

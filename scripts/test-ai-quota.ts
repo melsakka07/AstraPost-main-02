@@ -44,7 +44,7 @@ async function main() {
   await db.insert(aiGenerations).values({
     id: crypto.randomUUID(),
     userId: freeUserId,
-    type: "test",
+    type: "tools",
     inputPrompt: "test",
     outputContent: {},
     tokensUsed: 100,

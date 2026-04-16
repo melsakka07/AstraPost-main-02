@@ -2,6 +2,7 @@ import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
 import { getTrendsData, getStartDate } from "@/lib/services/affiliate-stats";
 
 const querySchema = z.object({
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[affiliate/trends] Error:", err);
+    logger.error("[affiliate/trends] Error", { error: err });
     return ApiError.internal("Failed to load affiliate trends");
   }
 }

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const parsed = schema.safeParse({ xAccountId: url.searchParams.get("xAccountId") });
   if (!parsed.success) {
-    return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
+    return ApiError.badRequest("Invalid request");
   }
 
   const runs = await db.query.analyticsRefreshRuns.findMany({

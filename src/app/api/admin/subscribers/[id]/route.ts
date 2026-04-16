@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { getPlanLimits } from "@/lib/plan-limits";
 import {
   aiGenerations,
@@ -297,7 +298,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       },
     });
   } catch (err) {
-    console.error("[subscribers] Error:", err);
+    logger.error("[subscribers] Error:", { error: err });
     return ApiError.internal("Failed to load subscriber details");
   }
 }
@@ -364,7 +365,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return Response.json({ data: updated });
   } catch (err) {
-    console.error("[subscribers] Error:", err);
+    logger.error("[subscribers] Error:", { error: err });
     return ApiError.internal("Failed to update subscriber");
   }
 }
@@ -423,7 +424,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error("[subscribers] Error:", err);
+    logger.error("[subscribers] Error:", { error: err });
     return ApiError.internal("Failed to delete subscriber");
   }
 }

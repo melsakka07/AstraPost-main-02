@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import Papa from "papaparse";
 import { getCorrelationId } from "@/lib/correlation";
@@ -10,7 +9,7 @@ import { getTeamContext } from "@/lib/team-context";
 
 export async function POST(req: Request) {
   const ctx = await getTeamContext();
-  if (!ctx) return new NextResponse("Unauthorized", { status: 401 });
+  if (!ctx) return new Response("Unauthorized", { status: 401 });
 
   const correlationId = getCorrelationId(req);
   logger.info("api_request", {
@@ -25,11 +24,11 @@ export async function POST(req: Request) {
   const xAccountId = formData.get("xAccountId") as string;
 
   if (!file) {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    return Response.json({ error: "No file provided" }, { status: 400 });
   }
 
   if (!xAccountId) {
-    return NextResponse.json({ error: "No X account selected" }, { status: 400 });
+    return Response.json({ error: "No X account selected" }, { status: 400 });
   }
 
   // Verify the selected account belongs to the current team workspace
@@ -38,12 +37,12 @@ export async function POST(req: Request) {
   });
 
   if (!account) {
-    return NextResponse.json({ error: "Invalid X account" }, { status: 400 });
+    return Response.json({ error: "Invalid X account" }, { status: 400 });
   }
 
   const text = await file.text();
 
-  return new Promise<NextResponse>((resolve) => {
+  return new Promise<Response>((resolve) => {
     Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
         // Validate headers
         if (rows.length > 0 && (!rows[0].content || !rows[0].scheduledAt)) {
           resolve(
-            NextResponse.json(
+            Response.json(
               { error: "CSV must have 'content' and 'scheduledAt' columns" },
               { status: 400 }
             )
@@ -112,7 +111,7 @@ export async function POST(req: Request) {
         await Promise.all(promises);
 
         resolve(
-          NextResponse.json({
+          Response.json({
             success: true,
             count: rows.length - errors.length,
             errors: errors.length > 0 ? errors : undefined,
@@ -120,7 +119,7 @@ export async function POST(req: Request) {
         );
       },
       error: (error: any) => {
-        resolve(NextResponse.json({ error: error.message }, { status: 400 }));
+        resolve(Response.json({ error: error.message }, { status: 400 }));
       },
     });
   });

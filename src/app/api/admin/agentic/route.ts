@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { agenticPosts, tweets } from "@/lib/schema";
 
 // ── Query params schema ───────────────────────────────────────────────────────
@@ -111,7 +112,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[agentic] Error:", err);
+    logger.error("[agentic] Error", { error: err });
     return ApiError.internal("Failed to load agentic sessions");
   }
 }

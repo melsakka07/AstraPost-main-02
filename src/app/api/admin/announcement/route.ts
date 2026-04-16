@@ -6,6 +6,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { featureFlags } from "@/lib/schema";
 
 const ANNOUNCEMENT_KEY = "_announcement";
@@ -51,7 +52,7 @@ export async function GET() {
 
     return Response.json({ data: config });
   } catch (err) {
-    console.error("[announcement] GET Error:", err);
+    logger.error("[announcement] GET Error", { error: err });
     return ApiError.internal("Failed to load announcement");
   }
 }
@@ -101,7 +102,7 @@ export async function PUT(request: Request) {
 
     return Response.json({ data: { text, type, enabled } });
   } catch (err) {
-    console.error("[announcement] PUT Error:", err);
+    logger.error("[announcement] PUT Error", { error: err });
     return ApiError.internal("Failed to update announcement");
   }
 }

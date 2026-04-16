@@ -5,10 +5,11 @@
  * Imports tweets from X/Twitter URLs with full context
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { normalizePlan } from "@/lib/plan-limits";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { importTweet, isValidTweetUrl } from "@/lib/services/tweet-importer";
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 2. Parse and validate request
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
     const validationResult = TweetLookupRequestSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Invalid request", details: validationResult.error.issues },
         { status: 400 }
       );
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // 3. Validate URL format
     if (!isValidTweetUrl(tweetUrl)) {
-      return NextResponse.json({ error: "Invalid X/Twitter URL format" }, { status: 400 });
+      return Response.json({ error: "Invalid X/Twitter URL format" }, { status: 400 });
     }
 
     // 4. Get user and plan info
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!userRecord) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return Response.json({ error: "User not found" }, { status: 404 });
     }
 
     const plan = normalizePlan(userRecord.plan);
@@ -85,18 +86,18 @@ export async function POST(req: NextRequest) {
       };
 
       const status = statusMap[result.code] || 500;
-      return NextResponse.json({ error: result.error, code: result.code }, { status });
+      return Response.json({ error: result.error, code: result.code }, { status });
     }
 
     // 8. Return successful result
-    return NextResponse.json({
+    return Response.json({
       success: true,
       data: result,
     });
   } catch (error) {
-    console.error("Tweet lookup error:", error);
+    logger.error("Tweet lookup error", { error });
 
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Failed to lookup tweet",
         message: error instanceof Error ? error.message : "Unknown error",

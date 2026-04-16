@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { user } from "@/lib/schema";
 
 export async function DELETE(_req: Request) {
@@ -24,7 +25,7 @@ export async function DELETE(_req: Request) {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error deleting account:", error);
+    logger.error("Error deleting account", { error });
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

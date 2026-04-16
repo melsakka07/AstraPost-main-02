@@ -1,6 +1,7 @@
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
 import { getConversionFunnel, getStartDate } from "@/lib/services/affiliate-stats";
 
 export async function GET() {
@@ -21,7 +22,7 @@ export async function GET() {
       },
     });
   } catch (err) {
-    console.error("[affiliate/funnel] Error:", err);
+    logger.error("[affiliate/funnel] Error", { error: err });
     return ApiError.internal("Failed to load affiliate conversion funnel");
   }
 }

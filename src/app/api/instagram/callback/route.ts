@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { instagramAccounts } from "@/lib/schema";
 import { encryptToken } from "@/lib/security/token-encryption";
 
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   const expectedState = cookieStore.get("instagram_oauth_state")?.value;
 
   if (!state || !expectedState || state !== expectedState) {
-    console.error("[INSTAGRAM_OAUTH_CSRF] state mismatch or missing — possible CSRF attempt");
+    logger.error("[INSTAGRAM_OAUTH_CSRF] state mismatch or missing — possible CSRF attempt");
     return settingsRedirect(req, "error=oauth_state_mismatch");
   }
 
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
   const oauthError = searchParams.get("error");
 
   if (oauthError || !code) {
-    console.error("[INSTAGRAM_AUTH_ERROR]", oauthError);
+    logger.error("[INSTAGRAM_AUTH_ERROR]", { error: oauthError });
     return settingsRedirect(req, "error=instagram_auth_failed");
   }
 
@@ -154,7 +155,7 @@ export async function GET(req: NextRequest) {
 
     return settingsRedirect(req, "success=instagram_connected");
   } catch (err) {
-    console.error("[INSTAGRAM_CALLBACK_ERROR]", err);
+    logger.error("[INSTAGRAM_CALLBACK_ERROR]", { error: err });
     return settingsRedirect(req, "error=instagram_connection_failed");
   }
 }

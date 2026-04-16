@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { teamInvitations } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -33,7 +34,7 @@ export async function DELETE(
 
     return Response.json({ success: true, message: "Invitation revoked" });
   } catch (error) {
-    console.error("Revoke Invitation Error:", error);
+    logger.error("Revoke Invitation Error", { error });
     return new Response("Internal Server Error", { status: 500 });
   }
 }

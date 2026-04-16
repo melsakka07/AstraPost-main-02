@@ -70,4 +70,38 @@ export const SCHEDULE_JOB_OPTIONS = {
   backoff: { type: "exponential" as const, delay: 60_000 },
   removeOnComplete: { count: 1_000, age: 86_400 } as const,
   removeOnFail: { age: 7 * 24 * 60 * 60 } as const, // 7-day TTL then prune
+  timeout: 120_000, // 2 min — kills hung X API calls before lock expiry
+} as const;
+
+/**
+ * Shared BullMQ job options for analytics refresh jobs.
+ *
+ * `attempts: 3` with exponential backoff from 5 s gives a max retry window
+ * of ~35 s — appropriate for transient X API failures without stacking up
+ * long-lived jobs.
+ *
+ * `removeOnComplete: { age: 24h }` retains completed jobs for one day as a
+ * secondary audit trail alongside the `analyticsRefreshRuns` DB table.
+ *
+ * `removeOnFail: { age: 7d }` retains failed jobs for operator review then
+ * prunes automatically — avoids unbounded Redis growth.
+ */
+export const ANALYTICS_JOB_OPTIONS = {
+  attempts: 3,
+  backoff: { type: "exponential" as const, delay: 5_000 },
+  removeOnComplete: { age: 24 * 60 * 60 } as const,
+  removeOnFail: { age: 7 * 24 * 60 * 60 } as const,
+  timeout: 300_000, // 5 min — analytics fetch can pull many tweets
+} as const;
+
+/**
+ * Shared BullMQ job options for X tier refresh jobs.
+ * Mirrors ANALYTICS_JOB_OPTIONS — same retry profile and Redis retention policy.
+ */
+export const TIER_REFRESH_JOB_OPTIONS = {
+  attempts: 3,
+  backoff: { type: "exponential" as const, delay: 5_000 },
+  removeOnComplete: { age: 24 * 60 * 60 } as const,
+  removeOnFail: { age: 7 * 24 * 60 * 60 } as const,
+  timeout: 60_000, // 1 min — simple tier check should be fast
 } as const;

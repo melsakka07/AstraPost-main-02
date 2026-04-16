@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { planChangeLog, session, user } from "@/lib/schema";
 
 // ── Zod schema ───────────────────────────────────────────────────────────────
@@ -124,12 +125,12 @@ export async function POST(request: Request): Promise<Response> {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       response.errors.push(errorMessage);
-      console.error("[BULK_SUBSCRIBERS] Error:", error);
+      logger.error("[BULK_SUBSCRIBERS] Error", { error });
     }
 
     return Response.json(response);
   } catch (err) {
-    console.error("[BULK_SUBSCRIBERS] Error:", err);
+    logger.error("[BULK_SUBSCRIBERS] Error", { error: err });
     return ApiError.internal("Failed to perform bulk action");
   }
 }

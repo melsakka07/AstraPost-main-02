@@ -13,8 +13,10 @@
 
 import { headers } from "next/headers";
 import { and, desc, eq, gte } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { posts, tweets } from "@/lib/schema";
 
 export async function GET(_req: Request) {
@@ -103,7 +105,7 @@ export async function GET(_req: Request) {
       preferredContentTypes,
     });
   } catch (error) {
-    console.error("Self-stats error:", error);
-    return new Response(JSON.stringify({ error: "Failed to compute self stats" }), { status: 500 });
+    logger.error("Self-stats error", { error });
+    return ApiError.internal("Failed to compute self stats");
   }
 }

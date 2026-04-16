@@ -4,8 +4,10 @@ import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { voiceProfileSchema as vpSchema } from "@/lib/ai/voice-profile";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { user } from "@/lib/schema";
 import { recordAiUsage } from "@/lib/services/ai-quota";
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     // Analyzing voice is a Pro feature
@@ -58,16 +60,14 @@ export async function POST(req: Request) {
     const result = analyzeRequestSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(result.error.issues);
     }
 
     const { tweets } = result.data;
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "AI Service not configured" }), { status: 500 });
+      return ApiError.internal("AI Service not configured");
     }
 
     const openrouter = createOpenRouter({ apiKey });
@@ -100,9 +100,7 @@ export async function POST(req: Request) {
     // oversized strings that later cause prompt injection when interpolated.
     const validated = vpSchema.safeParse(object);
     if (!validated.success) {
-      return new Response(JSON.stringify({ error: "AI returned an invalid voice profile shape" }), {
-        status: 500,
-      });
+      return ApiError.internal("AI returned an invalid voice profile shape");
     }
 
     // Save to DB
@@ -120,10 +118,8 @@ export async function POST(req: Request) {
 
     return Response.json(object);
   } catch (error) {
-    console.error("Voice Profile Analysis Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to analyze voice profile" }), {
-      status: 500,
-    });
+    logger.error("Voice Profile Analysis Error:", { error });
+    return ApiError.internal("Failed to analyze voice profile");
   }
 }
 
@@ -131,7 +127,7 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const dbUser = await db.query.user.findFirst({
@@ -141,10 +137,8 @@ export async function GET() {
 
     return Response.json({ voiceProfile: dbUser?.voiceProfile || null });
   } catch (error) {
-    console.error("Voice Profile Fetch Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch voice profile" }), {
-      status: 500,
-    });
+    logger.error("Voice Profile Fetch Error:", { error });
+    return ApiError.internal("Failed to fetch voice profile");
   }
 }
 
@@ -152,16 +146,14 @@ export async function DELETE() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     await db.update(user).set({ voiceProfile: null }).where(eq(user.id, session.user.id));
 
     return Response.json({ success: true });
   } catch (error) {
-    console.error("Voice Profile Delete Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to delete voice profile" }), {
-      status: 500,
-    });
+    logger.error("Voice Profile Delete Error:", { error });
+    return ApiError.internal("Failed to delete voice profile");
   }
 }

@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { promoCodes } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
@@ -43,7 +44,7 @@ export async function GET() {
 
     return Response.json({ data: rows });
   } catch (err) {
-    console.error("[promo-codes] Error:", err);
+    logger.error("[promo-codes] Error:", { error: err });
     return ApiError.internal("Failed to load promo codes");
   }
 }
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
         if ((err as { code?: string }).code === "resource_already_exists") {
           stripeCouponId = `ASTRAPOST_${data.code}`;
         } else {
-          console.error("[promo-codes] Stripe coupon creation failed", err);
+          logger.error("[promo-codes] Stripe coupon creation failed", { error: err });
           // Don't block DB creation — Stripe coupon can be created manually
         }
       }
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
 
     return Response.json({ data: created }, { status: 201 });
   } catch (err) {
-    console.error("[promo-codes] Error:", err);
+    logger.error("[promo-codes] Error:", { error: err });
     return ApiError.internal("Failed to create promo code");
   }
 }

@@ -2,7 +2,10 @@ import { streamText } from "ai";
 import { z } from "zod";
 import { getTemplatePrompt, type OutputFormat } from "@/lib/ai/template-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM, LANGUAGES } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 // Re-export the delimiter so the frontend can share it
@@ -20,6 +23,7 @@ const requestSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const { session, model } = preamble;
@@ -28,18 +32,14 @@ export async function POST(req: Request) {
     const parsed = requestSchema.safeParse(json);
 
     if (!parsed.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: parsed.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(parsed.error.issues);
     }
 
     const { templateId, topic, language } = parsed.data;
 
     const config = getTemplatePrompt(templateId);
     if (!config) {
-      return new Response(JSON.stringify({ error: `Unknown template: ${templateId}` }), {
-        status: 400,
-      });
+      return ApiError.badRequest(`Unknown template: ${templateId}`);
     }
 
     const tone = parsed.data.tone ?? config.defaultTone;
@@ -121,12 +121,13 @@ export async function POST(req: Request) {
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
         "X-Accel-Buffering": "no",
+        "x-correlation-id": correlationId,
       },
     });
   } catch (error) {
-    console.error("AI Template Generate Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate template content" }), {
-      status: 500,
+    logger.error("ai_template_generate_error", {
+      error: error instanceof Error ? error.message : String(error),
     });
+    return ApiError.internal("Failed to generate template content");
   }
 }

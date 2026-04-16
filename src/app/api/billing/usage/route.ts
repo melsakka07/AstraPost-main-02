@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq, and, gte, ne, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -10,7 +9,7 @@ import { getMonthWindow } from "@/lib/utils/time";
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const dbUser = await db.query.user.findFirst({
@@ -18,7 +17,7 @@ export async function GET() {
   });
 
   if (!dbUser) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return Response.json({ error: "User not found" }, { status: 404 });
   }
 
   // Display-only read: getPlanLimits is used here to return plan metadata and
@@ -88,7 +87,7 @@ export async function GET() {
     aiImagesPerMonth: limits.aiImagesPerMonth === -1 ? null : limits.aiImagesPerMonth,
   };
 
-  return NextResponse.json({
+  return Response.json({
     plan,
     limits: serializableLimits,
     usage,

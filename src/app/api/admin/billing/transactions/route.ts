@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { subscriptions, user } from "@/lib/schema";
 
 // ── Zod schema ───────────────────────────────────────────────────────────────
@@ -97,7 +98,7 @@ export async function GET() {
 
     return Response.json({ data: rows });
   } catch (err) {
-    console.error("[billing/transactions] Error:", err);
+    logger.error("[billing/transactions] Error:", { error: err });
     return ApiError.internal("Failed to load transactions");
   }
 }
@@ -124,7 +125,7 @@ export async function POST(request: Request): Promise<Response> {
 
     return ApiError.badRequest("Unknown action");
   } catch (err) {
-    console.error("[billing/transactions] Error:", err);
+    logger.error("[billing/transactions] Error:", { error: err });
     return ApiError.internal("Failed to process transaction request");
   }
 }
@@ -158,7 +159,7 @@ async function handleTransactionExport(): Promise<Response> {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("[TRANSACTIONS_EXPORT] Error:", error);
+    logger.error("[TRANSACTIONS_EXPORT] Error:", { error });
     return ApiError.internal(errorMessage);
   }
 }

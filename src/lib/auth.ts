@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "./db";
+import { logger } from "./logger";
 import { generateReferralCode } from "./referral/utils";
 import { user as userTable } from "./schema";
 import { decryptToken, encryptToken, isEncryptedToken } from "./security/token-encryption";
@@ -117,7 +118,9 @@ export const auth = betterAuth({
                   },
                 });
             } catch (error) {
-              console.error("Failed to sync xAccount on create", error);
+              logger.error("auth_x_account_sync_create_failed", {
+                error: error instanceof Error ? error.message : String(error),
+              });
             }
           }
         },
@@ -165,7 +168,9 @@ export const auth = betterAuth({
                   },
                 });
             } catch (error) {
-              console.error("Failed to sync xAccount on update", error);
+              logger.error("auth_x_account_sync_update_failed", {
+                error: error instanceof Error ? error.message : String(error),
+              });
             }
           }
         },

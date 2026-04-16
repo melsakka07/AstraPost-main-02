@@ -1,4 +1,5 @@
 import IORedis from "ioredis";
+import { logger } from "@/lib/logger";
 
 /**
  * Lightweight Redis client for billing-specific caching (e.g. the sync-failsafe
@@ -26,7 +27,7 @@ export function getBillingRedis(): IORedis | null {
 
   // Suppress unhandled-rejection noise — callers already use .catch(() => null).
   _client.on("error", (err: Error) => {
-    console.error("[billing-redis] connection error:", err.message);
+    logger.error("billing_redis_connection_error", { error: err.message });
   });
 
   return _client;

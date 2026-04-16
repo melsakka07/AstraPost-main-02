@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { followerSnapshots } from "@/lib/schema";
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
     to: url.searchParams.get("to") || undefined,
   });
   if (!parsed.success) {
-    return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
+    return ApiError.badRequest("Invalid request");
   }
 
   const from = parsed.data.from

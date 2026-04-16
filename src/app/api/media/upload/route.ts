@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 import { upload } from "@/lib/storage";
@@ -151,7 +152,7 @@ export async function POST(req: Request) {
       size: file.size,
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    logger.error("Upload error", { error });
     return new Response("Internal Server Error", { status: 500 });
   }
 }

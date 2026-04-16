@@ -1,8 +1,14 @@
-import { eq, and, gte, ne, sql } from "drizzle-orm";
+import { eq, and, gte, ne, sql, type ExtractTablesWithRelations } from "drizzle-orm";
+import { type PgQueryResultHKT, type PgTransaction } from "drizzle-orm/pg-core";
 import { db } from "@/lib/db";
 import { getPlanLimits } from "@/lib/plan-limits";
-import { aiGenerations, user } from "@/lib/schema";
+import { aiGenerations, aiGenerationTypeEnum, user } from "@/lib/schema";
+import type * as schema from "@/lib/schema";
 import { getMonthWindow } from "@/lib/utils/time";
+
+type DbClient =
+  | typeof db
+  | PgTransaction<PgQueryResultHKT, typeof schema, ExtractTablesWithRelations<typeof schema>>;
 
 export interface MonthlyAiUsage {
   used: number;
@@ -72,13 +78,15 @@ export async function getMonthlyImageUsage(userId: string): Promise<MonthlyAiUsa
 
 export async function recordAiUsage(
   userId: string,
-  type: string,
+  type: (typeof aiGenerationTypeEnum.enumValues)[number],
   tokens: number = 0,
   input: string,
   output: unknown,
-  language?: string
+  language?: string,
+  tx?: DbClient
 ) {
-  await db.insert(aiGenerations).values({
+  const client = tx ?? db;
+  await client.insert(aiGenerations).values({
     id: crypto.randomUUID(),
     userId,
     type,

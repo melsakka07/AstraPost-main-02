@@ -1,7 +1,10 @@
 import Stripe from "stripe";
+import { logger } from "@/lib/logger";
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.warn("[billing] STRIPE_SECRET_KEY is not set — all billing features are disabled.");
+  logger.warn("stripe_secret_key_missing", {
+    message: "STRIPE_SECRET_KEY is not set — all billing features are disabled.",
+  });
 }
 
 /**

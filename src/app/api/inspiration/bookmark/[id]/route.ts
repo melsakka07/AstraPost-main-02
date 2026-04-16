@@ -3,10 +3,11 @@
  * DELETE /api/inspiration/bookmark/[id]
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { inspirationBookmarks } from "@/lib/schema";
 
 type RouteContext = {
@@ -25,7 +26,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     });
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -37,7 +38,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     });
 
     if (!existing) {
-      return NextResponse.json({ error: "Bookmark not found" }, { status: 404 });
+      return Response.json({ error: "Bookmark not found" }, { status: 404 });
     }
 
     // 3. Delete bookmark
@@ -45,14 +46,14 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
       .delete(inspirationBookmarks)
       .where(and(eq(inspirationBookmarks.id, id), eq(inspirationBookmarks.userId, userId)));
 
-    return NextResponse.json({
+    return Response.json({
       success: true,
       message: "Bookmark removed",
     });
   } catch (error) {
-    console.error("Bookmark deletion error:", error);
+    logger.error("Bookmark deletion error", { error });
 
-    return NextResponse.json(
+    return Response.json(
       {
         error: "Failed to delete bookmark",
         message: error instanceof Error ? error.message : "Unknown error",

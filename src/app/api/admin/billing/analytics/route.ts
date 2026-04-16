@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { PRICING } from "@/lib/pricing";
 import { planChangeLog, processedWebhookEvents, user } from "@/lib/schema";
 
@@ -158,7 +159,7 @@ export async function GET(request: Request) {
       cohortData,
     });
   } catch (err) {
-    console.error("[billing/analytics] Error:", err);
+    logger.error("[billing/analytics] Error", { error: err });
     return ApiError.internal("Failed to load billing analytics");
   }
 }

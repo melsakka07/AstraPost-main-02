@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
 import { connection as redis } from "@/lib/queue/client";
 import { validateReferralCode } from "@/lib/referral/utils";
 
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
       referrerName: referrer.name,
     });
   } catch (error) {
-    console.error("Referral validation error:", error);
+    logger.error("Referral validation error", { error });
     return ApiError.internal();
   }
 }

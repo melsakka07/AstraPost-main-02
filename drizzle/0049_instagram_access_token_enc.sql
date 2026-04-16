@@ -1,0 +1,1 @@
+ALTER TABLE "instagram_accounts" RENAME COLUMN "access_token" TO "access_token_enc";

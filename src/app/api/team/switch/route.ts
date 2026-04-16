@@ -1,5 +1,4 @@
 import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -22,11 +21,11 @@ const bodySchema = z.object({
  */
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new NextResponse("Unauthorized", { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const parsed = bodySchema.safeParse(await req.json());
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid teamId" }, { status: 400 });
+    return Response.json({ error: "Invalid teamId" }, { status: 400 });
   }
 
   const { teamId } = parsed.data;
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
   if (teamId === session.user.id) {
     // Clear any existing team cookie — personal workspace is the default.
     cookieStore.delete(TEAM_COOKIE_NAME);
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   }
 
   // ── Team workspace ────────────────────────────────────────────────────────
@@ -46,7 +45,7 @@ export async function POST(req: Request) {
   });
 
   if (!membership) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Sign the cookie with the user's ID so it cannot be replayed cross-user.
@@ -60,5 +59,5 @@ export async function POST(req: Request) {
     secure: process.env.NODE_ENV === "production",
   });
 
-  return NextResponse.json({ success: true });
+  return Response.json({ success: true });
 }

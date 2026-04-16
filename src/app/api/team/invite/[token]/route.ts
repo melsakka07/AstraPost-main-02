@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { auth } from "@/lib/auth";
@@ -12,7 +11,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   });
 
   if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   const { token } = await params;
@@ -23,16 +22,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   });
 
   if (!invitation) {
-    return new NextResponse("Invalid or expired invitation", { status: 404 });
+    return new Response("Invalid or expired invitation", { status: 404 });
   }
 
   if (new Date() > invitation.expiresAt) {
-    return new NextResponse("Invitation expired", { status: 400 });
+    return new Response("Invitation expired", { status: 400 });
   }
 
   // 2. Check if user email matches (optional security check, usually good practice)
   if (session.user.email !== invitation.email) {
-    return new NextResponse("This invitation was sent to a different email address", {
+    return new Response("This invitation was sent to a different email address", {
       status: 403,
     });
   }
@@ -56,5 +55,5 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   // 4. Delete/Update invitation
   await db.delete(teamInvitations).where(eq(teamInvitations.id, invitation.id));
 
-  return NextResponse.json({ success: true, teamId: invitation.teamId });
+  return Response.json({ success: true, teamId: invitation.teamId });
 }

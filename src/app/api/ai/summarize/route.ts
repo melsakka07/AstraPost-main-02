@@ -1,10 +1,13 @@
 import { generateObject } from "ai";
-import * as cheerio from "cheerio";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, LANGUAGES, TONE_ENUM } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { checkUrlToThreadAccessDetailed } from "@/lib/middleware/require-plan";
 import { recordAiUsage } from "@/lib/services/ai-quota";
+import { BLOCKED_HOSTS, fetchArticleText } from "@/lib/services/article-fetcher";
 
 const requestSchema = z.object({
   url: z.string().url(),
@@ -19,46 +22,9 @@ const threadSchema = z.object({
   sourceLanguage: z.string(),
 });
 
-async function fetchArticleText(url: string): Promise<{ text: string; title: string }> {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-      "Accept-Language": "en-US,en;q=0.9",
-      "Accept-Encoding": "gzip, deflate, br",
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
-      "Sec-Fetch-Dest": "document",
-      "Sec-Fetch-Mode": "navigate",
-      "Sec-Fetch-Site": "none",
-      "Upgrade-Insecure-Requests": "1",
-    },
-    redirect: "follow",
-    signal: AbortSignal.timeout(15000),
-  });
-
-  if (!res.ok) throw new Error(`Failed to fetch URL: ${res.status}`);
-
-  const html = await res.text();
-  const $ = cheerio.load(html);
-
-  // Remove noise
-  $("script, style, nav, footer, header, aside, .ad, [class*='ad-'], [id*='ad-']").remove();
-
-  const title = $("meta[property='og:title']").attr("content") || $("title").text() || "";
-
-  // Prefer article/main content
-  const content = $("article").text() || $("main").text() || $("body").text();
-
-  // Normalize whitespace and limit to ~4000 chars to stay in context
-  const text = content.replace(/\s+/g, " ").trim().slice(0, 4000);
-
-  return { text, title: title.trim() };
-}
-
 export async function POST(req: Request) {
+  const correlationId = getCorrelationId(req);
+
   try {
     const preamble = await aiPreamble({ featureGate: checkUrlToThreadAccessDetailed });
     if (preamble instanceof Response) return preamble;
@@ -67,12 +33,26 @@ export async function POST(req: Request) {
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(result.error.issues);
     }
 
     const { url, language, tweetCount, tone } = result.data;
+
+    // Validate URL and check for SSRF attacks
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return ApiError.badRequest("Invalid URL");
+    }
+
+    if (parsedUrl.protocol !== "https:") {
+      return ApiError.badRequest("URL scheme not allowed. Only HTTPS is allowed.");
+    }
+
+    if (BLOCKED_HOSTS.test(parsedUrl.hostname)) {
+      return ApiError.forbidden("URL not allowed");
+    }
 
     // Fetch and extract article text
     let articleText: string;
@@ -82,16 +62,11 @@ export async function POST(req: Request) {
       articleText = fetched.text;
       articleTitle = fetched.title;
     } catch {
-      return new Response(
-        JSON.stringify({ error: "Could not fetch the URL. Make sure it is publicly accessible." }),
-        { status: 422 }
-      );
+      return ApiError.badRequest("Could not fetch the URL. Make sure it is publicly accessible.");
     }
 
     if (articleText.length < 100) {
-      return new Response(JSON.stringify({ error: "Not enough content found at this URL." }), {
-        status: 422,
-      });
+      return ApiError.badRequest("Not enough content found at this URL.");
     }
 
     const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
@@ -132,11 +107,14 @@ Constraints:
       tweets: object.tweets.map((t) => (t.length > 1000 ? t.slice(0, 997) + "..." : t)),
     };
 
-    return Response.json(sanitized);
+    const res = Response.json(sanitized);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("URL summarize error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate thread from URL" }), {
-      status: 500,
+    logger.error("url_summarize_error", {
+      correlationId,
+      error: error instanceof Error ? error.message : String(error),
     });
+    return ApiError.internal("Failed to generate thread from URL");
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { checkLinkedinAccessDetailed } from "@/lib/middleware/require-plan";
 import { linkedinAccounts } from "@/lib/schema";
 import { encryptToken } from "@/lib/security/token-encryption";
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
   const expectedState = cookieStore.get("linkedin_oauth_state")?.value;
 
   if (!state || !expectedState || state !== expectedState) {
-    console.error("[LINKEDIN_OAUTH_CSRF] state mismatch or missing — possible CSRF attempt");
+    logger.error("[LINKEDIN_OAUTH_CSRF] state mismatch or missing — possible CSRF attempt");
     return settingsRedirect(req, "error=oauth_state_mismatch");
   }
 
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
   const oauthError = searchParams.get("error");
 
   if (oauthError || !code) {
-    console.error("[LINKEDIN_AUTH_ERROR]", oauthError);
+    logger.error("[LINKEDIN_AUTH_ERROR]", { error: oauthError });
     return settingsRedirect(req, "error=linkedin_auth_failed");
   }
 
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
 
     if (!tokenRes.ok) {
       const errorText = await tokenRes.text();
-      console.error("[LINKEDIN_TOKEN_ERROR]", errorText);
+      logger.error("[LINKEDIN_TOKEN_ERROR]", { error: errorText });
       return settingsRedirect(req, "error=linkedin_token_exchange_failed");
     }
 
@@ -114,7 +115,7 @@ export async function GET(req: NextRequest) {
 
     return settingsRedirect(req, "success=linkedin_connected");
   } catch (err) {
-    console.error("[LINKEDIN_CALLBACK_ERROR]", err);
+    logger.error("[LINKEDIN_CALLBACK_ERROR]", { error: err });
     return settingsRedirect(req, "error=linkedin_connection_failed");
   }
 }

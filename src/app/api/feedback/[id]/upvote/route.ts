@@ -3,6 +3,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { feedback, feedbackVotes } from "@/lib/schema";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -53,7 +54,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       return Response.json({ voted: true });
     }
   } catch (error) {
-    console.error("Upvote Error:", error);
+    logger.error("Upvote Error", { error });
     return ApiError.internal();
   }
 }

@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { planToPrice, VALID_CHECKOUT_PLANS } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { checkIpRateLimit } from "@/lib/rate-limiter";
 import { promoCodes, subscriptions, user } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
@@ -21,10 +22,7 @@ export async function POST(req: Request) {
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const rlResult = await checkIpRateLimit(ip, "billing:checkout", 10, 60);
   if (rlResult?.limited) {
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
-      headers: { "Retry-After": String(rlResult.retryAfter) },
-    });
+    return ApiError.tooManyRequests("Too many requests");
   }
 
   if (!stripe) {
@@ -106,7 +104,9 @@ export async function POST(req: Request) {
             description: `Referral credits: $${pendingCredits}`,
           });
         } catch (err) {
-          console.error("[billing] failed to apply referral credits to Stripe balance", err);
+          logger.error("[billing] failed to apply referral credits to Stripe balance", {
+            error: err,
+          });
         }
       }
 
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
 
     return Response.json({ url: checkoutSession.url });
   } catch (error) {
-    console.error("[billing] checkout session creation failed", error);
+    logger.error("[billing] checkout session creation failed", { error });
     return ApiError.internal("Failed to create checkout session.");
   }
 }

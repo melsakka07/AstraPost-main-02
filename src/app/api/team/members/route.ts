@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { teamInvitations, teamMembers } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -53,7 +54,7 @@ export async function GET(_req: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Fetch Members Error:", error);
+    logger.error("Fetch Members Error", { error });
     return new Response("Internal Server Error", { status: 500 });
   }
 }

@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { teamInvitations, teamMembers, user } from "@/lib/schema";
 import { sendTeamInvitationEmail } from "@/lib/services/email";
@@ -18,7 +20,7 @@ export async function POST(req: NextRequest) {
     if (!ctx) return new Response("Unauthorized", { status: 401 });
 
     if (!ctx.isOwner && ctx.role !== "admin") {
-      return new Response("Forbidden: Only owners and admins can invite members", { status: 403 });
+      return ApiError.forbidden("Only owners and admins can invite members");
     }
 
     // Parse body
@@ -35,13 +37,7 @@ export async function POST(req: NextRequest) {
     const limits = getPlanLimits(plan);
 
     if (limits.maxTeamMembers === null) {
-      return new Response(
-        JSON.stringify({
-          error: "upgrade_required",
-          message: "Team members are only available on the Agency plan.",
-        }),
-        { status: 403 }
-      );
+      return ApiError.forbidden("Team members are only available on the Agency plan.");
     }
 
     // Count current members + pending invitations
@@ -60,12 +56,8 @@ export async function POST(req: NextRequest) {
     const totalUsed = Number(membersCount[0]?.count ?? 0) + Number(invitesCount[0]?.count ?? 0);
 
     if (totalUsed >= limits.maxTeamMembers) {
-      return new Response(
-        JSON.stringify({
-          error: "limit_exceeded",
-          message: `You have reached the maximum of ${limits.maxTeamMembers} team members.`,
-        }),
-        { status: 403 }
+      return ApiError.forbidden(
+        `You have reached the maximum of ${limits.maxTeamMembers} team members.`
       );
     }
 
@@ -79,9 +71,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingInvite) {
-      return new Response(JSON.stringify({ error: "Invitation already pending for this email" }), {
-        status: 409,
-      });
+      return ApiError.conflict("Invitation already pending for this email");
     }
 
     // Create invitation
@@ -108,7 +98,7 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: "Invalid input", details: error.issues }, { status: 400 });
     }
 
-    console.error("Invite Error:", error);
+    logger.error("Invite Error", { error });
     return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

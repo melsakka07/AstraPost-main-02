@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -11,7 +10,7 @@ export async function GET(_req: Request) {
   });
 
   if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   // 1. Get teams where the user is a member
@@ -47,5 +46,5 @@ export async function GET(_req: Request) {
     isPersonal: false,
   }));
 
-  return NextResponse.json([personalTeam, ...teams]);
+  return Response.json([personalTeam, ...teams]);
 }

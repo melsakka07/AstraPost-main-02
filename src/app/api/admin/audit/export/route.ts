@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { adminAuditLog, user } from "@/lib/schema";
 
 export async function GET(request: Request) {
@@ -111,7 +112,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[audit/export] Error:", err);
+    logger.error("[audit/export] Error", { error: err });
     return ApiError.internal("Failed to export audit log");
   }
 }

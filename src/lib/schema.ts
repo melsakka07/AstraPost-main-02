@@ -106,6 +106,65 @@ export const feedbackStatusEnum = pgEnum("feedback_status", ["pending", "approve
 /** Category of a feedback submission. */
 export const feedbackCategoryEnum = pgEnum("feedback_category", ["feature", "bug", "other"]);
 
+/** Type of an AI generation record. */
+export const aiGenerationTypeEnum = pgEnum("ai_generation_type", [
+  "thread",
+  "image",
+  "image_prompt",
+  "affiliate",
+  "inspiration",
+  "inspire",
+  "agentic_pipeline",
+  "agentic_regenerate",
+  "bio_optimizer",
+  "content_calendar",
+  "tools",
+  "hook",
+  "cta",
+  "rewrite",
+  "hashtags",
+  "translate",
+  "reply_generator",
+  "url_to_thread",
+  "template",
+  "variant_generator",
+  "competitor_analyzer",
+  "chat",
+  "voice_profile",
+]);
+
+/** Type of a user-facing notification. */
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "admin",
+  "post_failed",
+  "tier_downgrade_warning",
+  "token_expiring_soon",
+  "billing_checkout_completed",
+  "billing_trial_expired",
+  "billing_plan_changed",
+  "billing_accounts_over_limit",
+  "billing_posts_moved_to_draft",
+  "billing_cancel_scheduled",
+  "billing_reactivated",
+  "billing_subscription_cancelled",
+  "billing_payment_failed",
+  "billing_payment_succeeded",
+  "billing_trial_will_end",
+  "billing_checkout_expired",
+  "billing_grace_period_expired",
+  "webhook_processing_failed",
+  "referral_credit_earned",
+  "referral_trial_extended",
+]);
+
+/** Affiliate platform a link targets. */
+export const affiliatePlatformEnum = pgEnum("affiliate_platform", [
+  "amazon",
+  "noon",
+  "aliexpress",
+  "other",
+]);
+
 // IMPORTANT! ID fields should ALWAYS use UUID types, EXCEPT the BetterAuth tables.
 // However, to maintain consistency with the existing user table which uses text IDs,
 // we will use text for IDs in related tables as well, or ensure type compatibility.
@@ -571,7 +630,7 @@ export const aiGenerations = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    type: text("type"), // 'thread', 'tweet_improve', 'affiliate', 'image', 'inspiration', 'inspire'
+    type: aiGenerationTypeEnum("type"),
     inputPrompt: text("input_prompt"),
     outputContent: jsonb("output_content"),
     tone: text("tone"),
@@ -716,7 +775,7 @@ export const affiliateLinks = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     destinationUrl: text("destination_url").notNull(),
     shortCode: text("short_code").unique(),
-    platform: text("platform").default("amazon"),
+    platform: affiliatePlatformEnum("platform").default("amazon"),
     clicks: integer("clicks").default(0),
     amazonAsin: text("amazon_asin"),
     productTitle: text("product_title"),
@@ -760,7 +819,7 @@ export const notifications = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    type: text("type").notNull(),
+    type: notificationTypeEnum("type").notNull(),
     title: text("title"),
     message: text("message"),
     isRead: boolean("is_read").default(false),

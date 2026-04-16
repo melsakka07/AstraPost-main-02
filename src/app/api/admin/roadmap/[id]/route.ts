@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { feedback } from "@/lib/schema";
 
 const updateSchema = z.object({
@@ -59,7 +60,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     return Response.json(updated[0]);
   } catch (err) {
-    console.error("[roadmap/[id]] Error:", err);
+    logger.error("[roadmap/[id]] Error", { error: err });
     return ApiError.internal("Failed to update feedback");
   }
 }

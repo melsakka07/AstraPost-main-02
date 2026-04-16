@@ -1,8 +1,10 @@
 import { headers } from "next/headers";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { templates } from "@/lib/schema";
 
 const aiMetaSchema = z
@@ -27,7 +29,7 @@ export async function GET(_req: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const userTemplates = await db.query.templates.findMany({
@@ -37,8 +39,8 @@ export async function GET(_req: Request) {
 
     return Response.json(userTemplates);
   } catch (error) {
-    console.error("Fetch Templates Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch templates" }), { status: 500 });
+    logger.error("Fetch Templates Error", { error });
+    return ApiError.internal("Failed to fetch templates");
   }
 }
 
@@ -46,16 +48,14 @@ export async function POST(req: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const json = await req.json();
     const result = createTemplateSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(result.error.issues);
     }
 
     const { title, description, content, category, aiMeta } = result.data;
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
     return Response.json(newTemplate);
   } catch (error) {
-    console.error("Create Template Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to create template" }), { status: 500 });
+    logger.error("Create Template Error", { error });
+    return ApiError.internal("Failed to create template");
   }
 }

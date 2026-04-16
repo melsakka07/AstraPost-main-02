@@ -4,6 +4,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { feedback, feedbackVotes } from "@/lib/schema";
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +39,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error("[roadmap/[id]/delete] Error:", err);
+    logger.error("[roadmap/[id]/delete] Error", { error: err });
     return ApiError.internal("Failed to delete feedback");
   }
 }

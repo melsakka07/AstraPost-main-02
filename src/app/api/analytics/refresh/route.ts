@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
@@ -27,14 +28,14 @@ export async function POST(req: Request) {
   const json = await req.json().catch(() => ({}));
   const parsed = schema.safeParse(json);
   if (!parsed.success) {
-    return new Response(JSON.stringify({ error: "Invalid request" }), { status: 400 });
+    return ApiError.badRequest("Invalid request");
   }
 
   const all = await db.query.xAccounts.findMany({
     where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)),
   });
   if (all.length === 0) {
-    return new Response(JSON.stringify({ error: "No connected X accounts" }), { status: 400 });
+    return ApiError.badRequest("No connected X accounts");
   }
 
   const targetIds =
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
 
   const selected = all.filter((a) => targetIds.includes(a.id));
   if (selected.length === 0) {
-    return new Response(JSON.stringify({ error: "Invalid target accounts" }), { status: 400 });
+    return ApiError.badRequest("Invalid target accounts");
   }
 
   const runIds: string[] = [];

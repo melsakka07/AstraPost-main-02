@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   planChangeLog,
   subscriptions,
@@ -154,7 +155,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[subscribers] Error:", err);
+    logger.error("[subscribers] Error", { error: err });
     return ApiError.internal("Failed to load subscribers");
   }
 }
@@ -221,7 +222,7 @@ export async function POST(request: Request) {
 
     return Response.json({ data: created }, { status: 201 });
   } catch (err) {
-    console.error("[subscribers] Error:", err);
+    logger.error("[subscribers] Error", { error: err });
     return ApiError.internal("Failed to create subscriber");
   }
 }

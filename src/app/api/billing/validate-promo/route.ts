@@ -2,7 +2,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
-import { checkIpRateLimit } from "@/lib/rate-limiter";
+import { checkIpRateLimit, createIpRateLimitResponse } from "@/lib/rate-limiter";
 import { promoCodes } from "@/lib/schema";
 
 const schema = z.object({
@@ -17,12 +17,7 @@ const schema = z.object({
 export async function POST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const rlResult = await checkIpRateLimit(ip, "billing:validate-promo", 20, 60);
-  if (rlResult?.limited) {
-    return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
-      status: 429,
-      headers: { "Retry-After": String(rlResult.retryAfter) },
-    });
-  }
+  if (rlResult?.limited) return createIpRateLimitResponse(rlResult.retryAfter ?? 60);
 
   const body = await request.json().catch(() => null);
   if (!body) return ApiError.badRequest("Invalid JSON body");

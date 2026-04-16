@@ -28,6 +28,7 @@ console.log(
 
 const scheduleWorker = new Worker("schedule-queue", scheduleProcessor, {
   connection: connection as any,
+  lockDuration: 360_000, // 6 min — must exceed SCHEDULE_JOB_OPTIONS.timeout (2 min)
 });
 
 scheduleWorker.on("completed", (job) => {
@@ -87,6 +88,7 @@ scheduleWorker.on("failed", (job, err) => {
 
 const analyticsWorker = new Worker("analytics-queue", analyticsProcessor, {
   connection: connection as any,
+  lockDuration: 360_000, // 6 min — must exceed ANALYTICS_JOB_OPTIONS.timeout (5 min)
 });
 
 analyticsWorker.on("completed", (job) => {
@@ -151,6 +153,7 @@ analyticsQueue
 // accounts whose cached tier data is stale (>24h old) or never fetched.
 const xTierRefreshWorker = new Worker("x-tier-refresh-queue", refreshXTiersProcessor, {
   connection: connection as any,
+  lockDuration: 120_000, // 2 min — must exceed TIER_REFRESH_JOB_OPTIONS.timeout (1 min)
 });
 
 xTierRefreshWorker.on("completed", (job) => {
@@ -192,6 +195,7 @@ xTierRefreshQueue
 // Runs daily at 2 AM UTC to check for X account tokens expiring within 48 hours.
 const tokenHealthWorker = new Worker("token-health-queue", tokenHealthProcessor, {
   connection: connection as any,
+  lockDuration: 120_000, // 2 min — token health check should complete well within this
 });
 
 tokenHealthWorker.on("completed", (job) => {

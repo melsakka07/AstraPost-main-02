@@ -1,14 +1,16 @@
 import { headers } from "next/headers";
 import { eq, desc } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { affiliateLinks } from "@/lib/schema";
 
 export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const links = await db.query.affiliateLinks.findMany({
@@ -19,9 +21,7 @@ export async function GET() {
 
     return Response.json(links);
   } catch (error) {
-    console.error("Failed to fetch affiliate links:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch affiliate history" }), {
-      status: 500,
-    });
+    logger.error("Failed to fetch affiliate links", { error });
+    return ApiError.internal("Failed to fetch affiliate history");
   }
 }

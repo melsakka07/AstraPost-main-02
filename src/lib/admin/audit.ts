@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { adminAuditLog } from "@/lib/schema";
 import type { adminAuditActionEnum } from "@/lib/schema";
 
@@ -39,6 +40,8 @@ export async function logAdminAction(input: LogAdminActionInput): Promise<void> 
     });
   } catch (error) {
     // Never let audit logging break the primary operation
-    console.error("[ADMIN_AUDIT] Failed to log action:", error);
+    logger.error("admin_audit_log_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }

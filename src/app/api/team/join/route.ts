@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { teamInvitations, teamMembers } from "@/lib/schema";
 
 export async function POST(req: NextRequest) {
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     return Response.json({ success: true, message: "Joined team successfully" });
   } catch (error) {
-    console.error("Join Team Error:", error);
+    logger.error("Join Team Error", { error });
     return new Response("Internal Server Error", { status: 500 });
   }
 }

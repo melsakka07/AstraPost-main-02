@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
-import { notifications } from "@/lib/schema";
+import { notifications, notificationTypeEnum } from "@/lib/schema";
 
 interface NotifyBillingEventInput {
   userId: string;
-  type: string;
+  type: (typeof notificationTypeEnum.enumValues)[number];
   title: string;
   message: string;
   metadata?: Record<string, unknown>;

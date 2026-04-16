@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -8,7 +8,7 @@ import { tweetAnalytics, tweetAnalyticsSnapshots, tweets } from "@/lib/schema";
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   const { id } = await params;
@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   });
 
   if (!tweet || tweet.post.userId !== session.user.id) {
-    return new NextResponse("Not found", { status: 404 });
+    return new Response("Not found", { status: 404 });
   }
 
   // Fetch current metrics
@@ -42,7 +42,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   // Sort history ascending for charts
   const historyAsc = [...history].sort((a, b) => a.fetchedAt.getTime() - b.fetchedAt.getTime());
 
-  return NextResponse.json({
+  return Response.json({
     current: current || null,
     history: historyAsc,
   });

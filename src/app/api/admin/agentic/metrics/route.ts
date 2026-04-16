@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { agenticPosts, tweets } from "@/lib/schema";
 
 export async function GET() {
@@ -44,7 +45,7 @@ export async function GET() {
       },
     });
   } catch (err) {
-    console.error("[agentic/metrics] Error:", err);
+    logger.error("[agentic/metrics] Error", { error: err });
     return ApiError.internal("Failed to load agentic metrics");
   }
 }

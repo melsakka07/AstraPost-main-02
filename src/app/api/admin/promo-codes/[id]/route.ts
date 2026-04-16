@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { promoCodes } from "@/lib/schema";
 
 const patchSchema = z.object({
@@ -114,7 +115,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error("[promo-codes/[id]] Error:", err);
+    logger.error("[promo-codes/[id]] Error", { error: err });
     return ApiError.internal("Failed to delete promo code");
   }
 }

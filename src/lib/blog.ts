@@ -4,6 +4,7 @@ import { serialize } from "next-mdx-remote/serialize";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
+import { logger } from "@/lib/logger";
 
 const BLOG_CONTENT_PATH = path.join(process.cwd(), "content/blog");
 
@@ -107,7 +108,10 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
       image: frontmatter.image,
     };
   } catch (error) {
-    console.error(`Error compiling blog post "${slug}":`, error);
+    logger.error("blog_post_compile_failed", {
+      slug,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -141,7 +145,10 @@ export async function getAllBlogPosts(): Promise<BlogPostMeta[]> {
         });
       }
     } catch (error) {
-      console.error(`Error reading blog post "${slug}":`, error);
+      logger.error("blog_post_read_failed", {
+        slug,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

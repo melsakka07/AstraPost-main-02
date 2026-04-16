@@ -4,12 +4,13 @@
  * GET /api/inspiration/bookmark
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { checkBookmarkLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { inspirationBookmarks, user } from "@/lib/schema";
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
     // 1. Authentication
     const session = await auth.api.getSession({ headers: req.headers });
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validationResult = CreateBookmarkRequestSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
+      return Response.json(
         { error: "Invalid request", details: validationResult.error.issues },
         { status: 400 }
       );
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing) {
-      return NextResponse.json({ error: "Tweet already bookmarked" }, { status: 409 });
+      return Response.json({ error: "Tweet already bookmarked" }, { status: 409 });
     }
 
     // 5. Create bookmark
@@ -89,10 +90,10 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    return NextResponse.json({ success: true, bookmark: bookmark[0] });
+    return Response.json({ success: true, bookmark: bookmark[0] });
   } catch (error) {
-    console.error("Bookmark creation error:", error);
-    return NextResponse.json(
+    logger.error("Bookmark creation error", { error });
+    return Response.json(
       {
         error: "Failed to create bookmark",
         message: error instanceof Error ? error.message : "Unknown error",
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
     // 1. Authentication
     const session = await auth.api.getSession({ headers: req.headers });
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const userId = session.user.id;
@@ -133,10 +134,10 @@ export async function GET(req: NextRequest) {
       limit: planLimits.maxInspirationBookmarks > 0 ? planLimits.maxInspirationBookmarks : 100,
     });
 
-    return NextResponse.json({ bookmarks, limit: planLimits.maxInspirationBookmarks });
+    return Response.json({ bookmarks, limit: planLimits.maxInspirationBookmarks });
   } catch (error) {
-    console.error("Bookmark fetch error:", error);
-    return NextResponse.json(
+    logger.error("Bookmark fetch error", { error });
+    return Response.json(
       {
         error: "Failed to fetch bookmarks",
         message: error instanceof Error ? error.message : "Unknown error",

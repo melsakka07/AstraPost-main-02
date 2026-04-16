@@ -1,5 +1,7 @@
 import { headers } from "next/headers";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import {
   checkBestTimesAccessDetailed,
   createPlanLimitResponse,
@@ -21,7 +23,7 @@ export async function GET() {
     const times = await getBestTimes(session.user.id);
     return Response.json({ times });
   } catch (error) {
-    console.error("Best Times API Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch best times" }), { status: 500 });
+    logger.error("Best Times API Error", { error });
+    return ApiError.internal("Failed to fetch best times");
   }
 }

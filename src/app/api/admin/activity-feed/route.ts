@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { adminAuditLog, user } from "@/lib/schema";
 
 /**
@@ -77,7 +78,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("[ACTIVITY_FEED] Error:", error);
+    logger.error("[ACTIVITY_FEED] Error", { error });
     return ApiError.internal(errorMessage);
   }
 }

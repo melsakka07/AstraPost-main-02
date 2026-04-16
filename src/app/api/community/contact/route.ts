@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/services/email";
@@ -52,7 +51,7 @@ export async function POST(req: Request) {
     "unknown";
 
   if (isRateLimited(ip)) {
-    return NextResponse.json(
+    return Response.json(
       { error: "Too many requests. Please wait before submitting again." },
       { status: 429 }
     );
@@ -62,12 +61,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   const parsed = contactSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(
+    return Response.json(
       { error: "Invalid form data", details: parsed.error.flatten().fieldErrors },
       { status: 422 }
     );
@@ -146,13 +145,13 @@ export async function POST(req: Request) {
     });
 
     logger.info("community_contact_submitted", { category, ip });
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   } catch (error) {
     logger.warn("community_contact_email_failed", {
       error: error instanceof Error ? error.message : "Unknown",
     });
     // Return success to the user even if email delivery fails — the form data
     // was valid and we don't want to expose email infrastructure failures.
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   }
 }

@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { logger } from "@/lib/logger";
 import { connection as redis } from "@/lib/queue/client";
 import { validateReferralCode, REFERRAL_TRIAL_DAYS } from "@/lib/referral/utils";
 import { user } from "@/lib/schema";
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
     return Response.json({ success: true });
   } catch (error) {
     if (error instanceof Response) return error;
-    console.error("Set referrer error:", error);
+    logger.error("Set referrer error", { error });
     return ApiError.internal();
   }
 }

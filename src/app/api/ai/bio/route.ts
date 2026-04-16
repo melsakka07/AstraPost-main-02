@@ -3,9 +3,12 @@ import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { checkBioOptimizerAccessDetailed } from "@/lib/middleware/require-plan";
 import { xAccounts } from "@/lib/schema";
 import { recordAiUsage } from "@/lib/services/ai-quota";
@@ -40,7 +43,7 @@ export async function GET(_req: Request) {
   // Returns the connected account's username for display
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return new Response("Unauthorized", { status: 401 });
+    if (!session) return ApiError.unauthorized();
 
     const account = await db.query.xAccounts.findFirst({
       where: eq(xAccounts.userId, session.user.id),
@@ -51,13 +54,16 @@ export async function GET(_req: Request) {
       username: account?.xUsername ?? "",
     });
   } catch (error) {
-    console.error("Bio fetch error:", error);
-    return new Response(JSON.stringify({ error: "Failed to fetch account" }), { status: 500 });
+    logger.error("bio_fetch_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return ApiError.internal("Failed to fetch account");
   }
 }
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkBioOptimizerAccessDetailed });
     if (preamble instanceof Response) return preamble;
     const { session, model } = preamble;
@@ -65,9 +71,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(result.error.issues);
     }
 
     const { currentBio, goal, language, niche } = result.data;
@@ -115,11 +119,13 @@ For each variant provide:
       language
     );
 
-    return Response.json(object);
+    const res = Response.json(object);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("Bio generation error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate bio variants" }), {
-      status: 500,
+    logger.error("bio_generation_failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
+    return ApiError.internal("Failed to generate bio variants");
   }
 }

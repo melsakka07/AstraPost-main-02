@@ -2,7 +2,10 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, LANGUAGES, TONE_ENUM } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
@@ -25,6 +28,7 @@ const responseSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const { session, dbUser, model } = preamble;
@@ -32,9 +36,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: parsed.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(parsed.error.issues);
     }
 
     const { tool, language, tone, topic, input, context } = parsed.data;
@@ -97,9 +99,11 @@ ${input || ""}`;
 
     await recordAiUsage(session.user.id, tool, 0, prompt, object, language);
 
-    return Response.json(object);
+    const res = Response.json(object);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (err) {
-    console.error("AI tools error:", err);
-    return new Response(JSON.stringify({ error: "AI tool failed" }), { status: 500 });
+    logger.error("ai_tools_error", { error: err instanceof Error ? err.message : String(err) });
+    return ApiError.internal("AI tool failed");
   }
 }

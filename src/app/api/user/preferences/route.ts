@@ -1,9 +1,9 @@
 import { cookies, headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { user } from "@/lib/schema";
 
 function isValidIANATimezone(tz: string): boolean {
@@ -26,7 +26,7 @@ const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export async function PATCH(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   try {
@@ -45,12 +45,12 @@ export async function PATCH(req: Request) {
       path: "/",
     });
 
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return new NextResponse("Invalid request data", { status: 400 });
+      return new Response("Invalid request data", { status: 400 });
     }
-    console.error("Failed to save preferences:", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    logger.error("Failed to save preferences", { error });
+    return new Response("Internal Error", { status: 500 });
   }
 }

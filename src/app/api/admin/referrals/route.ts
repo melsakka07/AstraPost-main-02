@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { user } from "@/lib/schema";
 import { paginationSchema } from "@/lib/schemas/common";
 
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
       pagination: { page, limit, total: totalUsers, totalPages: Math.ceil(totalUsers / limit) },
     });
   } catch (err) {
-    console.error("[referrals] Error:", err);
+    logger.error("[referrals] Error", { error: err });
     return ApiError.internal("Failed to load referral analytics");
   }
 }

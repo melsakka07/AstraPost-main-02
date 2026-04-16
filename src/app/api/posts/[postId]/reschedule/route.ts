@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
@@ -9,7 +8,7 @@ import { getTeamContext } from "@/lib/team-context";
 
 export async function POST(req: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
-  if (!ctx) return new NextResponse("Unauthorized", { status: 401 });
+  if (!ctx) return new Response("Unauthorized", { status: 401 });
 
   const correlationId = getCorrelationId(req);
   logger.info("api_request", {
@@ -23,7 +22,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ postId:
   const body = await req.json().catch(() => null);
   const scheduledAt = body?.scheduledAt ? new Date(body.scheduledAt) : null;
   if (!scheduledAt || Number.isNaN(scheduledAt.getTime())) {
-    return NextResponse.json({ error: "Invalid scheduledAt" }, { status: 400 });
+    return Response.json({ error: "Invalid scheduledAt" }, { status: 400 });
   }
 
   const post = await db.query.posts.findFirst({
@@ -33,19 +32,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ postId:
     },
   });
 
-  if (!post) return new NextResponse("Not found", { status: 404 });
+  if (!post) return new Response("Not found", { status: 404 });
 
   // Verify ownership via team context — supports both personal and team workspaces
   const accountOwnerId = post.xAccount?.userId ?? post.userId;
   if (accountOwnerId !== ctx.currentTeamId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (post.status !== "scheduled") {
-    return NextResponse.json(
-      { error: "Only scheduled posts can be rescheduled." },
-      { status: 400 }
-    );
+    return Response.json({ error: "Only scheduled posts can be rescheduled." }, { status: 400 });
   }
 
   await db
@@ -71,7 +67,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ postId:
     { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
   );
 
-  const res = NextResponse.json({ success: true });
+  const res = Response.json({ success: true });
   res.headers.set("x-correlation-id", correlationId);
   return res;
 }

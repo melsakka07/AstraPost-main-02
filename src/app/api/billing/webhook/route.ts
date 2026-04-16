@@ -8,6 +8,7 @@ import { SubscriptionCancelledEmail } from "@/components/email/billing/subscript
 import { TrialEndingSoonEmail } from "@/components/email/billing/trial-ending-soon-email";
 import { TrialExpiredEmail } from "@/components/email/billing/trial-expired-email";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { awardReferralCredit, REFERRAL_CREDIT_AMOUNT } from "@/lib/referral/utils";
 import {
@@ -119,7 +120,7 @@ async function runSideEffect(task: () => Promise<void>, name: string) {
   try {
     await task();
   } catch (error) {
-    console.error(`webhook_side_effect_failed:${name}`, error);
+    logger.error(`webhook_side_effect_failed:${name}`, { error });
   }
 }
 
@@ -156,7 +157,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (planFromPriceId) {
     plan = planFromPriceId;
   } else {
-    console.error("webhook_checkout_unknown_price_id", {
+    logger.error("webhook_checkout_unknown_price_id", {
       userId,
       purchasedPriceId: purchasedPriceId ?? null,
       metadataPlan: session.metadata?.plan ?? null,
@@ -273,7 +274,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         });
       } catch (err) {
         // Credit is recorded in DB but failed in Stripe — log for admin reconciliation
-        console.error("webhook_referral_stripe_balance_failed", {
+        logger.error("webhook_referral_stripe_balance_failed", {
           referrerId: referrer.id,
           referrerStripeCustomerId: referrer.stripeCustomerId,
           creditAmount: REFERRAL_CREDIT_AMOUNT,
@@ -283,7 +284,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     } else if (!referrer.stripeCustomerId) {
       // Referrer hasn't subscribed yet — credit recorded in DB, will be applied
       // to Stripe when they create their first checkout session.
-      console.warn("webhook_referral_no_stripe_customer", {
+      logger.warn("webhook_referral_no_stripe_customer", {
         referrerId: referrer.id,
         message:
           "Credit recorded in DB but no Stripe customer to apply balance. Will apply on first checkout.",
@@ -299,7 +300,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const newPlan = getPlanFromPriceId(newPriceId);
 
   if (!newPlan && newPriceId) {
-    console.warn("webhook_subscription_updated_unknown_price", {
+    logger.warn("webhook_subscription_updated_unknown_price", {
       stripeSubscriptionId: subscription.id,
       newPriceId,
       message:
@@ -347,7 +348,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       stripeSubscriptionId: subscription.id,
     });
 
-    console.warn("webhook_subscription_incomplete_expired_downgrade", {
+    logger.warn("webhook_subscription_incomplete_expired_downgrade", {
       userId: existingRecord.userId,
       stripeSubscriptionId: subscription.id,
     });
@@ -411,7 +412,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       });
     });
 
-    console.warn("webhook_subscription_plan_synced", {
+    logger.warn("webhook_subscription_plan_synced", {
       userId: existingRecord.userId,
       oldPlan: existingRecord.plan,
       newPlan,
@@ -508,7 +509,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
           "billing_posts_moved_to_draft"
         );
 
-        console.warn("webhook_subscription_downgrade_posts_moved_to_draft", {
+        logger.warn("webhook_subscription_downgrade_posts_moved_to_draft", {
           userId: existingRecord.userId,
           oldPlan,
           newPlan,
@@ -895,7 +896,7 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId || null;
   const plan = session.metadata?.plan || null;
 
-  console.warn("checkout.session.expired", {
+  logger.warn("checkout.session.expired", {
     checkoutSessionId: session.id,
     userId,
     plan,
@@ -924,7 +925,7 @@ export async function POST(req: Request) {
   const signature = (await headers()).get("Stripe-Signature") as string;
 
   if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error("[billing] Stripe config missing — webhook disabled");
+    logger.error("[billing] Stripe config missing — webhook disabled");
     return new Response("Config Error", { status: 500 });
   }
 
@@ -933,7 +934,7 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (error) {
-    console.error("Webhook signature verification failed", error);
+    logger.error("Webhook signature verification failed", { error });
     return new Response("Webhook Error", { status: 400 });
   }
 
@@ -979,7 +980,7 @@ export async function POST(req: Request) {
         break;
     }
   } catch (error) {
-    console.error("Stripe webhook processing failed", {
+    logger.error("Stripe webhook processing failed", {
       eventType: event.type,
       eventId: event.id,
       error,

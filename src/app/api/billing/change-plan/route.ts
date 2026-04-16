@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { planToPrice } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { checkIpRateLimit } from "@/lib/rate-limiter";
 import { subscriptions } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
@@ -30,10 +31,7 @@ export async function POST(req: Request) {
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const rlResult = await checkIpRateLimit(ip, "billing:change-plan", 15, 60);
   if (rlResult?.limited) {
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
-      headers: { "Retry-After": String(rlResult.retryAfter) },
-    });
+    return ApiError.tooManyRequests("Too many requests");
   }
 
   if (!stripe) {
@@ -165,12 +163,12 @@ export async function POST(req: Request) {
   } catch (error) {
     const isStripeError = error && typeof error === "object" && "type" in error;
     if (isStripeError) {
-      console.error("[billing] change-plan Stripe API error:", error);
+      logger.error("[billing] change-plan Stripe API error:", { error });
       return ApiError.internal(
         "Failed to update subscription. Please try again or contact support."
       );
     }
-    console.error("[billing] change-plan error:", error);
+    logger.error("[billing] change-plan error:", { error });
     return ApiError.internal("Failed to change plan. Please try again or contact support.");
   }
 }

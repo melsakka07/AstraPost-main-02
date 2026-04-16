@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { user, posts, tweets, templates, featureFlags } from "@/lib/schema";
 
 // ── Query params schema ───────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[search] Error:", err);
+    logger.error("[search] Error", { error: err });
     return Response.json({ error: "Failed to perform search" }, { status: 500 });
   }
 }

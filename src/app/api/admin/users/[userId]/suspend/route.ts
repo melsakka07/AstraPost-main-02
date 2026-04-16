@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { user, session } from "@/lib/schema";
 
 const suspendSchema = z.object({
@@ -60,7 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error("[suspend] Error:", err);
+    logger.error("[suspend] Error", { error: err });
     return ApiError.internal("Failed to update suspension status");
   }
 }

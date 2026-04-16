@@ -3,6 +3,8 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const enhanceRequestSchema = z.object({
   topic: z.string().min(3).max(500),
@@ -20,8 +22,10 @@ Return ONLY the enhanced topic text. No explanation, no quotes, no preamble.`;
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ skipQuotaCheck: true });
     if (preamble instanceof Response) return preamble;
+    const { session } = preamble;
 
     const body = (await req.json()) as unknown;
     const parsed = enhanceRequestSchema.safeParse(body);
@@ -45,7 +49,17 @@ export async function POST(req: Request) {
       return ApiError.internal("Failed to enhance topic");
     }
 
-    return Response.json({ enhanced });
+    await recordAiUsage(
+      session.user.id,
+      "tools",
+      result.usage?.totalTokens ?? 0,
+      parsed.data.topic,
+      enhanced
+    );
+
+    const res = Response.json({ enhanced });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (err) {
     if ((err as Error).name === "AbortError") {
       return ApiError.internal("Enhancement timed out. Please try again.");

@@ -6,6 +6,7 @@ import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { session, user } from "@/lib/schema";
 
 // BetterAuth exposes `createSession` internally but does not include it in
@@ -93,7 +94,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ userId
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error("[impersonate] Error:", err);
+    logger.error("[impersonate] Error", { error: err });
     return ApiError.internal("Failed to start impersonation");
   }
 }

@@ -6,6 +6,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { notifications, user } from "@/lib/schema";
 
 // ── Query params schema ───────────────────────────────────────────────────────
@@ -177,7 +178,7 @@ export async function POST(request: Request) {
     const notificationRows = actualTargetUserIds.map((userId) => ({
       id: `${notificationId}-${userId}`,
       userId,
-      type: "admin",
+      type: "admin" as const,
       title,
       message: msgBody,
       isRead: false,
@@ -222,7 +223,7 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Failed to create notification:", error);
+    logger.error("Failed to create notification", { error });
     return ApiError.internal("Failed to create notification");
   }
 }

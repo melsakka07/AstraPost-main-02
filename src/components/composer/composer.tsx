@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useId, lazy, Suspense } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import {
@@ -33,8 +34,6 @@ import {
   X as XIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { AiImageDialog } from "@/components/composer/ai-image-dialog";
-import { AiToolsPanel } from "@/components/composer/ai-tools-panel";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
 import { ComposerOnboardingHint } from "@/components/composer/composer-onboarding-hint";
 // Phase 1: Removed InspirationPanel import - now using inline panel
@@ -43,10 +42,6 @@ import {
   TargetAccountsSelect,
   SocialAccountLite,
 } from "@/components/composer/target-accounts-select";
-// P4-E: Lazy-load TemplatesDialog — it's 834 lines and only needed on user interaction
-const TemplatesDialog = lazy(() =>
-  import("@/components/composer/templates-dialog").then((m) => ({ default: m.TemplatesDialog }))
-);
 import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -98,6 +93,17 @@ import { LANGUAGES } from "@/lib/constants";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
 import { cn } from "@/lib/utils";
+
+const AiImageDialog = dynamic(() =>
+  import("@/components/composer/ai-image-dialog").then((m) => m.AiImageDialog)
+);
+const AiToolsPanel = dynamic(() =>
+  import("@/components/composer/ai-tools-panel").then((m) => m.AiToolsPanel)
+);
+// P4-E: Lazy-load TemplatesDialog — it's 834 lines and only needed on user interaction
+const TemplatesDialog = lazy(() =>
+  import("@/components/composer/templates-dialog").then((m) => ({ default: m.TemplatesDialog }))
+);
 
 interface LinkPreview {
   url: string;

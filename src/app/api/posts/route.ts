@@ -1,5 +1,6 @@
 import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -85,9 +86,7 @@ export async function POST(req: Request) {
     const result = createPostSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(result.error.issues);
     }
 
     const {
@@ -147,7 +146,7 @@ export async function POST(req: Request) {
         const def = availableLi[0];
         if (def) selectedAccounts.push({ id: def.id, platform: "linkedin", obj: def });
       } else if (action !== "draft") {
-        return new Response(JSON.stringify({ error: "No connected accounts" }), { status: 400 });
+        return ApiError.badRequest("No connected accounts");
       }
     }
 
@@ -182,10 +181,7 @@ export async function POST(req: Request) {
 
     if (action === "schedule" || action === "publish_now") {
       if (action === "schedule" && !scheduledAt) {
-        return new Response(
-          JSON.stringify({ error: "Scheduled date is required for scheduling" }),
-          { status: 400 }
-        );
+        return ApiError.badRequest("Scheduled date is required for scheduling");
       }
 
       // Approval Workflow Logic
@@ -208,11 +204,8 @@ export async function POST(req: Request) {
       const anchor = finalScheduledAt ?? new Date();
       const maxAllowedEndDate = new Date(anchor.getTime() + 365 * 24 * 60 * 60 * 1000);
       if (new Date(recurrenceEndDate) > maxAllowedEndDate) {
-        return new Response(
-          JSON.stringify({
-            error: "Recurrence end date cannot be more than 1 year from the scheduled date",
-          }),
-          { status: 400 }
+        return ApiError.badRequest(
+          "Recurrence end date cannot be more than 1 year from the scheduled date"
         );
       }
     }
@@ -328,7 +321,9 @@ export async function POST(req: Request) {
           )
         );
       } catch (queueError) {
-        console.error("Queue enqueue failed (posts saved to DB, publish pending):", queueError);
+        logger.error("Queue enqueue failed (posts saved to DB, publish pending)", {
+          error: queueError,
+        });
         queueFailed = true;
       }
     }
@@ -337,7 +332,7 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    console.error("Create Post Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to create post" }), { status: 500 });
+    logger.error("create_post_failed", { error });
+    return ApiError.internal("Failed to create post");
   }
 }

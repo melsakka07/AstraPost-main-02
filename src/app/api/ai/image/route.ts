@@ -5,13 +5,16 @@
  * Generates AI images using multiple providers (Nano Banana 2, Banana Pro, Gemini Imagen 4)
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   checkAiImageQuotaDetailed,
   checkImageModelAccessDetailed,
@@ -34,7 +37,13 @@ import {
 const ImageGenRequestSchema = z.object({
   prompt: z.string().max(1000).optional(),
   tweetContent: z.string().max(5000).optional(),
-  model: z.enum(["nano-banana-2", "nano-banana-pro", "nano-banana"]).default("nano-banana-2"),
+  model: z
+    .enum([
+      process.env.REPLICATE_MODEL_FAST!,
+      process.env.REPLICATE_MODEL_PRO!,
+      process.env.REPLICATE_MODEL_FALLBACK!,
+    ])
+    .default(process.env.REPLICATE_MODEL_FAST!),
   aspectRatio: z.enum(["1:1", "16:9", "4:3", "9:16"]).default("1:1"),
   style: z
     .enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"])
@@ -77,7 +86,9 @@ Return ONLY the image prompt, no explanation or additional text.`,
 
     return text.trim();
   } catch (error) {
-    console.error("Failed to generate image prompt:", error);
+    logger.error("image_prompt_generation_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return `Visual representation of: ${sanitized.slice(0, 100)}`;
   }
 }
@@ -88,13 +99,15 @@ Return ONLY the image prompt, no explanation or additional text.`,
 
 export async function POST(req: NextRequest) {
   try {
+    const correlationId = getCorrelationId(req);
+
     // 1. Authentication
     const session = await auth.api.getSession({
       headers: req.headers,
     });
 
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return ApiError.unauthorized();
     }
 
     // 2. Parse and validate request
@@ -102,10 +115,7 @@ export async function POST(req: NextRequest) {
     const validationResult = ImageGenRequestSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: "Invalid request", details: validationResult.error.issues },
-        { status: 400 }
-      );
+      return ApiError.badRequest(validationResult.error.issues);
     }
 
     const { prompt, tweetContent, model, aspectRatio, style } = validationResult.data;
@@ -146,15 +156,15 @@ export async function POST(req: NextRequest) {
           tokensUsed: 0, // OpenRouter streaming does not expose token counts here
         })
         .catch((err: unknown) => {
-          console.error("Failed to record image_prompt ai generation", err);
+          logger.error("image_prompt_usage_record_failed", {
+            error: err instanceof Error ? err.message : String(err),
+            userId,
+          });
         });
     }
 
     if (!finalPrompt) {
-      return NextResponse.json(
-        { error: "Either prompt or tweetContent must be provided" },
-        { status: 400 }
-      );
+      return ApiError.badRequest("Either prompt or tweetContent must be provided");
     }
 
     // 8. Start image generation asynchronously (no polling — avoids serverless timeout).
@@ -185,16 +195,14 @@ export async function POST(req: NextRequest) {
     );
 
     // 10. Return prediction ID — client will poll for the result.
-    return NextResponse.json({ predictionId, estimatedSeconds: 20 });
+    const res = Response.json({ predictionId, estimatedSeconds: 20 });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("AI image generation error:", error);
+    logger.error("image_generation_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
 
-    return NextResponse.json(
-      {
-        error: "Failed to generate image",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to generate image");
   }
 }

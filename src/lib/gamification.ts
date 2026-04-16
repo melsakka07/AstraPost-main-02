@@ -1,6 +1,7 @@
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { milestones, posts, xAccounts } from "@/lib/schema";
 
 export const MILESTONES = {
@@ -81,7 +82,11 @@ async function unlock(userId: string, milestoneId: string, metadata: any = {}) {
       });
     }
   } catch (error) {
-    console.error(`Failed to unlock milestone ${milestoneId} for user ${userId}`, error);
+    logger.error("milestone_unlock_failed", {
+      milestoneId,
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 

@@ -8,6 +8,8 @@ interface EmptyStateProps {
   primaryAction?: ReactNode;
   secondaryAction?: ReactNode;
   className?: string;
+  /** Accepted for backwards-compatibility with admin consumers — currently unused. */
+  variant?: string;
 }
 
 export function EmptyState({

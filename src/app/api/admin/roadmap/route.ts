@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { feedback } from "@/lib/schema";
 
 const listQuerySchema = z.object({
@@ -88,7 +89,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[feedback] Error:", err);
+    logger.error("[feedback] Error", { error: err });
     return ApiError.internal("Failed to load feedback");
   }
 }

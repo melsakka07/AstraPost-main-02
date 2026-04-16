@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { feedback } from "@/lib/schema";
 
 const bulkUpdateSchema = z.object({
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
 
     return Response.json({ success: true, updatedCount: ids.length });
   } catch (err) {
-    console.error("[roadmap/bulk] Error:", err);
+    logger.error("[roadmap/bulk] Error", { error: err });
     return ApiError.internal("Failed to update feedback items");
   }
 }

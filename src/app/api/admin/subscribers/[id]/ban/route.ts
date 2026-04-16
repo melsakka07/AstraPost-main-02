@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { session, user } from "@/lib/schema";
 
 const banSchema = z.object({
@@ -71,7 +72,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     return Response.json({ success: true, banned: ban });
   } catch (err) {
-    console.error("[subscribers/ban] Error:", err);
+    logger.error("[subscribers/ban] Error", { error: err });
     return ApiError.internal("Failed to update ban status");
   }
 }

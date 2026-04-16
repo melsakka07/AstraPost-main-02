@@ -55,10 +55,13 @@
  * - `failed`: Generation failed with error details (check retryable flag)
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { nanoid } from "nanoid";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 import {
@@ -81,27 +84,29 @@ interface PredictionMeta {
 }
 
 export async function GET(req: NextRequest) {
+  const correlationId = getCorrelationId(req);
+
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return ApiError.unauthorized();
   }
 
   const predictionId = req.nextUrl.searchParams.get("id");
   if (!predictionId) {
-    return NextResponse.json({ error: "Missing prediction ID" }, { status: 400 });
+    return ApiError.badRequest("Missing prediction ID");
   }
 
   // Retrieve prediction metadata cached by the POST endpoint.
   const raw = await redis.get(`ai:img:pred:${predictionId}`);
   if (!raw) {
-    return NextResponse.json({ error: "Prediction not found or expired" }, { status: 404 });
+    return ApiError.notFound("Prediction not found or expired");
   }
 
   const meta: PredictionMeta = JSON.parse(raw);
 
   // Enforce ownership — only the user who created the prediction may poll it.
   if (meta.userId !== session.user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    return ApiError.forbidden("You do not have access to this prediction");
   }
 
   try {
@@ -109,7 +114,9 @@ export async function GET(req: NextRequest) {
 
     // Still running — tell the client to keep polling.
     if (prediction.status === "starting" || prediction.status === "processing") {
-      return NextResponse.json({ status: prediction.status });
+      const res = Response.json({ status: prediction.status });
+      res.headers.set("x-correlation-id", correlationId);
+      return res;
     }
 
     // Terminal failure — classify, then decide whether to fall back to the
@@ -130,7 +137,8 @@ export async function GET(req: NextRequest) {
       // failed attempt, and the new prediction ID is returned so the client can
       // keep polling without interruption.
       if (
-        (meta.model === "nano-banana-2" || meta.model === "nano-banana-pro") &&
+        (meta.model === process.env.REPLICATE_MODEL_FAST! ||
+          meta.model === process.env.REPLICATE_MODEL_PRO!) &&
         !isContentBlocked
       ) {
         await redis.del(`ai:img:pred:${predictionId}`);
@@ -139,14 +147,14 @@ export async function GET(req: NextRequest) {
           const fallback = await startImageGeneration({
             prompt: meta.finalPrompt,
             aspectRatio: meta.aspectRatio,
-            model: "nano-banana",
+            model: process.env.REPLICATE_MODEL_FALLBACK! as ImageModel,
             ...(meta.style !== null && { style: meta.style }),
           });
 
           // Cache fallback metadata under the new prediction ID.
           const fallbackMeta: PredictionMeta = {
             ...meta,
-            model: "nano-banana",
+            model: process.env.REPLICATE_MODEL_FALLBACK! as ImageModel,
           };
           await redis.setex(
             `ai:img:pred:${fallback.predictionId}`,
@@ -154,14 +162,19 @@ export async function GET(req: NextRequest) {
             JSON.stringify(fallbackMeta)
           );
 
-          return NextResponse.json({
+          const res = Response.json({
             status: "fallback",
             predictionId: fallback.predictionId,
           });
+          res.headers.set("x-correlation-id", correlationId);
+          return res;
         } catch (fallbackErr) {
           // If the fallback prediction itself fails to start, fall through to
           // the normal error path so the user sees a meaningful message.
-          console.error("Fallback prediction start failed:", fallbackErr);
+          logger.error("image_fallback_prediction_failed", {
+            error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
+            predictionId,
+          });
         }
       }
 
@@ -174,7 +187,7 @@ export async function GET(req: NextRequest) {
           rawError
         );
 
-      return NextResponse.json(
+      const res = Response.json(
         {
           error: isTransient
             ? "The image service is temporarily busy due to high demand. Your credits were not used."
@@ -190,13 +203,15 @@ export async function GET(req: NextRequest) {
         },
         { status: 422 }
       );
+      res.headers.set("x-correlation-id", correlationId);
+      return res;
     }
 
     // status === "succeeded" ─────────────────────────────────────────────────
 
     if (!prediction.output) {
       await redis.del(`ai:img:pred:${predictionId}`);
-      return NextResponse.json({ error: "No output returned from prediction" }, { status: 500 });
+      return ApiError.internal("No output returned from prediction");
     }
 
     const replicateUrl =
@@ -213,7 +228,10 @@ export async function GET(req: NextRequest) {
       if (uploadResult.url) storedUrl = uploadResult.url;
     } catch (uploadErr) {
       // Non-fatal: fall back to the ephemeral Replicate URL.
-      console.error("AI image upload failed, using Replicate URL:", uploadErr);
+      logger.error("image_upload_failed_using_replicate_url", {
+        error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr),
+        predictionId,
+      });
     }
 
     // Atomic Redis DEL is used for idempotency: if two concurrent requests both
@@ -239,7 +257,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({
+    const res = Response.json({
       status: "succeeded",
       imageUrl: storedUrl,
       width,
@@ -247,14 +265,13 @@ export async function GET(req: NextRequest) {
       model: meta.model,
       prompt: meta.finalPrompt,
     });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("AI image status check error:", error);
-    return NextResponse.json(
-      {
-        error: "Failed to check prediction status",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    logger.error("image_status_check_failed", {
+      error: error instanceof Error ? error.message : String(error),
+      predictionId,
+    });
+    return ApiError.internal("Failed to check prediction status");
   }
 }

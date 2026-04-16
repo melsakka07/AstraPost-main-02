@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, tweets, media } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
@@ -19,18 +19,18 @@ async function checkPostOwnership(
     linkedinAccount: { userId: string } | null;
   },
   ctx: { currentTeamId: string }
-): Promise<NextResponse | null> {
+): Promise<Response | null> {
   const accountOwnerId = post.xAccount?.userId ?? post.linkedinAccount?.userId;
 
   if (accountOwnerId) {
     if (accountOwnerId !== ctx.currentTeamId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return Response.json({ error: "Forbidden" }, { status: 403 });
     }
   } else {
     // Orphan post (draft without account) — require creator or team owner
     const session = await auth.api.getSession({ headers: await headers() });
     if (post.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return Response.json({ error: "Forbidden" }, { status: 403 });
     }
   }
 
@@ -41,7 +41,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pos
   const ctx = await getTeamContext();
 
   if (!ctx) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { postId } = await params;
@@ -65,23 +65,23 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pos
     },
   });
 
-  if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  if (!post) return Response.json({ error: "Post not found" }, { status: 404 });
   const ownershipError = await checkPostOwnership(post, ctx);
   if (ownershipError) return ownershipError;
 
-  return NextResponse.json(post);
+  return Response.json(post);
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
 
   if (!ctx) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Viewers cannot edit posts
   if (ctx.role === "viewer") {
-    return NextResponse.json({ error: "Viewers cannot edit posts" }, { status: 403 });
+    return Response.json({ error: "Viewers cannot edit posts" }, { status: 403 });
   }
 
   const { postId } = await params;
@@ -96,7 +96,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     },
   });
 
-  if (!existingPost) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  if (!existingPost) return Response.json({ error: "Post not found" }, { status: 404 });
   const ownershipError = await checkPostOwnership(existingPost, ctx);
   if (ownershipError) return ownershipError;
 
@@ -111,7 +111,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     if (body.action === "approve") {
       // Role check
       if (!ctx.isOwner && ctx.role !== "admin") {
-        return NextResponse.json({ error: "Only admins can approve posts" }, { status: 403 });
+        return Response.json({ error: "Only admins can approve posts" }, { status: 403 });
       }
       newStatus = "scheduled";
       const session = await auth.api.getSession({ headers: await headers() });
@@ -121,7 +121,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     } else if (body.action === "reject") {
       // Role check
       if (!ctx.isOwner && ctx.role !== "admin") {
-        return NextResponse.json({ error: "Only admins can reject posts" }, { status: 403 });
+        return Response.json({ error: "Only admins can reject posts" }, { status: 403 });
       }
       newStatus = "draft";
       reviewerNotes = body.reviewerNotes || "Rejected without reason";
@@ -129,7 +129,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
       newStatus = "scheduled";
       if (body.scheduledAt) newScheduledAt = new Date(body.scheduledAt);
       else if (!newScheduledAt)
-        return NextResponse.json({ error: "Scheduled date required" }, { status: 400 });
+        return Response.json({ error: "Scheduled date required" }, { status: 400 });
     } else if (body.action === "publish_now") {
       newStatus = "scheduled";
       newScheduledAt = new Date();
@@ -239,10 +239,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
       );
     }
   } catch (e) {
-    console.error("Queue operation failed", e);
+    logger.error("Queue operation failed", { error: e });
   }
 
-  return NextResponse.json({ success: true });
+  return Response.json({ success: true });
 }
 
 export async function DELETE(
@@ -252,12 +252,12 @@ export async function DELETE(
   const ctx = await getTeamContext();
 
   if (!ctx) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Viewers cannot delete posts
   if (ctx.role === "viewer") {
-    return NextResponse.json({ error: "Viewers cannot delete posts" }, { status: 403 });
+    return Response.json({ error: "Viewers cannot delete posts" }, { status: 403 });
   }
 
   const { postId } = await params;
@@ -271,7 +271,7 @@ export async function DELETE(
     },
   });
 
-  if (!existingPost) return NextResponse.json({ error: "Post not found" }, { status: 404 });
+  if (!existingPost) return Response.json({ error: "Post not found" }, { status: 404 });
   const ownershipError = await checkPostOwnership(existingPost, ctx);
   if (ownershipError) return ownershipError;
 
@@ -282,11 +282,11 @@ export async function DELETE(
       if (job) await job.remove();
     }
   } catch (e) {
-    console.error("Queue removal failed", e);
+    logger.error("Queue removal failed", { error: e });
   }
 
   // 3. Delete from DB
   await db.delete(posts).where(eq(posts.id, postId));
 
-  return NextResponse.json({ success: true });
+  return Response.json({ success: true });
 }

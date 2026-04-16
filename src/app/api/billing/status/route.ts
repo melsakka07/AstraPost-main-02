@@ -5,7 +5,8 @@ import { auth } from "@/lib/auth";
 import { getBillingRedis } from "@/lib/billing-redis";
 import { priceToPlan } from "@/lib/billing-utils";
 import { db } from "@/lib/db";
-import { checkIpRateLimit } from "@/lib/rate-limiter";
+import { logger } from "@/lib/logger";
+import { checkIpRateLimit, createIpRateLimitResponse } from "@/lib/rate-limiter";
 import { planChangeLog, subscriptions, user } from "@/lib/schema";
 import { stripe } from "@/lib/stripe";
 
@@ -39,12 +40,7 @@ function stripeStatusToDb(s: string): DbStatus {
 export async function GET() {
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const rlResult = await checkIpRateLimit(ip, "billing:status", 30, 60);
-  if (rlResult?.limited) {
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
-      headers: { "Retry-After": String(rlResult.retryAfter) },
-    });
-  }
+  if (rlResult?.limited) return createIpRateLimitResponse(rlResult.retryAfter ?? 60);
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return ApiError.unauthorized();
@@ -108,7 +104,7 @@ export async function GET() {
         const planMismatch = newPlan && newPlan !== "free" && newPlan !== latestSub.plan;
 
         if (statusMismatch || cancelMismatch || planMismatch) {
-          console.warn("[billing] sync-failsafe: DB drifted from Stripe, reconciling", {
+          logger.warn("[billing] sync-failsafe: DB drifted from Stripe, reconciling", {
             userId: session.user.id,
             stripeSubscriptionId: latestSub.stripeSubscriptionId,
             dbStatus: latestSub.status,
@@ -175,7 +171,9 @@ export async function GET() {
           latestSub.cancelAtPeriodEnd = newCancelAtPeriodEnd;
         }
       } catch (syncErr) {
-        console.error("[billing] sync-failsafe failed — returning cached DB state", syncErr);
+        logger.error("[billing] sync-failsafe failed — returning cached DB state", {
+          error: syncErr,
+        });
       }
 
       // Cache the check for 1 hour regardless of whether a reconciliation was

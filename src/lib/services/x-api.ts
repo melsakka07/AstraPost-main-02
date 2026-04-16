@@ -367,7 +367,11 @@ export class XApiService {
 
       if (!appendRes.ok && appendRes.status !== 204) {
         const errText = await appendRes.text().catch(() => "(empty)");
-        console.error(`[XApi] APPEND chunk ${i} failed: HTTP ${appendRes.status} — ${errText}`);
+        logger.error("x_media_upload_append_failed", {
+          chunk: i,
+          status: appendRes.status,
+          error: errText,
+        });
         throw new Error(`[XApi] APPEND chunk ${i} failed: HTTP ${appendRes.status} — ${errText}`);
       }
 

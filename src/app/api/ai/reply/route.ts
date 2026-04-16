@@ -1,7 +1,10 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, LANGUAGES, TONE_ENUM } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { checkReplyGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 import { importTweet } from "@/lib/services/tweet-importer";
@@ -32,6 +35,7 @@ const GOAL_LABELS: Record<string, string> = {
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkReplyGeneratorAccessDetailed });
     if (preamble instanceof Response) return preamble;
     const { session, model } = preamble;
@@ -39,9 +43,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(result.error.issues);
     }
 
     const { tweetUrl, language, tone, goal } = result.data;
@@ -51,11 +53,8 @@ export async function POST(req: Request) {
     let tweetAuthor = "";
     const context = await importTweet(tweetUrl);
     if ("error" in context) {
-      return new Response(
-        JSON.stringify({
-          error: "Could not fetch the tweet. Make sure the URL is valid and the account is public.",
-        }),
-        { status: 422 }
+      return ApiError.badRequest(
+        "Could not fetch the tweet. Make sure the URL is valid and the account is public."
       );
     }
     tweetText = context.originalTweet.text;
@@ -108,9 +107,13 @@ For each reply include:
       })),
     };
 
-    return Response.json(sanitized);
+    const res = Response.json(sanitized);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("Reply generation error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate replies" }), { status: 500 });
+    logger.error("reply_generation_error", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return ApiError.internal("Failed to generate replies");
   }
 }

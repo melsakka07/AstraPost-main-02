@@ -8,17 +8,18 @@
 
 import { headers } from "next/headers";
 import { and, eq, gte, sql } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { aiGenerations, user } from "@/lib/schema";
 import { getMonthWindow } from "@/lib/utils/time";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const correlationId = getCorrelationId(req);
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-  }
+  if (!session) return ApiError.unauthorized();
 
   const userId = session.user.id;
 
@@ -50,11 +51,13 @@ export async function GET() {
   const limit = limits.aiImagesPerMonth; // -1 means unlimited
   const remaining = limit === -1 ? -1 : Math.max(0, limit - used);
 
-  return Response.json({
+  const res = Response.json({
     availableModels: limits.availableImageModels,
     preferredModel: limits.availableImageModels[0] ?? "nano-banana-2",
     remainingImages: remaining,
     limit,
     used,
   });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }

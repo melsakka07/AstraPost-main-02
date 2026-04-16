@@ -1,6 +1,7 @@
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
 import { getTopAffiliates, getStartDate } from "@/lib/services/affiliate-stats";
 
 export async function GET() {
@@ -19,7 +20,7 @@ export async function GET() {
       data: topAffiliates,
     });
   } catch (err) {
-    console.error("[affiliate/leaderboard] Error:", err);
+    logger.error("[affiliate/leaderboard] Error", { error: err });
     return ApiError.internal("Failed to load affiliate leaderboard");
   }
 }

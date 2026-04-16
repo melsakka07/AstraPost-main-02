@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 type StatusLevel = "ok" | "warn" | "error";
 
 interface DiagnosticsResponse {
@@ -157,7 +155,7 @@ export async function GET(req: Request) {
     overallStatus,
   };
 
-  return NextResponse.json(body, {
+  return Response.json(body, {
     status: 200,
   });
 }

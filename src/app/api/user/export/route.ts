@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -9,7 +8,7 @@ export async function GET(_req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   const userId = session.user.id;
@@ -37,13 +36,13 @@ export async function GET(_req: Request) {
   });
 
   if (!userData) {
-    return new NextResponse("User not found", { status: 404 });
+    return new Response("User not found", { status: 404 });
   }
 
   // Create a JSON response
   const json = JSON.stringify(userData, null, 2);
 
-  return new NextResponse(json, {
+  return new Response(json, {
     headers: {
       "Content-Type": "application/json",
       "Content-Disposition": `attachment; filename="astrapost-data-${userId}.json"`,

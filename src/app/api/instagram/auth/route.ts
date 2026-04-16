@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!FACEBOOK_APP_ID) {
-    return NextResponse.json({ error: "FACEBOOK_APP_ID not configured" }, { status: 500 });
+    return Response.json({ error: "FACEBOOK_APP_ID not configured" }, { status: 500 });
   }
 
   const scope =

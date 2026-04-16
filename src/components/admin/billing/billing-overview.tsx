@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/ui/stat-card";
 import {
   Table,
   TableBody,
@@ -59,54 +60,6 @@ const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "
   past_due: "destructive",
   cancelled: "outline",
 };
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  trend,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ElementType;
-  trend?: "up" | "down" | "neutral";
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-5">
-        <div className="flex items-start justify-between">
-          <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-lg">
-            <Icon className="text-primary h-4 w-4" />
-          </div>
-          {trend && (
-            <span
-              className={
-                trend === "up"
-                  ? "text-green-500"
-                  : trend === "down"
-                    ? "text-destructive"
-                    : "text-muted-foreground"
-              }
-            >
-              {trend === "up" ? (
-                <TrendingUp className="h-4 w-4" />
-              ) : trend === "down" ? (
-                <TrendingDown className="h-4 w-4" />
-              ) : null}
-            </span>
-          )}
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-bold tabular-nums">{value}</p>
-          <p className="text-foreground text-sm font-medium">{label}</p>
-          {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 function LoadingSkeleton() {
   return (
@@ -197,22 +150,22 @@ export function BillingOverview() {
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="MRR"
+          title="MRR"
           value={mrrDisplay}
-          {...(!mrr.configured && { sub: "Set DISPLAY_PRICE_* env vars" })}
+          {...(!mrr.configured && { description: "Set DISPLAY_PRICE_* env vars" })}
           icon={DollarSign}
         />
         <StatCard
-          label="Active subscriptions"
+          title="Active subscriptions"
           value={subs.active}
-          sub={`${subs.trialing} on trial`}
+          description={`${subs.trialing} on trial`}
           icon={CreditCard}
           trend="neutral"
         />
         <StatCard
-          label="Churned this month"
+          title="Churned this month"
           value={subs.cancelledThisMonth}
-          sub={
+          description={
             churnDelta === 0
               ? "Same as last month"
               : `${Math.abs(churnDelta)} ${churnDelta > 0 ? "more" : "fewer"} than last month`
@@ -221,9 +174,9 @@ export function BillingOverview() {
           trend={churnDelta > 0 ? "down" : churnDelta < 0 ? "up" : "neutral"}
         />
         <StatCard
-          label="Trial → paid rate"
+          title="Trial → paid rate"
           value={`${trialToPaidRate}%`}
-          sub={`${users.newThisMonth} new users this month`}
+          description={`${users.newThisMonth} new users this month`}
           icon={Users}
         />
       </div>

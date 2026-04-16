@@ -2,6 +2,7 @@ import { count, eq, gte, and, sql } from "drizzle-orm";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { user, posts, aiGenerations, jobRuns } from "@/lib/schema";
 
 // ── GET /api/admin/stats ──────────────────────────────────────────────────────
@@ -86,7 +87,7 @@ export async function GET() {
       },
     });
   } catch (err) {
-    console.error("[stats] Error:", err);
+    logger.error("[stats] Error", { error: err });
     return Response.json({ error: "Failed to load admin stats" }, { status: 500 });
   }
 }

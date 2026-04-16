@@ -1,7 +1,9 @@
 import { count, eq, and, gte, sql, desc } from "drizzle-orm";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { posts, tweets, tweetAnalytics, user } from "@/lib/schema";
 
 // ── GET /api/admin/content ─────────────────────────────────────────────────────
@@ -164,10 +166,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[content] Error:", err);
-    return new Response(JSON.stringify({ error: "Failed to load content analytics" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    logger.error("[content] Error", { error: err });
+    return ApiError.internal("Failed to load content analytics");
   }
 }

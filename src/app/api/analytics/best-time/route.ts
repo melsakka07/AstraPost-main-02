@@ -1,5 +1,7 @@
 import { headers } from "next/headers";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import {
   checkBestTimesAccessDetailed,
   createPlanLimitResponse,
@@ -55,9 +57,7 @@ export async function GET(_req: Request) {
       slots: top3,
     });
   } catch (error) {
-    console.error("Best time error:", error);
-    return new Response(JSON.stringify({ error: "Failed to compute best times" }), {
-      status: 500,
-    });
+    logger.error("Best time error", { error });
+    return ApiError.internal("Failed to compute best times");
   }
 }

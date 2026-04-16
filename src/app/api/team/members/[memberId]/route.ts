@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { teamMembers } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -45,7 +46,7 @@ export async function DELETE(
 
     return Response.json({ success: true, message: "Member removed" });
   } catch (error) {
-    console.error("Remove Member Error:", error);
+    logger.error("Remove Member Error", { error });
     return new Response("Internal Server Error", { status: 500 });
   }
 }
@@ -90,7 +91,7 @@ export async function PATCH(
     if (error instanceof z.ZodError) {
       return Response.json({ error: "Invalid input", details: error.issues }, { status: 400 });
     }
-    console.error("Update Role Error:", error);
+    logger.error("Update Role Error", { error });
     return new Response("Internal Server Error", { status: 500 });
   }
 }

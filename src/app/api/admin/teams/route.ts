@@ -2,7 +2,9 @@ import { count, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { teamMembers, teamInvitations, user } from "@/lib/schema";
 
 // ── Query params schema ───────────────────────────────────────────────────────
@@ -26,10 +28,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const parsed = listQuerySchema.safeParse(Object.fromEntries(searchParams));
     if (!parsed.success) {
-      return new Response(JSON.stringify({ error: parsed.error.issues }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return ApiError.badRequest(parsed.error.issues);
     }
 
     const { page, limit } = parsed.data;
@@ -161,10 +160,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
-    console.error("[teams] Error:", err);
-    return new Response(JSON.stringify({ error: "Failed to load team analytics" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    logger.error("[teams] Error", { error: err });
+    return ApiError.internal("Failed to load team analytics");
   }
 }

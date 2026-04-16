@@ -4,6 +4,7 @@ import { renderToStream } from "@react-pdf/renderer";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { z } from "zod";
 import { AnalyticsPdfDocument } from "@/components/analytics/pdf-document";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
   });
 
   if (!parsed.success) {
-    return new Response(JSON.stringify({ error: "Invalid export request" }), { status: 400 });
+    return ApiError.badRequest("Invalid export request");
   }
 
   const dbUser = await db.query.user.findFirst({

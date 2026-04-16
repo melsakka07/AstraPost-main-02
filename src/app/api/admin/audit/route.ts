@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { adminAuditLog, user } from "@/lib/schema";
 
 // ── Zod schema ───────────────────────────────────────────────────────────────
@@ -255,7 +256,7 @@ async function handleAuditExport(filters?: {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("[AUDIT_EXPORT] Error:", error);
+    logger.error("[AUDIT_EXPORT] Error", { error });
     return ApiError.internal(errorMessage);
   }
 }

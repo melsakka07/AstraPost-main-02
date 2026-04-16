@@ -6,6 +6,7 @@ import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { xAccounts } from "@/lib/schema";
@@ -46,6 +47,7 @@ const threadRequestSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const { session, dbUser, model } = preamble;
@@ -206,6 +208,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
           "X-Accel-Buffering": "no",
+          "x-correlation-id": correlationId,
           ...(accumulated.length > getLengthMaxChars(lengthOption)
             ? { "X-Content-Overflow": "true" }
             : {}),
@@ -273,6 +276,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
         "X-Accel-Buffering": "no",
+        "x-correlation-id": correlationId,
       },
     });
   } catch (error) {

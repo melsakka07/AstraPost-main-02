@@ -5,6 +5,7 @@ import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { session as sessionTable } from "@/lib/schema";
 
 export async function DELETE(
@@ -81,7 +82,7 @@ export async function DELETE(
 
     return Response.json({ success: true });
   } catch (err) {
-    console.error("[impersonation] Error:", err);
+    logger.error("[impersonation] Error", { error: err });
     return ApiError.internal("Failed to end impersonation");
   }
 }

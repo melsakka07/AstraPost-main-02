@@ -7,8 +7,10 @@
 
 import { headers } from "next/headers";
 import { desc, eq, and, gte } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { posts, tweetAnalytics, tweets } from "@/lib/schema";
 
 export async function GET(req: Request) {
@@ -26,9 +28,7 @@ export async function GET(req: Request) {
 
     // Validate days parameter
     if (days < 7 || days > 365) {
-      return new Response(JSON.stringify({ error: "Days must be between 7 and 365" }), {
-        status: 400,
-      });
+      return ApiError.badRequest("Days must be between 7 and 365");
     }
 
     // 1. Fetch top-performing tweets
@@ -77,10 +77,8 @@ export async function GET(req: Request) {
       analysis,
     });
   } catch (error) {
-    console.error("Viral Analysis Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to analyze viral content" }), {
-      status: 500,
-    });
+    logger.error("Viral Analysis Error", { error });
+    return ApiError.internal("Failed to analyze viral content");
   }
 }
 

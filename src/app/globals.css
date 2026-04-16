@@ -225,7 +225,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
     content: "";
     position: absolute;
     bottom: 0;
-    left: 0;
+    inset-inline-start: 0;
     width: 60px;
     height: 3px;
     background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.3));
@@ -263,14 +263,14 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
   .prose ul > li {
     position: relative;
-    padding-left: 1.75rem;
+    padding-inline-start: 1.75rem;
     color: hsl(var(--foreground) / 0.9);
   }
 
   .prose ul > li::before {
     content: "";
     position: absolute;
-    left: 0;
+    inset-inline-start: 0;
     top: 0.65rem;
     width: 8px;
     height: 8px;
@@ -288,14 +288,14 @@ body:has([data-dashboard-layout]) [data-main-content] {
   .prose ol > li {
     counter-increment: prose-ol;
     position: relative;
-    padding-left: 2.5rem;
+    padding-inline-start: 2.5rem;
     color: hsl(var(--foreground) / 0.9);
   }
 
   .prose ol > li::before {
     content: counter(prose-ol);
     position: absolute;
-    left: 0;
+    inset-inline-start: 0;
     top: 0;
     width: 1.75rem;
     height: 1.75rem;
@@ -339,7 +339,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
     content: "";
     position: absolute;
     bottom: -2px;
-    left: 0;
+    inset-inline-start: 0;
     width: 100%;
     height: 2px;
     background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.5));
@@ -364,7 +364,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
     content: '"';
     position: absolute;
     top: -0.5rem;
-    left: 1rem;
+    inset-inline-start: 1rem;
     font-size: 4rem;
     line-height: 1;
     color: hsl(var(--primary) / 0.2);
@@ -392,8 +392,8 @@ body:has([data-dashboard-layout]) [data-main-content] {
     content: "";
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     height: 3px;
     background: linear-gradient(
       90deg,
@@ -619,7 +619,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
 .prose .anchor-link {
   position: absolute;
-  left: -1.5em;
+  inset-inline-start: -1.5em;
   width: 1.5em;
   height: 1em;
   display: flex;

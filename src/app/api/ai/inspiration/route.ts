@@ -1,6 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
@@ -17,6 +20,7 @@ const inspirationSchema = z.object({
 
 export async function GET(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const { session, model } = preamble;
@@ -30,10 +34,14 @@ export async function GET(req: Request) {
     try {
       const cached = await redis.get(cacheKey);
       if (cached) {
-        return Response.json(JSON.parse(cached));
+        const res = Response.json(JSON.parse(cached));
+        res.headers.set("x-correlation-id", correlationId);
+        return res;
       }
     } catch (e) {
-      console.error("Redis error:", e);
+      logger.error("inspiration_redis_get_failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
 
     const prompt = `
@@ -59,7 +67,9 @@ export async function GET(req: Request) {
     try {
       await redis.set(cacheKey, JSON.stringify(object), "EX", CACHE_TTL);
     } catch (e) {
-      console.error("Redis set error:", e);
+      logger.error("inspiration_redis_set_failed", {
+        error: e instanceof Error ? e.message : String(e),
+      });
     }
 
     // Record AI usage (only for fresh generations, not cached responses)
@@ -72,11 +82,13 @@ export async function GET(req: Request) {
       language
     );
 
-    return Response.json(object);
+    const res = Response.json(object);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("AI Inspiration Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate inspiration" }), {
-      status: 500,
+    logger.error("inspiration_generation_failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
+    return ApiError.internal("Failed to generate inspiration");
   }
 }

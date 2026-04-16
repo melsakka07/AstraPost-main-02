@@ -4,6 +4,7 @@ import { generateText } from "ai";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkAgenticPostingAccessDetailed } from "@/lib/middleware/require-plan";
 import { redis } from "@/lib/rate-limiter";
@@ -13,6 +14,7 @@ import {
   type TrendCategory,
   type TrendItem,
 } from "@/lib/schemas/common";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 // NOTE: A web-search-capable model produces significantly better results here.
 // Configure OPENROUTER_MODEL_TRENDS to something like:
@@ -40,6 +42,8 @@ Format: [{ "title": "...", "description": "...", "postCount": "...", "category":
 
 export async function GET(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
+
     // ── Auth only (no rate-limit yet) ────────────────────────────────────────
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return ApiError.unauthorized();
@@ -69,7 +73,9 @@ export async function GET(req: Request) {
           expiresAt: string;
         };
         logger.info("trends_cache_hit", { category, userId: session.user.id });
-        return Response.json(parsed);
+        const res = Response.json(parsed);
+        res.headers.set("x-correlation-id", correlationId);
+        return res;
       }
     } catch (cacheErr) {
       logger.warn("trends_cache_read_failed", {
@@ -139,8 +145,18 @@ export async function GET(req: Request) {
       }
     }
 
+    await recordAiUsage(
+      session.user.id,
+      "tools",
+      result.usage?.totalTokens ?? 0,
+      buildTrendsPrompt(category),
+      JSON.stringify(trends)
+    );
+
     logger.info("trends_fetch_done", { category, count: trends.length, userId: session.user.id });
-    return Response.json(responsePayload);
+    const res = Response.json(responsePayload);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (err) {
     logger.error("trends_route_error", {
       error: err instanceof Error ? err.message : String(err),

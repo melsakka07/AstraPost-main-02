@@ -41,6 +41,10 @@ export const ApiError = {
   internal: (message = "Internal server error") =>
     Response.json({ error: message }, { status: 500 }),
 
+  /** 429 — too many requests / rate limit exceeded. */
+  tooManyRequests: (message = "Too many requests") =>
+    Response.json({ error: message }, { status: 429 }),
+
   /** 503 — service temporarily unavailable (e.g. billing not configured). */
   serviceUnavailable: (message = "Service temporarily unavailable") =>
     Response.json({ error: message }, { status: 503 }),

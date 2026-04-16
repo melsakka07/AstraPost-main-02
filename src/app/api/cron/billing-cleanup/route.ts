@@ -1,5 +1,6 @@
 import { eq, and, ne, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { processedWebhookEvents, user, planChangeLog } from "@/lib/schema";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 import { stripe } from "@/lib/stripe";
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
 
     webhookEventsDeleted = deleted.length;
   } catch (error) {
-    console.error("[cron] billing cleanup failed", error);
+    logger.error("[cron] billing cleanup failed", { error });
     return Response.json({ error: "Cleanup failed" }, { status: 500 });
   }
 
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
 
     planChangesDeleted = deletedChanges.length;
   } catch (error) {
-    console.error("[cron] plan_change_log cleanup failed", error);
+    logger.error("[cron] plan_change_log cleanup failed", { error });
   }
 
   // Enforce grace period expiration
@@ -92,9 +93,9 @@ export async function POST(req: Request) {
               await stripe.subscriptions.cancel(subscription.id);
             }
           } catch (stripeError) {
-            console.error(
+            logger.error(
               `[cron] Failed to cancel Stripe subscription for user ${expiredUser.id}:`,
-              stripeError
+              { error: stripeError }
             );
           }
         }
@@ -113,14 +114,14 @@ export async function POST(req: Request) {
 
         gracePeriodsExpired++;
       } catch (userError) {
-        console.error(
+        logger.error(
           `[cron] Failed to process grace period expiration for user ${expiredUser.id}:`,
-          userError
+          { error: userError }
         );
       }
     }
   } catch (error) {
-    console.error("[cron] grace period enforcement failed", error);
+    logger.error("[cron] grace period enforcement failed", { error });
     // Don't fail the entire cron if grace period enforcement fails
   }
 

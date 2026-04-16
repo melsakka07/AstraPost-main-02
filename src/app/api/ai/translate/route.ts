@@ -1,7 +1,10 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
@@ -15,6 +18,7 @@ const responseSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const { session, model } = preamble;
@@ -22,19 +26,14 @@ export async function POST(req: Request) {
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: parsed.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(parsed.error.issues);
     }
 
     const { tweets, targetLanguage } = parsed.data;
 
     const emptyTweets = tweets.filter((t) => !t.trim());
     if (emptyTweets.length > 0) {
-      return new Response(
-        JSON.stringify({ error: "Cannot translate empty tweets. Please add content first." }),
-        { status: 400 }
-      );
+      return ApiError.badRequest("Cannot translate empty tweets. Please add content first.");
     }
 
     const prompt = `Translate this X thread into ${LANGUAGES.find((l) => l.code === targetLanguage)?.label || "English"}.
@@ -56,12 +55,14 @@ ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${t}`).join("\n\n")}`;
 
     await recordAiUsage(session.user.id, "translate", 0, prompt, object, targetLanguage);
 
-    return Response.json(object);
+    const res = Response.json(object);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("Translation error:", error);
-    const message = error instanceof Error ? error.message : "Translation failed";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
+    logger.error("translation_error", {
+      error: error instanceof Error ? error.message : String(error),
     });
+    const message = error instanceof Error ? error.message : "Translation failed";
+    return ApiError.serviceUnavailable(message);
   }
 }

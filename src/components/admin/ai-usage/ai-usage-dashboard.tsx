@@ -9,6 +9,7 @@ import { useAdminPolling } from "@/components/admin/use-admin-polling";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/ui/stat-card";
 import {
   Table,
   TableBody,
@@ -46,33 +47,6 @@ interface AiUsageData {
     from: string;
     to: string;
   };
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ElementType;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-5">
-        <div className="bg-primary/10 flex h-9 w-9 items-center justify-center rounded-lg">
-          <Icon className="text-primary h-4 w-4" />
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-bold tabular-nums">{value}</p>
-          <p className="text-foreground text-sm font-medium">{label}</p>
-          {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 function LoadingSkeleton() {
@@ -167,15 +141,15 @@ export function AiUsageDashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Total Generations"
+          title="Total Generations"
           value={data.summary.totalGenerations.toLocaleString()}
-          sub="All time"
+          description="All time"
           icon={Bot}
         />
         <StatCard
-          label="In Range"
+          title="In Range"
           value={data.summary.thisMonth.toLocaleString()}
-          sub={
+          description={
             data.dateRange
               ? `${new Date(data.dateRange.from).toLocaleDateString()} - ${new Date(data.dateRange.to).toLocaleDateString()}`
               : "Selected period"
@@ -183,15 +157,15 @@ export function AiUsageDashboard() {
           icon={BarChart3}
         />
         <StatCard
-          label="Active Users"
+          title="Active Users"
           value={data.summary.activeUsersThisMonth.toLocaleString()}
-          sub="Used AI in range"
+          description="Used AI in range"
           icon={Users}
         />
         <StatCard
-          label="Tokens Used"
+          title="Tokens Used"
           value={data.summary.tokensThisMonth.toLocaleString()}
-          sub="In selected range"
+          description="In selected range"
           icon={Zap}
         />
       </div>

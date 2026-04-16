@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 import { render } from "@react-email/render";
 import { Resend } from "resend";
 import { PostFailureEmail } from "@/components/email/post-failure-email";
+import { logger } from "@/lib/logger";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -17,17 +17,19 @@ interface SendEmailInput {
 }
 
 export async function sendEmail(input: SendEmailInput) {
-  // If Resend is not configured, log to console
+  // If Resend is not configured, log to logger
   if (!resend) {
-    console.warn("Resend API key not found. Email logged to console:", {
+    logger.warn("email_resend_not_configured", {
       to: input.to,
       subject: input.subject,
       metadata: input.metadata || {},
     });
     if (process.env.NODE_ENV === "development") {
-      console.log(
-        `[EMAIL to ${input.to}] Subject: ${input.subject}\nBody: ${input.text || "(HTML content)"}`
-      );
+      logger.info("email_dev_log", {
+        to: input.to,
+        subject: input.subject,
+        body: input.text || "(HTML content)",
+      });
     }
     return;
   }
@@ -61,14 +63,16 @@ export async function sendEmail(input: SendEmailInput) {
     });
 
     if (error) {
-      console.error("Failed to send email via Resend:", error);
+      logger.error("email_send_failed", { error });
       throw new Error(`Email sending failed: ${error.message}`);
     }
 
-    console.log(`Email sent successfully to ${input.to}`, data);
+    logger.info("email_sent", { to: input.to, data });
     return data;
   } catch (error) {
-    console.error("Error sending email:", error);
+    logger.error("email_send_error", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return undefined;
   }
 }

@@ -1,7 +1,10 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const hashtagRequestSchema = z.object({
@@ -15,6 +18,7 @@ const hashtagResponseSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const { session, model } = preamble;
@@ -23,9 +27,7 @@ export async function POST(req: Request) {
     const result = hashtagRequestSchema.safeParse(json);
 
     if (!result.success) {
-      return new Response(JSON.stringify({ error: "Invalid request", details: result.error }), {
-        status: 400,
-      });
+      return ApiError.badRequest(result.error.issues);
     }
 
     const { content, language } = result.data;
@@ -34,10 +36,10 @@ export async function POST(req: Request) {
       You are a social media growth expert for X (Twitter).
       Suggest 5-10 highly relevant and trending hashtags for the following tweet content.
       Language: ${LANGUAGES.find((l) => l.code === language)?.label || "English"}.
-      
+
       Content:
       "${content}"
-      
+
       Constraints:
       - If language is Arabic, prioritize hashtags popular in MENA.
       - If other language, prioritize hashtags popular in that region.
@@ -61,9 +63,13 @@ export async function POST(req: Request) {
       language
     );
 
-    return Response.json(object);
+    const res = Response.json(object);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    console.error("AI Hashtag Error:", error);
-    return new Response(JSON.stringify({ error: "Failed to generate hashtags" }), { status: 500 });
+    logger.error("hashtag_generation_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return ApiError.internal("Failed to generate hashtags");
   }
 }

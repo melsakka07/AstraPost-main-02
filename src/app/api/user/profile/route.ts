@@ -1,9 +1,9 @@
 import { headers, cookies } from "next/headers";
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { user } from "@/lib/schema";
 
 /**
@@ -39,7 +39,7 @@ export async function PATCH(req: Request) {
   });
 
   if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+    return new Response("Unauthorized", { status: 401 });
   }
 
   try {
@@ -65,12 +65,12 @@ export async function PATCH(req: Request) {
       path: "/",
     });
 
-    return NextResponse.json({ success: true });
+    return Response.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return new NextResponse("Invalid request data", { status: 400 });
+      return new Response("Invalid request data", { status: 400 });
     }
-    console.error(error);
-    return new NextResponse("Internal Error", { status: 500 });
+    logger.error("Profile update error", { error });
+    return new Response("Internal Error", { status: 500 });
   }
 }

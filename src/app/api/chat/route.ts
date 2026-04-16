@@ -3,8 +3,10 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { streamText, UIMessage, convertToModelMessages } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   checkAiLimitDetailed,
   checkAiQuotaDetailed,
@@ -34,10 +36,7 @@ const chatRequestSchema = z.object({
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    return ApiError.unauthorized();
   }
 
   const dbUser = await db.query.user.findFirst({
@@ -62,24 +61,12 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return ApiError.badRequest("Invalid JSON");
   }
 
   const parsed = chatRequestSchema.safeParse(body);
   if (!parsed.success) {
-    return new Response(
-      JSON.stringify({
-        error: "Invalid request",
-        details: parsed.error.flatten().fieldErrors,
-      }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return ApiError.badRequest(parsed.error.issues);
   }
 
   const { messages }: { messages: UIMessage[] } = parsed.data as { messages: UIMessage[] };
@@ -87,10 +74,7 @@ export async function POST(req: Request) {
   // Initialize OpenRouter with API key from environment
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "OpenRouter API key not configured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return ApiError.internal("OpenRouter API key not configured");
   }
 
   const openrouter = createOpenRouter({ apiKey });
@@ -109,7 +93,7 @@ export async function POST(req: Request) {
           null,
           "en"
         ).catch((err) => {
-          console.error("[chat] recordAiUsage error:", err);
+          logger.error("[chat] recordAiUsage error:", { error: err });
         });
       },
     });
@@ -118,10 +102,7 @@ export async function POST(req: Request) {
       result as unknown as { toUIMessageStreamResponse: () => Response }
     ).toUIMessageStreamResponse();
   } catch (err) {
-    console.error("[chat] streamText error:", err);
-    return new Response(
-      JSON.stringify({ error: "AI service unavailable. Please try again later." }),
-      { status: 503, headers: { "Content-Type": "application/json" } }
-    );
+    logger.error("[chat] streamText error:", { error: err });
+    return ApiError.serviceUnavailable("AI service unavailable. Please try again later.");
   }
 }

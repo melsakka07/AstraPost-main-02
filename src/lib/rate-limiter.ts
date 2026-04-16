@@ -3,6 +3,7 @@
 // connection count and used inconsistent retry behaviour. The BullMQ
 // connection already sets maxRetriesPerRequest: null which is correct for
 // both queuing and rate-limit operations.
+import { logger } from "@/lib/logger";
 import { connection as redis } from "@/lib/queue/client";
 export { redis };
 
@@ -78,14 +79,14 @@ export async function checkRateLimit(
       .expire(key, config.window, "NX") // Set expiry only if key doesn't exist
       .exec();
   } catch (err) {
-    console.error("Redis rate limit error", { type, userId, err });
+    logger.error("rate_limit_redis_error", { type, userId, error: err });
     results = null;
   }
 
   if (results === null) {
     if (COST_SENSITIVE_TYPES.has(type)) {
       // Fail CLOSED on AI/cost endpoints — caller must return 503, not 429
-      console.error(`Rate limiter Redis failure on cost-sensitive endpoint: ${type}`, { userId });
+      logger.error("rate_limit_redis_failure_cost_sensitive", { type, userId });
       return { success: false, remaining: 0, reset: Date.now() + 60_000, serviceError: true };
     }
     // Fail OPEN on low-cost endpoints (posts, media, auth)
@@ -127,6 +128,20 @@ export function createRateLimitResponse(result: RateLimitResult): Response {
     );
   }
 
+  return new Response(JSON.stringify({ error: "Too many requests", retryAfter }), {
+    status: 429,
+    headers: {
+      "Content-Type": "application/json",
+      "Retry-After": retryAfter.toString(),
+    },
+  });
+}
+
+/**
+ * Builds a 429 response from the result of `checkIpRateLimit`.
+ * Mirrors `createRateLimitResponse` for the IP-based limiter shape.
+ */
+export function createIpRateLimitResponse(retryAfter: number): Response {
   return new Response(JSON.stringify({ error: "Too many requests", retryAfter }), {
     status: 429,
     headers: {

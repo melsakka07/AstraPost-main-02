@@ -3,6 +3,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { subscriptions, user } from "@/lib/schema";
 
 // Configurable plan prices — set via env vars for accurate MRR.
@@ -125,7 +126,7 @@ export async function GET() {
       },
     });
   } catch (err) {
-    console.error("[billing/overview] Runtime error:", err);
+    logger.error("[billing/overview] Runtime error", { error: err });
     return ApiError.internal("Failed to load billing overview");
   }
 }
