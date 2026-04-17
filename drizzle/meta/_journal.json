@@ -393,6 +393,13 @@
       "when": 1744816200000,
       "tag": "0055_add_failed_jobs_dlq",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1744902600000,
+      "tag": "0056_remove_session_token_idx",
+      "breakpoints": true
     }
   ]
 }

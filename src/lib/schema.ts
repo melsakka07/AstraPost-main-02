@@ -242,7 +242,6 @@ export const session = pgTable(
   },
   (table) => [
     index("session_user_id_idx").on(table.userId),
-    index("session_token_idx").on(table.token),
     index("session_impersonated_by_idx").on(table.impersonatedBy),
   ]
 );

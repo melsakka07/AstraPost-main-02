@@ -1,5 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
@@ -38,13 +39,14 @@ export async function POST(req: Request) {
     }
 
     const { content } = result.data;
+    const sanitizedContent = sanitizeForPrompt(content, 5000);
 
     const prompt = `
       You are an expert social media analyst for X (Twitter).
       Analyze the following tweet/thread content and provide a viral potential score (0-100) and 3 specific, actionable feedback points to improve it.
 
       Content:
-      "${content}"
+      "${sanitizedContent}"
 
       Scoring Criteria:
       - Hooks (first line/tweet)

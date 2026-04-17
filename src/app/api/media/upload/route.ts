@@ -76,7 +76,7 @@ function detectMimeFromBuffer(buf: Buffer): DetectedFile | null {
 
 /** Absolute ceiling across all types (used for cheap pre-check before buffer read). */
 const ABSOLUTE_MAX_BYTES = 50 * 1024 * 1024; // 50 MB (video ceiling)
-const IMAGE_MAX_BYTES = 15 * 1024 * 1024; // 15 MB
+const IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 // ── Route handler ──────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
     // NOT trust the attacker-controlled file.type to choose the ceiling.
     // The per-type limit is enforced again below, after magic-bytes detection.
     if (file.size > ABSOLUTE_MAX_BYTES) {
-      return ApiError.badRequest("File too large");
+      return Response.json({ error: "File too large. Maximum size is 10MB." }, { status: 413 });
     }
 
     // ── Magic-bytes validation ─────────────────────────────────────────────
@@ -124,9 +124,10 @@ export async function POST(req: Request) {
     const isVideo = detected.mime.startsWith("video/");
     const typeMaxBytes = isVideo ? ABSOLUTE_MAX_BYTES : IMAGE_MAX_BYTES;
     if (file.size > typeMaxBytes) {
-      return ApiError.badRequest(
-        isVideo ? "Video too large (max 50 MB)" : "Image too large (max 15 MB)"
-      );
+      const message = isVideo
+        ? "Video too large (max 50 MB)"
+        : "File too large. Maximum size is 10MB.";
+      return Response.json({ error: message }, { status: 413 });
     }
 
     // ── Build a safe filename using only the canonical extension ──────────
