@@ -148,7 +148,7 @@ astrapost/
 │   ├── features/               # Feature implementation documentation
 │   └── technical/              # AI, X API, react-markdown, BetterAuth docs
 │
-├── drizzle/                    # Generated SQL migration files (0000–0047)
+├── drizzle/                    # Generated SQL migration files (0000–0057)
 │
 ├── scripts/                    # Operational scripts
 │   ├── worker.ts               # BullMQ worker entry point
@@ -1050,9 +1050,8 @@ And that **OAuth 2.0** is enabled with **Read and Write** + **Request email from
 
 ### AI features not working
 
-- **OpenRouter**: Ensure `OPENROUTER_API_KEY` is set. Get a key at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys).
+- **OpenRouter** (All AI text generation): Ensure `OPENROUTER_API_KEY` is set. Get a key at [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys). Set `OPENROUTER_MODEL` to a valid model (e.g., `openai/gpt-4o`).
 - **AI Image Generation**: Ensure `REPLICATE_API_TOKEN` is set. Get one at [replicate.com](https://replicate.com/).
-- **AI Inspiration/Chat**: Ensure `GEMINI_API_KEY` is set. Get one at [ai.google.dev](https://ai.google.dev/).
 - **Competitor Analyzer / Tweet Import**: Ensure `TWITTER_BEARER_TOKEN` is set.
 
 ### Worker not processing jobs
