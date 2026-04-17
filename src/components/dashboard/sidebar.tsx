@@ -3,36 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  PenSquare,
-  ListOrdered,
-  FileText,
-  BarChart2,
-  TrendingUp,
-  CalendarDays,
-  ListChecks,
-  Lightbulb,
-  ShoppingCart,
-  Settings,
-  LogOut,
-  Rocket,
-  ExternalLink,
-  Sparkles,
-  Users,
-  MessageCircle,
-  CalendarRange,
-  UserPen,
-  History,
-  Trophy,
-  Share2,
-  ChevronDown,
-  Wand2,
-  Image as ImageIcon,
-} from "lucide-react";
+import { LogOut, Rocket, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { Drawer as DrawerPrimitive } from "vaul";
+import { isItemActive } from "@/components/dashboard/sidebar-active-state";
+import { CollapsibleSection } from "@/components/dashboard/sidebar-collapsible-section";
+import { SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,236 +17,8 @@ import { clientLogger } from "@/lib/client-logger";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { cn } from "@/lib/utils";
 
-interface NavItem {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  href: string;
-  isPro?: boolean;
-  isNew?: boolean;
-  /** Only visible to admin users */
-  isAdmin?: boolean;
-}
-
-interface SidebarSection {
-  label: string;
-  items: NavItem[];
-  /** When true, the section collapses in the mobile Sheet */
-  collapsible?: boolean;
-}
-
-function isItemActive(itemHref: string, pathname: string, allItems: NavItem[]): boolean {
-  if (pathname === itemHref) return true;
-
-  const isPrefixOf = (prefix: string, path: string) =>
-    path === prefix || path.startsWith(`${prefix}/`);
-
-  const hasMoreSpecificMatch = allItems.some(
-    (other) =>
-      other.href !== itemHref &&
-      other.href.length > itemHref.length &&
-      isPrefixOf(other.href, pathname)
-  );
-
-  if (hasMoreSpecificMatch) return false;
-
-  return pathname.startsWith(`${itemHref}/`);
-}
-
-// ── Navigation Rules ──────────────────────────────────────────────────────────
-// 1. Every /dashboard/* route MUST have an entry here or be reachable from a
-//    page that does. Never ship a dashboard page without a sidebar path.
-// 2. This array is the single source of truth for navigation. If a page is
-//    also linked from a hub/overview card, the hub must be the sidebar entry —
-//    do NOT list both the hub and its sub-pages as peer siblings.
-// 3. Hub pages (e.g. /dashboard/ai) are supplementary launchers. Their cards
-//    must not duplicate links already present here at the same level.
-// ─────────────────────────────────────────────────────────────────────────────
-const sidebarSections: SidebarSection[] = [
-  {
-    label: "Overview",
-    items: [{ icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" }],
-  },
-  {
-    label: "Content",
-    items: [
-      { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
-      { icon: FileText, label: "Drafts", href: "/dashboard/drafts" },
-      { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
-      { icon: CalendarDays, label: "Calendar", href: "/dashboard/calendar" },
-    ],
-  },
-  {
-    label: "AI Tools",
-    collapsible: true,
-    items: [
-      {
-        icon: Wand2,
-        label: "Agentic Posting",
-        href: "/dashboard/ai/agentic",
-        isPro: true,
-        isNew: true,
-      },
-      { icon: Sparkles, label: "AI Tools", href: "/dashboard/ai" },
-      {
-        icon: CalendarRange,
-        label: "Content Calendar",
-        href: "/dashboard/ai/calendar",
-        isPro: true,
-      },
-      { icon: MessageCircle, label: "Reply Suggester", href: "/dashboard/ai/reply", isPro: true },
-      { icon: UserPen, label: "Bio Optimizer", href: "/dashboard/ai/bio", isPro: true },
-      { icon: History, label: "AI History", href: "/dashboard/ai/history", isAdmin: true },
-      { icon: Lightbulb, label: "Inspiration", href: "/dashboard/inspiration" },
-      { icon: ShoppingCart, label: "AI Affiliate", href: "/dashboard/affiliate" },
-    ],
-  },
-  {
-    label: "Analytics",
-    collapsible: true,
-    items: [
-      { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics" },
-      { icon: TrendingUp, label: "Viral Analyzer", href: "/dashboard/analytics/viral" },
-      { icon: Users, label: "Competitor", href: "/dashboard/analytics/competitor", isPro: true },
-    ],
-  },
-  {
-    label: "Growth",
-    items: [
-      { icon: Trophy, label: "Achievements", href: "/dashboard/achievements" },
-      { icon: Share2, label: "Referrals", href: "/dashboard/referrals" },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings" },
-    ],
-  },
-];
-
 // Flattened array of all nav items for active state checking
-const allNavItems = sidebarSections.flatMap((section) => section.items);
-
-// ── CollapsibleSection ────────────────────────────────────────────────────────
-// Wraps a nav section in a toggle for the mobile Sheet (M2).
-// Default open when any child matches the current pathname.
-interface CollapsibleSectionProps {
-  section: SidebarSection;
-  pathname: string;
-  onNavigate?: () => void;
-  isMobile: boolean;
-  userPlan?: string;
-}
-
-function CollapsibleSection({
-  section,
-  pathname,
-  onNavigate,
-  isMobile,
-  userPlan = "free",
-}: CollapsibleSectionProps) {
-  const hasActiveChild = section.items.some(
-    (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
-  );
-
-  // On mobile, start collapsed unless a child is active (M2).
-  // On desktop, always expanded (collapsible prop is ignored).
-  // vaul Drawer unmounts content on close, so this initializer re-runs fresh
-  // every time the Drawer is opened — no useEffect sync needed.
-  const [isOpen, setIsOpen] = useState(!isMobile || hasActiveChild);
-
-  const linkPy = isMobile ? "py-3" : "py-2.5"; // M3
-
-  return (
-    <div>
-      {/* Collapsible header — only interactive on mobile */}
-      <button
-        type="button"
-        onClick={() => isMobile && setIsOpen((v) => !v)}
-        className={cn(
-          "text-muted-foreground/60 flex w-full items-center justify-between px-3 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors",
-          isMobile && "hover:text-muted-foreground cursor-pointer"
-        )}
-        {...(isMobile
-          ? {
-              "aria-expanded": isOpen,
-              "aria-controls": `section-${section.label}`,
-            }
-          : {})}
-        // Prevent keyboard interaction on desktop where the button is decorative
-        tabIndex={isMobile ? 0 : -1}
-      >
-        {section.label}
-        {isMobile && (
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-              isOpen && "rotate-180"
-            )}
-            aria-hidden="true"
-          />
-        )}
-      </button>
-
-      <div
-        id={isMobile ? `section-${section.label}` : undefined}
-        className={cn(
-          "space-y-0.5 overflow-hidden transition-all duration-200",
-          isMobile && !isOpen ? "max-h-0 opacity-0" : "max-h-[600px] opacity-100"
-        )}
-      >
-        {section.items.map((item) => {
-          const isActive = isItemActive(item.href, pathname, allNavItems);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => onNavigate?.()}
-              aria-current={isActive ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
-                linkPy,
-                isActive
-                  ? isMobile
-                    ? "bg-primary/15 text-primary font-semibold" // M6
-                    : "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <item.icon className="h-4.5 w-4.5 shrink-0" />
-              {item.label}
-              {item.isNew && (
-                <Badge className="ms-auto h-4 border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0 text-[10px] text-emerald-600">
-                  New
-                </Badge>
-              )}
-              {item.isPro &&
-                !item.isNew &&
-                (userPlan === "free" ? (
-                  <Link href="/pricing" onClick={(e) => e.stopPropagation()} className="ms-auto">
-                    <Badge
-                      variant="outline"
-                      className="border-primary/30 text-primary hover:bg-primary/10 h-4 cursor-pointer px-1.5 py-0 text-[10px]"
-                    >
-                      Pro
-                    </Badge>
-                  </Link>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
-                  >
-                    Pro
-                  </Badge>
-                ))}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+const allNavItems = SIDEBAR_SECTIONS.flatMap((section) => section.items);
 
 // ── SidebarContent ────────────────────────────────────────────────────────────
 
@@ -350,20 +98,18 @@ function SidebarContent({
     });
 
   // Filter sidebar sections based on feature flags and admin access
-  const filteredSections = sidebarSections
-    .map((section) => {
-      let items = section.items;
-      // Hide admin-only items from non-admins
-      if (!isAdmin) {
-        items = items.filter((item) => !item.isAdmin);
-      }
-      // Hide Referrals when feature flag is off
-      if (section.label === "Growth" && !referralsEnabled) {
-        items = items.filter((item) => item.label !== "Referrals");
-      }
-      return { ...section, items };
-    })
-    .filter((section) => section.items.length > 0);
+  const filteredSections = SIDEBAR_SECTIONS.map((section) => {
+    let items = section.items;
+    // Hide admin-only items from non-admins
+    if (!isAdmin) {
+      items = items.filter((item) => !item.isAdmin);
+    }
+    // Hide Referrals when feature flag is off
+    if (section.label === "Growth" && !referralsEnabled) {
+      items = items.filter((item) => item.label !== "Referrals");
+    }
+    return { ...section, items };
+  }).filter((section) => section.items.length > 0);
 
   return (
     <div className="flex h-full flex-col">
@@ -432,6 +178,7 @@ function SidebarContent({
               <CollapsibleSection
                 section={section}
                 pathname={pathname}
+                allNavItems={allNavItems}
                 {...(onNavigate !== undefined && { onNavigate })}
                 isMobile={isMobile}
                 userPlan={userPlan}
@@ -463,28 +210,6 @@ function SidebarContent({
                       >
                         <item.icon className="h-4.5 w-4.5 shrink-0" />
                         {item.label}
-                        {item.isPro &&
-                          (userPlan === "free" ? (
-                            <Link
-                              href="/pricing"
-                              onClick={(e) => e.stopPropagation()}
-                              className="ms-auto"
-                            >
-                              <Badge
-                                variant="outline"
-                                className="border-primary/30 text-primary hover:bg-primary/10 h-4 cursor-pointer px-1.5 py-0 text-[10px]"
-                              >
-                                Pro
-                              </Badge>
-                            </Link>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-primary/30 text-primary ms-auto h-4 px-1.5 py-0 text-[10px]"
-                            >
-                              Pro
-                            </Badge>
-                          ))}
                       </Link>
                     );
                   })}

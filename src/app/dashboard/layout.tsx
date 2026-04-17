@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq, and, gte } from "drizzle-orm";
@@ -5,8 +6,10 @@ import { Rocket } from "lucide-react";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
+import { DashboardHeaderSkeleton } from "@/components/dashboard/dashboard-header-skeleton";
 import { FailureBanner } from "@/components/dashboard/failure-banner";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { SidebarSkeleton } from "@/components/dashboard/sidebar-skeleton";
 import { TokenWarningBanner } from "@/components/dashboard/token-warning-banner";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { ReferralCookieProcessor } from "@/components/referral/referral-cookie-processor";
@@ -99,13 +102,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div data-dashboard-layout className="bg-background pb-safe flex min-h-dvh">
       <DashboardTour />
       <ReferralCookieProcessor />
-      <Sidebar
-        aiUsage={aiUsage}
-        user={{ name: session.user.name, image: session.user.image || null }}
-        referralsEnabled={referralsEnabled}
-        isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}
-        userPlan={dbUser?.plan ?? "free"}
-      />
+      <Suspense fallback={<SidebarSkeleton />}>
+        <Sidebar
+          aiUsage={aiUsage}
+          user={{ name: session.user.name, image: session.user.image || null }}
+          referralsEnabled={referralsEnabled}
+          isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}
+          userPlan={dbUser?.plan ?? "free"}
+        />
+      </Suspense>
       <div className="flex min-w-0 flex-1 flex-col">
         {session.session.impersonatedBy && (
           <ImpersonationBanner
@@ -114,15 +119,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
             targetUserEmail={session.user.email}
           />
         )}
-        <DashboardHeader
-          user={{
-            id: session.user.id,
-            name: session.user.name,
-            image: session.user.image || null,
-          }}
-          currentTeamId={ctx?.currentTeamId || session.user.id}
-          memberships={formattedMemberships}
-        />
+        <Suspense fallback={<DashboardHeaderSkeleton />}>
+          <DashboardHeader
+            user={{
+              id: session.user.id,
+              name: session.user.name,
+              image: session.user.image || null,
+            }}
+            currentTeamId={ctx?.currentTeamId || session.user.id}
+            memberships={formattedMemberships}
+          />
+        </Suspense>
         <AnnouncementBanner />
         {inactiveAccount && <TokenWarningBanner username={inactiveAccount.xUsername} />}
         <FailureBanner hasFailures={!!failedPost} />
