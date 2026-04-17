@@ -100,6 +100,7 @@ export default async function SettingsPage({
               email: session.user.email,
               timezone: userRow?.timezone ?? null,
               language: userRow?.language ?? null,
+              image: userRow?.image ?? null,
             }}
           />
           <ReopenChecklistButton />

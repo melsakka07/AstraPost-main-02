@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { eq, and, gte } from "drizzle-orm";
 import { Rocket } from "lucide-react";
 import { AnnouncementBanner } from "@/components/announcement-banner";
+import { ChangelogBanner } from "@/components/changelog-banner";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DashboardHeaderSkeleton } from "@/components/dashboard/dashboard-header-skeleton";
@@ -130,6 +131,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             memberships={formattedMemberships}
           />
         </Suspense>
+        <ChangelogBanner />
         <AnnouncementBanner />
         {inactiveAccount && <TokenWarningBanner username={inactiveAccount.xUsername} />}
         <FailureBanner hasFailures={!!failedPost} />
