@@ -274,17 +274,24 @@ export const account = pgTable(
   ]
 );
 
-export const verification = pgTable("verification", {
-  id: text("id").primaryKey(),
-  identifier: text("identifier").notNull(),
-  value: text("value").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("verification_identifier_idx").on(table.identifier),
+    index("verification_identifier_expires_idx").on(table.identifier, table.expiresAt),
+  ]
+);
 
 // AstraPost Tables
 
@@ -650,7 +657,10 @@ export const aiGenerations = pgTable(
     tokensUsed: integer("tokens_used"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
-  (table) => [index("ai_gen_user_id_idx").on(table.userId)]
+  (table) => [
+    index("ai_gen_user_id_idx").on(table.userId),
+    index("ai_gen_user_created_idx").on(table.userId, table.createdAt),
+  ]
 );
 
 export const inspirationBookmarks = pgTable(

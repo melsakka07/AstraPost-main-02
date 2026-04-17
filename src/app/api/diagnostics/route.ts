@@ -1,3 +1,6 @@
+import { headers } from "next/headers";
+import { checkIpRateLimit, createIpRateLimitResponse } from "@/lib/rate-limiter";
+
 type StatusLevel = "ok" | "warn" | "error";
 
 interface DiagnosticsResponse {
@@ -32,7 +35,16 @@ interface DiagnosticsResponse {
 // This endpoint is intentionally public (no auth required) because it's used
 // by the setup checklist on the homepage before users are logged in.
 // It only returns boolean flags about configuration status, not sensitive data.
+// IP-based rate limiting: 10 requests per hour per IP to prevent abuse.
 export async function GET(req: Request) {
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for") ?? headersList.get("x-real-ip") ?? "unknown";
+
+  // 10 requests per hour per IP
+  const rl = await checkIpRateLimit(ip, "diagnostics", 10, 3600);
+  if (rl?.limited) {
+    return createIpRateLimitResponse(rl.retryAfter ?? 3600);
+  }
   const env = {
     POSTGRES_URL: Boolean(process.env.POSTGRES_URL),
     BETTER_AUTH_SECRET: Boolean(process.env.BETTER_AUTH_SECRET),

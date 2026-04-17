@@ -1,8 +1,13 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { Award } from "lucide-react";
 import { Metadata } from "next";
+import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { MilestoneList } from "@/components/gamification/milestone-list";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { milestones } from "@/lib/schema";
@@ -29,17 +34,35 @@ export default async function AchievementsPage() {
   const unlockedIds = unlocked.map((m) => m.milestoneId);
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Achievements</h1>
-      </div>
-
-      <div className="space-y-4">
-        <p className="text-muted-foreground">
-          Unlock badges by growing your audience and posting consistently.
-        </p>
-        <MilestoneList unlockedMilestoneIds={unlockedIds} />
-      </div>
-    </div>
+    <DashboardPageWrapper
+      icon={Award}
+      title="Achievements"
+      description="Track your progress and unlock rewards"
+    >
+      {unlockedIds.length === 0 ? (
+        <EmptyState
+          icon={<Award className="h-6 w-6" />}
+          title="No achievements yet"
+          description="Start creating content to unlock badges. Post consistently, grow your audience, and reach milestones."
+          primaryAction={
+            <Button asChild>
+              <Link href="/dashboard/compose">Create Your First Post</Link>
+            </Button>
+          }
+          secondaryAction={
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/analytics">View Analytics</Link>
+            </Button>
+          }
+        />
+      ) : (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            Unlock badges by growing your audience and posting consistently.
+          </p>
+          <MilestoneList unlockedMilestoneIds={unlockedIds} />
+        </div>
+      )}
+    </DashboardPageWrapper>
   );
 }
