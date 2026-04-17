@@ -1,7 +1,12 @@
 import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
+import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
+import { user } from "@/lib/schema";
 import { sendEmail } from "@/lib/services/email";
 
 // ── Validation ──────────────────────────────────────────────────────────────
@@ -13,23 +18,6 @@ const contactSchema = z.object({
   subject: z.string().min(5).max(150).trim(),
   message: z.string().min(20).max(2000).trim(),
 });
-
-// ── Rate limiting ────────────────────────────────────────────────────────────
-// Simple in-memory sliding-window: max 3 submissions per IP per hour.
-// For a distributed/multi-instance deployment, swap for Redis-based limiting.
-const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-const RATE_LIMIT = 3;
-const ipTimestamps = new Map<string, number[]>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const cutoff = now - RATE_WINDOW_MS;
-  const times = (ipTimestamps.get(ip) ?? []).filter((t) => t > cutoff);
-  if (times.length >= RATE_LIMIT) return true;
-  times.push(now);
-  ipTimestamps.set(ip, times);
-  return false;
-}
 
 // ── Category labels ──────────────────────────────────────────────────────────
 
@@ -51,9 +39,20 @@ export async function POST(req: Request) {
     reqHeaders.get("x-real-ip") ??
     "unknown";
 
-  if (isRateLimited(ip)) {
-    return ApiError.tooManyRequests("Too many requests. Please wait before submitting again.");
+  const session = await auth.api.getSession({ headers: await headers() });
+  const userId = session?.user?.id ?? `ip_${ip}`;
+
+  let plan = "free";
+  if (session?.user?.id) {
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true },
+    });
+    if (dbUser?.plan) plan = dbUser.plan;
   }
+
+  const rateLimit = await checkRateLimit(userId, plan, "contact");
+  if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   let body: unknown;
   try {

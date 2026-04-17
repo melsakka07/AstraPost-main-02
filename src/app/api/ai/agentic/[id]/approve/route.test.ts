@@ -17,7 +17,7 @@ import { POST } from "./route";
 
 // ─── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const { mockFindFirst, mockTransaction } = vi.hoisted(() => {
+const { mockFindFirst, mockTransaction, mockUserFindFirst, mockCheckRateLimit } = vi.hoisted(() => {
   const mockTxInsertValues = vi.fn().mockResolvedValue(undefined);
   const mockTxUpdateSet = vi.fn(() => ({
     where: vi.fn().mockResolvedValue(undefined),
@@ -30,8 +30,10 @@ const { mockFindFirst, mockTransaction } = vi.hoisted(() => {
   });
 
   const mockFindFirst = vi.fn();
+  const mockUserFindFirst = vi.fn().mockResolvedValue({ plan: "pro_monthly", voiceProfile: null });
+  const mockCheckRateLimit = vi.fn().mockResolvedValue({ success: true });
 
-  return { mockFindFirst, mockTransaction };
+  return { mockFindFirst, mockTransaction, mockUserFindFirst, mockCheckRateLimit };
 });
 
 // ─── Module mocks ──────────────────────────────────────────────────────────────
@@ -54,14 +56,26 @@ vi.mock("@/lib/logger", () => ({
 
 vi.mock("@/lib/db", () => ({
   db: {
-    query: { agenticPosts: { findFirst: mockFindFirst } },
+    query: {
+      agenticPosts: { findFirst: mockFindFirst },
+      user: { findFirst: mockUserFindFirst },
+    },
     transaction: mockTransaction,
   },
+}));
+
+vi.mock("@/lib/rate-limiter", () => ({
+  checkRateLimit: mockCheckRateLimit,
+  createRateLimitResponse: vi.fn(),
 }));
 
 vi.mock("@/lib/queue/client", () => ({
   scheduleQueue: { add: vi.fn().mockResolvedValue({ id: "job-1" }) },
   SCHEDULE_JOB_OPTIONS: { attempts: 5 },
+}));
+
+vi.mock("@/lib/services/ai-quota", () => ({
+  recordAiUsage: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ─── Test fixtures ─────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkViralScoreAccessDetailed } from "@/lib/middleware/require-plan";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const scoreRequestSchema = z.object({
   content: z.string().min(1).max(5000), // Allow thread content
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
       skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
-    const { model } = preamble;
+    const { model, session } = preamble;
 
     const json = await req.json();
     const result = scoreRequestSchema.safeParse(json);
@@ -60,6 +61,8 @@ export async function POST(req: Request) {
       schema: scoreResponseSchema,
       prompt,
     });
+
+    await recordAiUsage(session.user.id, "viral_score", 0, content, object.feedback.join("\n"));
 
     // Clamp score to 0-100 in case the model returns out-of-range values
     const res = Response.json({ ...object, score: Math.min(100, Math.max(0, object.score)) });

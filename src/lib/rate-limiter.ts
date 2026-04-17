@@ -16,6 +16,7 @@ export const RATE_LIMITS = {
     media: { limit: 20, window: 3600 },
     auth: { limit: 5, window: 900 }, // 5 per 15 mins
     tweet_lookup: { limit: 20, window: 3600 }, // 20 per hour
+    contact: { limit: 3, window: 3600 }, // 3 per hour
   },
   pro: {
     ai: { limit: 200, window: 3600 },
@@ -24,6 +25,7 @@ export const RATE_LIMITS = {
     media: { limit: 100, window: 3600 },
     auth: { limit: 20, window: 900 },
     tweet_lookup: { limit: 100, window: 3600 }, // 100 per hour
+    contact: { limit: 5, window: 3600 }, // 5 per hour
   },
   agency: {
     ai: { limit: 1000, window: 3600 },
@@ -32,6 +34,7 @@ export const RATE_LIMITS = {
     media: { limit: 500, window: 3600 },
     auth: { limit: 50, window: 900 },
     tweet_lookup: { limit: 200, window: 3600 }, // 200 per hour
+    contact: { limit: 10, window: 3600 }, // 10 per hour
   },
 };
 
@@ -61,7 +64,7 @@ export type RateLimitResult = {
 export async function checkRateLimit(
   userId: string,
   plan: string, // Relaxed type — normalised internally
-  type: "ai" | "ai_image" | "posts" | "media" | "auth" | "tweet_lookup"
+  type: "ai" | "ai_image" | "posts" | "media" | "auth" | "tweet_lookup" | "contact"
 ): Promise<RateLimitResult> {
   // Normalize plan
   let role: "free" | "pro" | "agency" = "free";

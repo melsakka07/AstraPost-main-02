@@ -131,6 +131,8 @@ export const aiGenerationTypeEnum = pgEnum("ai_generation_type", [
   "competitor_analyzer",
   "chat",
   "voice_profile",
+  "viral_score",
+  "agentic_approve",
 ]);
 
 /** Type of a user-facing notification. */

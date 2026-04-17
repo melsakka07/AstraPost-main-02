@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 
 /**
@@ -43,9 +44,23 @@ export async function PATCH(req: Request) {
     return ApiError.unauthorized();
   }
 
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+
+  const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "auth");
+  if (!rateLimit.success) return createRateLimitResponse(rateLimit);
+
   try {
     const body = await req.json();
-    const { name, timezone, language } = profileSchema.parse(body);
+    const parsed = profileSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return ApiError.badRequest(parsed.error.issues);
+    }
+
+    const { name, timezone, language } = parsed.data;
 
     await db.update(user).set({ name, timezone, language }).where(eq(user.id, session.user.id));
 
@@ -68,9 +83,6 @@ export async function PATCH(req: Request) {
 
     return Response.json({ success: true });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return ApiError.badRequest("Invalid request data");
-    }
     logger.error("Profile update error", { error });
     return ApiError.internal("Internal Error");
   }

@@ -8,6 +8,7 @@ import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { agenticPosts, posts, tweets, media } from "@/lib/schema";
+import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const approveSchema = z.object({
   action: z.enum(["post_now", "schedule", "save_draft"]),
@@ -140,6 +141,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       correlationId,
     });
 
+    // Record AI usage for the approval flow (non-blocking to avoid breaking the response)
+    recordAiUsage(session.user.id, "agentic_approve", 0, "Approve action", null).catch((err) => {
+      logger.error("failed_to_record_ai_usage", {
+        error: err instanceof Error ? err.message : String(err),
+        agenticPostId: id,
+      });
+    });
     return Response.json({ postId, action });
   } catch (err) {
     logger.error("agentic_approve_error", {

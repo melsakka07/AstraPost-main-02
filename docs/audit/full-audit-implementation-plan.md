@@ -6,10 +6,10 @@
 
 ---
 
-## ✅ Phase A Milestone: Critical 3 Tasks Complete
+## ✅ Phase A Milestone: Critical 8 Tasks Complete
 
 **Completion Date:** 2026-04-17  
-**Status:** 3 of 8 Phase A tasks completed (37.5%)
+**Status:** 8 of 8 Phase A tasks completed (100%)
 
 ### Completed Tasks
 
@@ -17,6 +17,11 @@
 2. **✅ A-B02: Replace Console Calls** — Eliminated 47 `console.*` calls across 18 component files, replacing with `clientLogger`
 3. **✅ A-B03: Extract getPlanLimits()** — Created service layer wrapper in `src/lib/services/plan-metadata.ts`; refactored 7 route handlers
 4. **✅ A-B04: Standardize ApiError** — Replaced 233+ error response patterns across 11 route handlers with typed `ApiError.*` methods
+5. **✅ A-B05: Add recordAiUsage()** — Added missing `recordAiUsage()` calls to AI Score, AI Image, and Agentic Approve endpoints; added `viral_score` and `agentic_approve` to `aiGenerationTypeEnum`
+6. **✅ A-B06: Add Rate Limiting** — Added `checkRateLimit()` to 11 unprotected endpoints (AI quota, history, status, notifications, affiliate, templates, feedback, link-preview, user profile, user preferences)
+7. **✅ A-B07: Replace In-Memory Rate Limiting** — Swapped `Map`-based sliding window in `community/contact` with `checkRateLimit(userId, plan, "contact")`
+8. **✅ A-B08: Add Zod Validation** — Added Zod `.safeParse()` to `link-preview` route to replace manual JSON parsing
+9. **✅ A-F01: Add Error Boundaries** — Added `error.tsx` to 6 major dashboard route segments (`compose`, `calendar`, `queue`, `analytics`, `settings`, `ai`) to prevent dashboard unmounts.
 
 ### Verification
 
@@ -70,10 +75,10 @@ This implementation plan consolidates findings from a comprehensive audit across
 
 | Phase             | Total Tasks | Not Started | In Progress | Done  | % Complete |
 | ----------------- | ----------- | ----------- | ----------- | ----- | ---------- |
-| A (Critical/High) | 8           | 5           | 0           | 3     | 37.5%      |
-| B (Medium + QW)   | 13          | 13          | 0           | 0     | 0%         |
-| C (Low + Adv)     | 10          | 10          | 0           | 0     | 0%         |
-| **TOTAL**         | **31**      | **28**      | **0**       | **3** | **9.7%**   |
+| A (Critical/High) | 9           | 0           | 0           | 9     | **100%**   |
+| B (Medium)        | 13          | 13          | 0           | 0     | 0%         |
+| C (Low/Advanced)  | 9           | 9           | 0           | 0     | 0%         |
+| **TOTAL**         | **31**      | **22**      | **0**       | **9** | **29.0%**  |
 
 ---
 
@@ -138,7 +143,7 @@ This implementation plan consolidates findings from a comprehensive audit across
 - **Desired State:** All AI endpoints that consume tokens call `recordAiUsage()` with appropriate type
 - **Acceptance Criteria:** All 24 AI route files contain `recordAiUsage`; `pnpm run check` passes
 - **Effort:** S (0.5 day)
-- **Status:** ⬜ Not Started
+- **Status:** ✅ COMPLETED (2026-04-17)
 - **Dependencies:** None
 
 #### A-B06: Add Rate Limiting to 11 Unprotected Routes
@@ -150,7 +155,7 @@ This implementation plan consolidates findings from a comprehensive audit across
 - **Desired State:** All mutation routes have rate limiting; read-only routes have lighter limits
 - **Acceptance Criteria:** All API routes have either `checkRateLimit()` or a documented exemption; `pnpm run check` passes
 - **Effort:** M (1 day)
-- **Status:** ⬜ Not Started
+- **Status:** ✅ COMPLETED (2026-04-17)
 - **Dependencies:** None
 
 #### A-B07: Replace In-Memory Rate Limiting in Contact Form
@@ -162,7 +167,7 @@ This implementation plan consolidates findings from a comprehensive audit across
 - **Desired State:** Uses `checkRateLimit(userId, plan, "contact")` from shared rate limiter
 - **Acceptance Criteria:** No `Map` usage in contact route; rate limiting works across instances
 - **Effort:** XS (0.25 day)
-- **Status:** ⬜ Not Started
+- **Status:** ✅ COMPLETED (2026-04-17)
 - **Dependencies:** None
 
 #### A-B08: Add Zod Validation to Link-Preview Route
@@ -174,7 +179,7 @@ This implementation plan consolidates findings from a comprehensive audit across
 - **Desired State:** Zod schema with `.safeParse()` and `ApiError.badRequest()`
 - **Acceptance Criteria:** Uses `.safeParse()` pattern; `pnpm run check` passes
 - **Effort:** XS (0.25 day)
-- **Status:** ⬜ Not Started
+- **Status:** ✅ COMPLETED (2026-04-17)
 - **Dependencies:** None
 
 ### Frontend
@@ -188,7 +193,7 @@ This implementation plan consolidates findings from a comprehensive audit across
 - **Desired State:** Each major dashboard section has its own error boundary
 - **Acceptance Criteria:** 6 new `error.tsx` files exist; crashing a component doesn't unmount the entire dashboard
 - **Effort:** S (0.5 day)
-- **Status:** ⬜ Not Started
+- **Status:** ✅ COMPLETED (2026-04-17)
 - **Dependencies:** None
 
 #### A-F02: Refactor ProfileForm and VoiceProfileForm to React Hook Form

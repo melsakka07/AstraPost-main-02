@@ -56,14 +56,15 @@
  */
 
 import { NextRequest } from "next/server";
+import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { redis } from "@/lib/rate-limiter";
-import { aiGenerations } from "@/lib/schema";
+import { checkRateLimit, createRateLimitResponse, redis } from "@/lib/rate-limiter";
+import { aiGenerations, user } from "@/lib/schema";
 import {
   checkImagePrediction,
   downloadImage,
@@ -95,6 +96,14 @@ export async function GET(req: NextRequest) {
   if (!predictionId) {
     return ApiError.badRequest("Missing prediction ID");
   }
+
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+
+  const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai_image");
+  if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   // Retrieve prediction metadata cached by the POST endpoint.
   const raw = await redis.get(`ai:img:pred:${predictionId}`);

@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 
 function isValidIANATimezone(tz: string): boolean {
@@ -30,9 +31,23 @@ export async function PATCH(req: Request) {
     return ApiError.unauthorized();
   }
 
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+
+  const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "auth");
+  if (!rateLimit.success) return createRateLimitResponse(rateLimit);
+
   try {
     const body = await req.json();
-    const { timezone, language } = preferencesSchema.parse(body);
+    const parsed = preferencesSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return ApiError.badRequest(parsed.error.issues);
+    }
+
+    const { timezone, language } = parsed.data;
 
     await db.update(user).set({ timezone, language }).where(eq(user.id, session.user.id));
 
@@ -48,9 +63,6 @@ export async function PATCH(req: Request) {
 
     return Response.json({ success: true });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return ApiError.badRequest("Invalid request data");
-    }
     logger.error("Failed to save preferences", { error });
     return ApiError.internal("Internal Error");
   }

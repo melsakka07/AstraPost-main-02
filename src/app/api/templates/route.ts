@@ -5,7 +5,8 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { templates } from "@/lib/schema";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
+import { templates, user } from "@/lib/schema";
 
 const aiMetaSchema = z
   .object({
@@ -32,6 +33,14 @@ export async function GET(_req: Request) {
       return ApiError.unauthorized();
     }
 
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true },
+    });
+
+    const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "auth");
+    if (!rateLimit.success) return createRateLimitResponse(rateLimit);
+
     const userTemplates = await db.query.templates.findMany({
       where: eq(templates.userId, session.user.id),
       orderBy: [desc(templates.createdAt)],
@@ -50,6 +59,14 @@ export async function POST(req: Request) {
     if (!session) {
       return ApiError.unauthorized();
     }
+
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true },
+    });
+
+    const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+    if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
     const json = await req.json();
     const result = createTemplateSchema.safeParse(json);

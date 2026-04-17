@@ -1,5 +1,38 @@
 # Latest Updates
 
+## 2026-04-17: Completed Phase A Audit Tasks (A-B05 to A-B08) ✅
+
+**Summary:** Successfully implemented the remaining backend tasks from the Phase A Full-Spectrum Audit Implementation Plan, bringing the Phase A completion rate to 87.5% (7 of 8 tasks).
+
+**Changes:**
+
+- **A-B05: Add `recordAiUsage()` to Missing AI Endpoints**
+  - Updated `src/lib/schema.ts` to add `"viral_score"` and `"agentic_approve"` to `aiGenerationTypeEnum`.
+  - Added usage tracking to `src/app/api/ai/score/route.ts`, `src/app/api/ai/image/route.ts`, and `src/app/api/ai/agentic/[id]/approve/route.ts`.
+- **A-B06: Add Rate Limiting to Unprotected Routes**
+  - Added `checkRateLimit()` to 11 API routes including `/ai/quota`, `/ai/history`, `/ai/image/status`, `/notifications`, `/affiliate`, `/templates`, `/feedback`, `/link-preview`, `/user/profile`, and `/user/preferences`.
+  - Utilized existing rate limit categories (`auth`, `posts`, `ai_image`) appropriate for each endpoint's sensitivity.
+- **A-B07: Replace In-Memory Rate Limiting**
+  - Replaced the naive `Map`-based rate limiter in `src/app/api/community/contact/route.ts` with the robust Redis-backed `checkRateLimit()` system.
+  - Added a dedicated `contact` rate limit tier in `src/lib/rate-limiter.ts`.
+- **A-B08: Add Zod Validation to Link-Preview**
+  - Replaced manual JSON body parsing with a strict Zod schema in `src/app/api/link-preview/route.ts`.
+- **A-F01: Add Error Boundaries to Dashboard Pages**
+  - Created 6 new `error.tsx` boundary files across critical dashboard segments (`compose`, `calendar`, `queue`, `analytics`, `settings`, `ai`).
+  - Protects the dashboard layout from fully unmounting during partial rendering failures.
+- **General Fixes**
+  - Fixed `z.ZodError` manual catches in user profile/preferences routes by using `.safeParse()` instead of `.parse()` (Addressing B-B04 early).
+  - Fixed TypeScript errors related to `recordAiUsage` arguments and unused imports.
+
+**Verification:**
+
+- `pnpm run lint` and `pnpm run typecheck` complete with zero errors.
+
+**Next Steps:**
+
+- Complete the final Phase A task: A-F01 (Add Error Boundaries to Dashboard Pages).
+- Proceed to Phase B (Medium Severity + Quick Wins) tasks.
+
 ## 2026-04-16: Full-Spectrum Codebase Audit ✅
 
 **Summary:** Completed a comprehensive 5-dimension audit of the entire AstraPost codebase covering backend, frontend, UX/UI, documentation, and improvement recommendations. Identified 82 total findings (6 critical, 23 high, 33 medium, 20 low) and produced a phased implementation plan with 54 actionable tasks.

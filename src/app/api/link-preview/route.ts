@@ -1,8 +1,13 @@
 import { headers } from "next/headers";
+import { eq } from "drizzle-orm";
 import { getLinkPreview } from "link-preview-js";
+import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
+import { user } from "@/lib/schema";
 
 /**
  * Regex matching private/internal IP ranges that must never be fetched:
@@ -14,12 +19,24 @@ import { logger } from "@/lib/logger";
 const BLOCKED_HOSTS =
   /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1$|0\.0\.0\.0)/i;
 
+const linkPreviewSchema = z.object({
+  url: z.string().url("Invalid URL format"),
+});
+
 export async function POST(req: Request) {
   // ── 1. Authentication ─────────────────────────────────────────────────────
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return ApiError.unauthorized();
   }
+
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+
+  const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+  if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   // ── 2. Input parsing ──────────────────────────────────────────────────────
   let body: unknown;
@@ -29,14 +46,12 @@ export async function POST(req: Request) {
     return ApiError.badRequest("Invalid JSON");
   }
 
-  const url =
-    body !== null && typeof body === "object" && "url" in body
-      ? (body as Record<string, unknown>).url
-      : undefined;
-
-  if (!url || typeof url !== "string") {
-    return ApiError.badRequest("URL required");
+  const parsedBody = linkPreviewSchema.safeParse(body);
+  if (!parsedBody.success) {
+    return ApiError.badRequest(parsedBody.error.issues);
   }
+
+  const { url } = parsedBody.data;
 
   // ── 3. URL validation & SSRF blocklist ────────────────────────────────────
   let parsed: URL;
