@@ -1538,6 +1538,10 @@ export function Composer() {
               : t
           )
         );
+        // Show optimization hint if the server provided one
+        if (data.optimizationHint) {
+          toast.info(data.optimizationHint);
+        }
         successCount++;
       } catch (error) {
         clientLogger.error("File upload failed", {

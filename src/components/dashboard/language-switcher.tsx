@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Globe, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,9 +20,18 @@ function getLocaleCookie(): string {
   return match?.[1] ?? "en";
 }
 
+function useIsClient() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+}
+
 export function LanguageSwitcher() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
+  const isClient = useIsClient();
 
   const currentLang =
     (session?.user &&
@@ -29,6 +39,9 @@ export function LanguageSwitcher() {
       ((session.user as Record<string, unknown>).language as string)) ||
     getLocaleCookie() ||
     "en";
+
+  // Ensure button is never disabled during SSR to prevent hydration mismatch
+  const shouldShowSpinner = isClient && loading;
 
   const handleLanguageChange = async (code: string) => {
     if (code === currentLang) return;
@@ -58,9 +71,13 @@ export function LanguageSwitcher() {
           size="icon"
           className="h-9 w-9 shrink-0"
           aria-label="Switch language"
-          disabled={loading}
+          disabled={shouldShowSpinner}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
+          {shouldShowSpinner ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Globe className="h-4 w-4" />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">

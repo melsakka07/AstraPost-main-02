@@ -1,33 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { Menu } from "lucide-react";
+import { UserProfile } from "@/components/auth/user-profile";
+import { AccountSwitcher } from "@/components/dashboard/account-switcher";
+import { LanguageSwitcher } from "@/components/dashboard/language-switcher";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { Button } from "@/components/ui/button";
-
-// All Radix-rooted components must use ssr: false so server and client
-// render the same (null) structure.  If even one Radix component renders
-// on the server while another is skipped, React's useId() counters
-// diverge and EVERY downstream Radix component gets mismatched IDs.
-
-const AccountSwitcher = dynamic(
-  () => import("@/components/dashboard/account-switcher").then((m) => m.AccountSwitcher),
-  { ssr: false }
-);
-
-const LanguageSwitcher = dynamic(
-  () => import("@/components/dashboard/language-switcher").then((m) => m.LanguageSwitcher),
-  { ssr: false }
-);
-
-const NotificationBell = dynamic(
-  () => import("@/components/dashboard/notification-bell").then((m) => m.NotificationBell),
-  { ssr: false }
-);
-
-const UserProfile = dynamic(
-  () => import("@/components/auth/user-profile").then((m) => m.UserProfile),
-  { ssr: false }
-);
 
 interface DashboardHeaderProps {
   user: {

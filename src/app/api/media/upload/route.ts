@@ -135,6 +135,23 @@ export async function POST(req: Request) {
     const filename = `${randomUUID()}${detected.ext}`;
     const fileType = detected.ext === ".gif" ? "gif" : isVideo ? "video" : "image";
 
+    // ── Check image optimization (non-critical hint for UX) ────────────────
+    // For images, provide a hint if the file seems uncompressed.
+    // Large uncompressed PNGs should be replaced with WebP or compressed PNG.
+    let optimizationHint: string | null = null;
+    if (!isVideo && detected.mime !== "image/gif") {
+      // If the image is PNG and larger than 500KB, suggest WebP conversion
+      if (detected.mime === "image/png" && buffer.length > 500 * 1024) {
+        optimizationHint =
+          "This PNG image is quite large. Consider converting to WebP or compressing with tools like TinyPNG or ImageOptim for better performance.";
+      }
+      // JPEG >2MB should be checked
+      else if (detected.mime === "image/jpeg" && buffer.length > 2 * 1024 * 1024) {
+        optimizationHint =
+          "This JPEG is large. Consider compressing it with tools like TinyJPG or using image optimization software.";
+      }
+    }
+
     // ── Persist to durable storage ────────────────────────────────────────
     // upload() routes to Vercel Blob in production (BLOB_READ_WRITE_TOKEN set)
     // and to public/uploads/media/ on local dev — both via the same abstraction.
@@ -150,6 +167,12 @@ export async function POST(req: Request) {
       mimeType: detected.mime,
       fileType,
       size: file.size,
+      optimizationHint,
+      // Future: add variants array for WebP srcsets when sharp integration is available
+      // variants: [
+      //   { type: 'image/webp', size: '1x', url: '...' },
+      //   { type: 'image/webp', size: '2x', url: '...' },
+      // ]
     });
   } catch (error) {
     logger.error("Upload error", { error });

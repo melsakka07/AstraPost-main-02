@@ -5,6 +5,7 @@ import { eq, and, gte } from "drizzle-orm";
 import { Rocket } from "lucide-react";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { ChangelogBanner } from "@/components/changelog-banner";
+import { CommandPalette } from "@/components/command-palette";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DashboardHeaderSkeleton } from "@/components/dashboard/dashboard-header-skeleton";
@@ -103,6 +104,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div data-dashboard-layout className="bg-background pb-safe flex min-h-dvh">
       <DashboardTour />
       <ReferralCookieProcessor />
+      <CommandPalette />
       <Suspense fallback={<SidebarSkeleton />}>
         <Sidebar
           aiUsage={aiUsage}
