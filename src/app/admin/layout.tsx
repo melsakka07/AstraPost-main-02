@@ -1,6 +1,13 @@
-import { GlobalAdminSearch } from "@/components/admin/global-search";
+import dynamicNext from "next/dynamic";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { requireAdmin } from "@/lib/admin";
+
+const GlobalAdminSearch = dynamicNext(
+  () => import("@/components/admin/global-search").then((mod) => mod.GlobalAdminSearch),
+  {
+    ssr: false,
+  }
+);
 
 // Force fresh RSC payload on every navigation — prevents Next.js router cache
 // from serving stale data when navigating between admin pages via sidebar links.

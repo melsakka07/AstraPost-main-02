@@ -1,20 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mic, Trash2, Loader2, Sparkles, AlertTriangle } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Mic, Trash2, Loader2, Sparkles, Plus, X } from "lucide-react";
+import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { clientLogger } from "@/lib/client-logger";
@@ -33,13 +29,38 @@ interface VoiceProfileFormProps {
   userPlan?: string;
 }
 
+const voiceProfileSchema = z.object({
+  samples: z
+    .array(
+      z.object({
+        value: z.string(),
+      })
+    )
+    .refine((arr) => arr.filter((s) => s.value.trim().length > 10).length >= 3, {
+      message: "Please provide at least 3 sample tweets (min 10 chars each).",
+    }),
+});
+
+type VoiceProfileValues = z.infer<typeof voiceProfileSchema>;
+
 export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
-  const [samples, setSamples] = useState<string[]>(["", "", ""]);
   const [profile, setProfile] = useState<VoiceProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { openWithContext } = useUpgradeModal();
   const isFree = userPlan === "free";
+
+  const form = useForm<VoiceProfileValues>({
+    resolver: zodResolver(voiceProfileSchema),
+    defaultValues: {
+      samples: [{ value: "" }, { value: "" }, { value: "" }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "samples",
+  });
 
   useEffect(() => {
     fetchProfile();
@@ -60,12 +81,8 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
     }
   };
 
-  const handleAnalyze = async () => {
-    const validSamples = samples.filter((s) => s.trim().length > 10);
-    if (validSamples.length < 3) {
-      toast.error("Please provide at least 3 sample tweets (min 10 chars each).");
-      return;
-    }
+  const onSubmit = async (data: VoiceProfileValues) => {
+    const validSamples = data.samples.map((s) => s.value).filter((s) => s.trim().length > 10);
 
     setIsAnalyzing(true);
     try {
@@ -87,12 +104,12 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
 
       if (!res.ok) throw new Error("Analysis failed");
 
-      const data = await res.json();
-      setProfile(data);
+      const responseData = await res.json();
+      setProfile(responseData);
       toast.success("Voice Profile created successfully!");
     } catch (e) {
       clientLogger.error("Failed to analyze voice profile samples", {
-        sampleCount: samples.length,
+        sampleCount: validSamples.length,
         error: e instanceof Error ? e.message : String(e),
       });
       toast.error("Failed to analyze samples. Please try again.");
@@ -113,21 +130,11 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
       const res = await fetch("/api/user/voice-profile", { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
       setProfile(null);
-      setSamples(["", "", ""]);
+      form.reset({ samples: [{ value: "" }, { value: "" }, { value: "" }] });
       toast.success("Voice Profile deleted.");
     } catch (e) {
       toast.error("Failed to delete profile");
     }
-  };
-
-  const updateSample = (index: number, val: string) => {
-    const newSamples = [...samples];
-    newSamples[index] = val;
-    setSamples(newSamples);
-  };
-
-  const addSampleField = () => {
-    if (samples.length < 10) setSamples([...samples, ""]);
   };
 
   if (isLoading) {
@@ -224,68 +231,90 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="mb-4 flex items-start gap-3 rounded-md bg-amber-50 p-3 text-sm text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>
-                    Pro Feature: Paste 3-5 of your best-performing tweets below to create your
-                    unique voice profile.
-                  </p>
-                </div>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium">Add Sample Tweets</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Paste at least 3 of your best performing or most representative tweets.
+                    </p>
+                  </div>
 
-                <div className="space-y-3">
-                  {samples.map((sample, i) => (
-                    <div key={i} className="space-y-1">
-                      <Label
-                        htmlFor={`sample-tweet-${i}`}
-                        className="text-muted-foreground text-xs"
-                      >
-                        Sample Tweet {i + 1}
-                      </Label>
-                      <Textarea
-                        id={`sample-tweet-${i}`}
-                        value={sample}
-                        onChange={(e) => updateSample(i, e.target.value)}
-                        placeholder="Paste one of your tweets here..."
-                        className="min-h-[80px] resize-none"
+                  <div className="space-y-3">
+                    {fields.map((field, index) => (
+                      <FormField
+                        key={field.id}
+                        control={form.control}
+                        name={`samples.${index}.value`}
+                        render={({ field: inputField }) => (
+                          <FormItem>
+                            <FormControl>
+                              <div className="relative">
+                                <Textarea
+                                  {...inputField}
+                                  placeholder={`Sample tweet ${index + 1}...`}
+                                  className="min-h-[80px] resize-none pr-10"
+                                />
+                                {fields.length > 3 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-muted-foreground hover:text-destructive absolute top-2 right-2 h-6 w-6"
+                                    onClick={() => remove(index)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                {samples.length < 5 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={addSampleField}
-                    className="w-full border border-dashed"
-                  >
-                    + Add another sample
-                  </Button>
-                )}
-              </div>
+                  {fields.length < 10 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ value: "" })}
+                      className="w-full"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add another sample
+                    </Button>
+                  )}
+
+                  {form.formState.errors.samples?.root && (
+                    <p className="text-destructive text-sm font-medium">
+                      {form.formState.errors.samples.root.message}
+                    </p>
+                  )}
+
+                  <div className="bg-primary/10 text-primary flex items-start gap-3 rounded-lg p-4 text-sm">
+                    <Sparkles className="mt-0.5 h-5 w-5 shrink-0" />
+                    <p>
+                      We&apos;ll analyze these samples to determine your tone, vocabulary level,
+                      emoji usage, and formatting habits. This profile will be used automatically
+                      when you use the AI Writer.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end pt-4">
+                    <Button type="submit" disabled={isAnalyzing}>
+                      {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Analyze & Create Profile
+                    </Button>
+                  </div>
+                </form>
+              </Form>
             )}
           </div>
         </BlurredOverlay>
       </CardContent>
-
-      {!profile && (
-        <CardFooter className="bg-muted/20 border-t pt-6">
-          <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full sm:w-auto">
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Analyzing Writing Style...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate Voice Profile
-              </>
-            )}
-          </Button>
-        </CardFooter>
-      )}
     </Card>
   );
 }

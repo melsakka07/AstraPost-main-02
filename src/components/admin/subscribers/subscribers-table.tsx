@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -37,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { useAdminPolling } from "../use-admin-polling";
 import { AddSubscriberDialog } from "./add-subscriber-dialog";
 import { BanDialog } from "./ban-dialog";
@@ -266,8 +268,132 @@ export function SubscribersTable() {
         })}
       />
 
-      {/* Table */}
-      <div className="bg-card rounded-lg border">
+      {/* Mobile Card Layout */}
+      <div className="grid gap-3 md:hidden">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex gap-4">
+                <Skeleton className="h-5 w-5 rounded" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                  <div className="flex gap-2 pt-2">
+                    <Skeleton className="h-5 w-16" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : (response?.data.length ?? 0) === 0 ? (
+          <Card className="p-8 text-center">
+            <EmptyState
+              variant={debouncedSearch ? "search" : "users"}
+              title={debouncedSearch ? "No results found" : "No subscribers yet"}
+              description={
+                debouncedSearch
+                  ? "Try adjusting your search or filters"
+                  : "Add your first subscriber to get started"
+              }
+            />
+          </Card>
+        ) : (
+          response?.data.map((sub: SubscriberRow) => (
+            <Card
+              key={sub.id}
+              className={cn(
+                "p-4 transition-colors",
+                sub.deletedAt && "opacity-50",
+                selectedIds.has(sub.id) && "bg-muted/50 border-primary"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={selectedIds.has(sub.id)}
+                  onCheckedChange={(checked: boolean | string) =>
+                    handleSelectOne(sub.id, checked === true)
+                  }
+                  aria-label={`Select ${sub.name}`}
+                  disabled={bulkLoading}
+                  className="mt-1 h-5 w-5"
+                />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate font-medium">{sub.name}</span>
+                      {sub.isAdmin && (
+                        <Badge variant="outline" className="h-4 shrink-0 px-1 py-0 text-[10px]">
+                          admin
+                        </Badge>
+                      )}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="-mr-2 h-7 w-7 shrink-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Actions</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/admin/subscribers/${sub.id}`}>View details</Link>
+                        </DropdownMenuItem>
+                        {!sub.deletedAt && (
+                          <>
+                            <DropdownMenuItem onClick={() => setEditTarget(sub)}>
+                              <UserPen className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setBanTarget(sub)}
+                              className={sub.bannedAt ? "text-green-600" : "text-amber-600"}
+                            >
+                              {sub.bannedAt ? (
+                                <>
+                                  <ShieldCheck className="mr-2 h-4 w-4" /> Unban
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldOff className="mr-2 h-4 w-4" /> Ban
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setDeleteTarget(sub)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="text-muted-foreground truncate text-xs">{sub.email}</div>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                    <PlanBadge plan={sub.plan} />
+                    <StatusBadge
+                      isSuspended={sub.isSuspended}
+                      bannedAt={sub.bannedAt}
+                      deletedAt={sub.deletedAt}
+                      trialEndsAt={sub.trialEndsAt}
+                    />
+                    <span className="text-muted-foreground ml-auto text-xs">
+                      {format(new Date(sub.createdAt), "MMM d, yy")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="bg-card hidden rounded-lg border md:block">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -291,7 +417,7 @@ export function SubscribersTable() {
                   </div>
                 </TableHead>
                 <TableHead>Subscriber</TableHead>
-                <TableHead>
+                <TableHead className="hidden md:table-cell">
                   <button
                     className="hover:text-foreground flex items-center gap-1"
                     onClick={() => toggleSort("plan")}
@@ -299,9 +425,9 @@ export function SubscribersTable() {
                     Plan <ArrowUpDown className="h-3.5 w-3.5" />
                   </button>
                 </TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Platforms</TableHead>
-                <TableHead>
+                <TableHead className="hidden sm:table-cell">Status</TableHead>
+                <TableHead className="hidden lg:table-cell">Platforms</TableHead>
+                <TableHead className="hidden md:table-cell">
                   <button
                     className="hover:text-foreground flex items-center gap-1"
                     onClick={() => toggleSort("createdAt")}
@@ -309,7 +435,7 @@ export function SubscribersTable() {
                     Joined <ArrowUpDown className="h-3.5 w-3.5" />
                   </button>
                 </TableHead>
-                <TableHead className="w-10" />
+                <TableHead className="w-10 text-right" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -369,12 +495,24 @@ export function SubscribersTable() {
                           )}
                         </div>
                         <span className="text-muted-foreground text-xs">{sub.email}</span>
+                        {/* Mobile-only additional details */}
+                        <div className="mt-2 flex flex-wrap items-center gap-2 md:hidden">
+                          <PlanBadge plan={sub.plan} />
+                          <span className="text-muted-foreground text-xs sm:hidden">
+                            <StatusBadge
+                              isSuspended={sub.isSuspended}
+                              bannedAt={sub.bannedAt}
+                              deletedAt={sub.deletedAt}
+                              trialEndsAt={sub.trialEndsAt}
+                            />
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <PlanBadge plan={sub.plan} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <StatusBadge
                         isSuspended={sub.isSuspended}
                         bannedAt={sub.bannedAt}
@@ -382,13 +520,13 @@ export function SubscribersTable() {
                         trialEndsAt={sub.trialEndsAt}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden lg:table-cell">
                       <span className="text-sm tabular-nums">{sub.connectedPlatforms}</span>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
                       {format(new Date(sub.createdAt), "d MMM yyyy")}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7">

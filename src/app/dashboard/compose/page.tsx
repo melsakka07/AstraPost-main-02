@@ -1,9 +1,16 @@
-import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { PenSquare } from "lucide-react";
-import { Composer } from "@/components/composer/composer";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { PostUsageBar } from "@/components/dashboard/post-usage-bar";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const Composer = dynamic(
+  () => import("@/components/composer/composer").then((mod) => mod.Composer),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[600px] w-full" />,
+  }
+);
 
 export default function ComposePage() {
   return (
@@ -13,9 +20,7 @@ export default function ComposePage() {
       description="Create and schedule your tweets and threads."
     >
       <PostUsageBar />
-      <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
-        <Composer />
-      </Suspense>
+      <Composer />
     </DashboardPageWrapper>
   );
 }

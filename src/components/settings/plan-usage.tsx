@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 
 interface UsageData {
   plan: string;
@@ -143,17 +143,36 @@ export function PlanUsage() {
       </div>
 
       {showUpgradeCta && (
-        <div className="border-primary/30 bg-primary/5 rounded-md border px-3 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-foreground text-sm">
-              You are using {Math.round(highestPercentage)}% of your plan limits. Upgrade now to
-              avoid interruptions.
-            </p>
-            <Button size="sm" asChild>
-              <Link href="/pricing">Upgrade</Link>
-            </Button>
-          </div>
-        </div>
+        <UpgradeBanner
+          usagePercentage={highestPercentage}
+          usedAmount={
+            highestPercentage === postPercentage
+              ? usage.posts
+              : highestPercentage === accountPercentage
+                ? usage.accounts
+                : highestPercentage === aiPercentage
+                  ? usage.ai
+                  : usage.aiImages
+          }
+          limitAmount={
+            highestPercentage === postPercentage
+              ? limits.postsPerMonth || 0
+              : highestPercentage === accountPercentage
+                ? limits.maxXAccounts || 0
+                : highestPercentage === aiPercentage
+                  ? limits.aiGenerationsPerMonth || 0
+                  : limits.aiImagesPerMonth || 0
+          }
+          featureName={
+            highestPercentage === postPercentage
+              ? "Posts"
+              : highestPercentage === accountPercentage
+                ? "Accounts"
+                : highestPercentage === aiPercentage
+                  ? "AI generations"
+                  : "AI images"
+          }
+        />
       )}
     </div>
   );

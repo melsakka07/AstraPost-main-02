@@ -14,6 +14,7 @@ import {
   History,
   Trophy,
   Share2,
+  Lightbulb,
 } from "lucide-react";
 
 export interface NavItem {
@@ -24,6 +25,8 @@ export interface NavItem {
   isNew?: boolean;
   /** Only visible to admin users */
   isAdmin?: boolean;
+  /** Optional identifier for the product tour (driver.js) */
+  dataTour?: string;
 }
 
 export interface SidebarSection {
@@ -53,17 +56,23 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     label: "Content",
     items: [
-      { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
+      { icon: PenSquare, label: "Compose", href: "/dashboard/compose", dataTour: "compose" },
       { icon: FileText, label: "Drafts", href: "/dashboard/drafts" },
       { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
-      { icon: CalendarDays, label: "Calendar", href: "/dashboard/calendar" },
+      { icon: CalendarDays, label: "Calendar", href: "/dashboard/calendar", dataTour: "calendar" },
     ],
   },
   {
     label: "AI Tools",
     collapsible: true,
     items: [
-      { icon: Sparkles, label: "Writer", href: "/dashboard/ai", isNew: true },
+      { icon: Sparkles, label: "Writer", href: "/dashboard/ai", isNew: true, dataTour: "ai-tools" },
+      {
+        icon: Lightbulb,
+        label: "Inspiration",
+        href: "/dashboard/inspiration",
+        dataTour: "inspiration",
+      },
       {
         icon: Wand2,
         label: "Agentic Posting",
@@ -77,7 +86,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "Analytics",
     collapsible: true,
     items: [
-      { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics" },
+      { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
       { icon: TrendingUp, label: "Viral Analyzer", href: "/dashboard/analytics/viral" },
       { icon: Users, label: "Competitor", href: "/dashboard/analytics/competitor", isPro: true },
     ],

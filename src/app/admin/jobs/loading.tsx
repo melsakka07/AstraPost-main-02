@@ -1,22 +1,21 @@
-import { Briefcase } from "lucide-react";
-import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function AdminJobsLoading() {
+export default function JobsLoading() {
   return (
-    <AdminPageWrapper
-      icon={Briefcase}
-      title="Background Jobs"
-      description="BullMQ queue status, job history, and worker health."
-    >
-      <div className="space-y-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
-          ))}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-8 w-[150px]" />
+          <Skeleton className="mt-2 h-4 w-[250px]" />
         </div>
-        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-10 w-[100px]" />
       </div>
-    </AdminPageWrapper>
+      <div className="grid gap-4 md:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-[100px] w-full rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-[500px] w-full rounded-xl" />
+    </div>
   );
 }

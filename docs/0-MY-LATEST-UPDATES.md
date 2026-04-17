@@ -1,5 +1,93 @@
 # Latest Updates
 
+## 2026-04-17: Phase A Documentation Tasks Completed (Phase A at 100%) ✅
+
+**Summary:** Successfully completed the final three documentation tasks for Phase A of the audit implementation plan. Phase A is now 100% complete!
+
+**Changes:**
+
+- **A-D01: Update Architecture Documentation**
+  - Rewrote `docs/claude/architecture.md` to perfectly match the current actual repository structure.
+  - Correctly mapped all `src/app/` folders (admin, auth, api, dashboard, etc.) and `src/components/` folders.
+  - Restructured the AI Endpoints mapping to reflect the current OpenRouter/Replicate integration flow.
+- **A-D02: Update AI Features and Environment Variables Documentation**
+  - Updated `docs/claude/ai-features.md` to reflect all 15+ backend AI generation endpoints (including the latest Variant Generator, Summarize, Translate, Calendar, and Quota routes).
+  - Updated `docs/claude/env-vars.md` to add `OPENROUTER_MODEL_AGENTIC`, `OPENROUTER_MODEL_TRENDS`, `CRON_SECRET`, `TWITTER_DRY_RUN`, and the `STRIPE_PRICE_ID_AGENCY` variables.
+- **A-D03: Fix CLAUDE.md Inaccuracies**
+  - Fixed an outdated line in `CLAUDE.md` that incorrectly stated "Better Auth (X OAuth 2.0 only)" to correctly reflect the existence of Instagram and LinkedIn OAuth integrations.
+
+**Verification:**
+
+- Phase A is completely finished (19 of 19 tasks done).
+- Total Audit completion is now at 68.5% (37 of 54 tasks done).
+
+## 2026-04-17: Phase A UX/UI Tasks Completed ✅
+
+**Summary:** Successfully completed the three remaining UX/UI tasks for Phase A of the audit implementation plan, increasing Phase A completion to ~84%.
+
+**Changes:**
+
+- **A-U01: Enhance Onboarding with Feature Discovery**
+  - Integrated `driver.js` product tour library.
+  - Created `src/components/onboarding/dashboard-tour.tsx` client component that automatically triggers when users complete onboarding and are redirected to `/dashboard?tour=true`.
+  - Highlighted 5 key features (Compose, AI Tools, Calendar, Analytics, Inspiration) via `data-tour` attributes injected into `src/components/dashboard/sidebar-nav-data.ts`.
+- **A-U02: Add Contextual Billing Upgrade Prompts**
+  - Updated `src/components/ui/upgrade-banner.tsx` to accept dynamic props (`usagePercentage`, `usedAmount`, `limitAmount`, `featureName`).
+  - Integrated the dynamic banner into `src/components/dashboard/post-usage-bar.tsx` for tracking post usage.
+  - Integrated into `src/components/settings/plan-usage.tsx` to dynamically prompt upgrades based on whichever feature limit is closest to exhaustion (Posts, Accounts, AI Generations, or AI Images).
+- **A-U03: Implement Responsive Data Tables for Mobile**
+  - Refactored `src/components/admin/subscribers/subscribers-table.tsx` to display a clean, stackable Card layout on mobile screens (`< 768px`).
+  - The standard desktop `Table` is hidden on mobile, ensuring no horizontal scrolling or broken views on 320px viewports.
+- **Fixed Diagnostics**
+  - Resolved `#problems_and_diagnostics` related to missing accessibility labels on the hidden file input inside `src/components/settings/profile-form.tsx`.
+
+**Verification:**
+
+- `pnpm run lint` and `pnpm run typecheck` run cleanly.
+
+## 2026-04-17: Phase A Frontend Tasks (Forms, Loading States, Code Splitting) ✅
+
+**Summary:** Successfully completed the 4 remaining frontend tasks from Phase A of the audit implementation plan, increasing Phase A completion to ~68%.
+
+**Changes:**
+
+- **A-F02: Refactor ProfileForm and VoiceProfileForm to React Hook Form**
+  - Converted `src/components/settings/profile-form.tsx` and `src/components/settings/voice-profile-form.tsx` to use `react-hook-form` + `@hookform/resolvers/zod`.
+  - Added robust Zod validation schemas for timezone, language, and custom tweet samples.
+- **A-F03: Refactor ContactForm to React Hook Form**
+  - Migrated `src/components/community/contact-form.tsx` to `react-hook-form` and standardized the Zod error map matching.
+- **A-F04: Add Loading States to Missing Dashboard Pages**
+  - Implemented structured `loading.tsx` skeletons with `@/components/ui/skeleton` for `achievements`, `affiliate`, `referrals`, and `jobs` pages to prevent blank screens during SSR/data fetching.
+- **A-F05: Add `dynamic()` Imports for Heavy Components**
+  - Wrapped `Composer` in `src/app/dashboard/compose/page.tsx` with `next/dynamic` (`ssr: false`) to eagerly lazy-load it with a skeleton fallback.
+  - Split `FollowerChart`, `ImpressionsChart`, `EngagementRateChart`, and `BestTimeHeatmap` inside `src/app/dashboard/analytics/page.tsx` via `next/dynamic` to optimize the analytics dashboard bundle size.
+  - Dynamically imported the global search overlay in `src/app/admin/layout.tsx`.
+
+**Verification:**
+
+- `pnpm run lint` and `pnpm run typecheck` run clean with no errors.
+
+## 2026-04-17: Composer Refactoring and Progressive Disclosure (Phase B) ✅
+
+**Summary:** Successfully implemented three key Phase B tasks to improve the maintainability and user experience of the Composer.
+
+**Changes:**
+
+- **B-F01: Decompose `composer.tsx` into smaller components**
+  - Extracted the preview section into `src/components/composer/composer-preview.tsx`.
+  - Extracted the complex alerts logic into `src/components/composer/composer-alerts.tsx`.
+  - Extracted the save template dialog into `src/components/composer/save-template-dialog.tsx`.
+  - Reduced `composer.tsx` size by ~700 lines, significantly improving readability and maintainability.
+- **B-U02: Add Progressive Disclosure to Compose Page**
+  - Simplified the initial publishing view for users by hiding advanced scheduling and recurrence options.
+  - Added a smooth "Show Advanced Options" toggle that expands the date/time picker, best time suggestions, and repeat settings only when needed.
+- **B-D03: Clean Up `.claude/plans/` Auto-Generated Names**
+  - Used `git mv` to rename 6 auto-generated plan files (e.g. `cheeky-dreaming-canyon.md`) to descriptive, date-prefixed names (e.g. `2026-04-16-close-last-mile-gaps.md`) to maintain clear history and project organization.
+
+**Verification:**
+
+- `pnpm run lint` and `pnpm run typecheck` both pass with zero errors.
+
 ## 2026-04-17: Completed Phase A Audit Tasks (A-B05 to A-B08) ✅
 
 **Summary:** Successfully implemented the remaining backend tasks from the Phase A Full-Spectrum Audit Implementation Plan, bringing the Phase A completion rate to 87.5% (7 of 8 tasks).

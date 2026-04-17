@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -16,12 +17,6 @@ import {
 } from "lucide-react";
 import { AccountSelector } from "@/components/analytics/account-selector";
 import { AnalyticsSectionNav } from "@/components/analytics/analytics-section-nav";
-import { BestTimeHeatmap } from "@/components/analytics/best-time-heatmap";
-import {
-  FollowerChart,
-  ImpressionsChart,
-  EngagementRateChart,
-} from "@/components/analytics/charts-client";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { ExportButton } from "@/components/analytics/export-button";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
@@ -31,6 +26,7 @@ import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -45,6 +41,38 @@ import {
   xAccounts,
 } from "@/lib/schema";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
+
+const FollowerChart = dynamic(
+  () => import("@/components/analytics/charts-client").then((mod) => mod.FollowerChart),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+  }
+);
+
+const ImpressionsChart = dynamic(
+  () => import("@/components/analytics/charts-client").then((mod) => mod.ImpressionsChart),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+  }
+);
+
+const EngagementRateChart = dynamic(
+  () => import("@/components/analytics/charts-client").then((mod) => mod.EngagementRateChart),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+  }
+);
+
+const BestTimeHeatmap = dynamic(
+  () => import("@/components/analytics/best-time-heatmap").then((mod) => mod.BestTimeHeatmap),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+  }
+);
 
 export default async function AnalyticsPage({
   searchParams,

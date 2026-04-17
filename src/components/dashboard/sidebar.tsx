@@ -157,6 +157,7 @@ function SidebarContent({
                       href={item.href}
                       onClick={() => onNavigate?.()}
                       aria-current={isActive ? "page" : undefined}
+                      data-tour={item.dataTour}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
                         linkPy,
@@ -198,6 +199,7 @@ function SidebarContent({
                         href={item.href}
                         onClick={() => onNavigate?.()}
                         aria-current={isActive ? "page" : undefined}
+                        data-tour={item.dataTour}
                         className={cn(
                           "flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
                           linkPy,

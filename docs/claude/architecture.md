@@ -7,56 +7,91 @@ src/
 ├── app/                          # Next.js App Router
 │   ├── (auth)/                   # Auth: login, register, forgot/reset password
 │   ├── (marketing)/              # Public: blog, changelog, community, docs, features, pricing, legal
+│   ├── admin/                    # Admin panel (Dashboard, Users, Billing, System Health, Jobs, Notifications, Audit)
 │   ├── api/
-│   │   ├── ai/                   # AI endpoints: thread, translate, affiliate, tools, agentic, image, inspire
-│   │   ├── analytics/            # Follower, tweet analytics, viral analysis
+│   │   ├── admin/                # Admin APIs (Subscribers, AI Usage, Teams, Impersonation, Billing Analytics, Notifications)
+│   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score)
+│   │   ├── analytics/            # Analytics (Followers, Engagement, Best Time, Competitor, Export)
+│   │   ├── announcement/         # Public announcements
 │   │   ├── auth/[...all]/        # Better Auth catch-all
-│   │   ├── billing/              # Stripe checkout & webhooks
-│   │   ├── chat/route.ts         # AI chat (OpenRouter)
+│   │   ├── billing/              # Stripe checkout & webhooks, change-plan preview
+│   │   ├── chat/                 # AI chat
+│   │   ├── community/contact/    # Contact form
+│   │   ├── cron/                 # Scheduled jobs (Billing cleanup)
+│   │   ├── diagnostics/          # System diagnostics
+│   │   ├── feedback/             # Roadmap feedback
 │   │   ├── inspiration/          # Tweet import & bookmarks
-│   │   ├── media/upload/         # File upload
-│   │   ├── posts/                # Post CRUD, reschedule, retry
-│   │   └── x/                    # X account management & tweet lookup
+│   │   ├── media/upload/         # File upload (Images, Videos)
+│   │   ├── posts/                # Post CRUD, reschedule, retry, bulk upload
+│   │   ├── team/                 # Team management (Invite, Join, Members)
+│   │   ├── user/                 # User profile, preferences, voice-profile, referrals
+│   │   └── x/                    # X account management, subscription tier sync & tweet lookup
 │   ├── chat/                     # AI chat interface
-│   ├── dashboard/                # Core app: affiliate, ai, analytics, calendar, compose, drafts, inspiration, jobs, onboarding, queue, settings
-│   └── profile/                  # User profile
+│   ├── dashboard/                # Core app: achievements, affiliate, ai, analytics, calendar, compose, drafts, inspiration, jobs, onboarding, queue, referrals, settings
+│   ├── go/[shortCode]/           # Affiliate link redirect
+│   ├── join-team/                # Team invitation landing page
+│   └── profile/                  # User profile public view
 ├── components/
-│   ├── ai/                       # hashtag-generator, agentic-posting-client
-│   ├── auth/                     # sign-in-button, sign-out-button, user-profile
-│   ├── composer/                 # composer, tweet-card, ai-tools-panel, ai-image-dialog, etc.
-│   ├── dashboard/                # sidebar
-│   ├── inspiration/              # adaptation-panel, imported-tweet-card, manual-editor
-│   ├── ui/                       # shadcn/ui primitives
-│   └── [site-header, site-footer, theme-provider]
+│   ├── admin/                    # Admin components (Dashboard, Tables, Sidebars, Modals)
+│   ├── ai/                       # AI components (Hashtag Generator, Agentic Posting)
+│   ├── analytics/                # Analytics components (Charts, Heatmaps, Drawers)
+│   ├── auth/                     # Auth components (Sign-in, Profile)
+│   ├── billing/                  # Billing components (Pricing cards, Payment forms)
+│   ├── calendar/                 # Calendar components (Grid, Event cards)
+│   ├── community/                # Community components (Contact form)
+│   ├── composer/                 # Composer (Editor, Preview, AI Tools Panel, Best Time, Alerts)
+│   ├── dashboard/                # Dashboard layout (Sidebar, Header, Bottom Nav, Banners)
+│   ├── drafts/                   # Draft components
+│   ├── email/                    # Email templates (React Email)
+│   ├── gamification/             # Gamification components (Badges, Progress)
+│   ├── inspiration/              # Inspiration components (Adaptation panel, Imported tweet card)
+│   ├── jobs/                     # Job tracking components
+│   ├── marketing/                # Marketing components (Hero, Features)
+│   ├── onboarding/               # Onboarding components (Wizard, Tour)
+│   ├── queue/                    # Queue components (List, Post cards)
+│   ├── referral/                 # Referral components (Cookie processor, Links table)
+│   ├── roadmap/                  # Roadmap components (Feedback list, Submit modal)
+│   ├── settings/                 # Settings components (Profile form, Voice profile, Plan usage, Accounts)
+│   └── ui/                       # shadcn/ui primitives
 └── lib/
-    ├── ai/                       # agentic-types, agentic-prompts
+    ├── admin/                    # Admin utilities & middleware
+    ├── ai/                       # AI prompts, template configs, voice-profile extraction
+    ├── api/                      # API error handling, AI preamble
+    ├── middleware/               # Plan gates, role checks
     ├── queue/                    # BullMQ client + processors
-    ├── services/                 # agentic-pipeline, ai-image, analytics, tweet-importer, x-api
-    ├── security/                 # token-encryption
-    ├── [auth, auth-client, db, env, logger, plan-limits, rate-limiter, schema, session, storage, utils]
+    ├── referral/                 # Referral utilities
+    ├── schemas/                  # Shared Zod validation schemas
+    ├── security/                 # Token encryption
+    ├── services/                 # Business logic (Agentic, AI Image, Analytics, Email, Plan Metadata, Stripe, X-API)
+    └── utils/                    # General utilities (cn, date formatting)
 ```
 
 ## Key Implementation Files
 
-### AI Endpoints (OpenRouter)
+### AI Endpoints
 
-- `src/app/api/ai/thread/route.ts` — Thread writer
-- `src/app/api/ai/translate/route.ts` — Translation
-- `src/app/api/ai/affiliate/route.ts` — Amazon affiliate tweets
-- `src/app/api/ai/tools/route.ts` — General AI writing tools
-- `src/app/api/chat/route.ts` — AI chat
-- `src/app/api/ai/agentic/route.ts` — Agentic SSE streaming (Pro/Agency)
-- `src/app/api/ai/agentic/[id]/approve/route.ts` — Approve/schedule/draft
-- `src/app/api/ai/agentic/[id]/regenerate/route.ts` — Single-tweet regen
+- `src/app/api/ai/thread/route.ts` — Thread writer (OpenRouter)
+- `src/app/api/ai/image/route.ts` — Image generation (Replicate via Nano Banana)
+- `src/app/api/ai/score/route.ts` — Viral Score evaluator
+- `src/app/api/ai/agentic/route.ts` — Agentic SSE streaming
+- `src/app/api/ai/agentic/[id]/approve/route.ts` — Approve agentic post to queue
+- `src/app/api/ai/tools/route.ts` — General AI writing tools (Hooks, CTAs, Rewrite)
+- `src/app/api/ai/translate/route.ts` — Translation service
+- `src/app/api/ai/calendar/route.ts` — AI Content Calendar generator
+- `src/app/api/chat/route.ts` — Conversational AI assistant
+- `src/app/api/ai/quota/route.ts` — Usage tracking read endpoint
 
-### Google Gemini AI
+### Core Services
 
-- `src/app/api/ai/inspire/route.ts` — Content inspiration
-- `src/app/api/ai/image/route.ts` — Image generation (via Replicate)
-- `src/lib/services/ai-image.ts` — Replicate API service
+- `src/lib/services/ai-quota.ts` — AI usage recording and retrieval
+- `src/lib/services/ai-image.ts` — Image generation orchestration
+- `src/lib/services/plan-metadata.ts` — Plan limits retrieval
+- `src/lib/services/x-api.ts` — Twitter/X API client
+- `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics)
 
-### Twitter/X API
+### Auth & Authorization
 
-- `src/app/api/x/tweet-lookup/route.ts` — Public tweet import
-- `src/lib/services/tweet-importer.ts` — Import service with caching
-- Requires `TWITTER_BEARER_TOKEN` env var
+- `src/lib/auth.ts` — Better Auth configuration
+- `src/lib/team-context.ts` — Multi-account context resolver
+- `src/lib/middleware/require-plan.ts` — Subscription feature gates
+- `src/lib/admin.ts` — Admin role verification

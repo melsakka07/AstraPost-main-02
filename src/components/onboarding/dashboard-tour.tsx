@@ -1,78 +1,93 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 
 export function DashboardTour() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const isTourActive = searchParams?.get("tour") === "true";
+  const hasRunRef = useRef(false);
+
   useEffect(() => {
-    // Check if tour already completed
-    if (typeof window === "undefined") return;
+    if (!isTourActive || hasRunRef.current) return;
 
-    const tourCompleted = localStorage.getItem("astro-tour-completed");
-    if (tourCompleted) return;
-
-    const tourDriver = driver({
-      showProgress: true,
-      animate: true,
-      doneBtnText: "Done",
-      nextBtnText: "Next",
-      prevBtnText: "Previous",
-      onDestroyed: () => {
-        localStorage.setItem("astro-tour-completed", "true");
-      },
-      steps: [
-        {
-          element: "aside",
-          popover: {
-            title: "Welcome to AstraPost!",
-            description: "This is your main navigation. Access all your tools here.",
-            side: "right",
-            align: "start",
-          },
-        },
-        {
-          element: "a[href='/dashboard/compose']",
-          popover: {
-            title: "Create Content",
-            description: "Draft tweets, threads, and schedule them for later.",
-            side: "right",
-          },
-        },
-        {
-          element: "a[href='/dashboard/analytics']",
-          popover: {
-            title: "Track Performance",
-            description: "See how your content is performing with detailed analytics.",
-            side: "right",
-          },
-        },
-        {
-          element: "a[href='/dashboard/achievements']",
-          popover: {
-            title: "Gamified Milestones",
-            description: "Unlock badges and track your growth streaks here!",
-            side: "right",
-          },
-        },
-        {
-          element: "a[href='/dashboard/referrals']",
-          popover: {
-            title: "Referral Program",
-            description: "Invite friends and earn credits for your subscription.",
-            side: "right",
-          },
-        },
-      ],
-    });
-
-    // Small delay to ensure UI is ready
+    // Slight delay to allow DOM to fully render
     const timer = setTimeout(() => {
+      const tourDriver = driver({
+        showProgress: true,
+        animate: true,
+        allowClose: true,
+        overlayColor: "rgba(0, 0, 0, 0.7)",
+        steps: [
+          {
+            element: '[data-tour="compose"]',
+            popover: {
+              title: "Write & Schedule",
+              description:
+                "Compose your tweets and threads here. You can preview, add media, and schedule them.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: '[data-tour="ai-tools"]',
+            popover: {
+              title: "AI Assistant",
+              description:
+                "Use AI to generate hooks, rewrite tweets, translate, and more directly in the composer.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: '[data-tour="calendar"]',
+            popover: {
+              title: "Content Calendar",
+              description:
+                "View and manage all your scheduled posts in one place. Drag and drop to reschedule.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: '[data-tour="analytics"]',
+            popover: {
+              title: "Analytics",
+              description:
+                "Track your performance, see follower growth, and find the best times to post.",
+              side: "right",
+              align: "start",
+            },
+          },
+          {
+            element: '[data-tour="inspiration"]',
+            popover: {
+              title: "Inspiration",
+              description:
+                "Save great tweets and use them as templates or references for your own content.",
+              side: "right",
+              align: "start",
+            },
+          },
+        ],
+        onDestroyStarted: () => {
+          if (!tourDriver.hasNextStep() || confirm("Are you sure you want to exit the tour?")) {
+            tourDriver.destroy();
+            // Remove ?tour=true from URL
+            router.replace("/dashboard");
+          }
+        },
+      });
+
       tourDriver.drive();
-    }, 1000);
+      hasRunRef.current = true;
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isTourActive, router]);
 
   return null;
 }

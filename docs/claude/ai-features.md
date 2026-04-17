@@ -1,42 +1,111 @@
 # AI Features Reference
 
-## 1. AI Thread Writer
+This document maps all backend AI generation and processing endpoints to their respective responsibilities.
 
-- `POST /api/ai/thread` — Generate 3-15 tweet threads
-- Tones: professional, casual, educational, inspirational, humorous, viral, controversial
-- Languages: ar, en, fr, de, es, it, pt, tr, ru, hi
+## 1. Core Generation
 
-## 2. AI Image Generation
+### `POST /api/ai/thread`
 
-- `POST /api/ai/image` — Replicate API (Flux models)
-- Styles: Photorealistic, Anime, Digital Art, etc.
-- Aspect ratios: 1:1, 16:9, 9:16
-- MENA regional optimization
+- **Purpose**: Generates multi-tweet threads from a starting topic or prompt.
+- **Support**: Tones (professional, casual, educational, etc.), Languages (ar, en, fr, de, etc.).
 
-## 3. AI Hashtag Generator
+### `POST /api/ai/tools`
 
-- Component: `src/components/ai/hashtag-generator.tsx`
-- Language-aware, regional prioritization (MENA for Arabic)
+- **Purpose**: General AI writing tools applied to a single tweet.
+- **Actions**: Hooks, CTAs, Rewrite.
 
-## 4. AI Inspiration
+### `POST /api/ai/hashtags`
 
-- `POST /api/ai/inspire` — Google Gemini API
-- Actions: rephrase, change tone, expand, add takeaway, translate, counter-point
+- **Purpose**: AI Hashtag Generator (Component: `src/components/ai/hashtag-generator.tsx`).
+- **Details**: Language-aware, regional prioritization (MENA for Arabic).
 
-## 5. Tweet Import (Inspiration)
+### `POST /api/ai/translate`
 
-- `POST /api/x/tweet-lookup` — Import public tweets
-- Full context (parent tweets, top replies), similarity checking, bookmarks
+- **Purpose**: Translates a tweet into a selected target language.
 
-## 6. Viral Content Analyzer
+### `POST /api/ai/reply`
 
-- `GET /api/analytics/viral?days=90` — Analyze top tweets
-- Dimensions: hashtags, keywords, length, timing, content types
+- **Purpose**: Reply Generator.
 
-## 7. Agentic Posting (Pro/Agency)
+## 2. Agentic Posting (Pro/Agency)
 
-- Route: `/dashboard/ai/agentic`
-- 5-step pipeline: Research → Strategy → Write → Images → Review
-- SSE streaming, session recovery, too-broad topic detection
-- DB table: `agenticPosts` (migration `0038_tiny_rocket_raccoon.sql`)
-- Gate: `checkAgenticPostingAccessDetailed` via `aiPreamble`
+### `POST /api/ai/agentic`
+
+- **Purpose**: Initiates the 5-step Agentic Posting pipeline via SSE streaming.
+- **Pipeline**: Research → Strategy → Write → Images → Review.
+- **Database**: `agenticPosts` table.
+
+### `POST /api/ai/agentic/[id]/regenerate`
+
+- **Purpose**: Single-tweet regeneration within an existing agentic pipeline context.
+
+### `POST /api/ai/agentic/[id]/approve`
+
+- **Purpose**: Approves the generated agentic post content to be drafted, posted immediately, or scheduled.
+
+## 3. Media & Assets
+
+### `POST /api/ai/image`
+
+- **Purpose**: Image generation via Replicate (Nano Banana models).
+- **Details**: Supports styles (Photorealistic, Anime, etc.) and aspect ratios (1:1, 16:9, 9:16). Auto-generates prompt from tweet if not provided.
+
+### `GET /api/ai/image/status`
+
+- **Purpose**: Polling endpoint to check Replicate generation status and cache the final result.
+
+## 4. Advanced Creators
+
+### `POST /api/ai/calendar`
+
+- **Purpose**: Generates a weekly Content Calendar strategy based on tone and topic.
+
+### `POST /api/ai/template-generate`
+
+- **Purpose**: Fills out a saved template format using user-provided input parameters.
+
+### `POST /api/ai/variants`
+
+- **Purpose**: Variant Generator to A/B test different phrasing of the same concept.
+
+### `POST /api/ai/affiliate`
+
+- **Purpose**: Generates promotional tweets for Amazon affiliate links.
+
+### `POST /api/ai/summarize`
+
+- **Purpose**: Summarizes long-form content or articles into concise posts.
+
+## 5. Evaluation & Inspiration
+
+### `POST /api/ai/score`
+
+- **Purpose**: Viral Score evaluator.
+- **Details**: Scores content 0-100 based on hooks, value prop, CTA, readability, and emotion. Does not consume user quota.
+
+### `POST /api/ai/inspire`
+
+- **Purpose**: Content Inspiration (Google Gemini).
+- **Actions**: Rephrase, change tone, expand, add takeaway, translate, counter-point.
+
+### `POST /api/ai/inspiration`
+
+- **Purpose**: Fetches trending inspiration topics by niche. Cached for 6 hours.
+
+### `POST /api/ai/enhance-topic`
+
+- **Purpose**: Enhances a raw topic string into a more robust prompt.
+
+## 6. Quota & Tracking
+
+### `GET /api/ai/quota`
+
+- **Purpose**: Retrieves the user's monthly AI usage counts.
+
+### `GET /api/ai/image/quota`
+
+- **Purpose**: Retrieves the user's monthly AI image generation counts and available models.
+
+### `GET /api/ai/history`
+
+- **Purpose**: Retrieves the user's historical AI generation log (`aiGenerations` table).

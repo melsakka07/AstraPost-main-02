@@ -4,7 +4,7 @@
 
 ## Tech Stack
 
-Next.js 16 (App Router), React 19, TypeScript, PostgreSQL 18 (pgvector), Drizzle ORM, BullMQ + Redis, shadcn/ui + Tailwind CSS 4, Better Auth (X OAuth 2.0 only), Stripe, Vercel AI SDK 5 + OpenRouter, Google Gemini, Replicate API
+Next.js 16 (App Router), React 19, TypeScript, PostgreSQL 18 (pgvector), Drizzle ORM, BullMQ + Redis, shadcn/ui + Tailwind CSS 4, Better Auth (X OAuth 2.0, Instagram, LinkedIn), Stripe, Vercel AI SDK 5 + OpenRouter, Google Gemini, Replicate API
 
 ## First Steps
 

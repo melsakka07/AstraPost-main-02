@@ -440,8 +440,8 @@ export function OnboardingWizard() {
         }
         setCurrentStep(5);
       } else if (currentStep === 5) {
-        // Step 5 — Explore AI → go to dashboard
-        await navigateAfterOnboarding("/dashboard");
+        // Step 5 — Explore AI → go to dashboard with tour enabled
+        await navigateAfterOnboarding("/dashboard?tour=true");
       }
     } catch (error) {
       clientLogger.error("Onboarding step failed", {

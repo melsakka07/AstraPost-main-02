@@ -1,11 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -25,46 +35,48 @@ const CATEGORIES = [
   { value: "billing", label: "Billing & Plans" },
 ] as const;
 
-interface FieldErrors {
-  name?: string[];
-  email?: string[];
-  category?: string[];
-  subject?: string[];
-  message?: string[];
-}
+const contactFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters").max(100).trim(),
+  email: z.string().email("Invalid email address").max(254).toLowerCase().trim(),
+  category: z.enum(["general", "bug", "feature", "partnership", "billing"], {
+    errorMap: () => ({ message: "Please select a category" }),
+  } as any),
+  subject: z.string().min(5, "Subject must be at least 5 characters").max(150).trim(),
+  message: z.string().min(20, "Message must be at least 20 characters").max(2000).trim(),
+});
+
+type ContactFormValues = z.infer<typeof contactFormSchema>;
 
 export function ContactForm() {
   const [formState, setFormState] = useState<FormState>("idle");
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [category, setCategory] = useState<string>("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  const form = useForm<ContactFormValues>({
+    resolver: zodResolver(contactFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      category: undefined as unknown as "general", // bypass undefined default error
+      subject: "",
+      message: "",
+    },
+  });
+
+  async function onSubmit(values: ContactFormValues) {
     setFormState("submitting");
-    setFieldErrors({});
     setErrorMessage(null);
-
-    const fd = new FormData(e.currentTarget);
-    const payload = {
-      name: fd.get("name") as string,
-      email: fd.get("email") as string,
-      category,
-      subject: fd.get("subject") as string,
-      message: fd.get("message") as string,
-    };
 
     try {
       const res = await fetch("/api/community/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(values),
       });
 
       const data = (await res.json()) as {
         success?: boolean;
         error?: string;
-        details?: FieldErrors;
+        details?: Record<string, string[]>;
       };
 
       if (res.status === 429) {
@@ -74,7 +86,14 @@ export function ContactForm() {
       }
 
       if (!res.ok || !data.success) {
-        if (data.details) setFieldErrors(data.details);
+        if (data.details) {
+          Object.entries(data.details).forEach(([key, messages]) => {
+            form.setError(key as keyof ContactFormValues, {
+              type: "server",
+              message: messages[0] || "Invalid field",
+            });
+          });
+        }
         setErrorMessage(data.error ?? "Something went wrong. Please try again.");
         setFormState("error");
         return;
@@ -118,140 +137,135 @@ export function ContactForm() {
         <CardDescription>We typically respond within 1–2 business days.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
-          {/* Name + Email row */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="contact-name">Your name</Label>
-              <Input
-                id="contact-name"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            {/* Name + Email row */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
                 name="name"
-                placeholder="Fatima Al-Rashid"
-                required
-                minLength={2}
-                maxLength={100}
-                disabled={isSubmitting}
-                aria-describedby={fieldErrors.name ? "contact-name-error" : undefined}
-                aria-invalid={!!fieldErrors.name}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Your name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Fatima Al-Rashid" disabled={isSubmitting} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {fieldErrors.name && (
-                <p id="contact-name-error" role="alert" className="text-destructive text-xs">
-                  {fieldErrors.name[0]}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact-email">Email address</Label>
-              <Input
-                id="contact-email"
+              <FormField
+                control={form.control}
                 name="email"
-                type="email"
-                placeholder="you@example.com"
-                required
-                maxLength={254}
-                disabled={isSubmitting}
-                aria-describedby={fieldErrors.email ? "contact-email-error" : undefined}
-                aria-invalid={!!fieldErrors.email}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email address</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="you@example.com"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {fieldErrors.email && (
-                <p id="contact-email-error" role="alert" className="text-destructive text-xs">
-                  {fieldErrors.email[0]}
-                </p>
-              )}
             </div>
-          </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="contact-category">Category</Label>
-            <Select required value={category} onValueChange={setCategory} disabled={isSubmitting}>
-              <SelectTrigger
-                id="contact-category"
-                aria-describedby={fieldErrors.category ? "contact-category-error" : undefined}
-                aria-invalid={!!fieldErrors.category}
-              >
-                <SelectValue placeholder="Select a category…" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldErrors.category && (
-              <p id="contact-category-error" role="alert" className="text-destructive text-xs">
-                {fieldErrors.category[0]}
-              </p>
-            )}
-          </div>
+            {/* Category */}
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={isSubmitting}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a category…" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* Subject */}
-          <div className="space-y-2">
-            <Label htmlFor="contact-subject">Subject</Label>
-            <Input
-              id="contact-subject"
+            {/* Subject */}
+            <FormField
+              control={form.control}
               name="subject"
-              placeholder="Brief description of your question"
-              required
-              minLength={5}
-              maxLength={150}
-              disabled={isSubmitting}
-              aria-describedby={fieldErrors.subject ? "contact-subject-error" : undefined}
-              aria-invalid={!!fieldErrors.subject}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Brief description of your question"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {fieldErrors.subject && (
-              <p id="contact-subject-error" role="alert" className="text-destructive text-xs">
-                {fieldErrors.subject[0]}
-              </p>
-            )}
-          </div>
 
-          {/* Message */}
-          <div className="space-y-2">
-            <Label htmlFor="contact-message">Message</Label>
-            <Textarea
-              id="contact-message"
+            {/* Message */}
+            <FormField
+              control={form.control}
               name="message"
-              placeholder="Tell us more about your question or issue…"
-              required
-              minLength={20}
-              maxLength={2000}
-              rows={5}
-              disabled={isSubmitting}
-              aria-describedby={fieldErrors.message ? "contact-message-error" : undefined}
-              aria-invalid={!!fieldErrors.message}
-              className="resize-none"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Message</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Tell us more about your question or issue…"
+                      rows={5}
+                      disabled={isSubmitting}
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {fieldErrors.message && (
-              <p id="contact-message-error" role="alert" className="text-destructive text-xs">
-                {fieldErrors.message[0]}
+
+            {/* Global error */}
+            {errorMessage && (
+              <p role="alert" aria-live="polite" className="text-destructive text-sm">
+                {errorMessage}
               </p>
             )}
-          </div>
 
-          {/* Global error */}
-          {errorMessage && (
-            <p role="alert" aria-live="polite" className="text-destructive text-sm">
-              {errorMessage}
-            </p>
-          )}
-
-          <Button type="submit" className="group w-full" disabled={isSubmitting || !category}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending…
-              </>
-            ) : (
-              <>
-                <Send className="mr-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                Send Message
-              </>
-            )}
-          </Button>
-        </form>
+            <Button type="submit" className="group w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending…
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  Send Message
+                </>
+              )}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
