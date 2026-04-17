@@ -271,11 +271,11 @@
 
 ---
 
-### D-L5: `docs/business/AstroPost_BRD.md` — Typo in Filename
+### D-L5: `docs/business/AstraPost_BRD.md` — Typo in Filename (RESOLVED)
 
-**File:** `docs/business/AstroPost_BRD.md`
+**File:** `docs/business/AstraPost_BRD.md`
 **Severity:** Low
 
-**Details:** The filename says "AstroPost" instead of "AstraPost".
+**Details:** The filename had a typo: "AstroPost" instead of "AstraPost".
 
-**Fix:** Rename the file to `AstraPost_BRD.md`.
+**Status:** RESOLVED — File renamed to `AstraPost_BRD.md` on 2026-04-17.

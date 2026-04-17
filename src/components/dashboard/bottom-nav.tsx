@@ -2,20 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, LayoutDashboard, ListOrdered, Menu, PenSquare } from "lucide-react";
+import { Bot, LayoutDashboard, ListOrdered, Menu, PenSquare, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
   { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
-  { icon: Bot, label: "AI Tools", href: "/dashboard/ai" },
+  { icon: Bot, label: "AI", href: "/dashboard/ai" },
+  { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ] as const;
 
 /**
  * M1 — Sticky bottom navigation bar visible only on mobile (< md).
- * "More" dispatches the same `sidebar:open` event as the hamburger button,
- * opening the full Sheet with all nav items.
+ * Shows 5 primary navigation items: Dashboard, Compose, Queue, AI, Settings.
+ * Additional routes accessible via "More" button which dispatches the `sidebar:open` event,
+ * opening the full Sheet with all navigation items.
+ *
+ * This ensures parity with the sidebar while keeping 5 critical routes quickly accessible.
  */
 export function BottomNav() {
   const pathname = usePathname();
@@ -28,8 +32,9 @@ export function BottomNav() {
     >
       <div className="flex h-14 items-stretch">
         {BOTTOM_NAV_ITEMS.map(({ icon: Icon, label, href }) => {
-          // Mark the item active if on its route or any child route,
-          // but avoid matching /dashboard/ai/... for the Queue item etc.
+          // Mark the item active if on its route or any child route.
+          // Special handling: /dashboard/ai matches /dashboard/ai and /dashboard/ai/...
+          // but not /dashboard/ai-related paths (e.g., /dashboard/analytics is not under /dashboard/ai)
           const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
           return (
@@ -49,7 +54,9 @@ export function BottomNav() {
           );
         })}
 
-        {/* "More" — opens the existing Sheet via the same custom event as the hamburger */}
+        {/* "More" — opens the full sidebar Sheet via custom event.
+            Routes accessible through More: Drafts, Calendar, Analytics, Viral Analyzer,
+            Competitor, Achievements, Referrals, Jobs (admin), plus all collapsible sections. */}
         <button
           type="button"
           aria-label="Open full navigation menu"

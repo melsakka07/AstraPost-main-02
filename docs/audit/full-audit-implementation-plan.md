@@ -73,12 +73,12 @@ This implementation plan consolidates findings from a comprehensive audit across
 
 ### Phase Progress Summary
 
-| Phase             | Total Tasks | Not Started | In Progress | Done  | % Complete |
-| ----------------- | ----------- | ----------- | ----------- | ----- | ---------- |
-| A (Critical/High) | 9           | 0           | 0           | 9     | **100%**   |
-| B (Medium)        | 13          | 13          | 0           | 0     | 0%         |
-| C (Low/Advanced)  | 9           | 9           | 0           | 0     | 0%         |
-| **TOTAL**         | **31**      | **22**      | **0**       | **9** | **29.0%**  |
+| Phase             | Total Tasks | Not Started | In Progress | Done   | % Complete |
+| ----------------- | ----------- | ----------- | ----------- | ------ | ---------- |
+| A (Critical/High) | 9           | 0           | 0           | 9      | **100%**   |
+| B (Medium)        | 13          | 13          | 0           | 0      | 0%         |
+| C (Low/Advanced)  | 14          | 12          | 0           | 2      | **14.3%**  |
+| **TOTAL**         | **36**      | **25**      | **0**       | **11** | **30.6%**  |
 
 ---
 
@@ -674,12 +674,14 @@ This implementation plan consolidates findings from a comprehensive audit across
 - **Title:** Add README to `docs/_archive/` explaining historical nature
 - **Files:** `docs/_archive/README.md` (new)
 - **Effort:** XS (0.1 day)
-- **Status:** ⬜ Not Started
+- **Status:** ✅ COMPLETED (2026-04-17)
+- **Details:** Created comprehensive archive README explaining purpose, contents by category, and navigation guidance with 55+ archived files catalogued.
 
 #### C-D02: Rename BRD File
 
 - **ID:** C-D02
 - **Title:** Fix typo: `AstroPost_BRD.md` → `AstraPost_BRD.md`
-- **Files:** `docs/business/AstroPost_BRD.md`
+- **Files:** `docs/business/AstraPost_BRD.md`
 - **Effort:** XS (0.05 day)
-- **Status:** ⬜ Not Started
+- **Status:** ✅ COMPLETED (2026-04-17)
+- **Details:** File renamed using `git mv` to preserve git history. All references in documentation updated.
