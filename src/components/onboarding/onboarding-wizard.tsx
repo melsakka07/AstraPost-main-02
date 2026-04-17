@@ -334,6 +334,27 @@ export function OnboardingWizard() {
     setCurrentStep(5);
   };
 
+  const handleSkipOnboarding = async () => {
+    // B-U03 — Skip entire wizard, allow resume later from settings
+    setLoading(true);
+    try {
+      const res = await fetch("/api/user/onboarding/skip", { method: "POST" });
+      if (!res.ok) {
+        toast.error("Failed to skip onboarding");
+        setLoading(false);
+        return;
+      }
+      // Navigate to dashboard — user can resume from settings
+      window.location.href = "/dashboard";
+    } catch (error) {
+      clientLogger.error("Failed to skip onboarding", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to skip onboarding");
+      setLoading(false);
+    }
+  };
+
   const handleSendNow = async () => {
     setLoading(true);
     try {
@@ -758,6 +779,17 @@ export function OnboardingWizard() {
           </Button>
 
           <div className="flex items-center gap-2">
+            {/* B-U03 — Skip entire wizard on any step (except last) */}
+            {currentStep < steps.length && (
+              <Button
+                variant="ghost"
+                onClick={handleSkipOnboarding}
+                disabled={loading}
+                className="text-muted-foreground min-h-[44px]"
+              >
+                Skip for now
+              </Button>
+            )}
             {/* O5 — Skip scheduling on step 4 */}
             {currentStep === 4 && (
               <Button

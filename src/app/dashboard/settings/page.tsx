@@ -15,6 +15,7 @@ import { PlanUsage } from "@/components/settings/plan-usage";
 import { PrivacySettings } from "@/components/settings/privacy-settings";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { ReopenChecklistButton } from "@/components/settings/reopen-checklist-button";
+import { ResumeOnboardingButton } from "@/components/settings/resume-onboarding-button";
 import { SettingsSectionNav } from "@/components/settings/settings-section-nav";
 import { VoiceProfileForm } from "@/components/settings/voice-profile-form";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,7 @@ export default async function SettingsPage({
             }}
           />
           <ReopenChecklistButton />
+          <ResumeOnboardingButton />
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
