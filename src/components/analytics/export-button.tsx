@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { clientLogger } from "@/lib/client-logger";
 
 export function ExportButton({ range }: { range: string }) {
   const handleExport = async (format: "csv" | "pdf") => {
@@ -41,7 +42,11 @@ export function ExportButton({ range }: { range: string }) {
     } catch (error) {
       toast.dismiss(loadingToast);
       toast.error("Failed to export analytics");
-      console.error(error);
+      clientLogger.error("Analytics export failed", {
+        format,
+        range,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { clientLogger } from "@/lib/client-logger";
 
 interface GitHubStarsProps {
   repo: string;
@@ -21,7 +22,9 @@ export function GitHubStars({ repo }: GitHubStarsProps) {
           setStars(data.stargazers_count);
         }
       } catch (error) {
-        console.error("Failed to fetch GitHub stars:", error);
+        clientLogger.error("Failed to fetch GitHub stars", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       } finally {
         setLoading(false);
       }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { clientLogger } from "@/lib/client-logger";
 
 interface BillingPortalError {
   error?: string;
@@ -50,7 +51,9 @@ export function ManageSubscriptionButton() {
       window.location.href = url;
       // Don't reset loading — page is navigating away
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Failed to create billing portal session", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Something went wrong");
       setLoading(false); // Only reset on error
     }

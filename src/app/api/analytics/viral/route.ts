@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     // Authentication
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const userId = session.user.id;

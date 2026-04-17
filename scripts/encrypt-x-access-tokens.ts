@@ -11,10 +11,10 @@ async function main() {
 
   let encrypted = 0;
   for (const a of accounts) {
-    if (!a.accessToken) continue;
-    if (a.accessToken.startsWith("v1:")) continue;
-    const next = encryptToken(a.accessToken);
-    await db.update(xAccounts).set({ accessToken: next }).where(eq(xAccounts.id, a.id));
+    if (!a.accessTokenEnc) continue;
+    if (a.accessTokenEnc.startsWith("v1:")) continue;
+    const next = encryptToken(a.accessTokenEnc);
+    await db.update(xAccounts).set({ accessTokenEnc: next }).where(eq(xAccounts.id, a.id));
     encrypted++;
   }
 

@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   try {
     const ctx = await getTeamContext();
     if (!ctx) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     // Role check: Viewers cannot create posts

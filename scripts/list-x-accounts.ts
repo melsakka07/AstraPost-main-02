@@ -21,7 +21,7 @@ async function main() {
       console.log("  Is Active:", acc.isActive);
       console.log("  Created At:", acc.createdAt);
       console.log("  Token Expires At:", acc.tokenExpiresAt);
-      console.log("  Has Access Token:", !!acc.accessToken);
+      console.log("  Has Access Token:", !!acc.accessTokenEnc);
       console.log("  Has Refresh Token:", !!acc.refreshTokenEnc);
     });
   }

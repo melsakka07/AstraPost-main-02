@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
 
 interface ProfileFormProps {
@@ -63,7 +64,9 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       toast.success("Profile updated successfully");
       router.refresh();
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Failed to update profile", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Something went wrong");
     } finally {
       setLoading(false);

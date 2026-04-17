@@ -4,6 +4,7 @@ import { type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getServerEnv } from "@/lib/env";
 import {
   checkAiLimitDetailed,
   checkAiQuotaDetailed,
@@ -35,6 +36,7 @@ export type AiPreambleResult = {
   session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
   dbUser: { plan: string | null; voiceProfile: unknown };
   model: LanguageModel;
+  fallbackModel: LanguageModel | null;
 };
 
 /**
@@ -93,19 +95,25 @@ export async function aiPreamble(
     if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
+  const { OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_MODEL_FREE } = getServerEnv();
+
+  if (!OPENROUTER_API_KEY) {
+    // eslint-disable-next-line no-restricted-syntax
     return new Response(JSON.stringify({ error: "AI service not configured" }), { status: 500 });
   }
 
-  const openrouter = createOpenRouter({ apiKey });
+  const openrouter = createOpenRouter({ apiKey: OPENROUTER_API_KEY });
   // Cast needed: OpenRouterChatLanguageModel satisfies LanguageModel at runtime but has
   // a minor type divergence in providerMetadata vs LanguageModelV2 interface.
-  const model = openrouter(process.env.OPENROUTER_MODEL!) as unknown as LanguageModel;
+  const model = openrouter(OPENROUTER_MODEL) as unknown as LanguageModel;
+  const fallbackModel = OPENROUTER_MODEL_FREE
+    ? (openrouter(OPENROUTER_MODEL_FREE) as unknown as LanguageModel)
+    : null;
 
   return {
     session,
     dbUser: dbUser ?? { plan: null, voiceProfile: null },
     model,
+    fallbackModel,
   };
 }

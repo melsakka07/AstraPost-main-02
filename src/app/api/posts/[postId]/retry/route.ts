@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -8,7 +9,8 @@ import { getTeamContext } from "@/lib/team-context";
 
 export async function POST(req: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
-  if (!ctx) return new Response("Unauthorized", { status: 401 });
+  if (!ctx) return ApiError.unauthorized();
+  if (ctx.role === "viewer") return ApiError.forbidden("Viewers cannot retry posts");
 
   const correlationId = getCorrelationId(req);
   logger.info("api_request", {
@@ -28,17 +30,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ postId:
     },
   });
 
-  if (!post) return new Response("Not found", { status: 404 });
+  if (!post) return ApiError.notFound();
 
   // Verify ownership via team context — supports both personal and team workspaces
   const accountOwnerId = post.xAccount?.userId ?? post.userId;
   if (accountOwnerId !== ctx.currentTeamId) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    return ApiError.forbidden("Forbidden");
   }
 
   const isRetryable = post.status === "failed" || post.status === "paused_needs_reconnect";
   if (!isRetryable) {
-    return Response.json({ error: "Only failed posts can be retried." }, { status: 400 });
+    return ApiError.badRequest("Only failed posts can be retried.");
   }
 
   // If the post was paused because the account was deactivated, re-activate it

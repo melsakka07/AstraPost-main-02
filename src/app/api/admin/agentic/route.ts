@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, count } from "drizzle-orm";
+import { and, desc, eq, ilike, count, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const { limit, offset, status, topic } = parsed.data;
 
     // Build WHERE conditions
-    const conditions: any[] = [];
+    const conditions: (SQL | undefined)[] = [];
 
     if (status) {
       // Map UI status to DB status
@@ -58,8 +58,8 @@ export async function GET(request: Request) {
     const countResult = await db.select({ total: count() }).from(agenticPosts).where(where);
     const total = countResult[0]?.total ?? 0;
 
-    // Fetch sessions
-    const sessions = await db
+    // Fetch sessions with tweet counts via aggregation JOIN
+    const sessionsPaginated = await db
       .select({
         id: agenticPosts.id,
         topic: agenticPosts.topic,
@@ -67,29 +67,27 @@ export async function GET(request: Request) {
         qualityScore: agenticPosts.qualityScore,
         startedAt: agenticPosts.createdAt,
         completedAt: agenticPosts.updatedAt,
+        postsGenerated: sql<number>`cast(count(distinct ${tweets.id}) as int)`,
       })
       .from(agenticPosts)
+      .leftJoin(tweets, eq(agenticPosts.postId, tweets.postId))
       .where(where)
+      .groupBy(
+        agenticPosts.id,
+        agenticPosts.topic,
+        agenticPosts.status,
+        agenticPosts.qualityScore,
+        agenticPosts.createdAt,
+        agenticPosts.updatedAt
+      )
       .orderBy(desc(agenticPosts.createdAt))
       .limit(limit)
       .offset(offset);
 
-    // Enrich with post counts from related tweets
-    const enriched = await Promise.all(
-      sessions.map(async (session) => {
-        const tweetCount = await db
-          .select({ c: count() })
-          .from(tweets)
-          .innerJoin(agenticPosts, eq(agenticPosts.postId, tweets.postId))
-          .where(eq(agenticPosts.id, session.id));
-
-        return {
-          ...session,
-          postsGenerated: tweetCount[0]?.c ?? 0,
-          qualityScore: session.qualityScore ?? 0,
-        };
-      })
-    );
+    const enriched = sessionsPaginated.map((session) => ({
+      ...session,
+      qualityScore: session.qualityScore ?? 0,
+    }));
 
     // Calculate successRate
     const allSessionsCount = await db.select({ total: count() }).from(agenticPosts);

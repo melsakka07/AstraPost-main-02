@@ -15,7 +15,7 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return ApiError.unauthorized();
 
   const correlationId = getCorrelationId(req);
   logger.info("api_request", {

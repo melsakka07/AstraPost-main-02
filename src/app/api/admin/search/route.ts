@@ -33,10 +33,10 @@ export async function GET(request: Request) {
     const searchPattern = `%${safeQuery}%`;
 
     const results: {
-      users?: any[];
-      posts?: any[];
-      content?: any[];
-      config?: any[];
+      users?: { id: string; name: string | null; email: string; plan: string | null }[];
+      posts?: { id: string; content: string | null; createdBy: string; engagement: number }[];
+      content?: { id: string; type: string; title: string; description: string | null }[];
+      config?: { key: string; label: string; value: boolean }[];
     } = {};
 
     // Search users
@@ -127,6 +127,6 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     logger.error("[search] Error", { error: err });
-    return Response.json({ error: "Failed to perform search" }, { status: 500 });
+    return ApiError.internal("Failed to perform search");
   }
 }

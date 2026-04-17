@@ -22,7 +22,7 @@ import { posts, tweets } from "@/lib/schema";
 export async function GET(_req: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return new Response("Unauthorized", { status: 401 });
+    if (!session) return ApiError.unauthorized();
 
     const userId = session.user.id;
 

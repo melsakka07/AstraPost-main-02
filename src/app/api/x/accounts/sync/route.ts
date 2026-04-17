@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAccountLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
@@ -10,15 +11,15 @@ import { getTeamContext } from "@/lib/team-context";
 
 export async function POST() {
   const ctx = await getTeamContext();
-  if (!ctx) return new Response("Unauthorized", { status: 401 });
+  if (!ctx) return ApiError.unauthorized();
 
   // Only the team owner can sync accounts
   if (!ctx.isOwner) {
-    return new Response("Forbidden: Only team owner can sync accounts", { status: 403 });
+    return ApiError.forbidden("Only team owner can sync accounts");
   }
 
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return ApiError.unauthorized();
 
   const linked = await db.query.account.findMany({
     where: and(eq(account.userId, session.user.id), eq(account.providerId, "twitter")),
@@ -71,7 +72,7 @@ export async function POST() {
         xUsername: profile.username || session.user.name || "twitter_user",
         xDisplayName: profile.name || session.user.name || "Twitter User",
         xAvatarUrl: profile.profile_image_url || session.user.image,
-        accessToken: encAccessToken,
+        accessTokenEnc: encAccessToken,
         refreshTokenEnc: encRefreshToken,
         tokenExpiresAt: la.accessTokenExpiresAt,
         isActive: true,
@@ -92,7 +93,7 @@ export async function POST() {
           xUsername: profile.username || existing.xUsername,
           xDisplayName: profile.name || existing.xDisplayName,
           xAvatarUrl: profile.profile_image_url || existing.xAvatarUrl,
-          accessToken: encAccessToken,
+          accessTokenEnc: encAccessToken,
           refreshTokenEnc: encRefreshToken ?? existing.refreshTokenEnc,
           tokenExpiresAt: la.accessTokenExpiresAt,
           isActive: true,

@@ -5,6 +5,7 @@ import { addDays, setHours, setMinutes, setSeconds, format, getDay } from "date-
 import { Lock, CalendarClock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { clientLogger } from "@/lib/client-logger";
 
 interface TimeSlot {
   day: number;
@@ -41,7 +42,9 @@ export function BestTimeSuggestions({ onSelect, hideHeader = false }: BestTimeSu
           setTimes(data.times);
         }
       } catch (e) {
-        console.error(e);
+        clientLogger.error("Failed to fetch best times", {
+          error: e instanceof Error ? e.message : String(e),
+        });
         setIsError(true);
       } finally {
         setIsLoading(false);

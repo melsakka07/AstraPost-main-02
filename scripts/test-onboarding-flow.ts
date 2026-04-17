@@ -25,7 +25,7 @@ async function main() {
     userId: userId,
     xUserId: "mock-x-id",
     xUsername: "mock_user",
-    accessToken: "mock-token",
+    accessTokenEnc: "mock-token",
     isActive: true,
   });
   console.log("Added mock X account");

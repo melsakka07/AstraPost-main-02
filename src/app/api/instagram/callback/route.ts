@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
       await db
         .update(instagramAccounts)
         .set({
-          accessToken: encryptToken(accessToken),
+          accessTokenEnc: encryptToken(accessToken),
           tokenExpiresAt: expiresAt,
           instagramUsername: igUsername,
           instagramAvatarUrl: igProfilePic,
@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
         instagramUserId: igAccountId,
         instagramUsername: igUsername,
         instagramAvatarUrl: igProfilePic,
-        accessToken: encryptToken(accessToken),
+        accessTokenEnc: encryptToken(accessToken),
         tokenExpiresAt: expiresAt,
         isActive: true,
       });

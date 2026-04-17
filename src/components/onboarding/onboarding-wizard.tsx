@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -278,7 +279,9 @@ export function OnboardingWizard() {
           setXAccounts(data.accounts || []);
         }
       } catch (error) {
-        console.error("Failed to fetch X accounts:", error);
+        clientLogger.error("Failed to fetch X accounts", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       } finally {
         setLoadingAccounts(false);
       }
@@ -420,7 +423,10 @@ export function OnboardingWizard() {
         await navigateAfterOnboarding("/dashboard");
       }
     } catch (error) {
-      console.error("Step error:", error);
+      clientLogger.error("Onboarding step failed", {
+        step: currentStep,
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Something went wrong");
     } finally {
       setLoading(false);

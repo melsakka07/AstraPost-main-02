@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { affiliateClicks, affiliateLinks, user } from "@/lib/schema";
 
@@ -153,38 +153,32 @@ export async function getConversionFunnel(startDate: Date): Promise<ConversionFu
 }
 
 export async function getTrendsData(startDate: Date): Promise<TrendDataPoint[]> {
-  const timeSeriesData = await db
-    .select({
-      date: sql<string>`DATE(${affiliateClicks.clickedAt})`,
-      clicks: count(affiliateClicks.id),
-    })
-    .from(affiliateClicks)
-    .where(gte(affiliateClicks.clickedAt, startDate))
-    .groupBy(sql`DATE(${affiliateClicks.clickedAt})`)
-    .orderBy(sql`DATE(${affiliateClicks.clickedAt})`);
+  const [clicksData, conversionsData] = await Promise.all([
+    db
+      .select({
+        date: sql<string>`DATE(${affiliateClicks.clickedAt})`,
+        clicks: count(affiliateClicks.id),
+      })
+      .from(affiliateClicks)
+      .where(gte(affiliateClicks.clickedAt, startDate))
+      .groupBy(sql`DATE(${affiliateClicks.clickedAt})`),
 
-  const timeSeriesMetrics = await Promise.all(
-    timeSeriesData.map(async (day) => {
-      const convForDay = await db
-        .select({ total: count() })
-        .from(user)
-        .where(
-          and(
-            sql`${user.referredBy} IS NOT NULL`,
-            sql`${user.plan} != 'free'`,
-            sql`DATE(${user.createdAt}) = ${day.date}`
-          )
-        );
+    db
+      .select({
+        date: sql<string>`DATE(${user.createdAt})`,
+        conversions: count(user.id),
+      })
+      .from(user)
+      .where(and(isNotNull(user.referredBy), ne(user.plan, "free"), gte(user.createdAt, startDate)))
+      .groupBy(sql`DATE(${user.createdAt})`),
+  ]);
 
-      return {
-        date: day.date,
-        clicks: day.clicks ?? 0,
-        conversions: Number(convForDay[0]?.total ?? 0),
-      };
-    })
-  );
-
-  return timeSeriesMetrics;
+  const convMap = new Map(conversionsData.map((d) => [d.date, d.conversions]));
+  return clicksData.map((row) => ({
+    date: row.date,
+    clicks: row.clicks,
+    conversions: convMap.get(row.date) ?? 0,
+  }));
 }
 
 export async function getTopAffiliates(
@@ -193,10 +187,10 @@ export async function getTopAffiliates(
 ): Promise<TopAffiliate[]> {
   const commissionCents = parseInt(process.env.AFFILIATE_COMMISSION_CENTS ?? "1000", 10);
 
-  const topAffiliatesData = await db
+  const topAffsRaw = await db
     .select({
       userId: affiliateLinks.userId,
-      clicks: sql<number>`count(${affiliateClicks.id})`,
+      clicks: count(affiliateClicks.id),
     })
     .from(affiliateLinks)
     .leftJoin(
@@ -207,44 +201,50 @@ export async function getTopAffiliates(
       )
     )
     .groupBy(affiliateLinks.userId)
-    .orderBy(desc(sql<number>`count(${affiliateClicks.id})`))
+    .orderBy(desc(count(affiliateClicks.id)))
     .limit(limit);
 
-  const topAffiliates = await Promise.all(
-    topAffiliatesData.map(async (aff) => {
-      const [userRow] = await db
-        .select({ name: user.name, email: user.email, referralCode: user.referralCode })
-        .from(user)
-        .where(eq(user.id, aff.userId));
+  const userIds = topAffsRaw.map((a) => a.userId);
 
-      const conversionsForAff = await db
-        .select({ total: count() })
-        .from(user)
-        .where(
-          and(
-            eq(user.referredBy, aff.userId),
-            sql`${user.plan} != 'free'`,
-            gte(user.createdAt, startDate)
-          )
-        );
+  if (userIds.length === 0) return [];
 
-      const conversions = Number(conversionsForAff[0]?.total ?? 0);
-      const clicks = aff.clicks ?? 0;
-      const conversionRate = clicks > 0 ? (conversions / clicks) * 100 : 0;
-      const earnings = conversions * commissionCents;
+  const [affiliateUsers, conversions] = await Promise.all([
+    db
+      .select({ id: user.id, name: user.name, email: user.email, referralCode: user.referralCode })
+      .from(user)
+      .where(inArray(user.id, userIds)),
+    db
+      .select({ referredBy: user.referredBy, convCount: count(user.id) })
+      .from(user)
+      .where(
+        and(
+          inArray(user.referredBy as any, userIds),
+          ne(user.plan, "free"),
+          gte(user.createdAt, startDate)
+        )
+      )
+      .groupBy(user.referredBy),
+  ]);
 
-      return {
-        id: aff.userId,
-        name: userRow?.name ?? "Unknown",
-        email: userRow?.email ?? "",
-        referralCode: userRow?.referralCode ?? "",
-        clicksThisMonth: clicks,
-        conversions,
-        conversionRate: Math.round(conversionRate * 100) / 100,
-        earningsCents: earnings,
-      };
-    })
-  );
+  const userMap = new Map(affiliateUsers.map((u) => [u.id, u]));
+  const convMap = new Map(conversions.map((c) => [c.referredBy!, c.convCount]));
 
-  return topAffiliates;
+  return topAffsRaw.map((aff) => {
+    const aUser = userMap.get(aff.userId);
+    const convs = convMap.get(aff.userId) ?? 0;
+    const clicks = aff.clicks ?? 0;
+    const conversionRate = clicks > 0 ? (convs / clicks) * 100 : 0;
+    const earnings = convs * commissionCents;
+
+    return {
+      id: aff.userId,
+      name: aUser?.name ?? "Unknown",
+      email: aUser?.email ?? "",
+      referralCode: aUser?.referralCode ?? "",
+      clicksThisMonth: clicks,
+      conversions: convs,
+      conversionRate: Math.round(conversionRate * 100) / 100,
+      earningsCents: earnings,
+    };
+  });
 }

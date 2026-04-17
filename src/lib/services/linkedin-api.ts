@@ -23,7 +23,7 @@ export class LinkedInApiService implements SocialApiService {
 
     if (!account) return null;
 
-    let accessToken = decryptToken(account.accessToken);
+    let accessToken = decryptToken(account.accessTokenEnc);
 
     // Check expiration and refresh if needed
     const expiresAt = account.tokenExpiresAt;
@@ -55,7 +55,7 @@ export class LinkedInApiService implements SocialApiService {
           await db
             .update(linkedinAccounts)
             .set({
-              accessToken: encryptToken(data.access_token),
+              accessTokenEnc: encryptToken(data.access_token),
               refreshTokenEnc: data.refresh_token
                 ? encryptToken(data.refresh_token)
                 : account.refreshTokenEnc,

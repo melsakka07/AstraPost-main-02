@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { clientLogger } from "@/lib/client-logger";
 import { Feedback, FeedbackItem } from "./feedback-item";
 
 const feedbackSchema = z.object({
@@ -66,7 +67,9 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
       const data = await res.json();
       setItems(data.items || []);
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Failed to load feedback", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to load roadmap");
     } finally {
       setLoading(false);

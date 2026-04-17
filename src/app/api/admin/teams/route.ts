@@ -1,4 +1,4 @@
-import { count, desc, eq, sql } from "drizzle-orm";
+import { count, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
@@ -76,23 +76,30 @@ export async function GET(request: Request) {
       .sort((a, b) => Number(b.memberCount) - Number(a.memberCount))
       .slice(offset, offset + limit);
 
-    const teamsData = await Promise.all(
-      teamsPaginated.map(async (t) => {
-        const [owner] = await db
-          .select({ id: user.id, name: user.name, email: user.email, plan: user.plan })
-          .from(user)
-          .where(eq(user.id, t.teamId))
-          .limit(1);
+    const teamsOwnerIds = teamsPaginated
+      .map((t) => t.teamId)
+      .filter((id): id is string => id != null);
 
-        return {
-          teamId: t.teamId,
-          owner: owner?.name ?? "Unknown",
-          ownerEmail: owner?.email ?? "Unknown",
-          plan: owner?.plan ?? "free",
-          memberCount: Number(t.memberCount),
-        };
-      })
-    );
+    const teamsOwners =
+      teamsOwnerIds.length > 0
+        ? await db
+            .select({ id: user.id, name: user.name, email: user.email, plan: user.plan })
+            .from(user)
+            .where(inArray(user.id, teamsOwnerIds))
+        : [];
+
+    const teamsOwnerMap = new Map(teamsOwners.map((o) => [o.id, o]));
+
+    const teamsData = teamsPaginated.map((t) => {
+      const owner = teamsOwnerMap.get(t.teamId ?? "");
+      return {
+        teamId: t.teamId,
+        owner: owner?.name ?? "Unknown",
+        ownerEmail: owner?.email ?? "Unknown",
+        plan: owner?.plan ?? "free",
+        memberCount: Number(t.memberCount),
+      };
+    });
 
     // Fetch pending invitations (paginated)
     const pendingInvitesCountResult = await db
@@ -117,26 +124,33 @@ export async function GET(request: Request) {
       .limit(limit)
       .offset(offset);
 
-    const invitationsData = await Promise.all(
-      invitationsRaw.map(async (inv) => {
-        const [owner] = await db
-          .select({ name: user.name, email: user.email })
-          .from(user)
-          .where(eq(user.id, inv.teamId))
-          .limit(1);
+    const invitationOwnerIds = invitationsRaw
+      .map((inv) => inv.teamId)
+      .filter((id): id is string => id != null);
 
-        return {
-          id: inv.id,
-          email: inv.email,
-          role: inv.role,
-          teamOwner: owner?.name ?? "Unknown",
-          teamOwnerEmail: owner?.email ?? "Unknown",
-          expiresAt: inv.expiresAt.toISOString(),
-          createdAt: inv.createdAt.toISOString(),
-          status: inv.status,
-        };
-      })
-    );
+    const invitationOwners =
+      invitationOwnerIds.length > 0
+        ? await db
+            .select({ id: user.id, name: user.name, email: user.email })
+            .from(user)
+            .where(inArray(user.id, invitationOwnerIds))
+        : [];
+
+    const invitationOwnerMap = new Map(invitationOwners.map((o) => [o.id, o]));
+
+    const invitationsData = invitationsRaw.map((inv) => {
+      const owner = invitationOwnerMap.get(inv.teamId ?? "");
+      return {
+        id: inv.id,
+        email: inv.email,
+        role: inv.role,
+        teamOwner: owner?.name ?? "Unknown",
+        teamOwnerEmail: owner?.email ?? "Unknown",
+        expiresAt: inv.expiresAt.toISOString(),
+        createdAt: inv.createdAt.toISOString(),
+        status: inv.status,
+      };
+    });
 
     return Response.json({
       summary,

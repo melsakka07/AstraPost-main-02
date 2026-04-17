@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const dbUser = await db.query.user.findFirst({
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File;
 
     if (!file) {
-      return new Response("No file uploaded", { status: 400 });
+      return ApiError.badRequest("No file uploaded");
     }
 
     // ── Size pre-check (cheap — protects memory before reading the full buffer) ──
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
     // NOT trust the attacker-controlled file.type to choose the ceiling.
     // The per-type limit is enforced again below, after magic-bytes detection.
     if (file.size > ABSOLUTE_MAX_BYTES) {
-      return new Response("File too large", { status: 400 });
+      return ApiError.badRequest("File too large");
     }
 
     // ── Magic-bytes validation ─────────────────────────────────────────────
@@ -116,18 +117,16 @@ export async function POST(req: Request) {
     const detected = detectMimeFromBuffer(buffer);
 
     if (!detected) {
-      return new Response("Unsupported file type. Allowed: JPEG, PNG, GIF, WebP, MP4/MOV.", {
-        status: 415,
-      });
+      return ApiError.badRequest("Unsupported file type. Allowed: JPEG, PNG, GIF, WebP, MP4/MOV.");
     }
 
     // ── Per-type size enforcement (now uses the verified detected type) ─────
     const isVideo = detected.mime.startsWith("video/");
     const typeMaxBytes = isVideo ? ABSOLUTE_MAX_BYTES : IMAGE_MAX_BYTES;
     if (file.size > typeMaxBytes) {
-      return new Response(isVideo ? "Video too large (max 50 MB)" : "Image too large (max 15 MB)", {
-        status: 400,
-      });
+      return ApiError.badRequest(
+        isVideo ? "Video too large (max 50 MB)" : "Image too large (max 15 MB)"
+      );
     }
 
     // ── Build a safe filename using only the canonical extension ──────────
@@ -153,6 +152,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     logger.error("Upload error", { error });
-    return new Response("Internal Server Error", { status: 500 });
+    return ApiError.internal("Internal Server Error");
   }
 }

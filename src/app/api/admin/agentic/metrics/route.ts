@@ -19,12 +19,12 @@ export async function GET() {
     const [completedSessions] = await db
       .select({ total: count() })
       .from(agenticPosts)
-      .where(eq(agenticPosts.status, "completed"));
+      .where(eq(agenticPosts.status, "posted"));
 
     const [avgQuality] = await db
       .select({ avg: avg(agenticPosts.qualityScore) })
       .from(agenticPosts)
-      .where(eq(agenticPosts.status, "completed"));
+      .where(eq(agenticPosts.status, "posted"));
 
     const [totalPosts] = await db
       .select({ total: count() })

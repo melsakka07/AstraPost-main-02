@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
       linkedinUserId: userInfo.id,
       linkedinName: userInfo.name,
       linkedinAvatarUrl: userInfo.avatarUrl ?? null,
-      accessToken: encryptToken(accessToken),
+      accessTokenEnc: encryptToken(accessToken),
       refreshTokenEnc: refreshToken ? encryptToken(refreshToken) : null,
       tokenExpiresAt: new Date(Date.now() + expiresIn * 1000),
       isActive: true,

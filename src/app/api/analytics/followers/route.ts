@@ -14,7 +14,7 @@ const schema = z.object({
 
 export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return ApiError.unauthorized();
 
   const url = new URL(req.url);
   const parsed = schema.safeParse({

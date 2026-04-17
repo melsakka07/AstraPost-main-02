@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useSession } from "@/lib/auth-client";
+import { clientLogger } from "@/lib/client-logger";
 import { sendToComposer } from "@/lib/composer-bridge";
 import { LANGUAGES } from "@/lib/constants";
 
@@ -104,7 +105,9 @@ export function HashtagGenerator() {
       setGeneratedHashtags(data.hashtags || []);
       toast.success(`Generated ${data.hashtags?.length || 0} hashtags!`);
     } catch (error) {
-      console.error("Hashtag generation error:", error);
+      clientLogger.error("Hashtag generation error", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to generate hashtags");
     } finally {
       setIsGenerating(false);

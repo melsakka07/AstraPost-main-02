@@ -24,10 +24,7 @@ export async function POST(req: Request) {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
     const allowed = await checkRateLimit(ip);
     if (!allowed) {
-      return Response.json(
-        { error: "Too many requests. Please try again later." },
-        { status: 429 }
-      );
+      return ApiError.tooManyRequests("Too many requests. Please try again later.");
     }
 
     if (!code) {
@@ -37,7 +34,7 @@ export async function POST(req: Request) {
     const referrer = await validateReferralCode(code);
 
     if (!referrer) {
-      return Response.json({ valid: false, error: "Invalid referral code" }, { status: 404 });
+      return ApiError.notFound("Invalid referral code");
     }
 
     return Response.json({

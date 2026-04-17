@@ -12,8 +12,9 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
-import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { normalizePlan } from "@/lib/plan-limits";
 import { aiGenerations, user } from "@/lib/schema";
+import { getPlanMetadata } from "@/lib/services/plan-metadata";
 import { getMonthWindow } from "@/lib/utils/time";
 
 export async function GET(req: Request) {
@@ -28,11 +29,11 @@ export async function GET(req: Request) {
     columns: { plan: true },
   });
 
-  // Display-only read: getPlanLimits is used here solely to return UI metadata
+  // Display-only read: getPlanMetadata is used here solely to return UI metadata
   // (available models, quota counts). No gating decision is made.
   // Intentional exception to CLAUDE.md §16 — no enforcement side effects.
   const plan = normalizePlan(userRecord?.plan);
-  const limits = getPlanLimits(plan);
+  const limits = getPlanMetadata(plan);
 
   const { start: monthStart } = getMonthWindow();
 

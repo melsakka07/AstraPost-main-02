@@ -102,7 +102,7 @@ export const auth = betterAuth({
                   xUsername: profile.username || "twitter_user",
                   xDisplayName: profile.name || "Twitter User",
                   xAvatarUrl: profile.profile_image_url || null,
-                  accessToken: account.accessToken,
+                  accessTokenEnc: account.accessToken,
                   refreshTokenEnc: account.refreshToken || null,
                   tokenExpiresAt: account.accessTokenExpiresAt || null,
                   isActive: true,
@@ -110,7 +110,7 @@ export const auth = betterAuth({
                 .onConflictDoUpdate({
                   target: xAccounts.xUserId,
                   set: {
-                    accessToken: account.accessToken,
+                    accessTokenEnc: account.accessToken,
                     refreshTokenEnc: account.refreshToken || null,
                     tokenExpiresAt: account.accessTokenExpiresAt || null,
                     isActive: true,
@@ -152,7 +152,7 @@ export const auth = betterAuth({
                   userId: account.userId,
                   xUserId: account.accountId,
                   xUsername: account.accountId, // fallback; create.after sets real username
-                  accessToken: account.accessToken,
+                  accessTokenEnc: account.accessToken,
                   refreshTokenEnc: account.refreshToken || null,
                   tokenExpiresAt: account.accessTokenExpiresAt || null,
                   isActive: true,
@@ -160,7 +160,7 @@ export const auth = betterAuth({
                 .onConflictDoUpdate({
                   target: xAccounts.xUserId,
                   set: {
-                    accessToken: account.accessToken,
+                    accessTokenEnc: account.accessToken,
                     refreshTokenEnc: account.refreshToken || null,
                     tokenExpiresAt: account.accessTokenExpiresAt || null,
                     isActive: true,

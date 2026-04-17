@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { teamMembers } from "@/lib/schema";
@@ -18,9 +19,9 @@ export async function DELETE(
     const { memberId } = await params;
     const ctx = await getTeamContext();
 
-    if (!ctx) return new Response("Unauthorized", { status: 401 });
+    if (!ctx) return ApiError.unauthorized();
     if (!ctx.isOwner && ctx.role !== "admin") {
-      return new Response("Forbidden: Only owners and admins can remove members", { status: 403 });
+      return ApiError.forbidden("Only owners and admins can remove members");
     }
 
     // Get the member to remove
@@ -29,17 +30,17 @@ export async function DELETE(
     });
 
     if (!memberToRemove) {
-      return new Response("Member not found", { status: 404 });
+      return ApiError.notFound("Member not found");
     }
 
     // Owners cannot be removed
     if (memberToRemove.userId === ctx.currentTeamId) {
-      return new Response("Cannot remove the team owner", { status: 403 });
+      return ApiError.forbidden("Cannot remove the team owner");
     }
 
     // Admins can only remove editors/viewers, not other admins (unless they are owner)
     if (ctx.role === "admin" && memberToRemove.role === "admin") {
-      return new Response("Forbidden: Admins cannot remove other admins", { status: 403 });
+      return ApiError.forbidden("Admins cannot remove other admins");
     }
 
     await db.delete(teamMembers).where(eq(teamMembers.id, memberId));
@@ -47,7 +48,7 @@ export async function DELETE(
     return Response.json({ success: true, message: "Member removed" });
   } catch (error) {
     logger.error("Remove Member Error", { error });
-    return new Response("Internal Server Error", { status: 500 });
+    return ApiError.internal("Internal Server Error");
   }
 }
 
@@ -59,10 +60,10 @@ export async function PATCH(
     const { memberId } = await params;
     const ctx = await getTeamContext();
 
-    if (!ctx) return new Response("Unauthorized", { status: 401 });
+    if (!ctx) return ApiError.unauthorized();
     if (!ctx.isOwner) {
       // Only owners can change roles for now to keep it simple
-      return new Response("Forbidden: Only the team owner can change roles", { status: 403 });
+      return ApiError.forbidden("Only the team owner can change roles");
     }
 
     const json = await req.json();
@@ -73,12 +74,12 @@ export async function PATCH(
     });
 
     if (!memberToUpdate) {
-      return new Response("Member not found", { status: 404 });
+      return ApiError.notFound("Member not found");
     }
 
     // Cannot change owner's role
     if (memberToUpdate.userId === ctx.currentTeamId) {
-      return new Response("Cannot change the team owner's role", { status: 403 });
+      return ApiError.forbidden("Cannot change the team owner's role");
     }
 
     await db
@@ -89,9 +90,9 @@ export async function PATCH(
     return Response.json({ success: true, message: "Role updated" });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return Response.json({ error: "Invalid input", details: error.issues }, { status: 400 });
+      return ApiError.badRequest(error.issues);
     }
     logger.error("Update Role Error", { error });
-    return new Response("Internal Server Error", { status: 500 });
+    return ApiError.internal("Internal Server Error");
   }
 }

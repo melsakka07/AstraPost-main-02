@@ -23,7 +23,9 @@ async function main() {
       console.log("Token Expires At:", acc.tokenExpiresAt);
       console.log("");
 
-      let accessToken = acc.accessToken ? decryptToken(acc.accessToken) : "(check accessTokenEnc)";
+      let accessToken = acc.accessTokenEnc
+        ? decryptToken(acc.accessTokenEnc)
+        : "(check accessTokenEnc)";
 
       let refreshToken = acc.refreshTokenEnc ? decryptToken(acc.refreshTokenEnc) : "";
 

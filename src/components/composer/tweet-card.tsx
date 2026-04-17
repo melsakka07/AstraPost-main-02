@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { XSubscriptionBadge, XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { clientLogger } from "@/lib/client-logger";
 import { getMaxCharacterLimit, canPostLongContent } from "@/lib/services/x-subscription";
 import { cn } from "@/lib/utils";
 import type { EmojiClickData } from "emoji-picker-react";
@@ -169,7 +170,9 @@ export function TweetCard({
           updateTweetPreview(tweet.id, { ...data, url: firstUrl });
         }
       } catch (e) {
-        console.error(e);
+        clientLogger.error("Failed to fetch link preview", {
+          error: e instanceof Error ? e.message : String(e),
+        });
       } finally {
         setLinkPreviewPending(false);
       }

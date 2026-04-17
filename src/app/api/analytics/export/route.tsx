@@ -11,8 +11,8 @@ import {
   checkAnalyticsExportLimitDetailed,
   createPlanLimitResponse,
 } from "@/lib/middleware/require-plan";
-import { getPlanLimits } from "@/lib/plan-limits";
 import { posts, tweetAnalytics, tweets, user } from "@/lib/schema";
+import { getPlanMetadata } from "@/lib/services/plan-metadata";
 
 const exportSchema = z.object({
   format: z.enum(["csv", "pdf"]).default("csv"),
@@ -30,7 +30,7 @@ function toCsvValue(value: string | number) {
 
 export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return ApiError.unauthorized();
 
   const userLocale =
     session?.user && "language" in session.user ? (session.user as any).language : "en";
@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     columns: { plan: true },
   });
 
-  const limits = getPlanLimits(dbUser?.plan);
+  const limits = getPlanMetadata(dbUser?.plan);
   const requestedDays = Number.parseInt(parsed.data.range.replace("d", ""), 10);
   const retentionDays = Math.max(1, limits.analyticsRetentionDays);
   const effectiveDays = Math.min(requestedDays, retentionDays);

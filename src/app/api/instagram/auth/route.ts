@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 
 const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID;
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (!FACEBOOK_APP_ID) {
-    return Response.json({ error: "FACEBOOK_APP_ID not configured" }, { status: 500 });
+    return ApiError.internal("FACEBOOK_APP_ID not configured");
   }
 
   const scope =

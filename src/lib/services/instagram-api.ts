@@ -22,7 +22,7 @@ export class InstagramApiService implements SocialApiService {
 
     if (!account) return null;
 
-    const accessToken = decryptToken(account.accessToken);
+    const accessToken = decryptToken(account.accessTokenEnc);
 
     // Instagram/Facebook Long-Lived tokens last 60 days.
     // We should refresh if getting close to expiry, but for now we'll assume valid or handle error.

@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { eq, and, desc } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { teamInvitations, teamMembers } from "@/lib/schema";
@@ -8,7 +9,7 @@ import { getTeamContext } from "@/lib/team-context";
 export async function GET(_req: NextRequest) {
   try {
     const ctx = await getTeamContext();
-    if (!ctx) return new Response("Unauthorized", { status: 401 });
+    if (!ctx) return ApiError.unauthorized();
 
     // Fetch members with user details
     const members = await db.query.teamMembers.findMany({
@@ -55,6 +56,6 @@ export async function GET(_req: NextRequest) {
     });
   } catch (error) {
     logger.error("Fetch Members Error", { error });
-    return new Response("Internal Server Error", { status: 500 });
+    return ApiError.internal("Internal Server Error");
   }
 }

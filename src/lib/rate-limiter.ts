@@ -116,6 +116,7 @@ export function createRateLimitResponse(result: RateLimitResult): Response {
   const retryAfter = Math.max(1, Math.ceil((result.reset - Date.now()) / 1000));
 
   if (result.serviceError) {
+    // eslint-disable-next-line no-restricted-syntax
     return new Response(
       JSON.stringify({ error: "Service temporarily unavailable. Please try again shortly." }),
       {
@@ -128,6 +129,7 @@ export function createRateLimitResponse(result: RateLimitResult): Response {
     );
   }
 
+  // eslint-disable-next-line no-restricted-syntax
   return new Response(JSON.stringify({ error: "Too many requests", retryAfter }), {
     status: 429,
     headers: {
@@ -142,6 +144,7 @@ export function createRateLimitResponse(result: RateLimitResult): Response {
  * Mirrors `createRateLimitResponse` for the IP-based limiter shape.
  */
 export function createIpRateLimitResponse(retryAfter: number): Response {
+  // eslint-disable-next-line no-restricted-syntax
   return new Response(JSON.stringify({ error: "Too many requests", retryAfter }), {
     status: 429,
     headers: {

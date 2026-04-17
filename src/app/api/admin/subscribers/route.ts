@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gt, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
@@ -114,36 +114,53 @@ export async function GET(request: Request) {
       .limit(limit)
       .offset(offset);
 
-    // Enrich with connected platform counts and subscription status
-    const enriched = await Promise.all(
-      rows.map(async (u) => {
-        const [xCount, liCount, igCount, subRow] = await Promise.all([
-          db
-            .select({ c: count() })
-            .from(xAccounts)
-            .where(and(eq(xAccounts.userId, u.id), eq(xAccounts.isActive, true))),
-          db
-            .select({ c: count() })
-            .from(linkedinAccounts)
-            .where(and(eq(linkedinAccounts.userId, u.id), eq(linkedinAccounts.isActive, true))),
-          db
-            .select({ c: count() })
-            .from(instagramAccounts)
-            .where(and(eq(instagramAccounts.userId, u.id), eq(instagramAccounts.isActive, true))),
-          db
-            .select({ status: subscriptions.status, plan: subscriptions.plan })
-            .from(subscriptions)
-            .where(eq(subscriptions.userId, u.id))
-            .limit(1),
-        ]);
+    // Enrich with connected platform counts and subscription status (bulk queries)
+    const userIds = rows.map((u) => u.id);
 
-        return {
-          ...u,
-          connectedPlatforms: (xCount[0]?.c ?? 0) + (liCount[0]?.c ?? 0) + (igCount[0]?.c ?? 0),
-          subscriptionStatus: subRow[0]?.status ?? null,
-        };
-      })
-    );
+    const [xCounts, liCounts, igCounts, subscriptionsData] = await Promise.all([
+      userIds.length > 0
+        ? db
+            .select({ userId: xAccounts.userId, cnt: count(xAccounts.id) })
+            .from(xAccounts)
+            .where(and(inArray(xAccounts.userId, userIds), eq(xAccounts.isActive, true)))
+            .groupBy(xAccounts.userId)
+        : Promise.resolve([]),
+      userIds.length > 0
+        ? db
+            .select({ userId: linkedinAccounts.userId, cnt: count(linkedinAccounts.id) })
+            .from(linkedinAccounts)
+            .where(
+              and(inArray(linkedinAccounts.userId, userIds), eq(linkedinAccounts.isActive, true))
+            )
+            .groupBy(linkedinAccounts.userId)
+        : Promise.resolve([]),
+      userIds.length > 0
+        ? db
+            .select({ userId: instagramAccounts.userId, cnt: count(instagramAccounts.id) })
+            .from(instagramAccounts)
+            .where(
+              and(inArray(instagramAccounts.userId, userIds), eq(instagramAccounts.isActive, true))
+            )
+            .groupBy(instagramAccounts.userId)
+        : Promise.resolve([]),
+      userIds.length > 0
+        ? db
+            .select({ userId: subscriptions.userId, status: subscriptions.status })
+            .from(subscriptions)
+            .where(inArray(subscriptions.userId, userIds))
+        : Promise.resolve([]),
+    ]);
+
+    const xMap = new Map(xCounts.map((p) => [p.userId, Number(p.cnt)]));
+    const liMap = new Map(liCounts.map((p) => [p.userId, Number(p.cnt)]));
+    const igMap = new Map(igCounts.map((p) => [p.userId, Number(p.cnt)]));
+    const subMap = new Map(subscriptionsData.map((s) => [s.userId, s.status]));
+
+    const enriched = rows.map((u) => ({
+      ...u,
+      connectedPlatforms: (xMap.get(u.id) ?? 0) + (liMap.get(u.id) ?? 0) + (igMap.get(u.id) ?? 0),
+      subscriptionStatus: subMap.get(u.id) ?? null,
+    }));
 
     return Response.json({
       data: enriched,

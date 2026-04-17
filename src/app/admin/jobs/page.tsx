@@ -5,15 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireAdmin } from "@/lib/admin";
 import { analyticsQueue, scheduleQueue } from "@/lib/queue/client";
+import type { Queue, Job } from "bullmq";
 
-async function getQueueData(queueName: string, queue: any) {
+async function getQueueData(queueName: string, queue: Queue) {
   const counts = await queue.getJobCounts("active", "waiting", "delayed", "failed", "completed");
   // Get active/failed/delayed jobs
   const jobs = await queue.getJobs(["active", "waiting", "delayed", "failed"], 0, 19, true);
 
   // We need to fetch state for each job as it's not directly in the object sometimes depending on version
   const jobsWithState = await Promise.all(
-    jobs.map(async (job: any) => {
+    jobs.map(async (job: Job) => {
       const state = await job.getState();
       return {
         id: job.id,

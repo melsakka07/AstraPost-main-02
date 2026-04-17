@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import { eq, and } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -13,13 +14,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const { token } = await req.json();
 
     if (!token) {
-      return new Response("Token is required", { status: 400 });
+      return ApiError.badRequest("Token is required");
     }
 
     const invitation = await db.query.teamInvitations.findFirst({
@@ -27,15 +28,15 @@ export async function POST(req: NextRequest) {
     });
 
     if (!invitation) {
-      return new Response("Invalid invitation token", { status: 404 });
+      return ApiError.notFound("Invitation");
     }
 
     if (invitation.status !== "pending") {
-      return new Response("Invitation is no longer valid", { status: 400 });
+      return ApiError.badRequest("Invitation is no longer valid");
     }
 
     if (new Date() > invitation.expiresAt) {
-      return new Response("Invitation has expired", { status: 400 });
+      return ApiError.badRequest("Invitation has expired");
     }
 
     // Optional: Enforce email match
@@ -78,6 +79,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ success: true, message: "Joined team successfully" });
   } catch (error) {
     logger.error("Join Team Error", { error });
-    return new Response("Internal Server Error", { status: 500 });
+    return ApiError.internal("Internal Server Error");
   }
 }

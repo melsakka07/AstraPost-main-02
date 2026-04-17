@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { and, asc, desc, eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkAccountLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
@@ -8,7 +9,7 @@ import { getTeamContext } from "@/lib/team-context";
 
 export async function POST() {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return ApiError.unauthorized();
 
   const accountLimit = await checkAccountLimitDetailed(session.user.id);
   if (!accountLimit.allowed) {
@@ -27,7 +28,7 @@ export async function POST() {
 
 export async function GET() {
   const ctx = await getTeamContext();
-  if (!ctx) return new Response("Unauthorized", { status: 401 });
+  if (!ctx) return ApiError.unauthorized();
 
   const accounts = await db.query.xAccounts.findMany({
     where: and(eq(xAccounts.userId, ctx.currentTeamId), eq(xAccounts.isActive, true)),

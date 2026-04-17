@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, ne } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
@@ -6,7 +6,6 @@ import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { getPlanLimits } from "@/lib/plan-limits";
 import {
   aiGenerations,
   instagramAccounts,
@@ -19,6 +18,7 @@ import {
   user,
   xAccounts,
 } from "@/lib/schema";
+import { getPlanMetadata } from "@/lib/services/plan-metadata";
 
 // ── PATCH body schema ────────────────────────────────────────────────────────
 
@@ -116,7 +116,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     // ── Additional data: AI quota, referrals, teams, activity timeline, OAuth health ──
 
     // 1. AI quota status
-    const limits = getPlanLimits(subscriber.plan);
+    const limits = getPlanMetadata(subscriber.plan);
     const aiUsed = Number(aiTextThisMonth[0]?.c ?? 0);
     const imagesUsed = Number(aiImagesThisMonth[0]?.c ?? 0);
     const aiLimit = limits.aiGenerationsPerMonth;
@@ -168,27 +168,23 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       .from(teamMembers)
       .where(eq(teamMembers.userId, id));
 
-    // Fetch team owner details for each membership
-    const teams = await Promise.all(
-      teamMemberships.map(async (membership) => {
-        const [teamOwner] = await db
-          .select({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          })
-          .from(user)
-          .where(eq(user.id, membership.teamId))
-          .limit(1);
+    // Bulk fetch team owner details
+    const teamIds = teamMemberships.map((m) => m.teamId);
+    const teamOwners =
+      teamIds.length > 0
+        ? await db
+            .select({ id: user.id, name: user.name, email: user.email })
+            .from(user)
+            .where(inArray(user.id, teamIds))
+        : [];
+    const ownerMap = new Map(teamOwners.map((o) => [o.id, o]));
 
-        return {
-          id: membership.id,
-          role: membership.role,
-          joinedAt: membership.joinedAt,
-          team: teamOwner ?? null,
-        };
-      })
-    );
+    const teams = teamMemberships.map((membership) => ({
+      id: membership.id,
+      role: membership.role,
+      joinedAt: membership.joinedAt,
+      team: ownerMap.get(membership.teamId) ?? null,
+    }));
 
     // 4. Activity timeline (last 20 actions)
     const [recentPosts, recentAiGenerations, recentPlanChanges] = await Promise.all([
@@ -265,15 +261,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const enhancedConnectedAccounts = {
       x: xAccs.map((acc) => ({
         ...acc,
-        health: checkTokenHealth(acc.tokenExpiresAt, acc.accessToken),
+        health: checkTokenHealth(acc.tokenExpiresAt, acc.accessTokenEnc),
       })),
       linkedin: liAccs.map((acc) => ({
         ...acc,
-        health: checkTokenHealth(acc.tokenExpiresAt, acc.accessToken),
+        health: checkTokenHealth(acc.tokenExpiresAt, acc.accessTokenEnc),
       })),
       instagram: igAccs.map((acc) => ({
         ...acc,
-        health: checkTokenHealth(acc.tokenExpiresAt, acc.accessToken),
+        health: checkTokenHealth(acc.tokenExpiresAt, acc.accessTokenEnc),
       })),
     };
 

@@ -3,7 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 import { checkEnv } from "./src/lib/env";
 import type { NextConfig } from "next";
 
-// Validate environment on startup
+// Validate env vars before build starts
 checkEnv();
 
 const withPWA = withPWAInit({

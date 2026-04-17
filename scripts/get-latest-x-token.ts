@@ -28,7 +28,7 @@ async function main() {
     console.log("Token Status:", expiresAt && expiresAt > now ? "✅ VALID" : "❌ EXPIRED");
     console.log("");
 
-    const accessToken = acc.accessToken ? decryptToken(acc.accessToken) : "";
+    const accessToken = acc.accessTokenEnc ? decryptToken(acc.accessTokenEnc) : "";
 
     const refreshToken = acc.refreshTokenEnc ? decryptToken(acc.refreshTokenEnc) : "";
 

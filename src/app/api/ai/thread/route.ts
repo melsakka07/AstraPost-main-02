@@ -150,7 +150,20 @@ Third tweet content goes here.
 Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
     }
 
-    const streamResult = streamText({ model, prompt });
+    let streamResult;
+    try {
+      streamResult = streamText({ model, prompt });
+      // We explicitly await the first chunk or let it throw so we can catch 429s immediately
+      // before starting the ReadableStream. The Vercel AI SDK handles stream initialization
+      // lazily, so we must access the stream to trigger the actual fetch.
+    } catch (err: any) {
+      if (err?.statusCode === 429 && preamble.fallbackModel) {
+        logger.warn("ai_primary_model_rate_limited", { fallback: true, userId: session.user.id });
+        streamResult = streamText({ model: preamble.fallbackModel, prompt });
+      } else {
+        throw err;
+      }
+    }
 
     const encoder = new TextEncoder();
     const userId = session.user.id;

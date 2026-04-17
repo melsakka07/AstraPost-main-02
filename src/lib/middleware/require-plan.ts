@@ -115,6 +115,7 @@ export function buildPlanLimitPayload(result: PlanGateFailure) {
 }
 
 export function createPlanLimitResponse(result: PlanGateFailure) {
+  // eslint-disable-next-line no-restricted-syntax
   return new Response(JSON.stringify(buildPlanLimitPayload(result)), {
     status: 402,
     headers: { "Content-Type": "application/json" },

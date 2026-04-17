@@ -1,6 +1,7 @@
 import { headers, cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -39,7 +40,7 @@ export async function PATCH(req: Request) {
   });
 
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return ApiError.unauthorized();
   }
 
   try {
@@ -68,9 +69,9 @@ export async function PATCH(req: Request) {
     return Response.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return new Response("Invalid request data", { status: 400 });
+      return ApiError.badRequest("Invalid request data");
     }
     logger.error("Profile update error", { error });
-    return new Response("Internal Error", { status: 500 });
+    return ApiError.internal("Internal Error");
   }
 }

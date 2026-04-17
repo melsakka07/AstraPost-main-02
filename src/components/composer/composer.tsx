@@ -89,6 +89,7 @@ import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { type OutputFormat, type TemplatePromptConfig } from "@/lib/ai/template-prompts";
 import { useSession } from "@/lib/auth-client";
+import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
@@ -353,7 +354,9 @@ export function Composer() {
           remainingQuota: data.remainingImages ?? 0,
         });
       } catch (e) {
-        console.error("Failed to fetch AI image quota:", e);
+        clientLogger.error("Failed to fetch AI image quota", {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     })();
     return () => {
@@ -462,7 +465,9 @@ export function Composer() {
           }
         }
       } catch (e) {
-        console.error("Failed to load drafts", e);
+        clientLogger.error("Failed to load drafts", {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -564,7 +569,10 @@ export function Composer() {
           toast.success("Draft loaded for editing");
         }
       } catch (e) {
-        console.error("Failed to load draft:", e);
+        clientLogger.error("Failed to load draft", {
+          draftId,
+          error: e instanceof Error ? e.message : String(e),
+        });
         toast.error("Failed to load draft");
       }
     })();
@@ -603,7 +611,9 @@ export function Composer() {
       setTemplateCategory("Personal");
     } catch (e) {
       toast.error("Failed to save template");
-      console.error(e);
+      clientLogger.error("Failed to save template", {
+        error: e instanceof Error ? e.message : String(e),
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -810,7 +820,10 @@ export function Composer() {
       const data = await res.json();
       setInspirationTopics(data.topics || []);
     } catch (e) {
-      console.error(e);
+      clientLogger.error("Failed to load inspiration topics", {
+        niche: inspirationNiche,
+        error: e instanceof Error ? e.message : String(e),
+      });
       toast.error("Failed to load inspiration topics");
     } finally {
       setIsLoadingInspiration(false);
@@ -887,7 +900,12 @@ export function Composer() {
             window.history.replaceState(null, "", "/dashboard/compose");
           }
         })
-        .catch(console.error);
+        .catch((e) => {
+          clientLogger.error("Failed to restore AI history", {
+            restoreId,
+            error: e instanceof Error ? e.message : String(e),
+          });
+        });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restoreId]);
@@ -1435,7 +1453,9 @@ export function Composer() {
         duration: 5000,
       });
     } catch (error) {
-      console.error(error);
+      clientLogger.error("AI request failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error(error instanceof Error ? error.message : "AI request failed");
     } finally {
       setIsGenerating(false);
@@ -1520,7 +1540,9 @@ export function Composer() {
         );
         successCount++;
       } catch (error) {
-        console.error(error);
+        clientLogger.error("File upload failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
         // Remove failed placeholder
         setTweets((prev) =>
           prev.map((t) =>
@@ -1635,7 +1657,10 @@ export function Composer() {
       setEditingDraftId(null);
       localStorage.removeItem("astra-post-drafts"); // Clear auto-save
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Post submission failed", {
+        action,
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);

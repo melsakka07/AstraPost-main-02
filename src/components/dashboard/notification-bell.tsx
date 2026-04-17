@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { clientLogger } from "@/lib/client-logger";
 import { cn } from "@/lib/utils";
 
 type Notification = {
@@ -73,7 +74,9 @@ export function NotificationBell() {
         // AbortError is expected on timeout or unmount cleanup.
         if ((error as Error)?.name === "AbortError") return;
         if (!inFlightRef.current) return; // Unmounted
-        console.error("Failed to fetch notifications", error);
+        clientLogger.error("Failed to fetch notifications", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       } finally {
         clearTimeout(timeoutId);
         inFlightRef.current = false;
@@ -107,7 +110,10 @@ export function NotificationBell() {
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error("Failed to mark as read", error);
+      clientLogger.error("Failed to mark notification as read", {
+        notificationId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -126,7 +132,9 @@ export function NotificationBell() {
       setUnreadCount(0);
       toast.success("All notifications marked as read");
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Failed to mark all notifications as read", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to mark all as read");
     }
   };

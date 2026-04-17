@@ -44,7 +44,7 @@ export async function POST(req: Request) {
 
   try {
     const ctx = await getTeamContext();
-    if (!ctx) return new Response("Unauthorized", { status: 401 });
+    if (!ctx) return ApiError.unauthorized();
 
     const dbUser = await db.query.user.findFirst({
       where: eq(user.id, ctx.currentTeamId),

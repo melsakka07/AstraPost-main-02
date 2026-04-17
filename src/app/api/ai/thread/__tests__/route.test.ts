@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { aiPreamble } from "@/lib/api/ai-preamble";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { POST } from "../route";
@@ -268,7 +269,7 @@ describe("AI Thread API — Tier Validation", () => {
 
   describe("unauthorized access", () => {
     it("should return 401 if not authenticated", async () => {
-      (aiPreamble as any).mockResolvedValue(new Response("Unauthorized", { status: 401 }));
+      (aiPreamble as any).mockResolvedValue(ApiError.unauthorized());
 
       const req = new NextRequest("http://localhost/api/ai/thread", {
         method: "POST",

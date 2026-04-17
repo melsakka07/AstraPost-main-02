@@ -34,7 +34,7 @@ type MediaCategory = "tweet_image" | "tweet_gif" | "tweet_video" | "amplify_vide
 type RefreshableAccount = {
   id: string;
   userId: string;
-  accessToken: string;
+  accessTokenEnc: string;
   refreshTokenEnc: string | null;
   tokenExpiresAt: Date | null;
 };
@@ -143,7 +143,7 @@ export class XApiService {
         throw new Error(`X account ${account.id} not found after waiting for refresh lock.`);
       }
 
-      return new XApiService(decryptToken(freshAccount.accessToken));
+      return new XApiService(decryptToken(freshAccount.accessTokenEnc));
     }
 
     // We hold the lock (or Redis is unavailable). Perform the refresh and
@@ -175,7 +175,7 @@ export class XApiService {
         await tx
           .update(xAccounts)
           .set({
-            accessToken: encryptToken(accessToken),
+            accessTokenEnc: encryptToken(accessToken),
             refreshTokenEnc: refreshToken ? encryptToken(refreshToken) : account.refreshTokenEnc,
             tokenExpiresAt: newExpiresAt,
           })
@@ -218,7 +218,7 @@ export class XApiService {
       return XApiService.refreshWithLock(account, userId);
     }
 
-    return new XApiService(decryptToken(account.accessToken));
+    return new XApiService(decryptToken(account.accessTokenEnc));
   }
 
   static async getClientForAccountId(accountId: string): Promise<XApiService | null> {
@@ -236,7 +236,7 @@ export class XApiService {
       return XApiService.refreshWithLock(account, account.userId);
     }
 
-    return new XApiService(decryptToken(account.accessToken));
+    return new XApiService(decryptToken(account.accessTokenEnc));
   }
 
   async postTweet(text: string, mediaIds?: string[]) {
@@ -467,7 +467,7 @@ export class XApiService {
     if (shouldRefresh) {
       client = await XApiService.refreshWithLock(account, account.userId);
     } else {
-      client = new XApiService(decryptToken(account.accessToken));
+      client = new XApiService(decryptToken(account.accessTokenEnc));
     }
 
     const tier = await client.getSubscriptionTier();

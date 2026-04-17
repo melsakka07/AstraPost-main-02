@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { clientLogger } from "@/lib/client-logger";
 
 interface ImpersonationSession {
   id: string;
@@ -58,7 +59,10 @@ export function ImpersonationTable({
       setSessions(sessions.filter((s) => s.id !== sessionId));
       toast.success("Impersonation session revoked");
     } catch (err) {
-      console.error(err);
+      clientLogger.error("Failed to revoke impersonation session", {
+        sessionId,
+        error: err instanceof Error ? err.message : String(err),
+      });
       toast.error("Failed to revoke session");
     } finally {
       setRevoking(null);

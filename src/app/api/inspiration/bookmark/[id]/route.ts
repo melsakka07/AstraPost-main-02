@@ -5,6 +5,7 @@
 
 import { NextRequest } from "next/server";
 import { and, eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -26,7 +27,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     });
 
     if (!session) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const userId = session.user.id;
@@ -38,7 +39,7 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     });
 
     if (!existing) {
-      return Response.json({ error: "Bookmark not found" }, { status: 404 });
+      return ApiError.notFound("Bookmark not found");
     }
 
     // 3. Delete bookmark
@@ -52,13 +53,6 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
     });
   } catch (error) {
     logger.error("Bookmark deletion error", { error });
-
-    return Response.json(
-      {
-        error: "Failed to delete bookmark",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to delete bookmark");
   }
 }

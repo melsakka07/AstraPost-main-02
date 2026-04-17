@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { clientLogger } from "@/lib/client-logger";
 
 export function ReferralCookieProcessor() {
   useEffect(() => {
@@ -21,7 +22,11 @@ export function ReferralCookieProcessor() {
           document.cookie = "astrapost_ref=;path=/;max-age=0;SameSite=Lax";
         }
       })
-      .catch((err) => console.error("Failed to process referral cookie:", err));
+      .catch((err) => {
+        clientLogger.error("Failed to process referral cookie", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      });
   }, []);
 
   return null;

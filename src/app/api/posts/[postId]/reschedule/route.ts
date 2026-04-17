@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -8,7 +9,8 @@ import { getTeamContext } from "@/lib/team-context";
 
 export async function POST(req: Request, { params }: { params: Promise<{ postId: string }> }) {
   const ctx = await getTeamContext();
-  if (!ctx) return new Response("Unauthorized", { status: 401 });
+  if (!ctx) return ApiError.unauthorized();
+  if (ctx.role === "viewer") return ApiError.forbidden("Viewers cannot reschedule posts");
 
   const correlationId = getCorrelationId(req);
   logger.info("api_request", {
@@ -22,7 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ postId:
   const body = await req.json().catch(() => null);
   const scheduledAt = body?.scheduledAt ? new Date(body.scheduledAt) : null;
   if (!scheduledAt || Number.isNaN(scheduledAt.getTime())) {
-    return Response.json({ error: "Invalid scheduledAt" }, { status: 400 });
+    return ApiError.badRequest("Invalid scheduledAt");
   }
 
   const post = await db.query.posts.findFirst({
@@ -32,16 +34,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ postId:
     },
   });
 
-  if (!post) return new Response("Not found", { status: 404 });
+  if (!post) return ApiError.notFound();
 
   // Verify ownership via team context — supports both personal and team workspaces
   const accountOwnerId = post.xAccount?.userId ?? post.userId;
   if (accountOwnerId !== ctx.currentTeamId) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+    return ApiError.forbidden("Forbidden");
   }
 
   if (post.status !== "scheduled") {
-    return Response.json({ error: "Only scheduled posts can be rescheduled." }, { status: 400 });
+    return ApiError.badRequest("Only scheduled posts can be rescheduled.");
   }
 
   await db

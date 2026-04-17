@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { clientLogger } from "@/lib/client-logger";
 
 export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLabel?: string }) {
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,10 @@ export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLa
       toast.success("Post cancelled");
       router.refresh();
     } catch (error) {
-      console.error(error);
+      clientLogger.error("Failed to cancel post", {
+        postId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Something went wrong");
     } finally {
       setLoading(false);

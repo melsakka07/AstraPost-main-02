@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
+import { clientLogger } from "@/lib/client-logger";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { cn } from "@/lib/utils";
 
@@ -314,7 +315,9 @@ function SidebarContent({
           setImageQuota({ used: data.used, limit: data.limit, remaining: data.remainingImages });
         }
       } catch (e) {
-        console.error("Failed to fetch image quota:", e);
+        clientLogger.error("Failed to fetch image quota", {
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
     fetchImageQuota();

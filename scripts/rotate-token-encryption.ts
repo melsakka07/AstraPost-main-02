@@ -6,7 +6,7 @@ import { decryptToken, encryptToken, isPrimaryKeyToken } from "@/lib/security/to
 
 async function main() {
   const accounts = await db.query.xAccounts.findMany({
-    where: sql<boolean>`${xAccounts.refreshTokenEnc} IS NOT NULL OR ${xAccounts.accessToken} IS NOT NULL`,
+    where: sql<boolean>`${xAccounts.refreshTokenEnc} IS NOT NULL OR ${xAccounts.accessTokenEnc} IS NOT NULL`,
   });
 
   let rotatedRefresh = 0;
@@ -20,11 +20,11 @@ async function main() {
       rotatedRefresh++;
     }
 
-    const access = a.accessToken;
+    const access = a.accessTokenEnc;
     if (access && access.startsWith("v1:") && !isPrimaryKeyToken(access)) {
       const plain = decryptToken(access);
       const next = encryptToken(plain);
-      await db.update(xAccounts).set({ accessToken: next }).where(eq(xAccounts.id, a.id));
+      await db.update(xAccounts).set({ accessTokenEnc: next }).where(eq(xAccounts.id, a.id));
       rotatedAccess++;
     }
   }

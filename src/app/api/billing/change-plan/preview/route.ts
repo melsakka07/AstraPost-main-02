@@ -4,8 +4,9 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { getPlanLimits, normalizePlan, type PlanType } from "@/lib/plan-limits";
+import { normalizePlan, type PlanType } from "@/lib/plan-limits";
 import { posts, user, xAccounts } from "@/lib/schema";
+import { getPlanMetadata } from "@/lib/services/plan-metadata";
 
 const CHANGE_PLAN_OPTIONS = [
   "free",
@@ -72,8 +73,8 @@ export async function POST(req: Request) {
     return normalizePlan(plan);
   };
 
-  const currentLimits = getPlanLimits(normalizedForLimits(currentPlan));
-  const targetLimits = getPlanLimits(normalizedForLimits(targetPlan));
+  const currentLimits = getPlanMetadata(normalizedForLimits(currentPlan));
+  const targetLimits = getPlanMetadata(normalizedForLimits(targetPlan));
 
   // ── Count current usage ──────────────────────────────────────────────────────
 

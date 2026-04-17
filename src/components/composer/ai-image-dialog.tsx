@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { clientLogger } from "@/lib/client-logger";
 import { cn } from "@/lib/utils";
 
 type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana";
@@ -347,7 +348,10 @@ export function AiImageDialog({
       activePollingIdRef.current = predictionId;
       pollForResult(predictionId);
     } catch (error) {
-      console.error("AI image generation error:", error);
+      clientLogger.error("AI image generation failed", {
+        model,
+        error: error instanceof Error ? error.message : String(error),
+      });
       stopProgressAnimation();
       toast.error("Failed to generate image. Please try again.");
       setIsGenerating(false);

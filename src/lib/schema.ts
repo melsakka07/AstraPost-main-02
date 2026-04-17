@@ -297,7 +297,7 @@ export const xAccounts = pgTable(
     xUsername: text("x_username").notNull(),
     xDisplayName: text("x_display_name"),
     xAvatarUrl: text("x_avatar_url"),
-    accessToken: text("access_token").notNull(),
+    accessTokenEnc: text("access_token_enc").notNull(),
     refreshTokenEnc: text("refresh_token_enc"),
     tokenExpiresAt: timestamp("token_expires_at"),
     followersCount: integer("followers_count").default(0),
@@ -323,7 +323,7 @@ export const linkedinAccounts = pgTable(
     linkedinUserId: text("linkedin_user_id").notNull().unique(),
     linkedinName: text("linkedin_name").notNull(),
     linkedinAvatarUrl: text("linkedin_avatar_url"),
-    accessToken: text("access_token").notNull(),
+    accessTokenEnc: text("access_token_enc").notNull(),
     refreshTokenEnc: text("refresh_token_enc"),
     tokenExpiresAt: timestamp("token_expires_at"),
     isActive: boolean("is_active").default(true),
@@ -345,7 +345,7 @@ export const instagramAccounts = pgTable(
     instagramUserId: text("instagram_user_id").notNull().unique(),
     instagramUsername: text("instagram_username").notNull(),
     instagramAvatarUrl: text("instagram_avatar_url"),
-    accessToken: text("access_token").notNull(),
+    accessTokenEnc: text("access_token_enc").notNull(),
     // Instagram Graph API tokens are long-lived (60 days)
     tokenExpiresAt: timestamp("token_expires_at"),
     isActive: boolean("is_active").default(true),
@@ -406,6 +406,8 @@ export const posts = pgTable(
     // or do a full userId scan filtered by status/date.  With it, the planner
     // satisfies the entire predicate from one B-tree scan ordered by publishedAt.
     index("posts_user_status_published_idx").on(table.userId, table.status, table.publishedAt),
+    index("posts_user_status_idx").on(table.userId, table.status),
+    index("posts_status_created_idx").on(table.status, table.createdAt),
   ]
 );
 
@@ -538,21 +540,29 @@ export const tweets = pgTable(
   ]
 );
 
-export const media = pgTable("media", {
-  id: text("id").primaryKey(),
-  postId: text("post_id")
-    .notNull()
-    .references(() => posts.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  tweetId: text("tweet_id").references(() => tweets.id, { onDelete: "cascade" }),
-  fileUrl: text("file_url").notNull(),
-  fileType: text("file_type"), // 'image', 'video', 'gif'
-  fileSize: integer("file_size"),
-  xMediaId: text("x_media_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const media = pgTable(
+  "media",
+  {
+    id: text("id").primaryKey(),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tweetId: text("tweet_id").references(() => tweets.id, { onDelete: "cascade" }),
+    fileUrl: text("file_url").notNull(),
+    fileType: text("file_type"), // 'image', 'video', 'gif'
+    fileSize: integer("file_size"),
+    xMediaId: text("x_media_id"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("media_post_id_idx").on(table.postId),
+    index("media_user_id_idx").on(table.userId),
+    index("media_tweet_id_idx").on(table.tweetId),
+  ]
+);
 
 export const tweetAnalytics = pgTable(
   "tweet_analytics",
@@ -829,6 +839,7 @@ export const notifications = pgTable(
   (table) => [
     index("notifications_user_id_idx").on(table.userId),
     index("notifications_is_read_idx").on(table.isRead),
+    index("notifications_user_unread_idx").on(table.userId, table.isRead, table.createdAt),
   ]
 );
 
@@ -1298,7 +1309,7 @@ export const agenticPosts = pgTable(
     qualityScore: integer("quality_score"),
     summary: text("summary"),
     status: varchar("status", { length: 30 }).default("generating").notNull(),
-    postId: text("post_id").references(() => posts.id),
+    postId: text("post_id").references(() => posts.id, { onDelete: "cascade" }),
     correlationId: varchar("correlation_id", { length: 36 }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Sparkles, Lock, Loader2, AlertCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { clientLogger } from "@/lib/client-logger";
 import { cn } from "@/lib/utils";
 
 interface ViralScoreBadgeProps {
@@ -80,7 +81,9 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
         errorMessage: null,
       });
     } catch (e) {
-      console.error(e);
+      clientLogger.error("Failed to fetch viral score", {
+        error: e instanceof Error ? e.message : String(e),
+      });
       setData((prev) => ({ ...prev, state: "error", errorMessage: "Network error." }));
     }
   }, []);

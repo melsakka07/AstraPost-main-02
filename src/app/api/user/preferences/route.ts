@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -26,7 +27,7 @@ const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export async function PATCH(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return ApiError.unauthorized();
   }
 
   try {
@@ -48,9 +49,9 @@ export async function PATCH(req: Request) {
     return Response.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return new Response("Invalid request data", { status: 400 });
+      return ApiError.badRequest("Invalid request data");
     }
     logger.error("Failed to save preferences", { error });
-    return new Response("Internal Error", { status: 500 });
+    return ApiError.internal("Internal Error");
   }
 }

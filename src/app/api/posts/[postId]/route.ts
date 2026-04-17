@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -24,13 +25,13 @@ async function checkPostOwnership(
 
   if (accountOwnerId) {
     if (accountOwnerId !== ctx.currentTeamId) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+      return ApiError.forbidden("Forbidden");
     }
   } else {
     // Orphan post (draft without account) — require creator or team owner
     const session = await auth.api.getSession({ headers: await headers() });
     if (post.userId !== session?.user.id && ctx.currentTeamId !== session?.user.id) {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
+      return ApiError.forbidden("Forbidden");
     }
   }
 
@@ -41,7 +42,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pos
   const ctx = await getTeamContext();
 
   if (!ctx) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return ApiError.unauthorized();
   }
 
   const { postId } = await params;
@@ -65,7 +66,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pos
     },
   });
 
-  if (!post) return Response.json({ error: "Post not found" }, { status: 404 });
+  if (!post) return ApiError.notFound("Post not found");
   const ownershipError = await checkPostOwnership(post, ctx);
   if (ownershipError) return ownershipError;
 
@@ -76,12 +77,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
   const ctx = await getTeamContext();
 
   if (!ctx) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return ApiError.unauthorized();
   }
 
   // Viewers cannot edit posts
   if (ctx.role === "viewer") {
-    return Response.json({ error: "Viewers cannot edit posts" }, { status: 403 });
+    return ApiError.forbidden("Viewers cannot edit posts");
   }
 
   const { postId } = await params;
@@ -96,7 +97,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     },
   });
 
-  if (!existingPost) return Response.json({ error: "Post not found" }, { status: 404 });
+  if (!existingPost) return ApiError.notFound("Post not found");
   const ownershipError = await checkPostOwnership(existingPost, ctx);
   if (ownershipError) return ownershipError;
 
@@ -111,7 +112,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     if (body.action === "approve") {
       // Role check
       if (!ctx.isOwner && ctx.role !== "admin") {
-        return Response.json({ error: "Only admins can approve posts" }, { status: 403 });
+        return ApiError.forbidden("Only admins can approve posts");
       }
       newStatus = "scheduled";
       const session = await auth.api.getSession({ headers: await headers() });
@@ -121,15 +122,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     } else if (body.action === "reject") {
       // Role check
       if (!ctx.isOwner && ctx.role !== "admin") {
-        return Response.json({ error: "Only admins can reject posts" }, { status: 403 });
+        return ApiError.forbidden("Only admins can reject posts");
       }
       newStatus = "draft";
       reviewerNotes = body.reviewerNotes || "Rejected without reason";
     } else if (body.action === "schedule") {
       newStatus = "scheduled";
       if (body.scheduledAt) newScheduledAt = new Date(body.scheduledAt);
-      else if (!newScheduledAt)
-        return Response.json({ error: "Scheduled date required" }, { status: 400 });
+      else if (!newScheduledAt) return ApiError.badRequest("Scheduled date required");
     } else if (body.action === "publish_now") {
       newStatus = "scheduled";
       newScheduledAt = new Date();
@@ -252,12 +252,12 @@ export async function DELETE(
   const ctx = await getTeamContext();
 
   if (!ctx) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return ApiError.unauthorized();
   }
 
   // Viewers cannot delete posts
   if (ctx.role === "viewer") {
-    return Response.json({ error: "Viewers cannot delete posts" }, { status: 403 });
+    return ApiError.forbidden("Viewers cannot delete posts");
   }
 
   const { postId } = await params;
@@ -271,7 +271,7 @@ export async function DELETE(
     },
   });
 
-  if (!existingPost) return Response.json({ error: "Post not found" }, { status: 404 });
+  if (!existingPost) return ApiError.notFound("Post not found");
   const ownershipError = await checkPostOwnership(existingPost, ctx);
   if (ownershipError) return ownershipError;
 

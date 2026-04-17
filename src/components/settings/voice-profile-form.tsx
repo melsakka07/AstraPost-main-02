@@ -17,6 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { clientLogger } from "@/lib/client-logger";
 
 interface VoiceProfile {
   tone: string;
@@ -51,7 +52,9 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
       const data = await res.json();
       setProfile(data.voiceProfile);
     } catch (e) {
-      console.error(e);
+      clientLogger.error("Failed to fetch voice profile", {
+        error: e instanceof Error ? e.message : String(e),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -88,7 +91,10 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
       setProfile(data);
       toast.success("Voice Profile created successfully!");
     } catch (e) {
-      console.error(e);
+      clientLogger.error("Failed to analyze voice profile samples", {
+        sampleCount: samples.length,
+        error: e instanceof Error ? e.message : String(e),
+      });
       toast.error("Failed to analyze samples. Please try again.");
     } finally {
       setIsAnalyzing(false);

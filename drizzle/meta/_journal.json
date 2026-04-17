@@ -372,6 +372,13 @@
       "when": 1744761600000,
       "tag": "0052_add_db_enums",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1776360007940,
+      "tag": "0053_add_indexes_and_cascade",
+      "breakpoints": true
     }
   ]
 }

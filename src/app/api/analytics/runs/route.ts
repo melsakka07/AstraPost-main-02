@@ -13,7 +13,7 @@ const schema = z.object({
 
 export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return ApiError.unauthorized();
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),

@@ -4,9 +4,10 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { normalizePlan } from "@/lib/plan-limits";
 import { teamInvitations, teamMembers, user } from "@/lib/schema";
 import { sendTeamInvitationEmail } from "@/lib/services/email";
+import { getPlanMetadata } from "@/lib/services/plan-metadata";
 import { getTeamContext } from "@/lib/team-context";
 
 const inviteSchema = z.object({
@@ -17,7 +18,7 @@ const inviteSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const ctx = await getTeamContext();
-    if (!ctx) return new Response("Unauthorized", { status: 401 });
+    if (!ctx) return ApiError.unauthorized();
 
     if (!ctx.isOwner && ctx.role !== "admin") {
       return ApiError.forbidden("Only owners and admins can invite members");
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     });
 
     const plan = normalizePlan(owner?.plan);
-    const limits = getPlanLimits(plan);
+    const limits = getPlanMetadata(plan);
 
     if (limits.maxTeamMembers === null) {
       return ApiError.forbidden("Team members are only available on the Agency plan.");
@@ -95,10 +96,10 @@ export async function POST(req: NextRequest) {
     return Response.json({ success: true, message: "Invitation sent" });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
-      return Response.json({ error: "Invalid input", details: error.issues }, { status: 400 });
+      return ApiError.badRequest(error.issues);
     }
 
     logger.error("Invite Error", { error });
-    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+    return ApiError.internal("Internal Server Error");
   }
 }

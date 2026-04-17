@@ -56,6 +56,7 @@ const serverEnvSchema = z.object({
 
   // App
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  TWITTER_DRY_RUN: z.string().optional(),
 });
 
 /**
@@ -122,12 +123,22 @@ export function checkEnv(): void {
     warnings.push("Twitter OAuth is not configured. Twitter login will be disabled.");
   }
 
-  if (!process.env.OPENROUTER_API_KEY) {
+  if (process.env.NODE_ENV === "production" && !process.env.OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is required in production");
+  } else if (!process.env.OPENROUTER_API_KEY) {
     warnings.push("OPENROUTER_API_KEY is not set. AI chat will not work.");
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN && process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && !process.env.BLOB_READ_WRITE_TOKEN) {
+    console.warn(
+      "CRITICAL: BLOB_READ_WRITE_TOKEN is not set in production! Falling back to local storage which will fail in serverless environments."
+    );
+  } else if (!process.env.BLOB_READ_WRITE_TOKEN) {
     warnings.push("BLOB_READ_WRITE_TOKEN is not set. Using local storage for file uploads.");
+  }
+
+  if (!process.env.REPLICATE_API_TOKEN) {
+    warnings.push("REPLICATE_API_TOKEN is not set. AI image generation will not work.");
   }
 
   if (!process.env.RESEND_API_KEY) {
@@ -150,8 +161,8 @@ export function checkEnv(): void {
     );
   }
 
-  // Log warnings in development
-  if (process.env.NODE_ENV === "development" && warnings.length > 0) {
+  // Log warnings
+  if (warnings.length > 0) {
     console.warn("\n⚠️  Environment warnings:");
     warnings.forEach((w) => console.warn(`   - ${w}`));
     console.warn("");

@@ -4,6 +4,7 @@ import { XApiService } from "./x-api";
 // Mock TwitterApi
 const mockTweet = vi.fn();
 const mockUploadMedia = vi.fn();
+const mockRefreshOAuth2Token = vi.fn();
 
 vi.mock("twitter-api-v2", () => {
   return {
@@ -15,6 +16,7 @@ vi.mock("twitter-api-v2", () => {
         v1: {
           uploadMedia: mockUploadMedia,
         },
+        refreshOAuth2Token: mockRefreshOAuth2Token,
       };
     }),
   };
@@ -28,6 +30,32 @@ vi.mock("@/lib/db", () => ({
         findFirst: vi.fn(),
       },
     },
+    update: vi.fn(() => ({
+      set: vi.fn(() => ({
+        where: vi.fn().mockResolvedValue(undefined),
+      })),
+    })),
+    transaction: vi.fn(async (cb) => {
+      await cb({
+        update: vi.fn(() => ({
+          set: vi.fn(() => ({
+            where: vi.fn().mockResolvedValue(undefined),
+          })),
+        })),
+      });
+    }),
+  },
+}));
+
+vi.mock("@/lib/security/token-encryption", () => ({
+  encryptToken: vi.fn((token) => `encrypted_${token}`),
+  decryptToken: vi.fn((token) => token.replace("encrypted_", "")),
+}));
+
+vi.mock("@/lib/rate-limiter", () => ({
+  redis: {
+    set: vi.fn().mockResolvedValue("OK"),
+    del: vi.fn().mockResolvedValue(1),
   },
 }));
 
@@ -103,6 +131,78 @@ describe("XApiService", () => {
     expect(fetchMock.mock.calls[0]![0]).toContain("media/upload/initialize");
     expect(fetchMock.mock.calls[1]![0]).toContain(`media/upload/${mediaId}/append`);
     expect(fetchMock.mock.calls[2]![0]).toContain(`media/upload/${mediaId}/finalize`);
+  });
+});
+
+describe("XApiService token refresh", async () => {
+  const { db } = await import("@/lib/db");
+  const { redis } = await import("@/lib/rate-limiter");
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should refresh token with lock when shouldRefresh is true", async () => {
+    const expiredAccount = {
+      id: "acc_1",
+      userId: "user_1",
+      accessTokenEnc: "encrypted_old_access",
+      refreshTokenEnc: "encrypted_old_refresh",
+      tokenExpiresAt: new Date(Date.now() - 1000), // Expired
+    };
+
+    (db.query.xAccounts.findFirst as any).mockResolvedValue(expiredAccount);
+    (redis.set as any).mockResolvedValue("OK");
+    mockRefreshOAuth2Token.mockResolvedValue({
+      accessToken: "new_access",
+      refreshToken: "new_refresh",
+      expiresIn: 7200,
+    });
+
+    const client = await XApiService.getClientForUser("user_1");
+
+    expect(client).toBeDefined();
+    expect(redis.set).toHaveBeenCalledWith(`x:token_refresh_lock:acc_1`, "1", "EX", 30, "NX");
+    expect(mockRefreshOAuth2Token).toHaveBeenCalledWith("old_refresh");
+    expect(db.transaction).toHaveBeenCalled();
+    expect(redis.del).toHaveBeenCalledWith(`x:token_refresh_lock:acc_1`);
+  });
+
+  it("should wait for lock and re-read DB if lock is held", async () => {
+    const expiredAccount = {
+      id: "acc_1",
+      userId: "user_1",
+      accessTokenEnc: "encrypted_old_access",
+      refreshTokenEnc: "encrypted_old_refresh",
+      tokenExpiresAt: new Date(Date.now() - 1000),
+    };
+
+    const refreshedAccount = {
+      ...expiredAccount,
+      accessTokenEnc: "encrypted_new_access",
+      tokenExpiresAt: new Date(Date.now() + 7200 * 1000),
+    };
+
+    // First call gets expired account
+    (db.query.xAccounts.findFirst as any)
+      .mockResolvedValueOnce(expiredAccount)
+      // Second call (after wait) gets refreshed account
+      .mockResolvedValueOnce(refreshedAccount);
+
+    // Simulate lock already held
+    (redis.set as any).mockResolvedValue(null);
+
+    const startTime = Date.now();
+    const client = await XApiService.getClientForUser("user_1");
+    const duration = Date.now() - startTime;
+
+    expect(client).toBeDefined();
+    // Verify it waited ~1.5s
+    expect(duration).toBeGreaterThanOrEqual(1400);
+    // Verify it didn't try to refresh itself
+    expect(mockRefreshOAuth2Token).not.toHaveBeenCalled();
+    // Verify it didn't try to delete the lock it didn't own
+    expect(redis.del).not.toHaveBeenCalled();
   });
 });
 

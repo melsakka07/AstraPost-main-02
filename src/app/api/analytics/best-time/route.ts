@@ -13,7 +13,7 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 export async function GET(_req: Request) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return new Response("Unauthorized", { status: 401 });
+    if (!session) return ApiError.unauthorized();
 
     const access = await checkBestTimesAccessDetailed(session.user.id);
     if (!access.allowed) return createPlanLimitResponse(access);

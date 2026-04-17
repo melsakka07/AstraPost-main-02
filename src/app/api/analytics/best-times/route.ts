@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
-      return new Response("Unauthorized", { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const access = await checkBestTimesAccessDetailed(session.user.id);

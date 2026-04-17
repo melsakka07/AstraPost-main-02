@@ -7,6 +7,7 @@
 
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return ApiError.unauthorized();
     }
 
     // 2. Parse and validate request
@@ -42,17 +43,14 @@ export async function POST(req: NextRequest) {
     const validationResult = TweetLookupRequestSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return Response.json(
-        { error: "Invalid request", details: validationResult.error.issues },
-        { status: 400 }
-      );
+      return ApiError.badRequest(validationResult.error.issues);
     }
 
     const { tweetUrl } = validationResult.data;
 
     // 3. Validate URL format
     if (!isValidTweetUrl(tweetUrl)) {
-      return Response.json({ error: "Invalid X/Twitter URL format" }, { status: 400 });
+      return ApiError.badRequest("Invalid X/Twitter URL format");
     }
 
     // 4. Get user and plan info
@@ -62,7 +60,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!userRecord) {
-      return Response.json({ error: "User not found" }, { status: 404 });
+      return ApiError.notFound("User not found");
     }
 
     const plan = normalizePlan(userRecord.plan);
@@ -77,16 +75,10 @@ export async function POST(req: NextRequest) {
     // 7. Check for errors
     if ("error" in result) {
       // Map error codes to HTTP status codes
-      const statusMap: Record<string, number> = {
-        TWEET_NOT_FOUND: 404,
-        PRIVATE_ACCOUNT: 403,
-        SUSPENDED_ACCOUNT: 410,
-        RATE_LIMITED: 429,
-        UNKNOWN: 500,
-      };
-
-      const status = statusMap[result.code] || 500;
-      return Response.json({ error: result.error, code: result.code }, { status });
+      if (result.code === "TWEET_NOT_FOUND") return ApiError.notFound(result.error);
+      if (result.code === "PRIVATE_ACCOUNT") return ApiError.forbidden(result.error);
+      if (result.code === "RATE_LIMITED") return ApiError.tooManyRequests(result.error);
+      return ApiError.internal(result.error);
     }
 
     // 8. Return successful result
@@ -96,13 +88,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     logger.error("Tweet lookup error", { error });
-
-    return Response.json(
-      {
-        error: "Failed to lookup tweet",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to lookup tweet");
   }
 }

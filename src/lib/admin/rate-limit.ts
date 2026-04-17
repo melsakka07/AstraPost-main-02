@@ -40,6 +40,7 @@ export async function checkAdminRateLimit(tier: AdminRateLimitTier): Promise<Res
 
   if (result.limited) {
     const retryAfter = result.retryAfter ?? config.windowSec;
+    // eslint-disable-next-line no-restricted-syntax
     return new Response(JSON.stringify({ error: "Too many requests" }), {
       status: 429,
       headers: {

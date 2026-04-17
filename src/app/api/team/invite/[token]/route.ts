@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { teamInvitations, teamMembers } from "@/lib/schema";
@@ -11,7 +12,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   });
 
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return ApiError.unauthorized();
   }
 
   const { token } = await params;
@@ -22,18 +23,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   });
 
   if (!invitation) {
-    return new Response("Invalid or expired invitation", { status: 404 });
+    return ApiError.notFound("Invitation");
   }
 
   if (new Date() > invitation.expiresAt) {
-    return new Response("Invitation expired", { status: 400 });
+    return ApiError.badRequest("Invitation expired");
   }
 
   // 2. Check if user email matches (optional security check, usually good practice)
   if (session.user.email !== invitation.email) {
-    return new Response("This invitation was sent to a different email address", {
-      status: 403,
-    });
+    return ApiError.forbidden("This invitation was sent to a different email address");
   }
 
   // 3. Create membership

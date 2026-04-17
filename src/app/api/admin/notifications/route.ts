@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
   const { limit, offset, status } = parsed.data;
 
   // Build WHERE conditions
-  const conditions: any[] = [
+  const conditions: (SQL | undefined)[] = [
     sql`(${notifications.metadata}->>'deletedAt' IS NULL OR ${notifications.metadata}->>'deletedAt' = 'null')`,
   ];
 

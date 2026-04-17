@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { getLinkPreview } from "link-preview-js";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
   // ── 1. Authentication ─────────────────────────────────────────────────────
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return ApiError.unauthorized();
   }
 
   // ── 2. Input parsing ──────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+    return ApiError.badRequest("Invalid JSON");
   }
 
   const url =
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
       : undefined;
 
   if (!url || typeof url !== "string") {
-    return Response.json({ error: "URL required" }, { status: 400 });
+    return ApiError.badRequest("URL required");
   }
 
   // ── 3. URL validation & SSRF blocklist ────────────────────────────────────
@@ -42,17 +43,17 @@ export async function POST(req: Request) {
   try {
     parsed = new URL(url);
   } catch {
-    return Response.json({ error: "Invalid URL" }, { status: 400 });
+    return ApiError.badRequest("Invalid URL");
   }
 
   // Only allow plain HTTP(S) — reject file://, ftp://, data://, etc.
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    return Response.json({ error: "URL scheme not allowed" }, { status: 400 });
+    return ApiError.badRequest("URL scheme not allowed");
   }
 
   // Block internal/private hosts
   if (BLOCKED_HOSTS.test(parsed.hostname)) {
-    return Response.json({ error: "URL not allowed" }, { status: 403 });
+    return ApiError.forbidden("URL not allowed");
   }
 
   // ── 4. Fetch preview ──────────────────────────────────────────────────────

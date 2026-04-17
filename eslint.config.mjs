@@ -62,6 +62,16 @@ const config = [
       "prefer-const": "error",
       "no-var": "error",
       eqeqeq: ["error", "always", { null: "ignore" }],
+
+      // Custom project rules
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector:
+            "NewExpression[callee.name='Response'][arguments.0.type='CallExpression'][arguments.0.callee.property.name='stringify']",
+          message: "Use ApiError.*() instead of new Response(JSON.stringify(...))",
+        },
+      ],
     },
   },
 ];

@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { xAccounts } from "@/lib/schema";
@@ -7,7 +8,7 @@ import { XApiService } from "@/lib/services/x-api";
 
 export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) return new Response("Unauthorized", { status: 401 });
+  if (!session) return ApiError.unauthorized();
 
   const { searchParams } = new URL(req.url);
   const accountId = searchParams.get("accountId");
@@ -23,7 +24,7 @@ export async function GET(req: Request) {
       });
 
       if (!account) {
-        return Response.json({ ok: false, error: "Account not found" }, { status: 404 });
+        return ApiError.notFound("Account not found");
       }
 
       client = await XApiService.getClientForAccountId(accountId);
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
     }
 
     if (!client) {
-      return Response.json({ ok: false, error: "No connected X account" }, { status: 400 });
+      return ApiError.badRequest("No connected X account");
     }
 
     const me = await client.getUser();

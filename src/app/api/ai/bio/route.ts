@@ -104,11 +104,29 @@ For each variant provide:
 - goal: a short label for this variant's strategy (e.g., "Authority-focused", "Client-attraction", "Personality-driven")
 - rationale: why this version works (under 300 chars)`;
 
-    const { object, usage } = await generateObject({
-      model,
-      schema: bioSchema,
-      prompt,
-    });
+    let object, usage;
+    try {
+      const gen = await generateObject({
+        model,
+        schema: bioSchema,
+        prompt,
+      });
+      object = gen.object;
+      usage = gen.usage;
+    } catch (err: any) {
+      if (err?.statusCode === 429 && preamble.fallbackModel) {
+        logger.warn("ai_primary_model_rate_limited", { fallback: true, userId: session.user.id });
+        const gen = await generateObject({
+          model: preamble.fallbackModel,
+          schema: bioSchema,
+          prompt,
+        });
+        object = gen.object;
+        usage = gen.usage;
+      } else {
+        throw err;
+      }
+    }
 
     await recordAiUsage(
       session.user.id,

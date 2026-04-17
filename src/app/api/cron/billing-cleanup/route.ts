@@ -1,4 +1,5 @@
 import { eq, and, ne, lt } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { processedWebhookEvents, user, planChangeLog } from "@/lib/schema";
@@ -10,7 +11,7 @@ const CRON_SECRET = process.env.CRON_SECRET;
 export async function POST(req: Request) {
   const authHeader = req.headers.get("authorization");
   if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
-    return new Response("Unauthorized", { status: 401 });
+    return ApiError.unauthorized();
   }
 
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
     webhookEventsDeleted = deleted.length;
   } catch (error) {
     logger.error("[cron] billing cleanup failed", { error });
-    return Response.json({ error: "Cleanup failed" }, { status: 500 });
+    return ApiError.internal("Cleanup failed");
   }
 
   // Clean up plan_change_log entries older than 1 year

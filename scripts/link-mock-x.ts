@@ -23,7 +23,7 @@ async function linkMockAccount() {
     xUserId: "mock_x_id_" + nanoid(),
     xUsername: "test_user_3_x",
     xDisplayName: "Test User 3 X",
-    accessToken: "mock_token",
+    accessTokenEnc: "mock_token",
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),

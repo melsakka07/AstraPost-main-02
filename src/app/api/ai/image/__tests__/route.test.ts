@@ -1,5 +1,10 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.hoisted(() => {
+  process.env.REPLICATE_MODEL_FAST = "nano-banana-2";
+  process.env.REPLICATE_MODEL_PRO = "banana-pro";
+  process.env.REPLICATE_MODEL_FALLBACK = "gemini-imagen-4";
+});
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { checkRateLimit, redis } from "@/lib/rate-limiter";
@@ -52,6 +57,16 @@ vi.mock("@/lib/services/ai-image", () => ({
   validateModelForPlan: vi.fn(),
 }));
 
+vi.mock("@/lib/middleware/require-plan", () => ({
+  checkAiImageQuotaDetailed: vi.fn().mockResolvedValue({ allowed: true }),
+  checkImageModelAccessDetailed: vi.fn().mockResolvedValue({ allowed: true }),
+  createPlanLimitResponse: vi.fn(
+    // eslint-disable-next-line no-restricted-syntax
+    () => new Response(JSON.stringify({ error: "Plan limit" }), { status: 402 })
+  ),
+  getUserPlanType: vi.fn().mockResolvedValue("pro_monthly"),
+}));
+
 vi.mock("ai", () => ({
   generateText: vi.fn().mockResolvedValue({ text: "generated prompt" }),
 }));
@@ -69,7 +84,7 @@ describe("AI Image API (POST)", () => {
     (db.query.user.findFirst as any).mockResolvedValue({ plan: "pro_monthly" });
     (validateModelForPlan as any).mockReturnValue({ valid: true });
     (checkRateLimit as any).mockResolvedValue({ success: true });
-    // @ts-ignore
+    // @ts-expect-error
     (db.where as any).mockReturnValue([{ count: 0 }]); // Quota check
     (startImageGeneration as any).mockResolvedValue({
       predictionId: "pred-abc123",
@@ -115,7 +130,7 @@ describe("AI Image API (POST)", () => {
 
     const req = new NextRequest("http://localhost/api/ai/image", {
       method: "POST",
-      body: JSON.stringify({ prompt: "test" }),
+      body: JSON.stringify({ prompt: "test", model: "nano-banana-2", aspectRatio: "1:1" }),
     });
 
     const res = await POST(req);
@@ -123,12 +138,15 @@ describe("AI Image API (POST)", () => {
   });
 
   it("should return 402 if monthly image quota exceeded", async () => {
-    // @ts-ignore
-    (db.where as any).mockReturnValue([{ count: 100 }]); // Over limit
+    const { checkAiImageQuotaDetailed } = await import("@/lib/middleware/require-plan");
+    (checkAiImageQuotaDetailed as any).mockResolvedValueOnce({
+      allowed: false,
+      reason: "Quota exceeded",
+    });
 
     const req = new NextRequest("http://localhost/api/ai/image", {
       method: "POST",
-      body: JSON.stringify({ prompt: "test" }),
+      body: JSON.stringify({ prompt: "test", model: "nano-banana-2", aspectRatio: "1:1" }),
     });
 
     const res = await POST(req);
@@ -136,12 +154,15 @@ describe("AI Image API (POST)", () => {
   });
 
   it("should not call startImageGeneration when quota exceeded", async () => {
-    // @ts-ignore
-    (db.where as any).mockReturnValue([{ count: 100 }]);
+    const { checkAiImageQuotaDetailed } = await import("@/lib/middleware/require-plan");
+    (checkAiImageQuotaDetailed as any).mockResolvedValueOnce({
+      allowed: false,
+      reason: "Quota exceeded",
+    });
 
     const req = new NextRequest("http://localhost/api/ai/image", {
       method: "POST",
-      body: JSON.stringify({ prompt: "test" }),
+      body: JSON.stringify({ prompt: "test", model: "nano-banana-2", aspectRatio: "1:1" }),
     });
 
     await POST(req);

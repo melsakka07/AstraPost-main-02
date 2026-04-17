@@ -50,7 +50,7 @@ async function createTestUser() {
         xUsername: "test_twitter_user",
         xDisplayName: "Test Twitter User",
         xAvatarUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=test",
-        accessToken: "mock_token",
+        accessTokenEnc: "mock_token",
         isActive: true,
         followersCount: 1500,
         createdAt: new Date(),

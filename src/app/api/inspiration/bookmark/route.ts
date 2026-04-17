@@ -8,12 +8,14 @@ import { NextRequest } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkBookmarkLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
-import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
+import { normalizePlan } from "@/lib/plan-limits";
 import { inspirationBookmarks, user } from "@/lib/schema";
+import { getPlanMetadata } from "@/lib/services/plan-metadata";
 
 // ============================================================================
 // Schema Validation
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
     // 1. Authentication
     const session = await auth.api.getSession({ headers: req.headers });
     if (!session) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const userId = session.user.id;
@@ -52,10 +54,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validationResult = CreateBookmarkRequestSchema.safeParse(body);
     if (!validationResult.success) {
-      return Response.json(
-        { error: "Invalid request", details: validationResult.error.issues },
-        { status: 400 }
-      );
+      return ApiError.badRequest(validationResult.error.issues);
     }
 
     const data = validationResult.data;
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing) {
-      return Response.json({ error: "Tweet already bookmarked" }, { status: 409 });
+      return ApiError.conflict("Tweet already bookmarked");
     }
 
     // 5. Create bookmark
@@ -93,13 +92,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ success: true, bookmark: bookmark[0] });
   } catch (error) {
     logger.error("Bookmark creation error", { error });
-    return Response.json(
-      {
-        error: "Failed to create bookmark",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to create bookmark");
   }
 }
 
@@ -112,7 +105,7 @@ export async function GET(req: NextRequest) {
     // 1. Authentication
     const session = await auth.api.getSession({ headers: req.headers });
     if (!session) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return ApiError.unauthorized();
     }
 
     const userId = session.user.id;
@@ -125,7 +118,7 @@ export async function GET(req: NextRequest) {
       where: eq(user.id, userId),
       columns: { plan: true },
     });
-    const planLimits = getPlanLimits(normalizePlan(dbUser?.plan));
+    const planLimits = getPlanMetadata(normalizePlan(dbUser?.plan));
 
     // 3. Fetch bookmarks
     const bookmarks = await db.query.inspirationBookmarks.findMany({
@@ -137,12 +130,6 @@ export async function GET(req: NextRequest) {
     return Response.json({ bookmarks, limit: planLimits.maxInspirationBookmarks });
   } catch (error) {
     logger.error("Bookmark fetch error", { error });
-    return Response.json(
-      {
-        error: "Failed to fetch bookmarks",
-        message: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
+    return ApiError.internal("Failed to fetch bookmarks");
   }
 }

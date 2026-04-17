@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, count } from "drizzle-orm";
+import { and, desc, eq, ilike, count, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
     const { limit, offset, status, topic } = parsed.data;
 
-    const conditions: any[] = [];
+    const conditions: (SQL | undefined)[] = [];
 
     if (status) {
       const statusMap: Record<string, string> = {

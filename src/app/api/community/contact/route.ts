@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { z } from "zod";
+import { ApiError } from "@/lib/api/errors";
 import { logger } from "@/lib/logger";
 import { sendEmail } from "@/lib/services/email";
 
@@ -51,25 +52,19 @@ export async function POST(req: Request) {
     "unknown";
 
   if (isRateLimited(ip)) {
-    return Response.json(
-      { error: "Too many requests. Please wait before submitting again." },
-      { status: 429 }
-    );
+    return ApiError.tooManyRequests("Too many requests. Please wait before submitting again.");
   }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+    return ApiError.badRequest("Invalid JSON");
   }
 
   const parsed = contactSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json(
-      { error: "Invalid form data", details: parsed.error.flatten().fieldErrors },
-      { status: 422 }
-    );
+    return ApiError.badRequest(parsed.error.issues);
   }
 
   const { name, email, category, subject, message } = parsed.data;

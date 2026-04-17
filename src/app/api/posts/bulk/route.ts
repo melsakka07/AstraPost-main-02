@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import Papa from "papaparse";
+import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -9,7 +10,8 @@ import { getTeamContext } from "@/lib/team-context";
 
 export async function POST(req: Request) {
   const ctx = await getTeamContext();
-  if (!ctx) return new Response("Unauthorized", { status: 401 });
+  if (!ctx) return ApiError.unauthorized();
+  if (ctx.role === "viewer") return ApiError.forbidden("Viewers cannot perform this action");
 
   const correlationId = getCorrelationId(req);
   logger.info("api_request", {
@@ -24,11 +26,11 @@ export async function POST(req: Request) {
   const xAccountId = formData.get("xAccountId") as string;
 
   if (!file) {
-    return Response.json({ error: "No file provided" }, { status: 400 });
+    return ApiError.badRequest("No file provided");
   }
 
   if (!xAccountId) {
-    return Response.json({ error: "No X account selected" }, { status: 400 });
+    return ApiError.badRequest("No X account selected");
   }
 
   // Verify the selected account belongs to the current team workspace
@@ -37,7 +39,7 @@ export async function POST(req: Request) {
   });
 
   if (!account) {
-    return Response.json({ error: "Invalid X account" }, { status: 400 });
+    return ApiError.badRequest("Invalid X account");
   }
 
   const text = await file.text();
@@ -52,12 +54,7 @@ export async function POST(req: Request) {
 
         // Validate headers
         if (rows.length > 0 && (!rows[0].content || !rows[0].scheduledAt)) {
-          resolve(
-            Response.json(
-              { error: "CSV must have 'content' and 'scheduledAt' columns" },
-              { status: 400 }
-            )
-          );
+          resolve(ApiError.badRequest("CSV must have 'content' and 'scheduledAt' columns"));
           return;
         }
 
@@ -119,7 +116,7 @@ export async function POST(req: Request) {
         );
       },
       error: (error: any) => {
-        resolve(Response.json({ error: error.message }, { status: 400 }));
+        resolve(ApiError.badRequest(error.message));
       },
     });
   });

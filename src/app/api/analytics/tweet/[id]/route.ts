@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { NextRequest } from "next/server";
 import { and, desc, eq, gte } from "drizzle-orm";
+import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { tweetAnalytics, tweetAnalyticsSnapshots, tweets } from "@/lib/schema";
@@ -8,7 +9,7 @@ import { tweetAnalytics, tweetAnalyticsSnapshots, tweets } from "@/lib/schema";
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
-    return new Response("Unauthorized", { status: 401 });
+    return ApiError.unauthorized();
   }
 
   const { id } = await params;
@@ -22,7 +23,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   });
 
   if (!tweet || tweet.post.userId !== session.user.id) {
-    return new Response("Not found", { status: 404 });
+    return ApiError.notFound();
   }
 
   // Fetch current metrics
