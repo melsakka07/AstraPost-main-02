@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import { affiliateLinks, affiliateClicks } from "@/lib/schema";
 
 export async function GET(
@@ -27,6 +29,9 @@ export async function GET(
   const referer = request.headers.get("referer") || null;
   const country = request.headers.get("x-vercel-ip-country") || null;
 
+  // Hash IP for privacy before storage
+  const ipHash = ip !== "unknown" ? crypto.createHash("sha256").update(ip).digest("hex") : null;
+
   // Fire and forget (in a real serverless env, use waitUntil or a queue)
   try {
     await db.transaction(async (tx) => {
@@ -34,6 +39,7 @@ export async function GET(
         id: nanoid(),
         affiliateLinkId: link.id,
         ipAddress: ip,
+        ipHash: ipHash,
         userAgent: userAgent,
         country: country,
         referer: referer,
@@ -45,7 +51,7 @@ export async function GET(
         .where(eq(affiliateLinks.id, link.id));
     });
   } catch (error) {
-    console.error("Failed to track click", error);
+    logger.error("Failed to track affiliate click", { error, shortCode });
   }
 
   return NextResponse.redirect(link.destinationUrl);

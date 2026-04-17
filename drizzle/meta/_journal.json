@@ -400,6 +400,13 @@
       "when": 1744902600000,
       "tag": "0056_remove_session_token_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1744988400000,
+      "tag": "0057_add_affiliate_clicks_ip_hash",
+      "breakpoints": true
     }
   ]
 }
