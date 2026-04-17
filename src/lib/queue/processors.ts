@@ -14,7 +14,16 @@ import {
   type RefreshXTiersJobPayload,
   type TokenHealthJobPayload,
 } from "@/lib/queue/client";
-import { posts, jobRuns, user, tweets, media, notifications, xAccounts } from "@/lib/schema";
+import {
+  posts,
+  jobRuns,
+  user,
+  tweets,
+  media,
+  notifications,
+  xAccounts,
+  failedJobs,
+} from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
 import { sendPostFailureEmail } from "@/lib/services/email";
@@ -556,6 +565,27 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
 
     const targetUserId = userId || post?.userId;
     if (isFinalAttempt && targetUserId) {
+      // Insert into dead-letter queue for visibility and manual recovery
+      try {
+        await db.insert(failedJobs).values({
+          id: crypto.randomUUID(),
+          jobName: job.name,
+          jobData: job.data as unknown as Record<string, unknown>,
+          errorMessage: error instanceof Error ? error.message : "Unknown error",
+          failureCount: attemptsMade + 1,
+          correlationId: correlationId || `${job.queueName}:${job.id}:${postId}`,
+          postId,
+          userId: targetUserId,
+          lastAttemptAt: new Date(),
+        });
+      } catch (dlqErr) {
+        logger.error("failed_to_insert_dlq", {
+          error: dlqErr instanceof Error ? dlqErr.message : String(dlqErr),
+          jobId: String(job.id),
+          postId,
+        });
+      }
+
       await db.insert(notifications).values({
         id: crypto.randomUUID(),
         userId: targetUserId,

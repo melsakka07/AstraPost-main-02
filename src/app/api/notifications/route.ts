@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { and, desc, eq } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
@@ -65,6 +66,7 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
+  const correlationId = getCorrelationId(req);
   const sessionResult = await withTimeout(
     auth.api.getSession({ headers: await headers() }),
     API_TIMEOUT_MS
@@ -120,5 +122,7 @@ export async function PATCH(req: Request) {
     return ApiError.badRequest("Missing id or all flag");
   }
 
-  return Response.json({ success: true });
+  const res = Response.json({ success: true });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }

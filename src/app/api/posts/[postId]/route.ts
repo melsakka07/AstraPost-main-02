@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
@@ -74,6 +75,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pos
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ postId: string }> }) {
+  const correlationId = getCorrelationId(request);
   const ctx = await getTeamContext();
 
   if (!ctx) {
@@ -242,13 +244,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     logger.error("Queue operation failed", { error: e });
   }
 
-  return Response.json({ success: true });
+  const res = Response.json({ success: true });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }
 
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ postId: string }> }
 ) {
+  const correlationId = getCorrelationId(_request);
   const ctx = await getTeamContext();
 
   if (!ctx) {
@@ -288,5 +293,7 @@ export async function DELETE(
   // 3. Delete from DB
   await db.delete(posts).where(eq(posts.id, postId));
 
-  return Response.json({ success: true });
+  const res = Response.json({ success: true });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }

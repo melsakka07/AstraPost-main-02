@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
@@ -36,6 +37,7 @@ const profileSchema = z.object({
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export async function PATCH(req: Request) {
+  const correlationId = getCorrelationId(req);
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -81,9 +83,11 @@ export async function PATCH(req: Request) {
       path: "/",
     });
 
-    return Response.json({ success: true });
+    const res = Response.json({ success: true });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
-    logger.error("Profile update error", { error });
+    logger.error("Profile update error", { error, correlationId });
     return ApiError.internal("Internal Error");
   }
 }

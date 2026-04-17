@@ -788,6 +788,36 @@ export const jobRuns = pgTable(
   ]
 );
 
+/**
+ * Dead-letter queue (DLQ) table for permanently failed jobs.
+ *
+ * When a job exhausts all retries or throws UnrecoverableError, we insert
+ * a record here for visibility and manual recovery/retry. Admins can view
+ * failed jobs and trigger manual retry via API.
+ */
+export const failedJobs = pgTable(
+  "failed_jobs",
+  {
+    id: text("id").primaryKey(),
+    jobName: text("job_name").notNull(), // e.g. "publish-post"
+    jobData: jsonb("job_data").notNull().$type<Record<string, unknown>>(), // original job payload
+    errorMessage: text("error_message").notNull(), // last error message
+    failureCount: integer("failure_count").notNull().default(1), // total attempts made
+    correlationId: text("correlation_id"), // for tracing back to request
+    postId: text("post_id").references(() => posts.id, { onDelete: "cascade" }), // if applicable
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    lastAttemptAt: timestamp("last_attempt_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("failed_jobs_user_id_idx").on(table.userId),
+    index("failed_jobs_created_at_idx").on(table.createdAt),
+    index("failed_jobs_job_name_idx").on(table.jobName),
+  ]
+);
+
 export const affiliateLinks = pgTable(
   "affiliate_links",
   {

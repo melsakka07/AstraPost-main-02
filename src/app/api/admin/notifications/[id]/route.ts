@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/schema";
 
@@ -97,6 +98,7 @@ async function getStats() {
 // ── PATCH /api/admin/notifications/[id] ────────────────────────────────────────
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const correlationId = getCorrelationId(request);
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
@@ -106,7 +108,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id: notificationId } = await params;
 
   if (!notificationId) {
-    return ApiError.badRequest("Notification ID required");
+    const res = ApiError.badRequest("Notification ID required");
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   }
 
   const body = await request.json().catch(() => null);
@@ -130,7 +134,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .limit(1);
 
   if (!notif) {
-    return ApiError.notFound("Notification");
+    const res = ApiError.notFound("Notification");
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   }
 
   // Update metadata
@@ -155,12 +161,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     details: { status, scheduledFor },
   });
 
-  return Response.json({ data: { id: notificationId, ...meta } });
+  const res = Response.json({ data: { id: notificationId, ...meta } });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }
 
 // ── DELETE /api/admin/notifications/[id] ───────────────────────────────────────
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const correlationId = getCorrelationId(_request);
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
@@ -170,7 +179,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const { id: notificationId } = await params;
 
   if (!notificationId) {
-    return ApiError.badRequest("Notification ID required");
+    const res = ApiError.badRequest("Notification ID required");
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   }
 
   // Find the notification
@@ -181,7 +192,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     .limit(1);
 
   if (!notif) {
-    return ApiError.notFound("Notification");
+    const res = ApiError.notFound("Notification");
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   }
 
   // Soft delete
@@ -203,5 +216,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     details: { action: "delete" },
   });
 
-  return Response.json({ success: true });
+  const res = Response.json({ success: true });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }

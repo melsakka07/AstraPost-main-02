@@ -5,6 +5,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { featureFlags } from "@/lib/schema";
@@ -60,6 +61,7 @@ export async function GET() {
 // ── PUT /api/admin/announcement ───────────────────────────────────────────────
 
 export async function PUT(request: Request) {
+  const correlationId = getCorrelationId(request);
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
@@ -100,7 +102,9 @@ export async function PUT(request: Request) {
       details: { text, type, enabled },
     });
 
-    return Response.json({ data: { text, type, enabled } });
+    const res = Response.json({ data: { text, type, enabled } });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (err) {
     logger.error("[announcement] PUT Error", { error: err });
     return ApiError.internal("Failed to update announcement");

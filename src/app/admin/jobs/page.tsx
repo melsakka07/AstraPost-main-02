@@ -1,10 +1,13 @@
 import { formatDistanceToNow } from "date-fns";
+import { desc } from "drizzle-orm";
 import { EmptyState } from "@/components/admin/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireAdmin } from "@/lib/admin";
+import { db } from "@/lib/db";
 import { analyticsQueue, scheduleQueue } from "@/lib/queue/client";
+import { failedJobs } from "@/lib/schema";
 import type { Queue, Job } from "bullmq";
 
 async function getQueueData(queueName: string, queue: Queue) {
@@ -28,6 +31,24 @@ async function getQueueData(queueName: string, queue: Queue) {
   );
 
   return { name: queueName, counts, jobs: jobsWithState };
+}
+
+async function getDeadLetterQueueData() {
+  const dlqJobs = await db.query.failedJobs.findMany({
+    orderBy: [desc(failedJobs.createdAt)],
+    limit: 20,
+  });
+
+  return dlqJobs.map((job) => ({
+    id: job.id,
+    name: job.jobName,
+    timestamp: job.createdAt.getTime(),
+    failedReason: job.errorMessage,
+    state: "dead_letter" as const,
+    data: job.jobData,
+    failureCount: job.failureCount,
+    lastAttemptAt: job.lastAttemptAt,
+  }));
 }
 
 function QueueStats({ counts }: { counts: any }) {
@@ -110,6 +131,9 @@ function JobsList({ jobs }: { jobs: any[] }) {
               </div>
               <div className="text-muted-foreground text-sm">
                 {job.name} • {formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}
+                {(job as any).failureCount && (
+                  <span className="ml-2">({(job as any).failureCount} attempts)</span>
+                )}
               </div>
               {job.failedReason && (
                 <p className="text-destructive bg-destructive/10 mt-1 rounded p-1 font-mono text-sm">
@@ -130,6 +154,7 @@ export default async function AdminJobsPage() {
 
   const scheduleData = await getQueueData("Schedule", scheduleQueue);
   const analyticsData = await getQueueData("Analytics", analyticsQueue);
+  const dlqData = await getDeadLetterQueueData();
 
   return (
     <div className="space-y-6">
@@ -142,6 +167,12 @@ export default async function AdminJobsPage() {
         <TabsList>
           <TabsTrigger value="schedule">Schedule Queue</TabsTrigger>
           <TabsTrigger value="analytics">Analytics Queue</TabsTrigger>
+          <TabsTrigger
+            value="dlq"
+            className={dlqData.length > 0 ? "bg-destructive/10 text-destructive" : ""}
+          >
+            Dead Letter Queue ({dlqData.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="schedule" className="space-y-4">
@@ -154,6 +185,11 @@ export default async function AdminJobsPage() {
           <QueueStats counts={analyticsData.counts} />
           <h3 className="text-lg font-medium">Recent Jobs</h3>
           <JobsList jobs={analyticsData.jobs} />
+        </TabsContent>
+
+        <TabsContent value="dlq" className="space-y-4">
+          <h3 className="text-lg font-medium">Permanently Failed Jobs</h3>
+          <JobsList jobs={dlqData} />
         </TabsContent>
       </Tabs>
     </div>

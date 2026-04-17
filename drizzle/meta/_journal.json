@@ -386,6 +386,13 @@
       "when": 1744761700000,
       "tag": "0054_phase_b_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1744816200000,
+      "tag": "0055_add_failed_jobs_dlq",
+      "breakpoints": true
     }
   ]
 }
