@@ -1,3 +1,4 @@
+import { CheckCircle2, Clock, AlertCircle, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { SubscriberPlan, SubscriptionStatus } from "./types";
 
@@ -25,18 +26,61 @@ export function StatusBadge({
   deletedAt: string | null;
   trialEndsAt: string | null;
 }) {
-  if (deletedAt) return <Badge variant="destructive">Deleted</Badge>;
-  if (bannedAt) return <Badge variant="destructive">Banned</Badge>;
-  if (isSuspended) return <Badge variant="destructive">Suspended</Badge>;
+  // Error/Failed state: Deleted, Banned, Suspended
+  if (deletedAt)
+    return (
+      <Badge
+        variant="destructive"
+        className="flex w-fit items-center gap-1"
+        title="User account has been deleted"
+      >
+        <X className="h-3 w-3" />
+        Deleted
+      </Badge>
+    );
+  if (bannedAt)
+    return (
+      <Badge
+        variant="destructive"
+        className="flex w-fit items-center gap-1"
+        title="User account has been banned"
+      >
+        <AlertCircle className="h-3 w-3" />
+        Banned
+      </Badge>
+    );
+  if (isSuspended)
+    return (
+      <Badge
+        variant="destructive"
+        className="flex w-fit items-center gap-1"
+        title="User account has been suspended"
+      >
+        <AlertCircle className="h-3 w-3" />
+        Suspended
+      </Badge>
+    );
+  // Pending state: Trial
   if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
     return (
-      <Badge variant="secondary" className="border-amber-500/50 text-amber-600 dark:text-amber-400">
+      <Badge
+        className="flex w-fit items-center gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400"
+        variant="secondary"
+        title="User is on a trial period"
+      >
+        <Clock className="h-3 w-3" />
         Trial
       </Badge>
     );
   }
+  // Active state
   return (
-    <Badge variant="outline" className="border-green-500/50 text-green-600 dark:text-green-400">
+    <Badge
+      className="flex w-fit items-center gap-1 border-green-500/50 text-green-600 dark:text-green-400"
+      variant="outline"
+      title="User account is active"
+    >
+      <CheckCircle2 className="h-3 w-3" />
       Active
     </Badge>
   );
@@ -44,12 +88,42 @@ export function StatusBadge({
 
 export function SubscriptionStatusBadge({ status }: { status: SubscriptionStatus | null }) {
   if (!status) return <span className="text-muted-foreground text-xs">—</span>;
-  const variants: Record<SubscriptionStatus, "default" | "secondary" | "destructive" | "outline"> =
+
+  const config: Record<
+    SubscriptionStatus,
     {
-      active: "default",
-      trialing: "secondary",
-      past_due: "destructive",
-      cancelled: "outline",
-    };
-  return <Badge variant={variants[status]}>{status.replace("_", " ")}</Badge>;
+      variant: "default" | "secondary" | "destructive" | "outline";
+      icon: React.ReactNode;
+      title: string;
+    }
+  > = {
+    active: {
+      variant: "default",
+      icon: <CheckCircle2 className="h-3 w-3" />,
+      title: "Subscription is active",
+    },
+    trialing: {
+      variant: "secondary",
+      icon: <Clock className="h-3 w-3" />,
+      title: "Subscription is trialing",
+    },
+    past_due: {
+      variant: "destructive",
+      icon: <AlertCircle className="h-3 w-3" />,
+      title: "Subscription payment is past due",
+    },
+    cancelled: {
+      variant: "outline",
+      icon: <X className="h-3 w-3" />,
+      title: "Subscription has been cancelled",
+    },
+  };
+
+  const { variant, icon, title } = config[status];
+  return (
+    <Badge variant={variant} className="flex w-fit items-center gap-1" title={title}>
+      {icon}
+      {status.replace("_", " ")}
+    </Badge>
+  );
 }

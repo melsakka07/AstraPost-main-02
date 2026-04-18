@@ -13,7 +13,8 @@ import {
   XCircle,
   LucideIcon,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ErrorState } from "@/components/admin/error-state";
+import { StatusIndicator } from "@/components/admin/status-indicator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,19 +41,21 @@ interface HealthCardProps {
 
 function HealthCard({ title, status, icon: Icon, children }: HealthCardProps) {
   const statusConfig = {
-    ok: { color: "text-green-500", bg: "bg-green-500/10", label: "OK", badge: "default" as const },
+    ok: { color: "text-green-500", bg: "bg-green-500/10" },
     warning: {
       color: "text-yellow-500",
       bg: "bg-yellow-500/10",
-      label: "WARNING",
-      badge: "secondary" as const,
     },
     error: {
       color: "text-destructive",
       bg: "bg-destructive/10",
-      label: "ERROR",
-      badge: "destructive" as const,
     },
+  };
+
+  const statusIndicatorMap: Record<Status, "active" | "error" | "pending"> = {
+    ok: "active",
+    warning: "pending",
+    error: "error",
   };
 
   const config = statusConfig[status];
@@ -64,7 +67,11 @@ function HealthCard({ title, status, icon: Icon, children }: HealthCardProps) {
           <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${config.bg}`}>
             <Icon className={`h-4 w-4 ${config.color}`} />
           </div>
-          <Badge variant={config.badge}>{config.label}</Badge>
+          <StatusIndicator
+            status={statusIndicatorMap[status]}
+            label={status.toUpperCase()}
+            showIcon={false}
+          />
         </div>
         <div className="mt-4">
           <p className="text-sm font-medium">{title}</p>
@@ -96,31 +103,37 @@ export function HealthDashboard() {
   const pathname = usePathname();
 
   useEffect(() => {
-    fetch("/api/admin/health")
-      .then(async (r) => {
+    const fetchHealth = async () => {
+      try {
+        const r = await fetch("/api/admin/health");
         if (!r.ok) {
           const err = await r.json().catch(() => ({ error: "Unknown error" }));
           throw new Error(err.error || `HTTP ${r.status}`);
         }
-        return r.json();
-      })
-      .then((json) => setHealth(json.data ?? null))
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to fetch health data"))
-      .finally(() => setLoading(false));
+        const json = await r.json();
+        setHealth(json.data ?? null);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch health data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHealth();
+    const interval = setInterval(fetchHealth, 30000);
+    return () => clearInterval(interval);
   }, [pathname]);
 
   if (loading) return <LoadingSkeleton />;
   if (error) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-destructive flex items-center gap-3">
-            <XCircle className="h-5 w-5" />
-            <p className="font-medium">Failed to load health data</p>
-          </div>
-          <p className="text-muted-foreground mt-2 text-sm">{error}</p>
-        </CardContent>
-      </Card>
+      <ErrorState
+        title="Failed to load system health"
+        description="Unable to fetch health check data from the server"
+        error={error}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
   if (!health) return null;

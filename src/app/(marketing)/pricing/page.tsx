@@ -142,7 +142,7 @@ export default async function PricingPage() {
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button size="lg" variant="outline" asChild>
-                <Link href="/community">Contact Sales</Link>
+                <a href="mailto:sales@astrapost.com">Contact Sales</a>
               </Button>
               <Button size="lg" variant="ghost" asChild>
                 <Link href="/docs">View Documentation</Link>

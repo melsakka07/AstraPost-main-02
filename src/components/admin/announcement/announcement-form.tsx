@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -114,10 +115,15 @@ export function AnnouncementForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Announcement text</FormLabel>
+                <FormDescription>
+                  Message displayed to all users (max 500 characters). Use for maintenance updates,
+                  important notices, or alerts.
+                </FormDescription>
                 <FormControl>
                   <Textarea
                     placeholder="e.g. We're performing scheduled maintenance on Saturday…"
                     rows={3}
+                    aria-label="Announcement text content"
                     {...field}
                   />
                 </FormControl>
@@ -133,9 +139,13 @@ export function AnnouncementForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
+                  <FormDescription>
+                    Choose visual style: Info for general updates, Warning for urgent notices,
+                    Success for positive announcements.
+                  </FormDescription>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger aria-label="Select announcement type">
                         <SelectValue />
                       </SelectTrigger>
                     </FormControl>
@@ -158,9 +168,14 @@ export function AnnouncementForm() {
               render={({ field }) => (
                 <FormItem className="flex flex-col justify-end">
                   <FormLabel>Active</FormLabel>
+                  <FormDescription>Turn on to display banner to all users.</FormDescription>
                   <div className="flex h-10 items-center gap-3">
                     <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        aria-label="Toggle announcement visibility"
+                      />
                     </FormControl>
                     <span className="text-muted-foreground text-sm">
                       {field.value ? "Visible to all users" : "Hidden"}

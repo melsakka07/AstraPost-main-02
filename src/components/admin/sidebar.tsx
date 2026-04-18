@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Users,
   UserPlus,
+  Webhook,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -71,6 +72,7 @@ const sidebarSections = [
       { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
       { href: "/admin/jobs", label: "Jobs (BullMQ)", icon: Activity },
       { href: "/admin/notifications", label: "Notifications", icon: Bell },
+      { href: "/admin/webhooks", label: "Webhooks", icon: Webhook },
       { href: "/admin/soft-delete-recovery", label: "Soft-Delete Recovery", icon: Trash2 },
     ],
   },

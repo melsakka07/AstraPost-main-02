@@ -10,9 +10,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
 
   return (
-    <div className="bg-background flex min-h-dvh">
+    <div className="bg-background min-h-dvh">
       <AdminSidebar />
-      <main className="flex-1 p-4 md:p-8 lg:ms-64">{children}</main>
+      <main className="min-h-dvh p-4 md:ms-64 md:p-8">{children}</main>
       <GlobalAdminSearchWrapper />
     </div>
   );

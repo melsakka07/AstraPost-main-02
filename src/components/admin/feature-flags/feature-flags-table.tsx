@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { StatusIndicator } from "@/components/admin/status-indicator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -135,15 +135,30 @@ export function FeatureFlagsTable() {
 
   return (
     <div className="space-y-6">
+      <Card className="border-blue-200/50 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
+        <CardContent className="pt-4">
+          <p className="text-sm text-blue-900 dark:text-blue-100">
+            <strong>Rollout %:</strong> Controls the percentage of users (0-100%) that will see this
+            feature. Use 0% for disabled, 100% for full rollout, or intermediate values for gradual
+            rollouts.
+          </p>
+        </CardContent>
+      </Card>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Flag key</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Rollout %</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead title="Unique identifier for the feature flag">Flag key</TableHead>
+              <TableHead title="Human-readable description of what this feature does">
+                Description
+              </TableHead>
+              <TableHead title="Whether the flag is enabled for rollout">Status</TableHead>
+              <TableHead title="Percentage of users (0-100%) that will see this feature">
+                Rollout %
+              </TableHead>
+              <TableHead className="text-right" title="Toggle flag on or off">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -156,9 +171,15 @@ export function FeatureFlagsTable() {
                   {flag.description ?? "—"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={flag.enabled ? "default" : "secondary"}>
-                    {flag.enabled ? "Enabled" : "Disabled"}
-                  </Badge>
+                  <StatusIndicator
+                    status={flag.enabled ? "active" : "inactive"}
+                    label={flag.enabled ? "Enabled" : "Disabled"}
+                    title={
+                      flag.enabled
+                        ? "Feature flag is enabled for rollout"
+                        : "Feature flag is disabled"
+                    }
+                  />
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
