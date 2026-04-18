@@ -286,7 +286,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
       const delay = Math.max(0, newScheduledAt.getTime() - Date.now());
       await scheduleQueue.add(
         "publish-post",
-        { postId, userId: ctx.currentTeamId },
+        { postId, userId: ctx.currentTeamId, correlationId },
         { delay, jobId: postId, ...SCHEDULE_JOB_OPTIONS }
       );
     }

@@ -68,7 +68,7 @@ export async function GET(request: Request) {
 
     const total = totalResult[0]?.total ?? 0;
 
-    return Response.json({
+    const res = Response.json({
       data: activities,
       pagination: {
         limit,
@@ -76,6 +76,11 @@ export async function GET(request: Request) {
         total,
       },
     });
+    // Ensure activity feed is always fresh — no caching
+    res.headers.set("Cache-Control", "no-store, must-revalidate");
+    res.headers.set("Pragma", "no-cache");
+    res.headers.set("Expires", "0");
+    return res;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     logger.error("[ACTIVITY_FEED] Error", { error });

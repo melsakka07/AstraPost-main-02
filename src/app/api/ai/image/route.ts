@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
     let finalPrompt = prompt;
 
     if (!finalPrompt && tweetContent) {
-      // Auto-generate prompt from tweet content via OpenRouter (GPT-4o).
+      // Auto-generate prompt from tweet content via OpenRouter.
       // Record this LLM call in aiGenerations so it appears in the usage ledger
       // alongside the image generation it precedes — operators can see the true
       // AI cost per image request, and quota dashboards reflect both operations.

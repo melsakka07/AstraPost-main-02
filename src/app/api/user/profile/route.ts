@@ -37,6 +37,34 @@ const profileSchema = z.object({
 // One year in seconds — locale preference is stable, long TTL is appropriate
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
+export async function GET() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return ApiError.unauthorized();
+  }
+
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: {
+      id: true,
+      name: true,
+      email: true,
+      timezone: true,
+      language: true,
+      image: true,
+    },
+  });
+
+  if (!dbUser) {
+    return ApiError.notFound("User not found");
+  }
+
+  return Response.json(dbUser);
+}
+
 export async function PATCH(req: Request) {
   const correlationId = getCorrelationId(req);
   const session = await auth.api.getSession({

@@ -126,12 +126,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // causes Next.js to fail resolving ioredis/built/utils and silently return
     // 404 for the entire route (module load failure ≠ handler error).
     if (action === "post_now") {
-      const { scheduleQueue, SCHEDULE_JOB_OPTIONS } = await import("@/lib/queue/client");
-      await scheduleQueue.add(
-        "publish-post",
-        { postId, userId: session.user.id, correlationId },
-        SCHEDULE_JOB_OPTIONS
-      );
+      try {
+        const { scheduleQueue, SCHEDULE_JOB_OPTIONS } = await import("@/lib/queue/client");
+        await scheduleQueue.add(
+          "publish-post",
+          { postId, userId: session.user.id, correlationId },
+          SCHEDULE_JOB_OPTIONS
+        );
+      } catch (queueError) {
+        logger.error("queue_enqueue_failed", {
+          postId,
+          agenticPostId: id,
+          error: queueError instanceof Error ? queueError.message : String(queueError),
+          correlationId,
+        });
+        // Post was already saved to DB (line 69-122), so return success but flag queue issue
+        const res = Response.json({
+          postId,
+          action,
+          queueWarning: "Post saved but not queued — may require manual publish",
+        });
+        res.headers.set("x-correlation-id", correlationId);
+        return res;
+      }
     }
 
     logger.info("agentic_approved", {
