@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { invalidateFeatureFlag } from "@/lib/feature-flags";
 import { featureFlags } from "@/lib/schema";
@@ -45,6 +46,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
 
   // Bust the in-process cache so the change is reflected immediately
   invalidateFeatureFlag(key);
+
+  // Invalidate Redis cache for all users and global flag cache
+  await Promise.all([cache.deletePattern("feature-flags:*"), cache.delete("feature-flags:all")]);
 
   logAdminAction({
     adminId: auth.session.user.id,
