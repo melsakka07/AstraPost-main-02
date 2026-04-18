@@ -34,6 +34,7 @@ export function EngagementRateChart({ data, className }: EngagementRateChartProp
                 left: 10,
                 bottom: 0,
               }}
+              aria-label="Engagement rate per day over the past 30 days"
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
               <XAxis

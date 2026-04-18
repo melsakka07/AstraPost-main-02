@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, tweets, xAccounts } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
@@ -44,6 +45,7 @@ export async function POST(req: Request) {
 
   const text = await file.text();
 
+  // Count valid rows to check plan limit before processing
   return new Promise<Response>((resolve) => {
     Papa.parse(text, {
       header: true,
@@ -56,6 +58,33 @@ export async function POST(req: Request) {
         if (rows.length > 0 && (!rows[0].content || !rows[0].scheduledAt)) {
           resolve(ApiError.badRequest("CSV must have 'content' and 'scheduledAt' columns"));
           return;
+        }
+
+        // Check plan limit for bulk post count before processing any rows
+        const validRowCount = rows.filter(
+          (row) => row.content?.trim() && row.scheduledAt?.trim()
+        ).length;
+        if (validRowCount > 0) {
+          const planGate = await checkPostLimitDetailed(ctx.currentTeamId, validRowCount);
+          if (!planGate.allowed) {
+            logger.info("bulk_post_plan_limit_exceeded", {
+              userId: ctx.session.user.id,
+              correlationId,
+              requestedCount: validRowCount,
+              planLimit: planGate.limit,
+              planUsed: planGate.used,
+              plan: planGate.plan,
+            });
+            resolve(createPlanLimitResponse(planGate));
+            return;
+          }
+
+          // Log successful plan check with quota details
+          logger.info("bulk_post_plan_check_passed", {
+            userId: ctx.session.user.id,
+            correlationId,
+            validRowCount,
+          });
         }
 
         const promises = rows.map(async (row, index) => {

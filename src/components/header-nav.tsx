@@ -2,21 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
-  { label: "Features", href: "/features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
-  { label: "Changelog", href: "/changelog" },
+const NAV_LINK_KEYS = [
+  { key: "features", href: "/features" },
+  { key: "pricing", href: "/pricing" },
+  { key: "blog", href: "/blog" },
+  { key: "changelog", href: "/changelog" },
 ] as const;
 
 export function HeaderNav() {
+  const t = useTranslations("nav");
   const pathname = usePathname();
 
   return (
     <div className="hidden items-center gap-6 text-sm font-medium md:flex">
-      {NAV_LINKS.map(({ label, href }) => {
+      {NAV_LINK_KEYS.map(({ key, href }) => {
         const isActive = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
@@ -30,7 +32,7 @@ export function HeaderNav() {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {label}
+            {t(key)}
           </Link>
         );
       })}

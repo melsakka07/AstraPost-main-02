@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { and, desc, eq } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { cachedQuery, cache } from "@/lib/cache";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -50,11 +51,16 @@ export async function GET() {
   if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   const notificationsResult = await withTimeout(
-    db.query.notifications.findMany({
-      where: eq(notifications.userId, session.user.id),
-      orderBy: [desc(notifications.createdAt)],
-      limit: 50,
-    }),
+    cachedQuery(
+      `notifications:${session.user.id}`,
+      () =>
+        db.query.notifications.findMany({
+          where: eq(notifications.userId, session.user.id),
+          orderBy: [desc(notifications.createdAt)],
+          limit: 50,
+        }),
+      30 // 30 seconds
+    ),
     API_TIMEOUT_MS
   );
   if (notificationsResult.status !== "ok") {
@@ -121,6 +127,8 @@ export async function PATCH(req: Request) {
   } else {
     return ApiError.badRequest("Missing id or all flag");
   }
+
+  await cache.delete(`notifications:${session.user.id}`);
 
   const res = Response.json({ success: true });
   res.headers.set("x-correlation-id", correlationId);

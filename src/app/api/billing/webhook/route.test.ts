@@ -91,7 +91,7 @@ vi.mock("next/headers", () => ({
 // test cases that delete STRIPE_SECRET_KEY still receive null from the mock.
 vi.mock("@/lib/stripe", () => {
   const mockInstance = {
-    webhooks: { constructEvent: mockConstructEvent },
+    webhooks: { constructEventAsync: mockConstructEvent },
     subscriptions: { retrieve: mockStripeSubscriptionsRetrieve },
   };
   return {

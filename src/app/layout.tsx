@@ -1,13 +1,14 @@
 import { Cairo, Geist, Geist_Mono } from "next/font/google";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { UpgradeModal } from "@/components/ui/upgrade-modal";
+import { auth } from "@/lib/auth";
 import type { Metadata, Viewport } from "next";
-
-/** Locales that should switch the document to RTL. */
-const RTL_LOCALES = new Set(["ar", "he", "fa", "ur"]);
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -114,14 +115,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  // `locale` cookie is set by the user's language preference in Settings.
-  // Falls back to "en" so unauthenticated/marketing pages default to English.
-  const locale = cookieStore.get("locale")?.value ?? "en";
-  const dir = RTL_LOCALES.has(locale) ? "rtl" : "ltr";
+  const session = await auth.api.getSession({ headers: await headers() });
+  const language = session?.user?.language || "en";
+  const dir = language === "ar" ? "rtl" : "ltr";
+  const messages = await getMessages();
 
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
+    <html lang={language} dir={dir} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cairo.variable} min-h-dvh overflow-x-hidden antialiased`}
       >
@@ -142,16 +142,18 @@ export default async function RootLayout({
         >
           {dir === "rtl" ? "تخطى إلى المحتوى الرئيسي" : "Skip to main content"}
         </a>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <UpgradeModal />
-          <Toaster richColors position="top-right" />
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages} locale={language}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TooltipProvider>{children}</TooltipProvider>
+            <UpgradeModal />
+            <Toaster position="bottom-right" richColors closeButton />
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

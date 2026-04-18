@@ -54,7 +54,7 @@ export async function GET(req: Request) {
 
   const res = Response.json({
     availableModels: limits.availableImageModels,
-    preferredModel: limits.availableImageModels[0] ?? "nano-banana-2",
+    preferredModel: limits.availableImageModels[0] ?? process.env.REPLICATE_MODEL_FALLBACK!,
     remainingImages: remaining,
     limit,
     used,

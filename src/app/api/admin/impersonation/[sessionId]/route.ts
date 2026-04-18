@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { eq } from "drizzle-orm";
+import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
@@ -18,17 +19,18 @@ export async function DELETE(
 
   try {
     if (originalToken) {
-      // If called from the impersonation banner by the impersonator
+      // Called from impersonation banner - verify original token is admin
       const reqHeaders = new Headers(await headers());
       reqHeaders.set("cookie", `better-auth.session_token=${originalToken}`);
       adminSession = await auth.api.getSession({ headers: reqHeaders });
+      if (!adminSession || !(adminSession.user as any).isAdmin) {
+        return ApiError.forbidden("Admin access required");
+      }
     } else {
-      // If called from the admin panel by an admin directly
-      adminSession = await auth.api.getSession({ headers: await headers() });
-    }
-
-    if (!adminSession || !(adminSession.user as any).isAdmin) {
-      return ApiError.forbidden("Admin access required");
+      // Called from admin panel directly - use requireAdminApi()
+      const adminCheck = await requireAdminApi();
+      if (!adminCheck.ok) return adminCheck.response;
+      adminSession = adminCheck.session;
     }
 
     const rl = await checkAdminRateLimit("destructive");

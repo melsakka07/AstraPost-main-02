@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/client-error-handler";
 
 export default function AiError({
   error,
@@ -12,7 +13,7 @@ export default function AiError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[ai error]", error);
+    reportError(error, { context: "ai-error", digest: error.digest });
   }, [error]);
 
   return (

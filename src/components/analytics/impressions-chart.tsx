@@ -26,6 +26,7 @@ export function ImpressionsChart({ data, className }: ImpressionsChartProps) {
                 left: 10,
                 bottom: 0,
               }}
+              aria-label="Impressions per day over the past 30 days"
             >
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
               <XAxis

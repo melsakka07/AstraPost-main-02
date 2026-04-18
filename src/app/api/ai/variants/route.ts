@@ -7,6 +7,7 @@ import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkVariantGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
 import { recordAiUsage } from "@/lib/services/ai-quota";
+import { RequestDedup } from "@/lib/services/request-dedup";
 
 const requestSchema = z.object({
   tweet: z.string().min(1).max(1000),
@@ -37,6 +38,21 @@ export async function POST(req: Request) {
     }
 
     const { tweet, language } = result.data;
+
+    // ── Deduplication check ──────────────────────────────────────────────
+    const dedupKey = RequestDedup.generateKey(session.user.id, "ai_variants", result.data);
+    const cachedResult = await RequestDedup.check<any>(dedupKey);
+
+    if (cachedResult) {
+      logger.info("dedup_cache_hit", {
+        userId: session.user.id,
+        endpoint: "/api/ai/variants",
+        correlationId,
+      });
+      const res = Response.json(cachedResult);
+      res.headers.set("x-correlation-id", correlationId);
+      return res;
+    }
 
     const prompt = `You are an expert social media copywriter.
 Given the following tweet, generate exactly 3 alternative versions using different angles.
@@ -76,6 +92,9 @@ For each variant:
         text: v.text.length > 1000 ? v.text.slice(0, 997) + "..." : v.text,
       })),
     };
+
+    // ── Cache result for dedup window ────────────────────────────────────
+    await RequestDedup.cache(dedupKey, sanitized, 60);
 
     const res = Response.json(sanitized);
     res.headers.set("x-correlation-id", correlationId);

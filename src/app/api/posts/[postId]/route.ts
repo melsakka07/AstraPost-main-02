@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
@@ -8,6 +9,48 @@ import { logger } from "@/lib/logger";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, tweets, media } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
+
+const postPatchActionEnum = z.enum([
+  "approve",
+  "reject",
+  "schedule",
+  "publish_now",
+  "draft",
+  "cancel",
+]);
+const postStatusEnum = z.enum([
+  "draft",
+  "scheduled",
+  "published",
+  "failed",
+  "cancelled",
+  "awaiting_approval",
+  "paused_needs_reconnect",
+]);
+
+const postPatchSchema = z.object({
+  action: postPatchActionEnum.optional(),
+  status: postStatusEnum.optional(),
+  scheduledAt: z.string().datetime({ offset: true }).optional(),
+  reviewerNotes: z.string().max(500).optional(),
+  tweets: z
+    .array(
+      z.object({
+        content: z.string().min(1).max(10000),
+        media: z
+          .array(
+            z.object({
+              url: z.string().url(),
+              fileType: z.string(),
+              size: z.number(),
+            })
+          )
+          .optional(),
+      })
+    )
+    .max(25)
+    .optional(),
+});
 
 /**
  * Shared ownership check used by GET, PATCH, and DELETE.
@@ -88,7 +131,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
   }
 
   const { postId } = await params;
-  const body = await request.json();
+  const rawBody = await request.json();
+
+  const parsed = postPatchSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return ApiError.badRequest(parsed.error.issues);
+  }
+  const body = parsed.data;
 
   // 1. Fetch post to verify ownership and current status
   const existingPost = await db.query.posts.findFirst({
@@ -176,12 +225,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
 
   // 3. Update Tweets (only if provided) — wrapped in a transaction so a
   //    failure mid-loop never leaves the post in a partial (tweetless) state.
-  if (body.tweets && Array.isArray(body.tweets)) {
+  if (body.tweets) {
+    const tweetUpdates = body.tweets;
     await db.transaction(async (tx) => {
       await tx.delete(tweets).where(eq(tweets.postId, postId));
 
-      for (let i = 0; i < body.tweets.length; i++) {
-        const t = body.tweets[i];
+      for (let i = 0; i < tweetUpdates.length; i++) {
+        const t = tweetUpdates[i]!;
         const tweetId = crypto.randomUUID();
 
         await tx.insert(tweets).values({
@@ -191,7 +241,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
           position: i + 1,
         });
 
-        if (t.media && Array.isArray(t.media)) {
+        if (t.media) {
           for (const m of t.media) {
             await tx.insert(media).values({
               id: crypto.randomUUID(),

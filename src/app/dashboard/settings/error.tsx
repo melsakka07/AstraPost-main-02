@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/client-error-handler";
 
 export default function SettingsError({
   error,
@@ -12,7 +13,7 @@ export default function SettingsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[settings error]", error);
+    reportError(error, { context: "settings-error", digest: error.digest });
   }, [error]);
 
   return (

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -29,7 +31,7 @@ import { getMaxCharacterLimit, canPostLongContent } from "@/lib/services/x-subsc
 import { cn } from "@/lib/utils";
 import type { EmojiClickData } from "emoji-picker-react";
 
-const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
+const EmojiPicker = dynamic(() => import("emoji-picker-react"));
 
 interface TweetDraft {
   id: string;

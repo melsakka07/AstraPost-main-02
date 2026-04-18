@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq, and, gte } from "drizzle-orm";
 import { Rocket } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { ChangelogBanner } from "@/components/changelog-banner";
 import { CommandPalette } from "@/components/command-palette";
@@ -17,6 +18,7 @@ import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { ReferralCookieProcessor } from "@/components/referral/referral-cookie-processor";
 import { ImpersonationBanner } from "@/components/ui/impersonation-banner";
 import { TrialBanner } from "@/components/ui/trial-banner";
+import { cachedQuery } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
@@ -32,6 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
   const session = ctx.session;
+  const t = await getTranslations();
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
@@ -52,7 +55,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="bg-background flex min-h-dvh flex-col">
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 flex h-14 shrink-0 items-center gap-2 border-b px-6 backdrop-blur">
           <Rocket className="text-primary h-5 w-5" aria-hidden="true" />
-          <span className="text-lg font-bold tracking-tight">AstraPost</span>
+          <span className="text-lg font-bold tracking-tight">
+            {t("common.app_name", { defaultValue: "AstraPost" })}
+          </span>
         </header>
         <ReferralCookieProcessor />
         <main className="flex-1">{children}</main>
@@ -64,18 +69,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
   oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
   const [memberships, failedPost, inactiveAccount, aiUsage] = await Promise.all([
-    db.query.teamMembers.findMany({
-      where: eq(teamMembers.userId, session.user.id),
-      with: {
-        team: {
-          columns: {
-            id: true,
-            name: true,
-            image: true,
+    cachedQuery(
+      `team:memberships:${session.user.id}`,
+      () =>
+        db.query.teamMembers.findMany({
+          where: eq(teamMembers.userId, session.user.id),
+          with: {
+            team: {
+              columns: {
+                id: true,
+                name: true,
+                image: true,
+              },
+            },
           },
-        },
-      },
-    }),
+        }),
+      5 * 60 // 5 minutes
+    ),
     db.query.posts.findFirst({
       where: and(
         eq(posts.userId, session.user.id),
@@ -88,7 +98,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, false)),
       columns: { xUsername: true },
     }),
-    getMonthlyAiUsage(session.user.id).catch(() => null),
+    cachedQuery(
+      `ai:usage:${session.user.id}:${new Date().getFullYear()}-${new Date().getMonth()}`,
+      () => getMonthlyAiUsage(session.user.id).catch(() => null),
+      10 * 60 // 10 minutes
+    ),
   ]);
 
   const formattedMemberships = memberships.map((m) => ({

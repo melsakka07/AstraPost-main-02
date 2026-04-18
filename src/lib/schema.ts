@@ -817,6 +817,44 @@ export const failedJobs = pgTable(
   ]
 );
 
+export const webhookDeadLetterQueue = pgTable("webhook_dead_letter_queue", {
+  id: text("id").primaryKey(),
+  stripeEventId: text("stripe_event_id").notNull().unique(),
+  eventType: text("event_type").notNull(),
+  eventData: jsonb("event_data").notNull(), // Full Stripe event object
+  errorMessage: text("error_message"),
+  failureCount: integer("failure_count").default(0).notNull(),
+  failedAt: timestamp("failed_at").notNull().defaultNow(),
+  movedToDlqAt: timestamp("moved_to_dlq_at").notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: text("resolved_by"), // Admin user ID
+  resolution: text("resolution"), // "replayed" | "ignored" | "manual_fix"
+  notes: text("notes"), // Admin notes
+  requestBody: text("request_body"), // Raw webhook request body
+  requestSignature: text("request_signature"), // Stripe-Signature header
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const webhookDeliveryLog = pgTable(
+  "webhook_delivery_log",
+  {
+    id: text("id").primaryKey(),
+    stripeEventId: text("stripe_event_id").notNull(),
+    eventType: text("event_type").notNull(),
+    status: text("status").notNull(), // "success" | "failure"
+    statusCode: integer("status_code"),
+    processingTimeMs: integer("processing_time_ms"),
+    errorMessage: text("error_message"),
+    requestBody: text("request_body"),
+    requestSignature: text("request_signature"),
+    processedAt: timestamp("processed_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("webhook_delivery_log_event_id_idx").on(table.stripeEventId),
+    index("webhook_delivery_log_processed_at_idx").on(table.processedAt),
+  ]
+);
+
 export const affiliateLinks = pgTable(
   "affiliate_links",
   {
@@ -879,8 +917,7 @@ export const notifications = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
-    index("notifications_user_id_idx").on(table.userId),
-    index("notifications_is_read_idx").on(table.isRead),
+    index("notifications_user_read_created_idx").on(table.userId, table.isRead, table.createdAt),
     index("notifications_user_unread_idx").on(table.userId, table.isRead, table.createdAt),
   ]
 );

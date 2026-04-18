@@ -30,6 +30,7 @@ import {
   type ImageStyle,
 } from "@/lib/services/ai-image";
 import { recordAiUsage } from "@/lib/services/ai-quota";
+import { RequestDedup } from "@/lib/services/request-dedup";
 
 // ============================================================================
 // Schema Validation
@@ -124,6 +125,24 @@ export async function POST(req: NextRequest) {
     // 3. Auth identity
     const userId = session.user.id;
 
+    // ── Deduplication check ──────────────────────────────────────────────
+    const dedupKey = RequestDedup.generateKey(userId, "ai_image", validationResult.data);
+    const cachedResult = await RequestDedup.check<{
+      predictionId: string;
+      estimatedSeconds: number;
+    }>(dedupKey);
+
+    if (cachedResult) {
+      logger.info("dedup_cache_hit", {
+        userId,
+        endpoint: "/api/ai/image",
+        correlationId,
+      });
+      const res = Response.json(cachedResult);
+      res.headers.set("x-correlation-id", correlationId);
+      return res;
+    }
+
     // 4. Plan checks — model gate + monthly image quota (standard 402 + upgrade_url on failure)
     const plan = await getUserPlanType(userId); // for rate-limit tier selection
     const modelAccess = await checkImageModelAccessDetailed(userId, model as ImageModel);
@@ -199,7 +218,10 @@ export async function POST(req: NextRequest) {
     );
 
     // 10. Return prediction ID — client will poll for the result.
-    const res = Response.json({ predictionId, estimatedSeconds: 20 });
+    const result = { predictionId, estimatedSeconds: 20 };
+    await RequestDedup.cache(dedupKey, result, 60);
+
+    const res = Response.json(result);
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useId, lazy, Suspense } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -79,6 +79,7 @@ import { type OutputFormat, type TemplatePromptConfig } from "@/lib/ai/template-
 import { useSession } from "@/lib/auth-client";
 import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
 
@@ -138,9 +139,12 @@ function formatTimeAgo(date: Date): string {
 
 export function Composer() {
   const dndId = useId();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const draftId = searchParams?.get("draft");
   const [tweets, setTweets] = useState<TweetDraft[]>([{ id: "1", content: "", media: [] }]);
+  const [confirmNavDialog, setConfirmNavDialog] = useState(false);
+  const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState<string>(
     searchParams?.get("scheduledAt") ?? ""
   );
@@ -307,7 +311,7 @@ export function Composer() {
     (async () => {
       try {
         setAccountsLoading(true);
-        const res = await fetch("/api/accounts", { method: "GET" });
+        const res = await fetchWithAuth("/api/accounts", { method: "GET" });
         if (!res.ok) return;
         const data = await res.json();
         if (cancelled) return;
@@ -335,7 +339,7 @@ export function Composer() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/ai/image/quota");
+        const res = await fetchWithAuth("/api/ai/image/quota");
         if (!res.ok || cancelled) return;
         const data = await res.json();
         setUserPlanLimits({
@@ -512,6 +516,41 @@ export function Composer() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [tweets]);
+
+  // UA-A13: Warn user before SPA navigation away mid-draft
+  // Store a ref to the original router.push to intercept calls
+  const originalRouterPush = useRef(router.push);
+
+  useEffect(() => {
+    const hasUnsavedContent = tweets.some((t) => t.content.trim().length > 0);
+    const hasUploadingMedia = tweets.some((t) => t.media.some((m) => m.uploading));
+    const isDrafty = hasUnsavedContent || hasUploadingMedia;
+
+    if (!isDrafty) return;
+
+    // Override router.push to check for unsaved content before navigation
+    const wrappedPush = async (href: string) => {
+      // Don't warn if navigating to the same page or within compose
+      if (href.startsWith("/dashboard/compose")) {
+        return originalRouterPush.current(href);
+      }
+
+      setConfirmNavDialog(true);
+      setPendingNavHref(href);
+      return undefined;
+    };
+
+    // Monkey-patch the router.push method
+    (router.push as any) = wrappedPush;
+
+    // Capture the original push in this effect scope to avoid stale ref in cleanup
+    const originalPush = originalRouterPush.current;
+
+    return () => {
+      // Restore original push
+      (router.push as any) = originalPush;
+    };
+  }, [tweets, router]);
 
   // Load draft from database when ?draft=<id> is present in the URL
   useEffect(() => {
@@ -799,7 +838,7 @@ export function Composer() {
   const handleFetchInspiration = async () => {
     setIsLoadingInspiration(true);
     try {
-      const res = await fetch(
+      const res = await fetchWithAuth(
         `/api/ai/inspiration?niche=${inspirationNiche}&language=${aiLanguage}`
       );
       if (res.status === 402) {
@@ -882,7 +921,7 @@ export function Composer() {
 
   useEffect(() => {
     if (restoreId) {
-      fetch(`/api/ai/history?id=${restoreId}`)
+      fetchWithAuth(`/api/ai/history?id=${restoreId}`)
         .then((res) => res.json())
         .then((data) => {
           if (data.item) {
@@ -947,7 +986,7 @@ export function Composer() {
           return;
         }
 
-        const res = await fetch("/api/ai/thread", {
+        const res = await fetchWithAuth("/api/ai/thread", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1107,7 +1146,7 @@ export function Composer() {
           return;
         }
 
-        const res = await fetch("/api/ai/template-generate", {
+        const res = await fetchWithAuth("/api/ai/template-generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1234,7 +1273,7 @@ export function Composer() {
           previousTweetsRef.current = structuredClone(tweets);
         }
 
-        const res = await fetch("/api/ai/tools", {
+        const res = await fetchWithAuth("/api/ai/tools", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1280,7 +1319,7 @@ export function Composer() {
           .filter(Boolean)
           .join(" ")
           .slice(0, 500);
-        const res = await fetch("/api/ai/tools", {
+        const res = await fetchWithAuth("/api/ai/tools", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1324,7 +1363,7 @@ export function Composer() {
         // Phase 0: Save state for undo before translating
         previousTweetsRef.current = structuredClone(tweets);
 
-        const res = await fetch("/api/ai/translate", {
+        const res = await fetchWithAuth("/api/ai/translate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1376,7 +1415,7 @@ export function Composer() {
         const t = tweets.find((x) => x.id === targetId);
         if (!t?.content.trim()) throw new Error("Tweet is empty");
 
-        const res = await fetch("/api/ai/hashtags", {
+        const res = await fetchWithAuth("/api/ai/hashtags", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1408,7 +1447,7 @@ export function Composer() {
         previousTweetsRef.current = structuredClone(tweets);
       }
 
-      const res = await fetch("/api/ai/tools", {
+      const res = await fetchWithAuth("/api/ai/tools", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1502,7 +1541,7 @@ export function Composer() {
       try {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await fetch("/api/media/upload", { method: "POST", body: formData });
+        const res = await fetchWithAuth("/api/media/upload", { method: "POST", body: formData });
         if (!res.ok) {
           const msg = await res.text().catch(() => "Upload failed");
           throw new Error(msg || "Upload failed");
@@ -1581,7 +1620,7 @@ export function Composer() {
       let res: Response;
       if (editingDraftId) {
         // Update the existing draft via PATCH
-        res = await fetch(`/api/posts/${editingDraftId}`, {
+        res = await fetchWithAuth(`/api/posts/${editingDraftId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1594,7 +1633,7 @@ export function Composer() {
           }),
         });
       } else {
-        res = await fetch("/api/posts", {
+        res = await fetchWithAuth("/api/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -2466,6 +2505,32 @@ export function Composer() {
         userPreferredModel={userPlanLimits.preferredModel}
         remainingQuota={userPlanLimits.remainingQuota}
       />
+
+      {/* UA-A13: Confirm before SPA navigation away mid-draft */}
+      <AlertDialog open={confirmNavDialog} onOpenChange={setConfirmNavDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved draft?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to leave without saving?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingNavHref(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingNavHref) {
+                  router.push(pendingNavHref);
+                  setPendingNavHref(null);
+                }
+                setConfirmNavDialog(false);
+              }}
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

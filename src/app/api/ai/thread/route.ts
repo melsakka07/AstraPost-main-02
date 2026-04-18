@@ -12,6 +12,7 @@ import { logger } from "@/lib/logger";
 import { xAccounts } from "@/lib/schema";
 import { aiLengthOptionEnum, type XSubscriptionTier } from "@/lib/schemas/common";
 import { recordAiUsage } from "@/lib/services/ai-quota";
+import { RequestDedup } from "@/lib/services/request-dedup";
 import { XApiService } from "@/lib/services/x-api";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 
@@ -61,6 +62,37 @@ export async function POST(req: Request) {
 
     const { topic, hook, tone, tweetCount, language, mode, lengthOption, targetAccountId } =
       parsed.data;
+
+    const dedupKey = RequestDedup.generateKey(session.user.id, "ai_thread", {
+      topic,
+      hook,
+      tone,
+      tweetCount,
+      language,
+      mode,
+      lengthOption,
+      targetAccountId,
+    });
+    const cachedResult = await RequestDedup.check(dedupKey); // check cache
+    if (cachedResult) {
+      // Note: we can reconstruct a basic ai stream response if we cached the text
+      // ai stream format requires specific format, but returning json works if client supports both
+      // actually, AI sdk handles strings if returning Response.json is not enough.
+      // We will wrap the cached text in the format expected by the client.
+      // Next.js AI SDK clients expect `0:"chunk"\n` format.
+      const text = cachedResult.text || "";
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(text)}\n`));
+          controller.close();
+        },
+      });
+      const response = new Response(stream, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
+      response.headers.set("x-correlation-id", correlationId);
+      return response;
+    }
 
     // ── Tier validation for single-post mode ──────────────────────────────────
     if (mode === "single" && lengthOption !== "short" && targetAccountId) {

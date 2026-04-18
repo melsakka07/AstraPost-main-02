@@ -15,6 +15,9 @@ import {
   Trophy,
   Share2,
   Lightbulb,
+  UserPen,
+  MessageCircle,
+  DollarSign,
 } from "lucide-react";
 
 export interface NavItem {
@@ -80,6 +83,24 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         isPro: true,
       },
       { icon: History, label: "History", href: "/dashboard/ai/history", isAdmin: true },
+      {
+        icon: UserPen,
+        label: "Bio Generator",
+        href: "/dashboard/ai/bio",
+        isPro: true,
+      },
+      {
+        icon: MessageCircle,
+        label: "Reply Generator",
+        href: "/dashboard/ai/reply",
+        isPro: true,
+      },
+      {
+        icon: CalendarDays,
+        label: "AI Calendar",
+        href: "/dashboard/ai/calendar",
+        isPro: true,
+      },
     ],
   },
   {
@@ -96,6 +117,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [
       { icon: Trophy, label: "Achievements", href: "/dashboard/achievements" },
       { icon: Share2, label: "Referrals", href: "/dashboard/referrals" },
+      { icon: DollarSign, label: "Affiliate Dashboard", href: "/dashboard/affiliate" },
     ],
   },
   {

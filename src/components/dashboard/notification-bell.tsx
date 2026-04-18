@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { clientLogger } from "@/lib/client-logger";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { cn } from "@/lib/utils";
 
 type Notification = {
@@ -35,6 +36,7 @@ export function NotificationBell() {
   const inFlightRef = useRef(false);
 
   useEffect(() => {
+    // Polling-based notification fetching with retries and timeout handling
     const fetchNotifications = async () => {
       if (inFlightRef.current) return;
       inFlightRef.current = true;
@@ -46,29 +48,53 @@ export function NotificationBell() {
       const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       try {
-        const res = await fetch("/api/notifications", { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data: Notification[] = await res.json();
+        // Retry up to 3 times with exponential backoff for dev-server race conditions
+        let lastError: Error | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
           if (!inFlightRef.current) return; // Unmounted
+          try {
+            const res = await fetchWithAuth("/api/notifications", { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+              const data: Notification[] = await res.json();
+              if (!inFlightRef.current) return; // Unmounted
 
-          for (const n of data) {
-            if (!seenIdsRef.current.has(n.id) && !n.isRead) {
-              if (n.type === "tier_downgrade_warning") {
-                toast.warning(n.title ?? "X Premium Subscription Changed", {
-                  description: n.message,
-                  action: {
-                    label: "View Queue",
-                    onClick: () => router.push("/dashboard/queue"),
-                  },
-                });
+              for (const n of data) {
+                if (!seenIdsRef.current.has(n.id) && !n.isRead) {
+                  if (n.type === "tier_downgrade_warning") {
+                    toast.warning(n.title ?? "X Premium Subscription Changed", {
+                      description: n.message,
+                      action: {
+                        label: "View Queue",
+                        onClick: () => router.push("/dashboard/queue"),
+                      },
+                    });
+                  }
+                  seenIdsRef.current.add(n.id);
+                }
               }
-              seenIdsRef.current.add(n.id);
+
+              setNotifications(data);
+              setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
+              return; // Success
+            }
+            // 404/500 — retry if not last attempt
+            if (attempt < 2) {
+              await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+            }
+          } catch (e) {
+            lastError = e instanceof Error ? e : new Error(String(e));
+            // Retry if not last attempt
+            if (attempt < 2) {
+              await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
             }
           }
-
-          setNotifications(data);
-          setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
+        }
+        // All retries exhausted
+        if (lastError && lastError.name !== "AbortError") {
+          clientLogger.error("Failed to fetch notifications after retries", {
+            error: lastError.message,
+          });
         }
       } catch (error) {
         // AbortError is expected on timeout or unmount cleanup.
@@ -98,7 +124,7 @@ export function NotificationBell() {
 
   const markAsRead = async (id: string) => {
     try {
-      const res = await fetch("/api/notifications", {
+      const res = await fetchWithAuth("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -120,7 +146,7 @@ export function NotificationBell() {
   const markAllAsRead = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent closing if we want to keep it open, but closing is fine.
     try {
-      const res = await fetch("/api/notifications", {
+      const res = await fetchWithAuth("/api/notifications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ all: true }),

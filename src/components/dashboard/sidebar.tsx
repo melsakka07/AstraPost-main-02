@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, Rocket, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { CollapsibleSection } from "@/components/dashboard/sidebar-collapsible-section";
@@ -52,20 +53,34 @@ function SidebarContent({
   isAdmin = false,
   userPlan = "free",
 }: SidebarContentProps & { referralsEnabled?: boolean }) {
+  const t = useTranslations("nav");
   const [imageQuota, setImageQuota] = useState<ImageQuota | null>(null);
 
   useEffect(() => {
     async function fetchImageQuota() {
-      try {
-        const res = await fetch("/api/ai/image/quota");
-        if (res.ok) {
-          const data = await res.json();
-          setImageQuota({ used: data.used, limit: data.limit, remaining: data.remainingImages });
+      // Retry up to 3 times with exponential backoff for dev-server race conditions
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch("/api/ai/image/quota");
+          if (res.ok) {
+            const data = await res.json();
+            setImageQuota({ used: data.used, limit: data.limit, remaining: data.remainingImages });
+            return; // Success
+          }
+          // 404/500 — retry if not last attempt
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+          }
+        } catch (e) {
+          // Retry if not last attempt
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+          } else {
+            clientLogger.error("Failed to fetch image quota after retries", {
+              error: e instanceof Error ? e.message : String(e),
+            });
+          }
         }
-      } catch (e) {
-        clientLogger.error("Failed to fetch image quota", {
-          error: e instanceof Error ? e.message : String(e),
-        });
       }
     }
     fetchImageQuota();
@@ -144,55 +159,21 @@ function SidebarContent({
 
       {/* Navigation sections */}
       <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Dashboard navigation">
-        {filteredSections.map((section, idx) => (
-          <div key={section.label} className={cn(idx > 0 && "mt-6")}>
-            {idx === 0 ? (
-              // Overview — no label, always visible, no collapse
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const isActive = isItemActive(item.href, pathname, allNavItems);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => onNavigate?.()}
-                      aria-current={isActive ? "page" : undefined}
-                      data-tour={item.dataTour}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
-                        linkPy,
-                        isActive
-                          ? isMobile
-                            ? "bg-primary/15 text-primary font-semibold"
-                            : "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <item.icon className="h-4.5 w-4.5 shrink-0" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : section.collapsible ? (
-              // M2 — collapsible on mobile, always expanded on desktop
-              <CollapsibleSection
-                section={section}
-                pathname={pathname}
-                allNavItems={allNavItems}
-                {...(onNavigate !== undefined && { onNavigate })}
-                isMobile={isMobile}
-                userPlan={userPlan}
-              />
-            ) : (
-              // Regular section with label — always expanded
-              <>
-                <p className="text-muted-foreground/60 mb-1.5 px-3 text-[11px] font-semibold tracking-wider uppercase">
-                  {section.label}
-                </p>
+        {filteredSections.map((section, idx) => {
+          const sectionLabelKey = section.label.toLowerCase().replace(/\s+/g, "_");
+          const translatedSectionLabel = t(sectionLabelKey as any, { defaultValue: section.label });
+
+          return (
+            <div key={section.label} className={cn(idx > 0 && "mt-6")}>
+              {idx === 0 ? (
+                // Overview — no label, always visible, no collapse
                 <div className="space-y-0.5">
                   {section.items.map((item) => {
                     const isActive = isItemActive(item.href, pathname, allNavItems);
+                    const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
+                    const translatedItemLabel = t(itemLabelKey as any, {
+                      defaultValue: item.label,
+                    });
                     return (
                       <Link
                         key={item.href}
@@ -211,15 +192,63 @@ function SidebarContent({
                         )}
                       >
                         <item.icon className="h-4.5 w-4.5 shrink-0" />
-                        {item.label}
+                        {translatedItemLabel}
                       </Link>
                     );
                   })}
                 </div>
-              </>
-            )}
-          </div>
-        ))}
+              ) : section.collapsible ? (
+                // M2 — collapsible on mobile, always expanded on desktop
+                <CollapsibleSection
+                  section={section}
+                  pathname={pathname}
+                  allNavItems={allNavItems}
+                  {...(onNavigate !== undefined && { onNavigate })}
+                  isMobile={isMobile}
+                  userPlan={userPlan}
+                  t={t}
+                />
+              ) : (
+                // Regular section with label — always expanded
+                <>
+                  <p className="text-muted-foreground/60 mb-1.5 px-3 text-[11px] font-semibold tracking-wider uppercase">
+                    {translatedSectionLabel}
+                  </p>
+                  <div className="space-y-0.5">
+                    {section.items.map((item) => {
+                      const isActive = isItemActive(item.href, pathname, allNavItems);
+                      const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
+                      const translatedItemLabel = t(itemLabelKey as any, {
+                        defaultValue: item.label,
+                      });
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => onNavigate?.()}
+                          aria-current={isActive ? "page" : undefined}
+                          data-tour={item.dataTour}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors",
+                            linkPy,
+                            isActive
+                              ? isMobile
+                                ? "bg-primary/15 text-primary font-semibold"
+                                : "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          )}
+                        >
+                          <item.icon className="h-4.5 w-4.5 shrink-0" />
+                          {translatedItemLabel}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
 
         {/* External link — Roadmap */}
         <div className="mt-6">

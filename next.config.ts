@@ -1,10 +1,13 @@
 import withPWAInit from "@ducanh2912/next-pwa";
 import { withSentryConfig } from "@sentry/nextjs";
+import createNextIntlPlugin from "next-intl/plugin";
 import { checkEnv } from "./src/lib/env";
 import type { NextConfig } from "next";
 
 // Validate env vars before build starts
 checkEnv();
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const withPWA = withPWAInit({
   dest: "public",
@@ -86,7 +89,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(withPWA(nextConfig), {
+export default withSentryConfig(withNextIntl(withPWA(nextConfig)), {
   // For all available options, see:
   // https://github.com/getsentry/sentry-webpack-plugin#options
 
@@ -95,6 +98,7 @@ export default withSentryConfig(withPWA(nextConfig), {
 
   // Only print logs for uploading source maps in CI
   silent: !process.env.CI,
+  ...(process.env.SENTRY_AUTH_TOKEN ? { authToken: process.env.SENTRY_AUTH_TOKEN } : {}),
 
   // For all available options, see:
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/

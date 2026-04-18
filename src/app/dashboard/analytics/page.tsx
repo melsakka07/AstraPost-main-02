@@ -1,4 +1,4 @@
-import dynamic from "next/dynamic";
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -17,6 +17,12 @@ import {
 } from "lucide-react";
 import { AccountSelector } from "@/components/analytics/account-selector";
 import { AnalyticsSectionNav } from "@/components/analytics/analytics-section-nav";
+import {
+  FollowerChart,
+  ImpressionsChart,
+  EngagementRateChart,
+  BestTimeHeatmap,
+} from "@/components/analytics/charts-wrapper";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { ExportButton } from "@/components/analytics/export-button";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
@@ -41,38 +47,6 @@ import {
   xAccounts,
 } from "@/lib/schema";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
-
-const FollowerChart = dynamic(
-  () => import("@/components/analytics/charts-client").then((mod) => mod.FollowerChart),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[300px] w-full" />,
-  }
-);
-
-const ImpressionsChart = dynamic(
-  () => import("@/components/analytics/charts-client").then((mod) => mod.ImpressionsChart),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[300px] w-full" />,
-  }
-);
-
-const EngagementRateChart = dynamic(
-  () => import("@/components/analytics/charts-client").then((mod) => mod.EngagementRateChart),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[300px] w-full" />,
-  }
-);
-
-const BestTimeHeatmap = dynamic(
-  () => import("@/components/analytics/best-time-heatmap").then((mod) => mod.BestTimeHeatmap),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[300px] w-full" />,
-  }
-);
 
 export default async function AnalyticsPage({
   searchParams,
@@ -605,7 +579,9 @@ export default async function AnalyticsPage({
           title="Optimization Insights"
           description="Upgrade to Pro to see when your audience is most active."
         >
-          <BestTimeHeatmap data={bestTimeData} />
+          <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-lg" />}>
+            <BestTimeHeatmap data={bestTimeData} />
+          </Suspense>
         </BlurredOverlay>
       </div>
 

@@ -1,5 +1,6 @@
 import { eq, and, ne, lt } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
+import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { processedWebhookEvents, user, planChangeLog } from "@/lib/schema";
@@ -32,16 +33,30 @@ export async function POST(req: Request) {
     return ApiError.internal("Cleanup failed");
   }
 
-  // Clean up plan_change_log entries older than 1 year
+  // Clean up plan_change_log entries older than configured retention period
+  // Default: 7 years, configurable via PLAN_CHANGE_LOG_RETENTION_YEARS env var
   let planChangesDeleted = 0;
   try {
-    const oneYearAgo = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    const retentionYears = parseInt(process.env.PLAN_CHANGE_LOG_RETENTION_YEARS || "7", 10);
+    const retentionMs = retentionYears * 365 * 24 * 60 * 60 * 1000;
+    const retentionCutoff = new Date(Date.now() - retentionMs);
+
+    logger.info("plan_change_log_cleanup_started", {
+      retentionYears,
+      retentionMs,
+      cutoffDate: retentionCutoff.toISOString(),
+    });
+
     const deletedChanges = await db
       .delete(planChangeLog)
-      .where(lt(planChangeLog.createdAt, oneYearAgo))
+      .where(lt(planChangeLog.createdAt, retentionCutoff))
       .returning({ id: planChangeLog.id });
 
     planChangesDeleted = deletedChanges.length;
+    logger.info("plan_change_log_cleanup_completed", {
+      deletedCount: planChangesDeleted,
+      retentionYears,
+    });
   } catch (error) {
     logger.error("[cron] plan_change_log cleanup failed", { error });
   }
@@ -81,6 +96,8 @@ export async function POST(req: Request) {
             createdAt: new Date(),
           });
         });
+
+        await cache.delete(`plan:${expiredUser.id}`);
 
         // Best-effort: cancel active Stripe subscriptions
         if (expiredUser.stripeCustomerId && stripe) {

@@ -24,4 +24,6 @@
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL` — Email
 - `CRON_SECRET` — Secure cron endpoint execution
 - `TWITTER_DRY_RUN` — If set, bypasses actual publishing to X
+- `DIAGNOSTICS_TOKEN` — Token required for full diagnostics endpoint response (without token, only status is returned)
+- `PLAN_CHANGE_LOG_RETENTION_YEARS` — Retention period for plan change audit logs in years (default: 7)
 - `NODE_ENV` — `development`, `production`, `test`

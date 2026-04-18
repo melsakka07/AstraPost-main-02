@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
 interface UsageData {
   plan: string;
@@ -32,19 +33,31 @@ export function PostUsageBar({ className }: PostUsageBarProps) {
 
     let cancelled = false;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     (async () => {
-      try {
-        const res = await fetch("/api/billing/usage", { signal: controller.signal });
-        if (!res.ok) return;
-        const json = (await res.json()) as UsageData;
-        if (!cancelled) setData(json);
-      } catch {
-        // Silently fail — this is a non-critical UX enhancement
-      } finally {
-        clearTimeout(timeoutId);
+      // Retry up to 3 times with exponential backoff for dev-server race conditions
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (cancelled) return;
+        try {
+          const res = await fetchWithAuth("/api/billing/usage", { signal: controller.signal });
+          if (res.ok) {
+            const json = (await res.json()) as UsageData;
+            if (!cancelled) setData(json);
+            return; // Success
+          }
+          // 404/500 — retry if not last attempt
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+          }
+        } catch {
+          // Retry if not last attempt
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
+          }
+        }
       }
+      // All retries exhausted — silently fail (non-critical UX enhancement)
     })();
 
     return () => {

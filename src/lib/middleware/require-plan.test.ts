@@ -11,9 +11,14 @@ import {
   type PlanGateFailure,
 } from "@/lib/middleware/require-plan";
 
-const { mockFindFirst, mockSelect } = vi.hoisted(() => ({
+const { mockFindFirst, mockSelect, mockCachedQuery } = vi.hoisted(() => ({
   mockFindFirst: vi.fn(),
   mockSelect: vi.fn(),
+  mockCachedQuery: vi.fn(),
+}));
+
+vi.mock("@/lib/cache", () => ({
+  cachedQuery: mockCachedQuery,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -41,6 +46,9 @@ function mockZeroCount() {
     }),
   });
 }
+
+// Set default implementation for cachedQuery to pass through without caching
+mockCachedQuery.mockImplementation((_, fn) => fn());
 
 describe("Trial System", () => {
   beforeEach(() => {
@@ -254,6 +262,10 @@ describe("Multi-Account Limits", () => {
 });
 
 describe("require-plan 402 payload", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   const resetAt = new Date("2026-03-01T00:00:00.000Z");
   const failure: PlanGateFailure = {
     allowed: false,

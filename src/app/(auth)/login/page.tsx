@@ -55,6 +55,13 @@ export default async function LoginPage({
           </a>
           .
         </p>
+
+        <p className="text-muted-foreground text-center text-sm">
+          Don&apos;t have an account?{" "}
+          <a href="/register" className="text-primary hover:text-primary/80 font-medium">
+            Register
+          </a>
+        </p>
       </div>
     </div>
   );

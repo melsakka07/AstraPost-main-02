@@ -34,6 +34,7 @@ export function FollowerChart({ data, className }: FollowerChartProps) {
                 left: 10,
                 bottom: 0,
               }}
+              aria-label="Follower growth over the past 30 days"
             >
               <defs>
                 <linearGradient id="colorFollowers" x1="0" y1="0" x2="0" y2="1">

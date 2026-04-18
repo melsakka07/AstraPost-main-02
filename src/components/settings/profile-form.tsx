@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -70,6 +70,18 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
   });
 
   const timezones = Intl.supportedValuesOf("timeZone");
+  const { isDirty } = form.formState;
+
+  // UA-A15: Warn before navigating away with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   const formatPreview = (timezone: string, language: string) => {
     const now = new Date();
@@ -157,7 +169,10 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       <CardHeader>
         <div className="flex items-center gap-2">
           <User className="text-primary h-5 w-5" />
-          <CardTitle>Profile</CardTitle>
+          <CardTitle>
+            Profile
+            {isDirty && <span className="text-destructive ml-1">*</span>}
+          </CardTitle>
         </div>
         <CardDescription>Manage your account details and preferences</CardDescription>
       </CardHeader>
@@ -300,7 +315,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
               </p>
             </div>
             <div className="flex justify-end">
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={!isDirty || loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
                 Save Changes

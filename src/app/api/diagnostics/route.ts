@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { logger } from "@/lib/logger";
 import { checkIpRateLimit, createIpRateLimitResponse } from "@/lib/rate-limiter";
 
 type StatusLevel = "ok" | "warn" | "error";
@@ -34,17 +35,30 @@ interface DiagnosticsResponse {
 
 // This endpoint is intentionally public (no auth required) because it's used
 // by the setup checklist on the homepage before users are logged in.
-// It only returns boolean flags about configuration status, not sensitive data.
+// It returns different levels of detail based on X-Diagnostics-Token header.
+// Full details only with correct token; limited status (ok/error) without token.
 // IP-based rate limiting: 10 requests per hour per IP to prevent abuse.
 export async function GET(req: Request) {
   const headersList = await headers();
   const ip = headersList.get("x-forwarded-for") ?? headersList.get("x-real-ip") ?? "unknown";
+  const userAgent = headersList.get("user-agent") ?? "unknown";
+  const diagnosticsToken = headersList.get("X-Diagnostics-Token");
 
   // 10 requests per hour per IP
   const rl = await checkIpRateLimit(ip, "diagnostics", 10, 3600);
   if (rl?.limited) {
     return createIpRateLimitResponse(rl.retryAfter ?? 3600);
   }
+
+  const hasValidToken = diagnosticsToken === process.env.DIAGNOSTICS_TOKEN;
+
+  // Log all diagnostics requests with IP + user agent
+  logger.info("diagnostics_endpoint_accessed", {
+    ip,
+    userAgent,
+    hasValidToken,
+    timestamp: new Date().toISOString(),
+  });
   const env = {
     POSTGRES_URL: Boolean(process.env.POSTGRES_URL),
     BETTER_AUTH_SECRET: Boolean(process.env.BETTER_AUTH_SECRET),
@@ -145,6 +159,25 @@ export async function GET(req: Request) {
     return "ok";
   })();
 
+  // Return limited info without token (only status)
+  if (!hasValidToken) {
+    logger.info("diagnostics_limited_response_sent", {
+      ip,
+      hasValidToken: false,
+    });
+    return Response.json(
+      {
+        timestamp: new Date().toISOString(),
+        overallStatus,
+        message: "Limited diagnostics. Provide X-Diagnostics-Token header for full details.",
+      },
+      {
+        status: 200,
+      }
+    );
+  }
+
+  // Full diagnostics response only with valid token
   const body: DiagnosticsResponse = {
     timestamp: new Date().toISOString(),
     env,
@@ -166,6 +199,12 @@ export async function GET(req: Request) {
     },
     overallStatus,
   };
+
+  logger.info("diagnostics_full_response_sent", {
+    ip,
+    hasValidToken: true,
+    overallStatus,
+  });
 
   return Response.json(body, {
     status: 200,

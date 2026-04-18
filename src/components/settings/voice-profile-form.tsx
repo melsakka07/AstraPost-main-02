@@ -57,6 +57,19 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
     },
   });
 
+  const { isDirty } = form.formState;
+
+  // UA-A15: Warn before navigating away with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "samples",
@@ -304,7 +317,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                   </div>
 
                   <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={isAnalyzing}>
+                    <Button type="submit" disabled={!isDirty || isAnalyzing}>
                       {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Analyze & Create Profile
                     </Button>

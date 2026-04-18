@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/client-error-handler";
 
 export default function AdminError({
   error,
@@ -13,7 +14,7 @@ export default function AdminError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[admin] Page error:", error);
+    reportError(error, { context: "admin-error", digest: error.digest });
   }, [error]);
 
   return (

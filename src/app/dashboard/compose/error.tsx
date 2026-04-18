@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/client-error-handler";
 
 export default function ComposeError({
   error,
@@ -12,7 +13,7 @@ export default function ComposeError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[compose error]", error);
+    reportError(error, { context: "compose-error", digest: error.digest });
   }, [error]);
 
   return (

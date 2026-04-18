@@ -1,0 +1,95 @@
+{
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "queue": "قائمة الانتظار",
+    "analytics": "التحليلات",
+    "settings": "الإعدادات",
+    "admin": "الإدارة",
+    "features": "المميزات",
+    "pricing": "الأسعار",
+    "blog": "المدونة",
+    "changelog": "سجل التغييرات",
+    "overview": "نظرة عامة",
+    "content": "المحتوى",
+    "ai_tools": "أدوات الذكاء الاصطناعي",
+    "growth": "النمو",
+    "system": "النظام",
+    "compose": "إنشاء",
+    "drafts": "المسودات",
+    "calendar": "التقويم",
+    "writer": "الكاتب",
+    "inspiration": "الإلهام",
+    "agentic_posting": "النشر الموكول",
+    "history": "السجل",
+    "viral_analyzer": "محلل الفيروسية",
+    "competitor": "المنافسون",
+    "achievements": "الإنجازات",
+    "referrals": "الإحالات",
+    "jobs": "الوظائف"
+  },
+  "buttons": {
+    "create": "إنشاء",
+    "delete": "حذف",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "publish": "نشر",
+    "schedule": "جدولة",
+    "draft": "حفظ كمسودة"
+  },
+  "posts": {
+    "title": "المنشورات",
+    "empty_state": "لا توجد منشورات حتى الآن. أنشئ منشورك الأول للبدء.",
+    "create_new": "منشور جديد",
+    "edit_post": "تحرير المنشور",
+    "delete_confirmation": "هل أنت متأكد من رغبتك في حذف هذا المنشور؟",
+    "status": {
+      "draft": "مسودة",
+      "scheduled": "مجدول",
+      "published": "منشور",
+      "failed": "فشل"
+    }
+  },
+  "ai": {
+    "generate_thread": "توليد خيط",
+    "generate_image": "توليد صورة",
+    "generating": "جاري التوليد...",
+    "quota_exceeded": "تم تجاوز حصة الذكاء الاصطناعي. رقِّ خطتك لتوليد المزيد من المحتوى."
+  },
+  "billing": {
+    "upgrade": "ترقية الخطة",
+    "current_plan": "الخطة الحالية",
+    "next_billing_date": "تاريخ الفاتورة التالية: {date}",
+    "cancel_subscription": "إلغاء الاشتراك"
+  },
+  "upgrade_modal": {
+    "ai_generation": "توليد الذكاء الاصطناعي",
+    "scheduled_posts": "المنشورات المجدولة",
+    "connected_x_accounts": "حسابات X المتصلة",
+    "analytics_export": "تصدير التحليلات",
+    "plan_limits": "حدود الخطة",
+    "agency": "وكالة",
+    "pro": "احترافي",
+    "increase_capacity": "زيادة السعة",
+    "unlock_export": "فتح الوصول إلى التصدير",
+    "unlock_pro": "فتح ميزات الاحترافي",
+    "upgrade_to_agency": "الترقية إلى وكالة",
+    "upgrade_to_pro": "الترقية إلى احترافي",
+    "maybe_later": "ربما لاحقاً",
+    "upgrade_description": "لقد وصلت إلى حد {feature} في خطتك الحالية. ترقِّ إلى {plan} للمتابعة.",
+    "feature_agency_1": "توصيل ما يصل إلى 10 حسابات X",
+    "feature_agency_2": "قدرة ذكاء اصطناعي أعلى للفرق",
+    "feature_agency_3": "تقارير بدون علامات تجارية",
+    "feature_agency_4": "دعم أعضاء الفريق",
+    "feature_agency_5": "مدير حساب مخصص",
+    "feature_pro_1": "توليد ذكاء اصطناعي غير محدود",
+    "feature_pro_2": "منشورات غير محدودة شهرياً",
+    "feature_pro_3": "توصيل ما يصل إلى 3 حسابات X",
+    "feature_pro_4": "تحليلات متقدمة",
+    "feature_pro_5": "دعم أولوية"
+  },
+  "errors": {
+    "unauthorized": "أنت غير مصرح بإجراء هذا الإجراء",
+    "not_found": "غير موجود",
+    "server_error": "حدث خطأ ما. يرجى المحاولة لاحقا."
+  }
+}

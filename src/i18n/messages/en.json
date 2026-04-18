@@ -1,0 +1,95 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "queue": "Queue",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "admin": "Admin",
+    "features": "Features",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "changelog": "Changelog",
+    "overview": "Overview",
+    "content": "Content",
+    "ai_tools": "AI Tools",
+    "growth": "Growth",
+    "system": "System",
+    "compose": "Compose",
+    "drafts": "Drafts",
+    "calendar": "Calendar",
+    "writer": "Writer",
+    "inspiration": "Inspiration",
+    "agentic_posting": "Agentic Posting",
+    "history": "History",
+    "viral_analyzer": "Viral Analyzer",
+    "competitor": "Competitor",
+    "achievements": "Achievements",
+    "referrals": "Referrals",
+    "jobs": "Jobs"
+  },
+  "buttons": {
+    "create": "Create",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "publish": "Publish",
+    "schedule": "Schedule",
+    "draft": "Save as Draft"
+  },
+  "posts": {
+    "title": "Posts",
+    "empty_state": "No posts yet. Create your first post to get started.",
+    "create_new": "New Post",
+    "edit_post": "Edit Post",
+    "delete_confirmation": "Are you sure you want to delete this post?",
+    "status": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "failed": "Failed"
+    }
+  },
+  "ai": {
+    "generate_thread": "Generate Thread",
+    "generate_image": "Generate Image",
+    "generating": "Generating...",
+    "quota_exceeded": "AI quota exceeded. Upgrade your plan to generate more content."
+  },
+  "billing": {
+    "upgrade": "Upgrade Plan",
+    "current_plan": "Current Plan",
+    "next_billing_date": "Next billing date: {date}",
+    "cancel_subscription": "Cancel Subscription"
+  },
+  "upgrade_modal": {
+    "ai_generation": "AI generation",
+    "scheduled_posts": "scheduled posts",
+    "connected_x_accounts": "connected X accounts",
+    "analytics_export": "analytics export",
+    "plan_limits": "plan limits",
+    "agency": "Agency",
+    "pro": "Pro",
+    "increase_capacity": "Increase Account Capacity",
+    "unlock_export": "Unlock Export Access",
+    "unlock_pro": "Unlock Pro Features",
+    "upgrade_to_agency": "Upgrade to Agency",
+    "upgrade_to_pro": "Upgrade to Pro",
+    "maybe_later": "Maybe later",
+    "upgrade_description": "You reached the {feature} limit on your current plan. Upgrade to {plan} to continue.",
+    "feature_agency_1": "Connect up to 10 X accounts",
+    "feature_agency_2": "Higher AI capacity for teams",
+    "feature_agency_3": "White-label reports",
+    "feature_agency_4": "Team members support",
+    "feature_agency_5": "Dedicated account manager",
+    "feature_pro_1": "Unlimited AI generations",
+    "feature_pro_2": "Unlimited posts per month",
+    "feature_pro_3": "Connect up to 3 X accounts",
+    "feature_pro_4": "Advanced analytics",
+    "feature_pro_5": "Priority support"
+  },
+  "errors": {
+    "unauthorized": "You are not authorized to perform this action",
+    "not_found": "Not found",
+    "server_error": "Something went wrong. Please try again later."
+  }
+}

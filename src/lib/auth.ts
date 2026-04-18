@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { twoFactor } from "better-auth/plugins";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "./db";
 import { logger } from "./logger";
@@ -8,9 +9,17 @@ import { user as userTable } from "./schema";
 import { decryptToken, encryptToken, isEncryptedToken } from "./security/token-encryption";
 
 export const auth = betterAuth({
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    autoSignIn: true,
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
+  plugins: [
+    twoFactor(), // Enable TOTP-based 2FA with automatic backup code generation
+  ],
   user: {
     additionalFields: {
       isAdmin: {

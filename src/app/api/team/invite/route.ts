@@ -24,9 +24,20 @@ export async function POST(req: NextRequest) {
       return ApiError.forbidden("Only owners and admins can invite members");
     }
 
-    // Parse body
+    // Parse and validate body
     const json = await req.json();
-    const { email, role } = inviteSchema.parse(json);
+    const parsed = inviteSchema.safeParse(json);
+
+    if (!parsed.success) {
+      logger.info("team_invite_validation_failed", {
+        userId: ctx.session.user.id,
+        teamId: ctx.currentTeamId,
+        errors: parsed.error.issues,
+      });
+      return ApiError.badRequest(parsed.error.issues);
+    }
+
+    const { email, role } = parsed.data;
 
     // Check plan limits
     const owner = await db.query.user.findFirst({
@@ -93,13 +104,16 @@ export async function POST(req: NextRequest) {
     // Send email
     await sendTeamInvitationEmail(email, token, owner?.name || "AstraPost Team");
 
+    logger.info("team_invite_created", {
+      userId: ctx.session.user.id,
+      teamId: ctx.currentTeamId,
+      invitedEmail: email,
+      role,
+    });
+
     return Response.json({ success: true, message: "Invitation sent" });
   } catch (error: any) {
-    if (error instanceof z.ZodError) {
-      return ApiError.badRequest(error.issues);
-    }
-
-    logger.error("Invite Error", { error });
+    logger.error("team_invite_error", { error });
     return ApiError.internal("Internal Server Error");
   }
 }

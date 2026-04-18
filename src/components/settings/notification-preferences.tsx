@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,18 @@ interface NotificationPreferencesProps {
 export function NotificationPreferences({ initialSettings }: NotificationPreferencesProps) {
   const [settings, setSettings] = useState(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
+  const isDirty = JSON.stringify(settings) !== JSON.stringify(initialSettings);
+
+  // UA-A15: Warn before navigating away with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   const handleToggle = async (key: keyof NotificationSettings) => {
     const newSettings = { ...settings, [key]: !settings[key] };
@@ -72,7 +84,10 @@ export function NotificationPreferences({ initialSettings }: NotificationPrefere
       <CardHeader>
         <div className="flex items-center gap-2">
           <Bell className="text-primary h-5 w-5" />
-          <CardTitle>Notifications</CardTitle>
+          <CardTitle>
+            Notifications
+            {isDirty && <span className="text-destructive ml-1">*</span>}
+          </CardTitle>
         </div>
         <CardDescription>Control when you receive alerts and notifications</CardDescription>
       </CardHeader>

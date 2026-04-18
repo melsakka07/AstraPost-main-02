@@ -15,6 +15,7 @@ interface CollapsibleSectionProps {
   onNavigate?: () => void;
   isMobile: boolean;
   userPlan?: string;
+  t?: (key: string, options?: { defaultValue?: string }) => string;
 }
 
 export function CollapsibleSection({
@@ -24,6 +25,7 @@ export function CollapsibleSection({
   onNavigate,
   isMobile,
   userPlan = "free",
+  t,
 }: CollapsibleSectionProps) {
   const hasActiveChild = section.items.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -56,7 +58,9 @@ export function CollapsibleSection({
         // Prevent keyboard interaction on desktop where the button is decorative
         tabIndex={isMobile ? 0 : -1}
       >
-        {section.label}
+        {t
+          ? t(section.label.toLowerCase().replace(/\s+/g, "_"), { defaultValue: section.label })
+          : section.label}
         {isMobile && (
           <ChevronDown
             className={cn(
@@ -77,6 +81,10 @@ export function CollapsibleSection({
       >
         {section.items.map((item) => {
           const isActive = isItemActive(item.href, pathname, allNavItems);
+          const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
+          const translatedItemLabel = t
+            ? t(itemLabelKey, { defaultValue: item.label })
+            : item.label;
           return (
             <Link
               key={item.href}
@@ -95,7 +103,7 @@ export function CollapsibleSection({
               )}
             >
               <item.icon className="h-4.5 w-4.5 shrink-0" />
-              {item.label}
+              {translatedItemLabel}
               {item.isNew && (
                 <Badge className="ms-auto h-4 border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0 text-[10px] text-emerald-600">
                   New

@@ -1,4 +1,6 @@
+import * as React from "react";
 import { headers } from "next/headers";
+import * as Sentry from "@sentry/nextjs";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { CancelScheduledEmail } from "@/components/email/billing/cancel-scheduled-email";
 import { PaymentFailedEmail } from "@/components/email/billing/payment-failed-email";
@@ -7,6 +9,7 @@ import { ReactivatedEmail } from "@/components/email/billing/reactivated-email";
 import { SubscriptionCancelledEmail } from "@/components/email/billing/subscription-cancelled-email";
 import { TrialEndingSoonEmail } from "@/components/email/billing/trial-ending-soon-email";
 import { TrialExpiredEmail } from "@/components/email/billing/trial-expired-email";
+import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { PLAN_LIMITS } from "@/lib/plan-limits";
@@ -18,6 +21,8 @@ import {
   user,
   xAccounts,
   posts,
+  webhookDeadLetterQueue,
+  webhookDeliveryLog,
 } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
 import { notifyBillingEvent } from "@/lib/services/notifications";
@@ -348,6 +353,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       stripeSubscriptionId: subscription.id,
     });
 
+    await cache.delete(`plan:${existingRecord.userId}`);
+
     logger.warn("webhook_subscription_incomplete_expired_downgrade", {
       userId: existingRecord.userId,
       stripeSubscriptionId: subscription.id,
@@ -412,11 +419,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       });
     });
 
+    // Invalidate plan caches after plan change to ensure fresh plan limits
+    // Cache key pattern matches getPlanContext in require-plan.ts
+    await cache.delete(`plan:${existingRecord.userId}`);
+
     logger.warn("webhook_subscription_plan_synced", {
       userId: existingRecord.userId,
       oldPlan: existingRecord.plan,
       newPlan,
       stripeSubscriptionId: subscription.id,
+      cacheCleared: true,
     });
 
     const planLabel = newPlan.replace(/_/g, " ");
@@ -749,6 +761,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     });
   });
 
+  await cache.delete(`plan:${subRecord.userId}`);
+
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
     columns: { email: true, name: true },
@@ -796,19 +810,23 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   const subRecord = await getSubscriptionRecord(stripeSubscriptionId);
   if (!subRecord) return;
 
-  await db
-    .update(subscriptions)
-    .set({
-      status: "active",
-    })
-    .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(subscriptions)
+      .set({
+        status: "active",
+      })
+      .where(eq(subscriptions.stripeSubscriptionId, stripeSubscriptionId));
 
-  await db
-    .update(user)
-    .set({
-      planExpiresAt: null,
-    })
-    .where(eq(user.id, subRecord.userId));
+    await tx
+      .update(user)
+      .set({
+        planExpiresAt: null,
+      })
+      .where(eq(user.id, subRecord.userId));
+
+    await cache.delete(`plan:${subRecord.userId}`);
+  });
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
@@ -923,110 +941,241 @@ async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = (await headers()).get("Stripe-Signature") as string;
+  const startTime = Date.now();
+  const DLQ_FAILURE_THRESHOLD = 5;
 
-  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
-    logger.error("[billing] Stripe config missing — webhook disabled");
-    return new Response("Config Error", { status: 500 });
-  }
-
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (error) {
-    logger.error("Webhook signature verification failed", { error });
-    return new Response("Webhook Error", { status: 400 });
-  }
-
-  // ── Idempotency guard ────────────────────────────────────────────────────
-  // Stripe retries webhooks on non-2xx responses and occasionally on timeouts.
-  // We INSERT first — ON CONFLICT DO NOTHING means we only process if this is new.
-  // This atomic pattern prevents duplicate processing even under race conditions.
-  const [inserted] = await db
-    .insert(processedWebhookEvents)
-    .values({ id: crypto.randomUUID(), stripeEventId: event.id, eventType: event.type })
-    .onConflictDoNothing()
-    .returning({ id: processedWebhookEvents.id });
-
-  if (!inserted) {
-    // Event already processed — skip
-    return new Response(null, { status: 200 });
-  }
-
-  try {
-    switch (event.type) {
-      case "checkout.session.completed":
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-        break;
-      case "customer.subscription.updated":
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-        break;
-      case "customer.subscription.deleted":
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-        break;
-      case "invoice.payment_failed":
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-        break;
-      case "invoice.payment_succeeded":
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
-        break;
-      case "customer.subscription.trial_will_end":
-        await handleTrialWillEnd(event.data.object as Stripe.Subscription);
-        break;
-      case "checkout.session.expired":
-        await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session);
-        break;
-      default:
-        break;
-    }
-  } catch (error) {
-    logger.error("Stripe webhook processing failed", {
-      eventType: event.type,
-      eventId: event.id,
-      error,
-    });
-    // Update retry count instead of deleting — allows monitoring repeated failures
-    try {
-      const [updated] = await db
-        .update(processedWebhookEvents)
-        .set({
-          retryCount: sql`${processedWebhookEvents.retryCount} + 1`,
-          errorMessage: error instanceof Error ? error.message : String(error),
-        })
-        .where(eq(processedWebhookEvents.stripeEventId, event.id))
-        .returning({ retryCount: processedWebhookEvents.retryCount });
-
-      // Alert admins when a webhook has failed 3+ times
-      if (updated && updated.retryCount >= 3) {
-        const admins = await db
-          .select({ id: user.id })
-          .from(user)
-          .where(eq(user.isAdmin, true))
-          .limit(5);
-
-        for (const admin of admins) {
-          await runSideEffect(
-            () =>
-              notifyBillingEvent({
-                userId: admin.id,
-                type: "webhook_processing_failed",
-                title: "Webhook retry alert",
-                message: `Stripe webhook ${event.type} (event ${event.id}) has failed ${updated.retryCount} times. Manual investigation may be needed.`,
-                metadata: {
-                  eventType: event.type,
-                  eventId: event.id,
-                  retryCount: updated.retryCount,
-                },
-              }),
-            `webhook_alert_${event.id}`
-          );
-        }
+  return Sentry.startSpan(
+    {
+      name: "webhook.stripe",
+      op: "http.server",
+    },
+    async () => {
+      if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
+        logger.error("[billing] Stripe config missing — webhook disabled");
+        return new Response("Config Error", { status: 500 });
       }
-    } catch {
-      // Ignore update failure
+
+      let event: Stripe.Event;
+
+      try {
+        event = await stripe.webhooks.constructEventAsync(
+          body,
+          signature,
+          process.env.STRIPE_WEBHOOK_SECRET
+        );
+      } catch (error) {
+        await db.insert(webhookDeliveryLog).values({
+          id: crypto.randomUUID(),
+          stripeEventId: "unknown",
+          eventType: "unknown",
+          status: "failure",
+          statusCode: 400,
+          processingTimeMs: Date.now() - startTime,
+          errorMessage: "Signature verification failed",
+          requestBody: body.slice(0, 2000), // Truncate for storage
+          requestSignature: signature,
+        });
+        logger.error("Webhook signature verification failed", { error });
+        return new Response("Webhook Error", { status: 400 });
+      }
+
+      Sentry.setTag("stripe_event_id", event.id);
+      Sentry.setTag("stripe_event_type", event.type);
+
+      // ── Idempotency guard ────────────────────────────────────────────────────
+      // Stripe retries webhooks on non-2xx responses and occasionally on timeouts.
+      // We INSERT first — ON CONFLICT DO NOTHING means we only process if this is new.
+      // This atomic pattern prevents duplicate processing even under race conditions.
+      const [inserted] = await db
+        .insert(processedWebhookEvents)
+        .values({ id: crypto.randomUUID(), stripeEventId: event.id, eventType: event.type })
+        .onConflictDoNothing()
+        .returning({ id: processedWebhookEvents.id });
+
+      if (!inserted) {
+        // Event already processed — skip
+        return new Response(null, { status: 200 });
+      }
+
+      try {
+        switch (event.type) {
+          case "checkout.session.completed":
+            await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+            break;
+          case "customer.subscription.updated":
+            await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+            break;
+          case "customer.subscription.deleted":
+            await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+            break;
+          case "invoice.payment_failed":
+            await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+            break;
+          case "invoice.payment_succeeded":
+            await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+            break;
+          case "customer.subscription.trial_will_end":
+            await handleTrialWillEnd(event.data.object as Stripe.Subscription);
+            break;
+          case "checkout.session.expired":
+            await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session);
+            break;
+          default:
+            break;
+        }
+
+        // Log successful processing
+        await db.insert(webhookDeliveryLog).values({
+          id: crypto.randomUUID(),
+          stripeEventId: event.id,
+          eventType: event.type,
+          status: "success",
+          statusCode: 200,
+          processingTimeMs: Date.now() - startTime,
+          requestBody: body.slice(0, 2000),
+          requestSignature: signature,
+        });
+
+        Sentry.captureMessage("Webhook processed successfully", "info");
+      } catch (error) {
+        Sentry.captureException(error, {
+          contexts: {
+            webhook: {
+              eventId: event.id,
+              eventType: event.type,
+            },
+          },
+          level: "error",
+        });
+
+        const processingTimeMs = Date.now() - startTime;
+        logger.error("Stripe webhook processing failed", {
+          eventType: event.type,
+          eventId: event.id,
+          error,
+        });
+        // Update retry count instead of deleting — allows monitoring repeated failures
+        try {
+          const [updated] = await db
+            .update(processedWebhookEvents)
+            .set({
+              retryCount: sql`${processedWebhookEvents.retryCount} + 1`,
+              errorMessage: error instanceof Error ? error.message : String(error),
+            })
+            .where(eq(processedWebhookEvents.stripeEventId, event.id))
+            .returning({ retryCount: processedWebhookEvents.retryCount });
+
+          // Log failure
+          await db.insert(webhookDeliveryLog).values({
+            id: crypto.randomUUID(),
+            stripeEventId: event.id,
+            eventType: event.type,
+            status: "failure",
+            processingTimeMs,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            requestBody: body.slice(0, 2000),
+            requestSignature: signature,
+          });
+
+          if (updated && updated.retryCount >= DLQ_FAILURE_THRESHOLD) {
+            // Move to dead-letter queue
+            await db
+              .insert(webhookDeadLetterQueue)
+              .values({
+                id: crypto.randomUUID(),
+                stripeEventId: event.id,
+                eventType: event.type,
+                eventData: event.data,
+                errorMessage: error instanceof Error ? error.message : String(error),
+                failureCount: updated.retryCount,
+                requestBody: body.slice(0, 5000),
+                requestSignature: signature,
+              })
+              .onConflictDoUpdate({
+                target: webhookDeadLetterQueue.stripeEventId,
+                set: {
+                  failureCount: updated.retryCount,
+                  errorMessage: error instanceof Error ? error.message : String(error),
+                },
+              });
+
+            // Alert admins that webhook moved to DLQ
+            const admins = await db
+              .select({ id: user.id, email: user.email })
+              .from(user)
+              .where(eq(user.isAdmin, true))
+              .limit(5);
+
+            for (const admin of admins) {
+              await runSideEffect(
+                () =>
+                  notifyBillingEvent({
+                    userId: admin.id,
+                    type: "webhook_processing_failed",
+                    title: "Webhook moved to dead-letter queue",
+                    message: `Stripe webhook ${event.type} (event ${event.id}) has failed ${updated.retryCount} times and moved to dead-letter queue. Manual review required.`,
+                    metadata: {
+                      eventType: event.type,
+                      eventId: event.id,
+                      failureCount: updated.retryCount,
+                    },
+                  }),
+                `webhook_dlq_alert_${event.id}`
+              );
+
+              if (admin.email) {
+                await runSideEffect(
+                  () =>
+                    sendBillingEmail({
+                      to: admin.email!,
+                      subject: `⚠️ Webhook Dead-Letter Queue: ${event.type}`,
+                      text: `A Stripe webhook (${event.type}, event ID: ${event.id}) has failed ${updated.retryCount} times and been moved to the dead-letter queue.\n\nPlease investigate at: /admin/webhooks/dead-letter-queue\n\nLast error: ${error instanceof Error ? error.message : String(error)}`,
+                      react: React.createElement("div", null, `Webhook failed: ${event.type}`), // fallback basic email
+                      metadata: {
+                        event: "webhook_dlq",
+                        eventType: event.type,
+                        eventId: event.id,
+                      },
+                    }),
+                  `webhook_dlq_email_${event.id}`
+                );
+              }
+            }
+          } else if (updated && updated.retryCount >= 3) {
+            const admins = await db
+              .select({ id: user.id })
+              .from(user)
+              .where(eq(user.isAdmin, true))
+              .limit(5);
+
+            for (const admin of admins) {
+              await runSideEffect(
+                () =>
+                  notifyBillingEvent({
+                    userId: admin.id,
+                    type: "webhook_processing_failed",
+                    title: "Webhook retry alert",
+                    message: `Stripe webhook ${event.type} (event ${event.id}) has failed ${updated.retryCount} times. Will move to DLQ after ${DLQ_FAILURE_THRESHOLD} failures.`,
+                    metadata: {
+                      eventType: event.type,
+                      eventId: event.id,
+                      retryCount: updated.retryCount,
+                      failureThreshold: DLQ_FAILURE_THRESHOLD,
+                    },
+                  }),
+                `webhook_alert_${event.id}`
+              );
+            }
+          }
+        } catch {
+          // Ignore update failure
+        }
+        return new Response("Webhook Processing Error", { status: 500 });
+      }
+
+      return new Response(null, { status: 200 });
     }
-    return new Response("Webhook Processing Error", { status: 500 });
-  }
+  );
 
   return new Response(null, { status: 200 });
 }

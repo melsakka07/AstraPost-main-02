@@ -1,4 +1,5 @@
 import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
+import { cachedQuery } from "@/lib/cache";
 import { db } from "@/lib/db";
 import {
   getPlanLimits,
@@ -61,33 +62,39 @@ interface PlanGateSuccess {
 export type PlanGateResult = PlanGateSuccess | PlanGateFailure;
 
 async function getPlanContext(userId: string): Promise<PlanContext> {
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, userId),
-    columns: { plan: true, trialEndsAt: true, createdAt: true, planExpiresAt: true },
-  });
+  return cachedQuery(
+    `plan:${userId}`,
+    async () => {
+      const dbUser = await db.query.user.findFirst({
+        where: eq(user.id, userId),
+        columns: { plan: true, trialEndsAt: true, createdAt: true, planExpiresAt: true },
+      });
 
-  const plan = normalizePlan(dbUser?.plan);
-  let trialEndsAt = dbUser?.trialEndsAt ?? null;
+      const plan = normalizePlan(dbUser?.plan);
+      let trialEndsAt = dbUser?.trialEndsAt ?? null;
 
-  // Grace period enforcement: if planExpiresAt has passed, treat as free
-  const now = new Date();
-  const effectivePlanBase = dbUser?.planExpiresAt && dbUser.planExpiresAt < now ? "free" : plan;
+      // Grace period enforcement: if planExpiresAt has passed, treat as free
+      const now = new Date();
+      const effectivePlanBase = dbUser?.planExpiresAt && dbUser.planExpiresAt < now ? "free" : plan;
 
-  if (plan === "free" && !trialEndsAt && dbUser?.createdAt) {
-    const inferredTrialEndsAt = new Date(dbUser.createdAt);
-    inferredTrialEndsAt.setDate(inferredTrialEndsAt.getDate() + 14);
-    trialEndsAt = inferredTrialEndsAt;
+      if (plan === "free" && !trialEndsAt && dbUser?.createdAt) {
+        const inferredTrialEndsAt = new Date(dbUser.createdAt);
+        inferredTrialEndsAt.setDate(inferredTrialEndsAt.getDate() + 14);
+        trialEndsAt = inferredTrialEndsAt;
 
-    await db
-      .update(user)
-      .set({ trialEndsAt: inferredTrialEndsAt })
-      .where(and(eq(user.id, userId), isNull(user.trialEndsAt)));
-  }
+        await db
+          .update(user)
+          .set({ trialEndsAt: inferredTrialEndsAt })
+          .where(and(eq(user.id, userId), isNull(user.trialEndsAt)));
+      }
 
-  const isTrialActive = effectivePlanBase === "free" && !!trialEndsAt && now < trialEndsAt;
-  const effectivePlan = isTrialActive ? TRIAL_EFFECTIVE_PLAN : effectivePlanBase;
+      const isTrialActive = effectivePlanBase === "free" && !!trialEndsAt && now < trialEndsAt;
+      const effectivePlan = isTrialActive ? TRIAL_EFFECTIVE_PLAN : effectivePlanBase;
 
-  return { plan: effectivePlanBase, effectivePlan, trialEndsAt, isTrialActive };
+      return { plan: effectivePlanBase, effectivePlan, trialEndsAt, isTrialActive };
+    },
+    5 * 60 // 5 minutes
+  );
 }
 
 function buildFailure(params: Omit<PlanGateFailure, "allowed">): PlanGateFailure {

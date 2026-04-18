@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const NAV_LINKS = [
-  { label: "Features", href: "/features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
-  { label: "Changelog", href: "/changelog" },
+const NAV_LINK_KEYS = [
+  { key: "features", href: "/features" },
+  { key: "pricing", href: "/pricing" },
+  { key: "blog", href: "/blog" },
+  { key: "changelog", href: "/changelog" },
 ] as const;
 
 interface MobileMenuProps {
@@ -19,6 +20,7 @@ interface MobileMenuProps {
 }
 
 export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
+  const t = useTranslations("nav");
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -89,7 +91,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
         <nav className="container mx-auto px-4 py-5" aria-label="Mobile navigation">
           {/* Nav links — onClick closes menu (clean, no useEffect setState) */}
           <ul className="space-y-1" role="list">
-            {NAV_LINKS.map(({ label, href }) => {
+            {NAV_LINK_KEYS.map(({ key, href }) => {
               const isActive = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <li key={href}>
@@ -104,7 +106,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
-                    {label}
+                    {t(key)}
                   </Link>
                 </li>
               );

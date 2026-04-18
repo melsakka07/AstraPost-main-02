@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Check, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { create } from "zustand";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,30 +48,32 @@ export const useUpgradeModal = create<UpgradeModalStore>((set) => ({
 export function UpgradeModal() {
   const { isOpen, context, close } = useUpgradeModal();
   const router = useRouter();
+  const t = useTranslations("upgrade_modal");
+
   const featureLabel =
     context?.feature === "ai_writer" || context?.feature === "ai_quota"
-      ? "AI generation"
+      ? t("ai_generation")
       : context?.feature === "scheduled_posts"
-        ? "scheduled posts"
+        ? t("scheduled_posts")
         : context?.feature === "x_accounts"
-          ? "connected X accounts"
+          ? t("connected_x_accounts")
           : context?.feature === "analytics_export"
-            ? "analytics export"
-            : "plan limits";
+            ? t("analytics_export")
+            : t("plan_limits");
 
   const suggestedPlanLabel =
     context?.suggestedPlan === "agency"
-      ? "Agency"
+      ? t("agency")
       : context?.suggestedPlan === "pro_annual" || context?.suggestedPlan === "pro_monthly"
-        ? "Pro"
-        : "Pro";
+        ? t("pro")
+        : t("pro");
 
   const title =
     context?.feature === "x_accounts"
-      ? "Increase Account Capacity"
+      ? t("increase_capacity")
       : context?.feature === "analytics_export"
-        ? "Unlock Export Access"
-        : "Unlock Pro Features";
+        ? t("unlock_export")
+        : t("unlock_pro");
 
   const usageText =
     typeof context?.limit === "number" && typeof context?.used === "number"
@@ -79,28 +82,29 @@ export function UpgradeModal() {
   const remainingText =
     typeof context?.remaining === "number" ? `${context.remaining} remaining` : null;
   const trialContextText = context?.trialActive ? "You are currently on trial." : null;
-  const ctaPlanLabel = context?.suggestedPlan === "agency" ? "Upgrade to Agency" : "Upgrade to Pro";
+  const ctaPlanLabel =
+    context?.suggestedPlan === "agency" ? t("upgrade_to_agency") : t("upgrade_to_pro");
   const description =
     context?.message ||
-    `You reached the ${featureLabel} limit on your current plan. Upgrade to ${suggestedPlanLabel} to continue.`;
+    t("upgrade_description", { feature: featureLabel, plan: suggestedPlanLabel });
   const metaLine = [usageText, remainingText, trialContextText].filter(Boolean).join(" • ");
   const ctaHref =
     context?.upgradeUrl && context.upgradeUrl.startsWith("/") ? context.upgradeUrl : "/pricing";
   const planFeatures =
     context?.suggestedPlan === "agency"
       ? [
-          "Connect up to 10 X accounts",
-          "Higher AI capacity for teams",
-          "White-label reports",
-          "Team members support",
-          "Dedicated account manager",
+          t("feature_agency_1"),
+          t("feature_agency_2"),
+          t("feature_agency_3"),
+          t("feature_agency_4"),
+          t("feature_agency_5"),
         ]
       : [
-          "Unlimited AI generations",
-          "Unlimited posts per month",
-          "Connect up to 3 X accounts",
-          "Advanced analytics",
-          "Priority support",
+          t("feature_pro_1"),
+          t("feature_pro_2"),
+          t("feature_pro_3"),
+          t("feature_pro_4"),
+          t("feature_pro_5"),
         ];
 
   return (
@@ -142,7 +146,7 @@ export function UpgradeModal() {
             {ctaPlanLabel}
           </Button>
           <Button variant="ghost" onClick={close} className="w-full">
-            Maybe later
+            {t("maybe_later")}
           </Button>
         </DialogFooter>
       </DialogContent>

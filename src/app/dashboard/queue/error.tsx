@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/client-error-handler";
 
 export default function QueueError({
   error,
@@ -12,7 +13,7 @@ export default function QueueError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[queue error]", error);
+    reportError(error, { context: "queue-error", digest: error.digest });
   }, [error]);
 
   return (

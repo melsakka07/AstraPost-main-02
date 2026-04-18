@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { reportError } from "@/lib/client-error-handler";
 
 export default function Error({
   error,
@@ -12,8 +13,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error("Application error:", error);
+    reportError(error, { context: "root-error", digest: error.digest });
   }, [error]);
 
   return (

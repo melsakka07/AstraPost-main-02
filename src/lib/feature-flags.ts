@@ -1,34 +1,27 @@
 import { eq } from "drizzle-orm";
+import { cachedQuery, cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { featureFlags } from "@/lib/schema";
 
-// ── In-memory cache (60-second TTL) ──────────────────────────────────────────
-
-const cache = new Map<string, { enabled: boolean; expiresAt: number }>();
-const CACHE_TTL_MS = 60_000;
-
 /**
  * Check if a feature flag is enabled.
- * Results are cached in-memory for 60 seconds per key.
+ * Results are cached in Redis for 10 minutes per key.
  * Returns false when the flag does not exist or DB is unavailable.
  */
 export async function isFeatureEnabled(key: string): Promise<boolean> {
-  const now = Date.now();
-  const cached = cache.get(key);
-  if (cached && cached.expiresAt > now) {
-    return cached.enabled;
-  }
-
   try {
-    const [flag] = await db
-      .select({ enabled: featureFlags.enabled })
-      .from(featureFlags)
-      .where(eq(featureFlags.key, key))
-      .limit(1);
-
-    const enabled = flag?.enabled ?? false;
-    cache.set(key, { enabled, expiresAt: now + CACHE_TTL_MS });
-    return enabled;
+    return await cachedQuery(
+      `feature:${key}`,
+      async () => {
+        const [flag] = await db
+          .select({ enabled: featureFlags.enabled })
+          .from(featureFlags)
+          .where(eq(featureFlags.key, key))
+          .limit(1);
+        return flag?.enabled ?? false;
+      },
+      10 * 60 // 10 minutes
+    );
   } catch {
     // Fail open — do not block features if DB is momentarily unavailable
     return false;
@@ -36,11 +29,11 @@ export async function isFeatureEnabled(key: string): Promise<boolean> {
 }
 
 /**
- * Invalidate the in-memory cache for a specific key.
+ * Invalidate the Redis cache for a specific key.
  * Call this after toggling a flag via the admin API.
  */
-export function invalidateFeatureFlag(key: string): void {
-  cache.delete(key);
+export async function invalidateFeatureFlag(key: string): Promise<void> {
+  await cache.delete(`feature:${key}`);
 }
 
 // ── Default flags ─────────────────────────────────────────────────────────────

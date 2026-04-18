@@ -1,33 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import { apiVersionMiddleware } from "@/lib/api/version-middleware";
 
 /**
- * Next.js 16 Proxy for auth protection.
+ * Next.js 16 Proxy for auth protection and API versioning.
  * Uses cookie-based checks for fast, optimistic redirects.
  *
- * Note: This only checks for cookie existence, not validity.
+ * Note: Auth only checks for cookie existence, not validity.
  * Full session validation should be done in each protected page/route.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Forward pathname as a request header so server layouts can read the
-  // current route without any client-side tricks.
   const requestHeaders = new Headers(request.headers);
+
+  // API versioning
+  if (pathname.startsWith("/api/")) {
+    const versionedReq = await apiVersionMiddleware(request);
+    if (versionedReq) {
+      return NextResponse.rewrite(versionedReq.url);
+    }
+    return NextResponse.next();
+  }
+
+  // Set pathname header for server layouts
   requestHeaders.set("x-pathname", pathname);
 
-  // Define protected routes
+  // Auth protection for protected routes
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isAdminRoute = pathname.startsWith("/admin");
   const isChatRoute = pathname.startsWith("/chat");
   const isProfileRoute = pathname.startsWith("/profile");
 
   if (isDashboardRoute || isAdminRoute || isChatRoute || isProfileRoute) {
-    // Check for session cookie
-    // Better Auth uses "better-auth.session_token" by default,
-    // or "better-auth.session_token.secure" in production (https)
     const sessionCookie = getSessionCookie(request);
-
     if (!sessionCookie) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
@@ -36,9 +41,26 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  // Set language from cookie for components to use
+  const language = request.cookies.get("language")?.value || "en";
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+    headers: {
+      "x-locale": language,
+    },
+  });
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/chat/:path*", "/profile/:path*"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!_next/static|_next/image|favicon.ico).*)",
+  ],
 };
