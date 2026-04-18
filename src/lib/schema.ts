@@ -402,6 +402,7 @@ export const posts = pgTable(
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date()),
+    deletedAt: timestamp("deleted_at"), // soft-delete; null = active post
   },
   (table) => [
     index("posts_user_id_idx").on(table.userId),
@@ -1301,6 +1302,7 @@ export const featureFlags = pgTable(
     key: text("key").notNull().unique(),
     enabled: boolean("enabled").default(false).notNull(),
     description: text("description"),
+    rolloutPercentage: integer("rollout_percentage").default(0).notNull(), // 0-100% for gradual rollout
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => new Date())
@@ -1419,6 +1421,10 @@ export const agenticPostsRelations = relations(agenticPosts, ({ one }) => ({
 }));
 
 // ── Type Exports ────────────────────────────────────────────────────────────
+export type User = typeof user.$inferSelect;
+export type InsertUser = typeof user.$inferInsert;
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = typeof posts.$inferInsert;
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
 export type InsertAdminAuditLog = typeof adminAuditLog.$inferInsert;
 export type SessionWithImpersonation = typeof session.$inferSelect & {

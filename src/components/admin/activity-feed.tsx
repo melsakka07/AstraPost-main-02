@@ -78,6 +78,7 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const pathname = usePathname();
 
   const inFlightRef = useRef(false);
@@ -106,6 +107,7 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
 
       const { data } = (await res.json()) as { data: AuditLog[] };
       setActivities(data);
+      setLastUpdated(new Date());
       setError(null);
     } catch (err) {
       // AbortError is expected on timeout
@@ -149,8 +151,15 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg">Recent Admin Activity</CardTitle>
+      <CardHeader className="flex flex-col gap-2 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <CardTitle className="text-lg">Recent Admin Activity</CardTitle>
+          {lastUpdated && (
+            <p className="text-muted-foreground mt-1 text-xs">
+              Last updated: {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+            </p>
+          )}
+        </div>
         <Button variant="ghost" size="sm" onClick={() => void fetchActivities()} disabled={loading}>
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
         </Button>

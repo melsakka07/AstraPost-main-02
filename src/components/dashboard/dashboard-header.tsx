@@ -5,6 +5,7 @@ import { UserProfile } from "@/components/auth/user-profile";
 import { AccountSwitcher } from "@/components/dashboard/account-switcher";
 import { LanguageSwitcher } from "@/components/dashboard/language-switcher";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
+import { ThemeSwitcher } from "@/components/dashboard/theme-switcher";
 import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
@@ -43,6 +44,7 @@ export function DashboardHeader({ user, currentTeamId, memberships }: DashboardH
 
       <AccountSwitcher user={user} currentTeamId={currentTeamId} teams={memberships} />
       <div className="flex flex-1 items-center justify-end gap-x-3 lg:gap-x-6">
+        <ThemeSwitcher />
         <LanguageSwitcher />
         <NotificationBell />
         <div className="bg-border hidden h-6 w-px lg:block" aria-hidden="true" />

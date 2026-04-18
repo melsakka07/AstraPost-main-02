@@ -10,7 +10,8 @@ import { invalidateFeatureFlag } from "@/lib/feature-flags";
 import { featureFlags } from "@/lib/schema";
 
 const patchSchema = z.object({
-  enabled: z.boolean(),
+  enabled: z.boolean().optional(),
+  rolloutPercentage: z.number().int().min(0).max(100).optional(),
 });
 
 // ── PATCH /api/admin/feature-flags/[key] ─────────────────────────────────────
@@ -38,9 +39,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
+  // Build update object with only provided fields
+  const updateData: { enabled?: boolean; rolloutPercentage?: number } = {};
+  if (parsed.data.enabled !== undefined) {
+    updateData.enabled = parsed.data.enabled;
+  }
+  if (parsed.data.rolloutPercentage !== undefined) {
+    updateData.rolloutPercentage = parsed.data.rolloutPercentage;
+  }
+
   const [updated] = await db
     .update(featureFlags)
-    .set({ enabled: parsed.data.enabled })
+    .set(updateData)
     .where(eq(featureFlags.key, key))
     .returning();
 
@@ -55,7 +65,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
     action: "feature_flag_toggle",
     targetType: "feature_flag",
     targetId: key,
-    details: { enabled: parsed.data.enabled },
+    details: {
+      ...(parsed.data.enabled !== undefined && { enabled: parsed.data.enabled }),
+      ...(parsed.data.rolloutPercentage !== undefined && {
+        rolloutPercentage: parsed.data.rolloutPercentage,
+      }),
+    },
   });
 
   return Response.json({ data: updated });

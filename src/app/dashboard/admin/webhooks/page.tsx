@@ -1,5 +1,6 @@
 import { desc } from "drizzle-orm";
 import { Bell } from "lucide-react";
+import { WebhookDLQTable } from "@/components/admin/webhook-dlq-table";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
@@ -35,35 +36,10 @@ export default async function WebhooksPage() {
         <div>
           <h2 className="text-lg font-semibold">Dead-Letter Queue</h2>
           <p className="text-muted-foreground mb-4 text-sm">
-            Webhooks that failed after 5 retries. Click "Replay" to re-process.
+            Webhooks that failed after 5 retries. Click "Replay" to re-invoke the same handlers as
+            the main webhook processor.
           </p>
-          <div className="rounded-md border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 border-b">
-                  <th className="p-2 text-left">Event ID</th>
-                  <th className="p-2 text-left">Type</th>
-                  <th className="p-2 text-left">Error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dlqEntries.map((e) => (
-                  <tr key={e.id} className="border-b">
-                    <td className="p-2 font-mono">{e.stripeEventId}</td>
-                    <td className="p-2">{e.eventType}</td>
-                    <td className="p-2 text-red-500">{e.errorMessage}</td>
-                  </tr>
-                ))}
-                {dlqEntries.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="text-muted-foreground p-4 text-center">
-                      No DLQ entries
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <WebhookDLQTable entries={dlqEntries} />
         </div>
 
         <div>

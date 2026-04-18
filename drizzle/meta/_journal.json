@@ -421,6 +421,20 @@
       "when": 1776448394425,
       "tag": "0059_bright_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1776526175897,
+      "tag": "0060_known_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1776527014574,
+      "tag": "0061_busy_namora",
+      "breakpoints": true
     }
   ]
 }

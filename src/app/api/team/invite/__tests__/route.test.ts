@@ -62,6 +62,7 @@ describe("POST /api/team/invite", () => {
       currentTeamId: "team-123",
       isOwner: true,
       role: "owner",
+      session: { user: { id: "user-123" } },
     });
 
     mockDbQueryUserFindFirst.mockResolvedValue({

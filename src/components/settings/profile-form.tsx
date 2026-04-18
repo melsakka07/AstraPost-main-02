@@ -67,10 +67,11 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       language: initialData.language || "ar",
       image: initialData.image || null,
     },
+    mode: "onChange", // Enable real-time validation feedback
   });
 
   const timezones = Intl.supportedValuesOf("timeZone");
-  const { isDirty } = form.formState;
+  const { isDirty, isValid } = form.formState;
 
   // UA-A15: Warn before navigating away with unsaved changes
   useEffect(() => {
@@ -315,7 +316,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
               </p>
             </div>
             <div className="flex justify-end">
-              <Button type="submit" disabled={!isDirty || loading}>
+              <Button type="submit" disabled={!isDirty || !isValid || loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
                 Save Changes

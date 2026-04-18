@@ -55,9 +55,10 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
     defaultValues: {
       samples: [{ value: "" }, { value: "" }, { value: "" }],
     },
+    mode: "onChange", // Enable real-time validation feedback
   });
 
-  const { isDirty } = form.formState;
+  const { isDirty, isValid } = form.formState;
 
   // UA-A15: Warn before navigating away with unsaved changes
   useEffect(() => {
@@ -317,7 +318,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                   </div>
 
                   <div className="flex justify-end pt-4">
-                    <Button type="submit" disabled={!isDirty || isAnalyzing}>
+                    <Button type="submit" disabled={!isDirty || !isValid || isAnalyzing}>
                       {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Analyze & Create Profile
                     </Button>

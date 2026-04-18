@@ -129,7 +129,7 @@ async function runSideEffect(task: () => Promise<void>, name: string) {
   }
 }
 
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const stripeSubscriptionId = toId(session.subscription);
   const userId = session.metadata?.userId;
   const stripeCustomerId = toId(session.customer);
@@ -298,7 +298,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   }, "referral_credit_award");
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+export async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const period = getSubscriptionPeriod(subscription);
   const firstItem = subscription.items.data[0];
   const newPriceId = firstItem?.price?.id ?? null;
@@ -623,7 +623,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+export async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   // Fetch the record BEFORE the transaction so we have the userId for the
   // user-table update and side-effect calls. The subscription row is written
   // atomically with the user downgrade below.
@@ -725,7 +725,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   }
 }
 
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   const stripeSubscriptionId = getInvoiceSubscriptionId(invoice);
   if (!stripeSubscriptionId) return;
 
@@ -803,7 +803,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   }
 }
 
-async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
+export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   const stripeSubscriptionId = getInvoiceSubscriptionId(invoice);
   if (!stripeSubscriptionId) return;
 
@@ -867,7 +867,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   }
 }
 
-async function handleTrialWillEnd(subscription: Stripe.Subscription) {
+export async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   const subRecord = await getSubscriptionRecord(subscription.id);
   if (!subRecord) return;
 
@@ -910,7 +910,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   }
 }
 
-async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
+export async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId || null;
   const plan = session.metadata?.plan || null;
 

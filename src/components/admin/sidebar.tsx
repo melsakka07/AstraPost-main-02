@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Tag,
   ToggleLeft,
+  Trash2,
   TrendingUp,
   Users,
   UserPlus,
@@ -70,6 +71,7 @@ const sidebarSections = [
       { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
       { href: "/admin/jobs", label: "Jobs (BullMQ)", icon: Activity },
       { href: "/admin/notifications", label: "Notifications", icon: Bell },
+      { href: "/admin/soft-delete-recovery", label: "Soft-Delete Recovery", icon: Trash2 },
     ],
   },
 ];

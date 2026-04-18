@@ -69,18 +69,24 @@ export async function POST(_req: Request, { params }: { params: Promise<{ userId
         });
       }
 
-      // Tag the session with the impersonating admin's ID
+      // Tag the session with the impersonating admin's ID and set 30-minute TTL
+      const impersonationStartedAt = new Date();
       await db
         .update(session)
-        .set({ impersonatedBy: auth.session.user.id })
+        .set({
+          impersonatedBy: auth.session.user.id,
+          impersonationStartedAt,
+        })
         .where(eq(session.token, token));
 
+      // Impersonation sessions expire after 30 minutes for security
+      const ttl30Minutes = 60 * 30;
       cookieStore.set("better-auth.session_token", token, {
         path: "/",
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 1 week
+        maxAge: ttl30Minutes,
       });
     }
 

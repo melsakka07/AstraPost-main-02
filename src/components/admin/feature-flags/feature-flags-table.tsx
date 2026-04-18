@@ -21,6 +21,7 @@ interface FeatureFlag {
   key: string;
   description: string | null;
   enabled: boolean;
+  rolloutPercentage: number;
   updatedAt: string;
 }
 
@@ -84,6 +85,38 @@ export function FeatureFlagsTable() {
     }
   };
 
+  const updateRollout = async (flag: FeatureFlag, newPercentage: number) => {
+    // Clamp value between 0-100
+    const percentage = Math.max(0, Math.min(100, newPercentage));
+    setToggling(flag.key);
+    // Optimistic update
+    setFlags((prev) =>
+      prev.map((f) => (f.key === flag.key ? { ...f, rolloutPercentage: percentage } : f))
+    );
+    try {
+      const res = await fetch(`/api/admin/feature-flags/${flag.key}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rolloutPercentage: percentage }),
+      });
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(error);
+      }
+      toast.success(`"${flag.key}" rollout set to ${percentage}%`);
+    } catch (err) {
+      // Revert on failure
+      setFlags((prev) =>
+        prev.map((f) =>
+          f.key === flag.key ? { ...f, rolloutPercentage: flag.rolloutPercentage } : f
+        )
+      );
+      toast.error(err instanceof Error ? err.message : "Failed to update rollout");
+    } finally {
+      setToggling(null);
+    }
+  };
+
   if (loading) return <LoadingSkeleton />;
 
   if (flags.length === 0) {
@@ -109,7 +142,8 @@ export function FeatureFlagsTable() {
               <TableHead>Flag key</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Toggle</TableHead>
+              <TableHead>Rollout %</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,6 +159,21 @@ export function FeatureFlagsTable() {
                   <Badge variant={flag.enabled ? "default" : "secondary"}>
                     {flag.enabled ? "Enabled" : "Disabled"}
                   </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={flag.rolloutPercentage}
+                      onChange={(e) => updateRollout(flag, parseInt(e.target.value, 10))}
+                      disabled={toggling === flag.key}
+                      className="bg-background border-input w-16 rounded border px-2 py-1 text-sm"
+                      aria-label={`Rollout percentage for ${flag.key}`}
+                    />
+                    <span className="text-muted-foreground text-sm">%</span>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <Switch
