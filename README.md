@@ -809,6 +809,48 @@ The build step uses minimal stub environment variables so no real secrets are ne
 
 This section summarises major development cycles. For full commit-level detail, see `docs/0-MY-LATEST-UPDATES.md`.
 
+### April 2026 — Security & Feature Audit Phase A Complete ✅
+
+**All 32 critical + high-severity audit findings fixed** (see `docs/PHASE-A-RELEASE-NOTES.md`)
+
+**Security (4 fixes):**
+
+- Authentication rate limiting (5 attempts/minute per IP on login/signup)
+- OAuth token encryption (AES-256-GCM) for Instagram, LinkedIn, X tokens
+- Admin API gating (role-based access control across all admin routes)
+- Token encryption guards prevent accidental double-encryption
+
+**User Features (7 fixes):**
+
+- 2FA support with TOTP + backup codes (Better Auth plugin)
+- Password reset flow with email verification (forgot-password → reset-password)
+- Account disconnection (OAuth token revocation for Instagram, LinkedIn)
+- AI quota display with real-time meter on dashboard
+- Plan limit checks across dashboard (post limits, AI quota, team member limits)
+- Unsaved changes warning on SPA navigation (prevents accidental data loss)
+- Dirty state tracking with visual indicator (asterisk on form fields)
+
+**Admin Infrastructure (5 fixes):**
+
+- Health check dashboard (PostgreSQL, Redis, BullMQ, Stripe, OpenRouter latency metrics)
+- Webhook management with retry logic (create, list, delete, test endpoints)
+- Feature flag cache invalidation (Redis purge after updates)
+- Impersonation session rate limiting (10 sessions/minute per IP)
+- Audit logging for sensitive operations (fire-and-forget pattern)
+
+**UX & Accessibility (12 fixes):**
+
+- Chart ARIA labels (follower growth, impressions, engagement rate)
+- Form validation feedback (real-time errors on all forms)
+- Loading states (spinner overlays, skeleton loaders, disabled buttons)
+- Modal improvements (error states, retry buttons, auto-close on success)
+- Keyboard navigation (focus management, tabindex consistency)
+- Theme persistence (LocalStorage + system preference detection)
+- Sidebar navigation improvements + affiliate dashboard link
+- Sentry error boundaries (all app routes report errors)
+
+**Status:** 0 failing tests, 0 lint errors, 0 type errors. Ready for Phase B (30 medium-severity tasks, ~15 hours).
+
 ### April 2026 — AI Quota Tracking Fixes
 
 **Billing usage double-count bug**
