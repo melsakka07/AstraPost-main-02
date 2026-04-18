@@ -17,6 +17,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -148,10 +149,38 @@ export function EditSubscriberDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="free">Free</SelectItem>
-                      <SelectItem value="pro_monthly">Pro Monthly</SelectItem>
-                      <SelectItem value="pro_annual">Pro Annual</SelectItem>
-                      <SelectItem value="agency">Agency</SelectItem>
+                      <SelectItem value="free">
+                        <div className="flex flex-col">
+                          <span>Free</span>
+                          <span className="text-muted-foreground text-xs">
+                            20 posts/mo · 1 X account · 20 AI uses
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="pro_monthly">
+                        <div className="flex flex-col">
+                          <span>Pro Monthly</span>
+                          <span className="text-muted-foreground text-xs">
+                            Unlimited posts · 3 X accounts · 100 AI uses
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="pro_annual">
+                        <div className="flex flex-col">
+                          <span>Pro Annual</span>
+                          <span className="text-muted-foreground text-xs">
+                            Unlimited posts · 4 X accounts · 150 AI uses
+                          </span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="agency">
+                        <div className="flex flex-col">
+                          <span>Agency</span>
+                          <span className="text-muted-foreground text-xs">
+                            Unlimited everything · LinkedIn · 10 X accounts · team seats
+                          </span>
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -164,28 +193,40 @@ export function EditSubscriberDialog({
                 control={form.control}
                 name="isAdmin"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <FormLabel className="text-sm font-medium">Admin</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
+                  <div>
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <FormLabel className="text-sm font-medium">Admin</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                    <FormDescription className="mt-1 text-xs">
+                      Grants full access to the /admin panel — all subscribers, billing, teams, and
+                      feature flags. Separate from team collaboration roles.
+                    </FormDescription>
+                  </div>
                 )}
               />
               <FormField
                 control={form.control}
                 name="isSuspended"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <FormLabel className="text-sm font-medium">Suspended</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
+                  <div>
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <FormLabel className="text-sm font-medium">Suspended</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                    <FormDescription className="mt-1 text-xs">
+                      Immediately blocks login and invalidates all active sessions. The account data
+                      is preserved.
+                    </FormDescription>
+                  </div>
                 )}
               />
             </div>

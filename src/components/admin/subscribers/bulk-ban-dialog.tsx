@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -12,6 +13,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface BulkBanDialogProps {
   open: boolean;
@@ -32,9 +35,12 @@ export function BulkBanDialog({
 }: BulkBanDialogProps) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
 
   const handleConfirm = async () => {
     setLoading(true);
+    setErrorMessage(null);
     setProgress({ processed: 0, total: selectedIds.length });
 
     try {
@@ -44,6 +50,7 @@ export function BulkBanDialog({
         body: JSON.stringify({
           action: isBanning ? "ban" : "unban",
           userIds: selectedIds,
+          ...(reason.trim() && { details: { reason: reason.trim() } }),
         }),
         signal: AbortSignal.timeout(60000), // 60s timeout
       });
@@ -67,12 +74,15 @@ export function BulkBanDialog({
       }
 
       onSuccess(processed, skipped);
-      onOpenChange(false);
+      setTimeout(() => {
+        onOpenChange(false);
+        setProgress(null);
+      }, 1500);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Action failed");
+      const msg = err instanceof Error ? err.message : "Action failed";
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
-      setProgress(null);
     }
   };
 
@@ -92,24 +102,67 @@ export function BulkBanDialog({
                 ? `This will immediately suspend the following subscriber(s) and invalidate all their active sessions: ${displayNames}`
                 : `This will restore access for the following subscriber(s): ${displayNames}`}
             </span>
-            {progress && (
-              <span className="text-muted-foreground block text-xs">
-                Processing {progress.processed} of {progress.total}...
-              </span>
-            )}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {errorMessage && (
+          <div className="bg-destructive/10 border-destructive text-destructive rounded-md border p-3 text-sm">
+            <div className="flex gap-2">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-medium">Action failed</p>
+                <p className="mt-0.5 text-xs">{errorMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">
+              Reason <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Textarea
+              placeholder="e.g. Violating terms of service, spam, etc."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={2}
+              maxLength={500}
+              disabled={loading}
+              className="resize-none text-sm"
+            />
+          </div>
+          {progress && (
+            <span className="text-muted-foreground block text-xs">
+              Processing {progress.processed} of {progress.total}...
+            </span>
+          )}
+        </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleConfirm}
-            disabled={loading}
-            className={
-              isBanning ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""
-            }
-          >
-            {loading ? "Processing…" : isBanning ? "Ban" : "Unban"}
-          </AlertDialogAction>
+          {errorMessage ? (
+            <Button
+              onClick={handleConfirm}
+              disabled={loading}
+              className={
+                isBanning
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              {loading ? "Retrying…" : "Retry"}
+            </Button>
+          ) : (
+            <AlertDialogAction
+              onClick={handleConfirm}
+              disabled={loading}
+              className={
+                isBanning
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              {loading ? "Processing…" : isBanning ? "Ban" : "Unban"}
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -10,6 +10,7 @@ import { session, user } from "@/lib/schema";
 
 const banSchema = z.object({
   ban: z.boolean(), // true = ban, false = unban
+  reason: z.string().max(500).optional(),
 });
 
 // ── POST /api/admin/subscribers/[id]/ban ─────────────────────────────────────
@@ -67,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       action: ban ? "ban" : "unban",
       targetType: "user",
       targetId: id,
-      details: { email: existing.email },
+      details: { email: existing.email, ...(parsed.data.reason && { reason: parsed.data.reason }) },
     });
 
     return Response.json({ success: true, banned: ban });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -12,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,6 +22,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { SubscriberPlan } from "./types";
+
+const PLAN_LABELS: Record<string, string> = {
+  free: "Free",
+  pro_monthly: "Pro Monthly",
+  pro_annual: "Pro Annual",
+  agency: "Agency",
+};
 
 interface BulkChangePlanDialogProps {
   open: boolean;
@@ -46,6 +55,7 @@ export function BulkChangePlanDialog({
   const [loading, setLoading] = useState(false);
   const [newPlan, setNewPlan] = useState<SubscriberPlan>("pro_monthly");
   const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleConfirm = async () => {
     if (!newPlan) {
@@ -54,6 +64,7 @@ export function BulkChangePlanDialog({
     }
 
     setLoading(true);
+    setErrorMessage(null);
     setProgress({ processed: 0, total: selectedIds.length });
 
     try {
@@ -77,18 +88,23 @@ export function BulkChangePlanDialog({
       setProgress({ processed: processed + skipped, total: selectedIds.length });
 
       if (skipped === 0) {
-        toast.success(`Changed plan for ${processed} user(s) to ${newPlan.replace(/_/g, " ")}`);
+        toast.success(
+          `Changed plan for ${processed} user(s) to ${PLAN_LABELS[newPlan] ?? newPlan}`
+        );
       } else {
         toast.warning(`Processed ${processed}, skipped ${skipped}`);
       }
 
       onSuccess(processed, skipped);
-      onOpenChange(false);
+      setTimeout(() => {
+        onOpenChange(false);
+        setProgress(null);
+      }, 1500);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Action failed");
+      const msg = err instanceof Error ? err.message : "Action failed";
+      setErrorMessage(msg);
     } finally {
       setLoading(false);
-      setProgress(null);
     }
   };
 
@@ -117,6 +133,10 @@ export function BulkChangePlanDialog({
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-muted-foreground text-xs">
+                This overrides the plan in the database. It does not automatically update Stripe
+                subscriptions. Feature access changes immediately.
+              </p>
             </div>
             {progress && (
               <span className="text-muted-foreground block text-xs">
@@ -125,11 +145,28 @@ export function BulkChangePlanDialog({
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {errorMessage && (
+          <div className="bg-destructive/10 border-destructive text-destructive rounded-md border p-3 text-sm">
+            <div className="flex gap-2">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-medium">Action failed</p>
+                <p className="mt-0.5 text-xs">{errorMessage}</p>
+              </div>
+            </div>
+          </div>
+        )}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} disabled={loading}>
-            {loading ? "Processing…" : "Change plan"}
-          </AlertDialogAction>
+          {errorMessage ? (
+            <Button onClick={handleConfirm} disabled={loading}>
+              {loading ? "Retrying…" : "Retry"}
+            </Button>
+          ) : (
+            <AlertDialogAction onClick={handleConfirm} disabled={loading}>
+              {loading ? "Processing…" : "Change plan"}
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

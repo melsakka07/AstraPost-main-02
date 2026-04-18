@@ -30,18 +30,19 @@ interface TeamMembershipProps {
   teams: TeamMembership[];
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  editor: "Editor",
+  viewer: "Viewer",
+};
+
 export function TeamMembershipSection({ teams }: TeamMembershipProps) {
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role.toLowerCase()) {
-      case "owner":
-        return "default";
-      case "admin":
-        return "secondary";
-      case "member":
-        return "outline";
-      default:
-        return "outline";
-    }
+  const getRoleBadgeVariant = (role: string): "default" | "secondary" | "outline" => {
+    if (role === "owner") return "default";
+    if (role === "admin") return "secondary";
+    // "editor" and "viewer" both get outline, but are visually distinguished by label
+    return "outline";
   };
 
   return (
@@ -70,7 +71,9 @@ export function TeamMembershipSection({ teams }: TeamMembershipProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getRoleBadgeVariant(membership.role)}>{membership.role}</Badge>
+                    <Badge variant={getRoleBadgeVariant(membership.role)}>
+                      {ROLE_LABELS[membership.role] ?? membership.role}
+                    </Badge>
                   </TableCell>
                   <TableCell>{format(new Date(membership.joinedAt), "MMM d, yyyy")}</TableCell>
                 </TableRow>

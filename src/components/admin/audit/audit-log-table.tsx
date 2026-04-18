@@ -23,11 +23,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { fetchAndDownloadCsv } from "@/lib/export";
-import type { adminAuditActionEnum } from "@/lib/schema";
+import {
+  ACTION_LABELS,
+  ACTION_DESCRIPTIONS,
+  ACTION_SEVERITY,
+  getActionSeverityClasses,
+  type AuditAction,
+} from "./action-labels";
 import { useAdminPolling } from "../use-admin-polling";
-
-type AuditAction = (typeof adminAuditActionEnum.enumValues)[number];
 
 export interface AuditLogRow {
   id: string;
@@ -53,50 +58,40 @@ export interface PaginatedResponse<T> {
   };
 }
 
-const ACTION_OPTIONS: { value: string; label: string }[] = [
+const ACTION_OPTIONS = [
   { value: "all", label: "All Actions" },
-  { value: "ban", label: "Ban" },
-  { value: "unban", label: "Unban" },
-  { value: "delete_user", label: "Delete User" },
-  { value: "suspend", label: "Suspend" },
-  { value: "unsuspend", label: "Unsuspend" },
-  { value: "impersonate_start", label: "Impersonate Start" },
-  { value: "impersonate_end", label: "Impersonate End" },
-  { value: "plan_change", label: "Plan Change" },
-  { value: "feature_flag_toggle", label: "Feature Flag Toggle" },
-  { value: "promo_create", label: "Create Promo" },
-  { value: "promo_update", label: "Update Promo" },
-  { value: "promo_delete", label: "Delete Promo" },
-  { value: "announcement_update", label: "Update Announcement" },
-  { value: "subscriber_create", label: "Create Subscriber" },
-  { value: "subscriber_update", label: "Update Subscriber" },
-  { value: "roadmap_update", label: "Update Roadmap" },
-  { value: "bulk_operation", label: "Bulk Operation" },
+  ...Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label })),
 ];
 
-function getActionColor(action: AuditAction): string {
-  const colors: Record<AuditAction, string> = {
-    ban: "bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20",
-    unban: "bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20",
-    delete_user: "bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20",
-    suspend: "bg-orange-500/10 text-orange-700 dark:text-orange-400 hover:bg-orange-500/20",
-    unsuspend: "bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20",
-    impersonate_start:
-      "bg-purple-500/10 text-purple-700 dark:text-purple-400 hover:bg-purple-500/20",
-    impersonate_end: "bg-purple-500/10 text-purple-700 dark:text-purple-400 hover:bg-purple-500/20",
-    plan_change: "bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20",
-    feature_flag_toggle: "bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20",
-    promo_create: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/20",
-    promo_update: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/20",
-    promo_delete: "bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20",
-    announcement_update:
-      "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-500/20",
-    subscriber_create: "bg-teal-500/10 text-teal-700 dark:text-teal-400 hover:bg-teal-500/20",
-    subscriber_update: "bg-teal-500/10 text-teal-700 dark:text-teal-400 hover:bg-teal-500/20",
-    roadmap_update: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-500/20",
-    bulk_operation: "bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20",
-  };
-  return colors[action];
+function formatDetails(details: Record<string, unknown> | null): React.ReactNode {
+  if (!details) return <span className="text-muted-foreground text-xs">No details</span>;
+
+  const lines: string[] = [];
+  if (details.reason) lines.push(`Reason: ${details.reason}`);
+  if (details.fromPlan) lines.push(`From plan: ${String(details.fromPlan).replace(/_/g, " ")}`);
+  if (details.toPlan) lines.push(`To plan: ${String(details.toPlan).replace(/_/g, " ")}`);
+  if (details.email) lines.push(`Email: ${details.email}`);
+  if (details.flagKey) lines.push(`Flag: ${details.flagKey}`);
+  if (details.newValue !== undefined) lines.push(`New value: ${String(details.newValue)}`);
+  if (details.count) lines.push(`Affected: ${details.count} users`);
+
+  return (
+    <div className="space-y-1">
+      {lines.length > 0 && (
+        <ul className="space-y-0.5 text-sm">
+          {lines.map((l) => (
+            <li key={l} className="text-foreground">
+              {l}
+            </li>
+          ))}
+        </ul>
+      )}
+      {/* Always show full JSON below for completeness */}
+      <pre className="text-muted-foreground bg-muted mt-2 overflow-auto rounded p-2 text-xs">
+        {JSON.stringify(details, null, 2)}
+      </pre>
+    </div>
+  );
 }
 
 export function AuditLogTable() {
@@ -215,18 +210,24 @@ export function AuditLogTable() {
           </Select>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className="w-[160px]"
-          />
-          <Input
-            type="date"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            className="w-[160px]"
-          />
+          <div className="flex flex-col gap-1">
+            <label className="text-muted-foreground text-xs font-medium">From</label>
+            <Input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="w-[160px]"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-muted-foreground text-xs font-medium">To</label>
+            <Input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="w-[160px]"
+            />
+          </div>
           {(fromDate || toDate) && (
             <Button
               variant="ghost"
@@ -296,9 +297,23 @@ export function AuditLogTable() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getActionColor(log.action)} variant="outline">
-                        {log.action.replace(/_/g, " ")}
-                      </Badge>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              className={getActionSeverityClasses(
+                                ACTION_SEVERITY[log.action] ?? "low"
+                              )}
+                              variant="outline"
+                            >
+                              {ACTION_LABELS[log.action] ?? log.action}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs text-xs">
+                            {ACTION_DESCRIPTIONS[log.action]}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </TableCell>
                     <TableCell className="text-sm">{log.targetType || "—"}</TableCell>
                     <TableCell className="text-muted-foreground font-mono text-sm text-xs">
@@ -328,11 +343,9 @@ export function AuditLogTable() {
                       <TableCell colSpan={7} className="bg-muted/30">
                         <div className="py-2">
                           <p className="text-muted-foreground mb-1 text-xs font-semibold">
-                            Full Details:
+                            Details:
                           </p>
-                          <pre className="bg-background overflow-x-auto rounded border p-3 text-xs">
-                            {JSON.stringify(log.details, null, 2)}
-                          </pre>
+                          {formatDetails(log.details)}
                           {log.userAgent && (
                             <>
                               <p className="text-muted-foreground mt-3 mb-1 text-xs font-semibold">

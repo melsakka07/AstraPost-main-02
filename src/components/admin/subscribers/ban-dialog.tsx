@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 interface BanDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function BanDialog({
 }: BanDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reason, setReason] = useState("");
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -42,7 +44,7 @@ export function BanDialog({
       const res = await fetch(`/api/admin/subscribers/${subscriberId}/ban`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ban: !isBanned }),
+        body: JSON.stringify({ ban: !isBanned, ...(reason.trim() && { reason: reason.trim() }) }),
       });
       if (!res.ok) {
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
@@ -60,7 +62,6 @@ export function BanDialog({
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Action failed";
       setError(errorMessage);
-      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -70,27 +71,43 @@ export function BanDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {error ? "Action failed" : isBanned ? "Unban subscriber?" : "Ban subscriber?"}
-          </AlertDialogTitle>
-          {error ? (
-            <div className="bg-destructive/10 border-destructive text-destructive rounded-md border p-3 text-sm">
-              <div className="flex gap-2">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div>
-                  <p className="font-medium">Error</p>
-                  <p className="text-sm">{error}</p>
-                </div>
+          <AlertDialogTitle>{isBanned ? "Unban subscriber?" : "Ban subscriber?"}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {isBanned
+              ? `This will restore ${subscriberName}'s access and allow them to log in again.`
+              : `This will immediately suspend ${subscriberName}'s account and invalidate all their active sessions. They will not be able to log in until unbanned.`}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {error && (
+          <div className="bg-destructive/10 border-destructive text-destructive rounded-md border p-3 text-sm">
+            <div className="flex gap-2">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-medium">Action failed</p>
+                <p className="mt-0.5 text-xs">{error}</p>
               </div>
             </div>
-          ) : (
-            <AlertDialogDescription>
-              {isBanned
-                ? `This will restore ${subscriberName}'s access and allow them to log in again.`
-                : `This will immediately suspend ${subscriberName}'s account and invalidate all their active sessions. They will not be able to log in until unbanned.`}
-            </AlertDialogDescription>
-          )}
-        </AlertDialogHeader>
+          </div>
+        )}
+        <div className="space-y-4">
+          <div className="mt-4 space-y-1.5">
+            <label className="text-sm font-medium">
+              Reason <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <Textarea
+              placeholder="e.g. Violating terms of service, spam, etc."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={2}
+              maxLength={500}
+              disabled={loading}
+              className="resize-none text-sm"
+            />
+          </div>
+          <p className="text-muted-foreground text-xs">
+            Note: This does not automatically cancel any active Stripe subscription.
+          </p>
+        </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
           {error ? (
