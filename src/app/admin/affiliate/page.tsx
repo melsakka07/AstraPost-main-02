@@ -4,10 +4,18 @@ import { AffiliateConversionFunnel } from "@/components/admin/affiliate/affiliat
 import { AffiliateLeaderboard } from "@/components/admin/affiliate/affiliate-leaderboard";
 import { AffiliateSummaryCards } from "@/components/admin/affiliate/affiliate-summary-cards";
 import { AffiliateTrendsChart } from "@/components/admin/affiliate/affiliate-trends-chart";
+import { fetchAdminData } from "@/lib/admin/fetch-server-data";
 
 export const metadata = { title: "Affiliate Program — Admin" };
 
-export default function AdminAffiliatePage() {
+export default async function AdminAffiliatePage() {
+  const [summaryRes, trendsRes, funnelRes, leaderboardRes] = await Promise.all([
+    fetchAdminData<any>("/affiliate/summary"),
+    fetchAdminData<any>("/affiliate/trends", { period: "30d" }),
+    fetchAdminData<any>("/affiliate/funnel"),
+    fetchAdminData<any>("/affiliate/leaderboard"),
+  ]);
+
   return (
     <AdminPageWrapper
       icon={Gift}
@@ -15,14 +23,14 @@ export default function AdminAffiliatePage() {
       description="Referral metrics, conversion funnel, and top affiliates."
     >
       <div className="space-y-6">
-        <AffiliateSummaryCards />
+        <AffiliateSummaryCards initialData={summaryRes?.data ?? null} />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <AffiliateConversionFunnel />
-          <AffiliateTrendsChart />
+          <AffiliateConversionFunnel initialData={funnelRes?.data ?? null} />
+          <AffiliateTrendsChart initialData={trendsRes?.data?.data ?? null} />
         </div>
 
-        <AffiliateLeaderboard />
+        <AffiliateLeaderboard initialData={leaderboardRes?.data ?? null} />
       </div>
     </AdminPageWrapper>
   );

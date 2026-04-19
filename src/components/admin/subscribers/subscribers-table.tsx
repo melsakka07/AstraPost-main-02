@@ -73,7 +73,11 @@ const FILTER_PILLS: { value: FilterOption; label: string }[] = [
   { value: "deleted", label: "Deleted" },
 ];
 
-export function SubscribersTable() {
+interface SubscribersTableProps {
+  initialData?: PaginatedResponse<SubscriberRow> | null;
+}
+
+export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterOption>("all");
   const [sort, setSort] = useState<SortOption>("createdAt");
@@ -116,6 +120,7 @@ export function SubscribersTable() {
       return (await res.json()) as PaginatedResponse<SubscriberRow>;
     },
     intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
   });
 
   const handleSearchChange = (value: string) => {
@@ -129,7 +134,7 @@ export function SubscribersTable() {
 
   const handleSelectAll = (checked: boolean | string) => {
     if (checked === true) {
-      setSelectedIds(new Set(response?.data.map((d: SubscriberRow) => d.id) ?? []));
+      setSelectedIds(new Set(response?.data?.map((d: SubscriberRow) => d.id) ?? []));
     } else {
       setSelectedIds(new Set());
     }
@@ -263,7 +268,7 @@ export function SubscribersTable() {
         onDelete={() => setBulkDeleteOpen(true)}
         onExport={handleExport}
         hasBannedUsers={Array.from(selectedIds).some((id) => {
-          const sub = response?.data.find((d: SubscriberRow) => d.id === id);
+          const sub = response?.data?.find((d: SubscriberRow) => d.id === id);
           return sub?.bannedAt != null;
         })}
       />
@@ -286,7 +291,7 @@ export function SubscribersTable() {
               </div>
             </Card>
           ))
-        ) : (response?.data.length ?? 0) === 0 ? (
+        ) : (response?.data?.length ?? 0) === 0 ? (
           <Card className="p-8 text-center">
             <EmptyState
               variant={debouncedSearch ? "search" : "users"}
@@ -299,7 +304,7 @@ export function SubscribersTable() {
             />
           </Card>
         ) : (
-          response?.data.map((sub: SubscriberRow) => (
+          response?.data?.map((sub: SubscriberRow) => (
             <Card
               key={sub.id}
               className={cn(
@@ -403,15 +408,15 @@ export function SubscribersTable() {
                     <Checkbox
                       checked={
                         selectedIds.size > 0 &&
-                        selectedIds.size === (response?.data.length ?? 0) &&
-                        (response?.data.length ?? 0) > 0
+                        selectedIds.size === (response?.data?.length ?? 0) &&
+                        (response?.data?.length ?? 0) > 0
                       }
                       indeterminate={
-                        selectedIds.size > 0 && selectedIds.size < (response?.data.length ?? 0)
+                        selectedIds.size > 0 && selectedIds.size < (response?.data?.length ?? 0)
                       }
                       onCheckedChange={handleSelectAll}
                       aria-label="Select all"
-                      disabled={bulkLoading || (response?.data.length ?? 0) === 0}
+                      disabled={bulkLoading || (response?.data?.length ?? 0) === 0}
                       className="h-5 w-5"
                     />
                   </div>
@@ -449,7 +454,7 @@ export function SubscribersTable() {
                     ))}
                   </TableRow>
                 ))
-              ) : (response?.data.length ?? 0) === 0 ? (
+              ) : (response?.data?.length ?? 0) === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="p-0">
                     <EmptyState
@@ -464,7 +469,7 @@ export function SubscribersTable() {
                   </TableCell>
                 </TableRow>
               ) : (
-                response?.data.map((sub: SubscriberRow) => (
+                response?.data?.map((sub: SubscriberRow) => (
                   <TableRow
                     key={sub.id}
                     className={`${sub.deletedAt ? "opacity-50" : ""} ${
@@ -580,7 +585,7 @@ export function SubscribersTable() {
       </div>
 
       {/* Pagination */}
-      {response?.pagination.totalPages && response.pagination.totalPages > 1 && (
+      {response?.pagination?.totalPages && response.pagination.totalPages > 1 && (
         <div className="text-muted-foreground flex items-center justify-between text-sm">
           <span>
             {(page - 1) * response.pagination.limit + 1}–
@@ -656,7 +661,7 @@ export function SubscribersTable() {
         selectedIds={Array.from(selectedIds)}
         selectedNames={
           response?.data
-            .filter((d: SubscriberRow) => selectedIds.has(d.id))
+            ?.filter((d: SubscriberRow) => selectedIds.has(d.id))
             .slice(0, 3)
             .map((d: SubscriberRow) => d.name) ?? []
         }

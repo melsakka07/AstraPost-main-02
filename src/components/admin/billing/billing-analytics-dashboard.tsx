@@ -169,7 +169,11 @@ function LoadingSkeleton() {
   );
 }
 
-export function BillingAnalyticsDashboard() {
+interface BillingAnalyticsDashboardProps {
+  initialData?: BillingAnalyticsData | null;
+}
+
+export function BillingAnalyticsDashboard({ initialData }: BillingAnalyticsDashboardProps = {}) {
   const [page, setPage] = useState(1);
 
   const fetchAnalytics = async (signal: AbortSignal): Promise<BillingAnalyticsData> => {
@@ -185,6 +189,7 @@ export function BillingAnalyticsDashboard() {
     fetchFn: fetchAnalytics,
     intervalMs: 60_000,
     enabled: true,
+    ...(initialData !== undefined && { initialData }),
   });
 
   const goToPage = (newPage: number) => {
@@ -258,10 +263,12 @@ export function BillingAnalyticsDashboard() {
       </div>
 
       <div>
-        <h3 className="mb-4 text-lg font-semibold">Plan Distribution</h3>
+        <h3 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
+          Plan Distribution
+        </h3>
         <Card>
           <CardContent className="pt-6">
-            <div className="grid gap-3">
+            <div className="space-y-3">
               {(["free", "pro_monthly", "pro_annual", "agency"] as const).map((plan) => {
                 const count = planDistribution[plan] ?? 0;
                 const total = (Object.values(planDistribution) as number[]).reduce(
@@ -270,18 +277,27 @@ export function BillingAnalyticsDashboard() {
                 );
                 const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                 return (
-                  <div key={plan} className="flex items-center gap-3">
-                    <span className="text-muted-foreground w-28 text-sm">{PLAN_LABELS[plan]}</span>
-                    <div className="bg-muted h-6 flex-1 overflow-hidden rounded">
+                  <div
+                    key={plan}
+                    className="grid items-center gap-3"
+                    style={{ gridTemplateColumns: "8rem 1fr 3rem 3rem" }}
+                  >
+                    <span
+                      className="text-muted-foreground truncate text-sm"
+                      title={PLAN_LABELS[plan]}
+                    >
+                      {PLAN_LABELS[plan]}
+                    </span>
+                    <div className="bg-muted h-2 overflow-hidden rounded-full">
                       <div
-                        className="bg-primary/80 h-full [width:var(--bar-width)] rounded transition-all"
-                        style={{ "--bar-width": `${pct}%` } as React.CSSProperties}
+                        className="bg-primary/80 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="w-16 text-right text-sm font-medium tabular-nums">
-                      {count}
+                    <span className="text-right text-sm font-medium tabular-nums">{count}</span>
+                    <span className="text-muted-foreground text-right text-sm tabular-nums">
+                      {pct}%
                     </span>
-                    <span className="text-muted-foreground w-12 text-right text-sm">{pct}%</span>
                   </div>
                 );
               })}
@@ -292,18 +308,30 @@ export function BillingAnalyticsDashboard() {
 
       {failedWebhooks && failedWebhooks.length > 0 && (
         <div>
-          <h3 className="mb-4 text-lg font-semibold">Failed Webhooks</h3>
+          <h3 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
+            Failed Webhooks
+          </h3>
           <Card>
             <CardContent className="pt-6">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Event Type</TableHead>
-                      <TableHead>Event ID</TableHead>
-                      <TableHead>Retries</TableHead>
-                      <TableHead>Error</TableHead>
-                      <TableHead>Last Attempt</TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        Event Type
+                      </TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        Event ID
+                      </TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        Retries
+                      </TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        Error
+                      </TableHead>
+                      <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        Last Attempt
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -337,7 +365,9 @@ export function BillingAnalyticsDashboard() {
       )}
 
       <div>
-        <h3 className="mb-4 text-lg font-semibold">Recent Plan Changes</h3>
+        <h3 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
+          Recent Plan Changes
+        </h3>
         <Card>
           <CardContent className="pt-6">
             {recentChanges.length === 0 ? (
@@ -352,11 +382,21 @@ export function BillingAnalyticsDashboard() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>From</TableHead>
-                        <TableHead>To</TableHead>
-                        <TableHead>Reason</TableHead>
+                        <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                          Date
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                          User
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                          From
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                          To
+                        </TableHead>
+                        <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                          Reason
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

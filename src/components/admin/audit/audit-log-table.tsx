@@ -94,7 +94,11 @@ function formatDetails(details: Record<string, unknown> | null): React.ReactNode
   );
 }
 
-export function AuditLogTable() {
+interface AuditLogTableProps {
+  initialData?: PaginatedResponse<AuditLogRow> | null;
+}
+
+export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
   const [search, setSearch] = useState("");
   const [action, setAction] = useState<string>("all");
   const [fromDate, setFromDate] = useState("");
@@ -130,6 +134,7 @@ export function AuditLogTable() {
       return (await res.json()) as PaginatedResponse<AuditLogRow>;
     },
     intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
   });
 
   // Reset to page 1 when filters change
@@ -173,7 +178,8 @@ export function AuditLogTable() {
         `/api/admin/audit/export?${params}`,
         `audit-log-${new Date().toISOString().split("T")[0]}.csv`,
         {
-          success: () => toast.success(`Exported ${response?.pagination.total ?? 0} audit entries`),
+          success: () =>
+            toast.success(`Exported ${response?.pagination?.total ?? 0} audit entries`),
           error: (msg) => toast.error(msg),
         }
       );
@@ -244,7 +250,7 @@ export function AuditLogTable() {
             variant="outline"
             size="sm"
             onClick={handleExportAuditLog}
-            disabled={exporting || (response?.pagination.total ?? 0) === 0}
+            disabled={exporting || (response?.pagination?.total ?? 0) === 0}
           >
             <FileDown className="mr-2 h-4 w-4" />
             {exporting ? "Exporting…" : "Export CSV"}
@@ -257,13 +263,27 @@ export function AuditLogTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Timestamp</TableHead>
-              <TableHead>Admin</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Target Type</TableHead>
-              <TableHead>Target ID</TableHead>
-              <TableHead>Details</TableHead>
-              <TableHead>IP Address</TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Timestamp
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Admin
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Action
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Target Type
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Target ID
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Details
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                IP Address
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -277,14 +297,14 @@ export function AuditLogTable() {
                   ))}
                 </TableRow>
               ))
-            ) : (response?.data.length ?? 0) === 0 ? (
+            ) : (response?.data?.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-muted-foreground h-32 text-center">
                   No audit logs found
                 </TableCell>
               </TableRow>
             ) : (
-              response?.data.map((log: AuditLogRow) => (
+              response?.data?.map((log: AuditLogRow) => (
                 <React.Fragment key={log.id}>
                   <TableRow>
                     <TableCell className="text-muted-foreground text-sm">
@@ -368,7 +388,7 @@ export function AuditLogTable() {
       </div>
 
       {/* Pagination */}
-      {response?.pagination.totalPages && response.pagination.totalPages > 1 && (
+      {response?.pagination?.totalPages && response.pagination.totalPages > 1 && (
         <div className="text-muted-foreground flex items-center justify-between text-sm">
           <span>
             {(page - 1) * response.pagination.limit + 1}–

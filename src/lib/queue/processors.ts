@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-import { type InferSelectModel, eq, and, or, sql } from "drizzle-orm";
+import { type InferSelectModel, eq, and, or, sql, isNotNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
@@ -800,8 +800,8 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
     const expiringSoon = await db.query.xAccounts.findMany({
       where: and(
         eq(xAccounts.isActive, true),
-        sql`x_accounts.token_expires_at IS NOT NULL`,
-        sql`x_accounts.token_expires_at < NOW() + INTERVAL '48 hours'`
+        isNotNull(xAccounts.tokenExpiresAt),
+        lt(xAccounts.tokenExpiresAt, sql`NOW() + INTERVAL '48 hours'`)
       ),
     });
 

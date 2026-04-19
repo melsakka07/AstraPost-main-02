@@ -19,7 +19,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface HealthData {
-  database: { connected: boolean; error: string | null };
+  status: "ok" | "degraded" | "critical";
+  checks: {
+    postgres: { ok: boolean; latency: number; error?: string };
+    redis: { ok: boolean; latency: number; error?: string };
+    bullmq: { ok: boolean; latency: number; error?: string };
+    stripe: { ok: boolean; latency: number; error?: string };
+    openrouter: { ok: boolean; latency: number; error?: string };
+  };
   env: { postgres: boolean; auth: boolean; ai: boolean; stripe: boolean; storage: boolean };
   subscriptions: { active: number; trialing: number; cancelled: number };
   oauthTokens: {
@@ -74,8 +81,8 @@ function HealthCard({ title, status, icon: Icon, children }: HealthCardProps) {
           />
         </div>
         <div className="mt-4">
-          <p className="text-sm font-medium">{title}</p>
-          <div className="mt-2">{children}</div>
+          <p className="text-sm font-semibold">{title}</p>
+          <div className="mt-3">{children}</div>
         </div>
       </CardContent>
     </Card>
@@ -96,33 +103,51 @@ function LoadingSkeleton() {
   );
 }
 
-export function HealthDashboard() {
-  const [health, setHealth] = useState<HealthData | null>(null);
-  const [loading, setLoading] = useState(true);
+interface HealthDashboardProps {
+  initialData?: HealthData | null;
+}
+
+export function HealthDashboard({ initialData }: HealthDashboardProps) {
+  const [health, setHealth] = useState<HealthData | null>(initialData ?? null);
+  const [loading, setLoading] = useState(initialData === null);
   const [error, setError] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchHealth = async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
       try {
-        const r = await fetch("/api/admin/health");
+        const r = await fetch("/api/admin/health", {
+          signal: controller.signal,
+        });
         if (!r.ok) {
           const err = await r.json().catch(() => ({ error: "Unknown error" }));
           throw new Error(err.error || `HTTP ${r.status}`);
         }
         const json = await r.json();
-        setHealth(json.data ?? null);
+        setHealth(json);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch health data");
+        if (err instanceof Error && err.name !== "AbortError") {
+          setError(err.message || "Failed to fetch health data");
+        }
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     };
 
     fetchHealth();
     const interval = setInterval(fetchHealth, 30000);
-    return () => clearInterval(interval);
+
+    return () => {
+      abortController.abort();
+      clearInterval(interval);
+    };
   }, [pathname]);
 
   if (loading) return <LoadingSkeleton />;
@@ -139,7 +164,7 @@ export function HealthDashboard() {
   if (!health) return null;
 
   // Calculate status for each card
-  const dbStatus: Status = health.database.connected ? "ok" : "error";
+  const dbStatus: Status = health.checks.postgres.ok ? "ok" : "error";
 
   const envMissing = Object.entries(health.env)
     .filter(([, v]) => !v)
@@ -158,63 +183,118 @@ export function HealthDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Database */}
-      <HealthCard title="Database" status={dbStatus} icon={Database}>
-        {health.database.connected ? (
-          <div className="flex items-center gap-2 text-sm text-green-600">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Connected</span>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <div className="text-destructive flex items-center gap-2 text-sm">
-              <XCircle className="h-4 w-4" />
-              <span>Connection failed</span>
+      {/* Top cards: Database, Env Vars, Subscriptions, Queue Health */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {/* Database */}
+        <HealthCard title="Database" status={dbStatus} icon={Database}>
+          {health.checks.postgres.ok ? (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Connected ({health.checks.postgres.latency}ms)</span>
             </div>
-            {health.database.error && (
-              <p className="text-muted-foreground text-xs">{health.database.error}</p>
-            )}
-          </div>
-        )}
-      </HealthCard>
-
-      {/* Environment Variables */}
-      <HealthCard title="Environment Variables" status={envStatus} icon={Key}>
-        {envMissing.length === 0 ? (
-          <div className="flex items-center gap-2 text-sm text-green-600">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>All configured</span>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm text-yellow-600">
-              <AlertTriangle className="h-4 w-4" />
-              <span>Missing variables</span>
+          ) : (
+            <div className="space-y-1">
+              <div className="text-destructive flex items-center gap-2 text-sm">
+                <XCircle className="h-4 w-4" />
+                <span>Connection failed</span>
+              </div>
+              {health.checks.postgres.error && (
+                <p className="text-muted-foreground text-xs">{health.checks.postgres.error}</p>
+              )}
             </div>
-            <p className="text-muted-foreground text-xs">
-              {envMissing.map((e) => e.toUpperCase()).join(", ")}
-            </p>
-          </div>
-        )}
-      </HealthCard>
+          )}
+        </HealthCard>
 
-      {/* Subscriptions */}
-      <HealthCard title="Subscriptions" status="ok" icon={CreditCard}>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-2xl font-bold tabular-nums">{health.subscriptions.active}</p>
-            <p className="text-muted-foreground text-xs">Active</p>
+        {/* Environment Variables */}
+        <HealthCard title="Environment Variables" status={envStatus} icon={Key}>
+          {envMissing.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>All configured</span>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm text-yellow-600">
+                <AlertTriangle className="h-4 w-4" />
+                <span>Missing variables</span>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                {envMissing.map((e) => e.toUpperCase()).join(", ")}
+              </p>
+            </div>
+          )}
+        </HealthCard>
+
+        {/* Subscriptions */}
+        <HealthCard title="Subscriptions" status="ok" icon={CreditCard}>
+          <div className="space-y-1.5">
+            {[
+              { label: "Active", value: health.subscriptions.active },
+              { label: "Trialing", value: health.subscriptions.trialing },
+              { label: "Cancelled", value: health.subscriptions.cancelled },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className="grid items-center gap-2"
+                style={{ gridTemplateColumns: "5rem 1fr 2.5rem" }}
+              >
+                <span className="text-muted-foreground text-xs">{label}</span>
+                <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                  <div
+                    className="bg-primary/70 h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${health.subscriptions.active + health.subscriptions.trialing + health.subscriptions.cancelled > 0 ? Math.round((value / (health.subscriptions.active + health.subscriptions.trialing + health.subscriptions.cancelled)) * 100) : 0}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-right text-sm font-semibold tabular-nums">{value}</span>
+              </div>
+            ))}
           </div>
-          <div>
-            <p className="text-2xl font-bold tabular-nums">{health.subscriptions.trialing}</p>
-            <p className="text-muted-foreground text-xs">Trialing</p>
+        </HealthCard>
+
+        {/* Queue Health */}
+        <HealthCard title="Queue Health (24h)" status={jobStatus} icon={Activity}>
+          <div className="space-y-1.5">
+            <div
+              className="grid items-center gap-2"
+              style={{ gridTemplateColumns: "4.5rem 1fr 2.5rem" }}
+            >
+              <span className="text-muted-foreground text-xs">Success</span>
+              <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                <div
+                  className="h-full rounded-full bg-green-500/70 transition-all duration-500"
+                  style={{
+                    width: `${health.jobs.success24h + health.jobs.failed24h > 0 ? Math.round((health.jobs.success24h / (health.jobs.success24h + health.jobs.failed24h)) * 100) : 100}%`,
+                  }}
+                />
+              </div>
+              <span className="text-right text-sm font-semibold text-green-600 tabular-nums">
+                {health.jobs.success24h}
+              </span>
+            </div>
+            <div
+              className="grid items-center gap-2"
+              style={{ gridTemplateColumns: "4.5rem 1fr 2.5rem" }}
+            >
+              <span className="text-muted-foreground text-xs">Failed</span>
+              <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                <div
+                  className="bg-destructive/70 h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${health.jobs.success24h + health.jobs.failed24h > 0 ? Math.round((health.jobs.failed24h / (health.jobs.success24h + health.jobs.failed24h)) * 100) : 0}%`,
+                  }}
+                />
+              </div>
+              <span
+                className={`text-right text-sm font-semibold tabular-nums ${health.jobs.failed24h > 0 ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {health.jobs.failed24h}
+              </span>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold tabular-nums">{health.subscriptions.cancelled}</p>
-            <p className="text-muted-foreground text-xs">Cancelled</p>
-          </div>
-        </div>
-      </HealthCard>
+        </HealthCard>
+      </div>
 
       {/* OAuth Tokens */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -269,28 +349,6 @@ export function HealthDashboard() {
           </div>
         </HealthCard>
       </div>
-
-      {/* Queue Health */}
-      <HealthCard title="Queue Health (24h)" status={jobStatus} icon={Activity}>
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div>
-            <p className="text-2xl font-bold text-green-600 tabular-nums">
-              {health.jobs.success24h}
-            </p>
-            <p className="text-muted-foreground text-xs">Success</p>
-          </div>
-          <div>
-            <p
-              className={`text-2xl font-bold tabular-nums ${
-                health.jobs.failed24h > 0 ? "text-destructive" : "text-green-600"
-              }`}
-            >
-              {health.jobs.failed24h}
-            </p>
-            <p className="text-muted-foreground text-xs">Failed</p>
-          </div>
-        </div>
-      </HealthCard>
     </div>
   );
 }

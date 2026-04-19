@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -46,14 +45,17 @@ function LoadingSkeleton() {
   );
 }
 
-export function PromoCodesTable() {
-  const [codes, setCodes] = useState<PromoCode[]>([]);
-  const [loading, setLoading] = useState(true);
+interface PromoCodesTableProps {
+  initialData?: PromoCode[] | null;
+}
+
+export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
+  const [codes, setCodes] = useState<PromoCode[]>(initialData ?? []);
+  const [loading, setLoading] = useState(initialData === null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PromoCode | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PromoCode | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const pathname = usePathname();
 
   const fetchCodes = useCallback(async () => {
     setLoading(true);
@@ -69,8 +71,10 @@ export function PromoCodesTable() {
   }, []);
 
   useEffect(() => {
-    fetchCodes();
-  }, [fetchCodes, pathname]);
+    if (!initialData) {
+      fetchCodes();
+    }
+  }, [fetchCodes, initialData]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -94,11 +98,9 @@ export function PromoCodesTable() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-muted-foreground text-sm">
-            {codes.length} active code{codes.length !== 1 ? "s" : ""}
-          </p>
-        </div>
+        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          {codes.length} code{codes.length !== 1 ? "s" : ""} total
+        </p>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Create code
@@ -109,18 +111,28 @@ export function PromoCodesTable() {
         <LoadingSkeleton />
       ) : codes.length === 0 ? (
         <div className="text-muted-foreground flex h-32 items-center justify-center rounded-lg border border-dashed text-sm">
-          No promo codes yet. Create one to get started.
+          No promo codes yet — create one to get started.
         </div>
       ) : (
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead>Redemptions</TableHead>
-                <TableHead>Valid</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Code
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Discount
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Redemptions
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Valid
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Status
+                </TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>

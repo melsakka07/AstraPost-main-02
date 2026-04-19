@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import { format } from "date-fns";
 import {
   ChevronLeft,
@@ -104,11 +103,15 @@ const CATEGORY_BADGES: Record<string, { label: string; className: string }> = {
   other: { label: "Other", className: "bg-muted text-muted-foreground" },
 };
 
-export function RoadmapTable() {
-  const [data, setData] = useState<FeedbackItem[]>([]);
+interface RoadmapTableProps {
+  initialData?: FeedbackItem[] | null;
+}
+
+export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
+  const [data, setData] = useState<FeedbackItem[]>(initialData ?? []);
   const [counts, setCounts] = useState<Counts>({ pending: 0, approved: 0, rejected: 0 });
   const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialData === null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterOption>("pending");
   const [page, setPage] = useState(1);
@@ -126,7 +129,6 @@ export function RoadmapTable() {
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const pathname = usePathname();
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -165,8 +167,10 @@ export function RoadmapTable() {
   }, [page, filter, debouncedSearch]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData, pathname]);
+    if (!initialData) {
+      fetchData();
+    }
+  }, [fetchData, initialData]);
 
   useEffect(() => {
     setSelectedIds(new Set());

@@ -46,19 +46,38 @@ function LoadingSkeleton() {
   );
 }
 
-export function AgenticSessionsTable() {
-  const [sessions, setSessions] = useState<AgenticSession[]>([]);
-  const [loading, setLoading] = useState(true);
+interface AgenticSessionsTableProps {
+  initialData?: AgenticSession[];
+}
+
+export function AgenticSessionsTable({ initialData }: AgenticSessionsTableProps) {
+  const [sessions, setSessions] = useState<AgenticSession[]>(initialData ?? []);
+  const [loading, setLoading] = useState(initialData === null);
   const [search, setSearch] = useState("");
   const [selectedSession, setSelectedSession] = useState<AgenticSession | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    fetch("/api/admin/agentic/sessions")
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 8000);
+
+    fetch("/api/admin/agentic/sessions", { signal: abortController.signal })
       .then((r) => r.json())
       .then((json) => setSessions(json.data ?? []))
-      .catch(() => setSessions([]))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (err instanceof Error && err.name !== "AbortError") {
+          setSessions([]);
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setLoading(false);
+      });
+
+    return () => {
+      abortController.abort();
+      clearTimeout(timeoutId);
+    };
   }, [pathname]);
 
   const filteredSessions = sessions.filter((session) =>
@@ -93,12 +112,24 @@ export function AgenticSessionsTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Topic</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Posts</TableHead>
-              <TableHead className="text-right">Quality Score</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead className="text-right">Action</TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Topic
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Status
+              </TableHead>
+              <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                Posts
+              </TableHead>
+              <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                Quality Score
+              </TableHead>
+              <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Duration
+              </TableHead>
+              <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                Action
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

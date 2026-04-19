@@ -58,7 +58,11 @@ function LoadingSkeleton() {
   );
 }
 
-export function AffiliateSummaryCards() {
+interface AffiliateSummaryCardsProps {
+  initialData?: AffiliateSummary | null;
+}
+
+export function AffiliateSummaryCards({ initialData }: AffiliateSummaryCardsProps = {}) {
   const { data: summary, loading } = useAdminPolling<AffiliateSummary>({
     fetchFn: async (signal) => {
       const r = await fetch("/api/admin/affiliate/summary", { signal });
@@ -67,6 +71,7 @@ export function AffiliateSummaryCards() {
       return json.data as AffiliateSummary;
     },
     intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
   });
 
   if (loading) return <LoadingSkeleton />;

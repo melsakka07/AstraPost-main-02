@@ -46,17 +46,36 @@ function LoadingSkeleton() {
   );
 }
 
-export function NotificationHistoryTable() {
-  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
-  const [loading, setLoading] = useState(true);
+interface NotificationHistoryTableProps {
+  initialData?: NotificationRow[];
+}
+
+export function NotificationHistoryTable({ initialData }: NotificationHistoryTableProps) {
+  const [notifications, setNotifications] = useState<NotificationRow[]>(initialData ?? []);
+  const [loading, setLoading] = useState(initialData === null);
   const pathname = usePathname();
 
   useEffect(() => {
-    fetch("/api/admin/notifications")
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 8000);
+
+    fetch("/api/admin/notifications", { signal: abortController.signal })
       .then((r) => r.json())
       .then((json) => setNotifications(json.data ?? []))
-      .catch(() => setNotifications([]))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (err instanceof Error && err.name !== "AbortError") {
+          setNotifications([]);
+        }
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setLoading(false);
+      });
+
+    return () => {
+      abortController.abort();
+      clearTimeout(timeoutId);
+    };
   }, [pathname]);
 
   const handleDelete = async (id: string) => {
@@ -107,12 +126,24 @@ export function NotificationHistoryTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Delivered / Read</TableHead>
-                <TableHead>Sent At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Title
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Target
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Status
+                </TableHead>
+                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  Delivered / Read
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Sent At
+                </TableHead>
+                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

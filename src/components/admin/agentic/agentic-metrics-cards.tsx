@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import { Activity, CheckCircle2, Zap, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,18 +58,23 @@ function LoadingSkeleton() {
   );
 }
 
-export function AgenticMetricsCards() {
-  const [metrics, setMetrics] = useState<AgenticMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const pathname = usePathname();
+interface AgenticMetricsCardsProps {
+  initialData?: AgenticMetrics | null;
+}
+
+export function AgenticMetricsCards({ initialData }: AgenticMetricsCardsProps = {}) {
+  const [metrics, setMetrics] = useState<AgenticMetrics | null>(initialData ?? null);
+  const [loading, setLoading] = useState(initialData === null);
 
   useEffect(() => {
-    fetch("/api/admin/agentic/metrics")
-      .then((r) => r.json())
-      .then((json) => setMetrics(json.data ?? null))
-      .catch(() => setMetrics(null))
-      .finally(() => setLoading(false));
-  }, [pathname]);
+    if (!initialData) {
+      fetch("/api/admin/agentic/metrics")
+        .then((r) => r.json())
+        .then((json) => setMetrics(json.data ?? null))
+        .catch(() => setMetrics(null))
+        .finally(() => setLoading(false));
+    }
+  }, [initialData]);
 
   if (loading) return <LoadingSkeleton />;
   if (!metrics) return null;

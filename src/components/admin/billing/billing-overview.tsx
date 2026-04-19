@@ -83,7 +83,11 @@ interface BillingData {
   transactions: Transaction[];
 }
 
-export function BillingOverview() {
+interface BillingOverviewProps {
+  initialData?: BillingData | null;
+}
+
+export function BillingOverview({ initialData }: BillingOverviewProps = {}) {
   const [exporting, setExporting] = useState(false);
 
   const { data, loading, error } = useAdminPolling<BillingData>({
@@ -105,6 +109,7 @@ export function BillingOverview() {
       };
     },
     intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
   });
 
   const handleExportTransactions = async () => {
@@ -189,17 +194,32 @@ export function BillingOverview() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {Object.entries(planBreakdown).map(([plan, { count, mrrCents }]) => (
-                <div key={plan} className="rounded-lg border p-3">
-                  <p className="text-sm font-medium">{PLAN_LABELS[plan] ?? plan}</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums">{count}</p>
-                  {mrr.configured && (
-                    <p className="text-muted-foreground text-xs">
-                      ${(mrrCents / 100).toFixed(0)}/mo
+              {Object.entries(planBreakdown).map(([plan, { count, mrrCents }]) => {
+                const totalCount = Object.values(planBreakdown).reduce(
+                  (sum, p) => sum + p.count,
+                  0
+                );
+                const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+                return (
+                  <div
+                    key={plan}
+                    className="flex min-h-[6rem] flex-col justify-between rounded-lg border p-3"
+                  >
+                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      {PLAN_LABELS[plan] ?? plan}
                     </p>
-                  )}
-                </div>
-              ))}
+                    <div>
+                      <p className="text-2xl font-bold tabular-nums">{count}</p>
+                      <p className="text-muted-foreground mt-0.5 text-xs">
+                        {pct}% of total
+                        {mrr.configured && mrrCents > 0
+                          ? ` · $${(mrrCents / 100).toFixed(0)}/mo`
+                          : ""}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -223,10 +243,18 @@ export function BillingOverview() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Subscriber</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Subscriber
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Plan
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Status
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Date
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

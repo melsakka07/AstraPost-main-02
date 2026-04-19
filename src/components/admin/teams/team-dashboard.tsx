@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Clock, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/ui/stat-card";
 import {
   Table,
   TableBody,
@@ -17,6 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAdminPolling } from "../use-admin-polling";
 
 interface TeamRow {
   teamId: string;
@@ -56,73 +57,6 @@ interface TeamsResponse {
   };
 }
 
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  variant = "default",
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ElementType;
-  variant?: "default" | "success" | "destructive" | "warning";
-}) {
-  const iconColor =
-    variant === "success"
-      ? "text-green-500"
-      : variant === "destructive"
-        ? "text-destructive"
-        : variant === "warning"
-          ? "text-amber-500"
-          : "text-primary";
-  const iconBg =
-    variant === "success"
-      ? "bg-green-500/10"
-      : variant === "destructive"
-        ? "bg-destructive/10"
-        : variant === "warning"
-          ? "bg-amber-500/10"
-          : "bg-primary/10";
-
-  return (
-    <Card>
-      <CardContent className="pt-5">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}>
-          <Icon className={`h-4 w-4 ${iconColor}`} />
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-bold tabular-nums">{value}</p>
-          <p className="text-foreground text-sm font-medium">{label}</p>
-          {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="pt-5">
-              <Skeleton className="h-20 w-full" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Card>
-        <CardContent className="pt-6">
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 function PlanBadge({ plan }: { plan: string }) {
   const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
     free: "secondary",
@@ -149,63 +83,62 @@ function InvitationStatusBadge({ status }: { status: string }) {
   return <Badge variant={variants[status] ?? "secondary"}>{status}</Badge>;
 }
 
-export function TeamDashboard() {
-  const [data, setData] = useState<TeamsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="pt-5">
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+interface TeamDashboardProps {
+  initialData?: TeamsResponse | null;
+}
+
+export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
   const [activeTab, setActiveTab] = useState<"teams" | "invitations">("teams");
   const [teamsPage, setTeamsPage] = useState(1);
   const [invitationsPage, setInvitationsPage] = useState(1);
-  const pathname = usePathname();
 
-  const fetchData = useCallback(
-    async (tab?: string, p?: number) => {
-      const currentTab = tab ?? activeTab;
-      const currentPage = p ?? (currentTab === "teams" ? teamsPage : invitationsPage);
+  const currentPage = activeTab === "teams" ? teamsPage : invitationsPage;
 
-      setLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: String(currentPage),
-          limit: "10",
-          tab: currentTab,
-        });
-        const res = await fetch(`/api/admin/teams?${params}`);
-        if (!res.ok) throw new Error("Failed to fetch team data");
-        const json: TeamsResponse = await res.json();
-        setData(json);
-      } catch {
-        toast.error("Failed to load team data");
-      } finally {
-        setLoading(false);
-      }
+  const { data, loading } = useAdminPolling<TeamsResponse>({
+    fetchFn: async (signal) => {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: "10",
+        tab: activeTab,
+      });
+      const res = await fetch(`/api/admin/teams?${params}`, { signal });
+      if (!res.ok) throw new Error("Failed to fetch team data");
+      const json: TeamsResponse = await res.json();
+      return json;
     },
-    [activeTab, teamsPage, invitationsPage]
-  );
+    intervalMs: 60_000,
+    onError: () => {
+      toast.error("Failed to load team data");
+    },
+    ...(initialData !== undefined && { initialData }),
+  });
 
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData, pathname]);
-
-  // Reset page when switching tabs
   const handleTabChange = (value: string) => {
     const newTab = value as "teams" | "invitations";
     setActiveTab(newTab);
-    if (newTab === "teams") {
-      setTeamsPage(1);
-    } else {
-      setInvitationsPage(1);
-    }
-    void fetchData(newTab, 1);
-  };
-
-  const handleTeamsPageChange = (newPage: number) => {
-    setTeamsPage(newPage);
-    void fetchData("teams", newPage);
-  };
-
-  const handleInvitationsPageChange = (newPage: number) => {
-    setInvitationsPage(newPage);
-    void fetchData("invitations", newPage);
+    if (newTab === "teams") setTeamsPage(1);
+    else setInvitationsPage(1);
   };
 
   if (loading && !data) return <LoadingSkeleton />;
@@ -221,24 +154,24 @@ export function TeamDashboard() {
           Overview
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Total Teams" value={summary.totalTeams.toLocaleString()} icon={Users} />
+          <StatCard title="Total Teams" value={summary.totalTeams.toLocaleString()} icon={Users} />
           <StatCard
-            label="Total Members"
+            title="Total Members"
             value={summary.totalMembers.toLocaleString()}
-            sub="Across all teams"
+            description="Across all teams"
             icon={Users}
           />
           <StatCard
-            label="Pending Invitations"
+            title="Pending Invitations"
             value={summary.pendingInvitations}
-            sub="Awaiting acceptance"
+            description="Awaiting acceptance"
             icon={UserPlus}
             variant={summary.pendingInvitations > 0 ? "warning" : "default"}
           />
           <StatCard
-            label="Expired Invitations"
+            title="Expired Invitations"
             value={summary.expiredInvitations}
-            sub="Not accepted in time"
+            description="Not accepted in time"
             icon={Clock}
             variant={summary.expiredInvitations > 0 ? "destructive" : "default"}
           />
@@ -265,10 +198,18 @@ export function TeamDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Members</TableHead>
-                  <TableHead>Plan</TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Owner
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Email
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                    Members
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Plan
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -295,7 +236,9 @@ export function TeamDashboard() {
                       <TableCell className="text-muted-foreground text-sm">
                         {team.ownerEmail}
                       </TableCell>
-                      <TableCell className="text-sm tabular-nums">{team.memberCount}</TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">
+                        {team.memberCount}
+                      </TableCell>
                       <TableCell>
                         <PlanBadge plan={team.plan} />
                       </TableCell>
@@ -319,7 +262,7 @@ export function TeamDashboard() {
                   type="button"
                   className="border-input hover:bg-accent hover:text-accent-foreground bg-background inline-flex h-8 w-8 items-center justify-center rounded-md border p-0 disabled:pointer-events-none disabled:opacity-50"
                   disabled={teams.pagination.page <= 1}
-                  onClick={() => handleTeamsPageChange(teams.pagination.page - 1)}
+                  onClick={() => setTeamsPage((p) => p - 1)}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -330,7 +273,7 @@ export function TeamDashboard() {
                   type="button"
                   className="border-input hover:bg-accent hover:text-accent-foreground bg-background inline-flex h-8 w-8 items-center justify-center rounded-md border p-0 disabled:pointer-events-none disabled:opacity-50"
                   disabled={teams.pagination.page >= teams.pagination.totalPages}
-                  onClick={() => handleTeamsPageChange(teams.pagination.page + 1)}
+                  onClick={() => setTeamsPage((p) => p + 1)}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -345,12 +288,24 @@ export function TeamDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Team Owner</TableHead>
-                  <TableHead>Expires At</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Email
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Role
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Team Owner
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Expires At
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Created At
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Status
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -417,7 +372,7 @@ export function TeamDashboard() {
                   type="button"
                   className="border-input hover:bg-accent hover:text-accent-foreground bg-background inline-flex h-8 w-8 items-center justify-center rounded-md border p-0 disabled:pointer-events-none disabled:opacity-50"
                   disabled={invitations.pagination.page <= 1}
-                  onClick={() => handleInvitationsPageChange(invitations.pagination.page - 1)}
+                  onClick={() => setInvitationsPage((p) => p - 1)}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -428,7 +383,7 @@ export function TeamDashboard() {
                   type="button"
                   className="border-input hover:bg-accent hover:text-accent-foreground bg-background inline-flex h-8 w-8 items-center justify-center rounded-md border p-0 disabled:pointer-events-none disabled:opacity-50"
                   disabled={invitations.pagination.page >= invitations.pagination.totalPages}
-                  onClick={() => handleInvitationsPageChange(invitations.pagination.page + 1)}
+                  onClick={() => setInvitationsPage((p) => p + 1)}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>

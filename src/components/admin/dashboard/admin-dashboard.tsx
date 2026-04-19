@@ -118,7 +118,11 @@ function getNewUsersVariant(newUsers: number): "default" | "success" {
   return newUsers > 0 ? "success" : "default";
 }
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  initialData?: DashboardData | null;
+}
+
+export function AdminDashboard({ initialData }: AdminDashboardProps = {}) {
   const fetchDashboardData = async (signal: AbortSignal): Promise<DashboardData> => {
     const [statsRes, billingRes] = await Promise.all([
       fetch("/api/admin/stats", { signal }).then((r) => r.json()),
@@ -135,6 +139,7 @@ export function AdminDashboard() {
     fetchFn: fetchDashboardData,
     intervalMs: 60_000,
     enabled: true,
+    ...(initialData !== undefined && { initialData }),
   });
 
   if (loading && !data) return <LoadingSkeleton />;
@@ -223,27 +228,38 @@ export function AdminDashboard() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardContent className="pt-5">
-              <p className="text-muted-foreground text-xs font-medium">Cancelled This Month</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                Cancelled This Month
+              </p>
+              <p className="mt-2 text-2xl font-bold tabular-nums">
                 {billing.subscriptions.cancelledThisMonth}
               </p>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                {billing.subscriptions.cancelledLastMonth} last month
+                {billing.subscriptions.cancelledLastMonth > 0
+                  ? `${billing.subscriptions.cancelledLastMonth} last month`
+                  : "None last month"}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5">
-              <p className="text-muted-foreground text-xs font-medium">New Users (month)</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums">{billing.users.newThisMonth}</p>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                New Users This Month
+              </p>
+              <p className="mt-2 text-2xl font-bold tabular-nums">{billing.users.newThisMonth}</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {billing.users.total.toLocaleString()} total users
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5">
-              <p className="text-muted-foreground text-xs font-medium">System Health</p>
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                System Health
+              </p>
               <Link
                 href="/admin/health"
-                className="text-primary hover:text-primary/80 mt-1 inline-flex items-center gap-1 text-sm font-medium"
+                className="text-primary hover:text-primary/80 mt-2 inline-flex items-center gap-1 text-sm font-medium"
               >
                 View details <ArrowRight className="h-3 w-3" />
               </Link>

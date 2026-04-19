@@ -31,7 +31,11 @@ function LoadingSkeleton() {
   );
 }
 
-export function AffiliateConversionFunnel() {
+interface AffiliateConversionFunnelProps {
+  initialData?: ConversionData | null;
+}
+
+export function AffiliateConversionFunnel({ initialData }: AffiliateConversionFunnelProps = {}) {
   const { data, loading } = useAdminPolling<ConversionData>({
     fetchFn: async (signal) => {
       const r = await fetch("/api/admin/affiliate/funnel", { signal });
@@ -40,6 +44,7 @@ export function AffiliateConversionFunnel() {
       return json.data as ConversionData;
     },
     intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
   });
 
   if (loading) return <LoadingSkeleton />;
@@ -51,7 +56,7 @@ export function AffiliateConversionFunnel() {
         <CardTitle>Conversion Funnel</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {data.stages.map((stage, index) => {
             const isLastStage = index === data.stages.length - 1;
             const nextStage = !isLastStage ? data.stages[index + 1] : null;
@@ -60,31 +65,34 @@ export function AffiliateConversionFunnel() {
               : 0;
 
             return (
-              <div key={stage.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{stage.name}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {stage.count.toLocaleString()} ({stage.percentage}%)
-                    </p>
+              <div key={stage.name} className="space-y-1.5">
+                <div
+                  className="grid items-center gap-3"
+                  style={{ gridTemplateColumns: "9rem 1fr 3.5rem" }}
+                >
+                  <span className="truncate text-sm font-medium" title={stage.name}>
+                    {stage.name}
+                  </span>
+                  <div className="bg-muted h-6 overflow-hidden rounded-md">
+                    <div
+                      className="bg-primary/70 h-full rounded-md transition-all duration-500"
+                      style={{ width: `${stage.percentage}%` }}
+                    />
                   </div>
+                  <span className="text-right text-sm tabular-nums">
+                    <span className="font-semibold">{stage.percentage}%</span>
+                  </span>
                 </div>
-                <div className="bg-muted relative h-8 overflow-hidden rounded-lg">
-                  <div
-                    className="bg-primary/60 h-full rounded-lg transition-all duration-300"
-                    style={{ width: `${stage.percentage}%` }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-foreground text-xs font-semibold">
-                      {stage.percentage}%
+                <div className="flex items-center gap-2 pl-0">
+                  <span className="text-muted-foreground text-xs">
+                    {stage.count.toLocaleString()} users
+                  </span>
+                  {!isLastStage && dropOffPercentage > 0 && (
+                    <span className="text-destructive text-xs">
+                      · {dropOffPercentage.toFixed(1)}% drop-off
                     </span>
-                  </div>
+                  )}
                 </div>
-                {!isLastStage && dropOffPercentage > 0 && (
-                  <p className="text-destructive text-xs">
-                    {dropOffPercentage.toFixed(1)}% drop-off to next stage
-                  </p>
-                )}
               </div>
             );
           })}

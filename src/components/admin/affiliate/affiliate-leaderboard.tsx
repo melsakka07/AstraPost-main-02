@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -46,7 +45,11 @@ function LoadingSkeleton() {
   );
 }
 
-export function AffiliateLeaderboard() {
+interface AffiliateLeaderboardProps {
+  initialData?: AffiliateLeaderboardRow[] | null;
+}
+
+export function AffiliateLeaderboard({ initialData }: AffiliateLeaderboardProps = {}) {
   const [sortField, setSortField] = useState<SortField>("earnings");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
@@ -58,6 +61,7 @@ export function AffiliateLeaderboard() {
       return json.data ?? [];
     },
     intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
   });
 
   const handleSort = (field: SortField) => {
@@ -106,52 +110,58 @@ export function AffiliateLeaderboard() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Rank</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Referral Code</TableHead>
-                <TableHead className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Rank
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Name
+                </TableHead>
+                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  Code
+                </TableHead>
+                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  <button
                     onClick={() => handleSort("clicks")}
-                    className="h-6 gap-1 px-1"
+                    className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
                   >
                     Clicks
-                    {sortField === "clicks" && <ArrowUpDown className="h-3 w-3" />}
-                  </Button>
+                    <ArrowUpDown
+                      className={`h-3 w-3 ${sortField === "clicks" ? "opacity-100" : "opacity-40"}`}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  <button
                     onClick={() => handleSort("conversions")}
-                    className="h-6 gap-1 px-1"
+                    className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
                   >
-                    Conversions
-                    {sortField === "conversions" && <ArrowUpDown className="h-3 w-3" />}
-                  </Button>
+                    Conv.
+                    <ArrowUpDown
+                      className={`h-3 w-3 ${sortField === "conversions" ? "opacity-100" : "opacity-40"}`}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  <button
                     onClick={() => handleSort("rate")}
-                    className="h-6 gap-1 px-1"
+                    className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
                   >
                     Rate
-                    {sortField === "rate" && <ArrowUpDown className="h-3 w-3" />}
-                  </Button>
+                    <ArrowUpDown
+                      className={`h-3 w-3 ${sortField === "rate" ? "opacity-100" : "opacity-40"}`}
+                    />
+                  </button>
                 </TableHead>
-                <TableHead className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  <button
                     onClick={() => handleSort("earnings")}
-                    className="h-6 gap-1 px-1"
+                    className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
                   >
                     Earnings
-                    {sortField === "earnings" && <ArrowUpDown className="h-3 w-3" />}
-                  </Button>
+                    <ArrowUpDown
+                      className={`h-3 w-3 ${sortField === "earnings" ? "opacity-100" : "opacity-40"}`}
+                    />
+                  </button>
                 </TableHead>
               </TableRow>
             </TableHeader>

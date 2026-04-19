@@ -12,6 +12,15 @@ export interface StatCardProps {
   /** Secondary descriptive text shown below the label */
   description?: string;
   /**
+   * Optional suffix appended to the value (e.g. "%" or "ms").
+   */
+  unit?: string;
+  /**
+   * Convenience color variant — sets icon bg + color automatically.
+   * Overridden by explicit iconBgClass / iconColorClass.
+   */
+  variant?: "default" | "success" | "destructive" | "warning";
+  /**
    * Optional trend indicator.
    * - "up"      → green TrendingUp icon
    * - "down"    → red TrendingDown icon
@@ -23,24 +32,43 @@ export interface StatCardProps {
    * When provided the card gets a `border-l-4` accent stripe.
    */
   accentClass?: string;
-  /** Icon wrapper background class (e.g. "bg-emerald-500/10"). Defaults to bg-primary/10. */
+  /** Icon wrapper background class (e.g. "bg-emerald-500/10"). Overrides variant. */
   iconBgClass?: string;
-  /** Icon color class (e.g. "text-emerald-500"). Defaults to text-primary. */
+  /** Icon color class (e.g. "text-emerald-500"). Overrides variant. */
   iconColorClass?: string;
   className?: string;
 }
+
+const VARIANT_ICON_BG: Record<NonNullable<StatCardProps["variant"]>, string> = {
+  default: "bg-primary/10",
+  success: "bg-green-500/10",
+  destructive: "bg-destructive/10",
+  warning: "bg-amber-500/10",
+};
+
+const VARIANT_ICON_COLOR: Record<NonNullable<StatCardProps["variant"]>, string> = {
+  default: "text-primary",
+  success: "text-green-500",
+  destructive: "text-destructive",
+  warning: "text-amber-500",
+};
 
 export function StatCard({
   title,
   value,
   icon: Icon,
   description,
+  unit,
+  variant = "default",
   trend,
   accentClass,
-  iconBgClass = "bg-primary/10",
-  iconColorClass = "text-primary",
+  iconBgClass,
+  iconColorClass,
   className,
 }: StatCardProps) {
+  const resolvedIconBg = iconBgClass ?? VARIANT_ICON_BG[variant];
+  const resolvedIconColor = iconColorClass ?? VARIANT_ICON_COLOR[variant];
+
   return (
     <Card
       className={cn(
@@ -51,8 +79,10 @@ export function StatCard({
     >
       <CardContent className="pt-5">
         <div className="flex items-start justify-between">
-          <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", iconBgClass)}>
-            <Icon className={cn("h-4 w-4", iconColorClass)} />
+          <div
+            className={cn("flex h-9 w-9 items-center justify-center rounded-lg", resolvedIconBg)}
+          >
+            <Icon className={cn("h-4 w-4", resolvedIconColor)} />
           </div>
           {trend && trend !== "neutral" && (
             <span className={trend === "up" ? "text-green-500" : "text-destructive"}>
@@ -65,7 +95,10 @@ export function StatCard({
           )}
         </div>
         <div className="mt-3">
-          <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+          <p className="text-2xl font-bold tracking-tight tabular-nums">
+            {value}
+            {unit && <span className="text-sm font-normal">{unit}</span>}
+          </p>
           <p className="text-foreground text-sm font-medium">{title}</p>
           {description && <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>}
         </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { StatusIndicator } from "@/components/admin/status-indicator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,11 +34,14 @@ function LoadingSkeleton() {
   );
 }
 
-export function FeatureFlagsTable() {
-  const [flags, setFlags] = useState<FeatureFlag[]>([]);
-  const [loading, setLoading] = useState(true);
+interface FeatureFlagsTableProps {
+  initialData?: FeatureFlag[] | null;
+}
+
+export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) {
+  const [flags, setFlags] = useState<FeatureFlag[]>(initialData ?? []);
+  const [loading, setLoading] = useState(initialData === null);
   const [toggling, setToggling] = useState<string | null>(null);
-  const pathname = usePathname();
 
   const fetchFlags = useCallback(async () => {
     setLoading(true);
@@ -55,8 +57,10 @@ export function FeatureFlagsTable() {
   }, []);
 
   useEffect(() => {
-    fetchFlags();
-  }, [fetchFlags, pathname]);
+    if (!initialData) {
+      fetchFlags();
+    }
+  }, [fetchFlags, initialData]);
 
   const toggle = async (flag: FeatureFlag) => {
     setToggling(flag.key);
@@ -148,16 +152,35 @@ export function FeatureFlagsTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead title="Unique identifier for the feature flag">Flag key</TableHead>
-              <TableHead title="Human-readable description of what this feature does">
+              <TableHead
+                title="Unique identifier for the feature flag"
+                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+              >
+                Flag key
+              </TableHead>
+              <TableHead
+                title="Human-readable description of what this feature does"
+                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+              >
                 Description
               </TableHead>
-              <TableHead title="Whether the flag is enabled for rollout">Status</TableHead>
-              <TableHead title="Percentage of users (0-100%) that will see this feature">
+              <TableHead
+                title="Whether the flag is enabled for rollout"
+                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+              >
+                Status
+              </TableHead>
+              <TableHead
+                title="Percentage of users (0-100%) that will see this feature"
+                className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
+              >
                 Rollout %
               </TableHead>
-              <TableHead className="text-right" title="Toggle flag on or off">
-                Actions
+              <TableHead
+                title="Toggle flag on or off"
+                className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase"
+              >
+                Toggle
               </TableHead>
             </TableRow>
           </TableHeader>

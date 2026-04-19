@@ -9,6 +9,7 @@ interface UseAdminPollingOptions<T> {
   enabled?: boolean;
   onSuccess?: (data: T) => void;
   onError?: (error: Error) => void;
+  initialData?: T | null;
 }
 
 interface UseAdminPollingReturn<T> {
@@ -27,12 +28,17 @@ export function useAdminPolling<T>({
   enabled = true,
   onSuccess,
   onError,
+  initialData = null,
 }: UseAdminPollingOptions<T>): UseAdminPollingReturn<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<T | null>(initialData);
+  const [loading, setLoading] = useState(initialData === null);
   const [error, setError] = useState<string | null>(null);
 
-  const inFlightRef = useRef(false);
+  // We use the AbortController reference as a per-request identity token.
+  // Comparing against it in callbacks prevents stale (superseded) fetches
+  // from updating state — this also fixes the React Strict Mode double-invoke
+  // race where the first mount's finally block was clearing `inFlightRef`
+  // after the second mount's fetch had already started.
   const abortControllerRef = useRef<AbortController | null>(null);
   const intervalIdRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -49,9 +55,12 @@ export function useAdminPolling<T>({
   });
 
   const executeFetch = useCallback(async () => {
-    if (inFlightRef.current) return;
+    // Abort any in-flight request before starting a new one.
+    // This handles Strict Mode double-invoke and debounced refreshes.
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-    inFlightRef.current = true;
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
@@ -59,38 +68,47 @@ export function useAdminPolling<T>({
 
     try {
       const result = await fetchFnRef.current(controller.signal);
-      if (!inFlightRef.current) return;
+
+      // Guard: a newer request has already taken over — discard this result.
+      if (abortControllerRef.current !== controller) return;
 
       setData(result);
       setError(null);
       onSuccessRef.current?.(result);
     } catch (err) {
-      if (!inFlightRef.current) return;
-
+      // Silently discard aborted requests (timeout, unmount cleanup, or
+      // Strict Mode double-invoke cancellation).
       if ((err as Error)?.name === "AbortError") return;
+
+      // Guard: discard error if a newer request has superseded this one.
+      if (abortControllerRef.current !== controller) return;
 
       const errorMessage = (err as Error)?.message || "Failed to fetch data";
       setError(errorMessage);
       onErrorRef.current?.(err as Error);
     } finally {
       clearTimeout(timeoutId);
-      inFlightRef.current = false;
+      // Only update loading state if we are still the active request.
+      // Without this guard the first (aborted) fetch's finally would call
+      // setLoading(false) while the second fetch is mid-flight, leaving the
+      // component in an empty, non-loading state until the page is refreshed.
       if (abortControllerRef.current === controller) {
         abortControllerRef.current = null;
+        setLoading(false);
       }
-      setLoading(false);
     }
   }, []);
 
   const refresh = useCallback(() => {
-    inFlightRef.current = false;
     void executeFetch();
   }, [executeFetch]);
 
   useEffect(() => {
     if (!enabled) return;
 
-    setLoading(true);
+    if (data === null) {
+      setLoading(true);
+    }
     setError(null);
 
     void executeFetch();
@@ -101,12 +119,13 @@ export function useAdminPolling<T>({
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
       }
-      inFlightRef.current = false;
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      // Null out the ref before aborting so the in-flight fetch's finally
+      // block sees a changed ref and does not call setLoading(false).
+      const controller = abortControllerRef.current;
+      abortControllerRef.current = null;
+      controller?.abort();
     };
-  }, [enabled, intervalMs, executeFetch, pathname]);
+  }, [enabled, intervalMs, executeFetch, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { data, loading, error, refresh };
 }

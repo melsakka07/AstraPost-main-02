@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { Gift, Users, CreditCard, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard } from "@/components/ui/stat-card";
 import {
   Table,
   TableBody,
@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAdminPolling } from "../use-admin-polling";
 
 interface ReferralSummary {
   totalReferrers: number;
@@ -33,61 +34,17 @@ interface ReferrerRow {
   totalCredits: number;
 }
 
-interface ReferralsResponse {
-  data: {
-    summary: ReferralSummary;
-    topReferrers: {
-      data: ReferrerRow[];
-      pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-      };
+interface ReferralsData {
+  summary: ReferralSummary;
+  topReferrers: {
+    data: ReferrerRow[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
     };
   };
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  variant = "default",
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon: React.ElementType;
-  variant?: "default" | "success" | "destructive";
-}) {
-  const iconColor =
-    variant === "success"
-      ? "text-green-500"
-      : variant === "destructive"
-        ? "text-destructive"
-        : "text-primary";
-  const iconBg =
-    variant === "success"
-      ? "bg-green-500/10"
-      : variant === "destructive"
-        ? "bg-destructive/10"
-        : "bg-primary/10";
-
-  return (
-    <Card>
-      <CardContent className="pt-5">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}>
-          <Icon className={`h-4 w-4 ${iconColor}`} />
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-bold tabular-nums">{value}</p>
-          <p className="text-foreground text-sm font-medium">{label}</p>
-          {sub && <p className="text-muted-foreground mt-0.5 text-xs">{sub}</p>}
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 function LoadingSkeleton() {
@@ -111,33 +68,24 @@ function LoadingSkeleton() {
   );
 }
 
-export function ReferralDashboard() {
-  const [data, setData] = useState<ReferralsResponse["data"] | null>(null);
-  const [loading, setLoading] = useState(true);
+interface ReferralDashboardProps {
+  initialData?: ReferralsData | null;
+}
+
+export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) {
   const [page, setPage] = useState(1);
-  const pathname = usePathname();
 
-  const fetchData = useCallback(async (currentPage: number) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: String(currentPage),
-        limit: "10",
-      });
-      const res = await fetch(`/api/admin/referrals?${params}`);
+  const { data, loading } = useAdminPolling<ReferralsData>({
+    fetchFn: async (signal) => {
+      const params = new URLSearchParams({ page: String(page), limit: "10" });
+      const res = await fetch(`/api/admin/referrals?${params}`, { signal });
       if (!res.ok) throw new Error("Failed to fetch referral data");
-      const json: ReferralsResponse = await res.json();
-      setData(json.data);
-    } catch {
-      // Error handled by empty state
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void fetchData(page);
-  }, [fetchData, page, pathname]);
+      const json = await res.json();
+      return json.data;
+    },
+    intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
+  });
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
@@ -158,28 +106,28 @@ export function ReferralDashboard() {
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            label="Total Referrers"
+            title="Total Referrers"
             value={summary.totalReferrers.toLocaleString()}
-            sub="Users with referral codes"
+            description="Users with referral codes"
             icon={Users}
           />
           <StatCard
-            label="Total Referred Users"
+            title="Total Referred Users"
             value={summary.totalReferred.toLocaleString()}
-            sub="Users joined via referral"
+            description="Users joined via referral"
             icon={Gift}
             variant={summary.totalReferred > 0 ? "success" : "default"}
           />
           <StatCard
-            label="Credits Issued"
+            title="Credits Issued"
             value={summary.totalCreditsIssued.toLocaleString()}
-            sub="Total credits awarded"
+            description="Total credits awarded"
             icon={CreditCard}
           />
           <StatCard
-            label="Conversion Rate"
+            title="Conversion Rate"
             value={`${summary.conversionRate}%`}
-            sub="Referred users who upgraded"
+            description="Referred users who upgraded"
             icon={TrendingUp}
             variant={summary.conversionRate > 20 ? "success" : "default"}
           />
@@ -196,12 +144,24 @@ export function ReferralDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Referral Code</TableHead>
-                  <TableHead className="text-right">Referred</TableHead>
-                  <TableHead className="text-right">Converted</TableHead>
-                  <TableHead className="text-right">Credits</TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Name
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Email
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Referral Code
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                    Referred
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                    Converted
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                    Credits
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

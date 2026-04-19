@@ -25,6 +25,10 @@
     "competitor": "Competitor",
     "achievements": "Achievements",
     "referrals": "Referrals",
+    "affiliate_dashboard": "Affiliate Dashboard",
+    "bio_generator": "Bio Generator",
+    "reply_generator": "Reply Generator",
+    "ai_calendar": "AI Calendar",
     "jobs": "Jobs"
   },
   "buttons": {

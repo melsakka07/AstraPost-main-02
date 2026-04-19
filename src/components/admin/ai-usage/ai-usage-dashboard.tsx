@@ -6,7 +6,6 @@ import { Bot, BarChart3, Users, Zap, Calendar } from "lucide-react";
 import { DateRangePicker, type DateRange } from "@/components/admin/date-range-picker";
 import { EmptyState } from "@/components/admin/empty-state";
 import { useAdminPolling } from "@/components/admin/use-admin-polling";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatCard } from "@/components/ui/stat-card";
@@ -77,7 +76,11 @@ function LoadingSkeleton() {
   );
 }
 
-export function AiUsageDashboard() {
+interface AiUsageDashboardProps {
+  initialData?: AiUsageData | null;
+}
+
+export function AiUsageDashboard({ initialData }: AiUsageDashboardProps = {}) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
     to: new Date(),
@@ -104,6 +107,7 @@ export function AiUsageDashboard() {
     fetchFn: fetchUsage,
     intervalMs: 60_000,
     enabled: true,
+    ...(initialData !== undefined && { initialData }),
   });
 
   const handleDateRangeChange = (range: DateRange | undefined) => {
@@ -242,28 +246,51 @@ export function AiUsageDashboard() {
                 variant="analytics"
               />
             ) : (
-              <div className="space-y-3">
-                {data.typeBreakdown.map((item) => (
-                  <div key={item.type ?? "null"} className="flex items-center gap-3">
-                    <Badge variant="outline" className="min-w-24 justify-center">
-                      {item.type ?? "Unknown"}
-                    </Badge>
-                    <div className="bg-muted h-6 flex-1 overflow-hidden rounded-full">
-                      <div
-                        className="bg-primary h-full [width:var(--bar-width)] rounded-full transition-all"
-                        style={
-                          {
-                            "--bar-width": `${(item.count / Math.max(...data.typeBreakdown.map((b) => b.count))) * 100}%`,
-                          } as React.CSSProperties
-                        }
-                      />
-                    </div>
-                    <span className="min-w-20 text-right text-sm font-medium tabular-nums">
-                      {item.count.toLocaleString()}
-                    </span>
+              (() => {
+                const maxCount = Math.max(...data.typeBreakdown.map((b) => b.count));
+                const total = data.typeBreakdown.reduce((s, b) => s + b.count, 0);
+                return (
+                  <div className="space-y-2">
+                    {data.typeBreakdown.map((item) => {
+                      const pct = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                      const share = total > 0 ? ((item.count / total) * 100).toFixed(1) : "0";
+                      return (
+                        <div
+                          key={item.type ?? "null"}
+                          className="grid items-center gap-3"
+                          style={{ gridTemplateColumns: "10rem 1fr 5rem" }}
+                        >
+                          {/* Fixed-width label — all bars start at the same x position */}
+                          <span
+                            className="truncate text-sm font-medium"
+                            title={item.type ?? "Unknown"}
+                          >
+                            {item.type ?? "Unknown"}
+                          </span>
+
+                          {/* Bar track */}
+                          <div className="bg-muted relative h-5 overflow-hidden rounded-md">
+                            <div
+                              className="bg-primary/80 h-full rounded-md transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+
+                          {/* Count + share — right-aligned, fixed width */}
+                          <div className="flex flex-col items-end">
+                            <span className="text-sm font-semibold tabular-nums">
+                              {item.count.toLocaleString()}
+                            </span>
+                            <span className="text-muted-foreground text-xs tabular-nums">
+                              {share}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                );
+              })()
             )}
           </CardContent>
         </Card>

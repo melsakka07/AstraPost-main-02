@@ -37,7 +37,11 @@ function LoadingSkeleton() {
   );
 }
 
-export function AffiliateTrendsChart() {
+interface AffiliateTrendsChartProps {
+  initialData?: TrendDataPoint[] | null;
+}
+
+export function AffiliateTrendsChart({ initialData }: AffiliateTrendsChartProps = {}) {
   const [period, setPeriod] = useState<DateRange>("30d");
 
   const { data, loading } = useAdminPolling<TrendDataPoint[]>({
@@ -48,6 +52,7 @@ export function AffiliateTrendsChart() {
       return json.data?.data ?? [];
     },
     intervalMs: 60_000,
+    ...(initialData !== undefined && { initialData }),
   });
 
   if (loading) return <LoadingSkeleton />;
