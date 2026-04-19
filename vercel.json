@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm run build:ci",
+  "buildCommand": "pnpm run build",
   "crons": [
     {
       "path": "/api/cron/billing-cleanup",
