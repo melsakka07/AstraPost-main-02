@@ -4,11 +4,11 @@
 
 ## Tech Stack
 
-Next.js 16 (App Router), React 19, TypeScript, PostgreSQL 18 (pgvector), Drizzle ORM, BullMQ + Redis, shadcn/ui + Tailwind CSS 4, Better Auth (X OAuth 2.0, Instagram, LinkedIn), Stripe, Vercel AI SDK 5 + OpenRouter, Google Gemini, Replicate API
+Next.js 16 (App Router), React 19, TypeScript 5.9, PostgreSQL 18 (pgvector), Drizzle ORM, BullMQ + Redis, shadcn/ui + Tailwind CSS 4, Better Auth (X OAuth 2.0, Instagram, LinkedIn), Stripe, Vercel AI SDK 5 + OpenRouter, Replicate API, Zod 4, next-intl (ar/en), Sentry, Resend
 
 ## First Steps
 
-- Check `docs/0-MY-LATEST-UPDATES.md` for recent changes before starting work
+- Check `docs/0-MY-LATEST-UPDATES.md` for recent changes before starting work, update the file with the latest changes once done
 - `pnpm run check` — lint + typecheck (run after ALL changes)
 - `pnpm test` — Vitest unit tests
 - Package manager: **pnpm** (not npm)
@@ -28,18 +28,6 @@ Next.js 16 (App Router), React 19, TypeScript, PostgreSQL 18 (pgvector), Drizzle
 11. **Never use `console.log` or `console.error`** — use `import { logger } from "@/lib/logger"` with structured fields
 12. **Never use `NextResponse.json()`** — use `Response.json()` in route handlers
 13. **Queue jobs must be enqueued AFTER `db.transaction()` commits** — never call `queue.add()` inside a transaction block
-
-## Anti-Patterns (Never Do)
-
-| Wrong                                                 | Right                                       |
-| ----------------------------------------------------- | ------------------------------------------- |
-| `new Response(JSON.stringify({error}), {status:400})` | `ApiError.badRequest("msg")`                |
-| `NextResponse.json({error}, {status:400})`            | `Response.json({error}, {status:400})`      |
-| `console.log("debug:", data)`                         | `logger.info("event", {data})`              |
-| `openrouter("anthropic/claude-3.5-sonnet")`           | `openrouter(process.env.OPENROUTER_MODEL!)` |
-| `getPlanLimits(user.plan)` in route handlers          | `checkPostLimitDetailed(userId, count)`     |
-| `queue.add(...)` inside `db.transaction()`            | Enqueue after transaction commits           |
-| `type Post = { id: string; ... }`                     | `type Post = typeof posts.$inferSelect`     |
 
 ## Definition of Done
 
@@ -71,11 +59,9 @@ Next.js 16 (App Router), React 19, TypeScript, PostgreSQL 18 (pgvector), Drizzle
 
 Canonical example: `src/app/api/posts/route.ts`
 
-## Plan Gates Reference
+## Plan Gates
 
-Import from `@/lib/middleware/require-plan`. Boolean feature gates: `checkAgenticPostingAccessDetailed`, `checkViralScoreAccessDetailed`, `checkVariantGeneratorAccessDetailed`, and others. Quota gates: `checkPostLimitDetailed`, `checkAiQuotaDetailed`, `checkAiImageQuotaDetailed`. All return `{ allowed: true } | PlanGateFailure`. Pass failures to `createPlanLimitResponse()` → 402 with `upgrade_url`, `suggested_plan`, `trial_active`, `reset_at`.
-
-Never call `getPlanLimits()` directly in route handlers — only in services that already hold the plan string.
+Import from `@/lib/middleware/require-plan`. See `.claude/rules/billing.md` for full gate list. All return `{ allowed: true } | PlanGateFailure`. Never call `getPlanLimits()` in route handlers.
 
 ## Key File Locations
 
@@ -105,8 +91,8 @@ Never call `getPlanLimits()` directly in route handlers — only in services tha
 
 Use sub-agents for 3+ file changes or independent subtasks. Never run sequential work that can be parallelized. Each agent gets scoped file boundaries — no overlapping writes. Final step: always parallel lint + typecheck + test agents.
 
-Custom agents in `.claude/agents/`: backend-dev, frontend-dev, ai-specialist, db-migrator, test-runner, researcher, code-reviewer, security-reviewer, performance-analyst, convention-enforcer
-Rules: `.claude/rules/agent-orchestration.md` | Patterns: `docs/claude/agent-patterns.md`
+Custom agents in `.claude/agents/`: backend-dev, frontend-dev, ai-specialist, i18n-dev, db-migrator, test-runner, researcher, code-reviewer, security-reviewer, performance-analyst, convention-enforcer
+Rules: `.claude/rules/agent-orchestration.md`
 
 ## Plans
 
@@ -118,5 +104,6 @@ Plan files: `YYYY-MM-DD-<short-kebab-case-description>.md` in `.claude/plans/`. 
 - **Environment variables**: `docs/claude/env-vars.md`
 - **AI features & endpoints**: `docs/claude/ai-features.md`
 - **Recent fixes & known issues**: `docs/claude/recent-changes.md`
+- **Latest updates log**: `docs/0-MY-LATEST-UPDATES.md`
 - **Common task patterns**: `docs/claude/common-tasks.md`
 - **Available scripts**: `docs/claude/scripts.md`

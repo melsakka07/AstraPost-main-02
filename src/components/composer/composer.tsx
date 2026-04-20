@@ -19,8 +19,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import {
-  ChevronDown,
-  ChevronUp,
   BookmarkPlus,
   Clock,
   FileText,
@@ -1656,7 +1654,16 @@ export function Composer() {
           return;
         }
         const error = await res.json();
-        throw new Error(error.error || "Failed to submit");
+        const detail =
+          error.issues
+            ?.map(
+              (i: { path?: (string | number)[]; message?: string }) =>
+                `${i.path?.join(".") ?? ""}: ${i.message}`
+            )
+            .join("; ") ??
+          error.error ??
+          "Failed to submit";
+        throw new Error(detail);
       }
 
       let message: string;
@@ -2106,16 +2113,8 @@ export function Composer() {
               />
             </div>
 
-            {!showAdvancedOptions ? (
-              <Button
-                variant="ghost"
-                className="text-muted-foreground w-full text-xs hover:bg-transparent hover:underline"
-                onClick={() => setShowAdvancedOptions(true)}
-              >
-                <ChevronDown className="mr-1 h-3 w-3" />
-                Show Advanced Options (Scheduling & Repeat)
-              </Button>
-            ) : (
+            {/* Schedule date picker — shown when user clicks Schedule or already has a date */}
+            {showAdvancedOptions && (
               <div className="animate-in fade-in slide-in-from-top-2 space-y-4">
                 <div className="space-y-1.5 sm:space-y-2">
                   <div className="flex items-center justify-between">
@@ -2126,10 +2125,15 @@ export function Composer() {
                       variant="ghost"
                       size="sm"
                       className="text-muted-foreground h-auto px-2 py-0.5 text-[10px] sm:text-xs"
-                      onClick={() => setShowAdvancedOptions(false)}
+                      onClick={() => {
+                        setShowAdvancedOptions(false);
+                        setScheduledDate("");
+                        setRecurrencePattern("none");
+                        setRecurrenceEndDate("");
+                      }}
                     >
-                      Hide
-                      <ChevronUp className="ml-1 h-3 w-3" />
+                      Cancel
+                      <XIcon className="ml-1 h-3 w-3" />
                     </Button>
                   </div>
                   <div className="bg-muted/30 space-y-1.5 rounded-lg p-2 sm:space-y-2 sm:p-3">
@@ -2230,28 +2234,93 @@ export function Composer() {
             </p>
 
             <div className="flex flex-col gap-1.5 sm:gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0}>
-                      <Button
-                        variant={scheduledDate ? "default" : "outline"}
-                        className="h-10 w-full text-sm font-semibold sm:h-11 sm:text-base"
-                        onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
-                        disabled={isSubmitting || !hasContent}
-                      >
-                        {isSubmitting ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                        ) : (
-                          <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                        )}
-                        {scheduledDate ? "Schedule" : "Post Now"}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                </Tooltip>
-              </TooltipProvider>
+              {scheduledDate ? (
+                /* Date is set — show Schedule as primary, Post Now as secondary */
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0}>
+                          <Button
+                            className="h-10 w-full text-sm font-semibold sm:h-11 sm:text-base"
+                            onClick={() => handleSubmit("schedule")}
+                            disabled={isSubmitting || !hasContent}
+                          >
+                            {isSubmitting ? (
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                            ) : (
+                              <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                            )}
+                            Schedule
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0}>
+                          <Button
+                            variant="outline"
+                            className="h-9 w-full text-sm sm:h-10"
+                            onClick={() => handleSubmit("publish_now")}
+                            disabled={isSubmitting || !hasContent}
+                          >
+                            <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                            Post Now
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              ) : (
+                /* No date set — Post Now primary, Schedule reveals date picker */
+                <>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0}>
+                          <Button
+                            className="h-10 w-full text-sm font-semibold sm:h-11 sm:text-base"
+                            onClick={() => handleSubmit("publish_now")}
+                            disabled={isSubmitting || !hasContent}
+                          >
+                            {isSubmitting ? (
+                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                            ) : (
+                              <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                            )}
+                            Post Now
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span tabIndex={0}>
+                          <Button
+                            variant="outline"
+                            className="h-9 w-full text-sm sm:h-10"
+                            onClick={() => setShowAdvancedOptions(true)}
+                            disabled={isSubmitting || !hasContent}
+                          >
+                            <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                            Schedule
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                    </Tooltip>
+                  </TooltipProvider>
+                </>
+              )}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

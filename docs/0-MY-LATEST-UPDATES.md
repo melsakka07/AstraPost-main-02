@@ -1,5 +1,83 @@
 # Latest Updates
 
+## 2026-04-20: Post PATCH Validation Schema Fix ✅ — Agentic Draft Scheduling Fixed
+
+**Summary:** Fixed validation error when scheduling agentic-generated drafts. `PATCH /api/posts/[postId]` returned 400 "Validation failed" when editing and scheduling a post created via the agentic pipeline.
+
+**Root Cause:** The PATCH route's `postPatchSchema` was inconsistent with the POST route's `createPostSchema`:
+
+1. Used `z.string().url()` for media URLs (stricter than POST's `z.string()`) — could reject valid URLs from Replicate
+2. Missing `mimeType` field in media schema that the composer always sends
+3. Used loose `z.string()` for `fileType` instead of `z.enum(["image", "video", "gif"])` like POST
+
+**Files Changed:**
+
+- `src/app/api/posts/[postId]/route.ts` — Aligned PATCH media schema with POST (accept `mimeType`, `z.enum` for `fileType`, relaxed `url` validator). Added `logger.warn` to log actual Zod issues on validation failure.
+- `src/components/composer/composer.tsx` — Improved client error reporting: now shows specific Zod validation issues (e.g., `tweets.0.media.0.url: Expected URL`) instead of generic "Validation failed".
+
+**Verification:**
+
+- `pnpm run check` passes (lint + typecheck)
+- PATCH returns 200, agentic thread (7 tweets, 2 images) published successfully to X
+
+---
+
+## 2026-04-20: Worker Queue SQL Query Fix ✅ — x-tier-refresh Job Now Running
+
+**Summary:** Fixed critical SQL query error in the `refreshXTiersProcessor` that was preventing the x-tier-refresh-queue job from running.
+
+**Problem:**
+
+The x-tier-refresh job was failing with:
+
+```
+Failed query: select ... from "x_accounts" "xAccounts" where
+  ("xAccounts"."is_active" = $1 and
+   (x_accounts.x_subscription_tier_updated_at is null or
+    x_accounts.x_subscription_tier_updated_at < now() - interval '24 hours'))
+```
+
+**Root Cause:** Mixed table references in the WHERE clause:
+
+- Used aliased `"xAccounts"` for `is_active` check
+- Used unaliased `x_accounts` for `x_subscription_tier_updated_at` checks
+- PostgreSQL compilation failed due to inconsistent table references
+
+**Fix Applied:**
+
+File: `src/lib/queue/processors.ts` (lines 669-677)
+
+Replaced raw SQL fragments with proper Drizzle operators:
+
+```typescript
+// Before ❌
+or(
+  sql`x_accounts.x_subscription_tier_updated_at is null`,
+  sql`x_accounts.x_subscription_tier_updated_at < now() - interval '24 hours'`
+);
+
+// After ✅
+or(
+  isNull(xAccounts.xSubscriptionTierUpdatedAt),
+  lt(xAccounts.xSubscriptionTierUpdatedAt, sql`NOW() - INTERVAL '24 hours'`)
+);
+```
+
+Also added `isNull` to imports from `drizzle-orm`.
+
+**Verification:**
+
+- ✅ `pnpm run check` passes (lint + typecheck)
+- ✅ Worker now runs cleanly without "Failed query" errors
+- ✅ All four job queues running: `schedule-queue`, `analytics-queue`, `x-tier-refresh-queue`, `token-health-queue`
+
+**Next Steps:**
+
+- Monitor worker logs for normal job processing
+- Note: Some users have expired tokens (`hoursUntilExpiry` < 0) — they should reconnect X accounts via Settings
+
+---
+
 ## 2026-04-18: FULL AUDIT COMPLETION ✅ — All 77 Tasks Done
 
 **Summary:** Completed ALL 77 audit tasks across all three phases. The full application audit implementation is now 100% complete with all critical, high, medium, and low-severity gaps addressed.

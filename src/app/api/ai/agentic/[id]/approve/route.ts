@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { eq, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { AgenticTweetsSchema } from "@/lib/ai/agentic-types";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
@@ -12,19 +13,8 @@ import { recordAiUsage } from "@/lib/services/ai-quota";
 
 const approveSchema = z.object({
   action: z.enum(["post_now", "schedule", "save_draft"]),
-  scheduledAt: z.string().datetime().optional(),
-  tweets: z
-    .array(
-      z.object({
-        position: z.number(),
-        text: z.string(),
-        hashtags: z.array(z.string()),
-        hasImage: z.boolean(),
-        imageUrl: z.string().nullish(),
-        charCount: z.number(),
-      })
-    )
-    .min(1),
+  scheduledAt: z.string().datetime({ offset: true }).optional(),
+  tweets: AgenticTweetsSchema.min(1),
 });
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -37,7 +27,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const json = (await req.json()) as unknown;
     const parsed = approveSchema.safeParse(json);
-    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+    if (!parsed.success) {
+      logger.warn("agentic_approve_validation_failed", {
+        id,
+        correlationId,
+        issues: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+      });
+      return ApiError.badRequest(parsed.error.issues);
+    }
 
     const { action, scheduledAt, tweets: editedTweets } = parsed.data;
 

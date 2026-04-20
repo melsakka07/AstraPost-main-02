@@ -209,6 +209,7 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     return {
       ...t,
       position: t.position ?? i,
+      hasImage: t.hasImage ?? false,
       charCount: combined.length,
     };
   });

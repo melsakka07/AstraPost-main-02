@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-import { type InferSelectModel, eq, and, or, sql, isNotNull, lt } from "drizzle-orm";
+import { type InferSelectModel, eq, and, or, sql, isNotNull, isNull, lt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
@@ -670,8 +670,8 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
       where: and(
         eq(xAccounts.isActive, true),
         or(
-          sql`x_accounts.x_subscription_tier_updated_at is null`,
-          sql`x_accounts.x_subscription_tier_updated_at < now() - interval '24 hours'`
+          isNull(xAccounts.xSubscriptionTierUpdatedAt),
+          lt(xAccounts.xSubscriptionTierUpdatedAt, sql`NOW() - INTERVAL '24 hours'`)
         )
       ),
     });

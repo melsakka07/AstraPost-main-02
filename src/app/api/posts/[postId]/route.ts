@@ -40,8 +40,9 @@ const postPatchSchema = z.object({
         media: z
           .array(
             z.object({
-              url: z.string().url(),
-              fileType: z.string(),
+              url: z.string(),
+              mimeType: z.string().optional(),
+              fileType: z.enum(["image", "video", "gif"]),
               size: z.number(),
             })
           )
@@ -135,6 +136,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
 
   const parsed = postPatchSchema.safeParse(rawBody);
   if (!parsed.success) {
+    logger.warn("post_patch_validation_failed", {
+      postId,
+      correlationId,
+      issues: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+    });
     return ApiError.badRequest(parsed.error.issues);
   }
   const body = parsed.data;
