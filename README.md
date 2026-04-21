@@ -1,4 +1,4 @@
-# AstraPost
+# AstraPost 📔📝
 
 > **AI-powered social media scheduling & content platform** — schedule tweets, threads, and posts on X (Twitter). Publish reliably via a background worker, track analytics, and generate content with AI. **LinkedIn integration available on Agency plan.**
 
