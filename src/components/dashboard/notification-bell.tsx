@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useUserLocale } from "@/hooks/use-user-locale";
 import { clientLogger } from "@/lib/client-logger";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+  const userLocale = useUserLocale();
   const seenIdsRef = useRef<Set<string>>(new Set());
   const abortRef = useRef<AbortController | null>(null);
   const inFlightRef = useRef(false);
@@ -224,7 +226,7 @@ export function NotificationBell() {
                     {notification.title || "Notification"}
                   </span>
                   <span className="text-muted-foreground text-[10px] whitespace-nowrap">
-                    {new Date(notification.createdAt).toLocaleDateString()}
+                    {new Date(notification.createdAt).toLocaleDateString(userLocale)}
                   </span>
                 </div>
                 <p className="text-muted-foreground line-clamp-2 w-full text-xs break-words">

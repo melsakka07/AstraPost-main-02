@@ -28,6 +28,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
+import { useUserLocale } from "@/hooks/use-user-locale";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 
 // Q4 — maps known failReason substrings to a contextual tip
@@ -125,6 +126,7 @@ export function QueueContent({
   role,
   currentUserId,
 }: QueueContentProps) {
+  const userLocale = useUserLocale();
   // Q5 — density toggle as client state (no page reload)
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
   const isCompact = density === "compact";
@@ -275,12 +277,12 @@ export function QueueContent({
                   <div>
                     <div className="text-sm font-bold">
                       {post.scheduledAt
-                        ? new Date(post.scheduledAt).toLocaleDateString()
+                        ? new Date(post.scheduledAt).toLocaleDateString(userLocale)
                         : "No Date"}
                     </div>
                     <div className="text-muted-foreground text-xs">
                       {post.scheduledAt
-                        ? new Date(post.scheduledAt).toLocaleTimeString([], {
+                        ? new Date(post.scheduledAt).toLocaleTimeString(userLocale, {
                             hour: "2-digit",
                             minute: "2-digit",
                           })

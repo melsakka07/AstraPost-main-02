@@ -72,6 +72,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { XSubscriptionBadge } from "@/components/ui/x-subscription-badge";
+import { useUserLocale } from "@/hooks/use-user-locale";
 import type {
   AgenticPost,
   AgenticTweet,
@@ -118,6 +119,7 @@ interface AgenticPostingClientProps {
 }
 
 export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
+  const userLocale = useUserLocale();
   const [screen, setScreen] = useState<"input" | "processing" | "review">("input");
 
   // ── Input screen state ──
@@ -265,7 +267,7 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
           const err = await res.json().catch(() => ({}));
           const resetAt = (err as { reset_at?: string }).reset_at;
           const msg = resetAt
-            ? `AI quota reached. Resets on ${new Date(resetAt).toLocaleDateString()}. Upgrade for unlimited access.`
+            ? `AI quota reached. Resets on ${new Date(resetAt).toLocaleDateString(userLocale)}. Upgrade for unlimited access.`
             : "AI quota reached. Upgrade your plan to continue.";
           toast.error(msg, { duration: 8000 });
           setScreen("input");
@@ -307,7 +309,16 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
         setScreen("input");
       }
     },
-    [topic, selectedAccountId, language, tone, includeImages, audience, handleProgressEvent]
+    [
+      topic,
+      selectedAccountId,
+      language,
+      tone,
+      includeImages,
+      audience,
+      handleProgressEvent,
+      userLocale,
+    ]
   );
 
   const handleCancel = useCallback(() => {

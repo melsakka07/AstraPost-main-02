@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUserLocale } from "@/hooks/use-user-locale";
 
 type DraftMedia = { id: string };
 type DraftTweet = { id: string; content: string | null; position: number; media: DraftMedia[] };
@@ -28,6 +29,7 @@ type Draft = {
 type SortKey = "updatedAt" | "createdAt" | "length";
 
 export function DraftsClient({ drafts }: { drafts: Draft[] }) {
+  const userLocale = useUserLocale();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("updatedAt");
 
@@ -106,7 +108,9 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
             const firstTweet = post.tweets[0];
             const isThread = post.tweets.length > 1;
             const hasMedia = post.tweets.some((t) => t.media.length > 0);
-            const editedDate = new Date(post.updatedAt ?? post.createdAt).toLocaleDateString();
+            const editedDate = new Date(post.updatedAt ?? post.createdAt).toLocaleDateString(
+              userLocale
+            );
 
             return (
               <Card
