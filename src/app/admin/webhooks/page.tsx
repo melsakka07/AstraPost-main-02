@@ -2,6 +2,7 @@ import { desc } from "drizzle-orm";
 import { Webhook } from "lucide-react";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { WebhookDLQTable } from "@/components/admin/webhook-dlq-table";
+import { formatDateToLocaleString } from "@/lib/date-utils";
 import { db } from "@/lib/db";
 import { webhookDeadLetterQueue, webhookDeliveryLog, processedWebhookEvents } from "@/lib/schema";
 
@@ -89,7 +90,7 @@ export default async function AdminWebhooksPage() {
               <tbody>
                 {deliveryLogs.map((e) => (
                   <tr key={e.id} className="border-b">
-                    <td className="p-2">{e.processedAt.toLocaleString()}</td>
+                    <td className="p-2">{formatDateToLocaleString(e.processedAt)}</td>
                     <td className="p-2 font-mono">{e.stripeEventId}</td>
                     <td className="p-2">{e.eventType}</td>
                     <td className="p-2">

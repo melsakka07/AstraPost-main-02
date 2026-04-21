@@ -1,11 +1,9 @@
-import { headers } from "next/headers";
-import { eq, and, desc, or } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import type { PipelineProgressEvent } from "@/lib/ai/agentic-types";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -32,19 +30,25 @@ const requestSchema = z.object({
 
 export async function GET() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return ApiError.unauthorized();
+    // 1. Auth + AI preamble (rate limit, quota, model)
+    const preamble = await aiPreamble({
+      featureGate: checkAgenticPostingAccessDetailed,
+      skipQuotaCheck: true, // We are just fetching session, not generating
+    });
+    if (preamble instanceof Response) return preamble;
+    const { session } = preamble;
 
     const latest = await db.query.agenticPosts.findFirst({
-      where: and(
-        eq(agenticPosts.userId, session.user.id),
-        or(
-          eq(agenticPosts.status, "generating"),
-          eq(agenticPosts.status, "ready"),
-          eq(agenticPosts.status, "needs_input")
-        )
-      ),
-      orderBy: [desc(agenticPosts.createdAt)],
+      where: (table, { eq, and, or }) =>
+        and(
+          eq(table.userId, session.user.id),
+          or(
+            eq(table.status, "generating"),
+            eq(table.status, "ready"),
+            eq(table.status, "needs_input")
+          )
+        ),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
     });
 
     if (!latest) return Response.json({ session: null });
@@ -60,8 +64,12 @@ export async function GET() {
 
 export async function DELETE() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return ApiError.unauthorized();
+    const preamble = await aiPreamble({
+      featureGate: checkAgenticPostingAccessDetailed,
+      skipQuotaCheck: true,
+    });
+    if (preamble instanceof Response) return preamble;
+    const { session } = preamble;
 
     await db
       .update(agenticPosts)

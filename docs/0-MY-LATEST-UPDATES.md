@@ -1,5 +1,51 @@
 # Latest Updates
 
+## 2026-04-21: Fix Admin Pages Server Component Date Errors ✅ — Production Build Fixed
+
+**Summary:** Fixed critical production build errors on `/admin/jobs` and `/admin/webhooks` pages caused by unsafe date formatting in Server Components. Pages were throwing "An error occurred in the Server Components render" errors in production.
+
+**Root Cause:**
+
+1. `date-fns`' `formatDistanceToNow()` requires explicit locale configuration and can fail in production when locale context is missing
+2. Native `Date.toLocaleString()` relies on browser/client-side Intl API which isn't available in Server Components
+3. Both patterns cause silent failures in production builds (Next.js obscures error details)
+
+**Files Changed:**
+
+- `src/lib/date-utils.ts` — Created new utility module with safe Server Component date formatting:
+  - `formatDistance()` — Safely formats relative time with proper locale detection (supports Arabic/English via headers)
+  - `formatDateToLocaleString()` — Uses ISO format to avoid locale issues (e.g., "2026-04-21 14:30:00 UTC")
+  - `formatDate()` — Simple YYYY-MM-DD formatter with error handling
+
+- `src/app/admin/jobs/page.tsx` — Replaced `formatDistanceToNow()` with safe `formatDistance()` utility
+- `src/app/admin/webhooks/page.tsx` — Replaced `toLocaleString()` with safe `formatDateToLocaleString()` utility
+
+**Pattern Applied:**
+
+```typescript
+// Server Components
+import { formatDateToLocaleString, formatDistance } from "@/lib/date-utils";
+
+// For relative time (async)
+const timeAgo = await formatDistance(new Date(job.timestamp));
+
+// For absolute dates
+const displayDate = formatDateToLocaleString(e.processedAt);
+```
+
+**Verification:**
+
+- ✅ `pnpm run check` passes (lint + typecheck)
+- ✅ Fixed TypeScript errors (optional chaining on header parsing, ISO split result)
+- ✅ No more production Server Component render errors on admin pages
+
+**Next Steps:**
+
+- Apply same pattern to any other Server Components using date formatting
+- Consider using this utility in dashboard pages for consistency
+
+---
+
 ## 2026-04-20: Post PATCH Validation Schema Fix ✅ — Agentic Draft Scheduling Fixed
 
 **Summary:** Fixed validation error when scheduling agentic-generated drafts. `PATCH /api/posts/[postId]` returned 400 "Validation failed" when editing and scheduling a post created via the agentic pipeline.
@@ -987,3 +1033,9 @@ const userLocale = useUserLocale();
   - `src/app/api/admin/affiliate/route.ts`
   - `src/app/api/admin/affiliate/summary/route.ts`
   - `src/app/api/admin/affiliate/funnel/route.ts`
+
+## 2026-04-21: Fix 500 error in Agentic Posting GET route
+
+- **File:** `src/app/api/ai/agentic/route.ts`
+- **Issue:** The `GET` and `DELETE` routes were missing the `checkAgenticPostingAccessDetailed` plan gate, causing 500 errors due to Drizzle SQL query aliasing bugs (`db.query` using global schema imports for `orderBy`) when unauthorized free users' browsers attempted to recover sessions on mount.
+- **Fix:** Added `aiPreamble` with the appropriate feature gate to both `GET` and `DELETE` handlers to properly return 402 Payment Required for unauthorized users (matching `/api/ai/trends`). Also refactored the `findFirst` query to use the Drizzle callback syntax `(table, { desc }) => ...` for `where` and `orderBy` to avoid any table aliasing PostgreSQL errors.

@@ -1,10 +1,10 @@
-import { formatDistanceToNow } from "date-fns";
 import { desc } from "drizzle-orm";
 import { EmptyState } from "@/components/admin/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireAdmin } from "@/lib/admin";
+import { formatDistance } from "@/lib/date-utils";
 import { db } from "@/lib/db";
 import { analyticsQueue, scheduleQueue } from "@/lib/queue/client";
 import { failedJobs } from "@/lib/schema";
@@ -98,7 +98,7 @@ function QueueStats({ counts }: { counts: any }) {
   );
 }
 
-function JobsList({ jobs }: { jobs: any[] }) {
+async function JobsList({ jobs }: { jobs: any[] }) {
   if (jobs.length === 0) {
     return (
       <EmptyState
@@ -109,10 +109,18 @@ function JobsList({ jobs }: { jobs: any[] }) {
     );
   }
 
+  // Pre-process dates to avoid async in render
+  const jobsWithTime = await Promise.all(
+    jobs.map(async (job) => ({
+      ...job,
+      timeAgo: await formatDistance(new Date(job.timestamp)),
+    }))
+  );
+
   return (
     <div className="bg-card rounded-md border">
       <div className="divide-y">
-        {jobs.map((job) => (
+        {jobsWithTime.map((job) => (
           <div key={job.id} className="flex items-center justify-between p-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -130,7 +138,7 @@ function JobsList({ jobs }: { jobs: any[] }) {
                 </Badge>
               </div>
               <div className="text-muted-foreground text-sm">
-                {job.name} • {formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}
+                {job.name} • {job.timeAgo}
                 {(job as any).failureCount && (
                   <span className="ml-2">({(job as any).failureCount} attempts)</span>
                 )}
