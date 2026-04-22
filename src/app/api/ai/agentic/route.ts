@@ -30,11 +30,8 @@ const requestSchema = z.object({
 
 export async function GET() {
   try {
-    // 1. Auth + AI preamble (rate limit, quota, model)
-    const preamble = await aiPreamble({
-      featureGate: checkAgenticPostingAccessDetailed,
-      skipQuotaCheck: true, // We are just fetching session, not generating
-    });
+    // 1. Auth + AI preamble — no feature gate: free users can view the page
+    const preamble = await aiPreamble({ skipQuotaCheck: true });
     if (preamble instanceof Response) return preamble;
     const { session } = preamble;
 
