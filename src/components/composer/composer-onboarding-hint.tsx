@@ -1,27 +1,10 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { CalendarDays, Keyboard, Sparkles, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const HINT_KEY = "astra-composer-hint-seen";
-
-function hasSeenHint(): boolean {
-  try {
-    return !!localStorage.getItem(HINT_KEY);
-  } catch {
-    return true;
-  }
-}
-
-function subscribeToHint(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  return () => window.removeEventListener("storage", onStoreChange);
-}
-
-function getHintServerSnapshot() {
-  return true;
-}
 
 /**
  * P3-E: First-time composer hint overlay.
@@ -31,9 +14,20 @@ function getHintServerSnapshot() {
  * it never appears again after the user clicks "Got it".
  */
 export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: number }) {
+  const [isMounted, setIsMounted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const seenHint = useSyncExternalStore(subscribeToHint, hasSeenHint, getHintServerSnapshot);
-  const visible = !seenHint && !dismissed;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMounted(true);
+  }, []);
+
+  let visible = false;
+  try {
+    visible = isMounted && !localStorage.getItem(HINT_KEY) && !dismissed;
+  } catch {
+    // ignore
+  }
 
   const dismiss = () => {
     try {

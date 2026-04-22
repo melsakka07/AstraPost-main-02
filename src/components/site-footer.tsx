@@ -153,7 +153,9 @@ export function SiteFooter() {
         {/* Bottom bar */}
         <div className="border-border/50 mt-16 border-t pt-8">
           <div className="text-muted-foreground flex flex-col items-center justify-between gap-3 text-xs sm:flex-row">
-            <p>&copy; {new Date().getFullYear()} AstraPost. All rights reserved.</p>
+            <p suppressHydrationWarning>
+              &copy; {new Date().getFullYear()} AstraPost. All rights reserved.
+            </p>
             <p className="flex items-center gap-1.5">
               <LockIcon className="text-primary/70 h-3.5 w-3.5" />
               Secured with industry-standard encryption

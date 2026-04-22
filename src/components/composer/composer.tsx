@@ -195,30 +195,28 @@ export function Composer() {
   const [templateFormat, setTemplateFormat] = useState<OutputFormat>("thread-short");
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
   // P3-A: Restore AI tone + language from localStorage (session language takes priority once loaded)
-  const [aiTone, setAiTone] = useState<string>(() => {
-    if (typeof window === "undefined") return "professional";
-    try {
-      const saved = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
-      return saved.tone ?? "professional";
-    } catch {
-      return "professional";
-    }
-  });
+  const [aiTone, setAiTone] = useState<string>("professional");
   const [aiCount, setAiCount] = useState([3]);
-  const [aiLanguage, setAiLanguage] = useState<string>(() => {
-    if (typeof window === "undefined") return "en";
-    try {
-      const saved = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
-      if (saved.language) return saved.language;
-    } catch {
-      // fall through to browser detection
-    }
-    const browserLang = navigator.language.split("-")[0] ?? "en";
-    const supported: string[] = LANGUAGES.map((l) => l.code);
-    return supported.includes(browserLang) ? browserLang : "en";
-  });
+  const [aiLanguage, setAiLanguage] = useState<string>("en");
   const [aiLengthOption, setAiLengthOption] = useState<"short" | "medium" | "long">("short");
   const [aiRewriteText, setAiRewriteText] = useState("");
+
+  // Load AI preferences from localStorage on mount (client-only)
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
+      if (saved.tone) setAiTone(saved.tone);
+      if (saved.language) {
+        setAiLanguage(saved.language);
+      } else {
+        const browserLang = navigator.language.split("-")[0] ?? "en";
+        const supported: string[] = LANGUAGES.map((l) => l.code);
+        if (supported.includes(browserLang)) setAiLanguage(browserLang);
+      }
+    } catch {
+      // keep defaults
+    }
+  }, []);
 
   // UI language ≠ content language; default to user's content preference
   useEffect(() => {
