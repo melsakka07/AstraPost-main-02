@@ -4,8 +4,24 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TrendingUp, RefreshCw, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import type { TrendCategory, TrendItem } from "@/lib/schemas/common";
 import { cn } from "@/lib/utils";
+
+interface PlanLimitPayload {
+  error?: string;
+  code?: string;
+  message?: string;
+  feature?: string;
+  plan?: string;
+  limit?: number | null;
+  used?: number;
+  remaining?: number | null;
+  upgrade_url?: string;
+  suggested_plan?: string;
+  trial_active?: boolean;
+  reset_at?: string | null;
+}
 
 const CATEGORIES: { id: TrendCategory; label: string }[] = [
   { id: "all", label: "All" },
@@ -31,35 +47,62 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const hasFetched = useRef(false);
+  const { openWithContext } = useUpgradeModal();
 
-  const fetchTrends = useCallback(async (category: TrendCategory) => {
-    abortRef.current?.abort();
-    const abort = new AbortController();
-    abortRef.current = abort;
+  const fetchTrends = useCallback(
+    async (category: TrendCategory) => {
+      abortRef.current?.abort();
+      const abort = new AbortController();
+      abortRef.current = abort;
 
-    setLoading(true);
-    setError(false);
+      setLoading(true);
+      setError(false);
 
-    try {
-      const res = await fetch(`/api/ai/trends?category=${category}`, {
-        signal: abort.signal,
-      });
+      try {
+        const res = await fetch(`/api/ai/trends?category=${category}`, {
+          signal: abort.signal,
+        });
 
-      if (!res.ok) {
+        if (res.status === 402) {
+          let payload: PlanLimitPayload | null = null;
+          try {
+            payload = (await res.json()) as PlanLimitPayload;
+          } catch {}
+          openWithContext({
+            error: payload?.error,
+            code: payload?.code,
+            message: payload?.message,
+            feature: payload?.feature,
+            plan: payload?.plan,
+            limit: payload?.limit,
+            used: payload?.used,
+            remaining: payload?.remaining,
+            upgradeUrl: payload?.upgrade_url,
+            suggestedPlan: payload?.suggested_plan,
+            trialActive: payload?.trial_active,
+            resetAt: payload?.reset_at,
+          });
+          setError(false);
+          return;
+        }
+
+        if (!res.ok) {
+          setError(true);
+          return;
+        }
+
+        const data = (await res.json()) as { trends: TrendItem[]; cachedAt?: string };
+        setTrends(data.trends ?? []);
+        setCachedAt(data.cachedAt ?? null);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
         setError(true);
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      const data = (await res.json()) as { trends: TrendItem[]; cachedAt?: string };
-      setTrends(data.trends ?? []);
-      setCachedAt(data.cachedAt ?? null);
-    } catch (err) {
-      if ((err as Error).name === "AbortError") return;
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [openWithContext]
+  );
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -150,7 +193,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
         {/* Error state */}
         {!loading && error && (
           <div className="text-muted-foreground mt-3 flex items-center gap-2 py-3 text-xs">
-            <span>Couldn&apos;t load trends right now.</span>
+            <span>Couldn't load trends right now.</span>
             <button
               type="button"
               onClick={() => void fetchTrends(selectedCategory)}

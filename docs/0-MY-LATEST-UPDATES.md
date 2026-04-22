@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-04-22: Fix Agentic Page React Error #418 and Allow Free Users to Access Trends ✅
+
+**Summary:** Fixed React hydration error (#418) causing "Couldn't load trends right now. Retry" message on `/dashboard/ai/agentic` page. Also removed Pro-only restriction from trends feature, allowing Free users access to trending topics.
+
+**Root Causes:**
+
+1. **React Hydration Error #418:** HTML entity `&apos;` in error message caused server-client HTML mismatch
+2. **Pro-only Feature Gate:** Trends API used `checkAgenticPostingAccessDetailed` (Pro-only) returning 402 for Free users
+3. **Missing 402 Handling:** Trends panel showed generic error instead of upgrade modal for plan limit failures
+
+**Files Changed:**
+
+- `src/app/api/ai/trends/route.ts` — Removed `checkAgenticPostingAccessDetailed` feature gate. Now all users with `canUseAi: true` (Free plan has 20 AI generations/month) can access trends. Kept `skipQuotaCheck: true` so trends don't count against monthly quota.
+
+- `src/components/ai/agentic-trends-panel.tsx` — Three fixes:
+  - Replaced HTML entity `&apos;` with plain apostrophe `'` in error message (fixes hydration error)
+  - Added `useUpgradeModal` hook and 402 response handling to show upgrade modal when `canUseAi` is false
+  - Imported `PlanLimitPayload` type for proper 402 response parsing
+
+**Verification:**
+
+- ✅ `pnpm run check` passes (lint + typecheck)
+- ✅ React hydration error #418 no longer occurs
+- ✅ Free users can now load trends without 402 errors
+- ✅ 402 responses (when `canUseAi: false`) show upgrade modal with context
+
+**Note:** One pre-existing test failure in `src/app/api/ai/image/__tests__/route.test.ts` (unrelated to these changes).
+
+---
+
 ## 2026-04-21: Fix Admin Pages Server Component Date Errors ✅ — Production Build Fixed
 
 **Summary:** Fixed critical production build errors on `/admin/jobs` and `/admin/webhooks` pages caused by unsafe date formatting in Server Components. Pages were throwing "An error occurred in the Server Components render" errors in production.

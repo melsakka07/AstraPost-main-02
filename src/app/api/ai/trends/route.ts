@@ -6,7 +6,6 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
-import { checkAgenticPostingAccessDetailed } from "@/lib/middleware/require-plan";
 import { redis } from "@/lib/rate-limiter";
 import {
   trendCategoryEnum,
@@ -84,9 +83,9 @@ export async function GET(req: Request) {
       });
     }
 
-    // ── Rate-limit + feature gate (only on cache miss → real AI call) ────────
+    // ── Rate-limit + AI access check (only on cache miss → real AI call) ─────
+    // Trends available to all users (Free users have canUseAi: true, skip quota)
     const preamble = await aiPreamble({
-      featureGate: checkAgenticPostingAccessDetailed,
       skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
