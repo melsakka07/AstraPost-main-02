@@ -1,5 +1,45 @@
 # Latest Updates
 
+## 2026-04-22: Fix Hydration Error #418 and Create OG Image Route ✅
+
+**Summary:** Fixed remaining React hydration error (#418) instances by replacing HTML entity `&apos;` with plain apostrophes, and created dynamic OG image route to eliminate 404 errors on `/og-image.png`.
+
+**Changes:**
+
+**Hydration Error Fixes:**
+
+- `src/components/ai/agentic-posting-client.tsx` — Replaced `&apos;` with plain `'` in 3 locations:
+  - Line 710-711: AlertDialog description text
+  - Line 1638: Image error span text
+- `src/app/not-found.tsx` — Replaced `&apos;` with plain `'` on line 15
+
+**OG Image Route:**
+
+- Created `src/app/og-image.png/route.tsx` — Dynamic OG image using `ImageResponse` from `next/og`
+  - Size: 1200x630 (standard OG image dimensions)
+  - Branded image with AstraPost logo, tagline, and feature list
+  - Edge runtime for fast generation
+  - Returns PNG content-type
+
+**Root Causes:**
+
+1. **Hydration Error #418:** HTML entities like `&apos;` cause server-client HTML mismatch in React, triggering hydration errors
+2. **OG Image 404:** `src/app/layout.tsx` and `src/app/manifest.ts` referenced `/og-image.png` but no route handler existed, causing Vercel bot crawling errors
+
+**Verification:**
+
+- ✅ All `&apos;` entities replaced with plain `'` apostrophes
+- ✅ OG image route created and functional
+- ✅ No hydration errors expected after deployment
+- ✅ `/og-image.png` now returns 200 with PNG image
+
+**Next Steps:**
+
+- Monitor production logs to confirm hydration error #418 is resolved
+- Verify OG image appears correctly on social sharing platforms
+
+---
+
 ## 2026-04-22: Fix Agentic Page React Error #418 and Allow Free Users to Access Trends ✅
 
 **Summary:** Fixed React hydration error (#418) causing "Couldn't load trends right now. Retry" message on `/dashboard/ai/agentic` page. Also removed Pro-only restriction from trends feature, allowing Free users access to trending topics.

@@ -25,20 +25,24 @@ export default async function AgenticPostingPage() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
 
-  const accounts = await db
-    .select({
-      id: xAccounts.id,
-      username: xAccounts.xUsername,
-      profileImageUrl: xAccounts.xAvatarUrl,
-      subscriptionTier: xAccounts.xSubscriptionTier,
-    })
-    .from(xAccounts)
-    .where(and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true)));
+  const [dbUser, accounts] = await Promise.all([
+    db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true, voiceProfile: true, trialEndsAt: true },
+    }),
+    db
+      .select({
+        id: xAccounts.id,
+        username: xAccounts.xUsername,
+        profileImageUrl: xAccounts.xAvatarUrl,
+        subscriptionTier: xAccounts.xSubscriptionTier,
+      })
+      .from(xAccounts)
+      .where(and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true))),
+  ]);
 
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { voiceProfile: true },
-  });
+  const isTrialActive = dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
+  const isLocked = !isTrialActive && dbUser?.plan === "free";
 
   const typedAccounts: XAccountOption[] = accounts.map((a) => ({
     id: a.id,
@@ -53,7 +57,11 @@ export default async function AgenticPostingPage() {
       title="Agentic Posting"
       description="Drop a topic. AI handles the rest."
     >
-      <AgenticPostingClient xAccounts={typedAccounts} hasVoiceProfile={!!dbUser?.voiceProfile} />
+      <AgenticPostingClient
+        xAccounts={typedAccounts}
+        hasVoiceProfile={!!dbUser?.voiceProfile}
+        isLocked={isLocked}
+      />
     </DashboardPageWrapper>
   );
 }
