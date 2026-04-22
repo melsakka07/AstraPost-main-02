@@ -21,9 +21,7 @@ const client =
     idle_timeout: process.env.NODE_ENV === "production" ? 60 : 20,
     max_lifetime: process.env.NODE_ENV === "production" ? 1800 : 60,
   });
-if (process.env.NODE_ENV !== "production") {
-  globalThis._postgresClient = client;
-}
+globalThis._postgresClient = client;
 
 export const db = drizzle(client, { schema });
 export const dbClient = client;

@@ -44,9 +44,9 @@ export async function GET() {
           color: "#ffffff",
         }}
       >
-        <span style={{ color: "#22c55e" }}>✓</span> Schedule &amp; Publish
-        <span style={{ color: "#22c55e" }}>✓</span> AI Content
-        <span style={{ color: "#22c55e" }}>✓</span> Analytics
+        <span style={{ color: "#22c55e" }}>•</span> Schedule &amp; Publish
+        <span style={{ color: "#22c55e" }}>•</span> AI Content
+        <span style={{ color: "#22c55e" }}>•</span> Analytics
       </div>
     </div>,
     {
