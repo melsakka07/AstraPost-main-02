@@ -71,8 +71,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge } from "@/components/ui/x-subscription-badge";
-import { useUserLocale } from "@/hooks/use-user-locale";
 import type {
   AgenticPost,
   AgenticTweet,
@@ -80,6 +80,21 @@ import type {
   PipelineStep,
 } from "@/lib/ai/agentic-types";
 import { LANGUAGES, TONE_ENUM } from "@/lib/constants";
+
+interface PlanLimitPayload {
+  error?: string;
+  code?: string;
+  message?: string;
+  feature?: string;
+  plan?: string;
+  limit?: number | null;
+  used?: number;
+  remaining?: number | null;
+  upgrade_url?: string;
+  suggested_plan?: string;
+  trial_active?: boolean;
+  reset_at?: string | null;
+}
 
 // ── Suggestion chips ──────────────────────────────────────────────────────────
 const DEFAULT_SUGGESTIONS = [
@@ -119,7 +134,7 @@ interface AgenticPostingClientProps {
 }
 
 export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
-  const userLocale = useUserLocale();
+  const { openWithContext } = useUpgradeModal();
   const [screen, setScreen] = useState<"input" | "processing" | "review">("input");
 
   // ── Input screen state ──
@@ -264,12 +279,24 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
         });
 
         if (res.status === 402) {
-          const err = await res.json().catch(() => ({}));
-          const resetAt = (err as { reset_at?: string }).reset_at;
-          const msg = resetAt
-            ? `AI quota reached. Resets on ${new Date(resetAt).toLocaleDateString(userLocale)}. Upgrade for unlimited access.`
-            : "AI quota reached. Upgrade your plan to continue.";
-          toast.error(msg, { duration: 8000 });
+          let payload: PlanLimitPayload | null = null;
+          try {
+            payload = (await res.json()) as PlanLimitPayload;
+          } catch {}
+          openWithContext({
+            error: payload?.error,
+            code: payload?.code,
+            message: payload?.message,
+            feature: payload?.feature,
+            plan: payload?.plan,
+            limit: payload?.limit,
+            used: payload?.used,
+            remaining: payload?.remaining,
+            upgradeUrl: payload?.upgrade_url,
+            suggestedPlan: payload?.suggested_plan,
+            trialActive: payload?.trial_active,
+            resetAt: payload?.reset_at,
+          });
           setScreen("input");
           return;
         }
@@ -317,7 +344,7 @@ export function AgenticPostingClient({ xAccounts }: AgenticPostingClientProps) {
       includeImages,
       audience,
       handleProgressEvent,
-      userLocale,
+      openWithContext,
     ]
   );
 
