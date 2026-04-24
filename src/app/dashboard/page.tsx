@@ -223,12 +223,12 @@ export default async function DashboardPage() {
 
       {data.failedCount > 0 && (
         <Alert className="border-destructive/50 bg-destructive/5">
-          <AlertCircle className="text-destructive h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between">
-            <span>
+          <AlertCircle className="text-destructive h-4 w-4 shrink-0" />
+          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm">
               {data.failedCount} post{data.failedCount > 1 ? "s" : ""} failed to publish.
             </span>
-            <Button size="sm" variant="outline" asChild>
+            <Button size="sm" variant="outline" asChild className="w-full sm:w-auto">
               <Link href="/dashboard/queue">View & Retry</Link>
             </Button>
           </AlertDescription>
@@ -238,7 +238,7 @@ export default async function DashboardPage() {
       <PostUsageBar />
 
       {/* Stats Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {STAT_CARDS.map((card) => {
           const stat = statValues[card.key]!;
           return (
@@ -246,8 +246,8 @@ export default async function DashboardPage() {
               key={card.key}
               className={`border-l-4 ${card.accent} transition-shadow hover:shadow-md`}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-muted-foreground text-sm font-medium">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3 pb-2">
+                <CardTitle className="text-muted-foreground text-xs font-medium sm:text-sm">
                   {card.label}
                 </CardTitle>
                 <div
@@ -256,8 +256,8 @@ export default async function DashboardPage() {
                   <card.icon className={`h-4 w-4 ${card.iconColor}`} />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+              <CardContent className="px-4 py-2">
+                <div className="text-xl font-bold tracking-tight sm:text-2xl">{stat.value}</div>
                 <p className="text-muted-foreground mt-1 text-xs">{stat.sub}</p>
               </CardContent>
             </Card>
@@ -266,12 +266,12 @@ export default async function DashboardPage() {
       </div>
 
       {/* Upcoming Queue + Quick Compose */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="lg:col-span-4">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Upcoming Queue</CardTitle>
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="md:col-span-1 lg:col-span-4">
+          <CardHeader className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="text-base sm:text-lg">Upcoming Queue</CardTitle>
             {data.upcomingPosts.length > 0 && (
-              <Button variant="ghost" size="sm" asChild className="text-xs">
+              <Button variant="ghost" size="sm" asChild className="w-full text-xs sm:w-auto">
                 <Link href="/dashboard/queue">View all</Link>
               </Button>
             )}

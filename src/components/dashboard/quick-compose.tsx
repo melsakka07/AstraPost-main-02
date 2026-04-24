@@ -32,16 +32,16 @@ export function QuickCompose() {
   };
 
   return (
-    <Card className="lg:col-span-3">
-      <CardHeader className="flex flex-row items-center gap-2">
+    <Card className="md:col-span-1 lg:col-span-3">
+      <CardHeader className="flex flex-row items-center gap-2 px-4 py-4">
         <PenSquare className="text-muted-foreground h-4 w-4" />
-        <CardTitle>Quick Compose</CardTitle>
+        <CardTitle className="text-base sm:text-lg">Quick Compose</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 py-0 pb-4">
         <div className="space-y-3">
           <div className="relative">
             <Textarea
-              className="min-h-[140px] resize-none pb-8 text-sm leading-relaxed"
+              className="min-h-[120px] resize-none pb-8 text-sm leading-relaxed sm:min-h-[140px]"
               placeholder="Share an idea, a thread hook, or a quick update..."
               aria-label="Quick compose"
               value={content}

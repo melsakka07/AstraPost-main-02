@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Command, Search, ChevronRight, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -120,6 +121,17 @@ export function CommandPalette() {
 
   return (
     <>
+      {/* Compact icon trigger — visible on mobile/tablet, hidden on lg+ (use ⌘K there) */}
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Open command palette"
+        className="h-9 w-9 shrink-0 lg:hidden"
+        onClick={() => setOpen(true)}
+      >
+        <Search className="h-4 w-4" />
+      </Button>
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[70vh] overflow-hidden p-0 shadow-xl">
           <DialogHeader className="space-y-0 border-b px-4 py-3">
@@ -197,20 +209,6 @@ export function CommandPalette() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Mobile: Show button for command palette */}
-      <div className="lg:hidden">
-        <button
-          onClick={() => setOpen(true)}
-          className="border-input bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex h-9 w-full max-w-xs items-center justify-between rounded-md border px-3 py-2 text-sm shadow-sm"
-        >
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            <span>Search commands...</span>
-          </div>
-          <kbd className="bg-muted rounded px-1.5 py-0.5 text-xs font-medium">⌘K</kbd>
-        </button>
-      </div>
     </>
   );
 }
