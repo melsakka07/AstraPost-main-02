@@ -8,7 +8,7 @@ Next.js 16 (App Router), React 19, TypeScript 5.9, PostgreSQL 18 (pgvector), Dri
 
 ## First Steps
 
-- Check `docs/0-MY-LATEST-UPDATES.md` for recent changes before starting work, update the file with the latest changes once done
+- Check the latest two updates in the (the first 100 lines) `docs/0-MY-LATEST-UPDATES.md` for recent changes before starting work, update the file with the latest changes once done
 - `pnpm run check` — lint + typecheck (run after ALL changes)
 - `pnpm test` — Vitest unit tests
 - Package manager: **pnpm** (not npm)
