@@ -146,8 +146,7 @@ export async function GET(req: NextRequest) {
       // failed attempt, and the new prediction ID is returned so the client can
       // keep polling without interruption.
       if (
-        (meta.model === process.env.REPLICATE_MODEL_FAST! ||
-          meta.model === process.env.REPLICATE_MODEL_PRO!) &&
+        (meta.model === "nano-banana-2" || meta.model === "nano-banana-pro") &&
         !isContentBlocked
       ) {
         await redis.del(`ai:img:pred:${predictionId}`);
@@ -156,14 +155,14 @@ export async function GET(req: NextRequest) {
           const fallback = await startImageGeneration({
             prompt: meta.finalPrompt,
             aspectRatio: meta.aspectRatio,
-            model: process.env.REPLICATE_MODEL_FALLBACK! as ImageModel,
+            model: "nano-banana" as ImageModel,
             ...(meta.style !== null && { style: meta.style }),
           });
 
           // Cache fallback metadata under the new prediction ID.
           const fallbackMeta: PredictionMeta = {
             ...meta,
-            model: process.env.REPLICATE_MODEL_FALLBACK! as ImageModel,
+            model: "nano-banana" as ImageModel,
           };
           await redis.setex(
             `ai:img:pred:${fallback.predictionId}`,

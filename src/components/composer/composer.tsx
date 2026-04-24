@@ -277,8 +277,8 @@ export function Composer() {
   const [isAiImageOpen, setIsAiImageOpen] = useState(false);
   const [aiImageTargetTweetId, setAiImageTargetTweetId] = useState<string | null>(null);
   const [userPlanLimits, setUserPlanLimits] = useState<{
-    availableModels: ("nano-banana-2" | "nano-banana-pro")[];
-    preferredModel: "nano-banana-2" | "nano-banana-pro";
+    availableModels: ("nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2")[];
+    preferredModel: "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
     remainingQuota: number;
   }>({
     availableModels: ["nano-banana-2"],
@@ -812,6 +812,11 @@ export function Composer() {
     setTweets((prev) =>
       prev.map((tweet) => {
         if (tweet.id === aiImageTargetTweetId) {
+          const currentMediaCount = tweet.media.length;
+          if (currentMediaCount >= 4) {
+            toast.error("Maximum 4 images per tweet");
+            return tweet; // return unchanged
+          }
           return {
             ...tweet,
             media: [
@@ -828,6 +833,7 @@ export function Composer() {
         return tweet;
       })
     );
+    // Dialog stays open — user can generate and attach more images (up to 4)
   };
 
   // Phase 1: Inspiration handlers (moved from dialog to composer)
@@ -2571,6 +2577,11 @@ export function Composer() {
         availableModels={userPlanLimits.availableModels}
         userPreferredModel={userPlanLimits.preferredModel}
         remainingQuota={userPlanLimits.remainingQuota}
+        attachedCount={
+          aiImageTargetTweetId
+            ? (tweets.find((t) => t.id === aiImageTargetTweetId)?.media.length ?? 0)
+            : 0
+        }
       />
 
       {/* UA-A13: Confirm before SPA navigation away mid-draft */}

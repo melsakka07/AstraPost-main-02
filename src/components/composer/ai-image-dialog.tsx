@@ -7,7 +7,16 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Wand2, Loader2, Sparkles, RefreshCw, Check, AlertCircle, RotateCcw } from "lucide-react";
+import {
+  Wand2,
+  Loader2,
+  Sparkles,
+  RefreshCw,
+  Check,
+  AlertCircle,
+  RotateCcw,
+  Download,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +39,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { clientLogger } from "@/lib/client-logger";
 import { cn } from "@/lib/utils";
 
-type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana";
+type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
 type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
 type ImageStyle =
   | "photorealistic"
@@ -56,12 +65,14 @@ interface AiImageDialogProps {
   availableModels: ImageModel[];
   userPreferredModel: ImageModel;
   remainingQuota: number;
+  attachedCount: number; // current media count on the target tweet (0-4)
 }
 
 const MODEL_LABELS: Record<ImageModel, string> = {
   "nano-banana-2": "Nano Banana 2 (Fast)",
   "nano-banana-pro": "Nano Banana Pro (Best)",
   "nano-banana": "Nano Banana",
+  "gpt-image-2": "GPT Image 2 (Advanced)",
 };
 
 const ASPECT_RATIO_LABELS: Record<AspectRatio, string> = {
@@ -88,6 +99,7 @@ export function AiImageDialog({
   availableModels,
   userPreferredModel,
   remainingQuota,
+  attachedCount,
 }: AiImageDialogProps) {
   // State
   const [prompt, setPrompt] = useState("");
@@ -99,6 +111,7 @@ export function AiImageDialog({
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [style, setStyle] = useState<ImageStyle | undefined>();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<GeneratedImage | null>(null);
   const [imageHistory, setImageHistory] = useState<GeneratedImage[]>([]);
 
@@ -362,10 +375,31 @@ export function AiImageDialog({
     handleGenerate();
   };
 
+  const handleDownload = async () => {
+    if (!generatedImage) return;
+    setIsDownloading(true);
+    try {
+      const res = await fetch(
+        `/api/ai/image/download?url=${encodeURIComponent(generatedImage.imageUrl)}`
+      );
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `astrapost-image-${Date.now()}.webp`;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      toast.error("Failed to download image");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const handleAttach = () => {
     if (generatedImage) {
       onImageAttach(generatedImage);
-      handleOpenChange(false);
       toast.success("Image attached to tweet!");
     }
   };
@@ -377,7 +411,7 @@ export function AiImageDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-x-hidden overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wand2 className="text-primary h-5 w-5" />
@@ -388,7 +422,7 @@ export function AiImageDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="w-full min-w-0 space-y-6 py-4">
           {/* Quota Display */}
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Monthly quota:</span>
@@ -431,7 +465,7 @@ export function AiImageDialog({
           </div>
 
           {/* Options Grid */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
             {/* Model Selection */}
             <div className="space-y-2">
               <Label htmlFor="model">Model</Label>
@@ -687,9 +721,34 @@ export function AiImageDialog({
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Regenerate
               </Button>
-              <Button onClick={handleAttach} disabled={isGenerating}>
+              {generatedImage && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    void handleDownload();
+                  }}
+                  disabled={isDownloading || isGenerating}
+                >
+                  {isDownloading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button onClick={handleAttach} disabled={isGenerating || attachedCount >= 4}>
                 <Check className="mr-2 h-4 w-4" />
-                Attach to Tweet
+                {attachedCount >= 4
+                  ? "Max images reached (4/4)"
+                  : attachedCount > 0
+                    ? `Attach to Tweet (${attachedCount}/4)`
+                    : "Attach to Tweet"}
               </Button>
             </>
           )}

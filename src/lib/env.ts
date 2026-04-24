@@ -35,6 +35,7 @@ const serverEnvSchema = z.object({
   REPLICATE_MODEL_FAST: z.string().min(1, "REPLICATE_MODEL_FAST is required"),
   REPLICATE_MODEL_PRO: z.string().min(1, "REPLICATE_MODEL_PRO is required"),
   REPLICATE_MODEL_FALLBACK: z.string().min(1, "REPLICATE_MODEL_FALLBACK is required"),
+  REPLICATE_MODEL_ADVANCED: z.string().min(1, "REPLICATE_MODEL_ADVANCED is required"),
 
   // Queue
   REDIS_URL: z.string().url().default("redis://localhost:6379"),

@@ -40,12 +40,8 @@ const ImageGenRequestSchema = z.object({
   prompt: z.string().max(1000).optional(),
   tweetContent: z.string().max(5000).optional(),
   model: z
-    .enum([
-      process.env.REPLICATE_MODEL_FAST!,
-      process.env.REPLICATE_MODEL_PRO!,
-      process.env.REPLICATE_MODEL_FALLBACK!,
-    ])
-    .default(process.env.REPLICATE_MODEL_FAST!),
+    .enum(["nano-banana-2", "nano-banana-pro", "nano-banana", "gpt-image-2"])
+    .default("nano-banana-2"),
   aspectRatio: z.enum(["1:1", "16:9", "4:3", "9:16"]).default("1:1"),
   style: z
     .enum(["photorealistic", "illustration", "minimalist", "abstract", "infographic", "meme"])

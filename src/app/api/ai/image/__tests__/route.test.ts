@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.hoisted(() => {
   process.env.REPLICATE_MODEL_FAST = "nano-banana-2";
-  process.env.REPLICATE_MODEL_PRO = "banana-pro";
-  process.env.REPLICATE_MODEL_FALLBACK = "gemini-imagen-4";
+  process.env.REPLICATE_MODEL_PRO = "nano-banana-pro";
+  process.env.REPLICATE_MODEL_FALLBACK = "nano-banana";
+  process.env.REPLICATE_MODEL_ADVANCED = "gpt-image-2";
 });
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";

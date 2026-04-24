@@ -46,7 +46,7 @@ import { upload } from "@/lib/storage";
 // Types and Interfaces
 // ============================================================================
 
-export type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana";
+export type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
 
 export type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
 
@@ -157,6 +157,21 @@ function convertAspectRatioToReplicate(aspectRatio: AspectRatio): string {
       return "4:3";
     case "9:16":
       return "9:16";
+    default:
+      return "1:1";
+  }
+}
+
+/**
+ * Convert aspect ratio for gpt-image-2 (supports limited set of ratios)
+ */
+function convertAspectRatioForGptImage2(aspectRatio: AspectRatio): string {
+  switch (aspectRatio) {
+    case "16:9":
+    case "4:3":
+      return "3:2";
+    case "9:16":
+      return "2:3";
     default:
       return "1:1";
   }
@@ -462,11 +477,13 @@ export async function startImageGeneration(
   const model = params.model ?? "nano-banana-2";
   const prompt = buildStyledPrompt(params.prompt, params.style);
   const modelName =
-    model === "nano-banana-pro"
-      ? process.env.REPLICATE_MODEL_PRO!
-      : model === "nano-banana"
-        ? process.env.REPLICATE_MODEL_FALLBACK!
-        : process.env.REPLICATE_MODEL_FAST!;
+    model === "gpt-image-2"
+      ? process.env.REPLICATE_MODEL_ADVANCED!
+      : model === "nano-banana-pro"
+        ? process.env.REPLICATE_MODEL_PRO!
+        : model === "nano-banana"
+          ? process.env.REPLICATE_MODEL_FALLBACK!
+          : process.env.REPLICATE_MODEL_FAST!;
   const resolution = model === "nano-banana-pro" ? "2K" : "1K";
 
   // Use the model name endpoint — /v1/models/{model_owner}/{model_name}/predictions
@@ -482,13 +499,23 @@ export async function startImageGeneration(
         Prefer: "wait",
       },
       body: JSON.stringify({
-        input: {
-          prompt,
-          aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
-          resolution,
-          output_format: "png",
-          safety_filter_level: "block_only_high",
-        },
+        input:
+          model === "gpt-image-2"
+            ? {
+                prompt,
+                aspect_ratio: convertAspectRatioForGptImage2(params.aspectRatio),
+                quality: "low",
+                output_format: "webp",
+                output_compression: 90,
+                moderation: "auto",
+              }
+            : {
+                prompt,
+                aspect_ratio: convertAspectRatioToReplicate(params.aspectRatio),
+                resolution,
+                output_format: "png",
+                safety_filter_level: "block_only_high",
+              },
       }),
     }
   );
