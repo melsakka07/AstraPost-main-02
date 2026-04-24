@@ -1,5 +1,14 @@
 # Recent Fixes & Changes
 
+## 2026-04-24
+
+- **Agent Orchestration Improvements**: Convention-enforcer checklist updated with 3 missing rules (optional chaining depth, AbortController polling, viewer check must use ApiError.forbidden). Added 6 new orchestration patterns + Agent Decision Matrix to agent-orchestration.md. All 11 agent files now have "Do NOT use this agent when" + handoff guidance. Plan template created at `.claude/plans/TEMPLATE.md`. Cross-references added to 4 rule files. Quick Agent Selection table added to CLAUDE.md. New `docs-writer` Haiku agent added. Canonical posts route viewer check fixed to use `ApiError.forbidden()`.
+
+## 2026-04-22
+
+- **OG Image Route**: Created `src/app/og-image.png/route.tsx` (1200×630 branded image via `next/og`, edge runtime) — fixes 404 errors from bot crawlers.
+- **Hydration Error #418**: Replaced `&apos;` HTML entities with plain apostrophes in `agentic-posting-client.tsx` and `not-found.tsx` to eliminate server-client HTML mismatches.
+
 ## 2026-04-11
 
 - **Admin-Only Pages**: `/dashboard/jobs` and `/dashboard/ai/history` now restricted to admin users only. Sidebar hides these items for non-admins. Page-level `requireAdmin()` guard redirects non-admins to `/dashboard`. Uses existing `isAdmin` field on user table via Better Auth session.

@@ -85,8 +85,13 @@ This document maps all backend AI generation and processing endpoints to their r
 
 ### `POST /api/ai/inspire`
 
-- **Purpose**: Content Inspiration (Google Gemini).
+- **Purpose**: Content Inspiration (OpenRouter).
 - **Actions**: Rephrase, change tone, expand, add takeaway, translate, counter-point.
+
+### `POST /api/ai/trends`
+
+- **Purpose**: Fetches AI-generated trending topics by category (Technology, Business, etc.) without requiring the X API.
+- **Details**: Uses `OPENROUTER_MODEL_TRENDS` (web-search-capable model) → falls back to `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`. Plan-gated (Pro/Agency).
 
 ### `POST /api/ai/inspiration`
 

@@ -89,10 +89,25 @@ Import from `@/lib/middleware/require-plan`. See `.claude/rules/billing.md` for 
 
 ## Agent Orchestration
 
-Use sub-agents for 3+ file changes or independent subtasks. Never run sequential work that can be parallelized. Each agent gets scoped file boundaries — no overlapping writes. Final step: always parallel lint + typecheck + test agents.
+Use sub-agents for 3+ file changes or independent subtasks. Never run sequential work that can be parallelized. Each agent gets scoped file boundaries — no overlapping writes. Final step: always parallel convention-enforcer + security-reviewer → test-runner.
 
 Custom agents in `.claude/agents/`: backend-dev, frontend-dev, ai-specialist, i18n-dev, db-migrator, test-runner, researcher, code-reviewer, security-reviewer, performance-analyst, convention-enforcer
 Rules: `.claude/rules/agent-orchestration.md`
+
+### Quick Agent Selection
+
+| Task              | Primary Agent                           | Also Spawn                              | Order                        |
+| ----------------- | --------------------------------------- | --------------------------------------- | ---------------------------- |
+| New API route     | backend-dev                             | convention-enforcer + security-reviewer | impl → parallel audit        |
+| New AI endpoint   | ai-specialist                           | convention-enforcer + security-reviewer | impl → parallel audit        |
+| Schema change     | db-migrator                             | backend-dev (update callers)            | sequential                   |
+| New component     | frontend-dev                            | —                                       | impl only                    |
+| New page          | frontend-dev                            | i18n-dev (if new strings)               | parallel                     |
+| New i18n keys     | i18n-dev                                | frontend-dev (if UI changes)            | parallel                     |
+| Billing/webhook   | backend-dev                             | convention-enforcer + security-reviewer | impl → parallel audit        |
+| Bug investigation | researcher                              | → targeted dev agent                    | sequential                   |
+| Post-impl audit   | convention-enforcer + security-reviewer | → test-runner                           | parallel audit → test        |
+| Refactor          | researcher (map) → dev agents           | code-reviewer + test-runner             | map → impl → parallel review |
 
 ## Plans
 

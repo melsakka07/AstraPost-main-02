@@ -47,54 +47,109 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ## Features
 
-| Category                      | Capability                                                                                                                        |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Scheduling**                | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts                                   |
-| **Thread Support**            | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview                                             |
-| **Multi-Platform**            | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan                                                            |
-| **Background Worker**         | BullMQ + Redis: reliable publishing, automatic retries (3 attempts, 5-min intervals)                                              |
-| **Real-time Queue**           | Server-Sent Events (SSE) for live queue status updates                                                                            |
-| **Queue Management**          | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips                                        |
-| **Draft Management**          | Auto-save every 30 seconds, searchable + sortable draft library, media badge, schedule shortcut                                   |
-| **AI Thread Writer**          | Streaming thread generation (tweets appear one by one), 7 tones, 10 languages — via OpenRouter                                    |
-| **AI Content Calendar**       | Generate weekly/monthly content plans with topics, times, tones, and briefs (Pro/Agency)                                          |
-| **URL → Thread Converter**    | Paste any article URL; AI scrapes and converts it to a Twitter thread (Pro/Agency)                                                |
-| **A/B Variant Generator**     | Generate 3 tweet angle variants (emotional/factual/question) for A/B testing (Pro/Agency)                                         |
-| **Reply Suggester**           | Paste a tweet URL; get 5 contextually-relevant reply options with tone control (Pro/Agency)                                       |
-| **Bio Optimizer**             | Generate 3 X bio variants under 160 chars optimized for a chosen goal (Pro/Agency)                                                |
-| **AI Image Generation**       | Generate images via Replicate (Nano Banana models) directly from the composer                                                     |
-| **AI Hashtag Generator**      | Language-aware, region-aware hashtag suggestions with inline chip UX (MENA priority)                                              |
-| **AI Inspiration**            | Content ideas and rephrase suggestions powered by OpenRouter                                                                      |
-| **Tweet Inspiration**         | Import public tweets from X, adapt with AI or manually, bookmark for later                                                        |
-| **AI Generation History**     | Browse and reuse past AI-generated content                                                                                        |
-| **Viral Score**               | Real-time viral potential scoring for tweets as you compose                                                                       |
-| **Viral Content Analyzer**    | Bar/hour charts: top hashtags, keywords, best hours/days, content types, tweet length                                             |
-| **Competitor Analyzer**       | Fetch any public account's recent tweets, generate a strategic AI analysis (Pro/Agency)                                           |
-| **Best Time to Post**         | Heatmap analysis showing optimal posting windows by day and hour (Pro/Agency)                                                     |
-| **Agentic Posting**           | Drop a topic — AI autonomously researches, writes, generates images, and prepares a ready-to-publish post in 5 steps (Pro/Agency) |
-| **Trending Topics Discovery** | AI-powered X trending topics by category (Technology, Business, etc.) — no X API required (Pro/Agency)                            |
-| **Voice Profile**             | Store your writing style to personalize AI-generated content                                                                      |
-| **Templates**                 | Save and reuse tweet/thread templates with full media support                                                                     |
-| **Analytics**                 | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7/30/90-day aggregates; CSV/PDF export             |
-| **Link Preview**              | Automatic link preview cards fetched when URLs are added to tweets                                                                |
-| **URL Shortener**             | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links                                                |
-| **Multi-Account**             | Connect and manage multiple X accounts per user (1 Free, 3 Pro, 10 Agency)                                                        |
-| **X Account Management**      | Per-account inline health checks, expired-token detection, confirm-before-disconnect                                              |
-| **Team Collaboration**        | Agency plan with team member invitations, role-based access, and post approval workflows                                          |
-| **Admin Panel**               | Admin dashboard with user management, job monitoring, and system metrics                                                          |
-| **Referral System**           | Built-in referral program with credit tracking                                                                                    |
-| **Achievements**              | Gamification milestones to reward consistent creators                                                                             |
-| **Onboarding**                | Multi-step wizard + interactive dashboard tour (driver.js)                                                                        |
-| **Mobile Navigation**         | Fixed bottom nav bar, swipe-to-close sidebar (vaul), collapsible nav sections                                                     |
-| **Billing**                   | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, 14-day Pro trial for new users, webhook handling, invoice history    |
-| **Auth**                      | Email/Password + X OAuth 2.0 + 2FA via Better Auth                                                                                |
-| **Security**                  | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes                                        |
-| **Observability**             | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration                                           |
-| **Media Uploads**             | Images (4×, 5 MB each), video (512 MB), GIF (15 MB); upload progress indicators                                                   |
-| **Notifications**             | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts)                                           |
-| **PWA**                       | Installable progressive web app with offline support                                                                              |
-| **Blog / MDX**                | Built-in MDX blog with syntax highlighting                                                                                        |
-| **Roadmap**                   | Public feedback and voting system                                                                                                 |
+| Category                      | Capability                                                                                                                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Scheduling**                | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts                                                                                       |
+| **Thread Support**            | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview                                                                                                 |
+| **Multi-Platform**            | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan                                                                                                                |
+| **Background Worker**         | BullMQ + Redis: reliable publishing, 5 attempts with exponential backoff (starting at 60 s)                                                                                           |
+| **Real-time Queue**           | Server-Sent Events (SSE) for live queue status updates                                                                                                                                |
+| **Queue Management**          | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips                                                                                            |
+| **Draft Management**          | Auto-save every 30 seconds, searchable + sortable draft library, media badge, schedule shortcut                                                                                       |
+| **AI Thread Writer**          | Streaming thread generation (tweets appear one by one), 7 tones, 10 languages — via OpenRouter                                                                                        |
+| **AI Content Calendar**       | Generate weekly/monthly content plans with topics, times, tones, and briefs (Pro/Agency)                                                                                              |
+| **URL → Thread Converter**    | Paste any article URL; AI scrapes and converts it to a Twitter thread (Pro/Agency)                                                                                                    |
+| **A/B Variant Generator**     | Generate 3 tweet angle variants (emotional/factual/question) for A/B testing (Pro/Agency)                                                                                             |
+| **Reply Suggester**           | Paste a tweet URL; get 5 contextually-relevant reply options with tone control (Pro/Agency)                                                                                           |
+| **Bio Optimizer**             | Generate 3 X bio variants under 160 chars optimized for a chosen goal (Pro/Agency)                                                                                                    |
+| **AI Image Generation**       | Generate images via Replicate (Nano Banana models) directly from the composer                                                                                                         |
+| **AI Hashtag Generator**      | Language-aware, region-aware hashtag suggestions with inline chip UX (MENA priority)                                                                                                  |
+| **AI Inspiration**            | Content ideas and rephrase suggestions powered by OpenRouter                                                                                                                          |
+| **Tweet Inspiration**         | Import public tweets from X, adapt with AI or manually, bookmark for later                                                                                                            |
+| **AI Generation History**     | Browse and reuse past AI-generated content                                                                                                                                            |
+| **Viral Score**               | Real-time viral potential scoring for tweets as you compose                                                                                                                           |
+| **Viral Content Analyzer**    | Bar/hour charts: top hashtags, keywords, best hours/days, content types, tweet length                                                                                                 |
+| **Competitor Analyzer**       | Fetch any public account's recent tweets, generate a strategic AI analysis (Pro/Agency)                                                                                               |
+| **Best Time to Post**         | Heatmap analysis showing optimal posting windows by day and hour (Pro/Agency)                                                                                                         |
+| **Agentic Posting**           | Drop a topic — AI autonomously researches, writes, generates images, and prepares a ready-to-publish post in 5 steps (Pro/Agency)                                                     |
+| **Trending Topics Discovery** | AI-powered X trending topics by category (Technology, Business, etc.) — no X API required. Available on all plans (quota-free)                                                        |
+| **Voice Profile**             | Store your writing style to personalize AI-generated content (Pro/Agency)                                                                                                             |
+| **Templates**                 | Save and reuse tweet/thread templates with full media support                                                                                                                         |
+| **Analytics**                 | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7-day retention (Free), 90-day (Pro), 365-day (Agency); CSV/PDF export (Pro), white-label PDF (Agency) |
+| **Link Preview**              | Automatic link preview cards fetched when URLs are added to tweets                                                                                                                    |
+| **URL Shortener**             | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links                                                                                                    |
+| **Multi-Account**             | Connect and manage multiple X accounts per user (1 Free, 3 Pro Monthly, 4 Pro Annual, 10 Agency)                                                                                      |
+| **X Account Management**      | Per-account inline health checks, expired-token detection, confirm-before-disconnect                                                                                                  |
+| **Team Collaboration**        | Agency plan: up to 5 team members, role-based access (owner/admin/editor/viewer), post approval workflows                                                                             |
+| **Admin Panel**               | Admin dashboard with user management, job monitoring, and system metrics                                                                                                              |
+| **Referral System**           | Built-in referral program with credit tracking                                                                                                                                        |
+| **Achievements**              | Gamification milestones to reward consistent creators                                                                                                                                 |
+| **Onboarding**                | Multi-step wizard + interactive dashboard tour (driver.js)                                                                                                                            |
+| **Mobile Navigation**         | Fixed bottom nav bar, swipe-to-close sidebar (vaul), collapsible nav sections                                                                                                         |
+| **Billing**                   | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, 14-day Pro trial for new users, webhook handling, invoice history                                                        |
+| **Auth**                      | Email/Password + X OAuth 2.0 + 2FA via Better Auth                                                                                                                                    |
+| **Security**                  | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes                                                                                            |
+| **Observability**             | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration                                                                                               |
+| **Media Uploads**             | Images (4×, 5 MB each), video (512 MB), GIF (15 MB); upload progress indicators                                                                                                       |
+| **Notifications**             | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts)                                                                                               |
+| **PWA**                       | Installable progressive web app with offline support                                                                                                                                  |
+| **Blog / MDX**                | Built-in MDX blog with syntax highlighting                                                                                                                                            |
+| **Roadmap**                   | Public feedback and voting system                                                                                                                                                     |
+
+---
+
+## Plans & Billing
+
+> New users get a **14-day free trial** with Pro Monthly limits automatically — no credit card required. Trial is enforced by `TRIAL_EFFECTIVE_PLAN = "pro_monthly"` in `src/lib/plan-limits.ts`.
+
+### Plan Limits (source of truth: `src/lib/plan-limits.ts`)
+
+| Limit                        | Free          | Pro Monthly         | Pro Annual          | Agency              |
+| ---------------------------- | ------------- | ------------------- | ------------------- | ------------------- |
+| Posts per month              | 20            | Unlimited           | Unlimited           | Unlimited           |
+| X accounts                   | 1             | 3                   | 4                   | 10                  |
+| AI text generations / month  | 20            | 100                 | 150                 | Unlimited           |
+| AI image generations / month | 10            | 50                  | 50                  | Unlimited           |
+| AI image models              | Fast + Backup | Fast + Pro + Backup | Fast + Pro + Backup | Fast + Pro + Backup |
+| Analytics retention          | 7 days        | 90 days             | 90 days             | 365 days            |
+| Analytics export             | —             | CSV + PDF           | CSV + PDF           | White-label PDF     |
+| Inspiration bookmarks        | 5             | Unlimited           | Unlimited           | Unlimited           |
+| Team members                 | —             | —                   | —                   | Up to 5             |
+
+### Feature Gates (source of truth: `src/lib/middleware/require-plan.ts`)
+
+| Feature                  | Free       | Pro | Agency         |
+| ------------------------ | ---------- | --- | -------------- |
+| AI text generation       | ✅ (20/mo) | ✅  | ✅             |
+| Thread scheduling        | —          | ✅  | ✅             |
+| Video & GIF uploads      | —          | ✅  | ✅             |
+| AI Viral Score           | —          | ✅  | ✅             |
+| AI Voice Profile         | —          | ✅  | ✅             |
+| Best Time to Post        | —          | ✅  | ✅             |
+| AI Content Calendar      | —          | ✅  | ✅             |
+| URL → Thread Converter   | —          | ✅  | ✅             |
+| A/B Variant Generator    | —          | ✅  | ✅             |
+| Competitor Analyzer      | —          | ✅  | ✅             |
+| Reply Suggester          | —          | ✅  | ✅             |
+| Bio Optimizer            | —          | ✅  | ✅             |
+| Agentic Posting          | —          | ✅  | ✅             |
+| Affiliate Generator      | —          | ✅  | ✅             |
+| AI image model: Pro tier | —          | ✅  | ✅             |
+| LinkedIn integration     | —          | —   | ✅             |
+| Team collaboration       | —          | —   | ✅ (5 members) |
+| White-label PDF export   | —          | —   | ✅             |
+| Trending Topics          | ✅         | ✅  | ✅             |
+| Tweet inspiration        | ✅         | ✅  | ✅             |
+
+### Billing Implementation
+
+- **Provider**: Stripe Checkout + Customer Portal + Webhooks
+- **Plans**: `free` → `pro_monthly` / `pro_annual` → `agency` (monthly or annual)
+- **Trial**: 14-day Pro Monthly limits inferred from `user.createdAt` — no explicit opt-in needed
+- **Grace period**: enforced by `GET /api/cron/billing-cleanup` (daily 2 AM UTC via `CRON_SECRET`)
+- **Webhook idempotency**: all subscription events use `onConflictDoUpdate` — safe to replay
+- **Plan changes**: always wrapped in `db.transaction()` with a `plan_change_log` audit record
+- **402 responses**: `createPlanLimitResponse()` returns structured JSON with `upgrade_url`, `suggested_plan`, `reset_at`, `remaining`
 
 ---
 
@@ -393,30 +448,67 @@ Open **http://localhost:3000** in your browser.
 
 ## Environment Variables Reference
 
-| Variable                         | Required                         | Description                                                                                                                                           |
-| -------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POSTGRES_URL`                   | ✅                               | PostgreSQL connection string (default Docker: `postgresql://dev_user:password@localhost:5499/postgres_dev`)                                           |
-| `REDIS_URL`                      | ✅                               | Redis connection string                                                                                                                               |
-| `BETTER_AUTH_SECRET`             | ✅                               | 32-character random secret for Better Auth                                                                                                            |
-| `BETTER_AUTH_URL`                | ✅                               | Base URL of the app (e.g. `http://localhost:3000`)                                                                                                    |
-| `TWITTER_CLIENT_ID`              | ✅                               | X (Twitter) OAuth 2.0 Client ID                                                                                                                       |
-| `TWITTER_CLIENT_SECRET`          | ✅                               | X (Twitter) OAuth 2.0 Client Secret                                                                                                                   |
-| `FACEBOOK_APP_ID`                | ⚠️ Instagram only                | Facebook App ID for Instagram OAuth (required for Instagram integration)                                                                              |
-| `TOKEN_ENCRYPTION_KEYS`          | ✅                               | Comma-separated 32-byte keys (base64/hex). First key is primary.                                                                                      |
-| `NEXT_PUBLIC_APP_URL`            | ✅                               | Public URL of the app                                                                                                                                 |
-| `TWITTER_BEARER_TOKEN`           | ⚠️ Inspiration + Competitor only | Bearer token for importing public tweets and competitor analysis. Get from [developer.twitter.com](https://developer.twitter.com/en/portal/dashboard) |
-| `OPENROUTER_API_KEY`             | ⚠️ AI only                       | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                                                                           |
-| `OPENROUTER_MODEL`               | ⚠️ AI only                       | Default: `openai/gpt-4o`. Browse at [openrouter.ai/models](https://openrouter.ai/models)                                                              |
-| `REPLICATE_API_TOKEN`            | ⚠️ AI Image only                 | Replicate token for AI image generation                                                                                                               |
-| `STRIPE_SECRET_KEY`              | ⚠️ Billing only                  | Stripe secret key                                                                                                                                     |
-| `STRIPE_WEBHOOK_SECRET`          | ⚠️ Billing only                  | Stripe webhook signing secret                                                                                                                         |
-| `STRIPE_PRICE_ID_MONTHLY`        | ⚠️ Billing only                  | Stripe price ID for Pro Monthly plan                                                                                                                  |
-| `STRIPE_PRICE_ID_ANNUAL`         | ⚠️ Billing only                  | Stripe price ID for Pro Annual plan                                                                                                                   |
-| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | ⚠️ Billing only                  | Stripe price ID for Agency Monthly plan                                                                                                               |
-| `STRIPE_PRICE_ID_AGENCY_ANNUAL`  | ⚠️ Billing only                  | Stripe price ID for Agency Annual plan                                                                                                                |
-| `RESEND_API_KEY`                 | ⚠️ Email only                    | Resend API key. If unset, emails are logged to console. Get from [resend.com](https://resend.com/api-keys)                                            |
-| `RESEND_FROM_EMAIL`              | ⚠️ Email only                    | From address for outgoing emails (e.g. `noreply@yourdomain.com`)                                                                                      |
-| `BLOB_READ_WRITE_TOKEN`          | ⚠️ Production only               | Vercel Blob token. Leave empty to use local storage in dev.                                                                                           |
+**Core (always required)**
+
+| Variable                   | Description                                                                                                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_URL`             | PostgreSQL connection string. Default Docker: `postgresql://dev_user:password@localhost:5499/postgres_dev`                         |
+| `REDIS_URL`                | Redis connection string. Default: `redis://localhost:6379`                                                                         |
+| `BETTER_AUTH_SECRET`       | Random secret ≥ 32 characters for Better Auth session signing                                                                      |
+| `BETTER_AUTH_URL`          | Base URL of the app (e.g. `http://localhost:3000`)                                                                                 |
+| `TOKEN_ENCRYPTION_KEYS`    | Comma-separated 32-byte base64 keys. First key is primary. See [Generating keys](#generating-token_encryption_keys)                |
+| `OPENROUTER_MODEL`         | Model identifier for all AI text generation (e.g. `openai/gpt-4o`). Browse at [openrouter.ai/models](https://openrouter.ai/models) |
+| `REPLICATE_MODEL_FAST`     | Replicate model ID for the fast/primary image generation tier                                                                      |
+| `REPLICATE_MODEL_PRO`      | Replicate model ID for the high-quality Pro image generation tier                                                                  |
+| `REPLICATE_MODEL_FALLBACK` | Replicate model ID used when fast/pro models fail                                                                                  |
+| `NEXT_PUBLIC_APP_URL`      | Public-facing URL of the app                                                                                                       |
+
+**OAuth & Social Platforms**
+
+| Variable                  | Required For                      | Description                                                                                                |
+| ------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `TWITTER_CLIENT_ID`       | X login & posting                 | X (Twitter) OAuth 2.0 Client ID                                                                            |
+| `TWITTER_CLIENT_SECRET`   | X login & posting                 | X (Twitter) OAuth 2.0 Client Secret                                                                        |
+| `TWITTER_BEARER_TOKEN`    | Tweet import, Competitor analyzer | App-only bearer token. Get from [developer.twitter.com](https://developer.twitter.com/en/portal/dashboard) |
+| `LINKEDIN_CLIENT_ID`      | LinkedIn OAuth                    | LinkedIn App Client ID                                                                                     |
+| `LINKEDIN_CLIENT_SECRET`  | LinkedIn OAuth                    | LinkedIn App Client Secret                                                                                 |
+| `INSTAGRAM_CLIENT_ID`     | Instagram OAuth                   | Instagram App Client ID                                                                                    |
+| `INSTAGRAM_CLIENT_SECRET` | Instagram OAuth                   | Instagram App Client Secret                                                                                |
+
+**AI Services**
+
+| Variable                   | Required For           | Description                                                                                                      |
+| -------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `OPENROUTER_API_KEY`       | All AI text generation | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                                      |
+| `OPENROUTER_MODEL_AGENTIC` | Agentic Posting        | Dedicated model for 5-step agentic pipeline. Falls back to `OPENROUTER_MODEL`                                    |
+| `OPENROUTER_MODEL_TRENDS`  | Trending Topics        | Web-search-capable model (e.g. `perplexity/llama-3.1-sonar-large-128k-online`). Falls back to `OPENROUTER_MODEL` |
+| `OPENROUTER_MODEL_FREE`    | Quota-free endpoints   | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                                      |
+| `REPLICATE_API_TOKEN`      | AI image generation    | Get from [replicate.com/account](https://replicate.com/account)                                                  |
+
+**Billing (Stripe)**
+
+| Variable                         | Description                      |
+| -------------------------------- | -------------------------------- |
+| `STRIPE_SECRET_KEY`              | Stripe secret key                |
+| `STRIPE_WEBHOOK_SECRET`          | Stripe webhook signing secret    |
+| `STRIPE_PRICE_ID_MONTHLY`        | Price ID for Pro Monthly plan    |
+| `STRIPE_PRICE_ID_ANNUAL`         | Price ID for Pro Annual plan     |
+| `STRIPE_PRICE_ID_AGENCY_MONTHLY` | Price ID for Agency Monthly plan |
+| `STRIPE_PRICE_ID_AGENCY_ANNUAL`  | Price ID for Agency Annual plan  |
+
+**Optional Services**
+
+| Variable                          | Description                                                       |
+| --------------------------------- | ----------------------------------------------------------------- |
+| `RESEND_API_KEY`                  | Resend email API key. If unset, emails are logged to console only |
+| `RESEND_FROM_EMAIL`               | From address for outgoing emails (e.g. `noreply@yourdomain.com`)  |
+| `BLOB_READ_WRITE_TOKEN`           | Vercel Blob token. Leave empty to use local filesystem in dev     |
+| `SENTRY_DSN`                      | Sentry error tracking DSN                                         |
+| `SENTRY_AUTH_TOKEN`               | Sentry auth token for source map upload during build              |
+| `CRON_SECRET`                     | Bearer token required to invoke `/api/cron/*` endpoints           |
+| `DIAGNOSTICS_TOKEN`               | Token required to receive full response from `/api/diagnostics`   |
+| `PLAN_CHANGE_LOG_RETENTION_YEARS` | Retention period for plan audit logs in years (default: `7`)      |
+| `TWITTER_DRY_RUN`                 | If set, worker skips actual X API posting (for local testing)     |
 
 ### Generating `TOKEN_ENCRYPTION_KEYS`
 
@@ -471,6 +563,14 @@ pnpm start                    # Start production server
 # Token Security
 pnpm run tokens:encrypt-access  # One-time: encrypt existing plaintext X tokens
 pnpm run tokens:rotate          # Re-encrypt all stored tokens with the current primary key
+
+# Formatting
+pnpm format                   # Format all files with Prettier
+pnpm run format:check         # Check formatting without writing
+
+# Setup & Diagnostics
+pnpm run setup                # Interactive project setup wizard
+pnpm run env:check            # Validate all environment variables and warn on missing
 ```
 
 ---
@@ -572,7 +672,7 @@ The `src/lib/` tree is organized so route handlers stay thin:
 
 ### Correlation ID Flow
 
-Every scheduling request generates a `correlationId` (via `nanoid`) that travels:
+Every scheduling request generates a `correlationId` (via `crypto.randomUUID()`) that travels:
 
 ```
 POST /api/posts  →  x-correlation-id header
@@ -808,6 +908,13 @@ The build step uses minimal stub environment variables so no real secrets are ne
 ## Recent Changes
 
 This section summarises major development cycles. For full commit-level detail, see `docs/0-MY-LATEST-UPDATES.md`.
+
+### April 2026 — Mobile Responsiveness & Stability Fixes
+
+- **Mobile responsiveness**: Systematically improved all dashboard pages for `< md` breakpoint — single-column grids, responsive typography, full-width buttons, 44px touch targets
+- **OG image route**: Created `/og-image.png` edge route (1200×630, `next/og`) — eliminates 404s from bot crawlers
+- **React hydration fix**: Replaced `&apos;` HTML entities with plain apostrophes in multiple components to eliminate error #418
+- **Claude Code config**: Agent orchestration improvements — 6 new patterns, decision matrix, `docs-writer` agent, plan template, cross-references across rule files
 
 ### April 2026 — Security & Feature Audit Phase A Complete ✅
 

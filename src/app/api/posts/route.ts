@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
     // Role check: Viewers cannot create posts
     if (ctx.role === "viewer") {
-      return new Response("Forbidden: Viewers cannot create posts", { status: 403 });
+      return ApiError.forbidden("Viewers cannot create posts");
     }
 
     const dbUser = await db.query.user.findFirst({

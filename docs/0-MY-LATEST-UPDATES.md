@@ -1,5 +1,23 @@
 # Latest Updates
 
+## 2026-04-24: Agent Orchestration & CLAUDE.md Improvements ✅
+
+**Summary:** Incremental improvements to Claude Code configuration — no code architecture changes. All changes are to `.md` files and one minor canonical route fix.
+
+**Changes:**
+
+- `convention-enforcer.md` — Added 3 missing checklist items: optional chaining at every nesting level, `AbortController` polling pattern, viewer check must use `ApiError.forbidden()` (not raw `new Response`)
+- `agent-orchestration.md` — Added 6 new orchestration patterns (database change, billing, i18n, security audit, performance audit, post-implementation audit) + Agent Decision Matrix + "when NOT to parallelize" section
+- All 11 agent files — Added `## Do NOT use this agent when` and `## Hand off to` sections
+- `.claude/plans/TEMPLATE.md` — Created reusable plan template with required sections (Context, Agent Strategy table, Files to Modify, Verification checklist)
+- 4 rule files (`api-routes.md`, `ai-integration.md`, `billing.md`, `frontend.md`) — Added `## Related Rules` cross-reference footers
+- `CLAUDE.md` — Added Quick Agent Selection table (10 rows) in Agent Orchestration section
+- `.claude/agents/docs-writer.md` — New Haiku agent scoped to `.md` files, auto-updates `0-MY-LATEST-UPDATES.md` as final step of any feature
+- `src/app/api/posts/route.ts` line 64 — Fixed viewer role check from raw `new Response("Forbidden...", { status: 403 })` to `ApiError.forbidden("Viewers cannot create posts")` — aligns canonical example with Hard Rule 4
+- Documentation audit: Fixed `correlation.ts` description (uses `crypto.randomUUID()` not `nanoid`), updated env vars table in README, fixed `ai-features.md` inspire endpoint (OpenRouter not Google Gemini), added `/api/ai/trends` to ai-features.md, updated recent-changes.md
+
+---
+
 ## 2026-04-24: Mobile Responsiveness Improvements for Dashboard ✅
 
 **Summary:** Systematically improved mobile responsiveness across all dashboard pages to ensure optimal user experience on mobile devices (< md breakpoint). Updated responsive grid layouts, spacing, typography, and component padding for better mobile viewing.
