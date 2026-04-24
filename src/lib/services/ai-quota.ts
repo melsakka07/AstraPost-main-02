@@ -98,7 +98,9 @@ export async function recordAiUsage(
   });
   // Invalidate sidebar cache so usage reflects immediately after generation
   const now = new Date();
-  await cache
-    .delete(`ai:usage:${userId}:${now.getFullYear()}-${now.getMonth()}`)
-    .catch(() => void 0);
+  const cacheKey =
+    type === "image"
+      ? `ai:image-usage:${userId}:${now.getFullYear()}-${now.getMonth()}`
+      : `ai:usage:${userId}:${now.getFullYear()}-${now.getMonth()}`;
+  await cache.delete(cacheKey).catch(() => void 0);
 }

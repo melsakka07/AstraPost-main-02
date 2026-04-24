@@ -21,7 +21,7 @@ import { cachedQuery } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
-import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
+import { getMonthlyAiUsage, getMonthlyImageUsage } from "@/lib/services/ai-quota";
 import { getTeamContext } from "@/lib/team-context";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -67,7 +67,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const oneDayAgo = new Date();
   oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-  const [memberships, failedPost, inactiveAccount, aiUsage] = await Promise.all([
+  const [memberships, failedPost, inactiveAccount, aiUsage, imageUsage] = await Promise.all([
     cachedQuery(
       `team:memberships:${session.user.id}`,
       () =>
@@ -102,6 +102,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
       () => getMonthlyAiUsage(session.user.id).catch(() => null),
       10 * 60 // 10 minutes
     ),
+    cachedQuery(
+      `ai:image-usage:${session.user.id}:${new Date().getFullYear()}-${new Date().getMonth()}`,
+      () => getMonthlyImageUsage(session.user.id).catch(() => null),
+      10 * 60 // 10 minutes
+    ),
   ]);
 
   const formattedMemberships = memberships.map((m) => ({
@@ -120,6 +125,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Suspense fallback={<SidebarSkeleton />}>
         <Sidebar
           aiUsage={aiUsage}
+          imageUsage={imageUsage}
           user={{ name: session.user.name, image: session.user.image || null }}
           referralsEnabled={referralsEnabled}
           isAdmin={!!(session.user as { isAdmin?: boolean }).isAdmin}

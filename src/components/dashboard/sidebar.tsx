@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { signOut } from "@/lib/auth-client";
-import { clientLogger } from "@/lib/client-logger";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +32,7 @@ interface SidebarContentProps {
   pathname: string;
   onNavigate?: () => void;
   aiUsage: MonthlyAiUsage | null;
+  imageUsage: MonthlyAiUsage | null;
   /** True when rendered inside the mobile Drawer — enables M2/M3/M6/M7 behaviour */
   isMobile?: boolean;
   /** M7 — user info shown in mobile drawer header */
@@ -47,6 +47,7 @@ function SidebarContent({
   pathname,
   onNavigate,
   aiUsage,
+  imageUsage,
   isMobile = false,
   user,
   referralsEnabled = true,
@@ -54,37 +55,14 @@ function SidebarContent({
   userPlan = "free",
 }: SidebarContentProps & { referralsEnabled?: boolean }) {
   const t = useTranslations("nav");
-  const [imageQuota, setImageQuota] = useState<ImageQuota | null>(null);
 
-  useEffect(() => {
-    async function fetchImageQuota() {
-      // Retry up to 3 times with exponential backoff for dev-server race conditions
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const res = await fetch("/api/ai/image/quota");
-          if (res.ok) {
-            const data = await res.json();
-            setImageQuota({ used: data.used, limit: data.limit, remaining: data.remainingImages });
-            return; // Success
-          }
-          // 404/500 — retry if not last attempt
-          if (attempt < 2) {
-            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
-          }
-        } catch (e) {
-          // Retry if not last attempt
-          if (attempt < 2) {
-            await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
-          } else {
-            clientLogger.error("Failed to fetch image quota after retries", {
-              error: e instanceof Error ? e.message : String(e),
-            });
-          }
-        }
+  const imageQuota: ImageQuota | null = imageUsage
+    ? {
+        used: imageUsage.used,
+        limit: imageUsage.limit ?? -1,
+        remaining: imageUsage.limit === null ? -1 : Math.max(0, imageUsage.limit - imageUsage.used),
       }
-    }
-    fetchImageQuota();
-  }, []);
+    : null;
 
   const aiProgress =
     aiUsage && typeof aiUsage.limit === "number" && aiUsage.limit > 0
@@ -342,6 +320,7 @@ function SidebarContent({
 
 interface SidebarProps {
   aiUsage: MonthlyAiUsage | null;
+  imageUsage: MonthlyAiUsage | null;
   /** M7 — user info for mobile Drawer header */
   user?: { name: string; image: string | null };
   referralsEnabled?: boolean;
@@ -353,6 +332,7 @@ interface SidebarProps {
 
 export function Sidebar({
   aiUsage,
+  imageUsage,
   user,
   referralsEnabled = true,
   isAdmin = false,
@@ -388,6 +368,7 @@ export function Sidebar({
         <SidebarContent
           pathname={pathname}
           aiUsage={aiUsage}
+          imageUsage={imageUsage}
           isMobile={false}
           referralsEnabled={referralsEnabled}
           isAdmin={isAdmin}
@@ -415,6 +396,7 @@ export function Sidebar({
               pathname={pathname}
               onNavigate={() => setOpen(false)}
               aiUsage={aiUsage}
+              imageUsage={imageUsage}
               isMobile={true}
               referralsEnabled={referralsEnabled}
               isAdmin={isAdmin}
