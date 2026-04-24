@@ -1,5 +1,6 @@
 import { eq, and, gte, ne, sql, type ExtractTablesWithRelations } from "drizzle-orm";
 import { type PgQueryResultHKT, type PgTransaction } from "drizzle-orm/pg-core";
+import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { getPlanLimits } from "@/lib/plan-limits";
 import { aiGenerations, aiGenerationTypeEnum, user } from "@/lib/schema";
@@ -95,4 +96,9 @@ export async function recordAiUsage(
     tokensUsed: tokens,
     language,
   });
+  // Invalidate sidebar cache so usage reflects immediately after generation
+  const now = new Date();
+  await cache
+    .delete(`ai:usage:${userId}:${now.getFullYear()}-${now.getMonth()}`)
+    .catch(() => void 0);
 }

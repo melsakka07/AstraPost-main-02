@@ -483,6 +483,11 @@ export function Composer() {
         ...t,
         media: t.media.filter((m) => !m.uploading),
       }));
+      const hasContent = saveable.some((t) => t.content.trim().length > 0 || t.media.length > 0);
+      if (!hasContent) {
+        localStorage.removeItem("astra-post-drafts");
+        return;
+      }
       localStorage.setItem("astra-post-drafts", JSON.stringify(saveable));
       setLastSavedAt(new Date());
     }, 2000);
