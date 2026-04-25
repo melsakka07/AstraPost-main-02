@@ -34,6 +34,7 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Purpose**: Initiates the 5-step Agentic Posting pipeline via SSE streaming.
 - **Pipeline**: Research → Strategy → Write → Images → Review.
 - **Database**: `agenticPosts` table.
+- **Quota Tracking**: Records usage for research, write, and image steps via `recordAiUsage()`. Image generation within the pipeline is tracked the same as standalone image generation.
 
 ### `POST /api/ai/agentic/[id]/regenerate`
 
@@ -42,17 +43,20 @@ This document maps all backend AI generation and processing endpoints to their r
 ### `POST /api/ai/agentic/[id]/approve`
 
 - **Purpose**: Approves the generated agentic post content to be drafted, posted immediately, or scheduled.
+- **Quota Tracking**: This endpoint does NOT record usage — it is a database + queue operation with no AI work. All quota consumption is already recorded during the generation pipeline (research, write, images steps).
 
 ## 3. Media & Assets
 
 ### `POST /api/ai/image`
 
-- **Purpose**: Image generation via Replicate (Nano Banana models).
+- **Purpose**: Initiates image generation via Replicate (Nano Banana models).
 - **Details**: Supports styles (Photorealistic, Anime, etc.) and aspect ratios (1:1, 16:9, 9:16). Auto-generates prompt from tweet if not provided.
+- **Quota Tracking**: Usage is NOT recorded on POST; client must poll `/api/ai/image/status` to finalize generation and record quota consumption.
 
 ### `GET /api/ai/image/status`
 
-- **Purpose**: Polling endpoint to check Replicate generation status and cache the final result.
+- **Purpose**: Polling endpoint to check Replicate generation status, cache the final result, and record image quota usage on success.
+- **Quota Tracking**: Calls `recordAiUsage("image", ...)` after successful image save; invalidates sidebar cache to reflect updated quota.
 
 ## 4. Advanced Creators
 

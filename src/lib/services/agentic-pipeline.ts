@@ -228,6 +228,7 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     const imageResults = await Promise.allSettled(
       imageTweets.map(async (tweet) => {
         const result = await generateAgenticImage({
+          userId,
           prompt: tweet.imagePrompt!,
           style: "editorial",
           aspectRatio: "16:9",

@@ -1,5 +1,9 @@
 # Recent Fixes & Changes
 
+## 2026-04-25
+
+- **AI Billing Fairness Audit**: Fixed three quota-tracking bugs: (1) Image usage was recorded only in status endpoint, not POST handler, to prevent double-counting on client retries. (2) Agentic images were bypassing quota gates — added `userId` parameter to `generateAgenticImage()` and calls `recordAiUsage()` in agentic-pipeline integration. (3) Agentic approve endpoint was incorrectly recording usage for a non-AI operation (DB+queue only) — removed `recordAiUsage()` call. Pattern: Use `recordAiUsage(userId, "image", ...)` for all image endpoints (standalone and agentic); avoid recording for metadata/approval operations.
+
 ## 2026-04-24
 
 - **Agent Orchestration Improvements**: Convention-enforcer checklist updated with 3 missing rules (optional chaining depth, AbortController polling, viewer check must use ApiError.forbidden). Added 6 new orchestration patterns + Agent Decision Matrix to agent-orchestration.md. All 11 agent files now have "Do NOT use this agent when" + handoff guidance. Plan template created at `.claude/plans/TEMPLATE.md`. Cross-references added to 4 rule files. Quick Agent Selection table added to CLAUDE.md. New `docs-writer` Haiku agent added. Canonical posts route viewer check fixed to use `ApiError.forbidden()`.

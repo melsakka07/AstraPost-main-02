@@ -60,6 +60,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { cache } from "@/lib/cache";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -263,6 +264,11 @@ export async function GET(req: NextRequest) {
         },
         createdAt: new Date(),
       });
+      // Invalidate sidebar image quota cache so the indicator updates immediately.
+      const now = new Date();
+      await cache
+        .delete(`ai:image-usage:${meta.userId}:${now.getFullYear()}-${now.getMonth()}`)
+        .catch(() => void 0);
     }
 
     const res = Response.json({

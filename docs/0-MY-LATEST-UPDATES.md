@@ -1,5 +1,19 @@
 # Latest Updates
 
+## 2026-04-25: AI Billing Fairness Audit ✅
+
+**Summary:** Fixed three quota-tracking bugs where AI operations either bypassed quota gates or double-recorded usage. All changes to recording logic and agentic pipeline integration.
+
+**Changes:**
+
+- Image generation quota tracking: `src/app/api/ai/image/route.ts` — removed premature `recordAiUsage()` call from POST handler; usage now recorded only in status endpoint on success
+- Image status cache: `src/app/api/ai/image/status/route.ts` — added `cache.delete()` after DB insert for immediate sidebar updates
+- Agentic images now count toward quota: `src/lib/services/ai-image.ts` — added `userId` param to `generateAgenticImage()`, calls `recordAiUsage(userId, "image", ...)` on success
+- Agentic pipeline integration: `src/lib/services/agentic-pipeline.ts` — passes `userId` to all `generateAgenticImage()` calls
+- Agentic approve no longer consumes quota: `src/app/api/ai/agentic/[id]/approve/route.ts` — removed `recordAiUsage()` call (approval is DB+queue op, not AI work)
+
+---
+
 ## 2026-04-24: Agent Orchestration & CLAUDE.md Improvements ✅
 
 **Summary:** Incremental improvements to Claude Code configuration — no code architecture changes. All changes are to `.md` files and one minor canonical route fix.

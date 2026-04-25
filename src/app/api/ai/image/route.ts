@@ -29,7 +29,6 @@ import {
   type AspectRatio,
   type ImageStyle,
 } from "@/lib/services/ai-image";
-import { recordAiUsage } from "@/lib/services/ai-quota";
 import { RequestDedup } from "@/lib/services/request-dedup";
 
 // ============================================================================
@@ -201,9 +200,6 @@ export async function POST(req: NextRequest) {
     }
 
     const { predictionId } = await startImageGeneration(genParams);
-
-    // Record usage immediately so it's tracked even if polling fails
-    await recordAiUsage(userId, "image", 0, finalPrompt, null);
 
     // 9. Cache prediction metadata in Redis (30 min TTL) so the status endpoint
     //    can verify ownership, reconstruct params, and record usage on completion.

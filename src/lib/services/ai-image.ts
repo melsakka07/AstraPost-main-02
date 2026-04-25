@@ -1,3 +1,4 @@
+import { recordAiUsage } from "@/lib/services/ai-quota";
 import { upload } from "@/lib/storage";
 
 /**
@@ -592,6 +593,7 @@ export async function downloadImage(imageUrl: string): Promise<Buffer> {
  * continue with the remaining tweets.
  */
 export async function generateAgenticImage(params: {
+  userId: string;
   prompt: string;
   style?: "photorealistic" | "digital-art" | "infographic" | "editorial";
   aspectRatio?: AspectRatio;
@@ -642,6 +644,11 @@ export async function generateAgenticImage(params: {
     const buffer = await downloadImage(replicateUrl);
     const filename = `agentic-${Date.now()}.png`;
     const stored = await upload(buffer, filename, "agentic-images");
+
+    // Record image usage so it counts toward the monthly image quota.
+    await recordAiUsage(params.userId, "image", 0, params.prompt, { imageUrl: stored.url }).catch(
+      () => void 0
+    );
 
     return { url: stored.url };
   } catch (err) {
