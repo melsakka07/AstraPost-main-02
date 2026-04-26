@@ -27,8 +27,9 @@ import {
   subMonths,
   subWeeks,
 } from "date-fns";
+import { ar } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -65,11 +66,33 @@ interface CalendarViewProps {
 
 export function CalendarView({ posts, currentDate, initialView = "month" }: CalendarViewProps) {
   const t = useTranslations("calendar");
+  const locale = useLocale();
+  const dateLocale = locale === "ar" ? ar : undefined;
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [view, setView] = React.useState<ViewType>(initialView);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [isUpdating, setIsUpdating] = React.useState(false);
+
+  const weekdayFormatter = React.useMemo(
+    () => new Intl.DateTimeFormat(locale, { weekday: "short" }),
+    [locale]
+  );
+  const weekdayFormatterLong = React.useMemo(
+    () => new Intl.DateTimeFormat(locale, { weekday: "long" }),
+    [locale]
+  );
+  const WEEKDAYS = React.useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) => {
+        const date = new Date(2024, 0, i + 1); // Jan 1 2024 was a Monday
+        return {
+          short: weekdayFormatter.format(date),
+          full: weekdayFormatterLong.format(date),
+        };
+      }),
+    [weekdayFormatter, weekdayFormatterLong]
+  );
 
   // After hydration, default to "week" on mobile when no explicit view was requested
   React.useEffect(() => {
@@ -130,11 +153,11 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
     if (view === "month") {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(monthStart);
-      startDate = startOfWeek(monthStart);
-      endDate = endOfWeek(monthEnd);
+      startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+      endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
     } else if (view === "week") {
-      startDate = startOfWeek(currentDate);
-      endDate = endOfWeek(currentDate);
+      startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
+      endDate = endOfWeek(currentDate, { weekStartsOn: 1 });
     } else {
       startDate = currentDate;
       endDate = currentDate;
@@ -219,7 +242,9 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
           <Button variant="outline" size="icon" onClick={handleNext} aria-label="Next period">
             <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" aria-hidden="true" />
           </Button>
-          <h2 className="text-base font-semibold sm:text-lg">{format(currentDate, "MMMM yyyy")}</h2>
+          <h2 className="text-base font-semibold sm:text-lg">
+            {format(currentDate, "MMMM yyyy", { ...(dateLocale && { locale: dateLocale }) })}
+          </h2>
           <Button variant="ghost" onClick={handleToday} className="min-h-[44px]">
             {t("today")}
           </Button>
@@ -248,15 +273,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
         <div className="flex flex-1 flex-col overflow-hidden rounded-md border">
           {view !== "day" && (
             <div className="bg-muted/50 grid grid-cols-7 border-b">
-              {[
-                { short: "S", full: "Sun" },
-                { short: "M", full: "Mon" },
-                { short: "T", full: "Tue" },
-                { short: "W", full: "Wed" },
-                { short: "T", full: "Thu" },
-                { short: "F", full: "Fri" },
-                { short: "S", full: "Sat" },
-              ].map((day, i) => (
+              {WEEKDAYS.map((day, i) => (
                 <div
                   key={i}
                   className="text-muted-foreground border-r p-1 text-center text-xs font-medium last:border-r-0 sm:p-2 sm:text-sm"

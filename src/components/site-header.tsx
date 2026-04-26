@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import Link from "next/link";
 import { Rocket } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { UserProfile } from "@/components/auth/user-profile";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { HeaderNav } from "@/components/header-nav";
@@ -12,6 +13,8 @@ import { ModeToggle } from "./ui/mode-toggle";
 export async function SiteHeader() {
   const session = await auth.api.getSession({ headers: await headers() });
   const isAuthenticated = !!session;
+  const t = await getTranslations("nav");
+  const tFooter = await getTranslations("site_footer");
 
   return (
     <header
@@ -20,14 +23,14 @@ export async function SiteHeader() {
     >
       <nav
         className="container mx-auto flex items-center justify-between px-4 py-3"
-        aria-label="Main navigation"
+        aria-label={t("main_navigation")}
       >
         {/* Left: logo + desktop nav */}
         <div className="flex items-center gap-8">
           <Link
             href="/"
             className="flex items-center gap-2 text-xl font-bold"
-            aria-label="AstraPost - Go to homepage"
+            aria-label={tFooter("logo_alt")}
           >
             <Rocket className="text-primary h-6 w-6" />
             <span>AstraPost</span>
@@ -46,17 +49,17 @@ export async function SiteHeader() {
             <div className="hidden items-center gap-3 md:flex">
               <NotificationBell />
               <Button variant="ghost" asChild>
-                <Link href="/dashboard">Dashboard</Link>
+                <Link href="/dashboard">{t("dashboard")}</Link>
               </Button>
               <UserProfile user={session.user} />
             </div>
           ) : (
             <div className="hidden items-center gap-2 md:flex">
               <Button variant="ghost" asChild>
-                <Link href="/login">Sign In</Link>
+                <Link href="/login">{t("sign_in")}</Link>
               </Button>
               <Button asChild>
-                <Link href="/login">Get Started</Link>
+                <Link href="/login">{t("get_started")}</Link>
               </Button>
             </div>
           )}

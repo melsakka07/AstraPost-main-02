@@ -25,12 +25,13 @@ const BOTTOM_NAV_ITEMS = [
 export function BottomNav() {
   const t = useTranslations("nav");
   const tShell = useTranslations("dashboard_shell");
+  const tMobileNav = useTranslations("mobile_nav");
   const pathname = usePathname();
 
   return (
     <nav
       className="bg-background/95 supports-[backdrop-filter]:bg-background/60 fixed right-0 bottom-0 left-0 z-50 border-t pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-sm md:hidden"
-      aria-label="Mobile navigation"
+      aria-label={tMobileNav("mobile_navigation")}
       // Safe area inset keeps nav items above the device home indicator
     >
       <div className="flex h-14 items-stretch">

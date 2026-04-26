@@ -83,17 +83,6 @@ interface AccountToDeactivate {
   xUsername: string;
 }
 
-function relativeTime(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
 function isTokenExpired(account: XAccountItem): boolean {
   if (!account.tokenExpiresAt) return false;
   return new Date(account.tokenExpiresAt) < new Date();
@@ -109,6 +98,18 @@ export function ConnectedXAccounts({
   userPlan = "free",
 }: ConnectedXAccountsProps) {
   const t = useTranslations("settings");
+
+  function relativeTime(date: Date): string {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return t("integrations.relative_time.just_now");
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return t("integrations.relative_time.minutes_ago", { minutes });
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return t("integrations.relative_time.hours_ago", { hours });
+    const days = Math.floor(hours / 24);
+    return t("integrations.relative_time.days_ago", { days });
+  }
+
   const params = useSearchParams();
   const { openWithContext } = useUpgradeModal();
   const shouldSync = params.get("sync") === "1";
@@ -172,7 +173,7 @@ export function ConnectedXAccounts({
       setAccounts(data.accounts || []);
       toast.success(t("integrations.sync_success"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Sync failed");
+      toast.error(e instanceof Error ? e.message : t("integrations.sync_failed"));
     } finally {
       setBusy(false);
     }
@@ -272,14 +273,14 @@ export function ConnectedXAccounts({
           }, 300);
         }
 
-        toast.success(`Subscription tier updated: ${result.tier}`);
+        toast.success(t("integrations.tier_updated", { tier: result.tier }));
       } else if (result?.status === "skipped_cooldown") {
-        toast.info("Tier was recently refreshed. Please wait before refreshing again.");
+        toast.info(t("integrations.tier_cooldown"));
       } else if (result?.status === "error") {
-        toast.error(result.error || "Failed to refresh tier");
+        toast.error(result.error || t("integrations.tier_refresh_failed"));
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to refresh tier");
+      toast.error(e instanceof Error ? e.message : t("integrations.tier_refresh_failed"));
     } finally {
       setRefreshingTier(null);
     }
@@ -307,9 +308,9 @@ export function ConnectedXAccounts({
       }
 
       setAccounts((prev) => prev.filter((a) => a.id !== showRemoveDialog.id));
-      toast.success(`Account @${showRemoveDialog.xUsername} removed successfully`);
+      toast.success(t("integrations.account_removed", { username: showRemoveDialog.xUsername }));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to remove account");
+      toast.error(e instanceof Error ? e.message : t("integrations.account_remove_failed"));
     } finally {
       setDeletingAccountId(null);
       setShowRemoveDialog(null);
@@ -344,9 +345,11 @@ export function ConnectedXAccounts({
           a.id === showDeactivateDialog.id ? { ...a, isActive: false, isDefault: false } : a
         )
       );
-      toast.success(`Account @${showDeactivateDialog.xUsername} deactivated successfully`);
+      toast.success(
+        t("integrations.account_deactivated", { username: showDeactivateDialog.xUsername })
+      );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to deactivate account");
+      toast.error(e instanceof Error ? e.message : t("integrations.account_deactivate_failed"));
     } finally {
       setDeactivatingAccountId(null);
       setShowDeactivateDialog(null);
@@ -549,7 +552,9 @@ export function ConnectedXAccounts({
                                     );
                                   } catch (e) {
                                     toast.error(
-                                      e instanceof Error ? e.message : "Failed to update default"
+                                      e instanceof Error
+                                        ? e.message
+                                        : t("integrations.default_update_failed")
                                     );
                                   } finally {
                                     setBusy(false);

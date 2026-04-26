@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { Users } from "lucide-react";
-import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { ReferralsEmptyState } from "@/components/referrals/empty-state-client";
@@ -13,11 +12,15 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { user } from "@/lib/schema";
+import { generateSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Referrals - AstraPost",
-  description: "Invite friends and earn rewards",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Referrals — AstraPost", ar: "الإحالات — أسترا بوست" },
+    { en: "Invite friends and earn rewards", ar: "ادعُ أصدقاءك واربح مكافآت" }
+  );
+}
 
 export default async function ReferralsPage() {
   const session = await auth.api.getSession({

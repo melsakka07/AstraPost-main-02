@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useId, lazy, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
 import {
   DndContext,
   closestCenter,
@@ -30,6 +29,7 @@ import {
   Sparkles,
   X as XIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
 import { ComposerAlerts } from "@/components/composer/composer-alerts";
@@ -611,7 +611,7 @@ export function Composer() {
     return () => {
       cancelled = true;
     };
-  }, [draftId]);
+  }, [draftId, t]);
 
   // Once both accounts and the draft's linked account ID are known, restore the selection
   useEffect(() => {
@@ -2228,7 +2228,7 @@ export function Composer() {
                       month: "short",
                       day: "numeric",
                     })}
-                    {" at "}
+                    {t("at_separator")}
                     {new Date(scheduledDate).toLocaleTimeString(undefined, {
                       hour: "numeric",
                       minute: "2-digit",
@@ -2237,11 +2237,11 @@ export function Composer() {
                 </>
               ) : (
                 <>
-                  Posting immediately to{" "}
+                  {t("posting_immediately_to")}{" "}
                   <span className="text-foreground font-medium">
                     {accounts.find((a) => targetAccountIds.includes(a.id))?.username
                       ? `@${accounts.find((a) => targetAccountIds.includes(a.id))?.username}`
-                      : "selected account"}
+                      : t("selected_account")}
                   </span>
                 </>
               )}

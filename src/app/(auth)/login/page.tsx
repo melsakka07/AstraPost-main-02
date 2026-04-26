@@ -4,6 +4,18 @@ import { Check } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { auth } from "@/lib/auth";
+import { generateSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Sign In — AstraPost", ar: "تسجيل الدخول — أسترا بوست" },
+    {
+      en: "Sign in to AstraPost to manage, schedule, and analyze your X content.",
+      ar: "سجّل دخولك إلى أسترا بوست لإدارة وجدولة وتحليل محتواك على X.",
+    }
+  );
+}
 
 export default async function LoginPage({
   searchParams,

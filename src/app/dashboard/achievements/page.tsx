@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { Award } from "lucide-react";
-import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { MilestoneList } from "@/components/gamification/milestone-list";
@@ -12,11 +11,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { milestones } from "@/lib/schema";
+import { generateSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Achievements - AstraPost",
-  description: "Track your progress and unlock rewards",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Achievements — AstraPost", ar: "الإنجازات — أسترا بوست" },
+    { en: "Track your progress and unlock rewards", ar: "تابع تقدمك وافتح المكافآت" }
+  );
+}
 
 export default async function AchievementsPage() {
   const session = await auth.api.getSession({

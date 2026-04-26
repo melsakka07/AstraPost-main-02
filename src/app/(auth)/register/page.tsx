@@ -19,25 +19,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-const registerSchema = z
-  .object({
-    email: z.string().email("Invalid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .max(128, "Password must be less than 128 characters"),
-    confirmPassword: z.string(),
-    terms: z.boolean().refine((val) => val === true, {
-      message: "You must agree to the Terms of Service and Privacy Policy",
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
-
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,6 +26,25 @@ export default function RegisterPage() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations("auth");
+
+  const registerSchema = z
+    .object({
+      email: z.string().email(t("register.errors.invalid_email")),
+      password: z
+        .string()
+        .min(8, t("register.errors.password_min"))
+        .max(128, t("register.errors.password_max")),
+      confirmPassword: z.string(),
+      terms: z.boolean().refine((val) => val === true, {
+        message: t("register.errors.terms_required"),
+      }),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: t("register.errors.password_mismatch"),
+      path: ["confirmPassword"],
+    });
+
+  type RegisterFormValues = z.infer<typeof registerSchema>;
 
   const features = [
     t("register.features.schedule"),
@@ -137,7 +137,7 @@ export default function RegisterPage() {
                   <FormLabel>{t("register.email_label")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="you@example.com"
+                      placeholder={t("register.email_placeholder")}
                       type="email"
                       autoCapitalize="none"
                       autoComplete="email"
@@ -157,7 +157,7 @@ export default function RegisterPage() {
                   <FormLabel>{t("register.password_label")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Min. 8 characters"
+                      placeholder={t("register.password_placeholder")}
                       type="password"
                       autoComplete="new-password"
                       {...field}
@@ -176,7 +176,7 @@ export default function RegisterPage() {
                   <FormLabel>{t("register.confirm_password_label")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Confirm your password"
+                      placeholder={t("register.confirm_password_placeholder")}
                       type="password"
                       autoComplete="new-password"
                       {...field}

@@ -1,4 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+vi.mock("@/lib/services/ai-quota", () => ({
+  recordAiUsage: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/lib/db", () => ({
+  db: {},
+}));
 import {
   generateImage,
   createImageProvider,

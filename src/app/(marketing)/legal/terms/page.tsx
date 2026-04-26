@@ -3,18 +3,19 @@ import { Scale, FileCheck, ShieldAlert, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Terms of Service",
-  description: "Read AstraPost's terms of service and understand your rights and obligations.",
-  alternates: { canonical: "/legal/terms" },
-  openGraph: {
-    title: "Terms of Service — AstraPost",
-    description: "Read AstraPost's terms of service and understand your rights and obligations.",
-    url: "/legal/terms",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Terms of Service", ar: "شروط الخدمة" },
+    {
+      en: "Read AstraPost's terms of service and understand your rights and obligations.",
+      ar: "اقرأ شروط خدمة AstraPost وافهم حقوقك والتزاماتك.",
+    },
+    { path: "/legal/terms" }
+  );
+}
 
 export default function TermsPage() {
   const cards = [

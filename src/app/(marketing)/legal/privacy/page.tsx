@@ -3,18 +3,19 @@ import { Shield, Lock, Eye, Mail } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description: "Learn how AstraPost protects your data and respects your privacy.",
-  alternates: { canonical: "/legal/privacy" },
-  openGraph: {
-    title: "Privacy Policy — AstraPost",
-    description: "Learn how AstraPost protects your data and respects your privacy.",
-    url: "/legal/privacy",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Privacy Policy", ar: "سياسة الخصوصية" },
+    {
+      en: "Learn how AstraPost protects your data and respects your privacy.",
+      ar: "تعرف على كيفية حماية AstraPost لبياناتك واحترام خصوصيتك.",
+    },
+    { path: "/legal/privacy" }
+  );
+}
 
 export default function PrivacyPage() {
   const cards = [

@@ -3,20 +3,19 @@ import { Calendar, Sparkles, BarChart2, Zap, Users, Globe, ArrowRight } from "lu
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Features",
-  description:
-    "AstraPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.",
-  alternates: { canonical: "/features" },
-  openGraph: {
-    title: "Features — AstraPost",
-    description:
-      "AstraPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.",
-    url: "/features",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Features", ar: "الميزات" },
+    {
+      en: "AstraPost provides a comprehensive suite of tools to help you grow your audience, engage with your community, and monetize your content.",
+      ar: "توفر AstraPost مجموعة شاملة من الأدوات لمساعدتك على تنمية جمهورك، والتفاعل مع مجتمعك، وتحقيق الدخل من محتواك.",
+    },
+    { path: "/features" }
+  );
+}
 
 export default async function FeaturesPage() {
   const t = await getTranslations("features");

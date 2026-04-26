@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
 import {
   Users,
   MessagesSquare,
@@ -9,6 +8,7 @@ import {
   Mail,
   MessageCircle,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { ContactForm } from "@/components/community/contact-form";
 import {
   Accordion,
@@ -18,20 +18,19 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Community & Support",
-  description:
-    "Connect with thousands of creators, get help from our support team, and grow together with AstraPost.",
-  alternates: { canonical: "/community" },
-  openGraph: {
-    title: "Community & Support — AstraPost",
-    description:
-      "Connect with thousands of creators, get help from our support team, and grow together with AstraPost.",
-    url: "/community",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Community & Support", ar: "المجتمع والدعم" },
+    {
+      en: "Connect with thousands of creators, get help from our support team, and grow together with AstraPost.",
+      ar: "تواصل مع آلاف المبدعين، واحصل على المساعدة من فريق الدعم، وانموا معاً مع AstraPost.",
+    },
+    { path: "/community" }
+  );
+}
 
 const faqs = [
   {

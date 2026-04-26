@@ -9,11 +9,19 @@ import { Button } from "@/components/ui/button";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user, subscriptions } from "@/lib/schema";
+import { generateSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Pricing | AstraPost",
-  description: "Simple, transparent pricing for creators and teams.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Pricing", ar: "الأسعار" },
+    {
+      en: "Simple, transparent pricing for creators and teams.",
+      ar: "أسعار بسيطة وشفافة للمبدعين والفرق.",
+    },
+    { path: "/pricing" }
+  );
+}
 
 export default async function PricingPage() {
   const t = await getTranslations("pricing");
@@ -52,7 +60,9 @@ export default async function PricingPage() {
         }
       }
     } catch (error) {
-      console.error("[pricing] Failed to load user plan data", error);
+      (await import("@/lib/logger")).logger.error("[pricing] Failed to load user plan data", {
+        error,
+      });
       // Gracefully degrade — show pricing page without personalized state
     }
   }

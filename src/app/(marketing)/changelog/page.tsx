@@ -1,17 +1,18 @@
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Changelog",
-  description: "Stay up to date with the latest features and improvements to AstraPost.",
-  alternates: { canonical: "/changelog" },
-  openGraph: {
-    title: "Changelog — AstraPost",
-    description: "Stay up to date with the latest features and improvements to AstraPost.",
-    url: "/changelog",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Changelog", ar: "سجل التغييرات" },
+    {
+      en: "Stay up to date with the latest features and improvements to AstraPost.",
+      ar: "ابق على اطلاع بأحدث الميزات والتحسينات في AstraPost.",
+    },
+    { path: "/changelog" }
+  );
+}
 
 export default async function ChangelogPage() {
   const t = await getTranslations("changelog");

@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ViralScoreBadge } from "@/components/composer/viral-score-badge";
 import { cn } from "@/lib/utils";
 
@@ -41,10 +44,11 @@ export function ComposerPreview({
   userHandle,
   session,
 }: ComposerPreviewProps) {
+  const t = useTranslations("compose");
   return (
     <div className="space-y-2 px-3 pt-3 sm:space-y-3 sm:px-6 sm:pt-5">
       <div className="mb-1.5 flex items-center justify-between sm:mb-2">
-        <p className="text-muted-foreground/70 text-xs font-medium">Preview</p>
+        <p className="text-muted-foreground/70 text-xs font-medium">{t("preview_label")}</p>
         <div className="flex items-center gap-1">
           {tweets.length > 1 && (
             <ViralScoreBadge
@@ -84,7 +88,7 @@ export function ComposerPreview({
                 <span className="text-muted-foreground truncate">{userHandle}</span>
               </div>
               <p className="text-xs break-words whitespace-pre-wrap sm:text-sm">
-                {previewTweet?.content || "Preview text will appear here..."}
+                {previewTweet?.content || t("preview_placeholder")}
               </p>
               {(previewTweet?.media?.length || 0) > 0 && previewTweet?.media?.[0]?.url && (
                 <div className="mt-2 overflow-hidden rounded-lg border">

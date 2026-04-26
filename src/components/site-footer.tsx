@@ -40,6 +40,7 @@ function LockIcon({ className }: { className?: string }) {
 
 export async function SiteFooter() {
   const t = await getTranslations("nav");
+  const tFooter = await getTranslations("site_footer");
 
   const NAV_COLUMNS: Array<{
     heading: string;
@@ -88,7 +89,7 @@ export async function SiteFooter() {
     },
   ];
   return (
-    <footer data-site-footer className="bg-muted/20" aria-label="Site footer">
+    <footer data-site-footer className="bg-muted/20" aria-label={tFooter("site_footer")}>
       {/* Gradient separator — consistent with page section dividers */}
       <div
         aria-hidden="true"
@@ -102,7 +103,7 @@ export async function SiteFooter() {
             <Link
               href="/"
               className="group inline-flex items-center gap-2 text-lg font-bold"
-              aria-label="AstraPost — Go to homepage"
+              aria-label={tFooter("logo_alt")}
             >
               <Rocket className="text-primary h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
               <span>AstraPost</span>
@@ -111,7 +112,10 @@ export async function SiteFooter() {
             <p className="text-muted-foreground max-w-xs text-sm leading-relaxed">{t("tagline")}</p>
 
             {/* Social media icons */}
-            <div className="flex items-center gap-2 pt-1" aria-label="Social media links">
+            <div
+              className="flex items-center gap-2 pt-1"
+              aria-label={tFooter("social_media_links")}
+            >
               {SOCIAL_LINKS.map(({ label, href, Icon }) => (
                 <Link
                   key={href}

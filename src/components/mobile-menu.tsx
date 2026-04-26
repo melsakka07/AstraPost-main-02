@@ -21,6 +21,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
   const t = useTranslations("nav");
+  const tMenu = useTranslations("mobile_menu");
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -51,7 +52,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
         type="button"
         className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-9 w-9 items-center justify-center rounded-lg transition-colors md:hidden"
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-label={isOpen ? tMenu("close_navigation_menu") : tMenu("open_navigation_menu")}
         aria-expanded={isOpen}
         aria-controls="mobile-nav-panel"
       >
@@ -77,7 +78,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
       <div
         id="mobile-nav-panel"
         role="dialog"
-        aria-label="Navigation menu"
+        aria-label={tMenu("navigation_menu")}
         aria-modal="false"
         className={cn(
           "bg-background/95 absolute top-full right-0 left-0 z-50 border-b shadow-xl md:hidden",
@@ -88,7 +89,7 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
             : "pointer-events-none invisible -translate-y-2 opacity-0"
         )}
       >
-        <nav className="container mx-auto px-4 py-5" aria-label="Mobile navigation">
+        <nav className="container mx-auto px-4 py-5" aria-label={tMenu("mobile_navigation")}>
           {/* Nav links — onClick closes menu (clean, no useEffect setState) */}
           <ul className="space-y-1" role="list">
             {NAV_LINK_KEYS.map(({ key, href }) => {
@@ -117,15 +118,15 @@ export function MobileMenu({ isAuthenticated }: MobileMenuProps) {
           <div className="border-border/60 mt-4 flex flex-col gap-2 border-t pt-4">
             {isAuthenticated ? (
               <Button asChild className="w-full" onClick={close}>
-                <Link href="/dashboard">Go to Dashboard</Link>
+                <Link href="/dashboard">{tMenu("go_to_dashboard")}</Link>
               </Button>
             ) : (
               <>
                 <Button variant="outline" asChild className="w-full" onClick={close}>
-                  <Link href="/login">Sign In</Link>
+                  <Link href="/login">{tMenu("sign_in")}</Link>
                 </Button>
                 <Button asChild className="w-full" onClick={close}>
-                  <Link href="/login">Get Started Free</Link>
+                  <Link href="/login">{tMenu("get_started_free")}</Link>
                 </Button>
               </>
             )}

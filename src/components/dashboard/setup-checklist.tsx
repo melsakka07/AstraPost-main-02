@@ -29,6 +29,7 @@ export function SetupChecklist({
   const [isVisible, setIsVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const tChecklist = useTranslations("setup_checklist");
 
   useEffect(() => {
     const hidden = localStorage.getItem(STORAGE_KEY);
@@ -138,7 +139,9 @@ export function SetupChecklist({
             size="icon"
             className="h-7 w-7"
             onClick={toggleExpanded}
-            aria-label={isExpanded ? "Collapse checklist" : "Expand checklist"}
+            aria-label={
+              isExpanded ? tChecklist("collapse_checklist") : tChecklist("expand_checklist")
+            }
           >
             <ChevronDown
               className={cn(

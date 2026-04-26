@@ -32,8 +32,11 @@
     "ai_calendar": "تقويم الذكاء الاصطناعي",
     "jobs": "الوظائف",
     "sign_out": "تسجيل الخروج",
+    "sign_in": "تسجيل الدخول",
+    "get_started": "ابدأ الآن",
     "roadmap": "خارطة الطريق",
     "go_home": "الذهاب إلى الرئيسية",
+    "main_navigation": "التنقل الرئيسي",
     "ai_credits": "رصيد الذكاء الاصطناعي",
     "images_credits": "رصيد الصور",
     "used_this_month": "مستخدم هذا الشهر",
@@ -60,6 +63,31 @@
       "growth": "النمو",
       "system": "النظام"
     }
+  },
+  "mobile_menu": {
+    "open_navigation_menu": "فتح قائمة التنقل",
+    "close_navigation_menu": "إغلاق قائمة التنقل",
+    "navigation_menu": "قائمة التنقل",
+    "main_navigation_links": "روابط التنقل الرئيسية",
+    "mobile_navigation": "التنقل عبر الهاتف المحمول",
+    "go_to_dashboard": "الذهاب إلى لوحة التحكم",
+    "sign_in": "تسجيل الدخول",
+    "get_started_free": "ابدأ مجاناً"
+  },
+  "mobile_nav": {
+    "mobile_navigation": "التنقل عبر الهاتف المحمول"
+  },
+  "sidebar": {
+    "dashboard_navigation": "تنقل لوحة التحكم"
+  },
+  "setup_checklist": {
+    "expand_checklist": "توسيع القائمة",
+    "collapse_checklist": "طي القائمة"
+  },
+  "site_footer": {
+    "site_footer": "تذييل الموقع",
+    "logo_alt": "AstraPost — الذهاب إلى الصفحة الرئيسية",
+    "social_media_links": "روابط وسائل التواصل الاجتماعي"
   },
   "buttons": {
     "create": "إنشاء",
@@ -152,8 +180,11 @@
       "title": "أنشئ حسابك في AstraPost",
       "subtitle": "انضم إلى آلاف المبدعين الذين يديرون تواجدهم على X.",
       "email_label": "عنوان البريد الإلكتروني",
+      "email_placeholder": "example@example.com",
       "password_label": "كلمة المرور",
+      "password_placeholder": "8 أحرف على الأقل",
       "confirm_password_label": "تأكيد كلمة المرور",
+      "confirm_password_placeholder": "تأكيد كلمة المرور",
       "agreement": "بالمتابعة، أنت توافق على <terms>شروط الخدمة</terms> و<privacy>سياسة الخصوصية</privacy> الخاصة بـ AstraPost",
       "terms_link": "شروط الخدمة",
       "privacy_link": "سياسة الخصوصية",
@@ -168,14 +199,19 @@
       },
       "errors": {
         "email_exists": "يوجد حساب بهذا البريد الإلكتروني مسبقاً.",
+        "invalid_email": "عنوان بريد إلكتروني غير صالح",
         "weak_password": "يجب أن تكون كلمة المرور 8 أحرف على الأقل.",
-        "password_mismatch": "كلمتا المرور غير متطابقتين."
+        "password_min": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
+        "password_max": "يجب أن تكون كلمة المرور أقل من 128 حرفاً",
+        "password_mismatch": "كلمتا المرور غير متطابقتين.",
+        "terms_required": "يجب الموافقة على شروط الخدمة وسياسة الخصوصية"
       }
     },
     "forgot_password": {
       "title": "إعادة تعيين كلمة المرور",
       "subtitle": "أدخل عنوان بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين.",
       "email_label": "عنوان البريد الإلكتروني",
+      "email_placeholder": "example@example.com",
       "submit": "إرسال رابط إعادة التعيين",
       "remember": "هل تتذكر كلمة مرورك؟",
       "sign_in_link": "تسجيل الدخول",
@@ -241,6 +277,7 @@
     "open_navigation": "فتح التنقل",
     "close_navigation": "إغلاق التنقل",
     "switch_language": "تغيير اللغة",
+    "switch_language_failed": "فشل تغيير اللغة",
     "notifications": "الإشعارات",
     "mark_all_read": "تحديد الكل كمقروء",
     "no_notifications": "لا توجد إشعارات",
@@ -402,6 +439,38 @@
       "discard_title": "هل تريد تجاهل المسودة غير المحفوظة؟",
       "discard_description": "لديك تغييرات غير محفوظة. إذا غادرت، ستفقد تغييراتك.",
       "continue": "متابعة"
+    },
+    "composer_welcome": "مرحباً بك في المحرر 👋",
+    "composer_hint_1": "استخدم كاتب الذكاء الاصطناعي في الشريط الجانبي لإنشاء خيوط كاملة في ثوانٍ.",
+    "composer_hint_2": "اختر تاريخاً ووقتاً للجدولة، أو انقر 'نشر إلى X' للنشر فوراً.",
+    "composer_shortcuts": "اختصارات لوحة المفاتيح: ⌘↵ نشر، ⌘D مسودة، ⌘K أدوات الذكاء الاصطناعي.",
+    "dismiss_hint": "تجاهل التلميح",
+    "got_it": "حسناً",
+    "media": "وسائط",
+    "ai_image": "صورة AI",
+    "emoji": "إيموجي",
+    "clear_tweet": "مسح التغريدة",
+    "upload_media": "رفع وسائط",
+    "generate_ai_image": "إنشاء صورة بالذكاء الاصطناعي",
+    "add_emoji": "إضافة إيموجي",
+    "characters_of_max": "{current} من {max} حرف",
+    "preview_label": "معاينة",
+    "preview_placeholder": "سيظهر نص المعاينة هنا...",
+    "posting_immediately_to": "النشر فوراً إلى",
+    "selected_account": "الحساب المحدد",
+    "at_separator": " الساعة ",
+    "save_template_dialog": {
+      "title": "حفظ كقالب",
+      "description": "احفظ بنية الخيط الحالي كقالب قابل لإعادة الاستخدام.",
+      "name_placeholder": "قالبي الرائع",
+      "description_placeholder": "وصف اختياري",
+      "category_personal": "شخصي",
+      "category_educational": "تعليمي",
+      "category_promotional": "ترويجي",
+      "category_engagement": "تفاعلي",
+      "ai_params_note": "سيتم حفظ معلمات الذكاء الاصطناعي",
+      "reuse_note": "يمكنك إعادة إنشاء هذا المحتوى من قوالبي.",
+      "save_button": "حفظ القالب"
     }
   },
   "queue": {
@@ -425,7 +494,19 @@
     "retry": "إعادة المحاولة",
     "delete": "حذف",
     "view_thread": "عرض الخيط",
-    "no_date": "بلا تاريخ"
+    "no_date": "بلا تاريخ",
+    "this_month": "هذا الشهر",
+    "posts_usage": "لقد استخدمت {used} من {limit} منشور هذا الشهر. قم بالترقية إلى الاحترافي للنشر غير المحدود.",
+    "view_comfortable": "مريح",
+    "view_compact": "مضغوط",
+    "new_post": "منشور جديد",
+    "open_calendar": "فتح التقويم",
+    "open_drafts": "فتح المسودات",
+    "scheduled_posts_heading": "المنشورات المجدولة",
+    "failed_posts_heading": "المنشورات الفاشلة",
+    "retry_failed_hint": "أعد المحاولة أو عدل المحتوى الفاشل بسرعة",
+    "all_clear": "كل شيء على ما يرام!",
+    "no_failed_posts": "لا توجد منشورات فاشلة. جميع مهام قائمة الانتظار سليمة."
   },
   "calendar": {
     "title": "التقويم",
@@ -442,7 +523,8 @@
     "bulk_import_description": "الصق تغريدات متعددة لاستيرادها دفعة واحدة",
     "paste_tweets": "الصق تغريداتك هنا، واحدة في كل سطر...",
     "import_button": "استيراد",
-    "importing": "جارٍ الاستيراد..."
+    "importing": "جارٍ الاستيراد...",
+    "import_csv": "استيراد CSV"
   },
   "drafts": {
     "title": "المسودات",
@@ -1242,7 +1324,22 @@
       "privacy_export_started_toast": "بدأ تصدير البيانات",
       "privacy_export_error_toast": "فشل تصدير البيانات",
       "privacy_account_deleted_toast": "تم حذف الحساب بنجاح",
-      "privacy_delete_error_toast": "فشل حذف الحساب"
+      "privacy_delete_error_toast": "فشل حذف الحساب",
+      "relative_time": {
+        "just_now": "الآن",
+        "minutes_ago": "قبل {minutes}د",
+        "hours_ago": "قبل {hours}س",
+        "days_ago": "قبل {days}ي"
+      },
+      "sync_failed": "فشلت المزامنة",
+      "tier_updated": "تم تحديث فئة الاشتراك: {tier}",
+      "tier_cooldown": "تم تحديث الفئة مؤخراً. يرجى الانتظار قبل التحديث مرة أخرى.",
+      "tier_refresh_failed": "فشل تحديث الفئة",
+      "account_removed": "تمت إزالة الحساب @{username} بنجاح",
+      "account_remove_failed": "فشلت إزالة الحساب",
+      "account_deactivated": "تم تعطيل الحساب @{username} بنجاح",
+      "account_deactivate_failed": "فشل تعطيل الحساب",
+      "default_update_failed": "فشل تحديث الإعداد الافتراضي"
     }
   },
   "hashtag_generator": {

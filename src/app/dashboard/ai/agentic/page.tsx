@@ -9,11 +9,15 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { xAccounts, user } from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
+import { generateSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Agentic Posting — AstraPost",
-  description: "Drop a topic. AI handles the rest.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Agentic Posting — AstraPost", ar: "النشر الموكول — أسترا بوست" },
+    { en: "Drop a topic. AI handles the rest.", ar: "ضع موضوعاً. والذكاء الاصطناعي يتولى الباقي." }
+  );
+}
 
 export interface XAccountOption {
   id: string;

@@ -143,7 +143,7 @@ export function QueueContent({
       actions={
         <>
           <Badge variant="outline" className="text-muted-foreground">
-            {postCount} / {postsPerMonthLimit === null ? "∞" : postsPerMonthLimit} this month
+            {postCount} / {postsPerMonthLimit === null ? "∞" : postsPerMonthLimit} {t("this_month")}
           </Badge>
           {/* Q5 — density toggle as client-side state buttons */}
           <div className="hidden items-center rounded-md border p-0.5 lg:flex">
@@ -153,7 +153,7 @@ export function QueueContent({
               className="h-7 px-2"
               onClick={() => setDensity("comfortable")}
             >
-              Comfortable
+              {t("view_comfortable")}
             </Button>
             <Button
               variant={isCompact ? "secondary" : "ghost"}
@@ -161,13 +161,13 @@ export function QueueContent({
               className="h-7 px-2"
               onClick={() => setDensity("compact")}
             >
-              Compact
+              {t("view_compact")}
             </Button>
           </div>
           <Button asChild>
             <Link href="/dashboard/compose">
               <PlusCircle className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">New Post</span>
+              <span className="hidden sm:inline">{t("new_post")}</span>
             </Link>
           </Button>
         </>
@@ -182,7 +182,7 @@ export function QueueContent({
               ? "Monthly Limit Reached"
               : "Approaching Monthly Limit"
           }
-          description={`You have used ${postCount} of your ${postsPerMonthLimit ?? "∞"} posts this month. Upgrade to Pro for unlimited scheduling.`}
+          description={t("posts_usage", { used: postCount, limit: postsPerMonthLimit ?? "∞" })}
         />
       )}
 
@@ -245,9 +245,9 @@ export function QueueContent({
 
       {/* ── Scheduled Posts ── */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold tracking-tight">Scheduled Posts</h2>
+        <h2 className="text-xl font-semibold tracking-tight">{t("scheduled_posts_heading")}</h2>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/dashboard/calendar">Open Calendar</Link>
+          <Link href="/dashboard/calendar">{t("open_calendar")}</Link>
         </Button>
       </div>
 
@@ -263,7 +263,7 @@ export function QueueContent({
           }
           secondaryAction={
             <Button variant="outline" asChild>
-              <Link href="/dashboard/drafts">Open Drafts</Link>
+              <Link href="/dashboard/drafts">{t("open_drafts")}</Link>
             </Button>
           }
         />
@@ -376,11 +376,9 @@ export function QueueContent({
 
       {/* ── Failed Posts ── */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold tracking-tight">Failed Posts</h2>
+        <h2 className="text-xl font-semibold tracking-tight">{t("failed_posts_heading")}</h2>
         {failedPosts.length > 0 && (
-          <p className="text-muted-foreground hidden text-sm sm:block">
-            Retry or edit failed content quickly
-          </p>
+          <p className="text-muted-foreground hidden text-sm sm:block">{t("retry_failed_hint")}</p>
         )}
       </div>
 
@@ -389,10 +387,8 @@ export function QueueContent({
           <div className="bg-success/15 mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full">
             <CheckCircle2 className="text-success h-5 w-5" />
           </div>
-          <h3 className="text-success text-sm font-semibold">All clear!</h3>
-          <p className="text-success/70 mt-1 text-xs">
-            No failed posts. All queue jobs are healthy.
-          </p>
+          <h3 className="text-success text-sm font-semibold">{t("all_clear")}</h3>
+          <p className="text-success/70 mt-1 text-xs">{t("no_failed_posts")}</p>
         </div>
       ) : (
         <div className="space-y-4">

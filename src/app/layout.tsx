@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UpgradeModal } from "@/components/ui/upgrade-modal";
 import { auth } from "@/lib/auth";
+import { getSeoLocale } from "@/lib/seo";
 import type { Metadata, Viewport } from "next";
 
 const geistSans = Geist({
@@ -48,67 +49,91 @@ export const viewport: Viewport = {
   colorScheme: "light dark",
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://astrapost.app"),
-  title: {
-    default: "AstraPost | AI-Powered Social Media Management",
-    template: "%s | AstraPost",
-  },
-  description:
-    "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost. The ultimate tool for X (Twitter) creators.",
-  keywords: [
-    "Twitter",
-    "X",
-    "Social Media",
-    "Scheduler",
-    "AI Writer",
-    "Analytics",
-    "Thread Maker",
-    "Growth Tool",
-    "Marketing Automation",
-  ],
-  authors: [{ name: "AstraPost Team" }],
-  creator: "AstraPost",
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "/",
-    siteName: "AstraPost",
-    title: "AstraPost | AI-Powered Social Media Management",
-    description:
-      "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "AstraPost Dashboard Preview",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "AstraPost",
-    description:
-      "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
-    images: ["/og-image.png"],
-    creator: "@AstraPostApp",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getSeoLocale();
+  const isAr = locale === "ar";
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://astrapost.app"),
+    title: {
+      default: isAr
+        ? "أسترا بوست | إدارة وسائل التواصل الاجتماعي بالذكاء الاصطناعي"
+        : "AstraPost | AI-Powered Social Media Management",
+      template: isAr ? "%s | أسترا بوست" : "%s | AstraPost",
+    },
+    description: isAr
+      ? "جدول التغريدات، وأنشئ خيوطاً بالذكاء الاصطناعي، وحلل نموك مع أسترا بوست. الأداة المثلى لمبدعي X (تويتر)."
+      : "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost. The ultimate tool for X (Twitter) creators.",
+    keywords: isAr
+      ? [
+          "تويتر",
+          "X",
+          "وسائل التواصل الاجتماعي",
+          "جدولة",
+          "كاتب ذكاء اصطناعي",
+          "تحليلات",
+          "صانع خيوط",
+          "أداة نمو",
+          "أتمتة التسويق",
+        ]
+      : [
+          "Twitter",
+          "X",
+          "Social Media",
+          "Scheduler",
+          "AI Writer",
+          "Analytics",
+          "Thread Maker",
+          "Growth Tool",
+          "Marketing Automation",
+        ],
+    authors: [{ name: "AstraPost Team" }],
+    creator: "AstraPost",
+    openGraph: {
+      type: "website",
+      locale: isAr ? "ar_SA" : "en_US",
+      url: "/",
+      siteName: "AstraPost",
+      title: isAr
+        ? "أسترا بوست | إدارة وسائل التواصل الاجتماعي بالذكاء الاصطناعي"
+        : "AstraPost | AI-Powered Social Media Management",
+      description: isAr
+        ? "جدول التغريدات، وأنشئ خيوطاً بالذكاء الاصطناعي، وحلل نموك مع أسترا بوست."
+        : "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: isAr ? "معاينة لوحة تحكم أسترا بوست" : "AstraPost Dashboard Preview",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "AstraPost",
+      description: isAr
+        ? "جدول التغريدات، وأنشئ خيوطاً بالذكاء الاصطناعي، وحلل نموك مع أسترا بوست."
+        : "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
+      images: ["/og-image.png"],
+      creator: "@AstraPostApp",
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  alternates: {
-    canonical: "/",
-  },
-};
+    alternates: {
+      canonical: "/",
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -117,7 +142,7 @@ export default async function RootLayout({
 }>) {
   const session = await auth.api.getSession({ headers: await headers() });
   const cookieStore = await cookies();
-  const language = session?.user?.language || cookieStore.get("locale")?.value || "en";
+  const language = cookieStore.get("locale")?.value || session?.user?.language || "en";
   const dir = language === "ar" ? "rtl" : "ltr";
   const messages = await getMessages();
 

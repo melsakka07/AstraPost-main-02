@@ -6,20 +6,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAllBlogPosts } from "@/lib/blog";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Blog",
-  description:
-    "Expert advice on social media growth, content creation, and building your audience in the MENA region.",
-  alternates: { canonical: "/blog" },
-  openGraph: {
-    title: "Blog — AstraPost",
-    description:
-      "Expert advice on social media growth, content creation, and building your audience in the MENA region.",
-    url: "/blog",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Blog", ar: "المدونة" },
+    {
+      en: "Expert advice on social media growth, content creation, and building your audience in the MENA region.",
+      ar: "نصائح الخبراء حول نمو وسائل التواصل الاجتماعي، وإنشاء المحتوى، وبناء جمهورك في منطقة الشرق الأوسط وشمال أفريقيا.",
+    },
+    { path: "/blog" }
+  );
+}
 
 export default async function BlogPage() {
   const t = await getTranslations("blog");

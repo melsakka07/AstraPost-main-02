@@ -6,6 +6,7 @@ import { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getBlogPost } from "@/lib/blog";
+import { getSeoLocale } from "@/lib/seo";
 import { BlogPostClient } from "./blog-post-client";
 
 export async function generateMetadata({
@@ -14,11 +15,12 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const locale = await getSeoLocale();
   const post = await getBlogPost(slug);
 
   if (!post) {
     return {
-      title: "Post Not Found",
+      title: locale === "ar" ? "المنشور غير موجود" : "Post Not Found",
     };
   }
 

@@ -1,5 +1,78 @@
 # Latest Updates
 
+## 2026-04-26: Arabic SEO Metadata — Root Layout + 10 Marketing Pages
+
+**Summary:** Converted all `export const metadata` to `export async function generateMetadata()` across the root layout and all 10 marketing pages. The root layout uses `getSeoLocale()` to detect the locale cookie and serve Arabic or English title, description, keywords, openGraph locale, and og:image alt. All 10 marketing pages use the shared `generateSeoMetadata()` helper from `@/lib/seo`.
+
+**Root layout (`src/app/layout.tsx`):** Async `generateMetadata()` reads locale cookie via `getSeoLocale()`, localizes: default title, template, description, keywords, openGraph title/description/locale, og:image alt. Non-localized fields preserved: metadataBase, viewport, robots, twitter card (title "AstraPost" stays fixed), alternates, authors, creator.
+
+**Marketing pages (10):** Each page now calls `generateSeoMetadata({ en, ar }, { en, ar }, { path })` with bilingual title and description. Files: features, pricing, community, blog, changelog, docs, resources, roadmap, legal/terms, legal/privacy.
+
+**Verification:** `pnpm run check` pending — Bash unavailable in session, verify manually.
+
+---
+
+## 2026-04-26: Added ~30 Untranslated Composer/Queue/Calendar i18n Keys
+
+**Summary:** Added 42 new key-value pairs across 3 existing namespaces (compose, queue, calendar) to both en.json and ar.json. Keys cover untranslated strings found during RTL QA for composer toolbar, queue management, and calendar import features.
+
+**Compose namespace (19 keys + save_template_dialog object with 10 keys):**
+
+- `composer_welcome`, `composer_hint_1`, `composer_hint_2`, `composer_shortcuts` — onboarding hints
+- `dismiss_hint`, `got_it` — dismissable hint UI
+- `media`, `ai_image`, `emoji` — toolbar button labels
+- `clear_tweet`, `upload_media`, `generate_ai_image`, `add_emoji` — tooltips/actions
+- `characters_of_max`, `preview_label`, `preview_placeholder` — editor feedback
+- `posting_immediately_to`, `selected_account`, `at_separator` — posting status
+- `save_template_dialog.title/description/name_placeholder/description_placeholder/category_*/ai_params_note/reuse_note/save_button` — save-as-template dialog
+
+**Queue namespace (12 keys):**
+
+- `this_month`, `posts_usage` — usage meter
+- `view_comfortable`, `view_compact` — layout toggle
+- `new_post`, `open_calendar`, `open_drafts` — quick actions
+- `scheduled_posts_heading`, `failed_posts_heading` — section headings
+- `retry_failed_hint`, `all_clear`, `no_failed_posts` — failed posts UI states
+
+**Calendar namespace (1 key):**
+
+- `import_csv` — CSV import button
+
+**Files modified:** `src/i18n/messages/en.json`, `src/i18n/messages/ar.json`
+
+**Verification:** `pnpm run check` pending — Bash unavailable in session, verify manually.
+
+---
+
+## 2026-04-26: Phase 8.5 Track A Complete — UI Strings + aria-labels ✅
+
+**Summary:** Fixed ~25 hardcoded user-visible strings and aria-labels across 6 components. Added 5 new translation namespaces with 15 new keys to both en.json and ar.json. All UI strings now use next-intl translations.
+
+**Files modified (6):**
+
+1. `src/components/mobile-menu.tsx` — Fixed 6 strings: open/close navigation menu, navigation menu, mobile navigation, go to dashboard, sign in, get started free
+2. `src/components/dashboard/language-switcher.tsx` — Fixed 1 string: "Failed to switch language" error toast
+3. `src/components/dashboard/bottom-nav.tsx` — Fixed 1 aria-label: "Mobile navigation"
+4. `src/components/dashboard/sidebar.tsx` — Fixed 1 aria-label: "Dashboard navigation"
+5. `src/components/dashboard/setup-checklist.tsx` — Fixed 1 aria-label: expand/collapse checklist
+6. `src/components/site-footer.tsx` — Fixed 3 strings/aria-labels: site footer, logo alt, social media links
+
+**New translation namespaces added (5):**
+
+- `mobile_menu` — 7 keys (open/close navigation menu, navigation menu, mobile navigation, go to dashboard, sign in, get started free)
+- `mobile_nav` — 1 key (mobile navigation)
+- `sidebar` — 1 key (dashboard navigation)
+- `setup_checklist` — 2 keys (expand/collapse checklist)
+- `site_footer` — 3 keys (site footer, logo alt, social media links)
+
+**Updated namespace:**
+
+- `dashboard_shell` — Added 1 key: `switch_language_failed`
+
+**Verification:** `pnpm run check` passes (lint + typecheck).
+
+---
+
 ## 2026-04-26: Fixed Arabic Language Switching Bug — Locale Cookie Mismatch
 
 **Problem:** Switching language to Arabic had no effect — `getMessages()` always loaded English messages and the UI never changed.

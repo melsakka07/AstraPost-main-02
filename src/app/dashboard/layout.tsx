@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq, and, gte } from "drizzle-orm";
 import { Rocket } from "lucide-react";
-import { getTranslations } from "next-intl/server";
 import { AnnouncementBanner } from "@/components/announcement-banner";
 import { ChangelogBanner } from "@/components/changelog-banner";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
@@ -33,7 +32,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
   const session = ctx.session;
-  const t = await getTranslations();
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
@@ -54,9 +52,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="bg-background flex min-h-dvh flex-col">
         <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 flex h-14 shrink-0 items-center gap-2 border-b px-6 backdrop-blur">
           <Rocket className="text-primary h-5 w-5" aria-hidden="true" />
-          <span className="text-lg font-bold tracking-tight">
-            {t("common.app_name", { defaultValue: "AstraPost" })}
-          </span>
+          <span className="text-lg font-bold tracking-tight">AstraPost</span>
         </header>
         <ReferralCookieProcessor />
         <main className="flex-1">{children}</main>

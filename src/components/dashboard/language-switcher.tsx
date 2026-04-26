@@ -60,7 +60,7 @@ export function LanguageSwitcher() {
       if (!res.ok) throw new Error("Failed to update language");
       window.location.reload();
     } catch {
-      toast.error("Failed to switch language");
+      toast.error(t("switch_language_failed"));
       setLoading(false);
     }
   };

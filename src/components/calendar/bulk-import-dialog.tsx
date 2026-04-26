@@ -79,7 +79,7 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Upload className="mr-2 h-4 w-4" />
-          Import CSV
+          {t("import_csv")}
         </Button>
       </DialogTrigger>
       <DialogContent>

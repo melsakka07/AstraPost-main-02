@@ -394,13 +394,13 @@ export function TweetCard({
                     size="sm"
                     className="text-primary h-7 gap-1 px-1.5 sm:h-8 sm:gap-1.5 sm:px-2"
                     onClick={() => triggerFileUpload(tweet.id)}
-                    aria-label="Upload media"
+                    aria-label={t("upload_media")}
                   >
                     <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden text-[10px] sm:inline sm:text-xs">Media</span>
+                    <span className="hidden text-[10px] sm:inline sm:text-xs">{t("media")}</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Upload Media</TooltipContent>
+                <TooltipContent>{t("upload_media")}</TooltipContent>
               </Tooltip>
 
               {openAiImage && (
@@ -411,13 +411,15 @@ export function TweetCard({
                       size="sm"
                       className="text-primary h-7 gap-1 px-1.5 sm:h-8 sm:gap-1.5 sm:px-2"
                       onClick={() => openAiImage(tweet.id)}
-                      aria-label="Generate AI image"
+                      aria-label={t("generate_ai_image")}
                     >
                       <Wand2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      <span className="hidden text-[10px] sm:inline sm:text-xs">AI Image</span>
+                      <span className="hidden text-[10px] sm:inline sm:text-xs">
+                        {t("ai_image")}
+                      </span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Generate AI Image</TooltipContent>
+                  <TooltipContent>{t("generate_ai_image")}</TooltipContent>
                 </Tooltip>
               )}
 
@@ -430,16 +432,18 @@ export function TweetCard({
                           variant="ghost"
                           size="sm"
                           className="text-primary h-7 gap-1 px-1.5 sm:h-8 sm:gap-1.5 sm:px-2"
-                          aria-label="Add emoji"
+                          aria-label={t("add_emoji")}
                           aria-haspopup="dialog"
                           aria-expanded={showEmojiPicker}
                         >
                           <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                          <span className="hidden text-[10px] sm:inline sm:text-xs">Emoji</span>
+                          <span className="hidden text-[10px] sm:inline sm:text-xs">
+                            {t("emoji")}
+                          </span>
                         </Button>
                       </PopoverTrigger>
                     </TooltipTrigger>
-                    <TooltipContent>Add Emoji</TooltipContent>
+                    <TooltipContent>{t("add_emoji")}</TooltipContent>
                   </Tooltip>
                   <PopoverContent className="w-auto border-none bg-transparent p-0 shadow-none">
                     <EmojiPicker onEmojiClick={onEmojiClick} />
@@ -453,20 +457,22 @@ export function TweetCard({
                         variant="ghost"
                         size="sm"
                         className="text-primary h-7 gap-1 px-1.5 sm:h-8 sm:gap-1.5 sm:px-2"
-                        aria-label="Add emoji"
+                        aria-label={t("add_emoji")}
                         aria-haspopup="dialog"
                         aria-expanded={showEmojiPicker}
                         onClick={() => setShowEmojiPicker(true)}
                       >
                         <Smile className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                        <span className="hidden text-[10px] sm:inline sm:text-xs">Emoji</span>
+                        <span className="hidden text-[10px] sm:inline sm:text-xs">
+                          {t("emoji")}
+                        </span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Add Emoji</TooltipContent>
+                    <TooltipContent>{t("add_emoji")}</TooltipContent>
                   </Tooltip>
                   <Sheet open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                     <SheetContent side="bottom" className="h-[350px] px-0 sm:h-[400px]">
-                      <SheetTitle className="sr-only">Emoji picker</SheetTitle>
+                      <SheetTitle className="sr-only">{t("emoji")}</SheetTitle>
                       <SheetDescription className="sr-only">
                         Select an emoji to insert
                       </SheetDescription>
@@ -484,13 +490,15 @@ export function TweetCard({
                     className="text-muted-foreground hover:text-destructive h-7 gap-1 px-1.5 sm:h-8 sm:gap-1.5 sm:px-2"
                     onClick={onClearTweet}
                     disabled={tweet.content === "" && tweet.media.length === 0}
-                    aria-label="Clear tweet content"
+                    aria-label={t("clear_tweet")}
                   >
                     <Eraser className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    <span className="hidden text-[10px] sm:inline sm:text-xs">Clear</span>
+                    <span className="hidden text-[10px] sm:inline sm:text-xs">
+                      {t("clear_tweet")}
+                    </span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Clear tweet</TooltipContent>
+                <TooltipContent>{t("clear_tweet")}</TooltipContent>
               </Tooltip>
 
               {totalTweets > 1 && onToggleNumbering && (
@@ -533,11 +541,11 @@ export function TweetCard({
                         : "text-muted-foreground"
                   )}
                 >
-                  {charCount} / {maxChars.toLocaleString()}
+                  {t("character_count", { count: charCount, max: maxChars.toLocaleString() })}
                 </span>
                 {/* P4-B: Off-screen aria-live span — only updates every 10 chars or near limit */}
                 <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
-                  {announcedCharCount} of {maxChars} characters
+                  {t("characters_of_max", { current: announcedCharCount, max: maxChars })}
                 </span>
                 {canPostLongContent(tier) && tier && !isThreadMode && (
                   <XSubscriptionBadge tier={tier} size="sm" />

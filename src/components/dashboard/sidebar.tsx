@@ -55,6 +55,7 @@ function SidebarContent({
   userPlan = "free",
 }: SidebarContentProps & { referralsEnabled?: boolean }) {
   const t = useTranslations("nav");
+  const tSidebar = useTranslations("sidebar");
 
   const imageQuota: ImageQuota | null = imageUsage
     ? {
@@ -136,7 +137,10 @@ function SidebarContent({
       </Link>
 
       {/* Navigation sections */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Dashboard navigation">
+      <nav
+        className="flex-1 overflow-y-auto px-3 py-4"
+        aria-label={tSidebar("dashboard_navigation")}
+      >
         {filteredSections.map((section, idx) => {
           const sectionLabelKey = section.label.toLowerCase().replace(/\s+/g, "_");
           const translatedSectionLabel = t(sectionLabelKey as any, { defaultValue: section.label });
@@ -341,6 +345,7 @@ export function Sidebar({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [sheetSide, setSheetSide] = useState<"left" | "right">("left");
+  const tMenu = useTranslations("mobile_menu");
 
   useEffect(() => {
     const syncDir = () => {
@@ -388,9 +393,11 @@ export function Sidebar({
                 : "border-border right-0 border-l"
             )}
           >
-            <DrawerPrimitive.Title className="sr-only">Navigation menu</DrawerPrimitive.Title>
+            <DrawerPrimitive.Title className="sr-only">
+              {tMenu("navigation_menu")}
+            </DrawerPrimitive.Title>
             <DrawerPrimitive.Description className="sr-only">
-              Main navigation links
+              {tMenu("main_navigation_links")}
             </DrawerPrimitive.Description>
             <SidebarContent
               pathname={pathname}

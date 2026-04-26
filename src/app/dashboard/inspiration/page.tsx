@@ -323,7 +323,7 @@ function InspirationContent() {
           setBookmarks(data.bookmarks || []);
         }
       } catch (err) {
-        console.error("Failed to load bookmarks:", err);
+        (await import("@/lib/logger")).logger.error("Failed to load bookmarks", { error: err });
       }
     };
 

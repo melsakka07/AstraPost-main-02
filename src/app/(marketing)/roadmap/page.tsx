@@ -3,11 +3,19 @@ import { getTranslations } from "next-intl/server";
 import { SubmissionForm } from "@/components/roadmap/submission-form";
 import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/auth";
+import { generateSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Product Roadmap | AstraPost",
-  description: "Help us build the features you need. Submit your ideas and suggestions.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Product Roadmap", ar: "خارطة طريق المنتج" },
+    {
+      en: "Help us build the features you need. Submit your ideas and suggestions.",
+      ar: "ساعدنا في بناء الميزات التي تحتاجها. شارك بأفكارك واقتراحاتك.",
+    },
+    { path: "/roadmap" }
+  );
+}
 
 export default async function RoadmapPage() {
   const session = await auth.api.getSession({

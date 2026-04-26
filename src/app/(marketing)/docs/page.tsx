@@ -3,18 +3,19 @@ import { FileText, Rocket, Shield, CreditCard, LayoutGrid, ArrowRight } from "lu
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Documentation",
-  description: "Everything you need to know about using AstraPost effectively.",
-  alternates: { canonical: "/docs" },
-  openGraph: {
-    title: "Documentation — AstraPost",
-    description: "Everything you need to know about using AstraPost effectively.",
-    url: "/docs",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Documentation", ar: "التوثيق" },
+    {
+      en: "Everything you need to know about using AstraPost effectively.",
+      ar: "كل ما تحتاج معرفته لاستخدام AstraPost بكفاءة.",
+    },
+    { path: "/docs" }
+  );
+}
 
 interface Article {
   title: string;

@@ -4,18 +4,19 @@ import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Resources",
-  description: "Guides, tutorials, and tools to help you succeed with AstraPost.",
-  alternates: { canonical: "/resources" },
-  openGraph: {
-    title: "Resources — AstraPost",
-    description: "Guides, tutorials, and tools to help you succeed with AstraPost.",
-    url: "/resources",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    { en: "Resources", ar: "الموارد" },
+    {
+      en: "Guides, tutorials, and tools to help you succeed with AstraPost.",
+      ar: "أدلة وشروحات وأدوات لمساعدتك على النجاح مع AstraPost.",
+    },
+    { path: "/resources" }
+  );
+}
 
 export default async function ResourcesPage() {
   const t = await getTranslations("resources");

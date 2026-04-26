@@ -32,8 +32,11 @@
     "ai_calendar": "AI Calendar",
     "jobs": "Jobs",
     "sign_out": "Sign out",
+    "sign_in": "Sign In",
+    "get_started": "Get Started",
     "roadmap": "Roadmap",
     "go_home": "Go to Home",
+    "main_navigation": "Main navigation",
     "ai_credits": "AI Credits",
     "images_credits": "Image Credits",
     "used_this_month": "used this month",
@@ -60,6 +63,31 @@
       "growth": "Growth",
       "system": "System"
     }
+  },
+  "mobile_menu": {
+    "open_navigation_menu": "Open navigation menu",
+    "close_navigation_menu": "Close navigation menu",
+    "navigation_menu": "Navigation menu",
+    "main_navigation_links": "Main navigation links",
+    "mobile_navigation": "Mobile navigation",
+    "go_to_dashboard": "Go to Dashboard",
+    "sign_in": "Sign In",
+    "get_started_free": "Get Started Free"
+  },
+  "mobile_nav": {
+    "mobile_navigation": "Mobile navigation"
+  },
+  "sidebar": {
+    "dashboard_navigation": "Dashboard navigation"
+  },
+  "setup_checklist": {
+    "expand_checklist": "Expand checklist",
+    "collapse_checklist": "Collapse checklist"
+  },
+  "site_footer": {
+    "site_footer": "Site footer",
+    "logo_alt": "AstraPost — Go to homepage",
+    "social_media_links": "Social media links"
   },
   "buttons": {
     "create": "Create",
@@ -152,8 +180,11 @@
       "title": "Create your AstraPost account",
       "subtitle": "Join thousands of creators managing their X presence.",
       "email_label": "Email address",
+      "email_placeholder": "you@example.com",
       "password_label": "Password",
+      "password_placeholder": "Min. 8 characters",
       "confirm_password_label": "Confirm password",
+      "confirm_password_placeholder": "Confirm your password",
       "agreement": "By continuing, you agree to AstraPost's <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>",
       "terms_link": "Terms of Service",
       "privacy_link": "Privacy Policy",
@@ -168,14 +199,19 @@
       },
       "errors": {
         "email_exists": "An account with this email already exists.",
+        "invalid_email": "Invalid email address",
         "weak_password": "Password must be at least 8 characters.",
-        "password_mismatch": "Passwords do not match."
+        "password_min": "Password must be at least 8 characters",
+        "password_max": "Password must be less than 128 characters",
+        "password_mismatch": "Passwords do not match.",
+        "terms_required": "You must agree to the Terms of Service and Privacy Policy"
       }
     },
     "forgot_password": {
       "title": "Reset your password",
       "subtitle": "Enter your email address and we'll send you a reset link.",
       "email_label": "Email address",
+      "email_placeholder": "you@example.com",
       "submit": "Send reset link",
       "remember": "Remember your password?",
       "sign_in_link": "Sign in",
@@ -241,6 +277,7 @@
     "open_navigation": "Open navigation",
     "close_navigation": "Close navigation",
     "switch_language": "Switch language",
+    "switch_language_failed": "Failed to switch language",
     "notifications": "Notifications",
     "mark_all_read": "Mark all as read",
     "no_notifications": "No notifications",
@@ -402,6 +439,38 @@
       "discard_title": "Discard unsaved draft?",
       "discard_description": "You have unsaved changes. If you leave, your changes will be lost.",
       "continue": "Continue"
+    },
+    "composer_welcome": "Welcome to the Composer 👋",
+    "composer_hint_1": "Use AI Writer in the sidebar to generate full threads in seconds.",
+    "composer_hint_2": "Pick a date & time to schedule, or click Post to X to publish now.",
+    "composer_shortcuts": "Keyboard shortcuts: ⌘↵ publish, ⌘D draft, ⌘K open AI.",
+    "dismiss_hint": "Dismiss hint",
+    "got_it": "Got it",
+    "media": "Media",
+    "ai_image": "AI Image",
+    "emoji": "Emoji",
+    "clear_tweet": "Clear tweet",
+    "upload_media": "Upload Media",
+    "generate_ai_image": "Generate AI Image",
+    "add_emoji": "Add Emoji",
+    "characters_of_max": "{current} of {max} characters",
+    "preview_label": "Preview",
+    "preview_placeholder": "Preview text will appear here...",
+    "posting_immediately_to": "Posting immediately to",
+    "selected_account": "selected account",
+    "at_separator": " at ",
+    "save_template_dialog": {
+      "title": "Save as Template",
+      "description": "Save your current thread structure as a reusable template.",
+      "name_placeholder": "My Awesome Template",
+      "description_placeholder": "Optional description",
+      "category_personal": "Personal",
+      "category_educational": "Educational",
+      "category_promotional": "Promotional",
+      "category_engagement": "Engagement",
+      "ai_params_note": "AI parameters will be saved",
+      "reuse_note": "You can re-generate this content from My Templates.",
+      "save_button": "Save Template"
     }
   },
   "queue": {
@@ -425,7 +494,19 @@
     "retry": "Retry",
     "delete": "Delete",
     "view_thread": "View Thread",
-    "no_date": "No date"
+    "no_date": "No date",
+    "this_month": "this month",
+    "posts_usage": "You have used {used} of your {limit} posts this month. Upgrade to Pro for unlimited scheduling.",
+    "view_comfortable": "Comfortable",
+    "view_compact": "Compact",
+    "new_post": "New Post",
+    "open_calendar": "Open Calendar",
+    "open_drafts": "Open Drafts",
+    "scheduled_posts_heading": "Scheduled Posts",
+    "failed_posts_heading": "Failed Posts",
+    "retry_failed_hint": "Retry or edit failed content quickly",
+    "all_clear": "All clear!",
+    "no_failed_posts": "No failed posts. All queue jobs are healthy."
   },
   "calendar": {
     "title": "Calendar",
@@ -442,7 +523,8 @@
     "bulk_import_description": "Paste multiple tweets to import them all at once",
     "paste_tweets": "Paste your tweets here, one per line...",
     "import_button": "Import",
-    "importing": "Importing..."
+    "importing": "Importing...",
+    "import_csv": "Import CSV"
   },
   "drafts": {
     "title": "Drafts",
@@ -1242,7 +1324,22 @@
       "privacy_export_started_toast": "Data export started",
       "privacy_export_error_toast": "Failed to export data",
       "privacy_account_deleted_toast": "Account deleted successfully",
-      "privacy_delete_error_toast": "Failed to delete account"
+      "privacy_delete_error_toast": "Failed to delete account",
+      "relative_time": {
+        "just_now": "just now",
+        "minutes_ago": "{minutes}m ago",
+        "hours_ago": "{hours}h ago",
+        "days_ago": "{days}d ago"
+      },
+      "sync_failed": "Sync failed",
+      "tier_updated": "Subscription tier updated: {tier}",
+      "tier_cooldown": "Tier was recently refreshed. Please wait before refreshing again.",
+      "tier_refresh_failed": "Failed to refresh tier",
+      "account_removed": "Account @{username} removed successfully",
+      "account_remove_failed": "Failed to remove account",
+      "account_deactivated": "Account @{username} deactivated successfully",
+      "account_deactivate_failed": "Failed to deactivate account",
+      "default_update_failed": "Failed to update default"
     }
   },
   "hashtag_generator": {

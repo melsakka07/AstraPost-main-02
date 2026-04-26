@@ -57,8 +57,8 @@ export function ConnectedLinkedInAccounts({
       toast.success(t("integrations.linkedin_disconnected_success"));
       window.location.reload();
     } catch (error) {
-      toast.error("An error occurred while disconnecting the account");
-      console.error("Disconnect error:", error);
+      toast.error(t("integrations.disconnect_error"));
+      (await import("@/lib/logger")).logger.error("Disconnect error", { error });
     } finally {
       setIsLoading(false);
       setPendingDisconnect(null);
