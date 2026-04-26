@@ -47,7 +47,7 @@ export function CalendarPostItem({ post, isOverlay, view, accentColor }: Calenda
           isOverlay && "scale-105 rotate-2 cursor-grabbing opacity-90 shadow-xl"
         )}
       >
-        <p className="truncate text-[10px] leading-tight">
+        <p className="truncate text-[10px] leading-tight" dir="auto">
           <span className="text-muted-foreground mr-1 font-medium">{time}</span>
           {content}
         </p>
@@ -77,7 +77,9 @@ export function CalendarPostItem({ post, isOverlay, view, accentColor }: Calenda
         </div>
         <div className="flex items-start gap-1">
           <GripVertical className="text-muted-foreground/30 mt-0.5 h-4 w-4 flex-shrink-0" />
-          <p className="line-clamp-2 flex-1 text-xs leading-tight break-words">{content}</p>
+          <p className="line-clamp-2 flex-1 text-xs leading-tight break-words" dir="auto">
+            {content}
+          </p>
         </div>
       </CardContent>
     </Card>

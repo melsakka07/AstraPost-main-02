@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
 import { Trash2, Edit2, XCircle } from "lucide-react";
+import { useLocale } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,7 @@ interface NotificationHistoryTableProps {
 }
 
 export function NotificationHistoryTable({ initialData }: NotificationHistoryTableProps) {
+  const locale = useLocale();
   const [notifications, setNotifications] = useState<NotificationRow[]>(initialData ?? []);
   const [loading, setLoading] = useState(initialData === null);
   const pathname = usePathname();
@@ -181,6 +184,7 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
                       {notification.sentAt
                         ? formatDistanceToNow(new Date(notification.sentAt), {
                             addSuffix: true,
+                            locale: locale === "ar" ? ar : enUS,
                           })
                         : "—"}
                     </TableCell>

@@ -380,7 +380,7 @@ export function TemplatesDialog({
                       onClick={() => setUserTemplatesPage((p) => Math.max(0, p - 1))}
                       disabled={userTemplatesPage === 0}
                     >
-                      <ChevronLeft className="h-3.5 w-3.5" />
+                      <ChevronLeft className="h-3.5 w-3.5 rtl:scale-x-[-1]" />
                       Previous
                     </Button>
                     <span className="text-muted-foreground text-xs tabular-nums">
@@ -396,7 +396,7 @@ export function TemplatesDialog({
                       disabled={userTemplatesPage >= userTemplatesPageCount - 1}
                     >
                       Next
-                      <ChevronRight className="h-3.5 w-3.5" />
+                      <ChevronRight className="h-3.5 w-3.5 rtl:scale-x-[-1]" />
                     </Button>
                   </div>
                 )}

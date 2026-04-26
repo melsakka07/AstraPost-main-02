@@ -55,6 +55,7 @@ export function ThreadCollapsible({
               </span>
               <p
                 className={`${isCompact ? "line-clamp-3 text-sm" : "line-clamp-4"} break-words whitespace-pre-wrap`}
+                dir="auto"
               >
                 {tweet.content ?? (
                   <span className="text-muted-foreground/60 italic">Empty tweet</span>

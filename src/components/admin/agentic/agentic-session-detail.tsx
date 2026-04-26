@@ -124,7 +124,9 @@ export function AgenticSessionDetail({
               <div className="space-y-3">
                 {detail.posts.map((post) => (
                   <div key={post.id} className="space-y-3 rounded-lg border p-4">
-                    <p className="text-foreground text-sm">{post.content}</p>
+                    <p className="text-foreground text-sm" dir="auto">
+                      {post.content}
+                    </p>
                     <div className="text-muted-foreground flex items-center justify-between text-xs">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1">

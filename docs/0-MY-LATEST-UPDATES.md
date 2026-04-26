@@ -1,5 +1,102 @@
 # Latest Updates
 
+## 2026-04-26: RTL Directional Icons — Added `rtl:scale-x-[-1]` to All Directional Icons (15 files, 27 instances)
+
+**Summary:** Added `rtl:scale-x-[-1]` Tailwind class to every directional icon (ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, CaretLeft, CaretRight) that was missing it across the entire codebase. This ensures icons visually flip in RTL mode (Arabic) so that a "left" chevron points left in LTR and right in RTL, matching the natural reading direction.
+
+**Files modified (15):**
+
+1. `src/components/command-palette.tsx:195` — ChevronRight
+2. `src/components/composer/templates-dialog.tsx:383,399` — ChevronLeft, ChevronRight
+3. `src/components/admin/teams/team-dashboard.tsx:267,278,377,388` — ChevronLeft x2, ChevronRight x2
+4. `src/components/admin/subscribers/subscribers-table.tsx:603,615` — ChevronLeft, ChevronRight
+5. `src/components/admin/subscribers/subscriber-detail.tsx:154` — ArrowLeft
+6. `src/components/ui/calendar.tsx:54,56` — ChevronLeft, ChevronRight
+7. `src/components/ui/breadcrumb.tsx:31` — ChevronRight
+8. `src/components/queue/queue-content.tsx:355,368` — ChevronLeft, ChevronRight
+9. `src/components/admin/roadmap/roadmap-table.tsx:496,507` — ChevronLeft, ChevronRight
+10. `src/components/admin/dashboard/admin-dashboard.tsx:77,264` — ArrowRight x2
+11. `src/components/admin/referrals/referral-dashboard.tsx:248,260` — ChevronLeft, ChevronRight
+12. `src/components/admin/breadcrumbs.tsx:32` — ChevronRight
+13. `src/components/admin/billing/analytics-pagination.tsx:32,42` — ChevronLeft, ChevronRight
+14. `src/components/admin/audit/audit-log-table.tsx:406,418` — ChevronLeft, ChevronRight
+15. `src/components/ai/agentic-posting-client.tsx:1364` — ArrowLeft
+
+**Already had `rtl:scale-x-[-1]` (not touched):** `calendar-view.tsx`, `quick-compose.tsx`, `dropdown-menu.tsx`, `directional-icon.tsx`
+
+---
+
+## 2026-04-26: Centralized Arabic AI Prompt Helper (15 routes, 1 new file)
+
+**Summary:** Created `src/lib/ai/arabic-prompt.ts` with two exports -- `getArabicInstructions(language)` and `getArabicToneGuidance(tone)` -- and replaced the duplicated inline `langInstruction` ternary pattern across all 15 AI routes. The enhanced Arabic block adds punctuation enforcement (،;؛? vs Latin), numeral consistency (Western 0-9), cultural context (MENA relevance, natural idioms), and language instruction. For routes with a tone parameter (calendar, summarize, thread, tools, reply), `getArabicToneGuidance` provides Arabic-specific tone names (احترافي, غير رسمي, etc.) with X/Twitter-native phrasing.
+
+**New file:**
+
+- `src/lib/ai/arabic-prompt.ts` -- `getArabicInstructions()`, `getArabicToneGuidance()`, `ARABIC_TONE_MAP`
+
+**Files modified (15):**
+
+- `src/app/api/ai/calendar/route.ts` -- replaced `langLabel` + `langInstruction` + inline tone
+- `src/app/api/ai/hashtags/route.ts` -- replaced `langLabel` + `langInstruction`
+- `src/app/api/ai/inspiration/route.ts` -- replaced `langLabel` + `langInstruction`
+- `src/app/api/ai/variants/route.ts` -- replaced inline `langInstruction` with `LANGUAGES` lookup
+- `src/app/api/ai/agentic/[id]/regenerate/route.ts` -- replaced `langLabel` + `langInstruction`
+- `src/app/api/ai/trends/route.ts` -- replaced `langLabel` + `langInstruction` in `buildTrendsPrompt()`
+- `src/app/api/ai/summarize/route.ts` -- replaced `langLabel` + `langInstruction` + inline tone
+- `src/app/api/ai/enhance-topic/route.ts` -- replaced `langLabel` + `langInstruction` in `buildEnhancePrompt()`
+- `src/app/api/ai/translate/route.ts` -- replaced `langLabel` + `langInstruction` (uses `targetLanguage`)
+- `src/app/api/ai/affiliate/route.ts` -- replaced `langLabel` + `langInstruction`
+- `src/app/api/ai/score/route.ts` -- replaced `langInstruction` (no `LANGUAGES` import to remove)
+- `src/app/api/ai/thread/route.ts` -- replaced `langLabel` + `langInstruction` + inline tone
+- `src/app/api/ai/tools/route.ts` -- replaced `langLabel` + `langInstruction` + inline tone (3 branches)
+- `src/app/api/ai/reply/route.ts` -- replaced `langInstruction` (inline `LANGUAGES` lookup) + inline tone
+- `src/app/api/ai/bio/route.ts` -- replaced `langLabel` + inline ternary
+
+Every file also had unused `LANGUAGES` import removed. No `LANGUAGES` or `langLabel` or inline Arabic string remains in any AI route.
+
+**Verification:** `pnpm run check` passes (lint + typecheck + i18n keys).
+
+---
+
+## 2026-04-26: Added `dir="auto"` to User-Generated / AI-Generated Text Elements (14 files, 25 elements)
+
+**Summary:** Added HTML-native `dir="auto"` attribute to every element that renders user-supplied or AI-generated text content across 14 components. This allows the browser to determine text direction per element from the first strong character, ensuring Arabic tweets, usernames, notifications, and AI-generated posts render correctly in RTL regardless of the document-level direction.
+
+**Files modified (14):**
+
+1. `src/components/queue/thread-collapsible.tsx` — Tweet body `<p>` (line 56)
+2. `src/components/calendar/calendar-post-item.tsx` — Compact chip tweet `<p>` (line 50) and expanded tweet `<p>` (line 80)
+3. `src/components/drafts/drafts-client.tsx` — Draft tweet body `<p>` (line 138)
+4. `src/components/analytics/top-tweets-list.tsx` — Tweet content `<p>` (line 41)
+5. `src/components/admin/agentic/agentic-session-detail.tsx` — AI-generated post body `<p>` (line 127)
+6. `src/components/admin/content/content-dashboard.tsx` — Post content `<TableCell>` (line 200) and author name `<span>` (line 205)
+7. `src/components/inspiration/imported-tweet-card.tsx` — Tweet text `<div>` (line 140)
+8. `src/components/dashboard/notification-bell.tsx` — Notification title `<span>` (line 229) and message `<p>` (line 236)
+9. `src/components/auth/user-profile.tsx` — User display name `<p>` (line 75)
+10. `src/components/composer/composer-preview.tsx` — User name spans (lines 87, 171), @handle spans (lines 88, 173), preview tweet `<p>` (line 90)
+11. `src/components/ai/agentic-posting-client.tsx` — Four `@{username}` spans (lines ~1000, ~1014, ~1027, ~1608)
+12. `src/components/admin/roadmap/roadmap-table.tsx` — User name spans in table (line 428) and detail dialog (line 531)
+13. `src/components/analytics/account-selector.tsx` — `@{xUsername}` in SelectItem (line 67) and desktop chip Link (line 89)
+
+**Verification:** `pnpm run check` pending — run manually.
+
+---
+
+## 2026-04-26: Fixed Hydration Mismatch — Removed `isMounted` Anti-Pattern (4 components)
+
+**Summary:** Fixed hydration mismatch on `/dashboard` and all other pages caused by the `isMounted` SSR-avoidance pattern (`useState(false)` + `useEffect(() => setIsMounted(true))` + `if (!isMounted) return null`). This pattern is explicitly called out in React hydration error messages as equivalent to `if (typeof window !== 'undefined')`.
+
+**Files modified (4):**
+
+1. `src/components/ui/trial-banner.tsx` — Removed `isMounted` guard. `useSyncExternalStore` already handles sessionStorage correctly for SSR. `usePathname` and `differenceInCalendarDays` work during SSR (off-by-1-day at timezone boundaries is negligible).
+2. `src/components/dashboard/setup-checklist.tsx` — Removed `isMounted` guard. Initial state defaults (`isVisible=true`, `isExpanded=false`) are SSR-safe. localStorage overrides apply in useEffect on client only.
+3. `src/components/dashboard/post-usage-bar.tsx` — Removed `isMounted` guard. The `!data` null check already prevents rendering before fetch completes.
+4. `src/components/composer/composer-onboarding-hint.tsx` — Replaced `isMounted` with `shouldShow` state set after localStorage check in useEffect. SSR-safe default is hidden.
+
+**Verification:** `pnpm run check` passes (lint + typecheck).
+
+---
+
 ## 2026-04-26: Arabic SEO Metadata — Root Layout + 10 Marketing Pages
 
 **Summary:** Converted all `export const metadata` to `export async function generateMetadata()` across the root layout and all 10 marketing pages. The root layout uses `getSeoLocale()` to detect the locale cookie and serve Arabic or English title, description, keywords, openGraph locale, and og:image alt. All 10 marketing pages use the shared `generateSeoMetadata()` helper from `@/lib/seo`.

@@ -29,7 +29,7 @@ export function AnalyticsPagination({ page, totalPages, total }: AnalyticsPagina
       </p>
       <div className="flex gap-2">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
           Previous
         </Button>
         <Button
@@ -39,7 +39,7 @@ export function AnalyticsPagination({ page, totalPages, total }: AnalyticsPagina
           onClick={() => goToPage(page + 1)}
         >
           Next
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
         </Button>
       </div>
     </div>

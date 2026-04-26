@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
 import {
   Lightbulb,
   Loader2,
@@ -17,7 +18,7 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
 import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
@@ -89,6 +90,7 @@ function InspirationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations("inspiration");
+  const locale = useLocale();
   const [tweetUrl, setTweetUrl] = useState("");
   const [isValidUrl, setIsValidUrl] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -591,7 +593,10 @@ function InspirationContent() {
                               {item.action}
                             </Badge>
                             <span className="text-muted-foreground text-xs">
-                              {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                              {formatDistanceToNow(new Date(item.createdAt), {
+                                addSuffix: true,
+                                locale: locale === "ar" ? ar : enUS,
+                              })}
                             </span>
                           </div>
                           <p className="text-muted-foreground line-clamp-2 text-sm">

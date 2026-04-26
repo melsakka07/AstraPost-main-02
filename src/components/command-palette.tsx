@@ -192,7 +192,7 @@ export function CommandPalette() {
                             )}
                           </div>
                         </div>
-                        <ChevronRight className="text-muted-foreground h-4 w-4 shrink-0" />
+                        <ChevronRight className="text-muted-foreground h-4 w-4 shrink-0 rtl:scale-x-[-1]" />
                       </button>
                     );
                   })}

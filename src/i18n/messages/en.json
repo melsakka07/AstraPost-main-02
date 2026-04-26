@@ -390,8 +390,8 @@
       "template_generated": "Template: Content generated!",
       "hook_generated": "Hook: Opening line generated!",
       "cta_added": "CTA: Call-to-action added!",
-      "translated": "Translate: {count} tweet(s) translated!",
-      "hashtags_generated": "Hashtags: {count} tags generated — click to add",
+      "translated": "Translate: {count, plural, one {# tweet translated!} other {# tweets translated!}}",
+      "hashtags_generated": "Hashtags: {count, plural, one {# tag generated — click to add} other {# tags generated — click to add}}",
       "rewrite_generated": "Rewrite: Tweet rewritten!",
       "switch_failed": "Failed to switch workspace",
       "switched_to": "Switched to {name}"
@@ -434,7 +434,7 @@
       "keep_editing": "Keep editing",
       "replace_generate": "Replace & Generate",
       "translate_title": "Translate tweets?",
-      "translate_description": "This will translate {count} tweet(s) to {language}. Your draft was auto-saved.",
+      "translate_description": "This will translate {count, plural, one {# tweet} other {# tweets}} to {language}. Your draft was auto-saved.",
       "translate_button": "Translate",
       "discard_title": "Discard unsaved draft?",
       "discard_description": "You have unsaved changes. If you leave, your changes will be lost.",
@@ -471,7 +471,14 @@
       "ai_params_note": "AI parameters will be saved",
       "reuse_note": "You can re-generate this content from My Templates.",
       "save_button": "Save Template"
-    }
+    },
+    "length_zone": {
+      "short": "Short post",
+      "medium": "Medium post",
+      "long": "Long post"
+    },
+    "over_standard_limit_warning": "This exceeds 280 characters.",
+    "exceeds_280_thread_warning": "Exceeds 280 chars — threads use standard tweet length"
   },
   "queue": {
     "title": "Queue",
@@ -681,7 +688,7 @@
     "mode_thread": "Thread",
     "mode_single": "Single Post",
     "length_label": "Length",
-    "tweets_count": "{count}/{max} tweets",
+    "tweets_count": "{count, plural, one {#/{max} tweet} other {#/{max} tweets}}",
     "length_short": "Short",
     "length_long": "Long",
     "generate_thread": "Generate Thread",
@@ -702,7 +709,7 @@
     "variants_title": "Content Variants",
     "original_label": "Original Content",
     "original_placeholder": "Paste your content here...",
-    "char_count": "{count} characters",
+    "char_count": "{count, plural, one {# character} other {# characters}}",
     "generate_variants": "Generate Variants",
     "angle": {
       "emotional": "Emotional",
@@ -767,10 +774,10 @@
         "done": "Done"
       },
       "working": "Working…",
-      "remaining": "~{seconds}s remaining",
+      "remaining": "~{seconds, plural, one {# second remaining} other {# seconds remaining}}",
       "broad_topic_title": "Your topic is broad. Pick a specific angle:",
-      "angles_found": "{count} angles found",
-      "format": "{format} · {count} tweets",
+      "angles_found": "{count, plural, one {# angle found} other {# angles found}}",
+      "format": "{format} · {count, plural, one {# tweet} other {# tweets}}",
       "quality_score": "Quality score: {score}/10"
     },
     "review_screen": {
@@ -868,7 +875,7 @@
     "generating": "Generating...",
     "fetching_tweet": "Fetching tweet and crafting replies...",
     "preview_tip": "Tip: click 👁 to preview the tweet before generating",
-    "reply_options": "{count} Reply Options",
+    "reply_options": "{count, plural, one {# Reply Option} other {# Reply Options}}",
     "chars": "{count}/280",
     "use_reply": "Use Reply",
     "copy": "Copy",
@@ -898,8 +905,7 @@
     "generate_calendar": "Generate Calendar",
     "generating": "Generating...",
     "building_calendar": "Building your content calendar...",
-    "posts_planned": "{count} post planned",
-    "posts_plural": "{count} posts planned",
+    "posts_planned": "{count, plural, one {# post planned} other {# posts planned}}",
     "schedule_all": "Schedule All",
     "calendar_appears": "Your content calendar will appear here",
     "set_niche_schedule": "Set your niche and schedule, then click Generate Calendar",
@@ -934,7 +940,7 @@
     "paste_url": "Paste X/Tweet URL",
     "url_placeholder": "https://x.com/username/status/1234567890",
     "import_button": "Import",
-    "importing": "Importing... ({seconds}s)",
+    "importing": "Importing... ({seconds, plural, one {# second} other {# seconds}})",
     "importing_label": "Import",
     "arrow_right": "→",
     "invalid_url": "Please enter a valid X/Twitter URL",
@@ -1114,7 +1120,7 @@
       "trial_ends": "Free trial ends",
       "trial_today": "today",
       "trial_tomorrow": "tomorrow",
-      "trial_in_days": "in {count} days",
+      "trial_in_days": "in {count, plural, one {# day} other {# days}}",
       "next_billing_date": "Next billing date:",
       "cancellation_notice": "Your subscription will be cancelled on {date}. You'll keep full access until then.",
       "undo_cancellation": "Undo Cancellation",
@@ -1346,7 +1352,7 @@
     "configuration": "Configuration",
     "tweet_content": "Tweet Content",
     "content_placeholder": "Paste your tweet content here to generate relevant hashtags...",
-    "characters": "{count} characters",
+    "characters": "{count, plural, one {# character} other {# characters}}",
     "target_language": "Target Language",
     "language_description": "Hashtags will be prioritized based on regional trends",
     "generate_hashtags": "Generate Hashtags",
@@ -1553,7 +1559,7 @@
     },
     "trial_ending_soon": {
       "subject": "Your trial is ending soon",
-      "body": "Your AstraPost Pro trial ends in {count} days. Don't lose access to AI-powered content creation and analytics.",
+      "body": "Your AstraPost Pro trial ends in {count, plural, one {# day} other {# days}}. Don't lose access to AI-powered content creation and analytics.",
       "days_left": "{count, plural, one {# day left} other {# days left}}",
       "cta": "Upgrade Now",
       "without_payment": "Without a payment method on file, your account will be moved to the Free plan when your trial ends."

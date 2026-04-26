@@ -33,6 +33,7 @@
 # misc
 .DS_Store
 Thumbs.db
+repomix-output.xml
 *.pem
 
 # local tooling

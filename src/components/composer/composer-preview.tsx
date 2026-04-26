@@ -84,10 +84,14 @@ export function ComposerPreview({
             </div>
             <div className="w-full min-w-0 space-y-0.5 sm:space-y-1">
               <div className="flex flex-col gap-0 text-xs sm:text-sm xl:flex-row xl:items-center xl:gap-1">
-                <span className="truncate font-bold">{userName}</span>
-                <span className="text-muted-foreground truncate">{userHandle}</span>
+                <span className="truncate font-bold" dir="auto">
+                  {userName}
+                </span>
+                <span className="text-muted-foreground truncate" dir="auto">
+                  {userHandle}
+                </span>
               </div>
-              <p className="text-xs break-words whitespace-pre-wrap sm:text-sm">
+              <p className="text-xs break-words whitespace-pre-wrap sm:text-sm" dir="auto">
                 {previewTweet?.content || t("preview_placeholder")}
               </p>
               {(previewTweet?.media?.length || 0) > 0 && previewTweet?.media?.[0]?.url && (
@@ -168,9 +172,13 @@ export function ComposerPreview({
                 </div>
                 <div className="w-full min-w-0 space-y-0.5 sm:space-y-1">
                   <div className="flex flex-col gap-0 text-xs sm:text-sm xl:flex-row xl:items-center xl:gap-1">
-                    <span className="truncate font-bold">{userName}</span>
+                    <span className="truncate font-bold" dir="auto">
+                      {userName}
+                    </span>
                     <div className="flex min-w-0 items-center gap-1">
-                      <span className="text-muted-foreground truncate">{userHandle}</span>
+                      <span className="text-muted-foreground truncate" dir="auto">
+                        {userHandle}
+                      </span>
                       {tweets.length > 1 && (
                         <span className="text-muted-foreground/60 shrink-0 text-[10px] sm:text-xs">
                           {i + 1}/{tweets.length}

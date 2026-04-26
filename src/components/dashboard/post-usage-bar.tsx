@@ -28,11 +28,8 @@ interface PostUsageBarProps {
 export function PostUsageBar({ className }: PostUsageBarProps) {
   const t = useTranslations("dashboard_shell");
   const [data, setData] = useState<UsageData | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
-
     let cancelled = false;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
@@ -69,7 +66,7 @@ export function PostUsageBar({ className }: PostUsageBarProps) {
     };
   }, []);
 
-  if (!isMounted || !data) return null;
+  if (!data) return null;
 
   const isFree = data.plan === "free";
   const postLimit = data.limits.postsPerMonth;

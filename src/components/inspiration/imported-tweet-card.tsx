@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
 import {
   Verified,
   MessageCircle,
@@ -13,7 +15,7 @@ import {
   Play,
   ExternalLink,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Tweet } from "@/lib/services/tweet-importer";
@@ -36,27 +38,6 @@ function formatNumber(num: number): string {
     return `${(num / 1000).toFixed(1)}K`;
   }
   return num.toString();
-}
-
-function formatRelativeTime(date: Date | string): string {
-  const now = new Date();
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-  const diff = now.getTime() - dateObj.getTime();
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) {
-    return `${days}d`;
-  }
-  if (hours > 0) {
-    return `${hours}h`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m`;
-  }
-  return "now";
 }
 
 function highlightEntities(text: string): React.ReactNode {
@@ -113,6 +94,7 @@ function highlightEntities(text: string): React.ReactNode {
 }
 
 function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: boolean }) {
+  const locale = useLocale();
   return (
     <div className={cn("flex gap-2 sm:gap-3", isReply && "ml-8 sm:ml-12")}>
       {/* Avatar */}
@@ -147,12 +129,18 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
           <span className="text-muted-foreground text-xs sm:text-sm">@{tweet.author.username}</span>
           <span className="text-muted-foreground text-xs sm:text-sm">·</span>
           <span className="text-muted-foreground text-xs sm:text-sm">
-            {formatRelativeTime(tweet.createdAt)}
+            {formatDistanceToNow(new Date(tweet.createdAt), {
+              addSuffix: true,
+              locale: locale === "ar" ? ar : enUS,
+            })}
           </span>
         </div>
 
         {/* Tweet Text */}
-        <div className="text-foreground mt-1 text-sm leading-normal break-words whitespace-pre-wrap sm:text-[15px]">
+        <div
+          className="text-foreground mt-1 text-sm leading-normal break-words whitespace-pre-wrap sm:text-[15px]"
+          dir="auto"
+        >
           {highlightEntities(tweet.text)}
         </div>
 

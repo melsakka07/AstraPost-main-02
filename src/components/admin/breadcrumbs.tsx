@@ -29,7 +29,7 @@ export function AdminBreadcrumbs({ items, className }: AdminBreadcrumbsProps) {
       </Link>
       {items.map((item, idx) => (
         <div key={idx} className="flex items-center gap-1">
-          <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />
           {item.href && idx < items.length - 1 ? (
             <Link
               href={item.href}

@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
@@ -36,11 +37,7 @@ export async function POST(req: Request) {
       return ApiError.badRequest("Cannot translate empty tweets. Please add content first.");
     }
 
-    const targetLangLabel = LANGUAGES.find((l) => l.code === targetLanguage)?.label || "English";
-    const langInstruction =
-      targetLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Translate into ${targetLangLabel}.`;
+    const langInstruction = getArabicInstructions(targetLanguage);
 
     const prompt = `${langInstruction}
 

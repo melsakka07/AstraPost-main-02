@@ -1,9 +1,9 @@
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
@@ -13,11 +13,7 @@ const enhanceRequestSchema = z.object({
 
 function buildEnhancePrompt(language: string | null): string {
   const userLanguage = language || "en";
-  const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
-  const langInstruction =
-    userLanguage === "ar"
-      ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-      : `Output language: ${langLabel}.`;
+  const langInstruction = getArabicInstructions(userLanguage);
 
   return `You are a social media topic refiner. Take the following topic idea and transform it into a concise, compelling topic description suitable as the starting point for a tweet or thread.
 

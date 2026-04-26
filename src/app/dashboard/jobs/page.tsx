@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { Settings2 as Settings2Icon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -197,7 +198,10 @@ export default async function JobsPage({
                       className="text-muted-foreground text-xs"
                       title={new Date(r.startedAt).toLocaleString(userLocale)}
                     >
-                      {formatDistanceToNow(new Date(r.startedAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(r.startedAt), {
+                        addSuffix: true,
+                        locale: userLocale === "ar" ? ar : enUS,
+                      })}
                     </div>
                   </div>
 

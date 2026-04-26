@@ -125,9 +125,9 @@ export function TweetCard({
   // Length zone label for Premium single-post mode
   const getLengthZone = () => {
     if (!isPremiumSinglePost) return null;
-    if (charCount <= 280) return "Short post";
-    if (charCount <= 1_000) return "Medium post";
-    return "Long post";
+    if (charCount <= 280) return t("length_zone.short");
+    if (charCount <= 1_000) return t("length_zone.medium");
+    return t("length_zone.long");
   };
 
   // P4-B: Only update the announced count when it crosses a 10-char boundary,
@@ -226,7 +226,7 @@ export function TweetCard({
             !canPostLongContent(selectedTier) && (
               <div className="mt-1.5 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                <span>This exceeds 280 characters.</span>
+                <span>{t("over_standard_limit_warning")}</span>
                 {onConvertToThread && (
                   <button
                     type="button"
@@ -586,7 +586,7 @@ export function TweetCard({
               {/* Thread mode per-tweet warning — P4-G: amber-700/amber-400 for WCAG AA contrast */}
               {isThreadMode && isOverStandardLimit(tweet.content) && (
                 <p className="text-[11px] text-amber-700 dark:text-amber-400" role="alert">
-                  Exceeds 280 chars — threads use standard tweet length
+                  {t("exceeds_280_thread_warning")}
                 </p>
               )}
             </div>

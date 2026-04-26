@@ -151,7 +151,7 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button variant="ghost" size="sm" asChild className="-ml-2">
           <Link href="/admin/subscribers">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 h-4 w-4 rtl:scale-x-[-1]" />
             All subscribers
           </Link>
         </Button>

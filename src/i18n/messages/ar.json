@@ -471,7 +471,14 @@
       "ai_params_note": "سيتم حفظ معلمات الذكاء الاصطناعي",
       "reuse_note": "يمكنك إعادة إنشاء هذا المحتوى من قوالبي.",
       "save_button": "حفظ القالب"
-    }
+    },
+    "length_zone": {
+      "short": "منشور قصير",
+      "medium": "منشور متوسط",
+      "long": "منشور طويل"
+    },
+    "over_standard_limit_warning": "هذا يتجاوز 280 حرفاً.",
+    "exceeds_280_thread_warning": "يتجاوز 280 حرفاً — تستخدم سلاسل التغريدات الطول القياسي"
   },
   "queue": {
     "title": "قائمة الانتظار",
@@ -681,7 +688,7 @@
     "mode_thread": "خيط",
     "mode_single": "منشور واحد",
     "length_label": "الطول",
-    "tweets_count": "{count}/{max} تغريدات",
+    "tweets_count": "{count, plural, zero {#/{max} لا تغريدات} one {#/{max} تغريدة واحدة} two {#/{max} تغريدتان} few {#/{max} تغريدات} many {#/{max} تغريدة} other {#/{max} تغريدة}}",
     "length_short": "قصير",
     "length_long": "طويل",
     "generate_thread": "توليد خيط",
@@ -702,7 +709,7 @@
     "variants_title": "متغيرات المحتوى",
     "original_label": "المحتوى الأصلي",
     "original_placeholder": "الصق محتواك هنا...",
-    "char_count": "{count} حرف",
+    "char_count": "{count, plural, zero {لا أحرف} one {حرف واحد} two {حرفان} few {# أحرف} many {# حرفاً} other {# حرف}}",
     "generate_variants": "توليد متغيرات",
     "angle": {
       "emotional": "عاطفي",
@@ -767,10 +774,10 @@
         "done": "مكتمل"
       },
       "working": "جاري العمل…",
-      "remaining": "~{seconds} ثانية متبقية",
+      "remaining": "~{seconds, plural, zero {لا ثوانٍ متبقية} one {ثانية واحدة متبقية} two {ثانيتان متبقيتان} few {# ثوانٍ متبقية} many {# ثانية متبقية} other {# ثانية متبقية}}",
       "broad_topic_title": "موضوعك واسع. اختر زاوية محددة:",
-      "angles_found": "تم العثور على {count} زوايا",
-      "format": "{format} · {count} تغريدات",
+      "angles_found": "تم العثور على {count, plural, zero {لا زوايا} one {زاوية واحدة} two {زاويتان} few {# زوايا} many {# زاوية} other {# زاوية}}",
+      "format": "{format} · {count, plural, zero {لا تغريدات} one {تغريدة واحدة} two {تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
       "quality_score": "درجة الجودة: {score}/10"
     },
     "review_screen": {
@@ -868,7 +875,7 @@
     "generating": "جاري التوليد...",
     "fetching_tweet": "جاري جلب التغريدة وصياغة الردود...",
     "preview_tip": "تلميح: انقر 👁 لمعاينة التغريدة قبل التوليد",
-    "reply_options": "{count} خيارات للرد",
+    "reply_options": "{count, plural, zero {لا خيارات للرد} one {خيار واحد للرد} two {خياران للرد} few {# خيارات للرد} many {# خياراً للرد} other {# خيار للرد}}",
     "chars": "{count}/280",
     "use_reply": "استخدام الرد",
     "copy": "نسخ",
@@ -898,8 +905,7 @@
     "generate_calendar": "توليد التقويم",
     "generating": "جاري التوليد...",
     "building_calendar": "جاري بناء تقويم محتواك...",
-    "posts_planned": "{count} منشور مخطط",
-    "posts_plural": "{count} منشورات مخططة",
+    "posts_planned": "{count, plural, zero {لا منشورات مخططة} one {منشور واحد مخطط} two {منشوران مخططان} few {# منشورات مخططة} many {# منشوراً مخططاً} other {# منشور مخطط}}",
     "schedule_all": "جدولة الكل",
     "calendar_appears": "سيظهر تقويم محتواك هنا",
     "set_niche_schedule": "حدد تخصصك وجدولتك، ثم انقر توليد التقويم",
@@ -934,7 +940,7 @@
     "paste_url": "الصق رابط X/Twitter",
     "url_placeholder": "https://x.com/username/status/1234567890",
     "import_button": "استيراد",
-    "importing": "جاري الاستيراد... ({seconds}ثانية)",
+    "importing": "جاري الاستيراد... ({seconds, plural, zero {لا ثوانٍ} one {ثانية واحدة} two {ثانيتان} few {# ثوانٍ} many {# ثانية} other {# ثانية}})",
     "importing_label": "استيراد",
     "arrow_right": "←",
     "invalid_url": "يرجى إدخال رابط X/Twitter صحيح",
@@ -1346,7 +1352,7 @@
     "configuration": "تكوين",
     "tweet_content": "محتوى التغريدة",
     "content_placeholder": "الصق محتوى تغريدة هنا لتوليد وسوم ذات صلة...",
-    "characters": "{count} حرف",
+    "characters": "{count, plural, zero {لا أحرف} one {حرف واحد} two {حرفان} few {# أحرف} many {# حرفاً} other {# حرف}}",
     "target_language": "اللغة المستهدفة",
     "language_description": "سيتم أولوية الوسوم بناءً على الاتجاهات الإقليمية",
     "generate_hashtags": "توليد الوسوم",

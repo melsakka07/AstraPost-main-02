@@ -1,9 +1,10 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES, TONE_ENUM } from "@/lib/constants";
+import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
@@ -43,23 +44,20 @@ export async function POST(req: Request) {
 
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
 
     // Validate the stored voiceProfile against the strict schema and sanitize
     // every field before interpolation. Returns "" for null/invalid profiles.
     const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
 
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Language: ${langLabel}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
+    const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
 
     const prompt = (() => {
       if (tool === "hook") {
         return `You are an expert viral X (Twitter) writer. Write ONE hook tweet about: "${
           topic || ""
         }".
-Tone: ${tone}.
+${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
 
@@ -73,7 +71,7 @@ Constraints:
       if (tool === "cta") {
         const contextPrompt = context ? `\n\nThread context for relevance:\n${context}` : "";
         return `Write a short call-to-action for the END of an X thread.
-Tone: ${tone}.
+${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
 ${contextPrompt}
@@ -85,7 +83,7 @@ Constraints:
       }
 
       return `Rewrite the following X tweet.
-Tone: ${tone}.
+${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
 

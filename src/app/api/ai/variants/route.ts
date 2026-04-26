@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkVariantGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
@@ -57,10 +58,7 @@ export async function POST(req: Request) {
       return res;
     }
 
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Language: ${LANGUAGES.find((l) => l.code === userLanguage)?.label || "English"}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
 
     const prompt = `You are an expert social media copywriter.
 Given the following tweet, generate exactly 3 alternative versions using different angles.

@@ -4,9 +4,9 @@ import { generateText } from "ai";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import type { AgenticTweet, ResearchBrief, ContentPlan } from "@/lib/ai/agentic-types";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
-import { LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -89,11 +89,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // Get user's language preference
     const userLanguage = agenticPost.user?.language || "en";
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Output language: ${langLabel}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
 
     const model = openrouter(process.env.OPENROUTER_MODEL!);
 

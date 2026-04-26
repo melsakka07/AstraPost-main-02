@@ -245,7 +245,7 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
                 disabled={page <= 1}
                 onClick={() => handlePageChange(page - 1)}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
               </Button>
               <span className="px-2">
                 {page} / {topReferrers.pagination.totalPages}
@@ -257,7 +257,7 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
                 disabled={page >= topReferrers.pagination.totalPages}
                 onClick={() => handlePageChange(page + 1)}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
               </Button>
             </div>
           </div>

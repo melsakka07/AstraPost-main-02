@@ -28,38 +28,30 @@ export function SetupChecklist({
   const searchParams = useSearchParams();
   const [isVisible, setIsVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const tChecklist = useTranslations("setup_checklist");
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     const hidden = localStorage.getItem(STORAGE_KEY);
     const checklistOpen = searchParams.get("checklist") === "open";
 
     if (checklistOpen) {
       localStorage.setItem(STORAGE_KEY, "false");
       localStorage.setItem(COLLAPSED_KEY, "false");
-      setTimeout(() => {
-        setIsVisible(true);
-        setIsExpanded(true);
-        setIsMounted(true);
-      }, 0);
+      setIsVisible(true);
+      setIsExpanded(true);
     } else if (hidden === "true") {
-      setTimeout(() => {
-        setIsVisible(false);
-        setIsMounted(true);
-      }, 0);
+      setIsVisible(false);
     } else {
       const collapsed = localStorage.getItem(COLLAPSED_KEY);
-      setTimeout(() => {
-        if (collapsed !== "true") setIsExpanded(true);
-        setIsMounted(true);
-      }, 0);
+      if (collapsed !== "true") setIsExpanded(true);
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [searchParams]);
 
   const t = useTranslations("dashboard_shell");
 
-  if (!isMounted) return null;
+  if (!isVisible) return null;
 
   const steps = [
     {

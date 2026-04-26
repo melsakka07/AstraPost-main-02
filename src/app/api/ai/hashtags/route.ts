@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
@@ -34,12 +35,7 @@ export async function POST(req: Request) {
 
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
-
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only. Prioritize hashtags popular in MENA."
-        : `Language: ${langLabel}. Prioritize hashtags popular in that region.`;
+    const langInstruction = getArabicInstructions(userLanguage);
 
     const prompt = `
       You are a social media growth expert for X (Twitter).

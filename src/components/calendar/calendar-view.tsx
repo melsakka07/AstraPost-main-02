@@ -68,6 +68,8 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
   const t = useTranslations("calendar");
   const locale = useLocale();
   const dateLocale = locale === "ar" ? ar : undefined;
+  // MENA countries typically start the week on Sunday; English locale uses Monday
+  const weekStartsOn = locale === "ar" ? 0 : 1;
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [view, setView] = React.useState<ViewType>(initialView);
@@ -82,17 +84,18 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
     () => new Intl.DateTimeFormat(locale, { weekday: "long" }),
     [locale]
   );
-  const WEEKDAYS = React.useMemo(
-    () =>
-      Array.from({ length: 7 }, (_, i) => {
-        const date = new Date(2024, 0, i + 1); // Jan 1 2024 was a Monday
-        return {
-          short: weekdayFormatter.format(date),
-          full: weekdayFormatterLong.format(date),
-        };
-      }),
-    [weekdayFormatter, weekdayFormatterLong]
-  );
+  const WEEKDAYS = React.useMemo(() => {
+    const days = Array.from({ length: 7 }, (_, i) => {
+      // Jan 4, 2026 = Sunday (produces Sun–Sat); Jan 5 = Monday (produces Mon–Sun)
+      const baseDate = new Date(2026, 0, weekStartsOn === 0 ? 4 : 5);
+      const date = addDays(baseDate, i);
+      return {
+        short: weekdayFormatter.format(date),
+        full: weekdayFormatterLong.format(date),
+      };
+    });
+    return days;
+  }, [weekdayFormatter, weekdayFormatterLong, weekStartsOn]);
 
   // After hydration, default to "week" on mobile when no explicit view was requested
   React.useEffect(() => {
@@ -153,11 +156,11 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
     if (view === "month") {
       const monthStart = startOfMonth(currentDate);
       const monthEnd = endOfMonth(monthStart);
-      startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
-      endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+      startDate = startOfWeek(monthStart, { weekStartsOn });
+      endDate = endOfWeek(monthEnd, { weekStartsOn });
     } else if (view === "week") {
-      startDate = startOfWeek(currentDate, { weekStartsOn: 1 });
-      endDate = endOfWeek(currentDate, { weekStartsOn: 1 });
+      startDate = startOfWeek(currentDate, { weekStartsOn });
+      endDate = endOfWeek(currentDate, { weekStartsOn });
     } else {
       startDate = currentDate;
       endDate = currentDate;
@@ -169,7 +172,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
       day = addDays(day, 1);
     }
     return dayList;
-  }, [currentDate, view]);
+  }, [currentDate, view, weekStartsOn]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);

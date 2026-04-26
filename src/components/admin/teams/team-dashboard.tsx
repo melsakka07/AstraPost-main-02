@@ -264,7 +264,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                   disabled={teams.pagination.page <= 1}
                   onClick={() => setTeamsPage((p) => p - 1)}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
                 </button>
                 <span className="px-2">
                   {teams.pagination.page} / {teams.pagination.totalPages}
@@ -275,7 +275,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                   disabled={teams.pagination.page >= teams.pagination.totalPages}
                   onClick={() => setTeamsPage((p) => p + 1)}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
                 </button>
               </div>
             </div>
@@ -374,7 +374,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                   disabled={invitations.pagination.page <= 1}
                   onClick={() => setInvitationsPage((p) => p - 1)}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
                 </button>
                 <span className="px-2">
                   {invitations.pagination.page} / {invitations.pagination.totalPages}
@@ -385,7 +385,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                   disabled={invitations.pagination.page >= invitations.pagination.totalPages}
                   onClick={() => setInvitationsPage((p) => p + 1)}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
                 </button>
               </div>
             </div>

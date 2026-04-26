@@ -1,11 +1,12 @@
 import { streamText } from "ai";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { getLengthPrompt, getLengthMaxChars, THREAD_MODE_PROMPT } from "@/lib/ai/length-prompts";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -73,13 +74,8 @@ export async function POST(req: Request) {
 
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
-
-    // In prompt — add explicit Arabic instruction:
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Language: ${langLabel}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
+    const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
 
     const dedupKey = RequestDedup.generateKey(session.user.id, "ai_thread", {
       topic,
@@ -164,7 +160,7 @@ export async function POST(req: Request) {
 
       prompt = `You are an expert social media content writer for X (Twitter).
 Write exactly ONE post about "${topic}".
-${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle, but adapt freely.\n` : ""}Tone: ${tone}.
+${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle, but adapt freely.\n` : ""}${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
 
@@ -179,7 +175,7 @@ Requirements:
       // Thread mode (existing behavior)
       prompt = `You are an expert social media content writer for X (Twitter).
 Write exactly ${tweetCount} tweets about "${topic}".
-${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle of the first tweet, but adapt freely.\n` : ""}Tone: ${tone}.
+${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle of the first tweet, but adapt freely.\n` : ""}${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
 

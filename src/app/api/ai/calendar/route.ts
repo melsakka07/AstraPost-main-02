@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES, TONE_ENUM } from "@/lib/constants";
+import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkContentCalendarAccessDetailed } from "@/lib/middleware/require-plan";
@@ -46,17 +47,15 @@ export async function POST(req: Request) {
 
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
     const totalPosts = postsPerWeek * weeks;
 
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Language: ${langLabel}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
+    const toneGuidance =
+      userLanguage === "ar" ? getArabicToneGuidance(tone) : `Default tone: ${tone}.`;
 
     const prompt = `You are a social media strategist for X (Twitter).
 Create a content calendar for ${weeks} week(s) with ${postsPerWeek} posts per week (${totalPosts} total) for a creator in the "${niche}" niche.
-${langInstruction} Default tone: ${tone}.
+${langInstruction} ${toneGuidance}
 
 For each post return:
 - day: day of week (Monday, Tuesday, etc.)

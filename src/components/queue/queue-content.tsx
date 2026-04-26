@@ -352,7 +352,7 @@ export function QueueContent({
                   aria-label="Previous page of scheduled posts"
                 >
                   <Link href={`?page=${scheduledPage - 1}`}>
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
                     Prev
                   </Link>
                 </Button>
@@ -365,7 +365,7 @@ export function QueueContent({
                 >
                   <Link href={`?page=${scheduledPage + 1}`}>
                     Next
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
                   </Link>
                 </Button>
               </div>

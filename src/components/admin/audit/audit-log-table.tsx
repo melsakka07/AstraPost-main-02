@@ -403,7 +403,7 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
             </Button>
             <span className="px-2">
               {page} / {response.pagination.totalPages}
@@ -415,7 +415,7 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
               disabled={page >= response.pagination.totalPages}
               onClick={() => setPage((p) => p + 1)}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
             </Button>
           </div>
         </div>

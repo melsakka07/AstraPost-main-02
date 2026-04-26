@@ -64,7 +64,7 @@ export function AccountSelector({
           <SelectContent>
             {accounts.map((a) => (
               <SelectItem key={a.id} value={a.id}>
-                @{a.xUsername}
+                <span dir="auto">@{a.xUsername}</span>
               </SelectItem>
             ))}
           </SelectContent>
@@ -85,6 +85,7 @@ export function AccountSelector({
                   ? "bg-primary/10 text-primary border-primary/30"
                   : "text-muted-foreground hover:bg-muted")
               }
+              dir="auto"
             >
               @{a.xUsername}
             </Link>

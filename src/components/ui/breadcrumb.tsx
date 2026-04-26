@@ -28,7 +28,7 @@ export function Breadcrumb({ items, className }: BreadcrumbProps) {
       </Link>
       {items.map((item, idx) => (
         <React.Fragment key={idx}>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 rtl:scale-x-[-1]" aria-hidden="true" />
           {item.href && idx < items.length - 1 ? (
             <Link href={item.href} className="hover:text-foreground transition-colors">
               {item.label}

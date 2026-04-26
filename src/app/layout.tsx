@@ -131,6 +131,10 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     alternates: {
       canonical: "/",
+      languages: {
+        en: "https://astrapost.app?lang=en",
+        ar: "https://astrapost.app?lang=ar",
+      },
     },
   };
 }
@@ -142,8 +146,33 @@ export default async function RootLayout({
 }>) {
   const session = await auth.api.getSession({ headers: await headers() });
   const cookieStore = await cookies();
-  const language = cookieStore.get("locale")?.value || session?.user?.language || "en";
-  const dir = language === "ar" ? "rtl" : "ltr";
+  const headersList = await headers();
+  const cookieLocale = cookieStore.get("locale")?.value;
+
+  // Check for ?lang= query param (used by hreflang alternate URLs for SEO)
+  let urlLang: string | undefined;
+  try {
+    const host = headersList.get("host") || "";
+    const proto = headersList.get("x-forwarded-proto") || "https";
+    const pathAndQuery =
+      headersList.get("x-invoke-path") || headersList.get("x-middleware-request-url") || "";
+    const urlStr = pathAndQuery.startsWith("http")
+      ? pathAndQuery
+      : `${proto}://${host}${pathAndQuery}`;
+    urlLang = new URL(urlStr).searchParams.get("lang") || undefined;
+  } catch {
+    /* ignore */
+  }
+
+  const acceptLang = headersList.get("accept-language");
+  const detectedLocale =
+    (urlLang === "ar" || urlLang === "en" || urlLang === "pseudo" ? urlLang : undefined) ||
+    cookieLocale ||
+    (/(^|,)\s*ar(-[A-Z]+)?\s*(;q=0\.[5-9])?/.test(acceptLang ?? "") ? "ar" : undefined) ||
+    session?.user?.language ||
+    "en";
+  const language = detectedLocale;
+  const dir = language === "ar" || language === "pseudo" ? "rtl" : "ltr";
   const messages = await getMessages();
 
   return (

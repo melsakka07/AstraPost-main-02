@@ -1,10 +1,11 @@
 import { headers } from "next/headers";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
-import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
@@ -25,11 +26,7 @@ const TRENDS_CACHE_TTL_SECONDS = 1800; // 30 minutes
 
 function buildTrendsPrompt(category: TrendCategory, language: string): string {
   const categoryLabel = category === "all" ? "all categories" : category;
-  const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
-  const langInstruction =
-    language === "ar"
-      ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-      : `Output language: ${langLabel}.`;
+  const langInstruction = getArabicInstructions(language);
 
   return `You are a social media trends analyst. Research what is currently trending on X (Twitter) right now in the "${categoryLabel}" category.
 ${langInstruction}

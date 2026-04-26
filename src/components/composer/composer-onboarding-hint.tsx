@@ -16,20 +16,21 @@ const HINT_KEY = "astra-composer-hint-seen";
  */
 export function ComposerOnboardingHint({ accountCount = 0 }: { accountCount?: number }) {
   const t = useTranslations("compose");
-  const [isMounted, setIsMounted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [shouldShow, setShouldShow] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsMounted(true);
+    try {
+      if (!localStorage.getItem(HINT_KEY)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setShouldShow(true);
+      }
+    } catch {
+      // ignore
+    }
   }, []);
 
-  let visible = false;
-  try {
-    visible = isMounted && !localStorage.getItem(HINT_KEY) && !dismissed;
-  } catch {
-    // ignore
-  }
+  const visible = shouldShow && !dismissed;
 
   const dismiss = () => {
     try {

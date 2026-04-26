@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -118,6 +119,14 @@ function getButtonState(
   return { label: defaultLabel, disabled: false };
 }
 
+// Static USD→SAR conversion table (refresh quarterly). SAR rate: 1 USD ≈ 3.75 SAR.
+function getMenaPrice(price: string): string | null {
+  const num = parseFloat(price.replace(/[^0-9.]/g, ""));
+  if (isNaN(num) || num === 0) return null;
+  const sar = Math.round(num * 3.75);
+  return `${sar.toLocaleString()} ر.س`;
+}
+
 export function PricingCard({
   plan,
   currentPlan,
@@ -125,6 +134,9 @@ export function PricingCard({
   isLoading,
   onSelect,
 }: PricingCardProps) {
+  const locale = useLocale();
+  const menaPrice = locale === "ar" ? getMenaPrice(plan.price) : null;
+
   // Compute button label and disabled state using the tier-aware logic
   const { label: buttonLabel, disabled: isDisabled } = getButtonState(
     currentPlan,
@@ -157,6 +169,7 @@ export function PricingCard({
           <span className="text-3xl font-bold">{plan.price}</span>
           <span className="text-muted-foreground">/{plan.interval}</span>
         </div>
+        {menaPrice && <p className="text-muted-foreground/70 text-sm">~{menaPrice}</p>}
         {plan.perMonthEquivalent && (
           <div className="flex items-center gap-1.5 text-sm">
             <span className="text-muted-foreground">{plan.perMonthEquivalent}</span>

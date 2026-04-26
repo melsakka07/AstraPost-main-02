@@ -1,8 +1,8 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
@@ -48,11 +48,7 @@ export async function GET(req: Request) {
       });
     }
 
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Output language: ${langLabel}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
 
     const prompt = `
       You are a social media trend analyst.

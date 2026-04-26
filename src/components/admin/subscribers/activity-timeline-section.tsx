@@ -1,7 +1,9 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
 import { FileText, Sparkles, CreditCard } from "lucide-react";
+import { useLocale } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -23,6 +25,7 @@ interface ActivityTimelineProps {
 }
 
 export function ActivityTimelineSection({ activities }: ActivityTimelineProps) {
+  const locale = useLocale();
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {
       case "post":
@@ -94,7 +97,10 @@ export function ActivityTimelineSection({ activities }: ActivityTimelineProps) {
                     <p className="text-muted-foreground text-xs">{activity.reason}</p>
                   )}
                   <p className="text-muted-foreground text-xs">
-                    {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(activity.createdAt), {
+                      addSuffix: true,
+                      locale: locale === "ar" ? ar : enUS,
+                    })}
                   </p>
                 </div>
               </div>

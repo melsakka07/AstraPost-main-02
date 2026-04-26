@@ -74,7 +74,7 @@ function KpiCard({ label, value, sub, icon: Icon, href, variant = "default" }: K
           <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconBg}`}>
             <Icon className={`h-4 w-4 ${iconColor}`} />
           </div>
-          {href && <ArrowRight className="text-muted-foreground h-4 w-4" />}
+          {href && <ArrowRight className="text-muted-foreground h-4 w-4 rtl:scale-x-[-1]" />}
         </div>
         <div className="mt-3">
           <p className="text-2xl font-bold tabular-nums">{value}</p>
@@ -261,7 +261,7 @@ export function AdminDashboard({ initialData }: AdminDashboardProps = {}) {
                 href="/admin/health"
                 className="text-primary hover:text-primary/80 mt-2 inline-flex items-center gap-1 text-sm font-medium"
               >
-                View details <ArrowRight className="h-3 w-3" />
+                View details <ArrowRight className="h-3 w-3 rtl:scale-x-[-1]" />
               </Link>
             </CardContent>
           </Card>

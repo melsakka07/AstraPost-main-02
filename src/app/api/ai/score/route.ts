@@ -1,5 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
@@ -43,10 +44,7 @@ export async function POST(req: Request) {
 
     // Get language: prefer user's DB preference (score doesn't accept language param)
     const userLanguage = dbUser.language || "en";
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : "Output in English.";
+    const langInstruction = getArabicInstructions(userLanguage);
 
     const prompt = `
       You are an expert social media analyst for X (Twitter).

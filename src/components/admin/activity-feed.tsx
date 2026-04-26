@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { ar, enUS } from "date-fns/locale";
 import {
   AlertCircle,
   AlertTriangle,
@@ -20,6 +21,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
+import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -101,6 +103,7 @@ function ActivityFeedSkeleton() {
 }
 
 export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
+  const locale = useLocale();
   const [activities, setActivities] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +191,11 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
           </div>
           {lastUpdated && (
             <p className="text-muted-foreground mt-1 text-xs">
-              Last updated: {formatDistanceToNow(lastUpdated, { addSuffix: true })}
+              Last updated:{" "}
+              {formatDistanceToNow(lastUpdated, {
+                addSuffix: true,
+                locale: locale === "ar" ? ar : enUS,
+              })}
             </p>
           )}
         </div>
@@ -265,6 +272,7 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
                       <p className="text-muted-foreground text-xs whitespace-nowrap">
                         {formatDistanceToNow(new Date(activity.createdAt), {
                           addSuffix: true,
+                          locale: locale === "ar" ? ar : enUS,
                         })}
                       </p>
                     </div>

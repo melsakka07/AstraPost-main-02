@@ -997,7 +997,9 @@ function InputScreen({
                 </AvatarFallback>
               </Avatar>
               <span>{t("input_screen.posting_as")}</span>
-              <span className="text-foreground font-medium">@{selectedAccount?.username}</span>
+              <span className="text-foreground font-medium" dir="auto">
+                @{selectedAccount?.username}
+              </span>
               <XSubscriptionBadge tier={selectedAccount?.subscriptionTier ?? "None"} size="sm" />
             </div>
           ) : (
@@ -1011,7 +1013,9 @@ function InputScreen({
                     </AvatarFallback>
                   </Avatar>
                   <span>{t("input_screen.posting_as")}</span>
-                  <span className="text-foreground font-medium">@{selectedAccount?.username}</span>
+                  <span className="text-foreground font-medium" dir="auto">
+                    @{selectedAccount?.username}
+                  </span>
                 </div>
               </SelectTrigger>
               <SelectContent>
@@ -1024,7 +1028,7 @@ function InputScreen({
                           {acc.username?.[0]?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span>@{acc.username}</span>
+                      <span dir="auto">@{acc.username}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -1357,7 +1361,7 @@ function ReviewScreen({
               onClick={onChangeTopic}
               className="text-muted-foreground gap-1.5"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5 rtl:scale-x-[-1]" />
               {t("review_screen.change_topic")}
             </Button>
             <Button
@@ -1605,7 +1609,7 @@ function AgenticTweetCard({
                 {selectedAccount?.username?.[0]?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span>@{selectedAccount?.username}</span>
+            <span dir="auto">@{selectedAccount?.username}</span>
             {selectedAccount && (
               <XSubscriptionBadge tier={selectedAccount.subscriptionTier} size="sm" />
             )}

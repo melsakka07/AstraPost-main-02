@@ -2,9 +2,10 @@ import { generateObject } from "ai";
 import * as cheerio from "cheerio";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -85,11 +86,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Generate Tweet with AI
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
-        : `Language: ${langLabel}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
 
     const prompt = `
       You are an expert affiliate marketer on X (Twitter).

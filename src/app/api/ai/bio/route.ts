@@ -2,10 +2,11 @@ import { headers } from "next/headers";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
-import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -78,7 +79,6 @@ export async function POST(req: Request) {
 
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
-    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
     const goalLabel = GOAL_LABELS[goal] || GOAL_LABELS.general;
 
     const currentBioSection = currentBio
@@ -92,7 +92,7 @@ Generate exactly 3 improved bio variants for a content creator.
 ${currentBioSection}${nicheSection}
 
 GOAL: ${goalLabel}
-${userLanguage === "ar" ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only." : `LANGUAGE: ${langLabel}.`}
+${getArabicInstructions(userLanguage)}
 
 Rules:
 - Each bio MUST be under 160 characters (X's limit)

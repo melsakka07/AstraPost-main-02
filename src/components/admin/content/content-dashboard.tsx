@@ -197,12 +197,18 @@ export function ContentDashboard({ initialData }: ContentDashboardProps = {}) {
                         ))
                       : topPosts.data.map((post, i) => (
                           <TableRow key={i}>
-                            <TableCell className="max-w-xs truncate" title={post.content}>
+                            <TableCell
+                              className="max-w-xs truncate"
+                              title={post.content}
+                              dir="auto"
+                            >
                               {post.content}
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-col">
-                                <span className="font-medium">{post.userName}</span>
+                                <span className="font-medium" dir="auto">
+                                  {post.userName}
+                                </span>
                                 <span className="text-muted-foreground text-xs">
                                   {post.userEmail}
                                 </span>

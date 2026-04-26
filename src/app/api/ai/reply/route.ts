@@ -1,8 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, LANGUAGES, TONE_ENUM } from "@/lib/constants";
+import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkReplyGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
@@ -63,10 +64,8 @@ export async function POST(req: Request) {
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
 
-    const langInstruction =
-      userLanguage === "ar"
-        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only. Be culturally appropriate for Arabic/MENA audiences."
-        : `Language: ${LANGUAGES.find((l) => l.code === userLanguage)?.label || "English"}.`;
+    const langInstruction = getArabicInstructions(userLanguage);
+    const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}`;
     const goalLabel = GOAL_LABELS[goal] || "add value";
 
     const prompt = `You are an expert social media engagement writer.
@@ -77,7 +76,7 @@ ORIGINAL TWEET:
 
 Requirements:
 - ${langInstruction}
-- Tone: ${tone}
+- ${toneGuidance}
 - Goal: ${goalLabel}
 - Each reply should be genuinely engaging and contextually relevant
 - Keep replies under 280 characters ideally (hard max: 800 chars)

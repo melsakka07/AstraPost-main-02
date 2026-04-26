@@ -40,6 +40,7 @@ export function TopTweetsList({
               <div className="flex items-start justify-between gap-4">
                 <p
                   className={`${isCompact ? "line-clamp-4 text-sm" : ""} flex-1 break-words whitespace-pre-wrap`}
+                  dir="auto"
                 >
                   {t.content}
                 </p>

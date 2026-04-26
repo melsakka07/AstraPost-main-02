@@ -425,7 +425,9 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                         <AvatarImage src={item.user.image ?? undefined} />
                         <AvatarFallback>{item.user.name[0]}</AvatarFallback>
                       </Avatar>
-                      <span className="text-sm">{item.user.name}</span>
+                      <span className="text-sm" dir="auto">
+                        {item.user.name}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
@@ -491,7 +493,7 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={pagination.page === 1}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
             </Button>
             <span className="text-sm">
               Page {pagination.page} of {pagination.totalPages}
@@ -502,7 +504,7 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
               onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
               disabled={pagination.page === pagination.totalPages}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
             </Button>
           </div>
         </div>
@@ -528,7 +530,7 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                 <AvatarImage src={viewTarget?.user.image ?? undefined} />
                 <AvatarFallback>{viewTarget?.user.name[0]}</AvatarFallback>
               </Avatar>
-              <span>{viewTarget?.user.name}</span>
+              <span dir="auto">{viewTarget?.user.name}</span>
               <span className="text-muted-foreground">•</span>
               <span className="text-muted-foreground">
                 {viewTarget?.createdAt

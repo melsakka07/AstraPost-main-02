@@ -135,7 +135,10 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
 
                   {/* Content preview */}
                   <div className="mb-4 flex-1">
-                    <p className="line-clamp-4 text-sm leading-relaxed break-words whitespace-pre-wrap">
+                    <p
+                      className="line-clamp-4 text-sm leading-relaxed break-words whitespace-pre-wrap"
+                      dir="auto"
+                    >
                       {firstTweet?.content ? (
                         firstTweet.content
                       ) : (

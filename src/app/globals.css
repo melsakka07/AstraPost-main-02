@@ -154,6 +154,17 @@
      ensures readable text if the font fails to load. */
   :lang(ar) {
     font-family: var(--font-arabic), system-ui, sans-serif;
+    line-height: 1.75;
+    letter-spacing: 0;
+  }
+
+  /* Arabic text needs extra line-height for diacritics and descenders.
+     Override Tailwind's tracking-tight/tighter which damages Arabic ligatures. */
+  :lang(ar) .tracking-tight,
+  :lang(ar) .tracking-tighter,
+  :lang(ar) .tracking-wide,
+  :lang(ar) .tracking-wider {
+    letter-spacing: 0 !important;
   }
 
   /* Respect the user's reduced-motion preference.
@@ -569,6 +580,15 @@ body:has([data-dashboard-layout]) [data-main-content] {
      Useful for bottom-fixed toolbars that need breathing room on all devices. */
   .pb-safe-or-4 {
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 1rem);
+  }
+
+  /* ─── Tabular Numerals ──────────────────────────────────────────────────────
+     Forces table-like digit alignment for stat displays (follower counts,
+     post counts, analytics). Works in both Latin and Arabic scripts.
+     Apply to any container showing numeric data alongside text.
+   ──────────────────────────────────────────────────────────────────────── */
+  .tabular-nums-container {
+    font-variant-numeric: tabular-nums;
   }
 
   /* ─── Touch Target ─────────────────────────────────────────────────────────

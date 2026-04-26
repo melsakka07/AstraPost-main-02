@@ -226,14 +226,17 @@ export function NotificationBell() {
                 onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex w-full items-start justify-between gap-2">
-                  <span className="max-w-[180px] truncate text-sm font-medium">
+                  <span className="max-w-[180px] truncate text-sm font-medium" dir="auto">
                     {notification.title || "Notification"}
                   </span>
                   <span className="text-muted-foreground text-[10px] whitespace-nowrap">
                     {new Date(notification.createdAt).toLocaleDateString(userLocale)}
                   </span>
                 </div>
-                <p className="text-muted-foreground line-clamp-2 w-full text-xs break-words">
+                <p
+                  className="text-muted-foreground line-clamp-2 w-full text-xs break-words"
+                  dir="auto"
+                >
                   {notification.message}
                 </p>
               </DropdownMenuItem>
