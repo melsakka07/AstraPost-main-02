@@ -9,15 +9,20 @@ import {
   Text,
   Tailwind,
 } from "@react-email/components";
+import { getEmailTranslations } from "@/lib/services/email-translations";
 
 interface BaseLayoutProps {
   preview?: string;
   children: React.ReactNode;
+  locale?: string;
 }
 
-export const BaseLayout = ({ preview, children }: BaseLayoutProps) => {
+export const BaseLayout = ({ preview, children, locale = "en" }: BaseLayoutProps) => {
+  const t = getEmailTranslations(locale);
+  const isRtl = locale === "ar";
+
   return (
-    <Html>
+    <Html dir={isRtl ? "rtl" : "ltr"} lang={locale}>
       <Head />
       <Preview>{preview || ""}</Preview>
       <Tailwind>
@@ -31,7 +36,7 @@ export const BaseLayout = ({ preview, children }: BaseLayoutProps) => {
             {children}
             <Section>
               <Text className="text-center text-[12px] leading-[24px] text-[#666666]">
-                © 2026 AstraPost. All rights reserved.
+                {t.common.all_rights_reserved || "© 2026 AstraPost. All rights reserved."}
               </Text>
             </Section>
           </Container>

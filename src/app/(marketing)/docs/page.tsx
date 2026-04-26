@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FileText, Rocket, Shield, CreditCard, LayoutGrid, ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { Metadata } from "next";
@@ -28,12 +29,14 @@ interface Category {
   articles: Article[];
 }
 
-export default function DocsPage() {
+export default async function DocsPage() {
+  const t = await getTranslations("docs");
+
   const categories: Category[] = [
     {
-      title: "Getting Started",
+      title: t("getting_started_title"),
       icon: <Rocket className="h-5 w-5" />,
-      description: "Learn the basics of setting up your AstraPost account.",
+      description: t("getting_started_desc"),
       articles: [
         { title: "Introduction to AstraPost", href: "/docs/intro", comingSoon: true },
         {
@@ -45,9 +48,9 @@ export default function DocsPage() {
       ],
     },
     {
-      title: "Core Features",
+      title: t("core_features_title"),
       icon: <LayoutGrid className="h-5 w-5" />,
-      description: "Master the tools to create and schedule content.",
+      description: t("core_features_desc"),
       articles: [
         { title: "Using the Smart Scheduler", href: "/docs/scheduler", comingSoon: true },
         { title: "Generating Content with AI", href: "/docs/ai-writer", comingSoon: true },
@@ -56,9 +59,9 @@ export default function DocsPage() {
       ],
     },
     {
-      title: "Account & Billing",
+      title: t("account_billing_title"),
       icon: <CreditCard className="h-5 w-5" />,
-      description: "Manage your subscription and team settings.",
+      description: t("account_billing_desc"),
       articles: [
         { title: "Plans and Pricing", href: "/docs/pricing", comingSoon: true },
         { title: "Managing Your Subscription", href: "/docs/subscription", comingSoon: true },
@@ -66,9 +69,9 @@ export default function DocsPage() {
       ],
     },
     {
-      title: "Security & Privacy",
+      title: t("security_privacy_title"),
       icon: <Shield className="h-5 w-5" />,
-      description: "How we protect your data and account.",
+      description: t("security_privacy_desc"),
       articles: [
         { title: "Two-Factor Authentication", href: "/docs/2fa", comingSoon: true },
         { title: "GDPR & Data Export", href: "/docs/gdpr", comingSoon: true },
@@ -87,19 +90,17 @@ export default function DocsPage() {
       <div className="container mx-auto max-w-5xl space-y-12 px-4 py-16 md:py-24">
         {/* Header */}
         <div className="mx-auto max-w-2xl space-y-6 text-center">
-          <Badge variant="outline">Documentation</Badge>
+          <Badge variant="outline">{t("badge")}</Badge>
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
-            How can we help?
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground text-xl leading-relaxed">
-            Everything you need to know about using AstraPost effectively.
-          </p>
+          <p className="text-muted-foreground text-xl leading-relaxed">{t("subtitle")}</p>
 
           {/* Search */}
           <div className="relative mx-auto max-w-md pt-4">
             <Input
               type="search"
-              placeholder="Search documentation..."
+              placeholder={t("search_placeholder")}
               className="bg-card h-12 pl-10 shadow-sm"
             />
             <div className="text-muted-foreground absolute top-[calc(1rem+0.875rem)] left-3">
@@ -150,7 +151,7 @@ export default function DocsPage() {
                           variant="outline"
                           className="border-muted-foreground/30 text-muted-foreground/50 ml-auto h-4 px-1.5 text-[10px]"
                         >
-                          Soon
+                          {t("soon_badge")}
                         </Badge>
                       </span>
                     ) : (
@@ -172,17 +173,13 @@ export default function DocsPage() {
 
         {/* Support CTA */}
         <div className="bg-muted/30 mt-12 rounded-xl border border-dashed p-8 text-center">
-          <h3 className="mb-2 text-lg font-semibold">
-            Can&apos;t find what you&apos;re looking for?
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            Our support team is here to help you get back on track.
-          </p>
+          <h3 className="mb-2 text-lg font-semibold">{t("cant_find")}</h3>
+          <p className="text-muted-foreground mb-4">{t("support_help")}</p>
           <Link
             href="mailto:support@astrapost.com"
             className="text-primary group inline-flex items-center gap-1 font-medium hover:underline"
           >
-            Contact Support
+            {t("contact_support")}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
           </Link>
         </div>

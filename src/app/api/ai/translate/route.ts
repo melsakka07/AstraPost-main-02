@@ -36,7 +36,13 @@ export async function POST(req: Request) {
       return ApiError.badRequest("Cannot translate empty tweets. Please add content first.");
     }
 
-    const prompt = `Translate this X thread into ${LANGUAGES.find((l) => l.code === targetLanguage)?.label || "English"}.
+    const targetLangLabel = LANGUAGES.find((l) => l.code === targetLanguage)?.label || "English";
+    const langInstruction =
+      targetLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Translate into ${targetLangLabel}.`;
+
+    const prompt = `${langInstruction}
 
 Constraints:
 - Keep each translated tweet under 280 characters. If a translation would exceed 280 characters, split it into multiple shorter tweets to stay within the limit.

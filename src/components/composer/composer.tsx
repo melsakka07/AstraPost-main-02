@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useId, lazy, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   DndContext,
   closestCenter,
@@ -129,13 +130,14 @@ interface PlanLimitPayload {
   reset_at?: string | null;
 }
 
-function formatTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  return `${Math.floor(seconds / 60)}m ago`;
-}
-
 export function Composer() {
+  const t = useTranslations("compose");
+
+  function formatTimeAgo(date: Date): string {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (seconds < 60) return t("label.just_now");
+    return `${Math.floor(seconds / 60)}${t("label.minutes_ago")}`;
+  }
   const dndId = useId();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -466,7 +468,7 @@ export function Composer() {
   const handleAcceptDraftRestore = () => {
     if (pendingDraftRestore) {
       setTweets(pendingDraftRestore);
-      toast.success("Draft restored from auto-save");
+      toast.success(t("toast.draft_restored"));
       setPendingDraftRestore(null);
     }
   };
@@ -596,14 +598,14 @@ export function Composer() {
           if (post.scheduledAt) {
             setScheduledDate(new Date(post.scheduledAt).toISOString().slice(0, 16));
           }
-          toast.success("Draft loaded for editing");
+          toast.success(t("toast.draft_loaded"));
         }
       } catch (e) {
         clientLogger.error("Failed to load draft", {
           draftId,
           error: e instanceof Error ? e.message : String(e),
         });
-        toast.error("Failed to load draft");
+        toast.error(t("toast.draft_load_failed"));
       }
     })();
     return () => {
@@ -621,7 +623,7 @@ export function Composer() {
 
   const handleSaveTemplate = async () => {
     if (!templateTitle.trim()) {
-      toast.error("Title is required");
+      toast.error(t("toast.title_required"));
       return;
     }
 
@@ -634,7 +636,7 @@ export function Composer() {
         content: tweets.map((t) => t.content),
         ...(lastTemplateAiMeta ? { aiMeta: lastTemplateAiMeta } : {}),
       });
-      toast.success("Template saved!");
+      toast.success(t("toast.template_saved"));
       setIsSaveTemplateOpen(false);
       setTemplateTitle("");
       setTemplateDescription("");
@@ -698,9 +700,9 @@ export function Composer() {
     const nextTweets = tweets.filter((t) => t.id !== id);
     setTweets(nextTweets);
     setPreviewIndex((prev) => Math.min(prev, nextTweets.length - 1));
-    toast("Tweet removed", {
+    toast(t("toast.tweet_removed"), {
       action: {
-        label: "Undo",
+        label: t("toast.undo"),
         onClick: () => {
           setTweets(previousTweets);
           setPreviewIndex((prev) => Math.min(prev, previousTweets.length - 1));
@@ -716,7 +718,7 @@ export function Composer() {
     setGeneratedHashtags([]);
     toast("Tweet cleared", {
       action: {
-        label: "Undo",
+        label: t("toast.undo"),
         onClick: () => setTweets((prev) => prev.map((t) => (t.id === id ? previous : t))),
       },
     });
@@ -775,8 +777,8 @@ export function Composer() {
     // Phase 0: Hook now targets active tweet (same as rewrite/hashtags)
     if ((tool === "rewrite" || tool === "hashtags" || tool === "hook") && tweetId) {
       setAiTargetTweetId(tweetId);
-      const t = tweets.find((x) => x.id === tweetId);
-      setAiRewriteText(t?.content || "");
+      const targetTweet = tweets.find((x) => x.id === tweetId);
+      setAiRewriteText(targetTweet?.content || "");
       setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
     } else {
       setAiTargetTweetId(null);
@@ -1039,9 +1041,9 @@ export function Composer() {
           setPreviewIndex(0);
           setIsAiOpen(false);
           // Phase 0: Undo toast for single post generation
-          toast.success("Post generated!", {
+          toast.success(t("toast.post_generated"), {
             action: {
-              label: "Undo",
+              label: t("toast.undo"),
               onClick: () => {
                 setTweets(previousTweets);
                 toast.info("Post restored");
@@ -1118,10 +1120,10 @@ export function Composer() {
         const previousTweets = preStreamTweetsRef.current;
         preStreamTweetsRef.current = null;
         // Phase 3: Standardized toast messages
-        toast.success("AI Writer: Thread generated!", {
+        toast.success(t("toast.ai_writer_generated"), {
           action: previousTweets
             ? {
-                label: "Undo",
+                label: t("toast.undo"),
                 onClick: () => {
                   setTweets(previousTweets);
                   toast.info("Thread restored");
@@ -1253,10 +1255,10 @@ export function Composer() {
         setLastTemplateAiMeta(templateAiMeta);
 
         // Phase 3: Standardized toast messages
-        toast.success("Template: Content generated!", {
+        toast.success(t("toast.template_generated"), {
           action: previousTweets
             ? {
-                label: "Undo",
+                label: t("toast.undo"),
                 onClick: () => {
                   setTweets(previousTweets);
                   toast.info("Content restored");
@@ -1301,10 +1303,10 @@ export function Composer() {
         updateTweet(targetTweet.id, data.text);
         setIsAiOpen(false);
         // Phase 3: Standardized toast messages
-        toast.success("Hook: Opening line generated!", {
+        toast.success(t("toast.hook_generated"), {
           action: previousTweetsRef.current
             ? {
-                label: "Undo",
+                label: t("toast.undo"),
                 onClick: () => {
                   if (previousTweetsRef.current) {
                     setTweets(previousTweetsRef.current);
@@ -1349,7 +1351,7 @@ export function Composer() {
         updateTweet(last.id, `${last.content}\n\n${data.text}`.trim());
         setIsAiOpen(false);
         // Phase 3: Standardized toast messages
-        toast.success("CTA: Call-to-action added!");
+        toast.success(t("toast.cta_added"));
         return;
       }
 
@@ -1397,36 +1399,33 @@ export function Composer() {
         setIsAiOpen(false);
         // Phase 3: Standardized toast messages
         const translatedCount = nonEmptyTweets.length;
-        toast.success(
-          `Translate: ${translatedCount} tweet${translatedCount !== 1 ? "s" : ""} translated!`,
-          {
-            action: {
-              label: "Undo",
-              onClick: () => {
-                if (previousTweetsRef.current) {
-                  setTweets(previousTweetsRef.current);
-                  previousTweetsRef.current = null;
-                  toast.info("Translation undone");
-                }
-              },
+        toast.success(t("toast.translated", { count: translatedCount }), {
+          action: {
+            label: t("toast.undo"),
+            onClick: () => {
+              if (previousTweetsRef.current) {
+                setTweets(previousTweetsRef.current);
+                previousTweetsRef.current = null;
+                toast.info("Translation undone");
+              }
             },
-            duration: 5000,
-          }
-        );
+          },
+          duration: 5000,
+        });
         return;
       }
 
       if (aiTool === "hashtags") {
         const targetId = aiTargetTweetId;
         if (!targetId) throw new Error("No tweet selected");
-        const t = tweets.find((x) => x.id === targetId);
-        if (!t?.content.trim()) throw new Error("Tweet is empty");
+        const targetTweet = tweets.find((x) => x.id === targetId);
+        if (!targetTweet?.content.trim()) throw new Error("Tweet is empty");
 
         const res = await fetchWithAuth("/api/ai/hashtags", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            content: t.content,
+            content: targetTweet.content,
             language: aiLanguage,
           }),
         });
@@ -1440,7 +1439,7 @@ export function Composer() {
         const data = await res.json();
         setGeneratedHashtags(data.hashtags || []);
         // Phase 3: Keep panel open - hashtags appear as inline chips in panel
-        toast.success(`Hashtags: ${data.hashtags?.length || 0} tags generated -- click to add`);
+        toast.success(t("toast.hashtags_generated", { count: data.hashtags?.length || 0 }));
         return;
       }
 
@@ -1475,9 +1474,9 @@ export function Composer() {
       updateTweet(targetId, data.text);
       setIsAiOpen(false);
       // Phase 3: Standardized toast messages
-      toast.success("Rewrite: Tweet rewritten!", {
+      toast.success(t("toast.rewrite_generated"), {
         action: {
-          label: "Undo",
+          label: t("toast.undo"),
           onClick: () => {
             if (previousTweetsRef.current) {
               setTweets(previousTweetsRef.current);
@@ -1921,7 +1920,9 @@ export function Composer() {
         {lastSavedAt && showSavedLabel && (
           <div className="text-muted-foreground/60 flex items-center justify-end gap-1 px-1 text-xs">
             <Clock className="h-3 w-3" />
-            <span>Auto-saved · {formatTimeAgo(lastSavedAt)}</span>
+            <span>
+              {t("label.auto_saved")} · {formatTimeAgo(lastSavedAt)}
+            </span>
           </div>
         )}
         <div className="flex items-center gap-2">
@@ -1931,7 +1932,7 @@ export function Composer() {
             onClick={addTweet}
           >
             <Plus className="mr-1.5 h-4 w-4 sm:mr-2" />
-            {tweets.length === 1 ? "Convert to Thread" : "Add to Thread"}
+            {tweets.length === 1 ? t("label.convert_to_thread") : t("label.add_to_thread")}
           </Button>
           {/* P3-B: Auto-numbering status chip — visible when thread has 3+ tweets */}
           {tweets.length >= 3 && (
@@ -1951,7 +1952,9 @@ export function Composer() {
               }
             >
               <ListOrdered className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{aiAddNumbering ? "1/N on" : "1/N off"}</span>
+              <span className="hidden sm:inline">
+                {aiAddNumbering ? t("label.thread_mode_on") : t("label.thread_mode_off")}
+              </span>
             </Button>
           )}
         </div>
@@ -1975,7 +1978,7 @@ export function Composer() {
         <Card>
           <CardContent className="space-y-2 px-3 pt-3 sm:space-y-3 sm:px-6 sm:pt-5">
             <div className="flex items-center justify-between">
-              <p className="text-muted-foreground/70 text-xs font-medium">AI Tools</p>
+              <p className="text-muted-foreground/70 text-xs font-medium">{t("label.ai_tools")}</p>
               {isAiOpen && (
                 <p className="text-muted-foreground/50 text-[10px] sm:text-xs">
                   {aiTool === "thread" && "Writer"}
@@ -1998,7 +2001,7 @@ export function Composer() {
                   disabled
                 >
                   <Sparkles className="text-primary h-4 w-4 shrink-0" />
-                  <span>AI Tools</span>
+                  <span>{t("label.ai_tools")}</span>
                 </Button>
               }
             >
@@ -2024,11 +2027,11 @@ export function Composer() {
               <Sparkles className="text-primary h-4 w-4 shrink-0 sm:h-4.5 sm:w-4.5" />
               {isAiOpen ? (
                 <>
-                  <span>Close</span>
+                  <span>{t("label.close")}</span>
                   <XIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </>
               ) : (
-                <span>AI Tools</span>
+                <span>{t("label.ai_tools")}</span>
               )}
             </Button>
             {/* P1-B/C: Inline AI panel expands here on desktop when open */}
@@ -2108,11 +2111,11 @@ export function Composer() {
         {/* Card 2: Publishing (H1 — split from content tools) */}
         <Card>
           <CardContent className="space-y-3 px-3 pt-3 sm:space-y-4 sm:px-6 sm:pt-5">
-            <p className="text-muted-foreground/70 text-xs font-medium">Publishing</p>
+            <p className="text-muted-foreground/70 text-xs font-medium">{t("label.publishing")}</p>
 
             <div className="space-y-1.5 sm:space-y-2">
               <Label htmlFor="post-accounts" className="text-xs sm:text-sm">
-                Post to accounts
+                {t("label.post_to_accounts")}
               </Label>
               <TargetAccountsSelect
                 value={targetAccountIds}
@@ -2128,7 +2131,7 @@ export function Composer() {
                 <div className="space-y-1.5 sm:space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="schedule-date" className="text-xs sm:text-sm">
-                      Schedule for
+                      {t("label.schedule_for")}
                     </Label>
                     <Button
                       variant="ghost"
@@ -2141,7 +2144,7 @@ export function Composer() {
                         setRecurrenceEndDate("");
                       }}
                     >
-                      Cancel
+                      {t("label.cancel")}
                       <XIcon className="ml-1 h-3 w-3" />
                     </Button>
                   </div>
@@ -2163,7 +2166,7 @@ export function Composer() {
                   </div>
                   {browserTimezone && (
                     <p className="text-muted-foreground/60 text-[10px] sm:text-xs">
-                      Times are in{" "}
+                      {t("label.times_are_in")}{" "}
                       <span className="text-foreground font-medium">{browserTimezone}</span>{" "}
                       <span className="tabular-nums">
                         (UTC
@@ -2181,23 +2184,25 @@ export function Composer() {
                   {scheduledDate && (
                     <div className="grid grid-cols-1 gap-2 pt-1.5 sm:grid-cols-2 sm:pt-2">
                       <div className="space-y-1">
-                        <label className="text-muted-foreground text-xs font-medium">Repeat</label>
+                        <label className="text-muted-foreground text-xs font-medium">
+                          {t("label.repeat")}
+                        </label>
                         <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
                           <SelectTrigger className="h-8 sm:h-9">
-                            <SelectValue placeholder="None" />
+                            <SelectValue placeholder={t("label.none")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">Never</SelectItem>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="none">{t("label.none")}</SelectItem>
+                            <SelectItem value="daily">{t("label.daily")}</SelectItem>
+                            <SelectItem value="weekly">{t("label.weekly")}</SelectItem>
+                            <SelectItem value="monthly">{t("label.monthly")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       {recurrencePattern !== "none" && (
                         <div className="space-y-1">
                           <label className="text-muted-foreground text-xs font-medium">
-                            End Date
+                            {t("label.end_date")}
                           </label>
                           <DatePicker
                             className="h-8 sm:h-9"
@@ -2260,7 +2265,7 @@ export function Composer() {
                             ) : (
                               <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
                             )}
-                            Schedule
+                            {t("label.schedule")}
                           </Button>
                         </span>
                       </TooltipTrigger>
@@ -2278,7 +2283,7 @@ export function Composer() {
                             disabled={isSubmitting || !hasContent}
                           >
                             <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            Post Now
+                            {t("label.post_now")}
                           </Button>
                         </span>
                       </TooltipTrigger>
@@ -2303,7 +2308,7 @@ export function Composer() {
                             ) : (
                               <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
                             )}
-                            Post Now
+                            {t("label.post_now")}
                           </Button>
                         </span>
                       </TooltipTrigger>
@@ -2321,7 +2326,7 @@ export function Composer() {
                             disabled={isSubmitting || !hasContent}
                           >
                             <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            Schedule
+                            {t("label.schedule")}
                           </Button>
                         </span>
                       </TooltipTrigger>
@@ -2341,7 +2346,7 @@ export function Composer() {
                         disabled={isSubmitting || !hasContent}
                       >
                         <FileText className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                        Save as Draft
+                        {t("label.save_draft")}
                       </Button>
                     </span>
                   </TooltipTrigger>
@@ -2352,7 +2357,7 @@ export function Composer() {
                 <div className="absolute inset-x-0 top-0 flex justify-center">
                   <div className="bg-card relative px-2">
                     <span className="text-muted-foreground/60 text-[10px] tracking-wider uppercase">
-                      or
+                      {t("label.or_divider")}
                     </span>
                   </div>
                   <div className="absolute inset-x-0 top-1/2 border-t" />
@@ -2369,7 +2374,7 @@ export function Composer() {
                             disabled={isSubmitting || !hasContent}
                           >
                             <BookmarkPlus className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            Save as Template
+                            {t("label.save_template")}
                           </Button>
                         </span>
                       </TooltipTrigger>
@@ -2404,8 +2409,8 @@ export function Composer() {
             className="pb-safe mx-2 flex h-[80dvh] flex-col gap-0 overflow-hidden rounded-t-2xl px-0 sm:mx-0 sm:h-[60dvh]"
           >
             <SheetHeader className="shrink-0 px-4 pb-2 sm:px-6">
-              <SheetTitle>AI Tools</SheetTitle>
-              <SheetDescription>Generate content with AI assistance</SheetDescription>
+              <SheetTitle>{t("ai_tools.title")}</SheetTitle>
+              <SheetDescription>{t("ai_tools.description")}</SheetDescription>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto px-4 py-2 sm:px-6">
               <AiToolsPanel
@@ -2483,7 +2488,7 @@ export function Composer() {
                 className="h-10 sm:h-9"
                 onClick={() => setIsAiOpen(false)}
               >
-                Cancel
+                {t("label.cancel")}
               </Button>
               <Button
                 size="sm"
@@ -2492,7 +2497,7 @@ export function Composer() {
                 disabled={isAiGenerateDisabled}
               >
                 {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Generate
+                {t("ai_tools.generate")}
               </Button>
             </div>
           </SheetContent>
@@ -2503,12 +2508,8 @@ export function Composer() {
       <AlertDialog open={confirmOverwrite} onOpenChange={setConfirmOverwrite}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Replace existing content?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Generating a new thread will replace your current{" "}
-              {tweets.filter((t) => t.content.trim()).length} tweet(s) with AI-generated content.
-              Your draft was auto-saved and can be restored.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("dialog.replace_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("dialog.replace_description")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
@@ -2519,7 +2520,7 @@ export function Composer() {
                 preStreamTweetsRef.current = null;
               }}
             >
-              Keep editing
+              {t("dialog.keep_editing")}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
@@ -2538,7 +2539,7 @@ export function Composer() {
                 setConfirmOverwrite(false);
               }}
             >
-              Replace &amp; Generate
+              {t("dialog.replace_generate")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2548,22 +2549,26 @@ export function Composer() {
       <AlertDialog open={confirmTranslate} onOpenChange={setConfirmTranslate}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Translate tweets?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dialog.translate_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will translate {tweets.filter((t) => t.content.trim()).length} tweet(s) to{" "}
-              {LANGUAGES.find((l) => l.code === aiTranslateTarget)?.label || aiTranslateTarget}.
-              Your draft was auto-saved and can be restored.
+              {t("dialog.translate_description", {
+                count: tweets.filter((t) => t.content.trim()).length,
+                language:
+                  LANGUAGES.find((l) => l.code === aiTranslateTarget)?.label || aiTranslateTarget,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmTranslate(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmTranslate(false)}>
+              {t("label.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setConfirmTranslate(false);
                 void handleAiRun({ skipTranslateCheck: true });
               }}
             >
-              Translate
+              {t("dialog.translate_button")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -2593,13 +2598,13 @@ export function Composer() {
       <AlertDialog open={confirmNavDialog} onOpenChange={setConfirmNavDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard unsaved draft?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes. Are you sure you want to leave without saving?
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("dialog.discard_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("dialog.discard_description")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingNavHref(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setPendingNavHref(null)}>
+              {t("label.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (pendingNavHref) {
@@ -2609,7 +2614,7 @@ export function Composer() {
                 setConfirmNavDialog(false);
               }}
             >
-              Continue
+              {t("dialog.continue")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

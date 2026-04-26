@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,57 +18,61 @@ export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
   const [isTokenValid, setIsTokenValid] = useState(false);
+  const t = useTranslations("auth");
 
-  const validateToken = useCallback(async (tokenParam: string) => {
-    try {
-      const res = await fetch("/api/auth/password-reset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: tokenParam, action: "validate" }),
-      });
+  const validateToken = useCallback(
+    async (tokenParam: string) => {
+      try {
+        const res = await fetch("/api/auth/password-reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: tokenParam, action: "validate" }),
+        });
 
-      if (!res.ok) {
-        const error = await res.json();
-        toast.error(error.message || "Invalid or expired reset link");
+        if (!res.ok) {
+          const error = await res.json();
+          toast.error(error.message || t("reset_password.errors.invalid_token"));
+          setIsTokenValid(false);
+        } else {
+          setIsTokenValid(true);
+        }
+      } catch (err) {
+        toast.error(t("reset_password.errors.invalid_token"));
         setIsTokenValid(false);
-      } else {
-        setIsTokenValid(true);
+      } finally {
+        setIsValidating(false);
       }
-    } catch (err) {
-      toast.error("Failed to validate reset link");
-      setIsTokenValid(false);
-    } finally {
-      setIsValidating(false);
-    }
-  }, []);
+    },
+    [t]
+  );
 
   useEffect(() => {
     const tokenParam = searchParams.get("token");
     if (!tokenParam) {
-      toast.error("No reset token found. Please request a new password reset link.");
+      toast.error(t("reset_password.errors.invalid_token"));
       setIsValidating(false);
       return;
     }
 
     setToken(tokenParam);
     validateToken(tokenParam);
-  }, [searchParams, validateToken]);
+  }, [searchParams, validateToken, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error(t("reset_password.errors.weak_password"));
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error("Passwords don't match");
+      toast.error(t("reset_password.errors.password_mismatch"));
       return;
     }
 
     if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-      toast.error("Password must contain uppercase, lowercase, and numbers");
+      toast.error(t("reset_password.errors.weak_password"));
       return;
     }
 
@@ -82,14 +87,14 @@ export default function ResetPasswordPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        toast.error(error.message || "Failed to reset password");
+        toast.error(error.message || t("reset_password.errors.invalid_token"));
         return;
       }
 
-      toast.success("Password reset successfully. Redirecting to login...");
+      toast.success(t("reset_password.title"));
       setTimeout(() => router.push("/login"), 2000);
     } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(t("reset_password.errors.invalid_token"));
     } finally {
       setIsLoading(false);
     }
@@ -108,11 +113,11 @@ export default function ResetPasswordPage() {
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6 text-center">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold">Invalid link</h1>
-            <p className="text-muted-foreground">This password reset link is invalid or expired.</p>
+            <h1 className="text-2xl font-bold">{t("reset_password.invalid_link_title")}</h1>
+            <p className="text-muted-foreground">{t("reset_password.invalid_link_body")}</p>
           </div>
           <Button onClick={() => router.push("/forgot-password")} className="w-full">
-            Request new link
+            {t("reset_password.request_new")}
           </Button>
         </div>
       </div>
@@ -123,16 +128,14 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold">Create new password</h1>
-          <p className="text-muted-foreground text-sm">
-            Enter a strong password to secure your account.
-          </p>
+          <h1 className="text-2xl font-bold">{t("reset_password.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("reset_password.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="password" className="block text-sm font-medium">
-              New Password
+              {t("reset_password.new_password_label")}
             </label>
             <div className="relative">
               <Input
@@ -154,13 +157,13 @@ export default function ResetPasswordPage() {
               </button>
             </div>
             <p className="text-muted-foreground text-xs">
-              At least 8 characters with uppercase, lowercase, and numbers
+              {t("reset_password.password_requirements")}
             </p>
           </div>
 
           <div className="space-y-2">
             <label htmlFor="confirm" className="block text-sm font-medium">
-              Confirm Password
+              {t("reset_password.confirm_password_label")}
             </label>
             <Input
               id="confirm"
@@ -175,14 +178,14 @@ export default function ResetPasswordPage() {
 
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Reset password
+            {t("reset_password.submit")}
           </Button>
         </form>
 
         <p className="text-muted-foreground text-center text-sm">
-          Remember your password?{" "}
+          {t("reset_password.remember")}{" "}
           <a href="/login" className="text-primary hover:text-primary/80 font-medium">
-            Sign in
+            {t("reset_password.sign_in_link")}
           </a>
         </p>
       </div>

@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
-const SECTIONS = [
-  { id: "section-overview", label: "Overview" },
-  { id: "section-performance", label: "Performance" },
-  { id: "section-insights", label: "Insights" },
+const SECTION_IDS = [
+  { id: "section-overview", key: "overview_tab" as const },
+  { id: "section-performance", key: "performance_tab" as const },
+  { id: "section-insights", key: "insights_tab" as const },
 ] as const;
 
 export function AnalyticsSectionNav() {
+  const t = useTranslations("analytics");
   const [active, setActive] = useState<string>("section-overview");
 
   const scrollToSection = (id: string) => {
@@ -24,7 +26,7 @@ export function AnalyticsSectionNav() {
 
   useEffect(() => {
     const handleScroll = () => {
-      for (const section of [...SECTIONS].reverse()) {
+      for (const section of [...SECTION_IDS].reverse()) {
         const el = document.getElementById(section.id);
         if (el && el.getBoundingClientRect().top <= 120) {
           setActive(section.id);
@@ -40,7 +42,7 @@ export function AnalyticsSectionNav() {
   return (
     <div className="bg-background/95 supports-[backdrop-filter]:bg-background/80 border-border sticky top-0 z-10 -mx-4 border-b px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6">
       <div className="flex gap-1">
-        {SECTIONS.map((section) => (
+        {SECTION_IDS.map((section) => (
           <button
             key={section.id}
             type="button"
@@ -52,7 +54,7 @@ export function AnalyticsSectionNav() {
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            {section.label}
+            {t(section.key)}
           </button>
         ))}
       </div>

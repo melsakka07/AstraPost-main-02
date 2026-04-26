@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, PenSquare, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 const MAX_LENGTH = 1000;
 
 export function QuickCompose() {
+  const t = useTranslations("dashboard_shell");
   const [content, setContent] = useState("");
   const router = useRouter();
   const hasContent = content.trim().length > 0;
@@ -35,15 +37,15 @@ export function QuickCompose() {
     <Card className="md:col-span-1 lg:col-span-3">
       <CardHeader className="flex flex-row items-center gap-2 px-4 py-4">
         <PenSquare className="text-muted-foreground h-4 w-4" />
-        <CardTitle className="text-base sm:text-lg">Quick Compose</CardTitle>
+        <CardTitle className="text-base sm:text-lg">{t("quick_compose.title")}</CardTitle>
       </CardHeader>
       <CardContent className="px-4 py-0 pb-4">
         <div className="space-y-3">
           <div className="relative">
             <Textarea
               className="min-h-[120px] resize-none pb-8 text-sm leading-relaxed sm:min-h-[140px]"
-              placeholder="Share an idea, a thread hook, or a quick update..."
-              aria-label="Quick compose"
+              placeholder={t("quick_compose.placeholder")}
+              aria-label={t("quick_compose.placeholder")}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={MAX_LENGTH}
@@ -55,8 +57,8 @@ export function QuickCompose() {
                   size="sm"
                   className="text-muted-foreground hover:text-destructive h-6 w-6 p-0"
                   onClick={() => setContent("")}
-                  aria-label="Clear"
-                  title="Clear"
+                  aria-label={t("quick_compose.clear")}
+                  title={t("quick_compose.clear")}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
@@ -67,7 +69,7 @@ export function QuickCompose() {
             </div>
           </div>
           <Button className="w-full" onClick={handleCompose} disabled={!hasContent}>
-            Continue in Editor
+            {t("quick_compose.draft")}
             <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
           </Button>
         </div>

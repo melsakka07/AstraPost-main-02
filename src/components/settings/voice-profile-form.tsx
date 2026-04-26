@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mic, Trash2, Loader2, Sparkles, Plus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -29,26 +30,31 @@ interface VoiceProfileFormProps {
   userPlan?: string;
 }
 
-const voiceProfileSchema = z.object({
-  samples: z
-    .array(
-      z.object({
-        value: z.string(),
-      })
-    )
-    .refine((arr) => arr.filter((s) => s.value.trim().length > 10).length >= 3, {
-      message: "Please provide at least 3 sample tweets (min 10 chars each).",
-    }),
-});
+function getVoiceProfileSchema(t: ReturnType<typeof useTranslations<"settings">>) {
+  return z.object({
+    samples: z
+      .array(
+        z.object({
+          value: z.string(),
+        })
+      )
+      .refine((arr) => arr.filter((s) => s.value.trim().length > 10).length >= 3, {
+        message: t("integrations.voice_validation_samples"),
+      }),
+  });
+}
 
-type VoiceProfileValues = z.infer<typeof voiceProfileSchema>;
+type VoiceProfileValues = z.infer<ReturnType<typeof getVoiceProfileSchema>>;
 
 export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
+  const t = useTranslations("settings");
   const [profile, setProfile] = useState<VoiceProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const { openWithContext } = useUpgradeModal();
   const isFree = userPlan === "free";
+
+  const voiceProfileSchema = useMemo(() => getVoiceProfileSchema(t), [t]);
 
   const form = useForm<VoiceProfileValues>({
     resolver: zodResolver(voiceProfileSchema),
@@ -120,34 +126,29 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
 
       const responseData = await res.json();
       setProfile(responseData);
-      toast.success("Voice Profile created successfully!");
+      toast.success(t("integrations.voice_created_success"));
     } catch (e) {
       clientLogger.error("Failed to analyze voice profile samples", {
         sampleCount: validSamples.length,
         error: e instanceof Error ? e.message : String(e),
       });
-      toast.error("Failed to analyze samples. Please try again.");
+      toast.error(t("integrations.voice_analyze_error"));
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete your Voice Profile? AI will revert to generic style."
-      )
-    )
-      return;
+    if (!confirm(t("integrations.voice_delete_confirm"))) return;
 
     try {
       const res = await fetch("/api/user/voice-profile", { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete");
       setProfile(null);
       form.reset({ samples: [{ value: "" }, { value: "" }, { value: "" }] });
-      toast.success("Voice Profile deleted.");
+      toast.success(t("integrations.voice_deleted_success"));
     } catch (e) {
-      toast.error("Failed to delete profile");
+      toast.error(t("integrations.voice_delete_error"));
     }
   };
 
@@ -168,15 +169,13 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Mic className="text-primary h-5 w-5" />
-              AI Voice Profile
+              {t("integrations.voice_profile_title")}
             </CardTitle>
-            <CardDescription>
-              Train the AI to write exactly like you by analyzing your best tweets.
-            </CardDescription>
+            <CardDescription>{t("integrations.voice_profile_description")}</CardDescription>
           </div>
           {profile && (
             <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-              Active
+              {t("integrations.active")}
             </Badge>
           )}
         </div>
@@ -185,8 +184,8 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
       <CardContent>
         <BlurredOverlay
           isLocked={isFree}
-          title="Voice Profile is a Pro feature"
-          description="Upgrade to Pro to create your custom AI voice profile."
+          title={t("integrations.voice_profile_pro_title")}
+          description={t("integrations.voice_profile_pro_desc")}
         >
           <div className="space-y-6">
             {profile ? (
@@ -194,7 +193,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                 <div className="bg-muted/50 space-y-3 rounded-lg border p-4">
                   <div className="flex items-start justify-between">
                     <h3 className="text-muted-foreground text-sm font-semibold uppercase">
-                      Your Voice Analysis
+                      {t("integrations.voice_analysis_title")}
                     </h3>
                     <Button
                       variant="ghost"
@@ -203,31 +202,41 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Reset Profile
+                      {t("integrations.reset_voice_profile")}
                     </Button>
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
                     <div>
-                      <span className="text-foreground font-medium">Tone:</span>
+                      <span className="text-foreground font-medium">
+                        {t("integrations.voice_tone_label")}
+                      </span>
                       <p className="text-muted-foreground">{profile.tone}</p>
                     </div>
                     <div>
-                      <span className="text-foreground font-medium">Structure:</span>
+                      <span className="text-foreground font-medium">
+                        {t("integrations.voice_structure_label")}
+                      </span>
                       <p className="text-muted-foreground">{profile.sentenceStructure}</p>
                     </div>
                     <div>
-                      <span className="text-foreground font-medium">Vocabulary:</span>
+                      <span className="text-foreground font-medium">
+                        {t("integrations.voice_vocabulary_label")}
+                      </span>
                       <p className="text-muted-foreground">{profile.vocabularyLevel}</p>
                     </div>
                     <div>
-                      <span className="text-foreground font-medium">Emojis:</span>
+                      <span className="text-foreground font-medium">
+                        {t("integrations.voice_emojis_label")}
+                      </span>
                       <p className="text-muted-foreground">{profile.emojiUsage}</p>
                     </div>
                   </div>
 
                   <div className="pt-2">
-                    <span className="text-foreground text-sm font-medium">Key Style Rules:</span>
+                    <span className="text-foreground text-sm font-medium">
+                      {t("integrations.voice_style_rules_label")}
+                    </span>
                     <ul className="text-muted-foreground mt-1 list-inside list-disc space-y-1 text-sm">
                       {profile.doAndDonts.map((rule, i) => (
                         <li key={i}>{rule}</li>
@@ -238,19 +247,16 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
 
                 <div className="flex items-start gap-3 rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                   <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>
-                    Your Voice Profile is active! All AI-generated content (threads, hooks,
-                    rewrites) will now automatically match this style.
-                  </p>
+                  <p>{t("integrations.voice_active_notice")}</p>
                 </div>
               </div>
             ) : (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Add Sample Tweets</h3>
+                    <h3 className="text-sm font-medium">{t("integrations.voice_add_samples")}</h3>
                     <p className="text-muted-foreground text-sm">
-                      Paste at least 3 of your best performing or most representative tweets.
+                      {t("integrations.voice_samples_desc")}
                     </p>
                   </div>
 
@@ -266,7 +272,9 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                               <div className="relative">
                                 <Textarea
                                   {...inputField}
-                                  placeholder={`Sample tweet ${index + 1}...`}
+                                  placeholder={t("integrations.voice_sample_placeholder", {
+                                    index: index + 1,
+                                  })}
                                   className="min-h-[80px] resize-none pr-10"
                                 />
                                 {fields.length > 3 && (
@@ -298,7 +306,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                       className="w-full"
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add another sample
+                      {t("integrations.voice_add_sample_button")}
                     </Button>
                   )}
 
@@ -310,17 +318,13 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
 
                   <div className="bg-primary/10 text-primary flex items-start gap-3 rounded-lg p-4 text-sm">
                     <Sparkles className="mt-0.5 h-5 w-5 shrink-0" />
-                    <p>
-                      We&apos;ll analyze these samples to determine your tone, vocabulary level,
-                      emoji usage, and formatting habits. This profile will be used automatically
-                      when you use the AI Writer.
-                    </p>
+                    <p>{t("integrations.voice_analyze_description")}</p>
                   </div>
 
                   <div className="flex justify-end pt-4">
                     <Button type="submit" disabled={!isDirty || !isValid || isAnalyzing}>
                       {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Analyze & Create Profile
+                      {t("integrations.voice_analyze_button")}
                     </Button>
                   </div>
                 </form>

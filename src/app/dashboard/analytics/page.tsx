@@ -15,6 +15,7 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { AccountSelector } from "@/components/analytics/account-selector";
 import { AnalyticsSectionNav } from "@/components/analytics/analytics-section-nav";
 import {
@@ -57,6 +58,7 @@ export default async function AnalyticsPage({
     range?: string | string[];
   }>;
 }) {
+  const t = await getTranslations("analytics");
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login?callbackUrl=/dashboard/analytics");
   const userLocale =
@@ -292,8 +294,8 @@ export default async function AnalyticsPage({
   return (
     <DashboardPageWrapper
       icon={BarChart3}
-      title="Analytics Overview"
-      description="Track your follower growth, tweet performance, and posting time insights — all in one view."
+      title={t("title")}
+      description={t("description")}
       actions={
         <>
           <DateRangeSelector />
@@ -324,13 +326,13 @@ export default async function AnalyticsPage({
 
       {/* ── Overview Section ── */}
       <div id="section-overview" className="flex items-center gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Overview</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{t("overview_tab")}</h2>
         <div className="bg-border h-px flex-1" />
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Follower Tracking</CardTitle>
+          <CardTitle className="text-base">{t("follower_tracking")}</CardTitle>
           {selectedAccountId ? (
             <ManualRefreshButton
               xAccountId={selectedAccountId}
@@ -351,7 +353,7 @@ export default async function AnalyticsPage({
           <div className={`grid sm:grid-cols-2 md:grid-cols-3 ${isCompact ? "gap-3" : "gap-4"}`}>
             <Card>
               <CardHeader className="space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current followers</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("current_followers")}</CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
@@ -361,7 +363,9 @@ export default async function AnalyticsPage({
             </Card>
             <Card>
               <CardHeader className="space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Growth ({effectiveRange})</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {t("growth", { range: effectiveRange })}
+                </CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
@@ -372,7 +376,7 @@ export default async function AnalyticsPage({
             </Card>
             <Card>
               <CardHeader className="space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Start of Period</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("start_of_period")}</CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
@@ -385,17 +389,17 @@ export default async function AnalyticsPage({
           <div className="space-y-3">
             <BlurredOverlay
               isLocked={isFree && rangeDays > 7}
-              title="Follower History"
+              title={t("follower_history")}
               description="Upgrade to Pro to see detailed follower growth over time."
             >
               {accounts.length === 0 ? (
                 <EmptyState
                   icon={<BarChart3 className="h-6 w-6" />}
-                  title="Connect an X account to unlock analytics"
+                  title={t("connect_x_cta")}
                   description="Follower and performance insights appear after an active account is connected."
                   primaryAction={
                     <Button asChild>
-                      <Link href="/dashboard/settings">Connect Account</Link>
+                      <Link href="/dashboard/settings">{t("connect_account")}</Link>
                     </Button>
                   }
                 />
@@ -407,17 +411,17 @@ export default async function AnalyticsPage({
 
           <details className="group">
             <summary className="flex cursor-pointer list-none items-center gap-2 select-none">
-              <h2 className="text-base font-semibold">Refresh history</h2>
+              <h2 className="text-base font-semibold">{t("refresh_history")}</h2>
               <span className="text-muted-foreground text-xs group-open:hidden">
-                (click to expand)
+                {t("click_expand")}
               </span>
               <span className="text-muted-foreground hidden text-xs group-open:inline">
-                (click to collapse)
+                {t("click_collapse")}
               </span>
             </summary>
             <div className="mt-2">
               {refreshRuns.length === 0 ? (
-                <div className="text-muted-foreground text-sm">No refreshes yet.</div>
+                <div className="text-muted-foreground text-sm">{t("no_refreshes")}</div>
               ) : (
                 <div className="space-y-2">
                   {refreshRuns.map((r) => {
@@ -485,42 +489,40 @@ export default async function AnalyticsPage({
 
       {/* ── Performance Section ── */}
       <div id="section-performance" className="flex items-center gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{t("performance_tab")}</h2>
         <div className="bg-border h-px flex-1" />
       </div>
 
       <div
         className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 ${isCompact ? "gap-3" : "gap-4"}`}
       >
-        {(
-          [
-            {
-              label: "Impressions",
-              icon: BarChart3,
-              current: totals.impressions,
-              prev: prevTotals.impressions,
-            },
-            { label: "Likes", icon: Heart, current: totals.likes, prev: prevTotals.likes },
-            {
-              label: "Retweets",
-              icon: Repeat2,
-              current: totals.retweets,
-              prev: prevTotals.retweets,
-            },
-            {
-              label: "Replies",
-              icon: MessageCircle,
-              current: totals.replies,
-              prev: prevTotals.replies,
-            },
-            {
-              label: "Link Clicks",
-              icon: MousePointerClick,
-              current: totals.clicks,
-              prev: prevTotals.clicks,
-            },
-          ] as const
-        ).map(({ label, icon: Icon, current, prev }) => {
+        {[
+          {
+            label: t("impressions"),
+            icon: BarChart3,
+            current: totals.impressions,
+            prev: prevTotals.impressions,
+          },
+          { label: t("likes"), icon: Heart, current: totals.likes, prev: prevTotals.likes },
+          {
+            label: t("retweets"),
+            icon: Repeat2,
+            current: totals.retweets,
+            prev: prevTotals.retweets,
+          },
+          {
+            label: t("replies"),
+            icon: MessageCircle,
+            current: totals.replies,
+            prev: prevTotals.replies,
+          },
+          {
+            label: t("link_clicks"),
+            icon: MousePointerClick,
+            current: totals.clicks,
+            prev: prevTotals.clicks,
+          },
+        ].map(({ label, icon: Icon, current, prev }) => {
           const d = delta(current, prev);
           return (
             <Card key={label}>
@@ -545,10 +547,12 @@ export default async function AnalyticsPage({
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-xl font-semibold">Impressions ({effectiveRange})</h2>
+        <h2 className="text-xl font-semibold">
+          {t("impressions")} ({effectiveRange})
+        </h2>
         <BlurredOverlay
           isLocked={isFree && rangeDays > 7}
-          title="Impressions History"
+          title={t("impressions_history_cta")}
           description="Upgrade to Pro to see detailed impressions history over time."
         >
           <ImpressionsChart data={impressionsChartData} />
@@ -559,7 +563,7 @@ export default async function AnalyticsPage({
         <h2 className="text-xl font-semibold">Engagement Rate ({effectiveRange})</h2>
         <BlurredOverlay
           isLocked={isFree && rangeDays > 7}
-          title="Engagement Rate History"
+          title={t("engagement_history_cta")}
           description="Upgrade to Pro to see your engagement rate trends over time."
         >
           <EngagementRateChart data={engagementChartData} />
@@ -568,15 +572,15 @@ export default async function AnalyticsPage({
 
       {/* ── Insights Section ── */}
       <div id="section-insights" className="flex items-center gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Insights</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{t("insights_tab")}</h2>
         <div className="bg-border h-px flex-1" />
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-xl font-semibold">Best Time to Post</h3>
+        <h3 className="text-xl font-semibold">{t("best_time_post")}</h3>
         <BlurredOverlay
           isLocked={isFree}
-          title="Optimization Insights"
+          title={t("optimization_insights")}
           description="Upgrade to Pro to see when your audience is most active."
         >
           <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-lg" />}>
@@ -586,20 +590,20 @@ export default async function AnalyticsPage({
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-xl font-semibold">Top Performing Tweets</h3>
+        <h3 className="text-xl font-semibold">{t("top_tweets")}</h3>
         <BlurredOverlay
           isLocked={isFree}
-          title="Top Tweets"
+          title={t("top_tweets")}
           description="See your best performing content with Pro analytics."
         >
           {topTweets.length === 0 ? (
             <EmptyState
               icon={<BarChart3 className="h-6 w-6" />}
-              title="No tweet analytics yet"
-              description="Once published posts are tracked by the analytics worker, your top tweets appear here."
+              title={t("no_tweet_analytics")}
+              description={t("no_tweet_analytics_description")}
               primaryAction={
                 <Button asChild>
-                  <Link href="/dashboard/compose">Publish a Post</Link>
+                  <Link href="/dashboard/compose">{t("publish_post")}</Link>
                 </Button>
               }
             />
@@ -609,7 +613,7 @@ export default async function AnalyticsPage({
               // WHERE clause guarantees no nulls, but Drizzle's type inference
               // can't reflect WHERE clause narrowing on selected columns.
               tweets={topTweets.filter(
-                (t): t is typeof t & { xTweetId: string } => t.xTweetId !== null
+                (tw): tw is typeof tw & { xTweetId: string } => tw.xTweetId !== null
               )}
               isCompact={isCompact}
               userLocale={userLocale}

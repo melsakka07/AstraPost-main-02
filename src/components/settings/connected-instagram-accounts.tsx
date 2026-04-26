@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Instagram, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -28,6 +29,7 @@ export function ConnectedInstagramAccounts({
 }: {
   initialAccounts: InstagramAccount[];
 }) {
+  const t = useTranslations("settings");
   const [isLoading, setIsLoading] = useState(false);
   const [pendingDisconnect, setPendingDisconnect] = useState<string | null>(null);
 
@@ -52,7 +54,7 @@ export function ConnectedInstagramAccounts({
         return;
       }
 
-      toast.success("Instagram account disconnected successfully");
+      toast.success(t("integrations.instagram_disconnected_success"));
       window.location.reload();
     } catch (error) {
       toast.error("An error occurred while disconnecting the account");
@@ -71,14 +73,14 @@ export function ConnectedInstagramAccounts({
         <CardHeader>
           <div className="flex items-center gap-2">
             <Instagram className="h-5 w-5 text-pink-600" />
-            <CardTitle>Instagram Accounts</CardTitle>
+            <CardTitle>{t("integrations.instagram_title")}</CardTitle>
           </div>
-          <CardDescription>Manage your connected Instagram Business profiles</CardDescription>
+          <CardDescription>{t("integrations.instagram_description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {initialAccounts.length === 0 ? (
             <div className="text-muted-foreground py-4 text-center text-sm">
-              No Instagram accounts connected.
+              {t("integrations.no_instagram_accounts")}
             </div>
           ) : (
             <div className="space-y-2">
@@ -105,7 +107,7 @@ export function ConnectedInstagramAccounts({
                     <div>
                       <div className="font-medium">@{account.instagramUsername}</div>
                       <div className="text-muted-foreground text-xs">
-                        {account.isActive ? "Active" : "Inactive"}
+                        {account.isActive ? t("integrations.active") : t("integrations.inactive")}
                       </div>
                     </div>
                   </div>
@@ -124,7 +126,7 @@ export function ConnectedInstagramAccounts({
 
           <Button variant="outline" className="w-full gap-2" onClick={handleConnect} disabled>
             <Plus className="h-4 w-4" />
-            Connect Instagram Account
+            {t("integrations.connect_instagram")}
           </Button>
         </CardContent>
       </Card>
@@ -135,16 +137,17 @@ export function ConnectedInstagramAccounts({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Disconnect Instagram Account?</AlertDialogTitle>
+            <AlertDialogTitle>{t("integrations.disconnect_instagram_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to disconnect @{accountToDisconnect?.instagramUsername}? You can
-              reconnect it later.
+              {t("integrations.disconnect_instagram_desc", {
+                username: accountToDisconnect?.instagramUsername ?? "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3">
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isLoading}>{t("integrations.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDisconnect} disabled={isLoading}>
-              {isLoading ? "Disconnecting..." : "Disconnect"}
+              {isLoading ? t("integrations.disconnecting") : t("integrations.disconnect")}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

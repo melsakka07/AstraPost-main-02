@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Calendar, Sparkles, BarChart2, Zap, Users, Globe, ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Metadata } from "next";
@@ -17,70 +18,69 @@ export const metadata: Metadata = {
   },
 };
 
-export default function FeaturesPage() {
+export default async function FeaturesPage() {
+  const t = await getTranslations("features");
+
   const features = [
     {
       icon: <Calendar className="text-primary h-6 w-6" />,
-      title: "Smart Scheduling",
-      description:
-        "Plan your content weeks in advance. Drag and drop calendar view makes it easy to visualize your strategy.",
+      title: t("scheduling_title"),
+      description: t("scheduling_desc"),
       details: [
-        "Visual calendar view",
-        "Best time to post recommendations",
-        "Drag & drop rescheduling",
-        "Timezone management",
+        t("scheduling_detail_1"),
+        t("scheduling_detail_2"),
+        t("scheduling_detail_3"),
+        t("scheduling_detail_4"),
       ],
     },
     {
       icon: <Sparkles className="text-primary h-6 w-6" />,
-      title: "AI Writer",
-      description:
-        "Generate viral threads, hook ideas, and polished tweets in seconds using our advanced AI models.",
+      title: t("ai_writer_title"),
+      description: t("ai_writer_desc"),
       details: [
-        "Thread generation from topics",
-        "Tone adjustment",
-        "Hashtag suggestions",
-        "Content rephrasing",
+        t("ai_writer_detail_1"),
+        t("ai_writer_detail_2"),
+        t("ai_writer_detail_3"),
+        t("ai_writer_detail_4"),
       ],
     },
     {
       icon: <BarChart2 className="text-primary h-6 w-6" />,
-      title: "Deep Analytics",
-      description:
-        "Understand what works. Track impressions, engagement rates, and follower growth over time.",
+      title: t("analytics_title"),
+      description: t("analytics_desc"),
       details: [
-        "Engagement metrics",
-        "Follower growth tracking",
-        "Top performing posts",
-        "Exportable reports",
+        t("analytics_detail_1"),
+        t("analytics_detail_2"),
+        t("analytics_detail_3"),
+        t("analytics_detail_4"),
       ],
     },
     {
       icon: <Zap className="text-primary h-6 w-6" />,
-      title: "Affiliate Generator",
-      description: "Turn product links into high-converting tweets automatically.",
+      title: t("affiliate_title"),
+      description: t("affiliate_desc"),
       details: [
-        "Amazon & generic link support",
-        "Automatic metadata extraction",
-        "Conversion-optimized copy",
-        "Affiliate tag insertion",
+        t("affiliate_detail_1"),
+        t("affiliate_detail_2"),
+        t("affiliate_detail_3"),
+        t("affiliate_detail_4"),
       ],
     },
     {
       icon: <Users className="text-primary h-6 w-6" />,
-      title: "Team Collaboration",
-      description: "Work together with your team. Assign roles and manage multiple accounts.",
-      details: ["Multi-user access", "Approval workflows", "Shared media library", "Activity logs"],
+      title: t("team_title"),
+      description: t("team_desc"),
+      details: [t("team_detail_1"), t("team_detail_2"), t("team_detail_3"), t("team_detail_4")],
     },
     {
       icon: <Globe className="text-primary h-6 w-6" />,
-      title: "Cross-Posting",
-      description: "Sync your content across platforms (Coming Soon).",
+      title: t("crossposting_title"),
+      description: t("crossposting_desc"),
       details: [
-        "LinkedIn integration",
-        "Threads integration",
-        "Customizable formats per platform",
-        "Unified inbox",
+        t("crossposting_detail_1"),
+        t("crossposting_detail_2"),
+        t("crossposting_detail_3"),
+        t("crossposting_detail_4"),
       ],
     },
   ];
@@ -96,14 +96,13 @@ export default function FeaturesPage() {
         {/* Header */}
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge variant="outline" className="px-4 py-1">
-            Features
+            {t("badge")}
           </Badge>
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
-            Everything you need to master X
+            {t("title")}
           </h1>
           <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
-            AstraPost provides a comprehensive suite of tools to help you grow your audience, engage
-            with your community, and monetize your content.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -135,19 +134,17 @@ export default function FeaturesPage() {
         <div className="border-border/50 from-muted/50 to-muted/20 relative overflow-hidden rounded-2xl border bg-gradient-to-br p-8 text-center shadow-lg md:p-12">
           <div className="from-primary/8 absolute inset-0 bg-gradient-to-br via-purple-500/6 to-pink-500/8" />
           <div className="relative">
-            <h2 className="mb-4 text-2xl font-bold md:text-3xl">Ready to get started?</h2>
-            <p className="text-muted-foreground mx-auto mb-8 max-w-xl">
-              Join thousands of creators using AstraPost to grow their audience.
-            </p>
+            <h2 className="mb-4 text-2xl font-bold md:text-3xl">{t("cta_title")}</h2>
+            <p className="text-muted-foreground mx-auto mb-8 max-w-xl">{t("cta_subtitle")}</p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button size="lg" className="group h-11 px-8" asChild>
                 <Link href="/login">
-                  Start Free Trial
+                  {t("cta_start_trial")}
                   <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="h-11 px-8" asChild>
-                <Link href="/pricing">View Pricing</Link>
+                <Link href="/pricing">{t("cta_view_pricing")}</Link>
               </Button>
             </div>
           </div>

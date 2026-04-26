@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import {
   Users,
   MessagesSquare,
@@ -31,30 +32,6 @@ export const metadata: Metadata = {
     url: "/community",
   },
 };
-
-const stats = [
-  { label: "Members", value: "2,500+" },
-  { label: "Daily Posts", value: "1,200+" },
-  { label: "Threads Created", value: "50,000+" },
-];
-
-const benefits = [
-  {
-    icon: <MessagesSquare className="h-6 w-6" />,
-    title: "Weekly Challenges",
-    description: "Participate in content challenges and win prizes.",
-  },
-  {
-    icon: <Users className="h-6 w-6" />,
-    title: "Feedback Loops",
-    description: "Get honest feedback on your threads before posting.",
-  },
-  {
-    icon: <Trophy className="h-6 w-6" />,
-    title: "Exclusive AMAs",
-    description: "Chat with top creators and the AstraPost team.",
-  },
-];
 
 const faqs = [
   {
@@ -89,7 +66,33 @@ const faqs = [
   },
 ];
 
-export default function CommunityPage() {
+export default async function CommunityPage() {
+  const t = await getTranslations("community");
+
+  const translatedStats = [
+    { label: t("stats_members"), value: "2,500+" },
+    { label: t("stats_daily_posts"), value: "1,200+" },
+    { label: t("stats_threads_created"), value: "50,000+" },
+  ];
+
+  const benefits = [
+    {
+      icon: <MessagesSquare className="h-6 w-6" />,
+      title: t("benefit_challenges_title"),
+      description: t("benefit_challenges_desc"),
+    },
+    {
+      icon: <Users className="h-6 w-6" />,
+      title: t("benefit_feedback_title"),
+      description: t("benefit_feedback_desc"),
+    },
+    {
+      icon: <Trophy className="h-6 w-6" />,
+      title: t("benefit_amas_title"),
+      description: t("benefit_amas_desc"),
+    },
+  ];
+
   return (
     <div className="relative min-h-dvh">
       {/* Background gradient */}
@@ -101,24 +104,19 @@ export default function CommunityPage() {
         {/* ── Hero ───────────────────────────────────────────────────────── */}
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div className="space-y-6">
-            <Badge variant="outline">Community</Badge>
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-              Join the AstraPost Community
-            </h1>
-            <p className="text-muted-foreground text-xl leading-relaxed">
-              Connect with thousands of creators, share your wins, get feedback on your content, and
-              grow together.
-            </p>
+            <Badge variant="outline">{t("badge")}</Badge>
+            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{t("hero_title")}</h1>
+            <p className="text-muted-foreground text-xl leading-relaxed">{t("hero_subtitle")}</p>
             <div className="flex flex-wrap gap-4">
               <Button size="lg" disabled>
-                Join Discord
+                {t("join_discord")}
                 <Badge variant="secondary" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
-                  Coming Soon
+                  {t("coming_soon")}
                 </Badge>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link href="https://x.com/astrapostai" target="_blank" rel="noopener noreferrer">
-                  Follow on X
+                  {t("follow_on_x")}
                 </Link>
               </Button>
             </div>
@@ -131,20 +129,20 @@ export default function CommunityPage() {
               <div className="flex justify-center gap-8">
                 <div className="bg-background flex flex-col items-center rounded-lg border p-4 shadow-sm">
                   <Users className="text-primary mb-2 h-8 w-8" />
-                  <span className="text-2xl font-bold">{stats[0]!.value}</span>
-                  <span className="text-muted-foreground text-sm">{stats[0]!.label}</span>
+                  <span className="text-2xl font-bold">{translatedStats[0]!.value}</span>
+                  <span className="text-muted-foreground text-sm">{translatedStats[0]!.label}</span>
                 </div>
                 <div className="bg-background flex flex-col items-center rounded-lg border p-4 shadow-sm">
                   <MessagesSquare className="text-primary mb-2 h-8 w-8" />
-                  <span className="text-2xl font-bold">{stats[1]!.value}</span>
-                  <span className="text-muted-foreground text-sm">{stats[1]!.label}</span>
+                  <span className="text-2xl font-bold">{translatedStats[1]!.value}</span>
+                  <span className="text-muted-foreground text-sm">{translatedStats[1]!.label}</span>
                 </div>
               </div>
               <div className="flex justify-center">
                 <div className="bg-background flex w-full max-w-[200px] flex-col items-center rounded-lg border p-4 shadow-sm">
                   <Trophy className="text-primary mb-2 h-8 w-8" />
-                  <span className="text-2xl font-bold">{stats[2]!.value}</span>
-                  <span className="text-muted-foreground text-sm">{stats[2]!.label}</span>
+                  <span className="text-2xl font-bold">{translatedStats[2]!.value}</span>
+                  <span className="text-muted-foreground text-sm">{translatedStats[2]!.label}</span>
                 </div>
               </div>
             </div>
@@ -153,7 +151,7 @@ export default function CommunityPage() {
 
         {/* ── Benefits ───────────────────────────────────────────────────── */}
         <div className="bg-muted/30 mx-auto max-w-4xl space-y-8 rounded-3xl p-12 text-center">
-          <h2 className="text-3xl font-bold">Why Join?</h2>
+          <h2 className="text-3xl font-bold">{t("why_join_title")}</h2>
           <div className="grid gap-8 md:grid-cols-3">
             {benefits.map((benefit, index) => (
               <div key={index} className="space-y-3 text-left">
@@ -174,12 +172,10 @@ export default function CommunityPage() {
           <div className="space-y-3 text-center">
             <Badge variant="outline" className="gap-1.5">
               <HelpCircle className="h-3.5 w-3.5" />
-              Support
+              {t("support_badge")}
             </Badge>
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">Have a question?</h2>
-            <p className="text-muted-foreground mx-auto max-w-xl text-lg">
-              Check the FAQ below or send us a message — we&apos;re happy to help.
-            </p>
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">{t("faq_title")}</h2>
+            <p className="text-muted-foreground mx-auto max-w-xl text-lg">{t("faq_subtitle")}</p>
           </div>
 
           <div className="grid items-start gap-10 lg:grid-cols-2">
@@ -187,7 +183,7 @@ export default function CommunityPage() {
             <div className="space-y-4">
               <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium tracking-wide uppercase">
                 <MessageCircle className="h-4 w-4" />
-                Frequently asked questions
+                {t("faq_heading")}
               </div>
               <Accordion type="single" collapsible className="space-y-2">
                 {faqs.map((faq, i) => (
@@ -211,7 +207,7 @@ export default function CommunityPage() {
               <div className="text-muted-foreground flex items-start gap-3 rounded-xl border border-dashed p-4 text-sm">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
-                  For urgent issues, email us directly at{" "}
+                  {t("urgent_email_prefix")}{" "}
                   <a
                     href="mailto:support@astrapost.app"
                     className="text-foreground hover:text-primary font-medium underline underline-offset-4"
@@ -226,7 +222,7 @@ export default function CommunityPage() {
             <div className="space-y-4">
               <div className="text-muted-foreground flex items-center gap-2 text-sm font-medium tracking-wide uppercase">
                 <Mail className="h-4 w-4" />
-                Send a message
+                {t("contact_heading")}
               </div>
               <ContactForm />
             </div>
@@ -237,19 +233,17 @@ export default function CommunityPage() {
         <div className="border-border/50 from-muted/50 to-muted/20 relative mx-auto max-w-4xl overflow-hidden rounded-2xl border bg-gradient-to-br p-8 text-center md:p-12">
           <div className="from-primary/5 absolute inset-0 bg-gradient-to-r via-purple-500/5 to-pink-500/5" />
           <div className="relative">
-            <h3 className="mb-4 text-2xl font-bold md:text-3xl">Ready to join 2,500+ creators?</h3>
-            <p className="text-muted-foreground mx-auto mb-8 max-w-lg">
-              Get instant access to our community of creators and start growing your audience today.
-            </p>
+            <h3 className="mb-4 text-2xl font-bold md:text-3xl">{t("cta_title")}</h3>
+            <p className="text-muted-foreground mx-auto mb-8 max-w-lg">{t("cta_subtitle")}</p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Button size="lg" disabled>
-                Join Community Now
+                {t("cta_join")}
                 <Badge variant="secondary" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
-                  Coming Soon
+                  {t("coming_soon")}
                 </Badge>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/dashboard">Start Creating</Link>
+                <Link href="/dashboard">{t("cta_start_creating")}</Link>
               </Button>
             </div>
           </div>

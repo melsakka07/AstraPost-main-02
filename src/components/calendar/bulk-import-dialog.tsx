@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ interface BulkImportDialogProps {
 }
 
 export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
+  const t = useTranslations("calendar");
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -82,10 +84,8 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Bulk Schedule Posts</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file with "content" and "scheduledAt" columns.
-          </DialogDescription>
+          <DialogTitle>{t("bulk_import_title")}</DialogTitle>
+          <DialogDescription>{t("bulk_import_description")}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
@@ -121,7 +121,7 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
           </Button>
           <Button onClick={handleSubmit} disabled={!file || !selectedAccount || isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Import
+            {isLoading ? t("importing") : t("import_button")}
           </Button>
         </DialogFooter>
       </DialogContent>

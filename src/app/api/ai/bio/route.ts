@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkBioOptimizerAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -74,8 +74,11 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { currentBio, goal, language, niche } = result.data;
-    const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
+    const { currentBio, goal, language: clientLanguage, niche } = result.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
     const goalLabel = GOAL_LABELS[goal] || GOAL_LABELS.general;
 
     const currentBioSection = currentBio
@@ -89,7 +92,7 @@ Generate exactly 3 improved bio variants for a content creator.
 ${currentBioSection}${nicheSection}
 
 GOAL: ${goalLabel}
-LANGUAGE: ${langLabel}
+${userLanguage === "ar" ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only." : `LANGUAGE: ${langLabel}.`}
 
 Rules:
 - Each bio MUST be under 160 characters (X's limit)
@@ -134,7 +137,7 @@ For each variant provide:
       usage?.totalTokens ?? 0,
       prompt,
       object,
-      language
+      userLanguage
     );
 
     const res = Response.json(object);

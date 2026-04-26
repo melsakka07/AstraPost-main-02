@@ -69,7 +69,7 @@ function SidebarContent({
       ? Math.min(100, Math.round((aiUsage.used / aiUsage.limit) * 100))
       : 0;
 
-  const aiProgressLabel = aiUsage && aiUsage.limit === null ? "Unlimited" : `${aiProgress}%`;
+  const aiProgressLabel = aiUsage && aiUsage.limit === null ? t("unlimited") : `${aiProgress}%`;
 
   const imageProgress =
     imageQuota && typeof imageQuota.limit === "number" && imageQuota.limit > 0
@@ -77,7 +77,7 @@ function SidebarContent({
       : 0;
 
   const imageProgressLabel =
-    imageQuota && imageQuota.limit === -1 ? "Unlimited" : `${imageProgress}%`;
+    imageQuota && imageQuota.limit === -1 ? t("unlimited") : `${imageProgress}%`;
 
   const linkPy = isMobile ? "py-3" : "py-2.5"; // M3
 
@@ -116,7 +116,7 @@ function SidebarContent({
           <span className="flex-1 truncate text-sm font-medium">{user.name}</span>
           <button
             type="button"
-            aria-label="Sign out"
+            aria-label={t("sign_out")}
             className="text-muted-foreground hover:text-destructive transition-colors"
             onClick={handleSignOut}
           >
@@ -129,7 +129,7 @@ function SidebarContent({
       <Link
         href="/"
         className="border-border flex h-16 shrink-0 items-center gap-2 border-b px-6 transition-opacity hover:opacity-80 rtl:flex-row-reverse"
-        aria-label="Go to AstraPost home"
+        aria-label={t("go_home")}
       >
         <Rocket className="text-primary h-6 w-6" />
         <span className="text-xl font-bold tracking-tight">AstraPost</span>
@@ -239,7 +239,7 @@ function SidebarContent({
             )}
           >
             <ExternalLink className="h-4.5 w-4.5 shrink-0" />
-            <span>Roadmap</span>
+            <span>{t("roadmap")}</span>
           </Link>
         </div>
       </nav>
@@ -250,14 +250,14 @@ function SidebarContent({
           {aiUsage ? (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-foreground text-xs font-medium">AI Credits</span>
+                <span className="text-foreground text-xs font-medium">{t("ai_credits")}</span>
                 <span className="text-muted-foreground text-xs">{aiProgressLabel}</span>
               </div>
               <Progress value={aiProgress} className="h-1.5" />
               <p className="text-muted-foreground text-xs">
                 {typeof aiUsage.limit === "number"
-                  ? `${aiUsage.used}/${aiUsage.limit} used this month`
-                  : `${aiUsage.used} used this month`}
+                  ? `${aiUsage.used}/${aiUsage.limit} ${t("used_this_month")}`
+                  : `${aiUsage.used} ${t("used_this_month")}`}
               </p>
             </>
           ) : (
@@ -278,15 +278,15 @@ function SidebarContent({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <ImageIcon className="h-3 w-3" />
-                  <span className="text-foreground text-xs font-medium">Images</span>
+                  <span className="text-foreground text-xs font-medium">{t("images_credits")}</span>
                 </div>
                 <span className="text-muted-foreground text-xs">{imageProgressLabel}</span>
               </div>
               <Progress value={imageProgress} className="h-1.5" />
               <p className="text-muted-foreground text-xs">
                 {typeof imageQuota.limit === "number" && imageQuota.limit !== -1
-                  ? `${imageQuota.used}/${imageQuota.limit} used this month`
-                  : `${imageQuota.used} used this month`}
+                  ? `${imageQuota.used}/${imageQuota.limit} ${t("used_this_month")}`
+                  : `${imageQuota.used} ${t("used_this_month")}`}
               </p>
             </>
           ) : (
@@ -308,7 +308,7 @@ function SidebarContent({
             onClick={handleSignOut}
           >
             <LogOut className="me-2 h-4.5 w-4.5" />
-            Sign Out
+            {t("sign_out")}
           </Button>
         )}
       </div>

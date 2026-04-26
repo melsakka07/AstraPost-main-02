@@ -2,6 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
+import { LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
@@ -23,13 +24,16 @@ export async function GET(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const { searchParams } = new URL(req.url);
     const niche = searchParams.get("niche") || "Technology";
-    const language = searchParams.get("language") || "en";
+    const rawLanguage = searchParams.get("language");
 
-    const cacheKey = `inspiration:${language}:${niche.toLowerCase().replace(/\s+/g, "_")}`;
+    // Get language: prefer query param, fall back to user's DB preference
+    const userLanguage = rawLanguage || dbUser.language || "en";
+
+    const cacheKey = `inspiration:${userLanguage}:${niche.toLowerCase().replace(/\s+/g, "_")}`;
 
     try {
       const cached = await redis.get(cacheKey);
@@ -44,10 +48,16 @@ export async function GET(req: Request) {
       });
     }
 
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Output language: ${langLabel}.`;
+
     const prompt = `
       You are a social media trend analyst.
       Generate 5 trending or evergreen topic ideas for a "${niche}" niche content creator on X (Twitter).
-      Language: ${language === "ar" ? "Arabic" : "English"}.
+      ${langInstruction}
 
       For each topic, provide:
       1. The Topic (short title)
@@ -77,9 +87,9 @@ export async function GET(req: Request) {
       session.user.id,
       "inspiration",
       0,
-      `inspiration:${niche}:${language}`,
+      `inspiration:${niche}:${userLanguage}`,
       object,
-      language
+      userLanguage
     );
 
     const res = Response.json(object);

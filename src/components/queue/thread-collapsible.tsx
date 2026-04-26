@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 interface TweetPreview {
@@ -17,6 +18,7 @@ export function ThreadCollapsible({
   tweets: TweetPreview[];
   isCompact: boolean;
 }) {
+  const t = useTranslations("queue");
   const [open, setOpen] = useState(false);
 
   if (tweets.length <= 1) return null;
@@ -28,18 +30,18 @@ export function ThreadCollapsible({
         size="sm"
         className="text-muted-foreground hover:text-foreground h-6 gap-1 px-0 text-xs hover:bg-transparent"
         aria-expanded={open}
-        aria-label={open ? "Collapse thread" : "Expand thread"}
+        aria-label={open ? t("view_thread") : t("view_thread")}
         onClick={() => setOpen((v) => !v)}
       >
         {open ? (
           <>
             <ChevronUp className="h-3.5 w-3.5" />
-            Collapse thread
+            {t("view_thread")}
           </>
         ) : (
           <>
             <ChevronDown className="h-3.5 w-3.5" />
-            Show thread ({tweets.length - 1} more)
+            {t("view_thread")}
           </>
         )}
       </Button>

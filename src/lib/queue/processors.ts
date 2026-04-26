@@ -600,13 +600,14 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       try {
         const userRecord = await db.query.user.findFirst({
           where: eq(user.id, targetUserId),
-          columns: { email: true },
+          columns: { email: true, language: true },
         });
         if (userRecord?.email) {
           await sendPostFailureEmail(
             userRecord.email,
             postId,
-            userHint || (error instanceof Error ? error.message : "Unknown error")
+            userHint || (error instanceof Error ? error.message : "Unknown error"),
+            userRecord.language || "en"
           );
         }
       } catch (emailError) {

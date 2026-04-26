@@ -17,6 +17,7 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
 import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
@@ -87,6 +88,7 @@ export default function InspirationPage() {
 function InspirationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations("inspiration");
   const [tweetUrl, setTweetUrl] = useState("");
   const [isValidUrl, setIsValidUrl] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -227,11 +229,11 @@ function InspirationContent() {
       };
       setHistory((prev) => [historyItem, ...prev.slice(0, 19)]); // Keep last 20
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to import tweet");
+      setError(err instanceof Error ? err.message : t("error_import"));
     } finally {
       setIsLoading(false);
     }
-  }, [isValidUrl, tweetUrl]);
+  }, [isValidUrl, tweetUrl, t]);
 
   // Send to Composer
   const handleSendToComposer = useCallback(
@@ -278,7 +280,7 @@ function InspirationContent() {
         throw new Error("Failed to bookmark");
       }
 
-      setSuccessMessage("Bookmarked successfully!");
+      setSuccessMessage(t("success_message"));
       setTimeout(() => setSuccessMessage(null), 3000);
 
       // Add to local bookmarks state
@@ -287,11 +289,11 @@ function InspirationContent() {
         setBookmarks((prev) => [bookmarkData.bookmark, ...prev]);
       }
     } catch (err) {
-      setError("Failed to bookmark");
+      setError(t("error_bookmark"));
     } finally {
       setIsBookmarking(false);
     }
-  }, [importedData, tweetUrl]);
+  }, [importedData, tweetUrl, t]);
 
   // Clear imported tweet and URL
   const handleClear = useCallback(() => {
@@ -329,68 +331,70 @@ function InspirationContent() {
   }, []);
 
   // Re-adapt bookmark
-  const handleReadaptBookmark = useCallback(async (bookmark: Bookmark) => {
-    setTweetUrl(bookmark.sourceTweetUrl);
-    setIsValidUrl(true);
+  const handleReadaptBookmark = useCallback(
+    async (bookmark: Bookmark) => {
+      setTweetUrl(bookmark.sourceTweetUrl);
+      setIsValidUrl(true);
 
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/x/tweet-lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweetUrl: bookmark.sourceTweetUrl }),
-      });
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/x/tweet-lookup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tweetUrl: bookmark.sourceTweetUrl }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to import tweet");
+        if (!response.ok) {
+          throw new Error("Failed to import tweet");
+        }
+
+        const result = await response.json();
+        setImportedData(result.data);
+        setActiveTab("import");
+      } catch (err) {
+        setError(t("error_reimport"));
+      } finally {
+        setIsLoading(false);
       }
-
-      const result = await response.json();
-      setImportedData(result.data);
-      setActiveTab("import");
-    } catch (err) {
-      setError("Failed to load bookmarked tweet");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [t]
+  );
 
   // Delete bookmark
-  const handleDeleteBookmark = useCallback(async (id: string) => {
-    try {
-      const response = await fetch(`/api/inspiration/bookmark/${id}`, {
-        method: "DELETE",
-      });
+  const handleDeleteBookmark = useCallback(
+    async (id: string) => {
+      try {
+        const response = await fetch(`/api/inspiration/bookmark/${id}`, {
+          method: "DELETE",
+        });
 
-      if (!response.ok) {
-        throw new Error("Failed to delete bookmark");
+        if (!response.ok) {
+          throw new Error("Failed to delete bookmark");
+        }
+
+        setBookmarks((prev) => prev.filter((b) => b.id !== id));
+      } catch (err) {
+        setError(t("error_delete"));
       }
-
-      setBookmarks((prev) => prev.filter((b) => b.id !== id));
-    } catch (err) {
-      setError("Failed to delete bookmark");
-    }
-  }, []);
+    },
+    [t]
+  );
 
   return (
-    <DashboardPageWrapper
-      icon={Lightbulb}
-      title="Inspiration"
-      description="Paste an X/Twitter URL to import a tweet, then adapt it with AI — or browse your saved inspiration."
-    >
+    <DashboardPageWrapper icon={Lightbulb} title={t("title")} description={t("description")}>
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-3 overflow-x-auto">
           <TabsTrigger value="import">
             <Download className="me-2 h-4 w-4" />
-            Import Tweet
+            {t("tabs.import")}
           </TabsTrigger>
           <TabsTrigger value="history">
             <History className="me-2 h-4 w-4" />
-            History
+            {t("tabs.history")}
           </TabsTrigger>
           <TabsTrigger value="bookmarks">
             <Bookmark className="me-2 h-4 w-4" />
-            Bookmarks
+            {t("tabs.bookmarks")}
           </TabsTrigger>
         </TabsList>
 
@@ -401,12 +405,12 @@ function InspirationContent() {
             <CardContent className="pt-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tweet-url">Paste X/Tweet URL</Label>
+                  <Label htmlFor="tweet-url">{t("paste_url")}</Label>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
                       id="tweet-url"
                       type="url"
-                      placeholder="https://x.com/username/status/1234567890"
+                      placeholder={t("url_placeholder")}
                       value={tweetUrl}
                       onChange={(e) => handleUrlChange(e.target.value)}
                       onKeyDown={(e) => {
@@ -424,11 +428,11 @@ function InspirationContent() {
                       {isLoading ? (
                         <>
                           <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                          Importing... ({importElapsed}s)
+                          {t("importing", { seconds: importElapsed })}
                         </>
                       ) : (
                         <>
-                          Import
+                          {t("import_button")}
                           <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
                         </>
                       )}
@@ -437,7 +441,7 @@ function InspirationContent() {
                   {tweetUrl.length >= 5 && !isValidUrl && (
                     <p className="text-destructive flex items-center gap-1.5 text-xs">
                       <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                      Please enter a valid X/Twitter URL
+                      {t("invalid_url")}
                     </p>
                   )}
                 </div>
@@ -490,9 +494,9 @@ function InspirationContent() {
               <div className="space-y-4">
                 <div className="flex items-start justify-between gap-2 sm:items-center">
                   <div>
-                    <h2 className="text-base font-semibold sm:text-lg">Imported Tweet</h2>
+                    <h2 className="text-base font-semibold sm:text-lg">{t("imported_tweet")}</h2>
                     <p className="text-muted-foreground text-xs sm:text-sm">
-                      Original content from X/Twitter
+                      {t("original_content")}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -501,7 +505,7 @@ function InspirationContent() {
                       size="icon"
                       onClick={handleBookmark}
                       disabled={isBookmarking}
-                      title={isBookmarking ? "Saving..." : "Bookmark"}
+                      title={isBookmarking ? t("saving") : t("bookmark")}
                       className="h-8 w-8 sm:h-10 sm:w-10"
                     >
                       <Bookmark className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -510,7 +514,7 @@ function InspirationContent() {
                       variant="outline"
                       size="icon"
                       onClick={handleClear}
-                      title="Clear"
+                      title={t("clear")}
                       className="h-8 w-8 sm:h-10 sm:w-10"
                     >
                       <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -530,10 +534,8 @@ function InspirationContent() {
               {/* Right: Adaptation Panel */}
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-lg font-semibold">Adapt Content</h2>
-                  <p className="text-muted-foreground text-sm">
-                    Use AI or manually adapt the tweet to your style
-                  </p>
+                  <h2 className="text-lg font-semibold">{t("adapt_content")}</h2>
+                  <p className="text-muted-foreground text-sm">{t("adapt_description")}</p>
                 </div>
                 <AdaptationPanel
                   sourceTweet={importedData.originalTweet}
@@ -555,10 +557,10 @@ function InspirationContent() {
                   <Lightbulb className="text-primary h-8 w-8 sm:h-10 sm:w-10" />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold sm:mb-3 sm:text-xl">
-                  No tweet imported yet
+                  {t("no_tweet_imported")}
                 </h3>
                 <p className="text-muted-foreground max-w-md text-sm sm:text-base">
-                  Paste a X/Twitter URL above to import a tweet and adapt it with AI assistance.
+                  {t("no_tweet_description")}
                 </p>
               </CardContent>
             </Card>
@@ -572,9 +574,7 @@ function InspirationContent() {
               {history.length === 0 ? (
                 <div className="py-16 text-center">
                   <History className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
-                  <p className="text-muted-foreground">
-                    No history yet. Import a tweet to get started.
-                  </p>
+                  <p className="text-muted-foreground">{t("no_history")}</p>
                 </div>
               ) : (
                 <ul role="list" className="space-y-3">
@@ -611,7 +611,7 @@ function InspirationContent() {
                             }}
                           >
                             <RefreshCw className="me-1 h-3 w-3" />
-                            Re-import
+                            {t("re_import")}
                           </Button>
                           <a
                             href={`https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`}
@@ -620,7 +620,7 @@ function InspirationContent() {
                             className="text-muted-foreground hover:text-foreground hover:bg-accent inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium transition-colors"
                           >
                             <ExternalLink className="h-3 w-3" />
-                            View on X
+                            {t("view_on_x")}
                           </a>
                         </div>
                       </div>
@@ -639,9 +639,7 @@ function InspirationContent() {
               {bookmarks.length === 0 ? (
                 <div className="py-16 text-center">
                   <Bookmark className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
-                  <p className="text-muted-foreground">
-                    No bookmarks yet. Bookmark inspiring tweets to save them for later.
-                  </p>
+                  <p className="text-muted-foreground">{t("no_bookmarks")}</p>
                 </div>
               ) : (
                 <ul role="list" className="space-y-3">
@@ -675,7 +673,7 @@ function InspirationContent() {
                             size="sm"
                             onClick={() => handleReadaptBookmark(bookmark)}
                           >
-                            Re-adapt
+                            {t("re_adapt")}
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -684,23 +682,23 @@ function InspirationContent() {
                                 size="sm"
                                 className="text-destructive hover:text-destructive"
                               >
-                                Delete
+                                {t("delete")}
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete bookmark?</AlertDialogTitle>
+                                <AlertDialogTitle>{t("delete_confirm_title")}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This cannot be undone. The bookmark will be permanently removed.
+                                  {t("delete_confirm_description")}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteBookmark(bookmark.id)}
                                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                  Delete
+                                  {t("delete_button")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>

@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM_LIMITED } from "@/lib/constants";
+import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -17,7 +17,7 @@ const BLOCKED_HOSTS =
 const affiliateRequestSchema = z.object({
   url: z.string().url(),
   affiliateTag: z.string().optional(),
-  language: LANGUAGE_ENUM_LIMITED.default("ar"),
+  language: LANGUAGE_ENUM.default("ar"),
   platform: z.enum(["amazon", "noon", "aliexpress", "other"]).default("amazon"),
 });
 
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const result = affiliateRequestSchema.safeParse(json);
@@ -40,7 +40,10 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { url, affiliateTag, language, platform } = result.data;
+    const { url, affiliateTag, language: clientLanguage, platform } = result.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
 
     // Validate URL and check for SSRF attacks
     let parsedUrl: URL;
@@ -82,6 +85,12 @@ export async function POST(req: Request) {
     }
 
     // 2. Generate Tweet with AI
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Language: ${langLabel}.`;
+
     const prompt = `
       You are an expert affiliate marketer on X (Twitter).
       Write a compelling, high-converting tweet to promote this product:
@@ -91,7 +100,7 @@ export async function POST(req: Request) {
       Platform: ${platform}
       Affiliate Tag/Coupon: ${affiliateTag || "None"}
 
-      Language: ${language === "ar" ? "Arabic" : "English"}.
+      ${langInstruction}
 
       Constraints:
       - Max 280 characters.
@@ -157,7 +166,7 @@ export async function POST(req: Request) {
         wasScheduled: false,
       });
 
-      await recordAiUsage(session.user.id, "affiliate", 0, prompt, output, language, tx);
+      await recordAiUsage(session.user.id, "affiliate", 0, prompt, output, userLanguage, tx);
     });
 
     const res = Response.json(output);

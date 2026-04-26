@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarPlus, FileText, Image as ImageIcon, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DeleteDraftButton } from "@/components/drafts/delete-draft-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +30,7 @@ type Draft = {
 type SortKey = "updatedAt" | "createdAt" | "length";
 
 export function DraftsClient({ drafts }: { drafts: Draft[] }) {
+  const t = useTranslations("drafts");
   const userLocale = useUserLocale();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("updatedAt");
@@ -61,11 +63,11 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
     return (
       <EmptyState
         icon={<FileText className="h-12 w-12" />}
-        title="No drafts yet"
-        description="Create your first draft to start building your content library."
+        title={t("empty_title")}
+        description={t("empty_description")}
         primaryAction={
           <Button asChild>
-            <Link href="/dashboard/compose">Create Draft</Link>
+            <Link href="/dashboard/compose">{t("new_draft")}</Link>
           </Button>
         }
       />

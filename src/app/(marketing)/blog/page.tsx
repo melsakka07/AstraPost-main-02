@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Calendar, Clock, Sparkles, BookOpen, TrendingUp } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BlogPage() {
+  const t = await getTranslations("blog");
   const posts = await getAllBlogPosts();
   const featuredPost = posts[0];
   const regularPosts = posts.slice(1);
@@ -38,14 +40,13 @@ export default async function BlogPage() {
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge className="from-primary inline-flex items-center gap-2 border-0 bg-gradient-to-r to-purple-500 text-white transition-opacity hover:opacity-90">
             <Sparkles className="h-3.5 w-3.5" />
-            Blog
+            {t("badge")}
           </Badge>
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
-            Insights & Strategies
+            {t("title")}
           </h1>
           <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
-            Expert advice on social media growth, content creation, and building your audience in
-            the MENA region.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -73,7 +74,7 @@ export default async function BlogPage() {
                 <div className="absolute top-4 left-4">
                   <Badge className="border-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg">
                     <TrendingUp className="mr-1 h-3 w-3" />
-                    Featured
+                    {t("featured_badge")}
                   </Badge>
                 </div>
               </div>
@@ -96,7 +97,7 @@ export default async function BlogPage() {
                   {featuredPost.excerpt}
                 </p>
                 <div className="text-primary flex items-center font-medium transition-all group-hover:gap-3">
-                  Read Featured Article <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
+                  {t("read_featured")} <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
                 </div>
               </div>
             </div>
@@ -108,7 +109,7 @@ export default async function BlogPage() {
           <div className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="via-border h-px flex-1 bg-gradient-to-r from-transparent to-transparent" />
-              <h2 className="text-foreground/80 text-lg font-semibold">Latest Articles</h2>
+              <h2 className="text-foreground/80 text-lg font-semibold">{t("latest_articles")}</h2>
               <div className="via-border h-px flex-1 bg-gradient-to-r from-transparent to-transparent" />
             </div>
 
@@ -145,7 +146,7 @@ export default async function BlogPage() {
                       {post.excerpt}
                     </p>
                     <div className="text-primary flex items-center pt-2 text-sm font-medium">
-                      Read Article{" "}
+                      {t("read_article")}{" "}
                       <ArrowRight className="ms-1 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                     </div>
                   </div>
@@ -163,24 +164,21 @@ export default async function BlogPage() {
             <div className="from-primary mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-white">
               <Sparkles className="h-8 w-8" />
             </div>
-            <h3 className="mb-4 text-2xl font-bold md:text-3xl">Stay Updated</h3>
+            <h3 className="mb-4 text-2xl font-bold md:text-3xl">{t("newsletter_title")}</h3>
             <p className="text-muted-foreground mx-auto mb-8 max-w-xl">
-              Get the latest social media tips, strategies, and insights delivered straight to your
-              inbox.
+              {t("newsletter_subtitle")}
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Input
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t("newsletter_placeholder")}
                 className="bg-background h-11 w-full min-w-[280px] sm:w-auto"
               />
               <Button className="from-primary w-full border-0 bg-gradient-to-r to-purple-500 transition-opacity hover:opacity-90 sm:w-auto">
-                Subscribe
+                {t("newsletter_subscribe")}
               </Button>
             </div>
-            <p className="text-muted-foreground mt-4 text-xs">
-              No spam, unsubscribe anytime. Join 5,000+ creators growing their audience.
-            </p>
+            <p className="text-muted-foreground mt-4 text-xs">{t("newsletter_disclaimer")}</p>
           </div>
         </div>
       </div>

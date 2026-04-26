@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { PenSquare } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { PostUsageBar } from "@/components/dashboard/post-usage-bar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,13 +19,11 @@ const ComposerWrapper = dynamic(
   }
 );
 
-export default function ComposePage() {
+export default async function ComposePage() {
+  const t = await getTranslations("compose");
+
   return (
-    <DashboardPageWrapper
-      icon={PenSquare}
-      title="Compose"
-      description="Create and schedule your tweets and threads."
-    >
+    <DashboardPageWrapper icon={PenSquare} title={t("title")} description={t("description")}>
       <PostUsageBar />
       <Suspense fallback={<Skeleton className="h-[600px] w-full rounded-lg" />}>
         <ComposerWrapper />

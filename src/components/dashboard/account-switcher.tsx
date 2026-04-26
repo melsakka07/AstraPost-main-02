@@ -4,6 +4,7 @@ import * as React from "react";
 import { useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronsUpDown, Check, Plus, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ function useIsClient() {
 
 export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherProps) {
   const router = useRouter();
+  const t = useTranslations("dashboard_shell");
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const isClient = useIsClient();
@@ -52,7 +54,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
   // 1. Personal Workspace
   const personalTeam: Team = {
     id: user.id,
-    name: "Personal Workspace",
+    name: t("account_switcher.personal_workspace"),
     image: user.image,
     role: "owner",
     isPersonal: true,
@@ -90,14 +92,14 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
       });
 
       if (!res.ok) {
-        toast.error("Failed to switch workspace");
+        toast.error(t("account_switcher.switch_failed"));
         return;
       }
 
       toast.success(`Switched to ${team.name}`);
       router.refresh();
     } catch {
-      toast.error("Failed to switch workspace");
+      toast.error(t("account_switcher.switch_failed"));
     }
   };
 
@@ -106,10 +108,12 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
       <button
         className="inline-flex h-9 w-auto items-center gap-1.5 rounded-md border px-2 text-sm sm:w-[200px] sm:gap-2 sm:px-3"
         disabled
-        aria-label="Select a team"
+        aria-label={t("account_switcher.label")}
       >
         <span className="bg-muted h-6 w-6 shrink-0 rounded-full" />
-        <span className="text-muted-foreground hidden sm:block sm:flex-1">Loading...</span>
+        <span className="text-muted-foreground hidden sm:block sm:flex-1">
+          {t("account_switcher.loading")}
+        </span>
       </button>
     );
   }
@@ -121,7 +125,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          aria-label="Select a team"
+          aria-label={t("account_switcher.label")}
           className="w-auto justify-between gap-1.5 px-2 sm:w-[200px] sm:gap-2 sm:px-3"
         >
           <Avatar className="h-6 w-6 shrink-0">
@@ -140,8 +144,8 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
           <div className="mb-2 flex items-center border-b px-3 pb-2">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
-              aria-label="Search team"
-              placeholder="Search team..."
+              aria-label={t("account_switcher.search_placeholder")}
+              placeholder={t("account_switcher.search_placeholder")}
               className="placeholder:text-muted-foreground flex h-6 w-full rounded-md border-0 bg-transparent px-0 py-3 text-sm outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -152,7 +156,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
             {personalTeamsFiltered.length > 0 && (
               <div className="mb-2">
                 <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
-                  Personal Account
+                  {t("account_switcher.personal_account")}
                 </div>
                 {personalTeamsFiltered.map((team) => (
                   <div
@@ -179,7 +183,9 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
 
             {otherTeamsFiltered.length > 0 && (
               <div className="mb-2">
-                <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">Teams</div>
+                <div className="text-muted-foreground px-2 py-1.5 text-xs font-medium">
+                  {t("account_switcher.teams")}
+                </div>
                 {otherTeamsFiltered.map((team) => (
                   <div
                     key={team.id}
@@ -205,7 +211,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
             )}
 
             {filteredTeams.length === 0 && (
-              <div className="py-6 text-center text-sm">No team found.</div>
+              <div className="py-6 text-center text-sm">{t("account_switcher.no_team_found")}</div>
             )}
           </div>
 
@@ -219,7 +225,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
             className="hover:bg-accent hover:text-accent-foreground relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm outline-none select-none"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Create Team
+            {t("account_switcher.create_team")}
           </div>
         </div>
       </PopoverContent>

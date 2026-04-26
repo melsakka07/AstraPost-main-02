@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Twitter } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth-client";
 
@@ -9,6 +10,7 @@ interface TokenWarningBannerProps {
 }
 
 export function TokenWarningBanner({ username }: TokenWarningBannerProps) {
+  const t = useTranslations("dashboard_shell");
   const handleReconnect = async () => {
     // Preserve current URL in callback if needed, here we just go back to dashboard
     await signIn.social({
@@ -22,9 +24,8 @@ export function TokenWarningBanner({ username }: TokenWarningBannerProps) {
       <div className="text-destructive flex items-center gap-2">
         <AlertTriangle className="h-5 w-5 shrink-0" />
         <p>
-          <strong>Connection Expired:</strong> Your connection to X (Twitter){" "}
-          {username ? `@${username}` : ""} has expired. Scheduled posts will fail until you
-          reconnect.
+          <strong>{t("token_warning.title")}</strong> {username ? `@${username}` : ""}{" "}
+          {t("token_warning.message")}
         </p>
       </div>
       <Button
@@ -34,7 +35,7 @@ export function TokenWarningBanner({ username }: TokenWarningBannerProps) {
         onClick={handleReconnect}
       >
         <Twitter className="mr-2 h-4 w-4" />
-        Reconnect Now
+        {t("token_warning.reconnect")}
       </Button>
     </div>
   );

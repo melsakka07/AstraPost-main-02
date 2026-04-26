@@ -1,33 +1,39 @@
 import { Button, Section, Text } from "@react-email/components";
+import { getEmailTranslations } from "@/lib/services/email-translations";
 import { BaseLayout } from "../base-layout";
 
 interface SubscriptionCancelledEmailProps {
   userName: string;
+  locale?: string;
 }
 
-export const SubscriptionCancelledEmail = ({ userName }: SubscriptionCancelledEmailProps) => {
+export const SubscriptionCancelledEmail = ({
+  userName,
+  locale = "en",
+}: SubscriptionCancelledEmailProps) => {
+  const t = getEmailTranslations(locale);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   return (
-    <BaseLayout preview="Your AstraPost subscription has been cancelled">
-      <Text className="text-[14px] leading-[24px] text-black">Hi {userName || "there"},</Text>
+    <BaseLayout preview={t.subscription_cancelled.subject} locale={locale}>
       <Text className="text-[14px] leading-[24px] text-black">
-        Your AstraPost subscription has been cancelled and your account has been moved to the Free
-        plan.
+        {t.common.greeting.replace("{name}", userName || "there")}
       </Text>
+      <Text className="text-[14px] leading-[24px] text-black">{t.subscription_cancelled.body}</Text>
       <Section className="mt-[32px] mb-[32px] text-center">
         <Button
           className="rounded bg-[#000000] px-5 py-3 text-center text-[12px] font-semibold text-white no-underline"
           href={`${baseUrl}/dashboard/settings`}
         >
-          Resubscribe
+          {t.subscription_cancelled.resubscribe}
         </Button>
       </Section>
       <Text className="text-[14px] leading-[24px] text-black">
-        You can resubscribe at any time from your account settings.
+        {t.subscription_cancelled.resubscribe_anytime ||
+          "You can resubscribe at any time from your account settings."}
       </Text>
       <Text className="text-[14px] leading-[24px] text-black">
-        Thank you for being an AstraPost customer.
+        {t.common.thank_you_customer || "Thank you for being an AstraPost customer."}
       </Text>
     </BaseLayout>
   );

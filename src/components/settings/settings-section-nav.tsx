@@ -1,20 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bell, CreditCard, Eye, Mic, Twitter, User } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
-const sections = [
-  { id: "profile", label: "Profile", icon: User },
-  { id: "subscription", label: "Subscription", icon: CreditCard },
-  { id: "accounts", label: "Accounts", icon: Twitter },
-  { id: "voice", label: "AI Voice", icon: Mic },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "privacy", label: "Privacy", icon: Eye },
-] as const;
-
 export function SettingsSectionNav() {
+  const t = useTranslations("settings");
   const [activeSection, setActiveSection] = useState("profile");
+
+  const sections = useMemo(
+    () =>
+      [
+        { id: "profile", label: t("nav.profile"), icon: User },
+        { id: "subscription", label: t("nav.subscription"), icon: CreditCard },
+        { id: "accounts", label: t("nav.accounts"), icon: Twitter },
+        { id: "voice", label: t("nav.ai_voice"), icon: Mic },
+        { id: "notifications", label: t("nav.notifications"), icon: Bell },
+        { id: "privacy", label: t("nav.privacy"), icon: Eye },
+      ] as const,
+    [t]
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -34,7 +40,7 @@ export function SettingsSectionNav() {
     }
 
     return () => observer.disconnect();
-  }, []);
+  }, [sections]);
 
   const handleClick = (id: string) => {
     const el = document.getElementById(id);
@@ -45,7 +51,7 @@ export function SettingsSectionNav() {
 
   return (
     <nav
-      aria-label="Settings sections"
+      aria-label={t("nav.label")}
       className="bg-background/95 supports-backdrop-filter:bg-background/80 sticky top-16 z-10 -mx-1 snap-x snap-mandatory overflow-x-auto rounded-lg border backdrop-blur-sm"
     >
       <div className="flex min-w-max items-center gap-1 p-1">

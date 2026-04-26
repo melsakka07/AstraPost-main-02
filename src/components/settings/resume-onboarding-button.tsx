@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { clientLogger } from "@/lib/client-logger";
 
 export function ResumeOnboardingButton() {
+  const t = useTranslations("settings");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleResumeOnboarding = async () => {
@@ -29,17 +31,14 @@ export function ResumeOnboardingButton() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <CheckCircle2 className="text-primary h-5 w-5" />
-          <CardTitle>Resume Onboarding</CardTitle>
+          <CardTitle>{t("profile.onboarding_title")}</CardTitle>
         </div>
-        <CardDescription>Complete the setup wizard anytime</CardDescription>
+        <CardDescription>{t("profile.onboarding_desc")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground mb-4 text-sm">
-          Skipped the onboarding wizard earlier? You can resume at any time to complete your setup,
-          schedule your first post, and explore AI-powered features.
-        </p>
+        <p className="text-muted-foreground mb-4 text-sm">{t("profile.onboarding_body")}</p>
         <Button onClick={handleResumeOnboarding} disabled={isLoading}>
-          {isLoading ? "Loading..." : "Resume Onboarding"}
+          {isLoading ? t("profile.onboarding_loading") : t("profile.onboarding_button")}
         </Button>
       </CardContent>
     </Card>

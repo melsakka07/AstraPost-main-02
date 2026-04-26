@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getTemplatePrompt, type OutputFormat } from "@/lib/ai/template-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM, TONE_ENUM, LANGUAGES } from "@/lib/constants";
+import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
@@ -35,7 +35,10 @@ export async function POST(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { templateId, topic, language } = parsed.data;
+    const { templateId, topic, language: clientLanguage } = parsed.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
 
     const config = getTemplatePrompt(templateId);
     if (!config) {
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
     const tone = parsed.data.tone ?? config.defaultTone;
     const format: OutputFormat = parsed.data.outputFormat ?? config.defaultFormat;
 
-    const prompt = config.buildPrompt(topic, tone, language, format);
+    const prompt = config.buildPrompt(topic, tone, userLanguage, format);
 
     const streamResult = streamText({ model, prompt });
 
@@ -92,14 +95,13 @@ export async function POST(req: Request) {
           // Record usage — non-critical, fire after responding
           try {
             const usage = await streamResult.usage;
-            const langLabel = LANGUAGES.find((l) => l.code === language)?.label ?? language;
             await recordAiUsage(
               userId,
               "template",
               usage?.totalTokens ?? 0,
               prompt,
               null,
-              langLabel
+              userLanguage
             );
           } catch {
             // Usage recording failure must not affect the user

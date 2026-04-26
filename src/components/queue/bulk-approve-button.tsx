@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCheck, Loader2, XCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -12,10 +13,11 @@ interface BulkApproveButtonProps {
 }
 
 export function BulkApproveButton({ postIds, action }: BulkApproveButtonProps) {
+  const t = useTranslations("queue");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const label = action === "approve" ? "Approve All" : "Reject All";
+  const label = action === "approve" ? t("bulk_approve") : t("reject");
 
   const handleBulk = async () => {
     setLoading(true);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CalendarClock } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ReschedulePostForm } from "@/components/calendar/reschedule-post-form";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +33,7 @@ export function RescheduleInlineDialog({
   scheduledAt,
   ariaLabel,
 }: RescheduleInlineDialogProps) {
+  const t = useTranslations("queue");
   const [open, setOpen] = useState(false);
 
   return (
@@ -44,7 +46,7 @@ export function RescheduleInlineDialog({
           className="text-muted-foreground hover:text-foreground"
         >
           <CalendarClock className="mr-1 h-4 w-4" />
-          Reschedule
+          {t("reschedule")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">

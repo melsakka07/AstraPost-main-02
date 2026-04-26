@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { Download, User } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { ReopenChecklistButton } from "@/components/settings/reopen-checklist-button";
@@ -13,6 +14,7 @@ import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
 
 export default async function ProfileSettingsPage() {
+  const t = await getTranslations("settings");
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login?callbackUrl=/dashboard/settings/profile");
 
@@ -23,8 +25,8 @@ export default async function ProfileSettingsPage() {
   return (
     <DashboardPageWrapper
       icon={User}
-      title="Profile Settings"
-      description="Manage your account profile and personal information"
+      title={t("profile.title")}
+      description={t("profile.description")}
     >
       <div className="max-w-3xl space-y-6">
         <ProfileForm
@@ -44,18 +46,14 @@ export default async function ProfileSettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Download className="text-primary h-5 w-5" />
-              <CardTitle>Export Your Data</CardTitle>
+              <CardTitle>{t("profile.export_title")}</CardTitle>
             </div>
-            <CardDescription>
-              Download a copy of your posts, analytics, and account data
-            </CardDescription>
+            <CardDescription>{t("profile.export_description")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground mb-4 text-sm">
-              Export your account data in JSON or CSV format for backup or analysis.
-            </p>
+            <p className="text-muted-foreground mb-4 text-sm">{t("profile.export_details")}</p>
             <Button variant="outline" asChild>
-              <a href="/api/user/export">Download Data</a>
+              <a href="/api/user/export">{t("profile.download_data")}</a>
             </Button>
           </CardContent>
         </Card>

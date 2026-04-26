@@ -34,7 +34,7 @@ export interface AiPreambleOptions {
 
 export type AiPreambleResult = {
   session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
-  dbUser: { plan: string | null; voiceProfile: unknown };
+  dbUser: { plan: string | null; voiceProfile: unknown; language: string | null };
   model: LanguageModel;
   fallbackModel: LanguageModel | null;
 };
@@ -75,7 +75,7 @@ export async function aiPreamble(
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
-    columns: { plan: true, voiceProfile: true },
+    columns: { plan: true, voiceProfile: true, language: true },
   });
 
   const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
@@ -112,7 +112,7 @@ export async function aiPreamble(
 
   return {
     session,
-    dbUser: dbUser ?? { plan: null, voiceProfile: null },
+    dbUser: dbUser ?? { plan: null, voiceProfile: null, language: null },
     model,
     fallbackModel,
   };

@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User, CreditCard, Bell, Zap } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("settings");
   const pathname = usePathname();
 
   const tabs = [
-    { label: "Profile", href: "/dashboard/settings/profile", icon: User },
-    { label: "Billing", href: "/dashboard/settings/billing", icon: CreditCard },
-    { label: "Notifications", href: "/dashboard/settings/notifications", icon: Bell },
-    { label: "Integrations", href: "/dashboard/settings/integrations", icon: Zap },
+    { label: t("nav.profile"), href: "/dashboard/settings/profile", icon: User },
+    { label: t("nav.subscription"), href: "/dashboard/settings/billing", icon: CreditCard },
+    { label: t("nav.notifications"), href: "/dashboard/settings/notifications", icon: Bell },
+    { label: t("nav.accounts"), href: "/dashboard/settings/integrations", icon: Zap },
   ];
 
   const isActive = (href: string) => pathname === href;

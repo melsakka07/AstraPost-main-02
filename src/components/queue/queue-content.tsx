@@ -14,6 +14,7 @@ import {
   PlusCircle,
   ShieldCheck,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { BulkApproveButton } from "@/components/queue/bulk-approve-button";
 import { CancelPostButton } from "@/components/queue/cancel-post-button";
@@ -126,6 +127,7 @@ export function QueueContent({
   role,
   currentUserId,
 }: QueueContentProps) {
+  const t = useTranslations("queue");
   const userLocale = useUserLocale();
   // Q5 — density toggle as client state (no page reload)
   const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
@@ -137,7 +139,7 @@ export function QueueContent({
     <DashboardPageWrapper
       icon={ListOrdered}
       title={title}
-      description="Manage scheduled and failed posts."
+      description={t("description")}
       actions={
         <>
           <Badge variant="outline" className="text-muted-foreground">
@@ -252,11 +254,11 @@ export function QueueContent({
       {scheduledPosts.length === 0 ? (
         <EmptyState
           icon={<Calendar className="h-6 w-6" />}
-          title="No scheduled posts yet"
-          description="Create your first scheduled post to start filling your publishing queue."
+          title={t("empty_title")}
+          description={t("empty_description")}
           primaryAction={
             <Button asChild>
-              <Link href="/dashboard/compose">Create Post</Link>
+              <Link href="/dashboard/compose">{t("schedule_first")}</Link>
             </Button>
           }
           secondaryAction={
@@ -278,7 +280,7 @@ export function QueueContent({
                     <div className="text-sm font-bold">
                       {post.scheduledAt
                         ? new Date(post.scheduledAt).toLocaleDateString(userLocale)
-                        : "No Date"}
+                        : t("no_date")}
                     </div>
                     <div className="text-muted-foreground text-xs">
                       {post.scheduledAt
@@ -294,7 +296,7 @@ export function QueueContent({
                   <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{post.type === "thread" ? "Thread" : "Tweet"}</Badge>
-                      <Badge variant="secondary">Scheduled</Badge>
+                      <Badge variant="secondary">{t("status.scheduled")}</Badge>
                       {!isOwner && post.user.id !== currentUserId && (
                         <span className="text-muted-foreground text-xs">by {post.user.name}</span>
                       )}

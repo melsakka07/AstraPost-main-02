@@ -13,6 +13,7 @@ import {
   Play,
   ExternalLink,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Tweet } from "@/lib/services/tweet-importer";
@@ -297,6 +298,7 @@ export function ImportedTweetCard({
   quotedTweet,
   onToggleThread,
 }: ImportedTweetCardProps) {
+  const t = useTranslations("inspiration");
   return (
     <Card className="border-border">
       <CardContent className="p-3 sm:p-4">
@@ -304,7 +306,7 @@ export function ImportedTweetCard({
         {quotedTweet && (
           <div className="border-border mb-3 border-b pb-3 sm:mb-4 sm:pb-4">
             <div className="text-muted-foreground mb-1.5 text-[10px] sm:mb-2 sm:text-xs">
-              Quoted Tweet
+              {t("quoted_tweet")}
             </div>
             <TweetContent tweet={quotedTweet} />
           </div>
@@ -313,7 +315,9 @@ export function ImportedTweetCard({
         {/* Parent Tweets (Thread Context) */}
         {showThreadContext && parentTweets.length > 0 && (
           <div className="border-border mb-3 space-y-3 border-b pb-3 sm:mb-4 sm:space-y-4 sm:pb-4">
-            <div className="text-muted-foreground text-[10px] sm:text-xs">Thread Context</div>
+            <div className="text-muted-foreground text-[10px] sm:text-xs">
+              {t("thread_context")}
+            </div>
             {[...parentTweets].reverse().map((parentTweet) => (
               <TweetContent key={parentTweet.id} tweet={parentTweet} />
             ))}
@@ -335,14 +339,14 @@ export function ImportedTweetCard({
               {showThreadContext ? (
                 <>
                   <ChevronUp className="mr-0.5 h-3.5 w-3.5 sm:mr-1 sm:h-4 sm:w-4" />
-                  Hide Thread
+                  {t("hide_thread")}
                 </>
               ) : (
                 <>
                   <ChevronDown className="mr-0.5 h-3.5 w-3.5 sm:mr-1 sm:h-4 sm:w-4" />
-                  View Thread {parentTweets.length > 0 && `(${parentTweets.length})`}
+                  {t("show_thread_context")} {parentTweets.length > 0 && `(${parentTweets.length})`}
                   {topReplies.length > 0 &&
-                    ` · ${topReplies.length} repl${topReplies.length > 1 ? "ies" : "y"}`}
+                    ` · ${topReplies.length} ${topReplies.length > 1 ? t("replies") : t("reply")}`}
                 </>
               )}
             </Button>
@@ -352,7 +356,7 @@ export function ImportedTweetCard({
         {/* Top Replies (shown when thread is expanded) */}
         {showThreadContext && topReplies.length > 0 && (
           <div className="border-border mt-3 space-y-3 border-t pt-3 sm:mt-4 sm:space-y-4 sm:pt-4">
-            <div className="text-muted-foreground text-[10px] sm:text-xs">Top Replies</div>
+            <div className="text-muted-foreground text-[10px] sm:text-xs">{t("top_replies")}</div>
             {topReplies.slice(0, 3).map((reply) => (
               <TweetContent key={reply.id} tweet={reply} isReply />
             ))}

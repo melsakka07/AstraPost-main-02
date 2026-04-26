@@ -1,5 +1,5 @@
 import { Cairo, Geist, Geist_Mono } from "next/font/google";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import "./globals.css";
@@ -116,7 +116,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth.api.getSession({ headers: await headers() });
-  const language = session?.user?.language || "en";
+  const cookieStore = await cookies();
+  const language = session?.user?.language || cookieStore.get("locale")?.value || "en";
   const dir = language === "ar" ? "rtl" : "ltr";
   const messages = await getMessages();
 

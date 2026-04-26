@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -34,17 +35,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const inviteSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address" }),
-  role: z.enum(["admin", "editor", "viewer"]),
-});
+function getInviteSchema(t: ReturnType<typeof useTranslations<"settings">>) {
+  return z.object({
+    email: z.string().email({ message: t("team.invite_validation_email") }),
+    role: z.enum(["admin", "editor", "viewer"]),
+  });
+}
 
-type InviteFormValues = z.infer<typeof inviteSchema>;
+type InviteFormValues = z.infer<ReturnType<typeof getInviteSchema>>;
 
 export function InviteMemberDialog() {
+  const t = useTranslations("settings");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const inviteSchema = useMemo(() => getInviteSchema(t), [t]);
 
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
@@ -69,7 +75,7 @@ export function InviteMemberDialog() {
         throw new Error(result.error || result.message || "Failed to send invitation");
       }
 
-      toast.success("Invitation sent successfully");
+      toast.success(t("team.invite_success"));
       setOpen(false);
       form.reset();
       router.refresh();
@@ -77,7 +83,7 @@ export function InviteMemberDialog() {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error("Something went wrong");
+        toast.error(t("team.invite_error"));
       }
     } finally {
       setIsLoading(false);
@@ -89,15 +95,13 @@ export function InviteMemberDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          Invite Member
+          {t("team.invite_button")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Invite Team Member</DialogTitle>
-          <DialogDescription>
-            Invite a new member to your team. They will receive an email with instructions to join.
-          </DialogDescription>
+          <DialogTitle>{t("team.invite_dialog_title")}</DialogTitle>
+          <DialogDescription>{t("team.invite_dialog_desc")}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -106,11 +110,15 @@ export function InviteMemberDialog() {
               name="email"
               render={({ field }: { field: any }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t("team.invite_email_label")}</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Mail className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
-                      <Input placeholder="colleague@example.com" className="pl-9" {...field} />
+                      <Mail className="text-muted-foreground absolute start-2.5 top-2.5 h-4 w-4" />
+                      <Input
+                        placeholder={t("team.invite_email_placeholder")}
+                        className="ps-9"
+                        {...field}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -122,35 +130,35 @@ export function InviteMemberDialog() {
               name="role"
               render={({ field }: { field: any }) => (
                 <FormItem>
-                  <FormLabel>Role</FormLabel>
+                  <FormLabel>{t("team.invite_role_label")}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a role" />
+                        <SelectValue placeholder={t("team.invite_role_placeholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="viewer">
                         <div className="flex flex-col">
-                          <span>Viewer</span>
+                          <span>{t("team.role_viewer")}</span>
                           <span className="text-muted-foreground text-xs">
-                            Can view posts and analytics
+                            {t("team.role_viewer_desc")}
                           </span>
                         </div>
                       </SelectItem>
                       <SelectItem value="editor">
                         <div className="flex flex-col">
-                          <span>Editor</span>
+                          <span>{t("team.role_editor")}</span>
                           <span className="text-muted-foreground text-xs">
-                            Can create and edit posts
+                            {t("team.role_editor_desc")}
                           </span>
                         </div>
                       </SelectItem>
                       <SelectItem value="admin">
                         <div className="flex flex-col">
-                          <span>Admin</span>
+                          <span>{t("team.role_admin")}</span>
                           <span className="text-muted-foreground text-xs">
-                            Full access except billing
+                            {t("team.role_admin_desc")}
                           </span>
                         </div>
                       </SelectItem>
@@ -163,7 +171,7 @@ export function InviteMemberDialog() {
             <DialogFooter>
               <Button type="submit" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send Invitation
+                {isLoading ? t("team.invite_sending") : t("team.invite_send")}
               </Button>
             </DialogFooter>
           </form>

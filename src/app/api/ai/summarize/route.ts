@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   try {
     const preamble = await aiPreamble({ featureGate: checkUrlToThreadAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { url, language, tweetCount, tone } = result.data;
+    const { url, language: clientLanguage, tweetCount, tone } = result.data;
 
     // Validate URL and check for SSRF attacks
     let parsedUrl: URL;
@@ -69,11 +69,17 @@ export async function POST(req: Request) {
       return ApiError.badRequest("Not enough content found at this URL.");
     }
 
-    const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Output language: ${langLabel}.`;
 
     const prompt = `You are an expert social media writer for X (Twitter).
 Read the following article and write a ${tweetCount}-tweet thread that summarizes or comments on it.
-Output language: ${langLabel}. Tone: ${tone}.
+${langInstruction} Tone: ${tone}.
 Auto-detect the source language and note it in sourceLanguage.
 
 ARTICLE TITLE: ${articleTitle}
@@ -99,7 +105,7 @@ Constraints:
       usage?.totalTokens ?? 0,
       prompt,
       object,
-      language
+      userLanguage
     );
 
     const sanitized = {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq, and, desc } from "drizzle-orm";
 import { FileText, Plus } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { DraftsClient } from "@/components/drafts/drafts-client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { db } from "@/lib/db";
 import { posts } from "@/lib/schema";
 
 export default async function DraftsPage() {
+  const t = await getTranslations("drafts");
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login?callbackUrl=/dashboard/drafts");
 
@@ -32,13 +34,13 @@ export default async function DraftsPage() {
   return (
     <DashboardPageWrapper
       icon={FileText}
-      title="Drafts"
-      description="Manage your saved drafts and continue editing."
+      title={t("title")}
+      description={t("description")}
       actions={
         <Button asChild>
           <Link href="/dashboard/compose">
             <Plus className="mr-2 h-4 w-4" />
-            New Draft
+            {t("new_draft")}
           </Link>
         </Button>
       }

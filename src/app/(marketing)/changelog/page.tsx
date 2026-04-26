@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import type { Metadata } from "next";
 
@@ -12,7 +13,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ChangelogPage() {
+export default async function ChangelogPage() {
+  const t = await getTranslations("changelog");
+  const typeLabels: Record<string, string> = {
+    new: t("type_new"),
+    imp: t("type_imp"),
+    fix: t("type_fix"),
+  };
   const releases = [
     {
       version: "v1.2.0",
@@ -125,13 +132,13 @@ export default function ChangelogPage() {
         {/* Header */}
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge variant="outline" className="px-4 py-1">
-            Changelog
+            {t("badge")}
           </Badge>
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
-            Product Updates
+            {t("title")}
           </h1>
           <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
-            Stay up to date with the latest features and improvements.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -169,7 +176,7 @@ export default function ChangelogPage() {
                       }
                       className="mt-0.5 h-5 w-12 shrink-0 justify-center px-1.5 py-0.5 text-[10px] uppercase"
                     >
-                      {change.type}
+                      {typeLabels[change.type]}
                     </Badge>
                     <span className="text-foreground/90 leading-relaxed">{change.content}</span>
                   </li>

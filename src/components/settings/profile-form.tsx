@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Save, User, Upload, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -41,23 +42,28 @@ interface ProfileFormProps {
   };
 }
 
-const profileFormSchema = z.object({
-  name: z
-    .string()
-    .min(2, "Display name must be at least 2 characters")
-    .max(50, "Display name must be 50 characters or fewer"),
-  timezone: z.string().min(1, "Timezone is required"),
-  language: z.string().min(2, "Language is required").max(10),
-  image: z.string().nullable().optional(),
-});
+function getProfileFormSchema(t: ReturnType<typeof useTranslations<"settings">>) {
+  return z.object({
+    name: z
+      .string()
+      .min(2, t("profile.validation.name_min"))
+      .max(50, t("profile.validation.name_max")),
+    timezone: z.string().min(1, t("profile.validation.timezone_required")),
+    language: z.string().min(2, t("profile.validation.language_required")).max(10),
+    image: z.string().nullable().optional(),
+  });
+}
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type ProfileFormValues = z.infer<ReturnType<typeof getProfileFormSchema>>;
 
 export function ProfileForm({ initialData }: ProfileFormProps) {
+  const t = useTranslations("settings");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const profileFormSchema = useMemo(() => getProfileFormSchema(t), [t]);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -100,13 +106,13 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
     const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     if (!validTypes.includes(file.type)) {
-      toast.error("Only JPEG, PNG, WebP, and GIF images are allowed");
+      toast.error(t("profile.error_file_type"));
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Image must be less than 10MB");
+      toast.error(t("profile.error_file_size"));
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -129,12 +135,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
       const data = await res.json();
       form.setValue("image", data.url, { shouldDirty: true, shouldValidate: true });
-      toast.success("Avatar uploaded successfully");
+      toast.success(t("profile.avatar_uploaded"));
     } catch (error) {
       clientLogger.error("Avatar upload failed", {
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to upload avatar");
+      toast.error(t("profile.error_upload"));
     } finally {
       setUploadingAvatar(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -153,13 +159,13 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
       if (!res.ok) throw new Error("Failed to update profile");
 
-      toast.success("Profile updated successfully");
+      toast.success(t("profile.saved"));
       router.refresh();
     } catch (error) {
       clientLogger.error("Failed to update profile", {
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Something went wrong");
+      toast.error(t("profile.error_save"));
     } finally {
       setLoading(false);
     }
@@ -171,11 +177,11 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
         <div className="flex items-center gap-2">
           <User className="text-primary h-5 w-5" />
           <CardTitle>
-            Profile
+            {t("profile.profile_card_title")}
             {isDirty && <span className="text-destructive ml-1">*</span>}
           </CardTitle>
         </div>
-        <CardDescription>Manage your account details and preferences</CardDescription>
+        <CardDescription>{t("profile.profile_card_description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -199,8 +205,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    title="Upload Avatar"
-                    aria-label="Upload Avatar"
+                    title={t("profile.avatar_title")}
+                    aria-label={t("profile.avatar_title")}
                     accept="image/jpeg,image/png,image/webp,image/gif"
                     onChange={handleAvatarChange}
                     disabled={uploadingAvatar}
@@ -216,12 +222,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                     {uploadingAvatar ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
+                        {t("profile.avatar_uploading")}
                       </>
                     ) : (
                       <>
                         <Upload className="mr-2 h-4 w-4" />
-                        Upload
+                        {t("profile.avatar_upload")}
                       </>
                     )}
                   </Button>
@@ -234,12 +240,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                       disabled={uploadingAvatar}
                     >
                       <X className="mr-2 h-4 w-4" />
-                      Remove
+                      {t("profile.avatar_remove")}
                     </Button>
                   )}
                 </div>
               </div>
-              <p className="text-muted-foreground text-xs">JPG, PNG, WebP, or GIF up to 10MB</p>
+              <p className="text-muted-foreground text-xs">{t("profile.avatar_hint")}</p>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
@@ -247,7 +253,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Display Name</FormLabel>
+                    <FormLabel>{t("profile.display_name_label")}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -256,7 +262,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 )}
               />
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("profile.email_label")}</Label>
                 <Input id="email" value={initialData.email} disabled className="bg-muted" />
               </div>
               <FormField
@@ -264,11 +270,11 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 name="timezone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Timezone</FormLabel>
+                    <FormLabel>{t("profile.timezone_label")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select timezone" />
+                          <SelectValue placeholder={t("profile.timezone_placeholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -279,7 +285,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormDescription>Posts will be scheduled in this timezone.</FormDescription>
+                    <FormDescription>{t("profile.timezone_description")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -289,11 +295,11 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                 name="language"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Interface Language</FormLabel>
+                    <FormLabel>{t("profile.language_label")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select language" />
+                          <SelectValue placeholder={t("profile.language_placeholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -311,7 +317,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             </div>
             <div className="col-span-full">
               <p className="text-muted-foreground text-sm">
-                Your posts will show as:{" "}
+                {t("profile.preview_text")}{" "}
                 <strong>{formatPreview(form.watch("timezone"), form.watch("language"))}</strong>
               </p>
             </div>
@@ -319,7 +325,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
               <Button type="submit" disabled={!isDirty || !isValid || loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
-                Save Changes
+                {t("profile.save")}
               </Button>
             </div>
           </form>

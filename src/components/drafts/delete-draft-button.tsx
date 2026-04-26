@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -18,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export function DeleteDraftButton({ postId, ariaLabel }: { postId: string; ariaLabel?: string }) {
+  const t = useTranslations("drafts");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -29,7 +31,7 @@ export function DeleteDraftButton({ postId, ariaLabel }: { postId: string; ariaL
         const body = await res.json().catch(() => null);
         throw new Error(body?.error || "Delete failed");
       }
-      toast.success("Draft deleted");
+      toast.success(t("deleted_successfully"));
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -56,10 +58,8 @@ export function DeleteDraftButton({ postId, ariaLabel }: { postId: string; ariaL
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete draft?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will permanently delete the draft. This action cannot be undone.
-          </AlertDialogDescription>
+          <AlertDialogTitle>{t("delete_draft")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("delete_confirmation")}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Keep</AlertDialogCancel>

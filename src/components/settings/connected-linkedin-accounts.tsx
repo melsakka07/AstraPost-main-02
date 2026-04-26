@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Linkedin, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -28,6 +29,7 @@ export function ConnectedLinkedInAccounts({
 }: {
   initialAccounts: LinkedInAccount[];
 }) {
+  const t = useTranslations("settings");
   const [isLoading, setIsLoading] = useState(false);
   const [pendingDisconnect, setPendingDisconnect] = useState<string | null>(null);
 
@@ -52,7 +54,7 @@ export function ConnectedLinkedInAccounts({
         return;
       }
 
-      toast.success("LinkedIn account disconnected successfully");
+      toast.success(t("integrations.linkedin_disconnected_success"));
       window.location.reload();
     } catch (error) {
       toast.error("An error occurred while disconnecting the account");
@@ -71,14 +73,14 @@ export function ConnectedLinkedInAccounts({
         <CardHeader>
           <div className="flex items-center gap-2">
             <Linkedin className="h-5 w-5 text-[#0077b5]" />
-            <CardTitle>LinkedIn Accounts</CardTitle>
+            <CardTitle>{t("integrations.linkedin_title")}</CardTitle>
           </div>
-          <CardDescription>Manage your connected LinkedIn profiles</CardDescription>
+          <CardDescription>{t("integrations.linkedin_description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {initialAccounts.length === 0 ? (
             <div className="text-muted-foreground py-4 text-center text-sm">
-              No LinkedIn accounts connected.
+              {t("integrations.no_linkedin_accounts")}
             </div>
           ) : (
             <div className="space-y-2">
@@ -105,7 +107,7 @@ export function ConnectedLinkedInAccounts({
                     <div>
                       <div className="font-medium">{account.linkedinName}</div>
                       <div className="text-muted-foreground text-xs">
-                        {account.isActive ? "Active" : "Inactive"}
+                        {account.isActive ? t("integrations.active") : t("integrations.inactive")}
                       </div>
                     </div>
                   </div>
@@ -124,7 +126,7 @@ export function ConnectedLinkedInAccounts({
 
           <Button variant="outline" className="w-full gap-2" onClick={handleConnect} disabled>
             <Plus className="h-4 w-4" />
-            Connect LinkedIn Account
+            {t("integrations.connect_linkedin")}
           </Button>
         </CardContent>
       </Card>
@@ -135,16 +137,17 @@ export function ConnectedLinkedInAccounts({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Disconnect LinkedIn Account?</AlertDialogTitle>
+            <AlertDialogTitle>{t("integrations.disconnect_linkedin_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to disconnect {accountToDisconnect?.linkedinName}? You can
-              reconnect it later.
+              {t("integrations.disconnect_linkedin_desc", {
+                name: accountToDisconnect?.linkedinName ?? "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3">
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isLoading}>{t("integrations.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDisconnect} disabled={isLoading}>
-              {isLoading ? "Disconnecting..." : "Disconnect"}
+              {isLoading ? t("integrations.disconnecting") : t("integrations.disconnect")}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

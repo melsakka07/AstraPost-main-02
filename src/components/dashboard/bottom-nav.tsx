@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Bot, LayoutDashboard, ListOrdered, Menu, PenSquare, Settings } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_ITEMS = [
@@ -22,6 +23,8 @@ const BOTTOM_NAV_ITEMS = [
  * This ensures parity with the sidebar while keeping 5 critical routes quickly accessible.
  */
 export function BottomNav() {
+  const t = useTranslations("nav");
+  const tShell = useTranslations("dashboard_shell");
   const pathname = usePathname();
 
   return (
@@ -36,20 +39,21 @@ export function BottomNav() {
           // Special handling: /dashboard/ai matches /dashboard/ai and /dashboard/ai/...
           // but not /dashboard/ai-related paths (e.g., /dashboard/analytics is not under /dashboard/ai)
           const isActive = pathname === href || pathname.startsWith(`${href}/`);
+          const translatedLabel = t(label.toLowerCase() as any, { defaultValue: label });
 
           return (
             <Link
               key={href}
               href={href}
               aria-current={isActive ? "page" : undefined}
-              aria-label={label}
+              aria-label={translatedLabel}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className="h-5 w-5 shrink-0" />
-              {label}
+              {translatedLabel}
             </Link>
           );
         })}
@@ -59,12 +63,12 @@ export function BottomNav() {
             Competitor, Achievements, Referrals, Jobs (admin), plus all collapsible sections. */}
         <button
           type="button"
-          aria-label="Open full navigation menu"
+          aria-label={tShell("open_navigation")}
           className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors"
           onClick={() => document.dispatchEvent(new CustomEvent("sidebar:open"))}
         >
           <Menu className="h-5 w-5 shrink-0" />
-          More
+          {tShell("bottom_nav.more")}
         </button>
       </div>
     </nav>

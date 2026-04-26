@@ -180,7 +180,8 @@ describe("POST /api/team/invite", () => {
     expect(mockSendTeamInvitationEmail).toHaveBeenCalledWith(
       "test@example.com",
       expect.any(String),
-      "Agency Owner"
+      "Agency Owner",
+      "en"
     );
   });
 });

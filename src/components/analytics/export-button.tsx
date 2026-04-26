@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +13,8 @@ import {
 import { clientLogger } from "@/lib/client-logger";
 
 export function ExportButton({ range }: { range: string }) {
+  const t = useTranslations("analytics");
+
   const handleExport = async (format: "csv" | "pdf") => {
     const loadingToast = toast.loading(`Generating ${format.toUpperCase()} export...`);
 
@@ -21,7 +24,7 @@ export function ExportButton({ range }: { range: string }) {
       if (!response.ok) {
         if (response.status === 402) {
           toast.dismiss(loadingToast);
-          toast.error("Upgrade to Pro to export analytics");
+          toast.error(t("upgrade_cta"));
           return;
         }
         throw new Error("Export failed");

@@ -15,6 +15,15 @@ interface UpgradeBannerProps {
   usedAmount?: number;
   limitAmount?: number;
   featureName?: string;
+  /** Translated text snippets for the limit warning messages */
+  translations?: {
+    used?: string;
+    of?: string;
+    limitReached?: string;
+    runningLow?: string;
+    upgradeToIncrease?: string;
+    cta?: string;
+  };
 }
 
 export function UpgradeBanner({
@@ -25,9 +34,18 @@ export function UpgradeBanner({
   usedAmount,
   limitAmount,
   featureName = "usage",
+  translations,
 }: UpgradeBannerProps) {
   const isNearLimit = usagePercentage !== undefined && usagePercentage >= 80;
   const isAtLimit = usagePercentage !== undefined && usagePercentage >= 100;
+
+  const txt = {
+    used: translations?.used ?? "used",
+    of: translations?.of ?? "of",
+    limitReached: translations?.limitReached ?? "limit reached",
+    runningLow: translations?.runningLow ?? "Running low on",
+    upgradeToIncrease: translations?.upgradeToIncrease ?? "Upgrade to increase your limits.",
+  };
 
   return (
     <Card
@@ -72,14 +90,14 @@ export function UpgradeBanner({
                 )}
               >
                 {isAtLimit
-                  ? `${featureName} limit reached`
+                  ? `${featureName} ${txt.limitReached}`
                   : isNearLimit
-                    ? `Running low on ${featureName.toLowerCase()}`
+                    ? `${txt.runningLow} ${featureName.toLowerCase()}`
                     : title}
               </h3>
               <p className="text-muted-foreground max-w-[500px] text-sm">
                 {isAtLimit || isNearLimit
-                  ? `You've used ${usedAmount} of ${limitAmount} ${featureName.toLowerCase()}. Upgrade to increase your limits.`
+                  ? `You've ${txt.used} ${usedAmount} ${txt.of} ${limitAmount} ${featureName.toLowerCase()}. ${txt.upgradeToIncrease}`
                   : description}
               </p>
             </div>
@@ -104,7 +122,7 @@ export function UpgradeBanner({
             isNearLimit && !isAtLimit ? "bg-amber-500 text-white hover:bg-amber-600" : ""
           )}
         >
-          <Link href="/pricing">Upgrade Now</Link>
+          <Link href="/pricing">{translations?.cta ?? "Upgrade Now"}</Link>
         </Button>
       </CardContent>
     </Card>

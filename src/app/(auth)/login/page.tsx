@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Check } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { auth } from "@/lib/auth";
 
@@ -16,19 +17,24 @@ export default async function LoginPage({
   }
 
   const { error, error_description, ref } = await searchParams;
+  const t = await getTranslations("auth");
+
+  const features = [
+    t("login.features.schedule"),
+    t("login.features.ai_writer"),
+    t("login.features.viral"),
+  ];
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Sign in with X to get started</h1>
-          <p className="text-muted-foreground text-sm">
-            Connect your X account to manage, schedule, and analyze your content.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("login.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("login.subtitle")}</p>
         </div>
 
         <div className="space-y-3">
-          {FEATURES.map((feature) => (
+          {features.map((feature) => (
             <div key={feature} className="text-muted-foreground flex items-center gap-3 text-sm">
               <Check className="text-primary h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{feature}</span>
@@ -40,26 +46,29 @@ export default async function LoginPage({
 
         {error && (
           <p role="alert" className="text-destructive text-center text-sm">
-            {getErrorMessage(error, error_description)}
+            {getErrorMessage(error, error_description, t)}
           </p>
         )}
 
         <p className="text-muted-foreground text-center text-xs">
-          By continuing, you agree to AstraPost&apos;s{" "}
-          <a href="/legal/terms" className="hover:text-foreground underline">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="/legal/privacy" className="hover:text-foreground underline">
-            Privacy Policy
-          </a>
-          .
+          {t.rich("login.agreement", {
+            terms: (chunks) => (
+              <a href="/legal/terms" className="hover:text-foreground underline">
+                {chunks}
+              </a>
+            ),
+            privacy: (chunks) => (
+              <a href="/legal/privacy" className="hover:text-foreground underline">
+                {chunks}
+              </a>
+            ),
+          })}
         </p>
 
         <p className="text-muted-foreground text-center text-sm">
-          Don&apos;t have an account?{" "}
+          {t("login.no_account")}{" "}
           <a href="/register" className="text-primary hover:text-primary/80 font-medium">
-            Register
+            {t("login.register_link")}
           </a>
         </p>
       </div>
@@ -67,23 +76,16 @@ export default async function LoginPage({
   );
 }
 
-const FEATURES = [
-  "Schedule tweets and threads in advance",
-  "AI-powered thread writer in your language",
-  "Viral content analyzer and analytics dashboard",
-];
+type TFunction = Awaited<ReturnType<typeof getTranslations<"auth">>>;
 
-function getErrorMessage(error: string, description?: string): string {
-  switch (error) {
-    case "access_denied":
-      return "You need to authorize AstraPost to access your X account to continue.";
-    case "server_error":
-      return "X is currently unavailable. Please try again in a few minutes.";
-    case "callback_error":
-      return "Sign-in failed. Please try again.";
-    case "email_not_found":
-      return "We couldn't get your email from X. Please ensure your X account has a verified email address.";
-    default:
-      return description || "Sign-in failed. Please try again.";
-  }
+function getErrorMessage(error: string, description: string | undefined, t: TFunction): string {
+  const knownErrors = [
+    "access_denied",
+    "server_error",
+    "callback_error",
+    "email_not_found",
+  ] as const;
+  const isKnown = (knownErrors as readonly string[]).includes(error);
+  if (isKnown) return t(`login.errors.${error}` as Parameters<TFunction>[0]);
+  return description || t("login.errors.default");
 }

@@ -101,8 +101,19 @@ export async function POST(req: NextRequest) {
       status: "pending",
     });
 
+    // Query invitee's language preference
+    const invitee = await db.query.user.findFirst({
+      where: eq(user.email, email),
+      columns: { language: true },
+    });
+
     // Send email
-    await sendTeamInvitationEmail(email, token, owner?.name || "AstraPost Team");
+    await sendTeamInvitationEmail(
+      email,
+      token,
+      owner?.name || "AstraPost Team",
+      invitee?.language || "en"
+    );
 
     logger.info("team_invite_created", {
       userId: ctx.session.user.id,

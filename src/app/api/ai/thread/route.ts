@@ -60,15 +60,33 @@ export async function POST(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { topic, hook, tone, tweetCount, language, mode, lengthOption, targetAccountId } =
-      parsed.data;
+    const {
+      topic,
+      hook,
+      tone,
+      tweetCount,
+      language: clientLanguage,
+      mode,
+      lengthOption,
+      targetAccountId,
+    } = parsed.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
+
+    // In prompt — add explicit Arabic instruction:
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Language: ${langLabel}.`;
 
     const dedupKey = RequestDedup.generateKey(session.user.id, "ai_thread", {
       topic,
       hook,
       tone,
       tweetCount,
-      language,
+      language: userLanguage,
       mode,
       lengthOption,
       targetAccountId,
@@ -136,7 +154,6 @@ export async function POST(req: Request) {
     }
 
     const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
-    const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
 
     // ── Build prompt based on mode ────────────────────────────────────────────
     let prompt: string;
@@ -148,7 +165,7 @@ export async function POST(req: Request) {
       prompt = `You are an expert social media content writer for X (Twitter).
 Write exactly ONE post about "${topic}".
 ${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle, but adapt freely.\n` : ""}Tone: ${tone}.
-Language: ${langLabel}.
+${langInstruction}
 ${voiceInstructions}
 
 ${lengthGuidance}
@@ -163,7 +180,7 @@ Requirements:
       prompt = `You are an expert social media content writer for X (Twitter).
 Write exactly ${tweetCount} tweets about "${topic}".
 ${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle of the first tweet, but adapt freely.\n` : ""}Tone: ${tone}.
-Language: ${langLabel}.
+${langInstruction}
 ${voiceInstructions}
 
 Requirements:
@@ -235,7 +252,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
                 usage?.totalTokens ?? 0,
                 prompt,
                 null,
-                language
+                userLanguage
               );
             } catch {
               // Usage recording failure should not affect the user
@@ -301,7 +318,14 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           // Record AI usage (non-critical — fire after responding)
           try {
             const usage = await streamResult.usage;
-            await recordAiUsage(userId, "thread", usage?.totalTokens ?? 0, prompt, null, language);
+            await recordAiUsage(
+              userId,
+              "thread",
+              usage?.totalTokens ?? 0,
+              prompt,
+              null,
+              userLanguage
+            );
           } catch {
             // Usage recording failure should not affect the user
           }

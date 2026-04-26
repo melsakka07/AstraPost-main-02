@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,13 @@ export default function RegisterPage() {
   const ref = searchParams.get("ref");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("auth");
+
+  const features = [
+    t("register.features.schedule"),
+    t("register.features.ai_writer"),
+    t("register.features.viral"),
+  ];
 
   // Store referral code in cookie when component mounts
   useEffect(() => {
@@ -84,11 +92,11 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         if (response.status === 409) {
-          setError("Email already registered. Please sign in.");
+          setError(t("register.errors.email_exists"));
         } else if (response.status === 429) {
-          setError("Too many registration attempts. Please try again later.");
+          setError(data.error || t("register.errors.weak_password"));
         } else {
-          setError(data.error || "Registration failed. Please try again.");
+          setError(data.error || t("register.errors.weak_password"));
         }
         setIsPending(false);
         return;
@@ -97,7 +105,7 @@ export default function RegisterPage() {
       // Success - redirect to dashboard
       router.push("/dashboard");
     } catch (err) {
-      setError("Registration failed. Please try again.");
+      setError(t("register.errors.weak_password"));
       setIsPending(false);
     }
   }
@@ -106,14 +114,12 @@ export default function RegisterPage() {
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
-          <p className="text-muted-foreground text-sm">
-            Join AstraPost to schedule tweets, generate AI content, and analyze your performance.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("register.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("register.subtitle")}</p>
         </div>
 
         <div className="space-y-3">
-          {FEATURES.map((feature) => (
+          {features.map((feature) => (
             <div key={feature} className="text-muted-foreground flex items-center gap-3 text-sm">
               <Check className="text-primary h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{feature}</span>
@@ -128,7 +134,7 @@ export default function RegisterPage() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t("register.email_label")}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="you@example.com"
@@ -148,7 +154,7 @@ export default function RegisterPage() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>{t("register.password_label")}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Min. 8 characters"
@@ -167,7 +173,7 @@ export default function RegisterPage() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel>{t("register.confirm_password_label")}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Confirm your password"
@@ -191,14 +197,18 @@ export default function RegisterPage() {
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>
-                      I agree to the{" "}
-                      <a href="/legal/terms" className="hover:text-foreground underline">
-                        Terms of Service
-                      </a>{" "}
-                      and{" "}
-                      <a href="/legal/privacy" className="hover:text-foreground underline">
-                        Privacy Policy
-                      </a>
+                      {t.rich("register.agreement", {
+                        terms: (chunks) => (
+                          <a href="/legal/terms" className="hover:text-foreground underline">
+                            {chunks}
+                          </a>
+                        ),
+                        privacy: (chunks) => (
+                          <a href="/legal/privacy" className="hover:text-foreground underline">
+                            {chunks}
+                          </a>
+                        ),
+                      })}
                     </FormLabel>
                   </div>
                 </FormItem>
@@ -234,28 +244,22 @@ export default function RegisterPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
                   </svg>
-                  Creating account...
+                  {t("register.creating")}
                 </>
               ) : (
-                "Create account"
+                t("register.submit")
               )}
             </Button>
           </form>
         </Form>
 
         <p className="text-muted-foreground text-center text-sm">
-          Already have an account?{" "}
+          {t("register.has_account")}{" "}
           <a href="/login" className="text-primary hover:text-primary/80 font-medium">
-            Sign in
+            {t("register.sign_in_link")}
           </a>
         </p>
       </div>
     </div>
   );
 }
-
-const FEATURES = [
-  "Schedule tweets and threads in advance",
-  "AI-powered thread writer in your language",
-  "Viral content analyzer and analytics dashboard",
-];

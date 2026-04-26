@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { UserPen, Sparkles, Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ interface PlanLimitPayload {
 }
 
 export default function BioOptimizerPage() {
+  const t = useTranslations("ai_bio");
   const { openWithContext } = useUpgradeModal();
 
   const [currentBio, setCurrentBio] = useState("");
@@ -99,14 +101,14 @@ export default function BioOptimizerPage() {
           return;
         }
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        toast.error(err.error ?? "Failed to generate bio variants");
+        toast.error(err.error ?? t("error"));
         return;
       }
 
       const data = (await res.json()) as { variants: BioVariant[] };
       setVariants(data.variants);
     } catch {
-      toast.error("Failed to generate bio variants. Please try again.");
+      toast.error(t("error"));
     } finally {
       setIsLoading(false);
     }
@@ -120,28 +122,26 @@ export default function BioOptimizerPage() {
   };
 
   return (
-    <DashboardPageWrapper
-      icon={UserPen}
-      title="AI Bio Optimizer"
-      description="Enter your niche to generate 3 compelling X bio variants under 160 characters — optimized for your goal."
-    >
-      <Breadcrumb items={[{ label: "Bio Optimizer" }]} className="mb-2" />
+    <DashboardPageWrapper icon={UserPen} title={t("title")} description={t("description")}>
+      <Breadcrumb items={[{ label: t("title") }]} className="mb-2" />
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         {/* Config */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Configure</CardTitle>
+            <CardTitle className="text-base">{t("configure")}</CardTitle>
             {connectedUsername && (
-              <CardDescription>Connected as @{connectedUsername}</CardDescription>
+              <CardDescription>
+                {t("connected_as", { username: connectedUsername })}
+              </CardDescription>
             )}
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="currentBio">Current Bio (optional)</Label>
+              <Label htmlFor="currentBio">{t("current_bio_label")}</Label>
               <div className="relative">
                 <Textarea
                   id="currentBio"
-                  placeholder="Paste your current X bio here, or leave blank..."
+                  placeholder={t("current_bio_placeholder")}
                   className="resize-none pb-6"
                   rows={3}
                   value={currentBio}
@@ -163,10 +163,10 @@ export default function BioOptimizerPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="niche">Your Niche</Label>
+              <Label htmlFor="niche">{t("your_niche")}</Label>
               <Input
                 id="niche"
-                placeholder="e.g. Islamic finance, AI tools, fitness..."
+                placeholder={t("niche_placeholder")}
                 value={niche}
                 onChange={(e) => setNiche(e.target.value)}
                 maxLength={100}
@@ -175,22 +175,22 @@ export default function BioOptimizerPage() {
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
               <div className="space-y-2">
-                <Label>Optimization Goal</Label>
+                <Label>{t("optimization_goal")}</Label>
                 <Select value={goal} onValueChange={setGoal}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="general">General</SelectItem>
-                    <SelectItem value="gain_followers">Gain Followers</SelectItem>
-                    <SelectItem value="attract_clients">Attract Clients</SelectItem>
-                    <SelectItem value="build_authority">Build Authority</SelectItem>
+                    <SelectItem value="general">{t("general")}</SelectItem>
+                    <SelectItem value="gain_followers">{t("gain_followers")}</SelectItem>
+                    <SelectItem value="attract_clients">{t("attract_clients")}</SelectItem>
+                    <SelectItem value="build_authority">{t("build_authority")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Language</Label>
+                <Label>{t("language")}</Label>
                 <Select value={language} onValueChange={setLanguage}>
                   <SelectTrigger>
                     <SelectValue />
@@ -220,12 +220,12 @@ export default function BioOptimizerPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  Generating... ({elapsed}s)
+                  {t("generating")} ({elapsed}s)
                 </>
               ) : (
                 <>
                   <Sparkles className="me-2 h-4 w-4" />
-                  Generate 3 Bio Variants
+                  {t("generate_variants")}
                 </>
               )}
             </Button>
@@ -258,10 +258,8 @@ export default function BioOptimizerPage() {
                 ))}
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold">3 bio variants will appear here</p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Each targets a different goal — followers, clients, or authority
-                </p>
+                <p className="text-sm font-semibold">{t("variants_appear")}</p>
+                <p className="text-muted-foreground mt-1 text-xs">{t("variants_description")}</p>
               </div>
             </div>
           )}
@@ -269,7 +267,7 @@ export default function BioOptimizerPage() {
           {isLoading && (
             <div className="border-border bg-muted/20 flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-16">
               <Loader2 className="text-primary h-8 w-8 animate-spin" />
-              <p className="text-muted-foreground text-sm">Crafting optimized bios...</p>
+              <p className="text-muted-foreground text-sm">{t("crafting")}</p>
             </div>
           )}
 
@@ -284,12 +282,12 @@ export default function BioOptimizerPage() {
                     {copiedIdx === idx ? (
                       <>
                         <Check className="me-1 h-3.5 w-3.5" />
-                        Copied
+                        {t("copied")}
                       </>
                     ) : (
                       <>
                         <Copy className="me-1 h-3.5 w-3.5" />
-                        Copy
+                        {t("copy")}
                       </>
                     )}
                   </Button>
@@ -299,7 +297,9 @@ export default function BioOptimizerPage() {
                   <p
                     className={`text-xs tabular-nums ${v.text.length > 160 ? "text-destructive" : "text-emerald-500"}`}
                   >
-                    {v.text.length}/160 chars{v.text.length > 160 && " — over limit"}
+                    {v.text.length > 160
+                      ? t("chars_over_limit", { count: v.text.length })
+                      : `${v.text.length}/160`}
                   </p>
                   <a
                     href="https://x.com/settings/profile"
@@ -308,7 +308,7 @@ export default function BioOptimizerPage() {
                     className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
                   >
                     <ExternalLink className="h-3 w-3" />
-                    Open X Settings
+                    {t("open_x_settings")}
                   </a>
                 </div>
                 <p className="text-muted-foreground text-xs italic">{v.rationale}</p>

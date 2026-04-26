@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkContentCalendarAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -42,14 +42,21 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { niche, language, postsPerWeek, weeks, tone } = result.data;
-    const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
+    const { niche, language: clientLanguage, postsPerWeek, weeks, tone } = result.data;
 
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
     const totalPosts = postsPerWeek * weeks;
+
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Language: ${langLabel}.`;
 
     const prompt = `You are a social media strategist for X (Twitter).
 Create a content calendar for ${weeks} week(s) with ${postsPerWeek} posts per week (${totalPosts} total) for a creator in the "${niche}" niche.
-Language: ${langLabel}. Default tone: ${tone}.
+${langInstruction} Default tone: ${tone}.
 
 For each post return:
 - day: day of week (Monday, Tuesday, etc.)
@@ -74,7 +81,7 @@ Return exactly ${totalPosts} items.`;
       usage?.totalTokens ?? 0,
       prompt,
       object,
-      language
+      userLanguage
     );
 
     const res = Response.json(object);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
@@ -25,6 +26,7 @@ interface PostUsageBarProps {
 }
 
 export function PostUsageBar({ className }: PostUsageBarProps) {
+  const t = useTranslations("dashboard_shell");
   const [data, setData] = useState<UsageData | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -86,7 +88,11 @@ export function PostUsageBar({ className }: PostUsageBarProps) {
       usagePercentage={percentage}
       usedAmount={postsUsed}
       limitAmount={postLimit}
-      featureName="Posts"
+      featureName={t("post_usage.feature_name")}
+      translations={{
+        used: t("post_usage.used"),
+        of: t("post_usage.of"),
+      }}
     />
   );
 }

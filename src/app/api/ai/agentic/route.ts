@@ -107,7 +107,10 @@ export async function POST(req: Request) {
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
 
-    const { topic, xAccountId, language, preferences } = parsed.data;
+    const { topic, xAccountId, language: clientLanguage, preferences } = parsed.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
 
     // 3. Verify xAccount ownership
     const account = await db.query.xAccounts.findFirst({
@@ -166,7 +169,7 @@ export async function POST(req: Request) {
             xAccountId,
             xSubscriptionTier: tier,
             voiceProfile: dbUser.voiceProfile,
-            language,
+            language: userLanguage,
             userId: session.user.id,
             correlationId,
             agenticPostId,

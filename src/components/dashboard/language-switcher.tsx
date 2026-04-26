@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSyncExternalStore } from "react";
 import { Globe, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ function useIsClient() {
 }
 
 export function LanguageSwitcher() {
+  const t = useTranslations("dashboard_shell");
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const isClient = useIsClient();
@@ -70,7 +72,7 @@ export function LanguageSwitcher() {
           variant="ghost"
           size="icon"
           className="h-9 w-9 shrink-0"
-          aria-label="Switch language"
+          aria-label={t("switch_language")}
           disabled={shouldShowSpinner}
         >
           {shouldShowSpinner ? (

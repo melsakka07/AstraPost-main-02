@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useState } from "react";
 import { Moon, Sun, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ const THEME_OPTIONS = [
 ];
 
 export function ThemeSwitcher() {
+  const t = useTranslations("dashboard_shell");
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -42,7 +44,12 @@ export function ThemeSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="Toggle theme">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 shrink-0"
+          aria-label={t("theme_switch")}
+        >
           {displayIcon}
         </Button>
       </DropdownMenuTrigger>

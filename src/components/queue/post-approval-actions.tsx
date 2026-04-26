@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +12,7 @@ interface PostApprovalActionsProps {
 }
 
 export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsProps) {
+  const t = useTranslations("queue");
   const router = useRouter();
 
   const handleAction = async (action: "approve" | "reject") => {
@@ -43,7 +45,7 @@ export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsPr
         onClick={() => handleAction("reject")}
       >
         <X className="mr-1 h-4 w-4" />
-        Reject
+        {t("reject")}
       </Button>
       <Button
         size="sm"
@@ -52,7 +54,7 @@ export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsPr
         onClick={() => handleAction("approve")}
       >
         <Check className="mr-1 h-4 w-4" />
-        Approve
+        {t("approve")}
       </Button>
     </div>
   );

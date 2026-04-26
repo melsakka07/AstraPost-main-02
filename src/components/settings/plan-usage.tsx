@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
@@ -30,6 +31,7 @@ function getPercentage(used: number, limit: number | null) {
 }
 
 export function PlanUsage() {
+  const t = useTranslations("settings");
   const [data, setData] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -62,9 +64,9 @@ export function PlanUsage() {
   if (error || !data) {
     return (
       <div className="text-muted-foreground mt-4 border-t pt-4 text-sm">
-        Failed to load usage data.{" "}
+        {t("billing.plan_usage.load_error")}{" "}
         <button onClick={() => window.location.reload()} className="text-primary hover:underline">
-          Refresh
+          {t("billing.refresh")}
         </button>
       </div>
     );
@@ -83,13 +85,25 @@ export function PlanUsage() {
   );
   const showUpgradeCta = highestPercentage >= 70 && plan !== "agency";
 
+  const upgradeBannerTranslations = {
+    used: t("billing.upgrade_banner.used"),
+    of: t("billing.upgrade_banner.of"),
+    limitReached: t("billing.upgrade_banner.limit_reached"),
+    runningLow: t("billing.upgrade_banner.running_low"),
+    upgradeToIncrease: t("billing.upgrade_banner.increase_limits"),
+    cta: t("billing.upgrade_banner.cta"),
+  };
+
   return (
     <div className="mt-4 space-y-6 border-t pt-4">
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span>Posts this month</span>
+          <span>{t("billing.plan_usage.posts")}</span>
           <span className="text-muted-foreground">
-            {usage.posts} / {limits.postsPerMonth === null ? "Unlimited" : limits.postsPerMonth}
+            {usage.posts} /{" "}
+            {limits.postsPerMonth === null
+              ? t("billing.plan_usage.unlimited")
+              : limits.postsPerMonth}
           </span>
         </div>
         <Progress value={postPercentage} className="h-2" />
@@ -97,9 +111,10 @@ export function PlanUsage() {
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span>Connected X Accounts</span>
+          <span>{t("billing.plan_usage.accounts")}</span>
           <span className="text-muted-foreground">
-            {usage.accounts} / {limits.maxXAccounts === null ? "Unlimited" : limits.maxXAccounts}
+            {usage.accounts} /{" "}
+            {limits.maxXAccounts === null ? t("billing.plan_usage.unlimited") : limits.maxXAccounts}
           </span>
         </div>
         <Progress value={accountPercentage} className="h-2" />
@@ -110,11 +125,14 @@ export function PlanUsage() {
                 href="/dashboard/settings#accounts"
                 className="text-primary cursor-pointer hover:underline"
               >
-                {limits.maxXAccounts - usage.accounts} slot
-                {limits.maxXAccounts - usage.accounts > 1 ? "s" : ""} available — add account
+                {t("billing.plan_usage.slots_available", {
+                  count: limits.maxXAccounts - usage.accounts,
+                })}
               </Link>
             ) : (
-              <span className="text-muted-foreground">Account limit reached</span>
+              <span className="text-muted-foreground">
+                {t("billing.plan_usage.account_limit_reached")}
+              </span>
             )}
           </div>
         )}
@@ -122,10 +140,12 @@ export function PlanUsage() {
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span>AI generations this month</span>
+          <span>{t("billing.plan_usage.ai")}</span>
           <span className="text-muted-foreground">
             {usage.ai} /{" "}
-            {limits.aiGenerationsPerMonth === null ? "Unlimited" : limits.aiGenerationsPerMonth}
+            {limits.aiGenerationsPerMonth === null
+              ? t("billing.plan_usage.unlimited")
+              : limits.aiGenerationsPerMonth}
           </span>
         </div>
         <Progress value={aiPercentage} className="h-2" />
@@ -133,10 +153,12 @@ export function PlanUsage() {
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span>AI images this month</span>
+          <span>{t("billing.plan_usage.ai_images")}</span>
           <span className="text-muted-foreground">
             {usage.aiImages} /{" "}
-            {limits.aiImagesPerMonth === null ? "Unlimited" : limits.aiImagesPerMonth}
+            {limits.aiImagesPerMonth === null
+              ? t("billing.plan_usage.unlimited")
+              : limits.aiImagesPerMonth}
           </span>
         </div>
         <Progress value={imagePercentage} className="h-2" />
@@ -144,6 +166,8 @@ export function PlanUsage() {
 
       {showUpgradeCta && (
         <UpgradeBanner
+          title={t("billing.upgrade_banner.title")}
+          description={t("billing.upgrade_banner.description")}
           usagePercentage={highestPercentage}
           usedAmount={
             highestPercentage === postPercentage
@@ -165,13 +189,14 @@ export function PlanUsage() {
           }
           featureName={
             highestPercentage === postPercentage
-              ? "Posts"
+              ? t("billing.plan_usage.posts")
               : highestPercentage === accountPercentage
-                ? "Accounts"
+                ? t("billing.plan_usage.accounts")
                 : highestPercentage === aiPercentage
-                  ? "AI generations"
-                  : "AI images"
+                  ? t("billing.plan_usage.ai")
+                  : t("billing.plan_usage.ai_images")
           }
+          translations={upgradeBannerTranslations}
         />
       )}
     </div>

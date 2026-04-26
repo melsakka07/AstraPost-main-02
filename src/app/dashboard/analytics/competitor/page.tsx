@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ArrowLeftRight,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -82,6 +83,7 @@ interface SelfStats {
 }
 
 export default function CompetitorAnalyzerPage() {
+  const t = useTranslations("analytics_competitor");
   const { openWithContext } = useUpgradeModal();
   const userLocale = useUserLocale();
 
@@ -166,11 +168,7 @@ export default function CompetitorAnalyzerPage() {
   };
 
   return (
-    <DashboardPageWrapper
-      icon={Users}
-      title="Competitor Analyzer"
-      description="Enter a public X username to uncover their posting strategy, top topics, and where you can stand out."
-    >
+    <DashboardPageWrapper icon={Users} title={t("title")} description={t("description")}>
       {/* Input */}
       <Card>
         <CardContent className="p-5">

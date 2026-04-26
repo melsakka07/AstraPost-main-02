@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Loader2, Sparkles, RefreshCw, Send } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -62,6 +63,7 @@ export function AdaptationPanel({
   onSendToComposer,
 }: AdaptationPanelProps) {
   const { data: session } = useSession();
+  const t = useTranslations("inspiration");
   const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
   const [aiAction, setAiAction] = useState("rephrase");
   const [aiTone, setAiTone] = useState("professional");
@@ -134,11 +136,11 @@ export function AdaptationPanel({
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "manual" | "ai")}>
           <TabsList className="grid h-9 w-full grid-cols-2 sm:h-10">
             <TabsTrigger value="manual" className="text-xs sm:text-sm">
-              Manual
+              {t("manual.title")}
             </TabsTrigger>
             <TabsTrigger value="ai" className="text-xs sm:text-sm">
               <Sparkles className="mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              AI Assist
+              {t("ai_assist.title")}
             </TabsTrigger>
           </TabsList>
 
@@ -155,7 +157,7 @@ export function AdaptationPanel({
           <TabsContent value="ai" className="mt-4 space-y-3 sm:space-y-4">
             {/* Action Selector */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm">What would you like to do?</Label>
+              <Label className="text-xs sm:text-sm">{t("ai_assist.what_do")}</Label>
               <Select value={aiAction} onValueChange={setAiAction}>
                 <SelectTrigger className="h-9 sm:h-10">
                   <SelectValue />
@@ -164,9 +166,11 @@ export function AdaptationPanel({
                   {AI_ACTIONS.map((action) => (
                     <SelectItem key={action.value} value={action.value}>
                       <div className="flex flex-col">
-                        <span className="text-xs sm:text-sm">{action.label}</span>
+                        <span className="text-xs sm:text-sm">
+                          {t(`ai_assist.${action.value}` as any)}
+                        </span>
                         <span className="text-muted-foreground text-[10px] sm:text-xs">
-                          {action.description}
+                          {t(`ai_assist.${action.value}_description` as any)}
                         </span>
                       </div>
                     </SelectItem>
@@ -175,17 +179,17 @@ export function AdaptationPanel({
               </Select>
               {selectedAction && (
                 <p className="text-muted-foreground text-[10px] sm:text-xs">
-                  {selectedAction.description}
+                  {t(`ai_assist.${selectedAction.value}_description` as any)}
                 </p>
               )}
             </div>
 
             {/* Tone Selector */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm">Tone (optional)</Label>
+              <Label className="text-xs sm:text-sm">{t("ai_assist.tone_optional")}</Label>
               <Select value={aiTone} onValueChange={setAiTone}>
                 <SelectTrigger className="h-9 sm:h-10">
-                  <SelectValue placeholder="Select tone" />
+                  <SelectValue placeholder={t("ai_assist.select_tone")} />
                 </SelectTrigger>
                 <SelectContent>
                   {TONES.map((tone) => (
@@ -199,7 +203,7 @@ export function AdaptationPanel({
 
             {/* Language Toggle */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm">Language</Label>
+              <Label className="text-xs sm:text-sm">{t("ai_assist.language")}</Label>
               <Select value={aiLanguage} onValueChange={(v) => setAiLanguage(v as "ar" | "en")}>
                 <SelectTrigger className="h-9 sm:h-10">
                   <SelectValue />
@@ -216,16 +220,16 @@ export function AdaptationPanel({
 
             {/* User Context (optional) */}
             <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-xs sm:text-sm">Your perspective (optional)</Label>
+              <Label className="text-xs sm:text-sm">{t("ai_assist.your_perspective")}</Label>
               <Textarea
                 value={userContext}
                 onChange={(e) => setUserContext(e.target.value)}
-                placeholder="Add your unique angle, expertise, or opinion..."
+                placeholder={t("ai_assist.perspective_placeholder")}
                 className="min-h-[60px] resize-none text-sm sm:min-h-[80px]"
                 maxLength={1000}
               />
               <p className="text-muted-foreground text-[10px] sm:text-xs">
-                {userContext.length} / 1000
+                {t("ai_assist.perspective_count", { count: userContext.length })}
               </p>
             </div>
 
@@ -235,12 +239,12 @@ export function AdaptationPanel({
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
+                    {t("ai_assist.generating")}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate
+                    {t("ai_assist.generate")}
                   </>
                 )}
               </Button>
@@ -250,7 +254,7 @@ export function AdaptationPanel({
                 <div className="border-border space-y-3 rounded-lg border p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-sm font-medium">
-                      Generated Content ({aiAction})
+                      {t("ai_assist.generated_content", { action: aiAction })}
                     </span>
                     <Button
                       variant="ghost"
@@ -269,11 +273,13 @@ export function AdaptationPanel({
                   {generatedContent.tweets.map((tweet, i) => (
                     <div key={i} className="bg-muted/30 border-border rounded-md border p-3">
                       <div className="text-muted-foreground mb-1 text-xs">
-                        {generatedContent.tweets.length > 1 ? `Tweet ${i + 1}` : "Tweet"}
+                        {generatedContent.tweets.length > 1
+                          ? t("ai_assist.tweet_number", { number: i + 1 })
+                          : t("ai_assist.tweet_label")}
                       </div>
                       <p className="text-sm whitespace-pre-wrap">{tweet}</p>
                       <p className="text-muted-foreground mt-2 text-xs">
-                        {tweet.length} / 1000 characters
+                        {t("ai_assist.chars", { count: tweet.length })}
                       </p>
                     </div>
                   ))}
@@ -281,7 +287,7 @@ export function AdaptationPanel({
                   {/* Send to Composer Button */}
                   <Button onClick={handleSendAiToComposer} className="w-full">
                     <Send className="mr-2 h-4 w-4" />
-                    Send to Composer
+                    {t("ai_assist.send_to_composer")}
                   </Button>
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { generateText } from "ai";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
@@ -22,9 +23,16 @@ import { recordAiUsage } from "@/lib/services/ai-quota";
 // which may not reflect current trends.
 const TRENDS_CACHE_TTL_SECONDS = 1800; // 30 minutes
 
-function buildTrendsPrompt(category: TrendCategory): string {
+function buildTrendsPrompt(category: TrendCategory, language: string): string {
   const categoryLabel = category === "all" ? "all categories" : category;
+  const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
+  const langInstruction =
+    language === "ar"
+      ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+      : `Output language: ${langLabel}.`;
+
   return `You are a social media trends analyst. Research what is currently trending on X (Twitter) right now in the "${categoryLabel}" category.
+${langInstruction}
 
 Return EXACTLY 5 trending topics as a JSON array. For each topic, include:
 - "title": the trending topic or hashtag name (as it appears on X)
@@ -47,7 +55,7 @@ export async function GET(req: Request) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return ApiError.unauthorized();
 
-    // ── Parse & validate category query param ────────────────────────────────
+    // ── Parse & validate category query param ─────────────────────────────────
     const { searchParams } = new URL(req.url);
     const rawCategory = searchParams.get("category") ?? "all";
     const categoryParsed = trendCategoryEnum.safeParse(rawCategory);
@@ -89,6 +97,17 @@ export async function GET(req: Request) {
       skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
+    const { dbUser } = preamble;
+
+    // ── Parse & validate language query param (with dbUser.language fallback) ─
+    const rawLanguage = searchParams.get("language") ?? dbUser.language ?? "en";
+    const languageParsed = LANGUAGE_ENUM.safeParse(rawLanguage);
+    if (!languageParsed.success) {
+      return ApiError.badRequest(
+        `Invalid language. Must be one of: ${LANGUAGE_ENUM.options.join(", ")}`
+      );
+    }
+    const userLanguage = languageParsed.data;
 
     // ── AI call ──────────────────────────────────────────────────────────────
     logger.info("trends_fetch_start", { category, userId: session.user.id });
@@ -102,7 +121,7 @@ export async function GET(req: Request) {
 
     const result = await generateText({
       model,
-      prompt: buildTrendsPrompt(category),
+      prompt: buildTrendsPrompt(category, userLanguage),
       maxOutputTokens: 800,
       abortSignal: AbortSignal.timeout(60_000),
     });
@@ -148,8 +167,9 @@ export async function GET(req: Request) {
       session.user.id,
       "tools",
       result.usage?.totalTokens ?? 0,
-      buildTrendsPrompt(category),
-      JSON.stringify(trends)
+      buildTrendsPrompt(category, userLanguage),
+      JSON.stringify(trends),
+      userLanguage
     );
 
     logger.info("trends_fetch_done", { category, count: trends.length, userId: session.user.id });

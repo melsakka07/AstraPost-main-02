@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import {
 import { authClient } from "@/lib/auth-client";
 
 export function PrivacySettings() {
+  const t = useTranslations("settings");
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -39,9 +41,9 @@ export function PrivacySettings() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success("Data export started");
+      toast.success(t("integrations.privacy_export_started_toast"));
     } catch (error) {
-      toast.error("Failed to export data");
+      toast.error(t("integrations.privacy_export_error_toast"));
     } finally {
       setExporting(false);
     }
@@ -53,11 +55,11 @@ export function PrivacySettings() {
       const response = await fetch("/api/user/delete", { method: "DELETE" });
       if (!response.ok) throw new Error("Deletion failed");
 
-      toast.success("Account deleted successfully");
+      toast.success(t("integrations.privacy_account_deleted_toast"));
       await authClient.signOut();
       router.push("/");
     } catch (error) {
-      toast.error("Failed to delete account");
+      toast.error(t("integrations.privacy_delete_error_toast"));
       setDeleting(false);
     }
   }
@@ -67,30 +69,32 @@ export function PrivacySettings() {
       <CardHeader>
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-red-500" />
-          <CardTitle>Privacy & Data</CardTitle>
+          <CardTitle>{t("integrations.privacy_data_title")}</CardTitle>
         </div>
-        <CardDescription>Manage your personal data and account existence.</CardDescription>
+        <CardDescription>{t("integrations.privacy_data_desc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <div className="font-medium">Export Data</div>
+            <div className="font-medium">{t("integrations.privacy_export_data")}</div>
             <div className="text-muted-foreground text-sm">
-              Download a copy of your personal data (GDPR).
+              {t("integrations.privacy_export_desc")}
             </div>
           </div>
           <Button variant="outline" onClick={handleExportData} disabled={exporting}>
             {exporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Download className="mr-2 h-4 w-4" />
-            Export JSON
+            {t("integrations.privacy_export_button")}
           </Button>
         </div>
 
         <div className="flex items-center justify-between border-t pt-4">
           <div className="space-y-0.5">
-            <div className="font-medium text-red-600">Delete Account</div>
+            <div className="font-medium text-red-600">
+              {t("integrations.privacy_delete_account")}
+            </div>
             <div className="text-muted-foreground text-sm">
-              Permanently delete your account and all data.
+              {t("integrations.privacy_delete_desc")}
             </div>
           </div>
 
@@ -98,24 +102,23 @@ export function PrivacySettings() {
             <DialogTrigger asChild>
               <Button variant="destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Account
+                {t("integrations.privacy_delete_account")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Are you absolutely sure?</DialogTitle>
+                <DialogTitle>{t("integrations.privacy_delete_confirm_title")}</DialogTitle>
                 <DialogDescription>
-                  This action cannot be undone. This will permanently delete your account and remove
-                  your data from our servers.
+                  {t("integrations.privacy_delete_confirm_desc")}
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                  Cancel
+                  {t("integrations.cancel")}
                 </Button>
                 <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
                   {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Yes, delete my account
+                  {t("integrations.privacy_delete_confirm_button")}
                 </Button>
               </DialogFooter>
             </DialogContent>

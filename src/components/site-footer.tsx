@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Rocket } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 // Brand SVG icons (inline — no external dependency needed for brand marks)
 function XIcon({ className }: { className?: string }) {
@@ -37,54 +38,55 @@ function LockIcon({ className }: { className?: string }) {
   );
 }
 
-const NAV_COLUMNS: Array<{
-  heading: string;
-  links: Array<{ label: string; href: string }>;
-}> = [
-  {
-    heading: "Product",
-    links: [
-      { label: "Features", href: "/features" },
-      { label: "Pricing", href: "/pricing" },
-      { label: "Changelog", href: "/changelog" },
-    ],
-  },
-  {
-    heading: "Resources",
-    links: [
-      { label: "Resources", href: "/resources" },
-      { label: "Documentation", href: "/docs" },
-      { label: "Blog", href: "/blog" },
-      { label: "Community", href: "/community" },
-    ],
-  },
-  {
-    heading: "Legal",
-    links: [
-      { label: "Privacy Policy", href: "/legal/privacy" },
-      { label: "Terms of Service", href: "/legal/terms" },
-    ],
-  },
-];
+export async function SiteFooter() {
+  const t = await getTranslations("nav");
 
-const SOCIAL_LINKS: Array<{
-  label: string;
-  href: string;
-  Icon: React.ComponentType<{ className?: string }>;
-}> = [
-  {
-    label: "Follow AstraPost on X (Twitter)",
-    href: "https://twitter.com/astrapost",
-    Icon: XIcon,
-  },
-  {
-    label: "Join the AstraPost Discord community",
-    href: "https://discord.gg/astrapost",
-    Icon: DiscordIcon,
-  },
-];
+  const NAV_COLUMNS: Array<{
+    heading: string;
+    links: Array<{ label: string; href: string }>;
+  }> = [
+    {
+      heading: t("product"),
+      links: [
+        { label: t("features"), href: "/features" },
+        { label: t("pricing"), href: "/pricing" },
+        { label: t("changelog"), href: "/changelog" },
+      ],
+    },
+    {
+      heading: t("resources"),
+      links: [
+        { label: t("resource_plural"), href: "/resources" },
+        { label: t("documentation"), href: "/docs" },
+        { label: t("blog"), href: "/blog" },
+        { label: t("community"), href: "/community" },
+      ],
+    },
+    {
+      heading: t("legal"),
+      links: [
+        { label: t("privacy_policy"), href: "/legal/privacy" },
+        { label: t("terms_of_service"), href: "/legal/terms" },
+      ],
+    },
+  ];
 
-export function SiteFooter() {
+  const SOCIAL_LINKS: Array<{
+    label: string;
+    href: string;
+    Icon: React.ComponentType<{ className?: string }>;
+  }> = [
+    {
+      label: t("follow_on_x"),
+      href: "https://twitter.com/astrapost",
+      Icon: XIcon,
+    },
+    {
+      label: t("join_discord"),
+      href: "https://discord.gg/astrapost",
+      Icon: DiscordIcon,
+    },
+  ];
   return (
     <footer data-site-footer className="bg-muted/20" aria-label="Site footer">
       {/* Gradient separator — consistent with page section dividers */}
@@ -106,10 +108,7 @@ export function SiteFooter() {
               <span>AstraPost</span>
             </Link>
 
-            <p className="text-muted-foreground max-w-xs text-sm leading-relaxed">
-              The AI-powered social media management tool for modern creators. Grow your audience on
-              X with smart scheduling and AI-generated content.
-            </p>
+            <p className="text-muted-foreground max-w-xs text-sm leading-relaxed">{t("tagline")}</p>
 
             {/* Social media icons */}
             <div className="flex items-center gap-2 pt-1" aria-label="Social media links">
@@ -154,11 +153,11 @@ export function SiteFooter() {
         <div className="border-border/50 mt-16 border-t pt-8">
           <div className="text-muted-foreground flex flex-col items-center justify-between gap-3 text-xs sm:flex-row">
             <p suppressHydrationWarning>
-              &copy; {new Date().getFullYear()} AstraPost. All rights reserved.
+              &copy; {new Date().getFullYear()} AstraPost. {t("all_rights_reserved")}
             </p>
             <p className="flex items-center gap-1.5">
               <LockIcon className="text-primary/70 h-3.5 w-3.5" />
-              Secured with industry-standard encryption
+              {t("secured_encryption")}
             </p>
           </div>
         </div>

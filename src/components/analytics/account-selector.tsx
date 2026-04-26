@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ export function AccountSelector({
   isCompact,
   range,
 }: AccountSelectorProps) {
+  const t = useTranslations("analytics");
   const router = useRouter();
 
   const buildHref = (accountId: string) => {
@@ -45,11 +47,7 @@ export function AccountSelector({
   };
 
   if (accounts.length === 0) {
-    return (
-      <div className="text-muted-foreground text-sm">
-        Connect an X account to enable follower tracking.
-      </div>
-    );
+    return <div className="text-muted-foreground text-sm">{t("connect_x_cta")}</div>;
   }
 
   return (

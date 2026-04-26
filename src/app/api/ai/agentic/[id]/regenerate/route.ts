@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { AgenticTweet, ResearchBrief, ContentPlan } from "@/lib/ai/agentic-types";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
+import { LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -68,6 +69,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const agenticPost = await db.query.agenticPosts.findFirst({
       where: and(eq(agenticPosts.id, id), eq(agenticPosts.userId, session.user.id)),
+      with: {
+        user: {
+          columns: { language: true },
+        },
+      },
     });
     if (!agenticPost) return ApiError.notFound("Agentic post");
     if (agenticPost.status !== "ready") {
@@ -81,10 +87,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const research = agenticPost.researchBrief as ResearchBrief;
     const plan = agenticPost.contentPlan as ContentPlan;
 
+    // Get user's language preference
+    const userLanguage = agenticPost.user?.language || "en";
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Output language: ${langLabel}.`;
+
     const model = openrouter(process.env.OPENROUTER_MODEL!);
 
     // Regenerate tweet text
     const prompt = `You are an expert social media copywriter.
+${langInstruction}
 
 Research Brief: ${JSON.stringify(research)}
 Content Plan: ${JSON.stringify(plan)}
@@ -113,7 +128,7 @@ Return ONLY a valid JSON object (no markdown):
       0,
       `regenerate:tweet-${tweetIndex}`,
       { tweetIndex, tweetText: result.text.slice(0, 100) },
-      "en"
+      userLanguage
     );
 
     let newTweet: Partial<AgenticTweet> = {};
@@ -155,7 +170,7 @@ Return ONLY a valid JSON object (no markdown):
             0,
             `agentic-regen-image:tweet-${tweetIndex}`,
             { tweetIndex, imagePrompt: updatedTweet.imagePrompt },
-            "en"
+            userLanguage
           );
         }
       } catch (err) {

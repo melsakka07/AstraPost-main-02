@@ -2,7 +2,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM } from "@/lib/constants";
+import { LANGUAGE_ENUM, LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkVariantGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkVariantGeneratorAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -37,7 +37,10 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { tweet, language } = result.data;
+    const { tweet, language: clientLanguage } = result.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
 
     // ── Deduplication check ──────────────────────────────────────────────
     const dedupKey = RequestDedup.generateKey(session.user.id, "ai_variants", result.data);
@@ -54,9 +57,14 @@ export async function POST(req: Request) {
       return res;
     }
 
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Language: ${LANGUAGES.find((l) => l.code === userLanguage)?.label || "English"}.`;
+
     const prompt = `You are an expert social media copywriter.
 Given the following tweet, generate exactly 3 alternative versions using different angles.
-Keep the same language as the original tweet (language hint: ${language}).
+${langInstruction}
 
 ORIGINAL TWEET:
 ${tweet}
@@ -83,7 +91,7 @@ For each variant:
       usage?.totalTokens ?? 0,
       prompt,
       object,
-      language
+      userLanguage
     );
 
     const sanitized = {

@@ -1,16 +1,22 @@
+import { cookies } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 
-export default getRequestConfig(async ({ locale }) => ({
-  locale: locale || "en",
-  messages: (await import(`./messages/${locale || "en"}.json`)).default,
-  timeZone: "UTC",
-  formats: {
-    dateTime: {
-      short: {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
+export default getRequestConfig(async () => {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("locale")?.value || "en";
+
+  return {
+    locale,
+    messages: (await import(`./messages/${locale}.json`)).default,
+    timeZone: "UTC",
+    formats: {
+      dateTime: {
+        short: {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        },
       },
     },
-  },
-}));
+  };
+});

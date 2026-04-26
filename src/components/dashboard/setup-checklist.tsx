@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, ChevronDown, Circle, Rocket, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -55,43 +56,45 @@ export function SetupChecklist({
     }
   }, [searchParams]);
 
+  const t = useTranslations("dashboard_shell");
+
   if (!isMounted) return null;
 
   const steps = [
     {
       id: "connect-x",
-      label: "Connect your X account",
+      label: t("setup_checklist.connect_x"),
       completed: hasXAccount,
       href: "/dashboard/settings",
-      cta: "Connect",
+      cta: t("setup_checklist.connect_x"),
     },
     {
       id: "schedule-post",
-      label: "Schedule your first tweet",
+      label: t("setup_checklist.schedule_post"),
       completed: hasScheduledPost,
       href: "/dashboard/compose",
-      cta: "Compose",
+      cta: t("setup_checklist.schedule_post"),
     },
     {
       id: "try-ai",
-      label: "Try the AI Writer",
+      label: t("setup_checklist.use_ai"),
       completed: hasUsedAI,
       href: "/dashboard/compose?tab=ai",
-      cta: "Try AI",
+      cta: t("setup_checklist.use_ai"),
     },
     {
       id: "explore-analytics",
-      label: "Explore Analytics",
+      label: t("setup_checklist.view_analytics"),
       completed: hasXAccount && hasScheduledPost,
       href: "/dashboard/analytics",
-      cta: "View",
+      cta: t("setup_checklist.view_analytics"),
     },
     {
       id: "upgrade-pro",
-      label: "Upgrade to Pro",
+      label: t("setup_checklist.completed"),
       completed: hasProPlan,
       href: "/pricing",
-      cta: "Upgrade",
+      cta: t("setup_checklist.completed"),
     },
   ];
 
@@ -122,7 +125,7 @@ export function SetupChecklist({
         </div>
 
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="text-sm font-semibold">Getting Started</span>
+          <span className="text-sm font-semibold">{t("setup_checklist.title")}</span>
           <span className="text-muted-foreground text-xs">
             {completedCount}/{steps.length}
           </span>
@@ -149,7 +152,7 @@ export function SetupChecklist({
             size="icon"
             className="text-muted-foreground hover:text-foreground h-7 w-7"
             onClick={handleDismiss}
-            aria-label="Dismiss checklist"
+            aria-label={t("setup_checklist.dismiss")}
           >
             <X className="h-3.5 w-3.5" />
           </Button>

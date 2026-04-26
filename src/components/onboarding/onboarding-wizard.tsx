@@ -15,6 +15,7 @@ import {
   Rocket,
   Twitter,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import twitter from "twitter-text";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -42,38 +43,45 @@ import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-const steps = [
-  {
-    id: 1,
-    title: "Connect Your X Account",
-    icon: Twitter,
-    description: "Confirm your connected X account.",
-  },
-  {
-    id: 2,
-    title: "Preferences",
-    icon: Globe,
-    description: "Set your language and time zone.",
-  },
-  {
-    id: 3,
-    title: "Compose",
-    icon: PenTool,
-    description: "Write your first tweet or thread.",
-  },
-  {
-    id: 4,
-    title: "Schedule",
-    icon: Calendar,
-    description: "Pick a time to publish.",
-  },
-  {
-    id: 5,
-    title: "Explore AI",
-    icon: Rocket,
-    description: "Discover AI-powered features.",
-  },
-];
+function getSteps(t: (key: string) => string): {
+  id: number;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+}[] {
+  return [
+    {
+      id: 1,
+      title: t("onboarding.steps.connect"),
+      icon: Twitter,
+      description: "Confirm your connected X account.",
+    },
+    {
+      id: 2,
+      title: t("onboarding.steps.preferences"),
+      icon: Globe,
+      description: t("onboarding.steps.preferences_description"),
+    },
+    {
+      id: 3,
+      title: t("onboarding.steps.compose"),
+      icon: PenTool,
+      description: t("onboarding.steps.compose_description"),
+    },
+    {
+      id: 4,
+      title: t("onboarding.steps.schedule"),
+      icon: Calendar,
+      description: "Pick a time to publish.",
+    },
+    {
+      id: 5,
+      title: t("onboarding.steps.explore_ai"),
+      icon: Rocket,
+      description: t("onboarding.steps.explore_ai_description"),
+    },
+  ];
+}
 
 // Time options grouped by period
 const TIME_OPTIONS = [
@@ -115,34 +123,6 @@ const TIME_OPTIONS = [
       { value: "23:00", label: "11:00 PM" },
       { value: "00:00", label: "12:00 AM" },
     ],
-  },
-];
-
-// Step 4 feature cards with real hrefs — O4 + O7
-const FEATURE_CARDS = [
-  {
-    icon: PenTool,
-    title: "AI Writer",
-    description: "Generate threads instantly.",
-    href: "/dashboard/ai",
-  },
-  {
-    icon: BarChart3,
-    title: "Analytics",
-    description: "Track your growth.",
-    href: "/dashboard/analytics",
-  },
-  {
-    icon: Lightbulb,
-    title: "Inspiration",
-    description: "Import tweets to adapt.",
-    href: "/dashboard/inspiration",
-  },
-  {
-    icon: ListOrdered,
-    title: "Queue",
-    description: "Manage scheduled posts.",
-    href: "/dashboard/queue",
   },
 ];
 
@@ -216,7 +196,10 @@ const TIMEZONE_GROUPS = [
 ];
 
 export function OnboardingWizard() {
+  const t = useTranslations("auth");
   const searchParams = useSearchParams();
+
+  const steps = getSteps(t);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -267,7 +250,7 @@ export function OnboardingWizard() {
       const step = parseInt(stepParam);
       if (step >= 1 && step <= steps.length) setCurrentStep(step);
     }
-  }, [searchParams]);
+  }, [searchParams, steps]);
 
   // Fetch connected X accounts
   useEffect(() => {
@@ -314,7 +297,7 @@ export function OnboardingWizard() {
           toast.error("Could not save onboarding status. Please try again.");
         });
     }
-  }, [currentStep]);
+  }, [currentStep, steps]);
 
   // All step-4 navigation must go through here.
   // Awaiting the promise ensures onboardingCompleted is committed to the DB
@@ -457,10 +440,8 @@ export function OnboardingWizard() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 md:py-12">
       <div className="mb-8">
-        <h1 className="mb-2 text-center text-3xl font-bold">Welcome to AstraPost! 🚀</h1>
-        <p className="text-muted-foreground text-center">
-          Let&apos;s get you set up in just a few steps.
-        </p>
+        <h1 className="mb-2 text-center text-3xl font-bold">{t("onboarding.title")}</h1>
+        <p className="text-muted-foreground text-center">{t("onboarding.subtitle")}</p>
       </div>
 
       {/* Mobile compact stepper */}
@@ -523,17 +504,15 @@ export function OnboardingWizard() {
               {loadingAccounts ? (
                 <div className="flex flex-col items-center gap-4">
                   <Loader2 className="text-primary h-8 w-8 animate-spin" />
-                  <p className="text-muted-foreground">Loading your account...</p>
+                  <p className="text-muted-foreground">{t("onboarding.loading_account")}</p>
                 </div>
               ) : xAccounts.length > 0 ? (
                 <>
                   <div className="bg-primary/5 mb-2 inline-block rounded-full p-6">
                     <Twitter className="text-primary h-12 w-12" />
                   </div>
-                  <h3 className="text-xl font-bold">Your X Account is Connected!</h3>
-                  <p className="text-muted-foreground">
-                    You&apos;re ready to start scheduling posts with AstraPost.
-                  </p>
+                  <h3 className="text-xl font-bold">{t("onboarding.account_connected")}</h3>
+                  <p className="text-muted-foreground">{t("onboarding.ready_to_start")}</p>
 
                   {/* Connected account card */}
                   <div className="bg-muted/50 rounded-lg p-4 text-left">
@@ -554,7 +533,7 @@ export function OnboardingWizard() {
                       </div>
                       {xAccounts[0]!.isDefault && (
                         <span className="bg-primary/10 text-primary rounded-full px-2 py-1 text-xs font-medium">
-                          Default
+                          {t("onboarding.default_label")}
                         </span>
                       )}
                     </div>
@@ -748,13 +727,40 @@ export function OnboardingWizard() {
                   dashboard layout to see onboardingCompleted=false and
                   redirect back to the onboarding shell (missing sidebar). */}
               <div className="mt-4 grid grid-cols-2 gap-3 text-left">
-                {FEATURE_CARDS.map((card) => (
+                {(
+                  [
+                    {
+                      icon: PenTool,
+                      title: t("onboarding.feature_cards.ai_writer"),
+                      description: t("onboarding.feature_cards.ai_writer_desc"),
+                      href: "/dashboard/ai",
+                    },
+                    {
+                      icon: BarChart3,
+                      title: t("onboarding.feature_cards.analytics"),
+                      description: t("onboarding.feature_cards.analytics_desc"),
+                      href: "/dashboard/analytics",
+                    },
+                    {
+                      icon: Lightbulb,
+                      title: t("onboarding.feature_cards.inspiration"),
+                      description: t("onboarding.feature_cards.inspiration_desc"),
+                      href: "/dashboard/inspiration",
+                    },
+                    {
+                      icon: ListOrdered,
+                      title: t("onboarding.feature_cards.queue"),
+                      description: t("onboarding.feature_cards.queue_desc"),
+                      href: "/dashboard/queue",
+                    },
+                  ] as const
+                ).map((card) => (
                   <button
                     key={card.href}
                     type="button"
                     onClick={() => void navigateAfterOnboarding(card.href)}
                     className="hover:bg-muted/50 hover:border-primary/30 block w-full rounded-md border p-4 text-left transition-colors"
-                    aria-label={`Go to ${card.title}`}
+                    aria-label={card.title}
                   >
                     <h3 className="flex items-center gap-2 font-semibold">
                       <card.icon className="text-primary h-4 w-4" />
@@ -787,7 +793,7 @@ export function OnboardingWizard() {
                 disabled={loading}
                 className="text-muted-foreground min-h-[44px]"
               >
-                Skip for now
+                {t("onboarding.skip")}
               </Button>
             )}
             {/* O5 — Skip scheduling on step 4 */}
@@ -803,7 +809,7 @@ export function OnboardingWizard() {
             )}
             <Button onClick={handleNext} disabled={loading} size="lg" className="min-h-[44px]">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {currentStep === steps.length ? "Go to Dashboard" : "Next Step"}
+              {currentStep === steps.length ? t("onboarding.finish") : t("onboarding.continue")}
             </Button>
           </div>
         </CardFooter>

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Rocket, Calendar, Sparkles, BarChart2, ArrowRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { HeroMockup } from "@/components/marketing/hero-mockup";
 import { SocialProof } from "@/components/marketing/social-proof";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export default function Home() {
+export default async function Home() {
+  const t = await getTranslations("marketing");
   return (
     <>
       {/* ── Hero ── */}
@@ -19,27 +21,26 @@ export default function Home() {
         {/* Hero copy — centered */}
         <div className="relative container mx-auto max-w-3xl space-y-8 text-center">
           <Badge variant="outline" className="px-4 py-1">
-            ✨ AI-Powered Social Media Growth
+            {t("badge")}
           </Badge>
 
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-r bg-clip-text pb-2 text-5xl font-bold tracking-tight text-transparent md:text-7xl">
-            Supercharge Your X Presence with AI
+            {t("hero_title")}
           </h1>
 
           <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
-            Schedule threads, generate viral content with AI, and track your analytics. AstraPost is
-            the all-in-one tool for serious creators.
+            {t("hero_subtitle")}
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
             <Button size="lg" className="group h-12 px-8 text-lg" asChild>
               <Link href="/login">
-                Get Started for Free
+                {t("cta_get_started")}
                 <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="h-12 px-8 text-lg" asChild>
-              <Link href="/features">View Features</Link>
+              <Link href="/features">{t("cta_view_features")}</Link>
             </Button>
           </div>
         </div>
@@ -61,13 +62,10 @@ export default function Home() {
       <section id="features" className="bg-muted/30 py-20">
         <div className="container mx-auto px-4">
           <div className="mb-16 space-y-4 text-center">
-            <Badge variant="outline">Features</Badge>
-            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Everything you need to grow
-            </h2>
+            <Badge variant="outline">{t("features_badge")}</Badge>
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">{t("features_title")}</h2>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              Stop wasting time on manual posting. Automate your workflow with powerful tools
-              designed for growth.
+              {t("features_subtitle")}
             </p>
           </div>
 
@@ -76,10 +74,9 @@ export default function Home() {
               <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
                 <Calendar className="text-primary h-6 w-6" />
               </div>
-              <h3 className="mb-3 text-xl font-bold">Smart Scheduling</h3>
+              <h3 className="mb-3 text-xl font-bold">{t("feature_scheduling_title")}</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Plan your content weeks in advance. Drag and drop calendar view makes it easy to
-                visualize your strategy.
+                {t("feature_scheduling_desc")}
               </p>
             </div>
 
@@ -87,29 +84,23 @@ export default function Home() {
               <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
                 <Sparkles className="text-primary h-6 w-6" />
               </div>
-              <h3 className="mb-3 text-xl font-bold">AI Writer</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Generate viral threads, hook ideas, and polished tweets in seconds using our
-                advanced AI models.
-              </p>
+              <h3 className="mb-3 text-xl font-bold">{t("feature_ai_writer_title")}</h3>
+              <p className="text-muted-foreground leading-relaxed">{t("feature_ai_writer_desc")}</p>
             </div>
 
             <div className="bg-card rounded-xl border p-8 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg">
               <div className="bg-primary/10 mb-6 flex h-12 w-12 items-center justify-center rounded-lg">
                 <BarChart2 className="text-primary h-6 w-6" />
               </div>
-              <h3 className="mb-3 text-xl font-bold">Deep Analytics</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Understand what works. Track impressions, engagement rates, and follower growth over
-                time.
-              </p>
+              <h3 className="mb-3 text-xl font-bold">{t("feature_analytics_title")}</h3>
+              <p className="text-muted-foreground leading-relaxed">{t("feature_analytics_desc")}</p>
             </div>
           </div>
 
           <div className="mt-16 text-center">
             <Button size="lg" variant="outline" asChild>
               <Link href="/features">
-                Explore All Features
+                {t("explore_all_features")}
                 <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
               </Link>
             </Button>
@@ -131,26 +122,24 @@ export default function Home() {
               </div>
               <div className="space-y-3">
                 <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-                  Ready to blast off?
+                  {t("cta_ready_title")}
                 </h2>
                 <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-                  Join thousands of creators who are growing their audience with AstraPost.
+                  {t("cta_ready_subtitle")}
                 </p>
               </div>
               <div className="flex flex-col items-center justify-center gap-4 pt-2 sm:flex-row">
                 <Button size="lg" className="group h-12 px-8 text-lg" asChild>
                   <Link href="/login">
-                    Start Your Free Trial
+                    {t("cta_start_trial")}
                     <ArrowRight className="ms-2 h-4 w-4 transition-transform group-hover:translate-x-1 rtl:scale-x-[-1] rtl:group-hover:-translate-x-1" />
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="h-12 px-8" asChild>
-                  <Link href="/pricing">View Pricing</Link>
+                  <Link href="/pricing">{t("cta_view_pricing")}</Link>
                 </Button>
               </div>
-              <p className="text-muted-foreground text-xs">
-                No credit card required • 14-day free trial
-              </p>
+              <p className="text-muted-foreground text-xs">{t("cta_no_credit_card")}</p>
             </div>
           </div>
         </div>

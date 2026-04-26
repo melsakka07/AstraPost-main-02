@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 export function RetryPostButton({ postId, ariaLabel }: { postId: string; ariaLabel?: string }) {
+  const t = useTranslations("queue");
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -33,7 +35,7 @@ export function RetryPostButton({ postId, ariaLabel }: { postId: string; ariaLab
         }
       }}
     >
-      {isPending ? "Retrying..." : "Retry"}
+      {isPending ? "..." : t("retry")}
     </Button>
   );
 }

@@ -3,6 +3,7 @@ import { generateText } from "ai";
 import { z } from "zod";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
+import { LANGUAGES } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
@@ -10,7 +11,17 @@ const enhanceRequestSchema = z.object({
   topic: z.string().min(3).max(500),
 });
 
-const ENHANCE_PROMPT = `You are a social media topic refiner. Take the following topic idea and transform it into a concise, compelling topic description suitable as the starting point for a tweet or thread.
+function buildEnhancePrompt(language: string | null): string {
+  const userLanguage = language || "en";
+  const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
+  const langInstruction =
+    userLanguage === "ar"
+      ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+      : `Output language: ${langLabel}.`;
+
+  return `You are a social media topic refiner. Take the following topic idea and transform it into a concise, compelling topic description suitable as the starting point for a tweet or thread.
+
+${langInstruction}
 
 Rules:
 - Keep it under 280 characters
@@ -19,13 +30,14 @@ Rules:
 - Do NOT add hashtags
 
 Return ONLY the enhanced topic text. No explanation, no quotes, no preamble.`;
+}
 
 export async function POST(req: Request) {
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ skipQuotaCheck: true });
     if (preamble instanceof Response) return preamble;
-    const { session } = preamble;
+    const { session, dbUser } = preamble;
 
     const body = (await req.json()) as unknown;
     const parsed = enhanceRequestSchema.safeParse(body);
@@ -38,7 +50,7 @@ export async function POST(req: Request) {
 
     const result = await generateText({
       model,
-      prompt: `${ENHANCE_PROMPT}\n\nTopic: ${parsed.data.topic}`,
+      prompt: `${buildEnhancePrompt(dbUser.language)}\n\nTopic: ${parsed.data.topic}`,
       maxOutputTokens: 100,
       abortSignal: AbortSignal.timeout(15_000),
     });
@@ -54,7 +66,8 @@ export async function POST(req: Request) {
       "tools",
       result.usage?.totalTokens ?? 0,
       parsed.data.topic,
-      enhanced
+      enhanced,
+      dbUser.language || "en"
     );
 
     const res = Response.json({ enhanced });

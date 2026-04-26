@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Wand2,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { PostUsageBar } from "@/components/dashboard/post-usage-bar";
 import { QuickCompose } from "@/components/dashboard/quick-compose";
@@ -142,7 +143,6 @@ async function getDashboardData(userId: string) {
 const STAT_CARDS = [
   {
     key: "publishedToday",
-    label: "Published Today",
     icon: CheckCircle2,
     accent: "border-l-emerald-500",
     iconColor: "text-emerald-500",
@@ -150,7 +150,6 @@ const STAT_CARDS = [
   },
   {
     key: "scheduledToday",
-    label: "Scheduled Today",
     icon: Calendar,
     accent: "border-l-blue-500",
     iconColor: "text-blue-500",
@@ -158,7 +157,6 @@ const STAT_CARDS = [
   },
   {
     key: "scheduled",
-    label: "Scheduled",
     icon: Clock,
     accent: "border-l-amber-500",
     iconColor: "text-amber-500",
@@ -166,7 +164,6 @@ const STAT_CARDS = [
   },
   {
     key: "engagement",
-    label: "Avg. Engagement",
     icon: TrendingUp,
     accent: "border-l-purple-500",
     iconColor: "text-purple-500",
@@ -175,6 +172,7 @@ const STAT_CARDS = [
 ] as const;
 
 export default async function DashboardPage() {
+  const t = await getTranslations("dashboard");
   const session = await auth.api.getSession({ headers: await headers() });
   const userLocale =
     session?.user && "language" in session.user ? (session.user as any).language : "en";
@@ -198,23 +196,39 @@ export default async function DashboardPage() {
         userPlan: "free",
       };
 
-  const statValues: Record<string, { value: string; sub: string }> = {
-    publishedToday: { value: String(data.publishedTodayCount), sub: "Today" },
-    scheduledToday: { value: String(data.scheduledTodayCount), sub: "Today" },
-    scheduled: { value: String(data.scheduledCount), sub: "Total in queue" },
-    engagement: { value: `${data.avgEngagement}%`, sub: "Last 30 days" },
+  const statValues: Record<string, { value: string; sub: string; label: string }> = {
+    publishedToday: {
+      value: String(data.publishedTodayCount),
+      sub: t("today"),
+      label: t("published_today"),
+    },
+    scheduledToday: {
+      value: String(data.scheduledTodayCount),
+      sub: t("today"),
+      label: t("scheduled_today"),
+    },
+    scheduled: {
+      value: String(data.scheduledCount),
+      sub: t("total_in_queue"),
+      label: t("scheduled"),
+    },
+    engagement: {
+      value: `${data.avgEngagement}%`,
+      sub: t("last_30_days"),
+      label: t("avg_engagement"),
+    },
   };
 
   return (
     <DashboardPageWrapper
       icon={LayoutDashboard}
-      title="Dashboard"
-      description={`Welcome back, ${session?.user?.name || "User"}! Here's your account overview.`}
+      title={t("title")}
+      description={t("welcome", { name: session?.user?.name ?? "" })}
       actions={
         <Button asChild>
           <Link href="/dashboard/compose">
             <PlusCircle className="mr-2 h-4 w-4" />
-            New Post
+            {t("new_post")}
           </Link>
         </Button>
       }
@@ -225,11 +239,9 @@ export default async function DashboardPage() {
         <Alert className="border-destructive/50 bg-destructive/5">
           <AlertCircle className="text-destructive h-4 w-4 shrink-0" />
           <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm">
-              {data.failedCount} post{data.failedCount > 1 ? "s" : ""} failed to publish.
-            </span>
+            <span className="text-sm">{t("failed_posts", { count: data.failedCount })}</span>
             <Button size="sm" variant="outline" asChild className="w-full sm:w-auto">
-              <Link href="/dashboard/queue">View & Retry</Link>
+              <Link href="/dashboard/queue">{t("view_retry")}</Link>
             </Button>
           </AlertDescription>
         </Alert>
@@ -248,7 +260,7 @@ export default async function DashboardPage() {
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3 pb-2">
                 <CardTitle className="text-muted-foreground text-xs font-medium sm:text-sm">
-                  {card.label}
+                  {stat.label}
                 </CardTitle>
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.iconBg}`}
@@ -269,10 +281,10 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="md:col-span-1 lg:col-span-4">
           <CardHeader className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base sm:text-lg">Upcoming Queue</CardTitle>
+            <CardTitle className="text-base sm:text-lg">{t("upcoming_queue")}</CardTitle>
             {data.upcomingPosts.length > 0 && (
               <Button variant="ghost" size="sm" asChild className="w-full text-xs sm:w-auto">
-                <Link href="/dashboard/queue">View all</Link>
+                <Link href="/dashboard/queue">{t("view_all")}</Link>
               </Button>
             )}
           </CardHeader>
@@ -282,20 +294,20 @@ export default async function DashboardPage() {
                 <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
                   <Send className="text-muted-foreground h-5 w-5" />
                 </div>
-                <p className="mt-4 text-sm font-medium">Your queue is empty</p>
+                <p className="mt-4 text-sm font-medium">{t("queue_empty")}</p>
                 <p className="text-muted-foreground mt-1 max-w-[240px] text-center text-xs">
-                  Schedule your first post and it will appear here.
+                  {t("queue_empty_description")}
                 </p>
                 <Button size="sm" asChild className="mt-4">
                   <Link href="/dashboard/compose">
                     <PenSquare className="mr-2 h-3.5 w-3.5" />
-                    Create a Post
+                    {t("create_post")}
                   </Link>
                 </Button>
                 <Button size="sm" variant="outline" asChild className="mt-2">
                   <Link href="/dashboard/ai/agentic">
                     <Wand2 className="mr-2 h-3.5 w-3.5" />
-                    Generate with AI
+                    {t("generate_ai")}
                   </Link>
                 </Button>
               </div>
@@ -322,7 +334,7 @@ export default async function DashboardPage() {
                                 dateStyle: "medium",
                                 timeStyle: "short",
                               })
-                            : "No date"}
+                            : t("no_date")}
                         </p>
                       </div>
                     </div>

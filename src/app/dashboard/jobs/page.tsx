@@ -2,6 +2,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { Settings2 as Settings2Icon } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { CopyIdButton } from "@/components/jobs/copy-id-button";
 import { RetryPostButton } from "@/components/queue/retry-post-button";
@@ -30,6 +31,7 @@ export default async function JobsPage({
     page?: string | string[];
   }>;
 }) {
+  const t = await getTranslations("jobs");
   const session = await requireAdmin();
   const userLocale =
     session?.user && "language" in session.user ? (session.user as any).language : "en";
@@ -94,11 +96,7 @@ export default async function JobsPage({
   };
 
   return (
-    <DashboardPageWrapper
-      icon={Settings2Icon}
-      title="Job History"
-      description="Monitor background job runs and troubleshoot failures."
-    >
+    <DashboardPageWrapper icon={Settings2Icon} title={t("title")} description={t("description")}>
       {/* Filters */}
       <Card>
         <CardHeader>

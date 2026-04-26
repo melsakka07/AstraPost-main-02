@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Book, FileText, Video, MessageSquare, ArrowRight, Clock } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,38 +17,40 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ResourcesPage() {
+export default async function ResourcesPage() {
+  const t = await getTranslations("resources");
+
   const resources = [
     {
       icon: <Book className="text-primary h-6 w-6" />,
-      title: "Knowledge Base",
-      description: "Step-by-step guides on how to use AstraPost features.",
+      title: t("knowledge_base_title"),
+      description: t("knowledge_base_desc"),
       link: "/docs",
-      button: "View Docs",
+      button: t("view_docs"),
       comingSoon: false,
     },
     {
       icon: <FileText className="text-primary h-6 w-6" />,
-      title: "API Reference",
-      description: "For developers integrating with AstraPost.",
+      title: t("api_reference_title"),
+      description: t("api_reference_desc"),
       link: null,
-      button: "Read API Docs",
+      button: t("read_api_docs"),
       comingSoon: true,
     },
     {
       icon: <Video className="text-primary h-6 w-6" />,
-      title: "Video Tutorials",
-      description: "Watch our video series on mastering X growth.",
+      title: t("video_tutorials_title"),
+      description: t("video_tutorials_desc"),
       link: null,
-      button: "Watch Now",
+      button: t("watch_now"),
       comingSoon: true,
     },
     {
       icon: <MessageSquare className="text-primary h-6 w-6" />,
-      title: "Community Forum",
-      description: "Connect with other creators and share tips.",
+      title: t("community_forum_title"),
+      description: t("community_forum_desc"),
       link: "/community",
-      button: "Join Community",
+      button: t("join_community"),
       comingSoon: false,
     },
   ];
@@ -63,13 +66,13 @@ export default function ResourcesPage() {
         {/* Header */}
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge variant="outline" className="px-4 py-1">
-            Resources
+            {t("badge")}
           </Badge>
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
-            Everything you need to succeed
+            {t("title")}
           </h1>
           <p className="text-muted-foreground mx-auto max-w-2xl text-xl leading-relaxed">
-            Everything you need to succeed with AstraPost.
+            {t("subtitle")}
           </p>
         </div>
 
@@ -95,7 +98,7 @@ export default function ResourcesPage() {
                 {resource.comingSoon ? (
                   <Button variant="outline" className="w-full" disabled>
                     <Clock className="mr-2 h-4 w-4" />
-                    Coming Soon
+                    {t("coming_soon")}
                   </Button>
                 ) : (
                   <Button variant="outline" className="group w-full" asChild>
@@ -114,16 +117,14 @@ export default function ResourcesPage() {
         <div className="border-border/50 from-muted/50 to-muted/20 relative mx-auto max-w-4xl overflow-hidden rounded-2xl border bg-gradient-to-br p-8 text-center md:p-12">
           <div className="from-primary/5 absolute inset-0 bg-gradient-to-r via-purple-500/5 to-pink-500/5" />
           <div className="relative">
-            <h2 className="mb-4 text-2xl font-bold md:text-3xl">Need personalized help?</h2>
-            <p className="text-muted-foreground mx-auto mb-8 max-w-lg">
-              Our support team is available 24/7 to assist you with any questions or issues.
-            </p>
+            <h2 className="mb-4 text-2xl font-bold md:text-3xl">{t("cta_title")}</h2>
+            <p className="text-muted-foreground mx-auto mb-8 max-w-lg">{t("cta_subtitle")}</p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button size="lg" asChild>
-                <Link href="mailto:support@astrapost.com">Contact Support</Link>
+                <Link href="mailto:support@astrapost.com">{t("contact_support")}</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/docs">Browse Documentation</Link>
+                <Link href="/docs">{t("browse_documentation")}</Link>
               </Button>
             </div>
           </div>

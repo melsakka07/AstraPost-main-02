@@ -10,7 +10,7 @@ import { z } from "zod";
 import { buildInspirePrompts, parseInspireResponse } from "@/lib/ai/inspire-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { LANGUAGE_ENUM_LIMITED } from "@/lib/constants";
+import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkInspirationAccessDetailed } from "@/lib/middleware/require-plan";
@@ -34,7 +34,7 @@ const InspireRequestSchema = z.object({
   tone: z
     .enum(["professional", "casual", "humorous", "educational", "inspirational", "viral"])
     .optional(),
-  language: LANGUAGE_ENUM_LIMITED.default("ar"),
+  language: LANGUAGE_ENUM.default("ar"),
   userContext: z.string().max(1000).optional(),
 });
 
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       featureGate: async (userId) => checkInspirationAccessDetailed(userId),
     });
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
     const userId = session.user.id;
 
     const body = await req.json();
@@ -59,12 +59,21 @@ export async function POST(req: Request) {
       return ApiError.badRequest(validationResult.error.issues);
     }
 
-    const { originalTweet, threadContext, action, tone, language, userContext } =
-      validationResult.data;
+    const {
+      originalTweet,
+      threadContext,
+      action,
+      tone,
+      language: clientLanguage,
+      userContext,
+    } = validationResult.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
 
     const { systemPrompt, userPrompt } = buildInspirePrompts(action, originalTweet, {
       ...(tone !== undefined && { tone }),
-      language,
+      language: userLanguage,
       ...(userContext !== undefined && { userContext }),
       ...(threadContext !== undefined && { threadContext }),
     });
@@ -82,8 +91,8 @@ export async function POST(req: Request) {
       "inspire",
       0,
       `${systemPrompt}\n\n${userPrompt}`,
-      { action, tone, language, tweets },
-      language
+      { action, tone, language: userLanguage, tweets },
+      userLanguage
     );
 
     const res = Response.json({ tweets, action });

@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkReplyGeneratorAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -46,9 +46,9 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { tweetUrl, language, tone, goal } = result.data;
+    const { tweetUrl, language: clientLanguage, tone, goal } = result.data;
 
-    // Fetch the target tweet
+    // Fetch target tweet
     let tweetText = "";
     let tweetAuthor = "";
     const context = await importTweet(tweetUrl);
@@ -60,7 +60,13 @@ export async function POST(req: Request) {
     tweetText = context.originalTweet.text;
     tweetAuthor = `@${context.originalTweet.author.username}`;
 
-    const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
+
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only. Be culturally appropriate for Arabic/MENA audiences."
+        : `Language: ${LANGUAGES.find((l) => l.code === userLanguage)?.label || "English"}.`;
     const goalLabel = GOAL_LABELS[goal] || "add value";
 
     const prompt = `You are an expert social media engagement writer.
@@ -70,14 +76,13 @@ ORIGINAL TWEET:
 "${tweetText}"
 
 Requirements:
-- Language: ${langLabel}
+- ${langInstruction}
 - Tone: ${tone}
 - Goal: ${goalLabel}
 - Each reply should be genuinely engaging and contextually relevant
 - Keep replies under 280 characters ideally (hard max: 800 chars)
 - Vary the style across the 5 replies
 - Do NOT start with "Great tweet!" or generic openers
-- Be culturally appropriate for Arabic/MENA audiences if language is Arabic
 
 For each reply include:
 - text: the reply text
@@ -95,7 +100,7 @@ For each reply include:
       usage?.totalTokens ?? 0,
       prompt,
       object,
-      language
+      userLanguage
     );
 
     const sanitized = {

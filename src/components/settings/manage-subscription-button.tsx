@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { clientLogger } from "@/lib/client-logger";
@@ -12,6 +13,7 @@ interface BillingPortalError {
 }
 
 export function ManageSubscriptionButton() {
+  const t = useTranslations("settings");
   const [loading, setLoading] = useState(false);
 
   const handleManage = async () => {
@@ -33,13 +35,13 @@ export function ManageSubscriptionButton() {
         }
 
         if (res.status === 400 && payload?.code === "no_subscription") {
-          toast.error("No active billing profile was found. Choose a plan to continue.");
+          toast.error(t("billing.no_billing_profile"));
           window.location.href = "/pricing?billing=restore";
           return; // Don't reset loading — navigating away
         }
 
         if (res.status === 503) {
-          toast.error("Billing service is temporarily unavailable. Please try again.");
+          toast.error(t("billing.service_unavailable"));
           setLoading(false);
           return;
         }
@@ -54,7 +56,7 @@ export function ManageSubscriptionButton() {
       clientLogger.error("Failed to create billing portal session", {
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Something went wrong");
+      toast.error(t("billing.something_wrong"));
       setLoading(false); // Only reset on error
     }
   };
@@ -62,7 +64,7 @@ export function ManageSubscriptionButton() {
   return (
     <Button variant="outline" onClick={handleManage} disabled={loading}>
       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-      Manage Subscription
+      {t("billing.manage_subscription")}
     </Button>
   );
 }

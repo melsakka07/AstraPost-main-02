@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { Users } from "lucide-react";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { ReferralsEmptyState } from "@/components/referrals/empty-state-client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,8 @@ export default async function ReferralsPage() {
     redirect("/login");
   }
 
+  const t = await getTranslations("referrals");
+
   const referralsEnabled = await isFeatureEnabled("referral_program");
   if (!referralsEnabled) redirect("/dashboard");
 
@@ -50,11 +53,7 @@ export default async function ReferralsPage() {
   const referralCount = currentUser.referrals.length;
 
   return (
-    <DashboardPageWrapper
-      icon={Users}
-      title="Referrals"
-      description="Invite friends and earn rewards"
-    >
+    <DashboardPageWrapper icon={Users} title={t("title")} description={t("description")}>
       {referralCount === 0 ? (
         <ReferralsEmptyState referralLink={referralLink} />
       ) : (

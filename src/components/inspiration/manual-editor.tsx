@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Eraser } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +77,7 @@ export function ManualEditor({
   onSendToComposer,
   maxChars = 280,
 }: ManualEditorProps) {
+  const tm = useTranslations("inspiration");
   const [text, setText] = useState(initialText);
 
   const similarity = useMemo(() => calculateSimilarity(text, sourceText), [text, sourceText]);
@@ -98,13 +100,13 @@ export function ManualEditor({
   return (
     <Card>
       <CardHeader className="p-3 sm:p-6">
-        <CardTitle className="text-base sm:text-lg">Manual Editor</CardTitle>
+        <CardTitle className="text-base sm:text-lg">{tm("manual.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 p-3 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
         {/* Character Counter */}
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <span className="text-muted-foreground text-xs sm:text-sm">
-            {charCount} / {maxChars} characters
+            {tm("manual.chars", { count: charCount, max: maxChars })}
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -113,11 +115,11 @@ export function ManualEditor({
               className="text-muted-foreground hover:text-destructive h-7 gap-1 px-2 text-xs"
               onClick={() => handleChange("")}
               disabled={text === ""}
-              aria-label="Clear text"
-              title="Clear text"
+              aria-label={tm("manual.clear_text")}
+              title={tm("manual.clear_text")}
             >
               <Eraser className="h-3.5 w-3.5" />
-              Clear
+              {tm("manual.clear_text")}
             </Button>
             <span
               className={cn(
@@ -125,7 +127,7 @@ export function ManualEditor({
                 isOverLimit ? "text-destructive" : "text-muted-foreground"
               )}
             >
-              {maxChars - charCount} remaining
+              {tm("manual.remaining", { count: maxChars - charCount })}
             </span>
           </div>
         </div>
@@ -134,7 +136,7 @@ export function ManualEditor({
         <Textarea
           value={text}
           onChange={(e) => handleChange(e.target.value)}
-          placeholder="Edit the tweet to make it your own..."
+          placeholder={tm("manual.placeholder")}
           className="min-h-[120px] resize-none text-sm sm:min-h-[150px]"
         />
 
@@ -155,14 +157,14 @@ export function ManualEditor({
             )}
             <AlertDescription className="text-xs sm:text-sm">
               {isTooSimilar ? (
-                <>
-                  <strong>Too similar!</strong> This content is {similarity.toFixed(0)}% similar to
-                  the source. Please make more changes to create original content.
-                </>
+                <>{tm("manual.too_similar_description", { percent: Math.round(similarity) })}</>
               ) : (
                 <>
-                  Similarity: {similarity.toFixed(0)}%.{" "}
-                  {similarity < 70 ? "Good progress!" : "Keep editing to add your unique voice."}
+                  {tm("manual.similarity_alert", {
+                    percent: Math.round(similarity),
+                    message:
+                      similarity < 70 ? tm("manual.good_progress") : tm("manual.keep_editing"),
+                  })}
                 </>
               )}
             </AlertDescription>
@@ -171,14 +173,14 @@ export function ManualEditor({
       </CardContent>
       <CardFooter className="flex flex-col items-center gap-2 p-3 pt-0 sm:gap-3 sm:p-6 sm:pt-0">
         <span className="text-muted-foreground text-center text-[10px] sm:text-xs">
-          Make substantial changes to create original content
+          {tm("manual.warning")}
         </span>
         <Button
           onClick={handleSendToComposer}
           disabled={isOverLimit || isTooSimilar || text.trim().length === 0}
           className="h-9 text-sm sm:h-10"
         >
-          Send to Composer
+          {tm("manual.send_to_composer")}
         </Button>
       </CardFooter>
     </Card>

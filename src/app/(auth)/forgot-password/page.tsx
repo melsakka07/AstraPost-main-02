@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const t = useTranslations("auth");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,14 +28,14 @@ export default function ForgotPasswordPage() {
 
       if (!res.ok) {
         const error = await res.json();
-        toast.error(error.message || "Failed to send reset link");
+        toast.error(error.message || t("forgot_password.errors.send_failed"));
         return;
       }
 
       setSubmitted(true);
-      toast.success("Check your email for a password reset link");
+      toast.success(t("forgot_password.check_email_title"));
     } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(t("forgot_password.errors.send_failed"));
     } finally {
       setIsLoading(false);
     }
@@ -44,13 +46,15 @@ export default function ForgotPasswordPage() {
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6 text-center">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold">Check your email</h1>
+            <h1 className="text-2xl font-bold">{t("forgot_password.check_email_title")}</h1>
             <p className="text-muted-foreground">
-              We sent a password reset link to <strong>{email}</strong>. It expires in 15 minutes.
+              {t.rich("forgot_password.check_email_body", {
+                email: () => <strong>{email}</strong>,
+              })}
             </p>
           </div>
           <Button onClick={() => router.push("/login")} className="w-full">
-            Back to login
+            {t("forgot_password.back_to_login")}
           </Button>
         </div>
       </div>
@@ -61,16 +65,14 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold">Reset your password</h1>
-          <p className="text-muted-foreground text-sm">
-            Enter your email and we'll send you a link to reset your password.
-          </p>
+          <h1 className="text-2xl font-bold">{t("forgot_password.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("forgot_password.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="block text-sm font-medium">
-              Email
+              {t("forgot_password.email_label")}
             </label>
             <Input
               id="email"
@@ -85,14 +87,14 @@ export default function ForgotPasswordPage() {
 
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Send reset link
+            {t("forgot_password.submit")}
           </Button>
         </form>
 
         <p className="text-muted-foreground text-center text-sm">
-          Remember your password?{" "}
+          {t("forgot_password.remember")}{" "}
           <a href="/login" className="text-primary hover:text-primary/80 font-medium">
-            Sign in
+            {t("forgot_password.sign_in_link")}
           </a>
         </p>
       </div>

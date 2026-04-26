@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { and, asc, eq, gte, lte, isNotNull } from "drizzle-orm";
 import { CalendarDays, PlusCircle } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { BulkImportDialog } from "@/components/calendar/bulk-import-dialog";
 import { CalendarViewClient } from "@/components/calendar/calendar-view-client";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -35,6 +36,8 @@ export default async function CalendarPage({
   // Validate the ?view= param — only accept the three known view types.
   const initialView: "month" | "week" | "day" = view === "week" || view === "day" ? view : "month";
 
+  const t = await getTranslations("calendar");
+
   const xAccountsList = await db.query.xAccounts.findMany({
     where: eq(xAccounts.userId, session.user.id),
     columns: { id: true, xUsername: true },
@@ -63,18 +66,18 @@ export default async function CalendarPage({
   return (
     <DashboardPageWrapper
       icon={CalendarDays}
-      title="Content Calendar"
-      description="Review scheduled content and drag to reschedule."
+      title={t("title")}
+      description={t("description")}
       actions={
         <>
           <BulkImportDialog xAccounts={xAccountsList} />
           <Button variant="outline" asChild>
-            <Link href="/dashboard/queue">Open Queue</Link>
+            <Link href="/dashboard/queue">{t("open_queue")}</Link>
           </Button>
           <Button asChild>
             <Link href="/dashboard/compose">
               <PlusCircle className="mr-2 h-4 w-4" />
-              Schedule New Post
+              {t("schedule_new")}
             </Link>
           </Button>
         </>

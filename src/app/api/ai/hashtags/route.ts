@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, dbUser, model } = preamble;
 
     const json = await req.json();
     const result = hashtagRequestSchema.safeParse(json);
@@ -30,19 +30,26 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { content, language } = result.data;
+    const { content, language: clientLanguage } = result.data;
+
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
+
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only. Prioritize hashtags popular in MENA."
+        : `Language: ${langLabel}. Prioritize hashtags popular in that region.`;
 
     const prompt = `
       You are a social media growth expert for X (Twitter).
       Suggest 5-10 highly relevant and trending hashtags for the following tweet content.
-      Language: ${LANGUAGES.find((l) => l.code === language)?.label || "English"}.
+      ${langInstruction}
 
       Content:
       "${content}"
 
       Constraints:
-      - If language is Arabic, prioritize hashtags popular in MENA.
-      - If other language, prioritize hashtags popular in that region.
       - Mix broad hashtags and niche ones.
       - Return only the hashtags in an array.
       - Do not include the # symbol in the string values if the schema doesn't require it, but here we want the full tag e.g. "#growth".
@@ -60,7 +67,7 @@ export async function POST(req: Request) {
       0,
       prompt,
       JSON.stringify(object),
-      language
+      userLanguage
     );
 
     const res = Response.json(object);

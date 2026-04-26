@@ -2,6 +2,7 @@ import { render } from "@react-email/render";
 import { Resend } from "resend";
 import { PostFailureEmail } from "@/components/email/post-failure-email";
 import { logger } from "@/lib/logger";
+import { getEmailTranslations } from "./email-translations";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -81,34 +82,58 @@ export async function sendBillingEmail(input: SendEmailInput) {
   await sendEmail(input);
 }
 
-export async function sendPostFailureEmail(to: string, postId: string, reason: string) {
+export async function sendPostFailureEmail(
+  to: string,
+  postId: string,
+  reason: string,
+  locale: string = "en"
+) {
   const retryUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/queue`;
+  const t = getEmailTranslations(locale);
 
   await sendEmail({
     to,
-    subject: "Action Required: Post Publishing Failed",
-    react: PostFailureEmail({ postId, reason, retryUrl }),
-    text: `Your post failed to publish.\n\nReason: ${reason}\n\nView Queue to retry: ${retryUrl}`,
+    subject: t.post_failure.subject,
+    react: PostFailureEmail({ postId, reason, retryUrl, locale }),
+    text: `${t.post_failure.body}\n\n${t.post_failure.reason_label}: ${reason}\n\n${t.post_failure.view_queue}: ${retryUrl}\n\n${t.post_failure.post_id}: ${postId}`,
     metadata: { postId, reason, type: "post_failure" },
   });
 }
 
-export async function sendTeamInvitationEmail(to: string, token: string, teamName: string) {
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+export async function sendTeamInvitationEmail(
+  to: string,
+  token: string,
+  teamName: string,
+  locale: string = "en"
+) {
   const url = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/join-team?token=${token}`;
+  const t = getEmailTranslations(locale);
+  const isRtl = locale === "ar";
+  const safeTeamName = escapeHtml(teamName);
 
   await sendEmail({
     to,
-    subject: `You've been invited to join ${teamName} on AstraPost`,
-    text: `You have been invited to join the team "${teamName}".\n\nClick here to join: ${url}\n\nThis link expires in 7 days.`,
+    subject: t.team_invite.subject.replace("{teamName}", safeTeamName),
+    text: `${t.team_invite.body}\n\n${t.team_invite.team_name_label}: ${safeTeamName}\n\n${url}\n\n${t.team_invite.expires}`,
     html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Team Invitation</h2>
-        <p>You have been invited to join the team <strong>${teamName}</strong> on AstraPost.</p>
-        <p>Click the button below to accept the invitation:</p>
-        <a href="${url}" style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Join Team</a>
-        <p style="margin-top: 24px; font-size: 14px; color: #666;">This link expires in 7 days.</p>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;${isRtl ? " direction: rtl; text-align: right;" : ""}">
+        <h2>${t.team_invite.subject.replace("{teamName}", safeTeamName)}</h2>
+        <p>${t.team_invite.body}</p>
+        <p>${t.team_invite.team_name_label}: <strong>${safeTeamName}</strong></p>
+        <p>${t.common.greeting_no_name}</p>
+        <a href="${escapeHtml(url)}" style="display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px;">${t.team_invite.join_button}</a>
+        <p style="margin-top: 24px; font-size: 14px; color: #666;">${t.team_invite.expires}</p>
       </div>
     `,
-    metadata: { type: "team_invitation", token },
+    metadata: { type: "team_invitation" },
   });
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Hash, Loader2, Copy, Check, PenSquare, Sparkles, TrendingUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ interface HashtagResult {
 export function HashtagGenerator() {
   const { data: session } = useSession();
   const { openWithContext } = useUpgradeModal();
+  const t = useTranslations("hashtag_generator");
   const [content, setContent] = useState("");
   const [language, setLanguage] = useState("ar");
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
@@ -59,7 +61,7 @@ export function HashtagGenerator() {
 
   const handleGenerate = async () => {
     if (!content.trim()) {
-      toast.error("Please enter some content");
+      toast.error(t("error_enter_content"));
       return;
     }
 
@@ -103,12 +105,12 @@ export function HashtagGenerator() {
 
       const data = (await res.json()) as HashtagResult;
       setGeneratedHashtags(data.hashtags || []);
-      toast.success(`Generated ${data.hashtags?.length || 0} hashtags!`);
+      toast.success(t("generated_hashtags"));
     } catch (error) {
       clientLogger.error("Hashtag generation error", {
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to generate hashtags");
+      toast.error(t("error_generation"));
     } finally {
       setIsGenerating(false);
     }
@@ -118,7 +120,7 @@ export function HashtagGenerator() {
     navigator.clipboard.writeText(hashtag);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
-    toast.success("Copied to clipboard");
+    toast.success(t("copied"));
   };
 
   const copyAllHashtags = () => {
@@ -126,7 +128,7 @@ export function HashtagGenerator() {
     navigator.clipboard.writeText(allTags);
     setAllCopied(true);
     setTimeout(() => setAllCopied(false), 2000);
-    toast.success("Copied to clipboard");
+    toast.success(t("copied"));
   };
 
   const removeHashtag = (index: number) => {
@@ -139,26 +141,28 @@ export function HashtagGenerator() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Hash className="h-5 w-5" />
-            Configuration
+            {t("configuration")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Content Input */}
           <div className="space-y-2">
-            <Label htmlFor="hashtag-content">Tweet Content</Label>
+            <Label htmlFor="hashtag-content">{t("tweet_content")}</Label>
             <Textarea
               id="hashtag-content"
-              placeholder="Paste your tweet content here to generate relevant hashtags..."
+              placeholder={t("content_placeholder")}
               className="min-h-[120px] resize-none"
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
-            <p className="text-muted-foreground text-xs">{content.length} characters</p>
+            <p className="text-muted-foreground text-xs">
+              {t("characters", { count: content.length })}
+            </p>
           </div>
 
           {/* Language Selector */}
           <div className="space-y-2">
-            <Label htmlFor="hashtag-language">Target Language</Label>
+            <Label htmlFor="hashtag-language">{t("target_language")}</Label>
             <Select value={language} onValueChange={setLanguage}>
               <SelectTrigger id="hashtag-language">
                 <SelectValue />
@@ -171,9 +175,7 @@ export function HashtagGenerator() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-muted-foreground text-xs">
-              Hashtags will be prioritized based on regional trends
-            </p>
+            <p className="text-muted-foreground text-xs">{t("language_description")}</p>
           </div>
 
           {/* Generate Button */}
@@ -185,12 +187,12 @@ export function HashtagGenerator() {
             {isGenerating ? (
               <>
                 <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                Generating...
+                {t("generating")}
               </>
             ) : (
               <>
                 <Sparkles className="me-2 h-4 w-4" />
-                Generate Hashtags
+                {t("generate_hashtags")}
               </>
             )}
           </Button>
@@ -203,25 +205,25 @@ export function HashtagGenerator() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
-              Generated Hashtags
-              <Badge variant="secondary">{generatedHashtags.length}</Badge>
+              {t("generated_hashtags")}
+              <Badge variant="secondary">{t("count", { count: generatedHashtags.length })}</Badge>
             </CardTitle>
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={copyAllHashtags}
-                aria-label="Copy all hashtags"
+                aria-label={t("copy_all")}
               >
                 {allCopied ? (
                   <>
                     <Check className="me-2 h-4 w-4" />
-                    Copied!
+                    {t("copied")}
                   </>
                 ) : (
                   <>
                     <Copy className="me-2 h-4 w-4" />
-                    Copy All
+                    {t("copy_all")}
                   </>
                 )}
               </Button>
@@ -230,10 +232,10 @@ export function HashtagGenerator() {
                 onClick={() =>
                   sendToComposer([generatedHashtags.join(" ")], { source: "hashtag-generator" })
                 }
-                aria-label="Send hashtags to Composer"
+                aria-label={t("compose")}
               >
                 <PenSquare className="me-2 h-4 w-4" />
-                Compose
+                {t("compose")}
               </Button>
             </div>
           </CardHeader>
@@ -260,10 +262,7 @@ export function HashtagGenerator() {
                 </Badge>
               ))}
             </div>
-            <p className="text-muted-foreground mt-4 text-xs">
-              Click any hashtag to copy it, or use "Copy All" to get everything. Click × to remove a
-              hashtag.
-            </p>
+            <p className="text-muted-foreground mt-4 text-xs">{t("click_copy")}</p>
           </CardContent>
         </Card>
       )}

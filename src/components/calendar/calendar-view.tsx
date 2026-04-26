@@ -28,6 +28,7 @@ import {
   subWeeks,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +64,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ posts, currentDate, initialView = "month" }: CalendarViewProps) {
+  const t = useTranslations("calendar");
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [view, setView] = React.useState<ViewType>(initialView);
@@ -219,7 +221,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
           </Button>
           <h2 className="text-base font-semibold sm:text-lg">{format(currentDate, "MMMM yyyy")}</h2>
           <Button variant="ghost" onClick={handleToday} className="min-h-[44px]">
-            Today
+            {t("today")}
           </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -234,8 +236,8 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
               <SelectValue placeholder="View" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="month">Month</SelectItem>
-              <SelectItem value="week">Week</SelectItem>
+              <SelectItem value="month">{t("month")}</SelectItem>
+              <SelectItem value="week">{t("week")}</SelectItem>
               <SelectItem value="day">Day</SelectItem>
             </SelectContent>
           </Select>

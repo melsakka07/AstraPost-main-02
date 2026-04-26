@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ interface NotificationPreferencesProps {
 }
 
 export function NotificationPreferences({ initialSettings }: NotificationPreferencesProps) {
+  const t = useTranslations("settings");
   const [settings, setSettings] = useState(initialSettings);
   const [isSaving, setIsSaving] = useState(false);
   const isDirty = JSON.stringify(settings) !== JSON.stringify(initialSettings);
@@ -47,10 +49,10 @@ export function NotificationPreferences({ initialSettings }: NotificationPrefere
       });
 
       if (!res.ok) throw new Error("Failed to save");
-      toast.success("Notifications updated");
+      toast.success(t("notifications.saved"));
     } catch (e) {
       setSettings(settings); // Revert on error
-      toast.error("Failed to update notifications");
+      toast.error(t("notifications.error_save"));
     } finally {
       setIsSaving(false);
     }
@@ -59,23 +61,23 @@ export function NotificationPreferences({ initialSettings }: NotificationPrefere
   const notificationOptions = [
     {
       key: "postFailures" as const,
-      label: "Post failure alerts",
-      description: "Notify me when a post fails to publish",
+      label: t("notifications.post_failures_label"),
+      description: t("notifications.post_failures_desc"),
     },
     {
       key: "aiQuotaWarning" as const,
-      label: "AI quota warning",
-      description: "Notify me when I reach 80% of my AI generation quota",
+      label: t("notifications.quota_warning_label"),
+      description: t("notifications.quota_warning_desc"),
     },
     {
       key: "trialExpiry" as const,
-      label: "Trial expiry reminder",
-      description: "Notify me 3 days before my trial expires",
+      label: t("notifications.trial_expiry_label"),
+      description: t("notifications.trial_expiry_desc"),
     },
     {
       key: "teamInvites" as const,
-      label: "Team invite notifications",
-      description: "Notify me when I'm invited to join a team",
+      label: t("notifications.team_invites_label"),
+      description: t("notifications.team_invites_desc"),
     },
   ];
 
@@ -85,11 +87,11 @@ export function NotificationPreferences({ initialSettings }: NotificationPrefere
         <div className="flex items-center gap-2">
           <Bell className="text-primary h-5 w-5" />
           <CardTitle>
-            Notifications
+            {t("notifications.card_title")}
             {isDirty && <span className="text-destructive ml-1">*</span>}
           </CardTitle>
         </div>
-        <CardDescription>Control when you receive alerts and notifications</CardDescription>
+        <CardDescription>{t("notifications.card_description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

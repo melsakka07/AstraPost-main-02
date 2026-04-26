@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { eq, and, asc, gte, sql, inArray } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 import { QueueContent } from "@/components/queue/queue-content";
 import { db } from "@/lib/db";
 import { getPlanLimits } from "@/lib/plan-limits";
@@ -13,6 +14,7 @@ export default async function QueuePage({
 }: {
   searchParams?: Promise<{ page?: string | string[] }>;
 }) {
+  const t = await getTranslations("queue");
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login?callbackUrl=/dashboard/queue");
 
@@ -108,7 +110,7 @@ export default async function QueuePage({
 
   return (
     <QueueContent
-      title={ctx.isOwner ? "Scheduled Queue" : `${dbUser?.name || "Team"}'s Queue`}
+      title={ctx.isOwner ? t("title") : `${dbUser?.name || "Team"}'s Queue`}
       postCount={postCount}
       postsPerMonthLimit={postsPerMonthLimit}
       isNearLimit={isNearLimit}

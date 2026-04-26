@@ -11,6 +11,7 @@ import {
   Package,
   PenSquare,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { RecentAffiliateLinks } from "@/components/affiliate/recent-affiliate-links";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -46,6 +47,7 @@ interface PlanLimitPayload {
 }
 
 export default function AffiliatePage() {
+  const t = useTranslations("affiliate");
   const { data: session } = useSession();
   const { openWithContext } = useUpgradeModal();
   const [url, setUrl] = useState("");
@@ -125,11 +127,7 @@ export default function AffiliatePage() {
   };
 
   return (
-    <DashboardPageWrapper
-      icon={Package}
-      title="Affiliate Generator"
-      description="Paste a product URL to generate a ready-to-post affiliate tweet — pick a tone and language, then copy or send to Composer."
-    >
+    <DashboardPageWrapper icon={Package} title={t("title")} description={t("description")}>
       <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
         <Card>
           <CardHeader>

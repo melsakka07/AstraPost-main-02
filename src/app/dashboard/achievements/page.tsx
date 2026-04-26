@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { Award } from "lucide-react";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { MilestoneList } from "@/components/gamification/milestone-list";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ export default async function AchievementsPage() {
     redirect("/login");
   }
 
+  const t = await getTranslations("achievements");
+
   const unlocked = await db.query.milestones.findMany({
     where: eq(milestones.userId, session.user.id),
     columns: { milestoneId: true },
@@ -34,11 +37,7 @@ export default async function AchievementsPage() {
   const unlockedIds = unlocked.map((m) => m.milestoneId);
 
   return (
-    <DashboardPageWrapper
-      icon={Award}
-      title="Achievements"
-      description="Track your progress and unlock rewards"
-    >
+    <DashboardPageWrapper icon={Award} title={t("title")} description={t("description")}>
       {unlockedIds.length === 0 ? (
         <EmptyState
           icon={<Award className="h-6 w-6" />}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { CreditCard } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { BillingStatus } from "@/components/settings/billing-status";
 import { BillingSuccessPoller } from "@/components/settings/billing-success-poller";
@@ -16,18 +17,12 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/lib/schema";
 
-const PLAN_LABELS: Record<string, string> = {
-  free: "Free",
-  pro_monthly: "Pro Monthly",
-  pro_annual: "Pro Annual",
-  agency: "Agency",
-};
-
 export default async function BillingSettingsPage({
   searchParams,
 }: {
   searchParams?: Promise<{ billing?: string | string[] }>;
 }) {
+  const t = await getTranslations("settings");
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login?callbackUrl=/dashboard/settings/billing");
 
@@ -42,39 +37,46 @@ export default async function BillingSettingsPage({
   const hasStripeCustomerId = Boolean(userRow?.stripeCustomerId);
   const isPaidPlan = currentPlan !== "free";
 
+  const planLabelMap: Record<string, string> = {
+    free: t("billing.plan_free"),
+    pro_monthly: t("billing.plan_pro_monthly"),
+    pro_annual: t("billing.plan_pro_annual"),
+    agency: t("billing.plan_agency"),
+  };
+
   const billingNotice =
     billingState === "success"
       ? {
           tone: "success",
-          text: "Payment completed successfully. Your subscription is now active.",
+          text: t("billing.payment_success"),
         }
       : billingState === "cancelled"
-        ? { tone: "warning", text: "Checkout was canceled. You can resume anytime from this page." }
+        ? { tone: "warning", text: t("billing.checkout_canceled") }
         : billingState === "portal_return"
           ? {
               tone: "info",
-              text: "Returned from billing portal. Changes usually sync within a few moments.",
+              text: t("billing.portal_returned"),
             }
           : billingState === "restore"
             ? {
                 tone: "warning",
-                text: "No active billing profile was found. Select a plan to restore billing access.",
+                text: t("billing.no_billing_profile"),
               }
             : null;
 
   return (
     <DashboardPageWrapper
       icon={CreditCard}
-      title="Billing & Subscription"
-      description="Manage your subscription and billing details"
+      title={t("billing.title")}
+      description={t("billing.description")}
     >
       <div className="max-w-3xl space-y-6">
         {billingState === "success" && <BillingSuccessPoller initialPlan={currentPlan} />}
 
         <Card>
           <CardHeader>
-            <CardTitle>Subscription</CardTitle>
-            <CardDescription>Your current plan and billing details</CardDescription>
+            <CardTitle>{t("billing.subscription_title")}</CardTitle>
+            <CardDescription>{t("billing.subscription_description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {billingNotice && billingState !== "success" && (
@@ -91,10 +93,12 @@ export default async function BillingSettingsPage({
 
             <div className="bg-muted/30 flex flex-col gap-3 rounded-lg p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-muted-foreground mb-1 text-sm font-medium">Current Plan</div>
+                <div className="text-muted-foreground mb-1 text-sm font-medium">
+                  {t("billing.current_plan_label")}
+                </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="px-3 py-1 text-base">
-                    {PLAN_LABELS[currentPlan] ?? currentPlan}
+                    {planLabelMap[currentPlan] ?? currentPlan}
                   </Badge>
                 </div>
               </div>
@@ -103,7 +107,7 @@ export default async function BillingSettingsPage({
                 {hasStripeCustomerId ? (
                   <>
                     <Button variant="outline" className="w-full sm:w-auto" asChild>
-                      <Link href="/pricing">Change Plan</Link>
+                      <Link href="/pricing">{t("billing.change_plan")}</Link>
                     </Button>
                     <ManageSubscriptionButton />
                   </>
@@ -112,18 +116,17 @@ export default async function BillingSettingsPage({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button variant="outline" className="w-full sm:w-auto" asChild>
-                          <Link href="/pricing?billing=restore">Restore Billing</Link>
+                          <Link href="/pricing?billing=restore">
+                            {t("billing.restore_billing")}
+                          </Link>
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>
-                        Your account is on a paid plan but no active payment was found. This can
-                        happen after a failed renewal or manual plan assignment.
-                      </TooltipContent>
+                      <TooltipContent>{t("billing.restore_tooltip")}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 ) : (
                   <Button className="w-full sm:w-auto" asChild>
-                    <Link href="/pricing">Upgrade Plan</Link>
+                    <Link href="/pricing">{t("billing.upgrade_plan")}</Link>
                   </Button>
                 )}
               </div>
@@ -133,10 +136,10 @@ export default async function BillingSettingsPage({
 
             <div className="text-muted-foreground px-2 text-xs">
               {hasStripeCustomerId
-                ? "Use the billing portal to update payment methods, invoices, or cancellation settings."
+                ? t("billing.portal_hint")
                 : isPaidPlan
-                  ? "Your account is on a paid plan without an active billing profile. Restore billing to manage subscription details."
-                  : "Upgrade to a paid plan to unlock billing portal access and self-service subscription management."}
+                  ? t("billing.no_billing_hint")
+                  : t("billing.upgrade_hint")}
             </div>
 
             <PlanUsage />

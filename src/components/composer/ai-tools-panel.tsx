@@ -16,6 +16,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { AiLengthSelector } from "@/components/composer/ai-length-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,6 +178,8 @@ export function AiToolsPanel({
   onHashtagsDone,
   isAiOpen,
 }: AiToolsPanelProps) {
+  const t = useTranslations("compose");
+  const bt = useTranslations("buttons");
   const isStreamingThread =
     isGenerating && aiTool === "thread" && typeof streamingTweetCount === "number";
 
@@ -637,7 +640,7 @@ export function AiToolsPanel({
                 disabled={isGenerating}
                 className="h-10 min-w-[44px] text-sm sm:h-9 sm:min-w-0"
               >
-                Cancel
+                {bt("cancel")}
               </Button>
               <Button
                 size="sm"
@@ -646,7 +649,7 @@ export function AiToolsPanel({
                 className="h-10 min-w-[44px] text-sm sm:h-9 sm:min-w-0"
               >
                 {isGenerating && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                Generate
+                {t("ai_generate")}
               </Button>
             </div>
           )}

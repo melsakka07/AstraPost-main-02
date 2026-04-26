@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle, Sparkles, Loader2, Copy, Check, ChevronRight, Eye } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ interface PlanLimitPayload {
 }
 
 export default function ReplyGeneratorPage() {
+  const t = useTranslations("ai_reply");
   const router = useRouter();
   const { openWithContext } = useUpgradeModal();
 
@@ -68,7 +70,7 @@ export default function ReplyGeneratorPage() {
 
   const handleGenerate = async () => {
     if (!tweetUrl.trim()) {
-      toast.error("Please enter a tweet URL");
+      toast.error(t("enter_url"));
       return;
     }
 
@@ -105,14 +107,14 @@ export default function ReplyGeneratorPage() {
           return;
         }
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        toast.error(err.error ?? "Failed to generate replies");
+        toast.error(err.error ?? t("generation_error"));
         return;
       }
 
       const data = (await res.json()) as ReplyResult;
       setResult(data);
     } catch {
-      toast.error("Failed to generate replies. Please try again.");
+      toast.error(t("generation_error"));
     } finally {
       setIsLoading(false);
     }
@@ -140,7 +142,7 @@ export default function ReplyGeneratorPage() {
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        setPreviewError(err.error ?? "Could not fetch tweet. Check the URL and try again.");
+        setPreviewError(err.error ?? t("preview_error"));
         return;
       }
       const data = (await res.json()) as {
@@ -153,7 +155,7 @@ export default function ReplyGeneratorPage() {
       });
       setPreviewedUrl(tweetUrl);
     } catch {
-      setPreviewError("Failed to preview tweet. Please try again.");
+      setPreviewError(t("fetch_error"));
     } finally {
       setPreviewLoading(false);
     }
@@ -172,21 +174,17 @@ export default function ReplyGeneratorPage() {
   };
 
   return (
-    <DashboardPageWrapper
-      icon={MessageCircle}
-      title="Reply Suggester"
-      description="Paste a tweet URL to generate 5 engagement-ready replies — grow your account through smart interactions."
-    >
-      <Breadcrumb items={[{ label: "Reply Suggester" }]} className="mb-2" />
+    <DashboardPageWrapper icon={MessageCircle} title={t("title")} description={t("description")}>
+      <Breadcrumb items={[{ label: t("title") }]} className="mb-2" />
       {/* Input */}
       <Card>
         <CardContent className="space-y-4 p-5">
           <div className="space-y-1.5">
-            <Label htmlFor="tweetUrl">Tweet URL</Label>
+            <Label htmlFor="tweetUrl">{t("tweet_url")}</Label>
             <div className="flex gap-2">
               <Input
                 id="tweetUrl"
-                placeholder="https://x.com/username/status/..."
+                placeholder={t("url_placeholder")}
                 value={tweetUrl}
                 onChange={(e) => handleUrlChange(e.target.value)}
                 className="flex-1"
@@ -196,8 +194,8 @@ export default function ReplyGeneratorPage() {
                 variant="outline"
                 onClick={handlePreview}
                 disabled={!tweetUrl.trim() || previewLoading}
-                aria-label="Preview tweet"
-                title="Preview tweet before generating"
+                aria-label={t("preview")}
+                title={t("preview_tweet")}
               >
                 {previewLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -219,7 +217,7 @@ export default function ReplyGeneratorPage() {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label>Language</Label>
+              <Label>{t("language")}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
                   <SelectValue />
@@ -240,33 +238,33 @@ export default function ReplyGeneratorPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Tone</Label>
+              <Label>{t("tone")}</Label>
               <Select value={tone} onValueChange={setTone}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="casual">Casual</SelectItem>
-                  <SelectItem value="professional">Professional</SelectItem>
-                  <SelectItem value="educational">Educational</SelectItem>
-                  <SelectItem value="inspirational">Inspirational</SelectItem>
-                  <SelectItem value="humorous">Humorous</SelectItem>
+                  <SelectItem value="casual">{t("casual")}</SelectItem>
+                  <SelectItem value="professional">{t("professional")}</SelectItem>
+                  <SelectItem value="educational">{t("educational")}</SelectItem>
+                  <SelectItem value="inspirational">{t("inspirational")}</SelectItem>
+                  <SelectItem value="humorous">{t("humorous")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Goal</Label>
+              <Label>{t("goal")}</Label>
               <Select value={goal} onValueChange={setGoal}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="add">Add Value</SelectItem>
-                  <SelectItem value="agree">Agree & Amplify</SelectItem>
-                  <SelectItem value="counter">Counter-Perspective</SelectItem>
-                  <SelectItem value="funny">Be Funny</SelectItem>
-                  <SelectItem value="question">Ask a Question</SelectItem>
+                  <SelectItem value="add">{t("add_value")}</SelectItem>
+                  <SelectItem value="agree">{t("agree_amplify")}</SelectItem>
+                  <SelectItem value="counter">{t("counter_perspective")}</SelectItem>
+                  <SelectItem value="funny">{t("be_funny")}</SelectItem>
+                  <SelectItem value="question">{t("ask_question")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -280,20 +278,17 @@ export default function ReplyGeneratorPage() {
             {isLoading ? (
               <>
                 <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                Generating... ({elapsed}s)
+                {t("generating")} ({elapsed}s)
               </>
             ) : (
               <>
                 <Sparkles className="me-2 h-4 w-4" />
-                Generate Replies
+                {t("generate_replies")}
               </>
             )}
           </Button>
           {!preview && tweetUrl.trim() && !isLoading && (
-            <p className="text-muted-foreground text-center text-xs">
-              Tip: click <Eye className="mx-0.5 inline h-3 w-3 align-[-1px]" /> to preview the tweet
-              before generating
-            </p>
+            <p className="text-muted-foreground text-center text-xs">{t("preview_tip")}</p>
           )}
         </CardContent>
       </Card>
@@ -340,10 +335,8 @@ export default function ReplyGeneratorPage() {
             ))}
           </div>
           <div className="text-center">
-            <p className="text-sm font-semibold">3 reply suggestions will appear here</p>
-            <p className="text-muted-foreground mt-1 text-xs">
-              Works with any public tweet from x.com or twitter.com
-            </p>
+            <p className="text-sm font-semibold">{t("3_replies_appear")}</p>
+            <p className="text-muted-foreground mt-1 text-xs">{t("works_with_any")}</p>
           </div>
         </div>
       )}
@@ -351,14 +344,14 @@ export default function ReplyGeneratorPage() {
       {isLoading && (
         <div className="border-border bg-muted/20 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-16">
           <Loader2 className="text-primary h-8 w-8 animate-spin" />
-          <p className="text-muted-foreground text-sm">Fetching tweet and crafting replies...</p>
+          <p className="text-muted-foreground text-sm">{t("fetching_tweet")}</p>
         </div>
       )}
 
       {result && (
         <div className="space-y-3">
           <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-            {result.replies.length} Reply Options
+            {t("reply_options", { count: result.replies.length })}
           </h3>
           {result.replies.map((reply, idx) => (
             <Card key={idx} className="hover:border-primary/30 transition-colors">

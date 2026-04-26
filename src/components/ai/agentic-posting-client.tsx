@@ -42,6 +42,7 @@ import {
   GripVertical,
   Eraser,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { XAccountOption } from "@/app/dashboard/ai/agentic/page";
 import { AgenticTrendsPanel } from "@/components/ai/agentic-trends-panel";
@@ -137,6 +138,7 @@ interface AgenticPostingClientProps {
 }
 
 export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPostingClientProps) {
+  const t = useTranslations("ai_agentic");
   const { openWithContext } = useUpgradeModal();
   const [screen, setScreen] = useState<"input" | "processing" | "review">("input");
 
@@ -583,12 +585,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
   if (screen === "input")
     return (
       <div className="space-y-6">
-        {isLocked && (
-          <UpgradeBanner
-            title="Unlock Agentic Posting"
-            description="AI researches, writes, and creates visuals for your posts. Upgrade to Pro to generate threads automatically."
-          />
-        )}
+        {isLocked && <UpgradeBanner title={t("pro_feature")} description={t("pro_description")} />}
         <InputScreen
           topic={topic}
           setTopic={setTopic}
@@ -693,13 +690,11 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
       <AlertDialog open={showRegenerateConfirm} onOpenChange={setShowRegenerateConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Regenerate entire thread?</AlertDialogTitle>
-            <AlertDialogDescription>
-              All your edits will be lost. The AI will rewrite the thread from scratch.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("dialogs.regenerate_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("dialogs.regenerate_description")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialogs.keep_editing")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setShowRegenerateConfirm(false);
@@ -707,7 +702,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
                 void startPipeline(topic);
               }}
             >
-              Regenerate
+              {t("dialogs.regenerate_button")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -717,14 +712,11 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
       <AlertDialog open={showDiscardConfirm} onOpenChange={setShowDiscardConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard this thread?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This thread will be deleted and you'll return to the input screen. This can't be
-              undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("dialogs.discard_title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("dialogs.discard_description")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("dialogs.cancel_button")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
@@ -732,7 +724,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
                 void doChangeTopic();
               }}
             >
-              Discard
+              {t("dialogs.discard_button")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -792,6 +784,7 @@ function InputScreen({
   onEnhanceTopic,
   isLocked = false,
 }: InputScreenProps) {
+  const t = useTranslations("ai_agentic");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     inputRef.current?.focus();
@@ -813,17 +806,17 @@ function InputScreen({
           </div>
         </div>
         <h2 className="text-foreground text-3xl font-bold tracking-tight sm:text-4xl">
-          What should we post about?
+          {t("input_screen.hero_title")}
         </h2>
         <p className="text-muted-foreground mx-auto mt-3 max-w-lg text-center text-base">
-          AI will research, write, and create visuals — ready in seconds.
+          {t("input_screen.hero_description")}
         </p>
       </div>
 
       <BlurredOverlay
         isLocked={isLocked}
-        title="Pro Feature"
-        description="AI researches, writes, and creates visuals for your posts. Upgrade to Pro to unlock agentic posting."
+        title={t("pro_feature")}
+        description={t("pro_description")}
         className="space-y-6"
       >
         {/* ── Topic input ────────────────────────────────────────────────────── */}
@@ -833,11 +826,11 @@ function InputScreen({
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="e.g., AI coding tools, sustainable fashion, Web3 gaming..."
+            placeholder={t("input_screen.placeholder")}
             className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring max-h-[10rem] min-h-[8rem] w-full resize-none overflow-y-auto rounded-xl border px-5 py-4 text-[15px] leading-relaxed shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2 sm:max-h-[12rem]"
             maxLength={500}
             rows={4}
-            aria-label="Topic for your post"
+            aria-label={t("input_screen.hero_title")}
           />
         </div>
 
@@ -867,26 +860,26 @@ function InputScreen({
             aria-label="Clear topic"
           >
             <Eraser className="h-4 w-4" />
-            Clear
+            {t("input_screen.clear")}
           </Button>
           <Button
             variant="secondary"
             className="h-12 gap-2 rounded-xl px-6 text-base font-medium transition-transform active:scale-[0.98]"
             disabled={!topic.trim() || isEnhancing}
             onClick={() => void onEnhanceTopic()}
-            aria-label="Enhance topic with AI"
+            aria-label={t("input_screen.enhance")}
           >
             <Wand2 className={`h-4 w-4 ${isEnhancing ? "animate-spin" : ""}`} />
-            {isEnhancing ? "Enhancing\u2026" : "Enhance"}
+            {isEnhancing ? t("input_screen.enhancing") : t("input_screen.enhance")}
           </Button>
           <Button
             className="h-12 gap-2 rounded-xl px-8 text-base font-medium transition-transform active:scale-[0.98]"
             disabled={!canSubmit || isEnhancing}
             onClick={() => onSubmit()}
-            aria-label={`Generate AI post about ${topic || "your topic"}`}
+            aria-label={t("input_screen.generate")}
           >
             <Sparkles className="h-5 w-5" />
-            Generate
+            {t("input_screen.generate")}
           </Button>
         </div>
 
@@ -900,7 +893,7 @@ function InputScreen({
             <ChevronDown
               className={`h-4 w-4 transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`}
             />
-            Advanced options
+            {t("input_screen.advanced_options")}
           </button>
 
           {showAdvanced && (
@@ -912,14 +905,14 @@ function InputScreen({
                     htmlFor="agentic-tone"
                     className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                   >
-                    Tone
+                    {t("input_screen.tone")}
                   </Label>
                   <Select value={tone} onValueChange={setTone}>
                     <SelectTrigger id="agentic-tone" className="h-9 rounded-lg">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto (AI decides)</SelectItem>
+                      <SelectItem value="auto">{t("input_screen.auto_tone")}</SelectItem>
                       {TONE_ENUM.options.map((t) => (
                         <SelectItem key={t} value={t} className="capitalize">
                           {t}
@@ -935,7 +928,7 @@ function InputScreen({
                     htmlFor="agentic-language"
                     className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                   >
-                    Language
+                    {t("input_screen.language")}
                   </Label>
                   <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger id="agentic-language" className="h-9 rounded-lg">
@@ -955,8 +948,10 @@ function InputScreen({
               {/* Include images */}
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Include AI Images</p>
-                  <p className="text-muted-foreground text-xs">Generate visuals for key tweets</p>
+                  <p className="text-sm font-medium">{t("input_screen.include_images")}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t("input_screen.include_images_description")}
+                  </p>
                 </div>
                 <Switch
                   id="agentic-images"
@@ -971,13 +966,13 @@ function InputScreen({
                   htmlFor="agentic-audience"
                   className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                 >
-                  Audience hint <span className="normal-case">(optional)</span>
+                  {t("input_screen.audience_hint")} <span className="normal-case">(optional)</span>
                 </Label>
                 <Input
                   id="agentic-audience"
                   value={audience}
                   onChange={(e) => setAudience(e.target.value)}
-                  placeholder="e.g., developers, marketers, students"
+                  placeholder={t("input_screen.audience_placeholder")}
                   maxLength={100}
                   className="rounded-lg"
                 />
@@ -1001,7 +996,7 @@ function InputScreen({
                   {selectedAccount?.username?.[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span>Posting as</span>
+              <span>{t("input_screen.posting_as")}</span>
               <span className="text-foreground font-medium">@{selectedAccount?.username}</span>
               <XSubscriptionBadge tier={selectedAccount?.subscriptionTier ?? "None"} size="sm" />
             </div>
@@ -1015,7 +1010,7 @@ function InputScreen({
                       {selectedAccount?.username?.[0]?.toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span>Posting as</span>
+                  <span>{t("input_screen.posting_as")}</span>
                   <span className="text-foreground font-medium">@{selectedAccount?.username}</span>
                 </div>
               </SelectTrigger>
@@ -1067,6 +1062,7 @@ function ProcessingScreen({
   broadMessage,
   onSelectSuggestion,
 }: ProcessingScreenProps) {
+  const t = useTranslations("ai_agentic");
   const totalEstimated = ORDERED_STEPS.reduce((acc, s) => acc + STEP_CONFIG[s].estimatedMs, 0);
   const completedMs = ORDERED_STEPS.reduce((acc, s) => {
     if (steps[s].state === "complete") return acc + STEP_CONFIG[s].estimatedMs;
@@ -1080,7 +1076,7 @@ function ProcessingScreen({
       <div className="flex items-center justify-between border-b pb-4">
         <div className="min-w-0">
           <p className="text-muted-foreground mb-1 text-xs tracking-wide uppercase">
-            Generating for topic
+            {t("processing_screen.generating_for_topic")}
           </p>
           <p className="truncate font-medium">{topic}</p>
         </div>
@@ -1090,20 +1086,20 @@ function ProcessingScreen({
           className="text-muted-foreground hover:text-destructive ml-4 shrink-0"
           onClick={() => setShowCancelConfirm(true)}
         >
-          Cancel
+          {t("processing_screen.cancel")}
         </Button>
       </div>
 
       {/* Cancel confirm */}
       {showCancelConfirm && (
         <div className="border-destructive/30 bg-destructive/5 flex items-center justify-between gap-4 rounded-lg border p-4">
-          <p className="text-sm">Stop generating? Progress will be lost.</p>
+          <p className="text-sm">{t("processing_screen.stop_confirmation")}</p>
           <div className="flex shrink-0 gap-2">
             <Button size="sm" variant="ghost" onClick={() => setShowCancelConfirm(false)}>
-              Keep going
+              {t("processing_screen.keep_going")}
             </Button>
             <Button size="sm" variant="destructive" onClick={onCancel}>
-              Stop
+              {t("processing_screen.stop")}
             </Button>
           </div>
         </div>
@@ -1134,7 +1130,16 @@ function ProcessingScreen({
                   <span
                     className={`text-sm font-medium ${step.state === "pending" ? "text-muted-foreground" : "text-foreground"}`}
                   >
-                    {config.label}
+                    {(() => {
+                      const stepKey2 = stepKey as string;
+                      if (stepKey2 === "research") return t("processing_screen.steps.research");
+                      if (stepKey2 === "strategy") return t("processing_screen.steps.strategy");
+                      if (stepKey2 === "writing") return t("processing_screen.steps.writing");
+                      if (stepKey2 === "images") return t("processing_screen.steps.images");
+                      if (stepKey2 === "review") return t("processing_screen.steps.review");
+                      if (stepKey2 === "done") return t("processing_screen.steps.done");
+                      return config.label;
+                    })()}
                   </span>
                   {step.state === "complete" && step.elapsedMs && (
                     <span className="text-muted-foreground text-xs">
@@ -1142,7 +1147,9 @@ function ProcessingScreen({
                     </span>
                   )}
                   {step.state === "in_progress" && (
-                    <span className="text-primary animate-pulse text-xs">Working…</span>
+                    <span className="text-primary animate-pulse text-xs">
+                      {t("processing_screen.working")}
+                    </span>
                   )}
                 </div>
                 {step.summary && (
@@ -1161,7 +1168,9 @@ function ProcessingScreen({
 
       {/* Estimated time */}
       {remainingSecs > 0 && (
-        <p className="text-muted-foreground text-center text-xs">~{remainingSecs}s remaining</p>
+        <p className="text-muted-foreground text-center text-xs">
+          {t("processing_screen.remaining", { seconds: remainingSecs })}
+        </p>
       )}
 
       {/* Broad topic suggestions overlay */}
@@ -1257,6 +1266,7 @@ function ReviewScreen({
   onRegenerateAll,
   onDiscard,
 }: ReviewScreenProps) {
+  const t = useTranslations("ai_agentic");
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -1279,7 +1289,7 @@ function ReviewScreen({
         {/* Review header */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-muted-foreground text-sm">Your post is ready</p>
+            <p className="text-muted-foreground text-sm">{t("review_screen.ready")}</p>
             <h2 className="truncate font-semibold">{agenticPost.summary}</h2>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
@@ -1338,7 +1348,7 @@ function ReviewScreen({
         <div className="flex items-center justify-between pt-2">
           <Button variant="outline" size="sm" onClick={onAddTweet} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" />
-            Add Tweet
+            {t("review_screen.add_tweet")}
           </Button>
           <div className="flex gap-2">
             <Button
@@ -1348,7 +1358,7 @@ function ReviewScreen({
               className="text-muted-foreground gap-1.5"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Change topic
+              {t("review_screen.change_topic")}
             </Button>
             <Button
               variant="ghost"
@@ -1357,7 +1367,7 @@ function ReviewScreen({
               className="text-muted-foreground gap-1.5"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              Regenerate all
+              {t("review_screen.regenerate_all")}
             </Button>
           </div>
         </div>
@@ -1368,7 +1378,7 @@ function ReviewScreen({
             onClick={() => setShowResearch(!showResearch)}
             className="hover:bg-muted/50 flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
           >
-            <span>Research Insights</span>
+            <span>{t("review_screen.research_insights")}</span>
             {showResearch ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           {showResearch && (
@@ -1386,11 +1396,11 @@ function ReviewScreen({
               {scheduleDate && (
                 <Button size="sm" onClick={() => onApprove("schedule")} disabled={isSubmitting}>
                   <Calendar className="mr-1.5 h-3.5 w-3.5" />
-                  Confirm Schedule
+                  {t("review_screen.confirm_schedule")}
                 </Button>
               )}
               <Button size="sm" variant="ghost" onClick={() => setShowSchedulePicker(false)}>
-                Cancel
+                {t("dialogs.cancel_button")}
               </Button>
             </div>
           )}
@@ -1405,7 +1415,7 @@ function ReviewScreen({
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Post Now
+              {t("review_screen.post_now")}
             </Button>
             <Button
               variant="outline"
@@ -1416,7 +1426,9 @@ function ReviewScreen({
               className="flex-1 gap-2 sm:flex-none"
             >
               <Calendar className="h-4 w-4" />
-              {scheduleDate ? `Schedule for ${scheduleDate}` : "Schedule"}
+              {scheduleDate
+                ? t("review_screen.schedule_for", { date: scheduleDate })
+                : t("review_screen.schedule")}
             </Button>
             <Button
               variant="ghost"
@@ -1426,7 +1438,7 @@ function ReviewScreen({
               className="text-muted-foreground gap-1.5"
             >
               <BookmarkIcon className="h-3.5 w-3.5" />
-              Save Draft
+              {t("review_screen.save_draft")}
             </Button>
             <Button
               variant="ghost"
@@ -1435,7 +1447,7 @@ function ReviewScreen({
               onClick={onDiscard}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Discard
+              {t("review_screen.discard")}
             </Button>
           </div>
         </div>
@@ -1446,7 +1458,7 @@ function ReviewScreen({
       <div className="hidden lg:block">
         <div className="border-border sticky top-4 overflow-hidden rounded-lg border">
           <div className="border-b px-4 py-3">
-            <p className="text-sm font-medium">Research Insights</p>
+            <p className="text-sm font-medium">{t("review_screen.research_insights")}</p>
           </div>
           <div className="space-y-3 px-4 py-4 text-sm">
             <ResearchInsightsContent agenticPost={agenticPost} />
@@ -1460,18 +1472,19 @@ function ReviewScreen({
 // ── Shared research insights content ─────────────────────────────────────────
 
 function ResearchInsightsContent({ agenticPost }: { agenticPost: AgenticPost }) {
+  const t = useTranslations("ai_agentic");
   return (
     <>
       <div>
         <p className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
-          Recommended Angle
+          {t("review_screen.recommended_angle")}
         </p>
         <p>{agenticPost.research.recommendedAngle}</p>
       </div>
       {agenticPost.research.trendingHashtags.length > 0 && (
         <div>
           <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
-            Trending Hashtags
+            {t("review_screen.trending_hashtags")}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {agenticPost.research.trendingHashtags.map((h) => (
@@ -1488,7 +1501,7 @@ function ResearchInsightsContent({ agenticPost }: { agenticPost: AgenticPost }) 
       {agenticPost.research.keyFacts.length > 0 && (
         <div>
           <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wide uppercase">
-            Key Facts
+            {t("review_screen.key_facts")}
           </p>
           <ul className="space-y-1">
             {agenticPost.research.keyFacts.map((f, i) => (
@@ -1502,7 +1515,7 @@ function ResearchInsightsContent({ agenticPost }: { agenticPost: AgenticPost }) 
       )}
       <div>
         <p className="text-muted-foreground mb-1 text-xs font-semibold tracking-wide uppercase">
-          Content Plan
+          {t("review_screen.content_plan")}
         </p>
         <p className="text-muted-foreground">{agenticPost.plan.rationale}</p>
       </div>
@@ -1562,6 +1575,7 @@ function AgenticTweetCard({
   onRemove,
   dragHandleProps,
 }: AgenticTweetCardProps) {
+  const t = useTranslations("ai_agentic");
   const charCount = isEditing ? editText.length : tweet.charCount;
   const isOverLimit = charCount > 280;
 
@@ -1617,10 +1631,10 @@ function AgenticTweetCard({
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={onEditSave}>
-                Save
+                {t("review_screen.save_draft")}
               </Button>
               <Button size="sm" variant="ghost" onClick={onEditCancel}>
-                Cancel
+                {t("dialogs.cancel_button")}
               </Button>
             </div>
           </div>
@@ -1648,7 +1662,7 @@ function AgenticTweetCard({
                 onClick={onRewrite}
               >
                 <ImageIcon className="h-3 w-3" />
-                New Image
+                {t("review_screen.new_image")}
               </button>
             </div>
           </div>
@@ -1656,9 +1670,9 @@ function AgenticTweetCard({
         {tweet.hasImage && !tweet.imageUrl && (
           <div className="border-border bg-muted/30 text-muted-foreground flex flex-col items-center gap-2 rounded-lg border border-dashed p-4 text-center text-xs">
             <ImageIcon className="text-muted-foreground/40 h-5 w-5" />
-            <span>Image couldn't be generated.</span>
+            <span>{t("review_screen.image_failed")}</span>
             <button className="text-primary underline hover:no-underline" onClick={onRewrite}>
-              Retry
+              {t("review_screen.retry")}
             </button>
           </div>
         )}
@@ -1673,7 +1687,7 @@ function AgenticTweetCard({
               onClick={onEditStart}
             >
               <Pencil className="h-3 w-3" />
-              Edit
+              {t("review_screen.edit")}
             </Button>
             <Button
               size="sm"
@@ -1683,7 +1697,7 @@ function AgenticTweetCard({
               disabled={isRewriting}
             >
               <RefreshCw className={`h-3 w-3 ${isRewriting ? "animate-spin" : ""}`} />
-              {isRewriting ? "Rewriting…" : "Rewrite"}
+              {isRewriting ? t("review_screen.rewriting") : t("review_screen.rewrite")}
             </Button>
             <Button
               size="sm"
@@ -1692,7 +1706,7 @@ function AgenticTweetCard({
               onClick={onRemove}
             >
               <X className="h-3 w-3" />
-              Remove
+              {t("review_screen.remove")}
             </Button>
           </div>
         )}
@@ -1712,24 +1726,25 @@ function SuccessScreen({
   scheduleDate?: string;
   onCreateAnother: () => void;
 }) {
+  const t = useTranslations("ai_agentic");
   const message =
     action === "post_now"
-      ? "Thread queued for posting! 🎉"
+      ? t("review_screen.post_queued")
       : action === "schedule"
-        ? `Scheduled for ${scheduleDate ?? "later"} ✓`
-        : "Saved as draft ✓";
+        ? t("review_screen.scheduled_for", { date: scheduleDate ?? "later" })
+        : t("review_screen.draft_saved");
 
   return (
     <div className="animate-in fade-in mx-auto max-w-md space-y-6 py-16 text-center duration-300">
       <div className="text-5xl">✨</div>
       <div>
         <h2 className="text-xl font-semibold">{message}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">Your AI-generated content is ready.</p>
+        <p className="text-muted-foreground mt-1 text-sm">{t("review_screen.content_ready")}</p>
       </div>
       <div className="flex flex-col items-center gap-2">
         <Button onClick={onCreateAnother} className="gap-2">
           <Wand2 className="h-4 w-4" />
-          Create Another
+          {t("review_screen.create_another")}
         </Button>
         <div className="flex gap-4 text-sm">
           <Link
@@ -1737,14 +1752,14 @@ function SuccessScreen({
             className="text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <ListOrdered className="h-3.5 w-3.5" />
-            View in Queue
+            {t("review_screen.view_in_queue")}
           </Link>
           <Link
             href="/dashboard/calendar"
             className="text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <Calendar className="h-3.5 w-3.5" />
-            Go to Calendar
+            {t("review_screen.go_to_calendar")}
           </Link>
         </div>
       </div>

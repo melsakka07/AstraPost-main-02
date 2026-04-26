@@ -71,6 +71,9 @@ async function generateImagePromptFromTweet(tweetContent: string): Promise<strin
       throw new Error("OPENROUTER_MODEL environment variable is not configured");
     }
 
+    // Note: Image prompts should always be in English for better visual generation
+    // regardless of the user's language preference. The generated images will be
+    // visual representations that work across languages.
     const { text } = await generateText({
       model: openrouterProvider(process.env.OPENROUTER_MODEL),
       system: `You are an expert at creating vivid, specific image prompts for social media content.
@@ -120,7 +123,6 @@ export async function POST(req: NextRequest) {
     // 3. Auth identity
     const userId = session.user.id;
 
-    // ── Deduplication check ──────────────────────────────────────────────
     const dedupKey = RequestDedup.generateKey(userId, "ai_image", validationResult.data);
     const cachedResult = await RequestDedup.check<{
       predictionId: string;

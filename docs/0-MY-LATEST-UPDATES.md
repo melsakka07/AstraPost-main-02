@@ -1,5 +1,242 @@
 # Latest Updates
 
+## 2026-04-26: Fixed Arabic Language Switching Bug — Locale Cookie Mismatch
+
+**Problem:** Switching language to Arabic had no effect — `getMessages()` always loaded English messages and the UI never changed.
+
+**Root cause — two-part fix:**
+
+1. **`src/i18n/request.ts`** — `getRequestConfig` relied on the `locale` parameter from next-intl's internal resolution. Since the project uses the next-intl plugin without i18n routing middleware, next-intl had no way to know about the app's `locale` cookie. It defaulted to `"en"` every time. **Fix:** Now reads the `locale` cookie directly via `cookies().get("locale")?.value`.
+
+2. **`src/app/layout.tsx`** — Language detection relied solely on `session?.user?.language`. After the preferences API updates the DB, Better Auth's session token may still contain the cached old value after reload. **Fix:** Added `locale` cookie fallback: `session?.user?.language || cookieStore.get("locale")?.value || "en"`.
+
+**Files changed:** `src/i18n/request.ts`, `src/app/layout.tsx`
+
+## 2026-04-26: Arabic Localization — Phases 0-7 Complete, Security Fixes, Composer Wired
+
+**Comprehensive audit + implementation pass across all 7 phases:**
+
+- **Phase 0-0.5** — Verified: Cairo font, RTL dir, language switcher, i18n/request.ts, LANGUAGES trimmed to ar/en only, LANGUAGE_ENUM_LIMITED removed
+- **Phase 1 (Auth)** — Verified: all auth pages + onboarding wizard use translations. Fixed onboarding step titles and FEATURE_CARDS hardcoded strings
+- **Phase 2 (Dashboard Shell)** — Verified: 9/13 components fully translated. Fixed hardcoded strings in account-switcher (7), bottom-nav ("More"), post-usage-bar ("Posts"), quick-compose (title + "Clear")
+- **Phase 3 (Dashboard Core)** — **Major gap found**: composer.tsx (2,620 lines) had zero translations. Wired ~87 `t()` calls across toasts, labels, dialogs, AI tools panel
+- **Phase 4 (AI Features)** — Verified: all 8 AI namespaces, 11 feature pages, 11/12 AI routes complete. Fixed trends/route.ts `dbUser.language` fallback
+- **Phase 5 (Settings)** — Verified: all 5 settings pages + 8 components fully translated
+- **Phase 6 (Marketing)** — Verified: all 9 marketing pages + site-footer fully translated
+- **Phase 7 (Emails)** — Implemented: email-translations.ts helper, 9 email templates localized, email.ts service updated, 3 callers (processors, webhook, team invite) pass user language. RTL support in base-layout.tsx
+
+**Security fixes:** Removed raw invite token from Resend metadata (critical), added HTML escaping for teamName in team invite email (high)
+
+**i18n JSON:** 41 namespaces, ~1,500+ keys in both en.json and ar.json with full Arabic (MSA) translations
+
+**Remaining (Phase 9 cleanup):** ~30 hardcoded strings in onboarding-wizard.tsx (time options, timezone labels, error toasts), ~10 in composer.tsx (undo toast callbacks), 3 auth page placeholders — minor UX strings, not blocking
+
+## 2026-04-26: Phase 7 Complete — Transactional Email Localization ✅ (earlier)
+
+**Summary:** All system emails now render in the recipient's preferred language (`user.language` column). Email templates accept a `locale` prop and use `getEmailTranslations()` helper (not `useTranslations()` — email templates are server-rendered HTML, not React hooks). Subject lines, text fallbacks, and HTML bodies are all translated. RTL support: `base-layout.tsx` sets `dir="rtl"` and `lang="ar"` when locale is Arabic.
+
+**New file:** `src/lib/services/email-translations.ts` — lightweight helper returning `en.emails` or `ar.emails` based on locale string.
+
+**Modified files (14):**
+
+- `src/components/email/base-layout.tsx` — added `locale` prop, `dir`/`lang` attributes, translated copyright
+- `src/components/email/post-failure-email.tsx` — all text wired to `t.post_failure.*` keys
+- `src/components/email/billing/trial-expired-email.tsx` — all text wired to `t.trial_expired.*` + `t.common.*`
+- `src/components/email/billing/trial-ending-soon-email.tsx` — all text wired to `t.trial_ending_soon.*` + `t.common.*`
+- `src/components/email/billing/cancel-scheduled-email.tsx` — all text wired to `t.cancel_scheduled.*` + `t.common.*`
+- `src/components/email/billing/reactivated-email.tsx` — all text wired to `t.reactivated.*` + `t.common.*`
+- `src/components/email/billing/subscription-cancelled-email.tsx` — all text wired to `t.subscription_cancelled.*` + `t.common.*`
+- `src/components/email/billing/payment-failed-email.tsx` — all text wired to `t.payment_failed.*` + `t.common.*`
+- `src/components/email/billing/payment-succeeded-email.tsx` — all text wired to `t.payment_succeeded.*` + `t.common.*`
+- `src/lib/services/email.ts` — `sendPostFailureEmail()` and `sendTeamInvitationEmail()` now accept `locale` param, use translations for subject/text/HTML
+- `src/app/api/billing/webhook/route.ts` — all 7 billing email handlers query `user.language` and pass locale to templates; subject/text translated at call sites via `getEmailTranslations()`
+- `src/app/api/team/invite/route.ts` — queries invitee's language (not inviter's) before sending team invite
+- `src/lib/queue/processors.ts` — queries user language before sending post failure email
+- `src/i18n/messages/en.json` + `ar.json` — added 9 new keys: `common.all_rights_reserved`, `common.thank_you_customer/staying/continued/trying`, `cancel_scheduled.access_until_end`, `cancel_scheduled.reactivate_before_end`, `subscription_cancelled.resubscribe_anytime`, `payment_failed.grace_period`, `trial_ending_soon.without_payment`
+
+**Key decisions:**
+
+- `getEmailTranslations()` is a plain function imported into templates — not `useTranslations()` (templates render server-side as HTML via `@react-email/render`, no React hook support)
+- Billing email subjects/texts are translated at the webhook call site (route handler), not inside `sendBillingEmail()` which remains a generic wrapper
+- Team invite: queries the INVITEE's language preference, not the inviter's
+- `t.common.greeting` contains `{name}` placeholder; templates use `.replace("{name}", userName)` for substitution
+- Fallback English strings provided for newly-added keys that templates reference (with `||` fallback) to ensure back-compat
+
+**Verification:** `pnpm lint` passes (0 new warnings); `pnpm typecheck` passes (only pre-existing `composer.tsx:1442` error unrelated).
+
+---
+
+## 2026-04-26: Composer Translation Wiring ✅
+
+**Summary:** Replaced ~45 hardcoded English user-facing strings in `src/components/composer/composer.tsx` with `next-intl` `useTranslations("compose")` calls. All keys already existed in both `en.json` and `ar.json` — no new keys were needed.
+
+**Changed file:** `src/components/composer/composer.tsx` (single file, ~87 `t()` calls added)
+
+**Categories covered:**
+
+- **Toast messages (12 keys):** `toast.draft_restored`, `toast.draft_loaded`, `toast.draft_load_failed`, `toast.title_required`, `toast.template_saved`, `toast.tweet_removed`, `toast.undo`, `toast.post_generated`, `toast.ai_writer_generated`, `toast.template_generated`, `toast.hook_generated`, `toast.cta_added`, `toast.translated` (with count ICU), `toast.hashtags_generated` (with count ICU), `toast.rewrite_generated`
+- **Labels (21 keys):** `label.just_now`, `label.minutes_ago`, `label.auto_saved`, `label.convert_to_thread`, `label.add_to_thread`, `label.thread_mode_on`, `label.thread_mode_off`, `label.ai_tools`, `label.close`, `label.publishing`, `label.post_to_accounts`, `label.schedule_for`, `label.cancel`, `label.times_are_in`, `label.repeat`, `label.none`, `label.daily`, `label.weekly`, `label.monthly`, `label.end_date`, `label.schedule`, `label.post_now`, `label.save_draft`, `label.or_divider`, `label.save_template`
+- **AI Tools Sheet (3 keys):** `ai_tools.title`, `ai_tools.description`, `ai_tools.generate`
+- **Dialog content (8 keys):** `dialog.replace_title`, `dialog.replace_description`, `dialog.keep_editing`, `dialog.replace_generate`, `dialog.translate_title`, `dialog.translate_description` (with count/language ICUs), `dialog.translate_button`, `dialog.discard_title`, `dialog.discard_description`, `dialog.continue`
+
+**Key implementation details:**
+
+- `formatTimeAgo()` moved from module scope into component body to access `t` for `label.just_now` and `label.minutes_ago`
+- Toast action labels ("Undo") use `t("toast.undo")` consistently
+- ICU message format used for variable messages: `t("toast.translated", { count })`, `t("dialog.translate_description", { count, language })`
+
+**Left untranslated (no keys in compose namespace):** "Scheduling for"/"Posting immediately to" context line, tooltip "Add content to enable" (6 instances), "Tweet cleared" toast, history restoration toasts, form validation error messages, tool attribute titles. These require i18n-dev to add new keys.
+
+---
+
+## 2026-04-26: Phase 6 Complete — Marketing Pages Arabic Localization ✅
+
+**Phase 6A (i18n):** Added 9 new top-level namespaces + extended nav with 14 footer keys. ~170 new translation keys. JSON structure verified identical across en.json and ar.json (40 namespaces each).
+
+**Phase 6B (Frontend):** Replaced all hardcoded English UI strings across 9 marketing pages + site footer with `getTranslations()` calls. Content (blog posts, FAQ answers, release notes) left untranslated — only UI chrome (labels, buttons, headings, badges) localized.
+
+**Verification:** `pnpm run check` passes (0 errors, 0 type errors).
+
+---
+
+## 2026-04-26: Phase 6B — Marketing Pages Translation Wiring ✅
+
+**Summary:** Replaced all hardcoded English UI strings across 9 marketing pages and the site footer with `next-intl` `getTranslations()` calls, using per-page namespaces (`marketing`, `pricing`, `features`, `community`, `blog`, `changelog`, `docs`, `resources`, `roadmap`, `nav`).
+
+**Files Modified (10):**
+
+- `src/app/(marketing)/page.tsx` — Homepage: badge, hero, features grid, CTA section (namespace: `marketing`)
+- `src/app/(marketing)/pricing/page.tsx` — Pricing: header, trial banner, feature list, FAQ CTA (namespace: `pricing`)
+- `src/app/(marketing)/features/page.tsx` — Features: header, 6 feature cards with titles/descriptions/details, CTA (namespace: `features`)
+- `src/app/(marketing)/community/page.tsx` — Community: hero, stats labels, benefits, FAQ heading/support section, CTA (namespace: `community`)
+- `src/app/(marketing)/blog/page.tsx` — Blog: header, featured/latest article labels, newsletter section (namespace: `blog`)
+- `src/app/(marketing)/changelog/page.tsx` — Changelog: header, change type badges (new/imp/fix) (namespace: `changelog`)
+- `src/app/(marketing)/docs/page.tsx` — Docs: header, search placeholder, category titles/descriptions, soon badge, support CTA (namespace: `docs`)
+- `src/app/(marketing)/resources/page.tsx` — Resources: header, resource card titles/descriptions/buttons, CTA (namespace: `resources`)
+- `src/app/(marketing)/roadmap/page.tsx` — Roadmap: header, feedback section (namespace: `roadmap`)
+- `src/components/site-footer.tsx` — Footer: nav column headings, link labels, tagline, copyright, security text (namespace: `nav`)
+
+**Key Decisions:**
+
+- All pages use `getTranslations()` (Server Components) — no `"use client"` directives added
+- Blog post titles/excerpts, FAQ answers, changelog release notes, docs article titles left as content (not translated)
+- Stats values (2,500+, 1,200+, 50,000+) kept as data, only labels translated
+- Changelog type badges use a `Record<string, string>` lookup map for type-safe translation
+- Site footer: `NAV_COLUMNS` and `SOCIAL_LINKS` moved from module scope into async component body
+
+## 2026-04-26: Phase 5B Complete — Settings Pages & Components Arabic Localization ✅
+
+**Summary:** Replaced all hardcoded user-facing English strings across 23 settings files (5 server pages, 17 client components, 1 layout) with `next-intl` translations using the `settings` namespace.
+
+**Server Components (5 pages):**
+
+- `src/app/dashboard/settings/profile/page.tsx` — title, description, export card strings
+- `src/app/dashboard/settings/billing/page.tsx` — title, description, PLAN_LABELS replaced with t() calls, billing notices, tooltip, portal hints
+- `src/app/dashboard/settings/notifications/page.tsx` — title, description
+- `src/app/dashboard/settings/team/page.tsx` — title, description, upgrade alert, members card
+- `src/app/dashboard/settings/integrations/page.tsx` — title, description, section headings, card titles, team card
+
+**Client Components (17 files):**
+
+- `profile-form.tsx` — Zod schema factory pattern with `getProfileFormSchema(t)`, all form labels, validation, toast messages
+- `billing-status.tsx` — status badges, trial countdown, cancellation notice, past due warning
+- `manage-subscription-button.tsx` — button text, error toasts
+- `plan-usage.tsx` — usage labels, "Unlimited", slot availability, UpgradeBanner translations
+- `billing-success-poller.tsx` — plan labels map, success/processing toasts
+- `notification-preferences.tsx` — card titles, notification options, toasts
+- `connected-x-accounts.tsx` — all tooltips, badges (Active/Inactive/Expired), dialogs, info boxes, sync button, 40+ strings replaced
+- `x-health-check-button.tsx` — button text, status messages
+- `connected-instagram-accounts.tsx` — card titles, labels, disconnect dialog
+- `connected-linkedin-accounts.tsx` — card titles, labels, disconnect dialog
+- `team/invite-member-dialog.tsx` — Zod schema factory, form labels, role descriptions, toasts; RTL fix: `left-2.5` → `start-2.5`, `pl-9` → `ps-9`
+- `team/team-members-list.tsx` — table headers, role labels, dropdown items, confirmation dialog, toasts
+- `voice-profile-form.tsx` — Zod schema factory, card titles, analysis labels, sample inputs, buttons, toasts
+- `privacy-settings.tsx` — card titles, export/delete labels, confirmation dialog
+- `reopen-checklist-button.tsx` — card strings using `profile.checklist_*` keys
+- `resume-onboarding-button.tsx` — card strings using `profile.onboarding_*` keys
+- `settings-section-nav.tsx` — section labels from `nav.*` keys, aria-label
+
+**Layout:**
+
+- `src/app/dashboard/settings/layout.tsx` — tab labels wired to `nav.*` keys
+
+**Bonus:**
+
+- `src/components/ui/upgrade-banner.tsx` — added optional `cta` translation prop; plan-usage passes `billing.upgrade_banner.cta`
+
+**Key Patterns Used:**
+
+- Server: `const t = await getTranslations("settings")`
+- Client: `const t = useTranslations("settings")`
+- Zod schemas at module level: factory function `getSchema(t)` + `useMemo` inside component
+- Plan labels: inline map `planLabelMap[currentPlan]` using t() calls
+- ICU plural messages: `t("team.members_count", { current, max })`, `t("billing.trial_in_days", { count })`
+
+**Verification:** All i18n keys verified existing in both en.json and ar.json (settings namespace, lines 836-1134). No new keys required.
+
+---
+
+## 2026-04-25: Phase 4 Complete — AI Feature Pages + AI Routes Language-Aware ✅
+
+**Summary:** Completed Arabic localization Phase 4 across three parallel tracks: AI feature pages wired with translations, AI API routes made language-aware, and Phase 1-3 gaps fixed.
+
+**Phase 4C — AI Routes Language-Aware (7 files modified, 11 already done, 2 skipped):**
+
+- Modified: `enhance-topic/route.ts`, `affiliate/route.ts`, `trends/route.ts`, `template-generate/route.ts`, `score/route.ts`, `inspiration/route.ts`, `agentic/[id]/regenerate/route.ts`
+- Pattern: `userLanguage = clientLanguage || dbUser.language || "en"` → `langInstruction` injected into prompt → `recordAiUsage()` with `userLanguage`
+- Skipped: `image/route.ts` (English prompts needed for visual quality), `agentic/[id]/approve/route.ts` (no AI generation)
+
+**Phase 4B — AI Feature Pages (14 files):** ai/page.tsx (tool cards), ai/writer/page.tsx (all tabs/labels/buttons), ai/reply/page.tsx, ai/bio/page.tsx, agentic-posting-client.tsx, hashtag-generator.tsx, inspiration/page.tsx, adaptation-panel.tsx, imported-tweet-card.tsx, manual-editor.tsx, en.json + ar.json
+
+**Phase 1-3 gaps fixed (12 files):** account-switcher, post-usage-bar, upgrade-banner, compose/page, tweet-card, ai-tools-panel, calendar-day, thread-collapsible, analytics-section-nav, account-selector, export-button, onboarding-wizard
+
+**Verification:** `pnpm run check` passes — 0 lint errors, 0 type errors (all 3 TS6133 errors resolved). Both en.json and ar.json at 898 lines with identical key structures.
+
+**Next: Phase 5 — Settings Pages**
+
+---
+
+## 2026-04-25: Phase 1-3 Translation Wiring for Frontend Components ✅
+
+**Summary:** Wired up existing Arabic translation keys across 12 frontend files that still had hardcoded English strings. All changes use existing JSON keys from `src/i18n/messages/en.json` and `ar.json` — no new keys were needed.
+
+**Files Modified:**
+
+- `src/components/dashboard/account-switcher.tsx` — Added `useTranslations("dashboard_shell")`, replaced 2 `aria-label` instances with `t("account_switcher")`
+- `src/components/dashboard/post-usage-bar.tsx` — Added `useTranslations("dashboard_shell")`, passes `post_usage.used`/`post_usage.of` as `translations` prop to UpgradeBanner
+- `src/components/ui/upgrade-banner.tsx` — Added optional `translations` prop with `used`/`of`/`limitReached`/`runningLow`/`upgradeToIncrease` overrides for i18n
+- `src/app/dashboard/compose/page.tsx` — Server Component: added `getTranslations("compose")`, title and description now use `t("title")`/`t("description")`
+- `src/components/composer/tweet-card.tsx` — Added `useTranslations("compose")`, textarea placeholder uses `t("tweet_placeholder")`
+- `src/components/composer/ai-tools-panel.tsx` — Added `useTranslations("compose")` + `useTranslations("buttons")`, Cancel uses `bt("cancel")`, Generate uses `t("ai_generate")`
+- `src/components/calendar/calendar-day.tsx` — Added `useTranslations("calendar")`, create-post aria-label uses `t("schedule_new")`
+- `src/components/queue/thread-collapsible.tsx` — Added `useTranslations("queue")`, button text and aria-label use `t("view_thread")`
+- `src/components/analytics/analytics-section-nav.tsx` — Added `useTranslations("analytics")`, section labels use `t("overview_tab")`/`t("performance_tab")`/`t("insights_tab")`
+- `src/components/analytics/account-selector.tsx` — Added `useTranslations("analytics")`, connect message uses `t("connect_x_cta")`
+- `src/components/analytics/export-button.tsx` — Added `useTranslations("analytics")`, upgrade toast uses `t("upgrade_cta")`
+- `src/components/onboarding/onboarding-wizard.tsx` — Added `useTranslations("auth")`, header/title/subtitle/steps/buttons now translated; `steps` array moved from module-level to component-level via `getSteps(t)` helper
+
+**Remaining Gaps (requires i18n-dev for new keys):**
+
+- `account-switcher`: toast messages, search placeholder, group labels (no `dashboard_shell` keys)
+- `thread-collapsible`: "Empty tweet" fallback (no `queue` key)
+- `ai-tools-panel`: form labels (Topic, Tone, Language, etc.), instructional text, tone options, streaming status text (no `compose` keys)
+- `export-button`: "Export", "Export as CSV/PDF" labels (no `analytics` keys)
+- `date-range-selector`: "Select range", "Last 7d/14d/30d/90d" (no `analytics` keys)
+- `onboarding-wizard`: steps 2/3/5 titles ("Preferences", "Compose", "Explore AI"), all step descriptions, step-specific content text (no `auth.onboarding` keys beyond 3 steps)
+- `tweet-card`: toolbar labels (Media, AI Image, Emoji, Clear, 1/N), aria-labels (no `compose` keys)
+
+---
+
+## 2026-04-25: Arabic Localization Plan Creation ✅
+
+**Summary:** Drafted a detailed step-by-step implementation plan for scaling up cookie/session-based Arabic language support. Created `docs/arabic-implementation-plan.md` to guide AI agents (`@i18n-dev`, `@frontend-dev`, etc.) in systematically replacing hardcoded strings across the codebase.
+
+**Changes:**
+
+- Generated `docs/arabic/arabic-implementation-plan.md` outlining the architecture, phases, and specific agent prompts required to fully localize the app into Arabic without SEO/URL overhead.
+
+---
+
 ## 2026-04-25: AI Billing Fairness Audit ✅
 
 **Summary:** Fixed three quota-tracking bugs where AI operations either bypassed quota gates or double-recorded usage. All changes to recording logic and agentic pipeline integration.

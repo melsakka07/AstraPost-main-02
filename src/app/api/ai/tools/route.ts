@@ -39,13 +39,20 @@ export async function POST(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { tool, language, tone, topic, input, context } = parsed.data;
+    const { tool, language: clientLanguage, tone, topic, input, context } = parsed.data;
 
-    const langLabel = LANGUAGES.find((l) => l.code === language)?.label || "English";
+    // Get language: prefer client-sent language, fall back to user's DB preference
+    const userLanguage = clientLanguage || dbUser.language || "en";
+    const langLabel = LANGUAGES.find((l) => l.code === userLanguage)?.label || "English";
 
     // Validate the stored voiceProfile against the strict schema and sanitize
     // every field before interpolation. Returns "" for null/invalid profiles.
     const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
+
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : `Language: ${langLabel}.`;
 
     const prompt = (() => {
       if (tool === "hook") {
@@ -53,7 +60,7 @@ export async function POST(req: Request) {
           topic || ""
         }".
 Tone: ${tone}.
-Language: ${langLabel}.
+${langInstruction}
 ${voiceInstructions}
 
 Constraints:
@@ -67,7 +74,7 @@ Constraints:
         const contextPrompt = context ? `\n\nThread context for relevance:\n${context}` : "";
         return `Write a short call-to-action for the END of an X thread.
 Tone: ${tone}.
-Language: ${langLabel}.
+${langInstruction}
 ${voiceInstructions}
 ${contextPrompt}
 
@@ -79,7 +86,7 @@ Constraints:
 
       return `Rewrite the following X tweet.
 Tone: ${tone}.
-Language: ${langLabel}.
+${langInstruction}
 ${voiceInstructions}
 
 Constraints:
@@ -97,7 +104,7 @@ ${input || ""}`;
       prompt,
     });
 
-    await recordAiUsage(session.user.id, tool, 0, prompt, object, language);
+    await recordAiUsage(session.user.id, tool, 0, prompt, object, userLanguage);
 
     const res = Response.json(object);
     res.headers.set("x-correlation-id", correlationId);

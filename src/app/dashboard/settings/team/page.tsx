@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Shield } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { InviteMemberDialog } from "@/components/settings/team/invite-member-dialog";
 import { TeamMembersList } from "@/components/settings/team/team-members-list";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,6 +13,7 @@ import { getPlanLimits, normalizePlan } from "@/lib/plan-limits";
 import { getTeamContext } from "@/lib/team-context";
 
 export default async function TeamSettingsPage() {
+  const t = await getTranslations("settings");
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -111,10 +113,8 @@ export default async function TeamSettingsPage() {
     <div className="mx-auto w-full max-w-7xl space-y-6 md:space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your team members and their access levels.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("team.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("team.description")}</p>
         </div>
         {canManage && canInvite && <InviteMemberDialog />}
       </div>
@@ -122,11 +122,11 @@ export default async function TeamSettingsPage() {
       {!canInvite && (
         <Alert variant="destructive">
           <Shield className="h-4 w-4" />
-          <AlertTitle>Upgrade Required</AlertTitle>
+          <AlertTitle>{t("team.upgrade_required_title")}</AlertTitle>
           <AlertDescription>
-            Team management is only available on the Agency plan.
+            {t("team.upgrade_required_desc")}
             <Button variant="link" className="ml-1 h-auto p-0 font-semibold" asChild>
-              <a href="/pricing">Upgrade now</a>
+              <a href="/pricing">{t("team.upgrade_cta")}</a>
             </Button>
           </AlertDescription>
         </Alert>
@@ -138,9 +138,9 @@ export default async function TeamSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>
-                  Members ({currentCount} / {maxMembers})
+                  {t("team.members_count", { current: currentCount, max: maxMembers })}
                 </CardTitle>
-                <CardDescription>People with access to this workspace.</CardDescription>
+                <CardDescription>{t("team.members_description")}</CardDescription>
               </div>
             </div>
           </CardHeader>

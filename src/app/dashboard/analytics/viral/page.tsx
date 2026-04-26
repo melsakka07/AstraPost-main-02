@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Type,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
 import { ViralHourChart } from "@/components/analytics/viral-hour-chart";
@@ -63,6 +64,7 @@ function safeBold(text: string): React.ReactNode {
 }
 
 export default function ViralAnalyzerPage() {
+  const t = useTranslations("analytics_viral");
   const userLocale = useUserLocale();
   const [days, setDays] = useState("90");
   const [analysis, setAnalysis] = useState<ViralAnalysis | null>(null);
@@ -192,8 +194,8 @@ export default function ViralAnalyzerPage() {
   return (
     <DashboardPageWrapper
       icon={TrendingUp}
-      title="Viral Content Analyzer"
-      description="Analyze your last 90 days of posts to find viral patterns — best hashtags, ideal timing, and top content types."
+      title={t("title")}
+      description={t("description")}
       actions={
         <div className="flex items-center gap-2">
           <Select value={days} onValueChange={setDays}>

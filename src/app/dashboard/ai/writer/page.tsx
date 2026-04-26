@@ -15,6 +15,7 @@ import {
   Check,
   Shuffle,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { HashtagGenerator } from "@/components/ai/hashtag-generator";
 import { AiLengthSelector } from "@/components/composer/ai-length-selector";
@@ -75,6 +76,7 @@ type ActiveTab = "thread" | "url" | "variants" | "hashtags";
 
 function AIWriterContent() {
   const searchParams = useSearchParams();
+  const t = useTranslations("ai_writer");
   const initialTab = (searchParams?.get("tab") as ActiveTab | null) ?? "thread";
   const { openWithContext } = useUpgradeModal();
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
@@ -232,7 +234,7 @@ function AIWriterContent() {
             };
 
             if (event.error) {
-              toast.error("Generation failed. Please try again.");
+              toast.error(t("errors.generation_failed"));
               streamDone = true;
               break;
             }
@@ -251,7 +253,7 @@ function AIWriterContent() {
         }
       }
     } catch {
-      toast.error("Failed to generate content");
+      toast.error(t("errors.generation_failed"));
     } finally {
       setIsGenerating(false);
     }
@@ -321,13 +323,13 @@ function AIWriterContent() {
           return;
         }
         const err = (await res.json().catch(() => ({}))) as { error?: string };
-        toast.error(err.error ?? "Failed to convert URL");
+        toast.error(err.error ?? t("errors.generation_failed"));
         return;
       }
       const data = (await res.json()) as { tweets: string[]; title: string };
       setUrlResult(data);
     } catch {
-      toast.error("Failed to convert URL to thread");
+      toast.error(t("errors.generation_failed"));
     } finally {
       setUrlLoading(false);
     }
@@ -380,7 +382,7 @@ function AIWriterContent() {
       const data = (await res.json()) as { variants: Variant[] };
       setVariants(data.variants);
     } catch {
-      toast.error("Failed to generate variants");
+      toast.error(t("errors.generation_failed"));
     } finally {
       setVariantLoading(false);
     }
@@ -407,22 +409,22 @@ function AIWriterContent() {
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="thread">
           <PenTool className="me-1.5 h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Thread Writer</span>
-          <span className="sm:hidden">Thread</span>
+          <span className="hidden sm:inline">{t("tabs.thread")}</span>
+          <span className="sm:hidden">{t("tabs.thread")}</span>
         </TabsTrigger>
         <TabsTrigger value="url">
           <Link2 className="me-1.5 h-3.5 w-3.5" />
-          <span className="hidden sm:inline">URL → Thread</span>
-          <span className="sm:hidden">URL</span>
+          <span className="hidden sm:inline">{t("tabs.url")}</span>
+          <span className="sm:hidden">{t("tabs.url")}</span>
         </TabsTrigger>
         <TabsTrigger value="variants">
           <Shuffle className="me-1.5 h-3.5 w-3.5" />
-          <span className="hidden sm:inline">A/B Variants</span>
-          <span className="sm:hidden">Variants</span>
+          <span className="hidden sm:inline">{t("tabs.variants")}</span>
+          <span className="sm:hidden">{t("tabs.variants")}</span>
         </TabsTrigger>
         <TabsTrigger value="hashtags">
           <Hash className="me-1.5 h-3.5 w-3.5" />
-          Hashtags
+          {t("tabs.hashtags")}
         </TabsTrigger>
       </TabsList>
 
@@ -433,15 +435,15 @@ function AIWriterContent() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PenTool className="text-primary h-5 w-5" />
-                Configuration
+                {t("topic_label")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="topic">Topic or Idea</Label>
+                <Label htmlFor="topic">{t("topic_label")}</Label>
                 <Textarea
                   id="topic"
-                  placeholder="e.g. The future of remote work..."
+                  placeholder={t("topic_placeholder")}
                   className="min-h-[120px] resize-none"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
@@ -449,26 +451,26 @@ function AIWriterContent() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Tone</Label>
+                  <Label>{t("tone_label")}</Label>
                   <Select value={tone} onValueChange={setTone}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="casual">Casual</SelectItem>
-                      <SelectItem value="humorous">Humorous</SelectItem>
-                      <SelectItem value="controversial">Controversial</SelectItem>
-                      <SelectItem value="educational">Educational</SelectItem>
-                      <SelectItem value="inspirational">Inspirational</SelectItem>
-                      <SelectItem value="viral">Viral</SelectItem>
+                      <SelectItem value="professional">{t("tone.professional")}</SelectItem>
+                      <SelectItem value="casual">{t("tone.casual")}</SelectItem>
+                      <SelectItem value="humorous">{t("tone.humorous")}</SelectItem>
+                      <SelectItem value="controversial">{t("tone.controversial")}</SelectItem>
+                      <SelectItem value="educational">{t("tone.educational")}</SelectItem>
+                      <SelectItem value="inspirational">{t("tone.inspirational")}</SelectItem>
+                      <SelectItem value="viral">{t("tone.viral")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>
                     <Globe className="me-1 inline h-3.5 w-3.5" />
-                    Language
+                    {t("language_label")}
                   </Label>
                   <Select value={language} onValueChange={setLanguage}>
                     <SelectTrigger>
@@ -492,7 +494,7 @@ function AIWriterContent() {
 
               {/* Mode toggle: Thread vs Single Post */}
               <div className="space-y-2">
-                <Label>Output Mode</Label>
+                <Label>{t("output_mode_label")}</Label>
                 <div className="bg-muted/50 grid grid-cols-2 gap-1 rounded-lg border p-1">
                   <button
                     type="button"
@@ -504,7 +506,7 @@ function AIWriterContent() {
                     )}
                     onClick={() => setMode("thread")}
                   >
-                    Thread
+                    {t("mode_thread")}
                   </button>
                   <button
                     type="button"
@@ -516,7 +518,7 @@ function AIWriterContent() {
                     )}
                     onClick={() => setMode("single")}
                   >
-                    Single Post
+                    {t("mode_single")}
                   </button>
                 </div>
               </div>
@@ -534,9 +536,9 @@ function AIWriterContent() {
               {mode === "thread" && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>Thread Length</Label>
+                    <Label>{t("length_label")}</Label>
                     <span className="text-muted-foreground text-sm font-medium tabular-nums">
-                      {tweetCount} tweets
+                      {t("tweets_count", { count: tweetCount, max: 15 })}
                     </span>
                   </div>
                   <Slider
@@ -545,11 +547,11 @@ function AIWriterContent() {
                     min={3}
                     max={15}
                     step={1}
-                    aria-label="Thread length"
+                    aria-label={t("length_label")}
                   />
                   <div className="text-muted-foreground flex justify-between text-xs">
-                    <span>Short (3)</span>
-                    <span>Long (15)</span>
+                    <span>{t("length_short")} (3)</span>
+                    <span>{t("length_long")} (15)</span>
                   </div>
                 </div>
               )}
@@ -563,12 +565,12 @@ function AIWriterContent() {
                 {isGenerating ? (
                   <>
                     <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                    Generating... ({threadElapsed}s)
+                    {t("generating")} ({threadElapsed}s)
                   </>
                 ) : (
                   <>
                     <Sparkles className="me-2 h-4 w-4" />
-                    {mode === "single" ? "Generate Post" : "Generate Thread"}
+                    {mode === "single" ? t("generate_post") : t("generate_thread")}
                   </>
                 )}
               </Button>
@@ -583,7 +585,7 @@ function AIWriterContent() {
                   <>
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground text-sm font-medium">
-                        {isGenerating ? "Generating..." : "Generated post"}
+                        {isGenerating ? t("generating") : t("generated_post")}
                       </span>
                       {!isGenerating && (
                         <div className="flex gap-2">
@@ -594,19 +596,19 @@ function AIWriterContent() {
                               navigator.clipboard.writeText(generatedTweets[0] ?? "");
                               setCopiedAll(true);
                               setTimeout(() => setCopiedAll(false), 2000);
-                              toast.success("Copied to clipboard");
+                              toast.success(t("copy"));
                             }}
-                            aria-label="Copy post"
+                            aria-label={t("copy")}
                           >
                             {copiedAll ? (
                               <>
                                 <Check className="me-1.5 h-3.5 w-3.5" />
-                                Copied
+                                {t("copy")}
                               </>
                             ) : (
                               <>
                                 <Copy className="me-1.5 h-3.5 w-3.5" />
-                                Copy
+                                {t("copy")}
                               </>
                             )}
                           </Button>
@@ -617,7 +619,7 @@ function AIWriterContent() {
                             }
                           >
                             <PenSquare className="me-1.5 h-3.5 w-3.5" />
-                            Open in Composer
+                            {t("open_composer")}
                           </Button>
                         </div>
                       )}
@@ -658,12 +660,12 @@ function AIWriterContent() {
                             {copiedAll ? (
                               <>
                                 <Check className="me-1.5 h-3.5 w-3.5" />
-                                Copied
+                                {t("copy")}
                               </>
                             ) : (
                               <>
                                 <Copy className="me-1.5 h-3.5 w-3.5" />
-                                Copy All
+                                {t("copy_all")}
                               </>
                             )}
                           </Button>
@@ -674,7 +676,7 @@ function AIWriterContent() {
                             }
                           >
                             <PenSquare className="me-1.5 h-3.5 w-3.5" />
-                            Open in Composer
+                            {t("open_composer")}
                           </Button>
                         </div>
                       )}
@@ -754,9 +756,9 @@ function AIWriterContent() {
                   ))}
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium">Your thread will appear here</p>
+                  <p className="text-sm font-medium">{t("empty_state")}</p>
                   <p className="text-muted-foreground mt-1 text-xs">
-                    Enter a topic above and click Generate Thread
+                    {t("empty_state_description")}
                   </p>
                 </div>
               </div>
@@ -855,7 +857,7 @@ function AIWriterContent() {
                 ) : (
                   <>
                     <Sparkles className="me-2 h-4 w-4" />
-                    Convert to Thread
+                    {t("convert_to_thread")}
                   </>
                 )}
               </Button>
@@ -881,17 +883,17 @@ function AIWriterContent() {
                       variant="outline"
                       size="sm"
                       onClick={copyUrlThread}
-                      aria-label="Copy all URL thread tweets"
+                      aria-label={t("copy_all")}
                     >
                       {urlCopied ? (
                         <>
                           <Check className="me-1.5 h-3.5 w-3.5" />
-                          Copied
+                          {t("copy")}
                         </>
                       ) : (
                         <>
                           <Copy className="me-1.5 h-3.5 w-3.5" />
-                          Copy All
+                          {t("copy_all")}
                         </>
                       )}
                     </Button>
@@ -902,7 +904,7 @@ function AIWriterContent() {
                       }
                     >
                       <PenSquare className="me-1.5 h-3.5 w-3.5" />
-                      Open in Composer
+                      {t("open_composer")}
                     </Button>
                   </div>
                 </div>
@@ -1020,12 +1022,12 @@ function AIWriterContent() {
                 {variantLoading ? (
                   <>
                     <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                    Generating... ({variantElapsed}s)
+                    {t("generating")} ({variantElapsed}s)
                   </>
                 ) : (
                   <>
                     <Shuffle className="me-2 h-4 w-4" />
-                    Generate 3 Variants
+                    {t("generate_variants")}
                   </>
                 )}
               </Button>
@@ -1052,16 +1054,14 @@ function AIWriterContent() {
                   ))}
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium">3 variants will appear here</p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Each uses a different angle: emotional, factual, and question
-                  </p>
+                  <p className="text-sm font-medium">{t("variants_empty")}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">{t("variants_description")}</p>
                 </div>
               </div>
             ) : variantLoading ? (
               <div className="border-border bg-muted/20 flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-12">
                 <Loader2 className="text-primary h-8 w-8 animate-spin" />
-                <p className="text-muted-foreground text-sm">Generating variants...</p>
+                <p className="text-muted-foreground text-sm">{t("generating")}</p>
               </div>
             ) : (
               variants.map((v, idx) => (
@@ -1087,7 +1087,7 @@ function AIWriterContent() {
                           )}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => applyVariant(v.text)}>
-                          Use
+                          {t("use")}
                         </Button>
                         <Button
                           size="sm"
@@ -1118,12 +1118,9 @@ function AIWriterContent() {
 }
 
 export default function AIWriterPage() {
+  const t = useTranslations("ai_writer");
   return (
-    <DashboardPageWrapper
-      icon={Bot}
-      title="AI Writer"
-      description="Enter a topic and tone to generate a ready-to-post thread — or convert URLs, create A/B variants, and find hashtags."
-    >
+    <DashboardPageWrapper icon={Bot} title={t("title")} description={t("description")}>
       <AIWriterContent />
     </DashboardPageWrapper>
   );

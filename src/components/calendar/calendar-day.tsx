@@ -3,6 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { format, isToday } from "date-fns";
 import { Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { CalendarPostItem } from "./calendar-post-item";
 import { type CalendarPost } from "./calendar-view";
@@ -26,6 +27,7 @@ export function CalendarDay({
   onDateClick,
   accountColorMap,
 }: CalendarDayProps) {
+  const t = useTranslations("calendar");
   const { setNodeRef, isOver } = useDroppable({
     id,
   });
@@ -59,7 +61,7 @@ export function CalendarDay({
               e.stopPropagation();
               onDateClick(date);
             }}
-            aria-label={`Create post for ${format(date, "MMMM d")}`}
+            aria-label={`${t("schedule_new")} — ${format(date, "MMMM d")}`}
             className="text-muted-foreground hover:bg-accent hover:text-foreground flex h-5 w-5 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100"
           >
             <Plus className="h-3.5 w-3.5" />

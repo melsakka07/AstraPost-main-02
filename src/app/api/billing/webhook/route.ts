@@ -25,6 +25,7 @@ import {
   webhookDeliveryLog,
 } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
+import { getEmailTranslations } from "@/lib/services/email-translations";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 import { stripe } from "@/lib/stripe";
 import type Stripe from "stripe";
@@ -362,7 +363,7 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
 
     const expiredUser = await db.query.user.findFirst({
       where: eq(user.id, existingRecord.userId),
-      columns: { email: true, name: true },
+      columns: { email: true, name: true, language: true },
     });
 
     await runSideEffect(
@@ -379,13 +380,15 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     );
 
     if (expiredUser?.email) {
+      const userLocale = expiredUser.language || "en";
+      const t = getEmailTranslations(userLocale);
       await runSideEffect(
         () =>
           sendBillingEmail({
             to: expiredUser.email,
-            subject: "Your AstraPost trial has expired",
-            text: `Hi ${expiredUser.name || "there"},\n\nYour free trial has ended without a payment method on file. Your account has been moved to the Free plan.\n\nYou can upgrade anytime from your account settings to regain access to all features.\n\nThank you,\nThe AstraPost Team`,
-            react: TrialExpiredEmail({ userName: expiredUser.name || "there" }),
+            subject: t.trial_expired.subject,
+            text: `${t.common.greeting.replace("{name}", expiredUser.name || "there")}\n\n${t.trial_expired.body}\n\n${t.trial_expired.upgrade_description}\n\n${t.common.closing}\n${t.common.closing_team}`,
+            react: TrialExpiredEmail({ userName: expiredUser.name || "there", locale: userLocale }),
             metadata: {
               event: "incomplete_expired",
               userId: existingRecord.userId,
@@ -541,7 +544,7 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
 
   const lifecycleUser = await db.query.user.findFirst({
     where: eq(user.id, existingRecord.userId),
-    columns: { email: true, name: true },
+    columns: { email: true, name: true, language: true },
   });
 
   const periodEndDate = period.currentPeriodEnd
@@ -570,13 +573,19 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     );
 
     if (lifecycleUser?.email) {
+      const userLocale = lifecycleUser.language || "en";
+      const ct = getEmailTranslations(userLocale);
       await runSideEffect(
         () =>
           sendBillingEmail({
             to: lifecycleUser.email,
-            subject: "Your AstraPost subscription cancellation is scheduled",
-            text: `Hi ${lifecycleUser.name || "there"},\n\nYour AstraPost subscription has been scheduled for cancellation on ${periodEndDate}.\n\nYou'll continue to have full access to all features until that date. After that, your account will be moved to the Free plan.\n\nIf you change your mind, you can reactivate at any time from your account settings before the cancellation date.\n\nThank you for being an AstraPost customer.`,
-            react: CancelScheduledEmail({ userName: lifecycleUser.name || "there", periodEndDate }),
+            subject: ct.cancel_scheduled.subject,
+            text: `${ct.common.greeting.replace("{name}", lifecycleUser.name || "there")}\n\n${ct.cancel_scheduled.body.replace("{date}", periodEndDate)}\n\n${ct.cancel_scheduled.access_until_end || "You'll continue to have full access to all features until that date. After that, your account will be moved to the Free plan."}\n\n${ct.cancel_scheduled.reactivate_before_end || "If you change your mind, you can reactivate at any time from your account settings before the cancellation date."}\n\n${ct.common.thank_you_customer || "Thank you for being an AstraPost customer."}`,
+            react: CancelScheduledEmail({
+              userName: lifecycleUser.name || "there",
+              periodEndDate,
+              locale: userLocale,
+            }),
             metadata: {
               event: "cancel_scheduled",
               userId: existingRecord.userId,
@@ -604,13 +613,18 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
     );
 
     if (lifecycleUser?.email) {
+      const userLocale = lifecycleUser.language || "en";
+      const rt = getEmailTranslations(userLocale);
       await runSideEffect(
         () =>
           sendBillingEmail({
             to: lifecycleUser.email,
-            subject: "Your AstraPost subscription has been reactivated",
-            text: `Hi ${lifecycleUser.name || "there"},\n\nGreat news — your AstraPost subscription has been reactivated and will continue on its normal billing schedule.\n\nThank you for staying with AstraPost!`,
-            react: ReactivatedEmail({ userName: lifecycleUser.name || "there" }),
+            subject: rt.reactivated.subject,
+            text: `${rt.common.greeting.replace("{name}", lifecycleUser.name || "there")}\n\n${rt.reactivated.body}\n\n${rt.common.thank_you_staying || "Thank you for staying with AstraPost!"}`,
+            react: ReactivatedEmail({
+              userName: lifecycleUser.name || "there",
+              locale: userLocale,
+            }),
             metadata: {
               event: "reactivated",
               userId: existingRecord.userId,
@@ -704,16 +718,21 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
   // Send cancellation email
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
-    columns: { email: true, name: true },
+    columns: { email: true, name: true, language: true },
   });
   if (dbUser?.email) {
+    const userLocale = dbUser.language || "en";
+    const st = getEmailTranslations(userLocale);
     await runSideEffect(
       () =>
         sendBillingEmail({
           to: dbUser.email,
-          subject: "Your AstraPost subscription has been cancelled",
-          text: `Hi ${dbUser.name || "there"},\n\nYour AstraPost subscription has been cancelled and your account has been moved to the Free plan.\n\nYou can resubscribe at any time from your account settings.\n\nThank you for being an AstraPost customer.`,
-          react: SubscriptionCancelledEmail({ userName: dbUser.name || "there" }),
+          subject: st.subscription_cancelled.subject,
+          text: `${st.common.greeting.replace("{name}", dbUser.name || "there")}\n\n${st.subscription_cancelled.body}\n\n${st.subscription_cancelled.resubscribe_anytime || "You can resubscribe at any time from your account settings."}\n\n${st.common.thank_you_customer || "Thank you for being an AstraPost customer."}`,
+          react: SubscriptionCancelledEmail({
+            userName: dbUser.name || "there",
+            locale: userLocale,
+          }),
           metadata: {
             event: "customer.subscription.deleted",
             userId: subRecord.userId,
@@ -765,7 +784,7 @@ export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
-    columns: { email: true, name: true },
+    columns: { email: true, name: true, language: true },
   });
 
   await runSideEffect(
@@ -785,13 +804,15 @@ export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   );
 
   if (dbUser?.email) {
+    const userLocale = dbUser.language || "en";
+    const pt = getEmailTranslations(userLocale);
     await runSideEffect(
       () =>
         sendBillingEmail({
           to: dbUser.email,
-          subject: "Payment failed — action required",
-          text: `Hi ${dbUser.name || "there"}, your payment failed. Please update your billing method within 7 days to avoid service interruption.`,
-          react: PaymentFailedEmail({ userName: dbUser.name || "there" }),
+          subject: pt.payment_failed.subject,
+          text: `${pt.common.greeting.replace("{name}", dbUser.name || "there")}\n\n${pt.payment_failed.body}\n\n${pt.payment_failed.grace_period || "Your account will remain active during the grace period, but service will be interrupted if payment is not updated."}`,
+          react: PaymentFailedEmail({ userName: dbUser.name || "there", locale: userLocale }),
           metadata: {
             event: "invoice.payment_failed",
             userId: subRecord.userId,
@@ -830,7 +851,7 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
-    columns: { email: true, name: true },
+    columns: { email: true, name: true, language: true },
   });
 
   await runSideEffect(
@@ -849,13 +870,15 @@ export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   );
 
   if (dbUser?.email) {
+    const userLocale = dbUser.language || "en";
+    const pst = getEmailTranslations(userLocale);
     await runSideEffect(
       () =>
         sendBillingEmail({
           to: dbUser.email,
-          subject: "Payment succeeded",
-          text: `Hi ${dbUser.name || "there"}, your subscription payment was successful.`,
-          react: PaymentSucceededEmail({ userName: dbUser.name || "there" }),
+          subject: pst.payment_succeeded.subject,
+          text: `${pst.common.greeting.replace("{name}", dbUser.name || "there")}\n\n${pst.payment_succeeded.body}\n\n${pst.common.thank_you_continued || "Thank you for your continued subscription!"}`,
+          react: PaymentSucceededEmail({ userName: dbUser.name || "there", locale: userLocale }),
           metadata: {
             event: "invoice.payment_succeeded",
             userId: subRecord.userId,
@@ -873,7 +896,7 @@ export async function handleTrialWillEnd(subscription: Stripe.Subscription) {
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
-    columns: { email: true, name: true },
+    columns: { email: true, name: true, language: true },
   });
 
   await runSideEffect(
@@ -892,13 +915,15 @@ export async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   );
 
   if (dbUser?.email) {
+    const userLocale = dbUser.language || "en";
+    const tt = getEmailTranslations(userLocale);
     await runSideEffect(
       () =>
         sendBillingEmail({
           to: dbUser.email,
-          subject: "Your trial ends soon",
-          text: `Hi ${dbUser.name || "there"}, your trial ends in 3 days. Add a payment method to keep your access.`,
-          react: TrialEndingSoonEmail({ userName: dbUser.name || "there" }),
+          subject: tt.trial_ending_soon.subject,
+          text: `${tt.common.greeting.replace("{name}", dbUser.name || "there")}\n\n${tt.trial_ending_soon.body}\n\n${tt.common.thank_you_trying || "Thank you for trying AstraPost!"}`,
+          react: TrialEndingSoonEmail({ userName: dbUser.name || "there", locale: userLocale }),
           metadata: {
             event: "customer.subscription.trial_will_end",
             userId: subRecord.userId,

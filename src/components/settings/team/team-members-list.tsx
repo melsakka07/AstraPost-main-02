@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { MoreHorizontal, Trash2, Loader2, UserX, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -68,6 +69,7 @@ export function TeamMembersList({
   currentUserId,
   isOwner,
 }: TeamMembersListProps) {
+  const t = useTranslations("settings");
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null); // For confirm dialog
@@ -90,7 +92,9 @@ export function TeamMembersList({
         throw new Error(error || "Failed to remove");
       }
 
-      toast.success(deleteType === "member" ? "Member removed" : "Invitation revoked");
+      toast.success(
+        deleteType === "member" ? t("team.member_removed") : t("team.invitation_revoked")
+      );
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "An error occurred");
@@ -112,13 +116,20 @@ export function TeamMembersList({
 
       if (!res.ok) throw new Error("Failed to update role");
 
-      toast.success("Role updated");
+      toast.success(t("team.role_updated"));
       router.refresh();
     } catch (error) {
-      toast.error("Failed to update role");
+      toast.error(t("team.role_update_error"));
     } finally {
       setLoadingId(null);
     }
+  };
+
+  const roleLabels: Record<string, string> = {
+    owner: t("team.role_owner"),
+    admin: t("team.role_admin"),
+    editor: t("team.role_editor"),
+    viewer: t("team.role_viewer"),
   };
 
   return (
@@ -127,9 +138,9 @@ export function TeamMembersList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Joined</TableHead>
+              <TableHead>{t("team.table_user")}</TableHead>
+              <TableHead>{t("team.table_role")}</TableHead>
+              <TableHead>{t("team.table_joined")}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -150,7 +161,7 @@ export function TeamMembersList({
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className="capitalize">
-                    {member.role}
+                    {roleLabels[member.role] ?? member.role}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
@@ -168,7 +179,7 @@ export function TeamMembersList({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("team.actions")}</DropdownMenuLabel>
                       {isOwner && member.userId !== currentUserId && (
                         <>
                           <DropdownMenuSeparator />
@@ -176,9 +187,15 @@ export function TeamMembersList({
                             value={member.role}
                             onValueChange={(val) => handleRoleChange(member.id, val)}
                           >
-                            <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="editor">Editor</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="viewer">Viewer</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="admin">
+                              {t("team.role_admin")}
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="editor">
+                              {t("team.role_editor")}
+                            </DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="viewer">
+                              {t("team.role_viewer")}
+                            </DropdownMenuRadioItem>
                           </DropdownMenuRadioGroup>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -189,12 +206,12 @@ export function TeamMembersList({
                             }}
                           >
                             <UserX className="mr-2 h-4 w-4" />
-                            Remove Member
+                            {t("team.remove_member")}
                           </DropdownMenuItem>
                         </>
                       )}
                       {member.userId === currentUserId && (
-                        <DropdownMenuItem disabled>Cannot remove yourself</DropdownMenuItem>
+                        <DropdownMenuItem disabled>{t("team.cannot_remove_self")}</DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -211,18 +228,22 @@ export function TeamMembersList({
                       <Mail className="text-muted-foreground h-4 w-4" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-muted-foreground font-medium">Pending Invitation</span>
+                      <span className="text-muted-foreground font-medium">
+                        {t("team.pending_invitation")}
+                      </span>
                       <span className="text-muted-foreground text-xs">{invite.email}</span>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary" className="capitalize opacity-70">
-                    {invite.role} (Pending)
+                    {t("team.role_pending", { role: roleLabels[invite.role] ?? invite.role })}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-xs">
-                  Sent {format(new Date(invite.createdAt), "MMM d, yyyy")}
+                  {t("team.invite_sent", {
+                    date: format(new Date(invite.createdAt), "MMM d, yyyy"),
+                  })}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -244,7 +265,7 @@ export function TeamMembersList({
                         }}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Revoke Invitation
+                        {t("team.revoke_invitation")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -255,7 +276,7 @@ export function TeamMembersList({
             {members.length === 0 && invitations.length === 0 && (
               <TableRow>
                 <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
-                  No team members found.
+                  {t("team.no_members")}
                 </TableCell>
               </TableRow>
             )}
@@ -266,21 +287,21 @@ export function TeamMembersList({
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>{t("team.confirm_title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone.
+              {t("team.confirm_desc")}
               {deleteType === "member"
-                ? " This user will lose access to the team workspace."
-                : " The invitation link will become invalid."}
+                ? t("team.confirm_remove_member")
+                : t("team.confirm_revoke_invite")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("team.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleRemove}
             >
-              {deleteType === "member" ? "Remove Member" : "Revoke Invitation"}
+              {deleteType === "member" ? t("team.remove_member") : t("team.revoke_invitation")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

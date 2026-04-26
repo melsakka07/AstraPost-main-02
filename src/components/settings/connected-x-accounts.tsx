@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Activity,
@@ -16,6 +15,7 @@ import {
   Twitter,
   XCircle,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -108,6 +108,7 @@ export function ConnectedXAccounts({
   initialAccounts,
   userPlan = "free",
 }: ConnectedXAccountsProps) {
+  const t = useTranslations("settings");
   const params = useSearchParams();
   const { openWithContext } = useUpgradeModal();
   const shouldSync = params.get("sync") === "1";
@@ -129,6 +130,14 @@ export function ConnectedXAccounts({
   const planLimit = getPlanLimits(userPlan).maxXAccounts;
   const activeCount = accounts.filter((a) => a.isActive).length;
   const isOverLimit = activeCount > planLimit;
+
+  // Format plan name for display
+  const planName =
+    userPlan === "free"
+      ? t("billing.plan_free")
+      : userPlan === "pro_monthly" || userPlan === "pro_annual"
+        ? t("billing.plan_pro_monthly")
+        : t("billing.plan_agency");
 
   const syncNow = useCallback(async () => {
     setBusy(true);
@@ -161,15 +170,13 @@ export function ConnectedXAccounts({
       const listRes = await fetch("/api/x/accounts", { method: "GET" });
       const data = await listRes.json();
       setAccounts(data.accounts || []);
-      toast.success(
-        "Accounts synced. Paused posts have been automatically re-queued and will publish shortly."
-      );
+      toast.success(t("integrations.sync_success"));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Sync failed");
     } finally {
       setBusy(false);
     }
-  }, [openWithContext]);
+  }, [openWithContext, t]);
 
   useEffect(() => {
     if (!shouldSync) return;
@@ -186,14 +193,20 @@ export function ConnectedXAccounts({
         ...prev,
         [accountId]: {
           ok,
-          detail: ok ? `Connected as @${data.user?.username}` : (data?.error ?? "Check failed"),
+          detail: ok
+            ? t("integrations.health_check_passed", { username: data.user?.username ?? "" })
+            : (data?.error ?? t("integrations.health_check_failed")),
           checkedAt: new Date(),
         },
       }));
     } catch {
       setHealthStatus((prev) => ({
         ...prev,
-        [accountId]: { ok: false, detail: "Check failed", checkedAt: new Date() },
+        [accountId]: {
+          ok: false,
+          detail: t("integrations.health_check_failed"),
+          checkedAt: new Date(),
+        },
       }));
     } finally {
       setChecking(null);
@@ -277,7 +290,7 @@ export function ConnectedXAccounts({
 
     // Prevent removing the last remaining account
     if (accounts.length === 1) {
-      toast.error("Cannot remove the last connected account. Please add another account first.");
+      toast.error(t("integrations.cannot_remove_last"));
       setShowRemoveDialog(null);
       return;
     }
@@ -308,9 +321,7 @@ export function ConnectedXAccounts({
 
     // Prevent deactivating the last remaining account
     if (accounts.length === 1) {
-      toast.error(
-        "Cannot deactivate the last connected account. Please add another account first."
-      );
+      toast.error(t("integrations.cannot_deactivate_last"));
       setShowDeactivateDialog(null);
       return;
     }
@@ -373,14 +384,6 @@ export function ConnectedXAccounts({
     refreshMissingTiers();
   }, [accounts]);
 
-  // Format plan name for display
-  const planName =
-    userPlan === "free"
-      ? "Free"
-      : userPlan === "pro_monthly" || userPlan === "pro_annual"
-        ? "Pro"
-        : "Agency";
-
   return (
     <TooltipProvider>
       <div className="space-y-4">
@@ -389,19 +392,14 @@ export function ConnectedXAccounts({
           <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <div>
-              <p className="font-medium">Account limit exceeded</p>
+              <p className="font-medium">{t("integrations.account_limit_exceeded_title")}</p>
               <p className="mt-0.5 text-xs opacity-90">
-                Your {planName} plan allows {planLimit} X account{planLimit !== 1 ? "s" : ""}. You
-                have {activeCount} active account{activeCount !== 1 ? "s" : ""}. Please{" "}
-                <strong>deactivate</strong> {activeCount - planLimit} account
-                {activeCount - planLimit !== 1 ? "s" : ""} or{" "}
-                <Link
-                  href="/pricing"
-                  className="font-medium underline hover:text-amber-700 dark:hover:text-amber-300"
-                >
-                  upgrade
-                </Link>{" "}
-                your plan.
+                {t("integrations.account_limit_exceeded_message", {
+                  planName,
+                  planLimit,
+                  activeCount,
+                  excess: activeCount - planLimit,
+                })}
               </p>
             </div>
           </div>
@@ -409,25 +407,22 @@ export function ConnectedXAccounts({
 
         {accounts.length === 0 ? (
           <div className="space-y-3 py-6 text-center">
-            <p className="text-muted-foreground text-sm">No accounts connected yet.</p>
+            <p className="text-muted-foreground text-sm">{t("integrations.no_accounts")}</p>
             <Button onClick={handleAddAccount} disabled={busy}>
               <Plus className="mr-2 h-4 w-4" />
-              Connect X Account
+              {t("integrations.connect_x")}
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
             <Button variant="outline" onClick={handleAddAccount} disabled={busy}>
               <Plus className="mr-2 h-4 w-4" />
-              Connect X Account
+              {t("integrations.connect_x")}
             </Button>
             <div className="border-border/50 bg-muted/30 text-muted-foreground flex items-start gap-2 rounded-md border px-3 py-2 text-xs">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <div>
-                <p>
-                  Click <strong>Connect X Account</strong> to add another X account while logged in.
-                  Pro plan: up to 3 accounts · Agency: up to 10 accounts.
-                </p>
+                <p>{t("integrations.connect_x_hint")}</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -497,14 +492,14 @@ export function ConnectedXAccounts({
                                 className="h-4 gap-1 px-1.5 py-0 text-[10px]"
                               >
                                 <AlertTriangle className="h-2.5 w-2.5" />
-                                Expired
+                                {t("integrations.expired")}
                               </Badge>
                             ) : (
                               <Badge
                                 variant={a.isActive ? "default" : "secondary"}
                                 className="h-4 px-1.5 py-0 text-[10px]"
                               >
-                                {a.isActive ? "Active" : "Inactive"}
+                                {a.isActive ? t("integrations.active") : t("integrations.inactive")}
                               </Badge>
                             )}
                             {tierUpdatedAt && (
@@ -530,7 +525,11 @@ export function ConnectedXAccounts({
                                     ? "text-primary hover:text-primary h-8 w-8 p-0"
                                     : "text-muted-foreground hover:text-foreground h-8 w-8 p-0"
                                 }
-                                aria-label={a.isDefault ? "Default account" : "Set as default"}
+                                aria-label={
+                                  a.isDefault
+                                    ? t("integrations.default_account")
+                                    : t("integrations.set_as_default")
+                                }
                                 onClick={async () => {
                                   setBusy(true);
                                   try {
@@ -565,7 +564,9 @@ export function ConnectedXAccounts({
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
-                              {a.isDefault ? "Default account" : "Set as default"}
+                              {a.isDefault
+                                ? t("integrations.default_account")
+                                : t("integrations.set_as_default")}
                             </TooltipContent>
                           </Tooltip>
 
@@ -578,7 +579,7 @@ export function ConnectedXAccounts({
                                 size="sm"
                                 disabled={isChecking || busy}
                                 className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
-                                aria-label={`Test connection for @${a.xUsername}`}
+                                aria-label={t("integrations.test_connection") + ` @${a.xUsername}`}
                                 onClick={() => handleHealthCheck(a.id)}
                               >
                                 <Activity
@@ -589,7 +590,7 @@ export function ConnectedXAccounts({
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
-                              Test connection
+                              {t("integrations.test_connection")}
                             </TooltipContent>
                           </Tooltip>
 
@@ -602,7 +603,7 @@ export function ConnectedXAccounts({
                                 size="sm"
                                 disabled={refreshingTier === a.id || busy}
                                 className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
-                                aria-label={`Refresh subscription tier for @${a.xUsername}`}
+                                aria-label={t("integrations.refresh_tier") + ` @${a.xUsername}`}
                                 onClick={() =>
                                   handleRefreshTier(
                                     a.id,
@@ -618,7 +619,7 @@ export function ConnectedXAccounts({
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
-                              Refresh tier
+                              {t("integrations.refresh_tier")}
                             </TooltipContent>
                           </Tooltip>
 
@@ -631,7 +632,7 @@ export function ConnectedXAccounts({
                                 size="sm"
                                 disabled={deletingAccountId === a.id || busy}
                                 className="text-muted-foreground hover:text-destructive h-8 w-8 p-0"
-                                aria-label={`Remove account @${a.xUsername}`}
+                                aria-label={t("integrations.remove_account") + ` @${a.xUsername}`}
                                 onClick={() =>
                                   setShowRemoveDialog({ id: a.id, xUsername: a.xUsername })
                                 }
@@ -644,7 +645,7 @@ export function ConnectedXAccounts({
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom" className="text-xs">
-                              Remove account
+                              {t("integrations.remove_account")}
                             </TooltipContent>
                           </Tooltip>
 
@@ -658,7 +659,9 @@ export function ConnectedXAccounts({
                                   size="sm"
                                   disabled={deactivatingAccountId === a.id || busy}
                                   className="text-muted-foreground h-8 w-8 p-0 hover:text-amber-600"
-                                  aria-label={`Deactivate account @${a.xUsername}`}
+                                  aria-label={
+                                    t("integrations.deactivate_account") + ` @${a.xUsername}`
+                                  }
                                   onClick={() =>
                                     setShowDeactivateDialog({ id: a.id, xUsername: a.xUsername })
                                   }
@@ -671,7 +674,7 @@ export function ConnectedXAccounts({
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent side="bottom" className="text-xs">
-                                Deactivate account
+                                {t("integrations.deactivate_account")}
                               </TooltipContent>
                             </Tooltip>
                           )}
@@ -684,7 +687,7 @@ export function ConnectedXAccounts({
                       <div className="border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
                         <div className="text-destructive flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4 shrink-0" />
-                          <span>Token expired — posts will fail until you reconnect.</span>
+                          <span>{t("integrations.token_expired_warning")}</span>
                         </div>
                         <Button
                           size="sm"
@@ -692,7 +695,7 @@ export function ConnectedXAccounts({
                           className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive shrink-0"
                           onClick={handleReconnect}
                         >
-                          Reconnect
+                          {t("integrations.reconnect")}
                         </Button>
                       </div>
                     )}
@@ -729,19 +732,12 @@ export function ConnectedXAccounts({
           <div className="border-border/50 bg-muted/30 text-muted-foreground flex items-start gap-2 rounded-md border px-3 py-2 text-xs">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <div className="space-y-0.5">
-              <p>
-                <span className="text-foreground font-medium">Character limits:</span> Free X
-                accounts can post up to 280 characters. X Premium subscribers can post up to 2,000
-                characters per post.
-              </p>
-              <p>
-                The colored dot next to each account shows its subscription tier. Use the refresh
-                icon to update tier status.
-              </p>
+              <p>{t("integrations.character_limits")}</p>
+              <p>{t("integrations.tier_info")}</p>
             </div>
           </div>
           <Button variant="outline" className="w-full" disabled={busy} onClick={syncNow}>
-            {busy ? "Syncing..." : "Sync accounts"}
+            {busy ? t("integrations.syncing") : t("integrations.sync_accounts")}
           </Button>
         </div>
 
@@ -752,19 +748,25 @@ export function ConnectedXAccounts({
         >
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
-              <AlertDialogTitle>Remove @{showRemoveDialog?.xUsername}?</AlertDialogTitle>
+              <AlertDialogTitle>
+                {t("integrations.remove_dialog_title", {
+                  username: showRemoveDialog?.xUsername ?? "",
+                })}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                Scheduled posts for this account will be cancelled. You cannot undo this action.
+                {t("integrations.remove_dialog_desc")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={deletingAccountId !== null}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel disabled={deletingAccountId !== null}>
+                {t("integrations.cancel")}
+              </AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
                 onClick={handleRemoveAccount}
                 disabled={deletingAccountId !== null}
               >
-                {deletingAccountId ? "Removing..." : "Remove"}
+                {deletingAccountId ? t("integrations.removing") : t("integrations.remove")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -777,15 +779,18 @@ export function ConnectedXAccounts({
         >
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
-              <AlertDialogTitle>Deactivate @{showDeactivateDialog?.xUsername}?</AlertDialogTitle>
+              <AlertDialogTitle>
+                {t("integrations.deactivate_dialog_title", {
+                  username: showDeactivateDialog?.xUsername ?? "",
+                })}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This account will be deactivated and won't be able to post scheduled content. You
-                can reactivate it anytime. Scheduled posts for this account will be cancelled.
+                {t("integrations.deactivate_dialog_desc")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={deactivatingAccountId !== null}>
-                Cancel
+                {t("integrations.cancel")}
               </AlertDialogCancel>
               <AlertDialogAction
                 variant="default"
@@ -793,7 +798,9 @@ export function ConnectedXAccounts({
                 disabled={deactivatingAccountId !== null}
                 className="bg-amber-600 text-white hover:bg-amber-700"
               >
-                {deactivatingAccountId ? "Deactivating..." : "Deactivate"}
+                {deactivatingAccountId
+                  ? t("integrations.deactivating")
+                  : t("integrations.deactivate")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

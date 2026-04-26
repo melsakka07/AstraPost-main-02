@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ type Notification = {
 };
 
 export function NotificationBell() {
+  const t = useTranslations("dashboard_shell");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
@@ -189,13 +191,13 @@ export function NotificationBell() {
             />
           )}
           <span className="sr-only">
-            {unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}
+            {unreadCount > 0 ? t("unread_count", { count: unreadCount }) : t("notifications")}
           </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <div className="flex items-center justify-between p-2">
-          <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("notifications")}</DropdownMenuLabel>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -203,14 +205,16 @@ export function NotificationBell() {
               onClick={markAllAsRead}
               className="h-auto px-2 py-1 text-xs"
             >
-              Mark all read
+              {t("mark_all_read")}
             </Button>
           )}
         </div>
         <DropdownMenuSeparator />
         <div className="max-h-[300px] overflow-y-auto">
           {notifications.length === 0 ? (
-            <div className="text-muted-foreground p-4 text-center text-sm">No notifications</div>
+            <div className="text-muted-foreground p-4 text-center text-sm">
+              {t("no_notifications")}
+            </div>
           ) : (
             notifications.map((notification) => (
               <DropdownMenuItem

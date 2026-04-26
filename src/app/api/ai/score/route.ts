@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
-    const { model, session } = preamble;
+    const { model, session, dbUser } = preamble;
 
     const json = await req.json();
     const result = scoreRequestSchema.safeParse(json);
@@ -41,9 +41,17 @@ export async function POST(req: Request) {
     const { content } = result.data;
     const sanitizedContent = sanitizeForPrompt(content, 5000);
 
+    // Get language: prefer user's DB preference (score doesn't accept language param)
+    const userLanguage = dbUser.language || "en";
+    const langInstruction =
+      userLanguage === "ar"
+        ? "IMPORTANT: Output ENTIRE response in Arabic (العربية). Use Modern Standard Arabic only."
+        : "Output in English.";
+
     const prompt = `
       You are an expert social media analyst for X (Twitter).
       Analyze the following tweet/thread content and provide a viral potential score (0-100) and 3 specific, actionable feedback points to improve it.
+      ${langInstruction}
 
       Content:
       "${sanitizedContent}"
@@ -64,7 +72,14 @@ export async function POST(req: Request) {
       prompt,
     });
 
-    await recordAiUsage(session.user.id, "viral_score", 0, content, object.feedback.join("\n"));
+    await recordAiUsage(
+      session.user.id,
+      "viral_score",
+      0,
+      content,
+      object.feedback.join("\n"),
+      userLanguage
+    );
 
     // Clamp score to 0-100 in case the model returns out-of-range values
     const res = Response.json({ ...object, score: Math.min(100, Math.max(0, object.score)) });
