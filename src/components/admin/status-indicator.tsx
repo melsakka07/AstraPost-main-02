@@ -35,26 +35,27 @@ export function StatusIndicator({ status, label, title, showIcon = true }: Statu
       variant: "default",
       icon: <CheckCircle2 className="h-3 w-3" />,
       className:
-        "border-green-500/50 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20",
+        "border-success-9/50 text-success-11 dark:text-success-11 bg-success-3 dark:bg-success-3/20",
       defaultTitle: "Resource is active and operational",
     },
     inactive: {
       variant: "secondary",
       icon: <X className="h-3 w-3" />,
-      className: "border-gray-300 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-950/20",
+      className:
+        "border-neutral-7 text-neutral-11 dark:text-neutral-11 bg-neutral-3 dark:bg-neutral-3/20",
       defaultTitle: "Resource is inactive or disabled",
     },
     error: {
       variant: "destructive",
       icon: <AlertCircle className="h-3 w-3" />,
-      className: "bg-red-50 dark:bg-red-950/20",
+      className: "bg-danger-3 dark:bg-danger-3/20",
       defaultTitle: "Resource has encountered an error",
     },
     pending: {
       variant: "outline",
       icon: <Clock className="h-3 w-3" />,
       className:
-        "border-amber-500/50 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20",
+        "border-warning-9/50 text-warning-11 dark:text-warning-11 bg-warning-3 dark:bg-warning-3/20",
       defaultTitle: "Resource is in a pending state",
     },
   };

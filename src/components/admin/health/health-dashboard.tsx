@@ -48,10 +48,10 @@ interface HealthCardProps {
 
 function HealthCard({ title, status, icon: Icon, children }: HealthCardProps) {
   const statusConfig = {
-    ok: { color: "text-green-500", bg: "bg-green-500/10" },
+    ok: { color: "text-success-11", bg: "bg-success-9/10" },
     warning: {
-      color: "text-yellow-500",
-      bg: "bg-yellow-500/10",
+      color: "text-warning-11",
+      bg: "bg-warning-9/10",
     },
     error: {
       color: "text-destructive",
@@ -188,7 +188,7 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
         {/* Database */}
         <HealthCard title="Database" status={dbStatus} icon={Database}>
           {health.checks.postgres.ok ? (
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="text-success-11 flex items-center gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4" />
               <span>Connected ({health.checks.postgres.latency}ms)</span>
             </div>
@@ -208,13 +208,13 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
         {/* Environment Variables */}
         <HealthCard title="Environment Variables" status={envStatus} icon={Key}>
           {envMissing.length === 0 ? (
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="text-success-11 flex items-center gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4" />
               <span>All configured</span>
             </div>
           ) : (
             <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-yellow-600">
+              <div className="text-warning-11 flex items-center gap-2 text-sm">
                 <AlertTriangle className="h-4 w-4" />
                 <span>Missing variables</span>
               </div>
@@ -263,13 +263,13 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
               <span className="text-muted-foreground text-xs">Success</span>
               <div className="bg-muted h-1.5 overflow-hidden rounded-full">
                 <div
-                  className="h-full rounded-full bg-green-500/70 transition-all duration-500"
+                  className="bg-success-9/70 h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${health.jobs.success24h + health.jobs.failed24h > 0 ? Math.round((health.jobs.success24h / (health.jobs.success24h + health.jobs.failed24h)) * 100) : 100}%`,
                   }}
                 />
               </div>
-              <span className="text-right text-sm font-semibold text-green-600 tabular-nums">
+              <span className="text-success-11 text-right text-sm font-semibold tabular-nums">
                 {health.jobs.success24h}
               </span>
             </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Rocket } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { LogoMark } from "@/components/brand";
 
 // Brand SVG icons (inline — no external dependency needed for brand marks)
 function XIcon({ className }: { className?: string }) {
@@ -105,7 +105,10 @@ export async function SiteFooter() {
               className="group inline-flex items-center gap-2 text-lg font-bold"
               aria-label={tFooter("logo_alt")}
             >
-              <Rocket className="text-primary h-5 w-5 transition-transform duration-300 group-hover:rotate-12" />
+              <LogoMark
+                size={20}
+                className="text-primary transition-transform duration-300 group-hover:rotate-12"
+              />
               <span>AstraPost</span>
             </Link>
 

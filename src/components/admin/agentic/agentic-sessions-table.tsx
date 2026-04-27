@@ -30,10 +30,10 @@ interface AgenticSession {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-  running: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-  completed: "bg-green-500/10 text-green-700 dark:text-green-400",
-  failed: "bg-red-500/10 text-red-700 dark:text-red-400",
+  pending: "bg-warning-9/10 text-warning-11 dark:text-warning-11",
+  running: "bg-info-9/10 text-info-11 dark:text-info-11",
+  completed: "bg-success-9/10 text-success-11 dark:text-success-11",
+  failed: "bg-danger-9/10 text-danger-11 dark:text-danger-11",
 };
 
 function LoadingSkeleton() {

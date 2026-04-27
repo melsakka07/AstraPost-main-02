@@ -3,7 +3,7 @@
 import { Lock, Trophy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MILESTONES } from "@/lib/gamification";
+import { MILESTONES } from "@/lib/milestones";
 import { cn } from "@/lib/utils";
 
 function getMilestones(t: ReturnType<typeof useTranslations<"achievements">>) {

@@ -1,5 +1,86 @@
 # Latest Updates
 
+## 2026-04-27: Brand Kit Reference Page Installation
+
+**Summary:** Installed a self-contained `/brand` reference page from `astrapost-brand-kit-page.zip`. The page documents the full AstraPost identity (logo system, color tokens, typography, component samples, downloadable assets) in one scrollable URL. It is a server component with a single client island (`CopyButton` for click-to-copy swatches). Marked `noindex, nofollow` — internal reference only.
+
+**Files created:**
+
+- `src/app/brand/page.tsx` — Server component, all content; imports `Logo`/`LogoMark` from `@/components/brand` and token constants from `@/lib/tokens`
+- `src/app/brand/_components/CopyButton.tsx` — Client component for copying token values to clipboard
+
+**Public asset fix:** Copied 8 files from `public/brand/svg/` and `public/brand/png/` to flat `public/brand/` so the Downloads section links resolve correctly (originals preserved in subdirs).
+
+**Route:** `http://localhost:3000/brand` — publicly accessible, no auth gate.
+
+**Verification:** `pnpm run check` passes (lint + typecheck + i18n).
+
+## 2026-04-27: Color Token System — Radix-Derived OKLCH Scales
+
+**Summary:** Replaced the default shadcn/ui color system with a complete Radix-derived OKLCH token system (`astrapost-tokens.zip`). Installed 6 calibrated colour scales (neutral, brand, info, success, warning, danger) × 12 steps × 2 modes = 144 OKLCH values mapped to 21 shadcn/ui semantic tokens. Placed a `tokens.ts` module with TypeScript hex constants for runtime use (charts, OG images, emails). Migrated 6 admin/status component files from raw Tailwind palette utilities (`bg-blue-500`, `text-green-600`) to the new named scale tokens (`bg-info-9/10`, `text-success-11`). All semantic token NAMES are unchanged — existing shadcn components using `bg-primary`, `text-foreground`, etc. pick up the new values automatically.
+
+**Design:** Indigo brand accent (#3E63DD, "cosmic" Astra identity) on a slate neutral scale (Apple/Linear/Vercel aesthetic). Blue→Info, Green→Success, Amber→Warning, Red→Danger. All step-9 solids reach WCAG AA contrast; step-12 reaches AAA.
+
+**Files created:**
+
+- `src/lib/tokens.ts` — TS constants: `neutral`, `brand`, `info`, `success`, `warning`, `danger` (12-step hex arrays per mode), `chartColors` (5-series categorical palette), `brandConstants` (OG/email-safe values). `as const` tuples for type-safe usage.
+- `tmp_tokens/astrapost-tokens/` — extracted bundle for reference (includes `generate.py` for hue swapping and `preview.html` for visual inspection)
+
+**Files modified:**
+
+- `src/app/globals.css` — full replacement: added 144 raw-scale OKLCH variables (6 scales × 12 steps × 2 modes), recalibrated 21 semantic tokens, added `@import "tw-animate-css"`, added `@custom-variant dark (&:is(.dark *))`. Preserved all custom content: Arabic/RTL typography, prose blog styling, safe-area insets, touch targets, fluid typography, accordion animations, hover-only media query, dashboard shell overrides, sidebar tokens (mapped to `var(--neutral-*)` + `var(--brand-*)`), `--success`/`--warning` status tokens (mapped to `var(--success-11)`/`var(--warning-11)`), `--spacing-page-x`, `--spacing-section`, `--radius-card` tokens
+- `src/components/announcement-banner.tsx` — `blue/amber/green-500` → `info/warning/success-9` scales with step-11 text
+- `src/components/ui/stat-card.tsx` — variant icon bg/color + trend indicator → success/warning scale tokens
+- `src/components/admin/agentic/agentic-sessions-table.tsx` — status badge colors → info/success/warning/danger scales
+- `src/components/admin/notifications/notification-history-table.tsx` — status badge colors → neutral/info/success/danger scales
+- `src/components/admin/health/health-dashboard.tsx` — status card config + inline status text → semantic scales
+- `src/components/admin/status-indicator.tsx` — 4 status variant classNames → semantic scales with proper 3/9/11 step usage
+
+**Usage:**
+
+```tsx
+// Semantic (preferred — auto light/dark)
+<div className="bg-background text-foreground border-border">
+
+// Raw scale (fine-grained control)
+<Badge className="bg-success-3 text-success-11 border-success-6">Active</Badge>
+<Button className="bg-brand-9 hover:bg-brand-10">Schedule</Button>
+
+// Runtime (charts, OG, email)
+import { chartColors, brandConstants } from "@/lib/tokens";
+<Line stroke={chartColors.light[0]} />  // brand indigo
+```
+
+**Dependencies:** `tw-animate-css` v1.4.0 already installed — no new packages needed.
+
+## 2026-04-27: Canonical Brand System Installation
+
+**Summary:** Installed the canonical AstraPost logo system from `astrapost-brand.zip`. Created `src/components/brand/` with `Logo` (full lockup, LTR/RTL/auto variants, `currentColor`-driven) and `LogoMark` (sparkle-only, `currentColor`-driven). Placed 15 SVGs in `public/brand/svg/` and 7 reference PNGs in `public/brand/png/`. Updated `public/` root: favicon.ico, favicon-32.png, app-icon-180.png, app-icon-192.png, app-icon-512.png, og-1200x630.png. Created `public/manifest.json` (PWA: theme_color #0A0A0A, standalone display). Wired metadata in `src/app/layout.tsx` — icons array, manifest reference, OG/Twitter image URLs. Migrated 3 logo sites from `<Rocket />` (lucide-react) to `<LogoMark />`: site-header, site-footer, dashboard sidebar.
+
+**Files created:**
+
+- `src/components/brand/index.ts` (barrel), `Logo.tsx` (11.9 KB), `LogoMark.tsx` (881 B) — zero-dependency, SSR-safe, `currentColor`-driven
+- `public/brand/svg/` — 15 SVG variants (lockup, mark, wordmark × LTR/RTL/Arabic × currentColor/black/white)
+- `public/brand/png/` — 7 raster references (mark at 16/32/512, lockup at 1024, app-icon-512-light)
+- `public/manifest.json` — PWA manifest (name, icons, theme_color, standalone display)
+
+**Files modified:**
+
+- `src/app/layout.tsx` — added `icons` (favicon.ico + favicon-32.png + apple 180), `manifest`, changed OG/Twitter images to `/og-1200x630.png`
+- `src/components/site-header.tsx` — `<Rocket>` → `<LogoMark size={24}>`, removed lucide-react Rocket import
+- `src/components/site-footer.tsx` — `<Rocket>` → `<LogoMark size={20}>`, removed lucide-react Rocket import
+- `src/components/dashboard/sidebar.tsx` — `<Rocket>` → `<LogoMark size={24}>`, removed lucide-react Rocket import
+
+**Usage:**
+
+```tsx
+import { Logo, LogoMark } from "@/components/brand";
+<Logo />                       // LTR lockup, 28px, currentColor
+<Logo variant="rtl" />         // Arabic RTL lockup
+<Logo variant="auto" />        // Switches on nearest [dir] ancestor
+<LogoMark size={24} className="text-primary" />  // Sparkle only
+```
+
 ## 2026-04-26: Affiliate Page Arabic Localization
 
 **Summary:** Wired full Arabic localization into the affiliate page and its `RecentAffiliateLinks` child component. Added 47 new i18n keys across both `en.json` and `ar.json` under the existing `affiliate` namespace (form labels, placeholders, buttons, table headers, empty states, status badges). Replaced all 53 hardcoded English strings across 2 components with `t()` calls. Sidebar entry already existed.

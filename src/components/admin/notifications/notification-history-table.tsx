@@ -32,10 +32,10 @@ interface NotificationRow {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-slate-500/10 text-slate-700 dark:text-slate-400",
-  scheduled: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
-  sent: "bg-green-500/10 text-green-700 dark:text-green-400",
-  failed: "bg-red-500/10 text-red-700 dark:text-red-400",
+  draft: "bg-neutral-9/10 text-neutral-11 dark:text-neutral-11",
+  scheduled: "bg-info-9/10 text-info-11 dark:text-info-11",
+  sent: "bg-success-9/10 text-success-11 dark:text-success-11",
+  failed: "bg-danger-9/10 text-danger-11 dark:text-danger-11",
 };
 
 function LoadingSkeleton() {

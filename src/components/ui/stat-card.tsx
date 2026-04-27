@@ -41,16 +41,16 @@ export interface StatCardProps {
 
 const VARIANT_ICON_BG: Record<NonNullable<StatCardProps["variant"]>, string> = {
   default: "bg-primary/10",
-  success: "bg-green-500/10",
+  success: "bg-success-9/10",
   destructive: "bg-destructive/10",
-  warning: "bg-amber-500/10",
+  warning: "bg-warning-9/10",
 };
 
 const VARIANT_ICON_COLOR: Record<NonNullable<StatCardProps["variant"]>, string> = {
   default: "text-primary",
-  success: "text-green-500",
+  success: "text-success-11",
   destructive: "text-destructive",
-  warning: "text-amber-500",
+  warning: "text-warning-11",
 };
 
 export function StatCard({
@@ -85,7 +85,7 @@ export function StatCard({
             <Icon className={cn("h-4 w-4", resolvedIconColor)} />
           </div>
           {trend && trend !== "neutral" && (
-            <span className={trend === "up" ? "text-green-500" : "text-destructive"}>
+            <span className={trend === "up" ? "text-success-11" : "text-destructive"}>
               {trend === "up" ? (
                 <TrendingUp className="h-4 w-4" />
               ) : (

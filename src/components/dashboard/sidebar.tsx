@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Rocket, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { LogOut, ExternalLink, Image as ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Drawer as DrawerPrimitive } from "vaul";
+import { LogoMark } from "@/components/brand";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { CollapsibleSection } from "@/components/dashboard/sidebar-collapsible-section";
 import { SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
@@ -132,7 +133,7 @@ function SidebarContent({
         className="border-border flex h-16 shrink-0 items-center gap-2 border-b px-6 transition-opacity hover:opacity-80 rtl:flex-row-reverse"
         aria-label={t("go_home")}
       >
-        <Rocket className="text-primary h-6 w-6" />
+        <LogoMark size={24} className="text-primary" />
         <span className="text-xl font-bold tracking-tight">AstraPost</span>
       </Link>
 

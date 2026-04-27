@@ -1,8 +1,8 @@
 import { headers } from "next/headers";
 import Link from "next/link";
-import { Rocket } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { UserProfile } from "@/components/auth/user-profile";
+import { LogoMark } from "@/components/brand";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { HeaderNav } from "@/components/header-nav";
 import { MobileMenu } from "@/components/mobile-menu";
@@ -32,7 +32,7 @@ export async function SiteHeader() {
             className="flex items-center gap-2 text-xl font-bold"
             aria-label={tFooter("logo_alt")}
           >
-            <Rocket className="text-primary h-6 w-6" />
+            <LogoMark size={24} className="text-primary" />
             <span>AstraPost</span>
           </Link>
 

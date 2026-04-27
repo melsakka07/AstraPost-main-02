@@ -1,0 +1,3281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AstraPost color tokens</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+        background: #f5f5f7;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+      .sub {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 24px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AstraPost — color system preview</h1>
+    <div class="sub">
+      Radix-derived scales (slate, indigo, blue, grass, amber, red) → OKLCH → Tailwind 4 + shadcn
+      semantic tokens.
+    </div>
+    <div class="grid">
+      <div
+        style="
+          background: #fcfcfd;
+          color: #1e1f24;
+          padding: 24px;
+          border-radius: 12px;
+          flex: 1;
+          min-width: 0;
+        "
+      >
+        <div
+          style="
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+            margin-bottom: 12px;
+          "
+        >
+          light mode
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            neutral
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #fcfcfd;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fcfcfd</div>
+            </div>
+            <div
+              style="
+                background: #f9f9fb;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#f9f9fb</div>
+            </div>
+            <div
+              style="
+                background: #eff0f3;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#eff0f3</div>
+            </div>
+            <div
+              style="
+                background: #e7e8ec;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e7e8ec</div>
+            </div>
+            <div
+              style="
+                background: #e0e1e6;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e0e1e6</div>
+            </div>
+            <div
+              style="
+                background: #d8d9e0;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#d8d9e0</div>
+            </div>
+            <div
+              style="
+                background: #cdced7;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#cdced7</div>
+            </div>
+            <div
+              style="
+                background: #b9bbc6;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#b9bbc6</div>
+            </div>
+            <div
+              style="
+                background: #8b8d98;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#8b8d98</div>
+            </div>
+            <div
+              style="
+                background: #80828d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#80828d</div>
+            </div>
+            <div
+              style="
+                background: #62636c;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#62636c</div>
+            </div>
+            <div
+              style="
+                background: #1e1f24;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#1e1f24</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            brand
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #fdfdfe;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fdfdfe</div>
+            </div>
+            <div
+              style="
+                background: #f7f9ff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#f7f9ff</div>
+            </div>
+            <div
+              style="
+                background: #edf2fe;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#edf2fe</div>
+            </div>
+            <div
+              style="
+                background: #e1e9ff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e1e9ff</div>
+            </div>
+            <div
+              style="
+                background: #d2deff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#d2deff</div>
+            </div>
+            <div
+              style="
+                background: #c1d0ff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#c1d0ff</div>
+            </div>
+            <div
+              style="
+                background: #abbdf9;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#abbdf9</div>
+            </div>
+            <div
+              style="
+                background: #8da4ef;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#8da4ef</div>
+            </div>
+            <div
+              style="
+                background: #3e63dd;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3e63dd</div>
+            </div>
+            <div
+              style="
+                background: #3358d4;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3358d4</div>
+            </div>
+            <div
+              style="
+                background: #3a5bc7;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3a5bc7</div>
+            </div>
+            <div
+              style="
+                background: #1f2d5c;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#1f2d5c</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            info
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #fbfdff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fbfdff</div>
+            </div>
+            <div
+              style="
+                background: #f4faff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#f4faff</div>
+            </div>
+            <div
+              style="
+                background: #e6f4fe;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e6f4fe</div>
+            </div>
+            <div
+              style="
+                background: #d5efff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#d5efff</div>
+            </div>
+            <div
+              style="
+                background: #c2e5ff;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#c2e5ff</div>
+            </div>
+            <div
+              style="
+                background: #acd8fc;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#acd8fc</div>
+            </div>
+            <div
+              style="
+                background: #8ec8f6;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#8ec8f6</div>
+            </div>
+            <div
+              style="
+                background: #5eb1ef;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#5eb1ef</div>
+            </div>
+            <div
+              style="
+                background: #0090ff;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#0090ff</div>
+            </div>
+            <div
+              style="
+                background: #0588f0;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#0588f0</div>
+            </div>
+            <div
+              style="
+                background: #0d74ce;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#0d74ce</div>
+            </div>
+            <div
+              style="
+                background: #113264;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#113264</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            success
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #fbfefb;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fbfefb</div>
+            </div>
+            <div
+              style="
+                background: #f5fbf5;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#f5fbf5</div>
+            </div>
+            <div
+              style="
+                background: #e9f6e9;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e9f6e9</div>
+            </div>
+            <div
+              style="
+                background: #daf1db;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#daf1db</div>
+            </div>
+            <div
+              style="
+                background: #c9e8ca;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#c9e8ca</div>
+            </div>
+            <div
+              style="
+                background: #b2ddb5;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#b2ddb5</div>
+            </div>
+            <div
+              style="
+                background: #94ce9a;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#94ce9a</div>
+            </div>
+            <div
+              style="
+                background: #65ba74;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#65ba74</div>
+            </div>
+            <div
+              style="
+                background: #46a758;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#46a758</div>
+            </div>
+            <div
+              style="
+                background: #3e9b4f;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3e9b4f</div>
+            </div>
+            <div
+              style="
+                background: #2a7e3b;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#2a7e3b</div>
+            </div>
+            <div
+              style="
+                background: #203c25;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#203c25</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            warning
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #fefdfb;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fefdfb</div>
+            </div>
+            <div
+              style="
+                background: #fefbe9;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fefbe9</div>
+            </div>
+            <div
+              style="
+                background: #fff7c2;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fff7c2</div>
+            </div>
+            <div
+              style="
+                background: #ffee9c;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffee9c</div>
+            </div>
+            <div
+              style="
+                background: #fbe577;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fbe577</div>
+            </div>
+            <div
+              style="
+                background: #f3d673;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#f3d673</div>
+            </div>
+            <div
+              style="
+                background: #e9c162;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e9c162</div>
+            </div>
+            <div
+              style="
+                background: #e2a336;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e2a336</div>
+            </div>
+            <div
+              style="
+                background: #ffc53d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffc53d</div>
+            </div>
+            <div
+              style="
+                background: #ffba18;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffba18</div>
+            </div>
+            <div
+              style="
+                background: #ab6400;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ab6400</div>
+            </div>
+            <div
+              style="
+                background: #4f3422;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#4f3422</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            danger
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #fffcfc;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fffcfc</div>
+            </div>
+            <div
+              style="
+                background: #fff7f7;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fff7f7</div>
+            </div>
+            <div
+              style="
+                background: #feebec;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#feebec</div>
+            </div>
+            <div
+              style="
+                background: #ffdbdc;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffdbdc</div>
+            </div>
+            <div
+              style="
+                background: #ffcdce;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffcdce</div>
+            </div>
+            <div
+              style="
+                background: #fdbdbe;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#fdbdbe</div>
+            </div>
+            <div
+              style="
+                background: #f4a9aa;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#f4a9aa</div>
+            </div>
+            <div
+              style="
+                background: #eb8e90;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#eb8e90</div>
+            </div>
+            <div
+              style="
+                background: #e5484d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e5484d</div>
+            </div>
+            <div
+              style="
+                background: #dc3e42;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#dc3e42</div>
+            </div>
+            <div
+              style="
+                background: #ce2c31;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ce2c31</div>
+            </div>
+            <div
+              style="
+                background: #641723;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#641723</div>
+            </div>
+          </div>
+        </div>
+        <div
+          style="
+            margin-top: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          "
+        >
+          Semantic tokens
+        </div>
+        <div
+          style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px"
+        >
+          <div
+            style="
+              background: #fcfcfd;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">background</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #fcfcfd
+            </div>
+          </div>
+          <div
+            style="
+              background: #1e1f24;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">foreground</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #1e1f24
+            </div>
+          </div>
+          <div
+            style="
+              background: #fcfcfd;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">card</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #fcfcfd
+            </div>
+          </div>
+          <div
+            style="
+              background: #fcfcfd;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">popover</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #fcfcfd
+            </div>
+          </div>
+          <div
+            style="
+              background: #3e63dd;
+              color: #fcfcfd;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">primary</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #3e63dd
+            </div>
+          </div>
+          <div
+            style="
+              background: #eff0f3;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">secondary</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #eff0f3
+            </div>
+          </div>
+          <div
+            style="
+              background: #eff0f3;
+              color: #62636c;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">muted</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #eff0f3
+            </div>
+          </div>
+          <div
+            style="
+              background: #e7e8ec;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">accent</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #e7e8ec
+            </div>
+          </div>
+          <div
+            style="
+              background: #e5484d;
+              color: #fcfcfd;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">destructive</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #e5484d
+            </div>
+          </div>
+          <div
+            style="
+              background: #d8d9e0;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">border</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #d8d9e0
+            </div>
+          </div>
+          <div
+            style="
+              background: #d8d9e0;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">input</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #d8d9e0
+            </div>
+          </div>
+          <div
+            style="
+              background: #8da4ef;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">ring</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #8da4ef
+            </div>
+          </div>
+          <div
+            style="
+              background: #3e63dd;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-1</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #3e63dd
+            </div>
+          </div>
+          <div
+            style="
+              background: #0090ff;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-2</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #0090ff
+            </div>
+          </div>
+          <div
+            style="
+              background: #46a758;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-3</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #46a758
+            </div>
+          </div>
+          <div
+            style="
+              background: #ffc53d;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-4</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #ffc53d
+            </div>
+          </div>
+          <div
+            style="
+              background: #e5484d;
+              color: #1e1f24;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #d8d9e0;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-5</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #e5484d
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            background: #fcfcfd;
+            border: 1px solid #d8d9e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+          "
+        >
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px; color: #1e1f24">
+            Schedule a post
+          </div>
+          <div style="font-size: 12px; color: #62636c; margin-bottom: 12px">
+            Compose now, publish later. AI will suggest the best time.
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button
+              style="
+                background: #3e63dd;
+                color: #fff;
+                border: none;
+                padding: 8px 14px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+              "
+            >
+              Schedule
+            </button>
+            <button
+              style="
+                background: #eff0f3;
+                color: #1e1f24;
+                border: 1px solid #d8d9e0;
+                padding: 8px 14px;
+                border-radius: 6px;
+                font-size: 13px;
+                cursor: pointer;
+              "
+            >
+              Save draft
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          background: #111113;
+          color: #edeef0;
+          padding: 24px;
+          border-radius: 12px;
+          flex: 1;
+          min-width: 0;
+        "
+      >
+        <div
+          style="
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+            margin-bottom: 12px;
+          "
+        >
+          dark mode
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            neutral
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #111113;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#111113</div>
+            </div>
+            <div
+              style="
+                background: #18191b;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#18191b</div>
+            </div>
+            <div
+              style="
+                background: #212225;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#212225</div>
+            </div>
+            <div
+              style="
+                background: #272a2d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#272a2d</div>
+            </div>
+            <div
+              style="
+                background: #2e3135;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#2e3135</div>
+            </div>
+            <div
+              style="
+                background: #363a3f;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#363a3f</div>
+            </div>
+            <div
+              style="
+                background: #43484e;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#43484e</div>
+            </div>
+            <div
+              style="
+                background: #5a6169;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#5a6169</div>
+            </div>
+            <div
+              style="
+                background: #696e77;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#696e77</div>
+            </div>
+            <div
+              style="
+                background: #777b84;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#777b84</div>
+            </div>
+            <div
+              style="
+                background: #b0b4ba;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#b0b4ba</div>
+            </div>
+            <div
+              style="
+                background: #edeef0;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#edeef0</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            brand
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #11131f;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#11131f</div>
+            </div>
+            <div
+              style="
+                background: #141726;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#141726</div>
+            </div>
+            <div
+              style="
+                background: #182449;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#182449</div>
+            </div>
+            <div
+              style="
+                background: #1d2e62;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#1d2e62</div>
+            </div>
+            <div
+              style="
+                background: #243974;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#243974</div>
+            </div>
+            <div
+              style="
+                background: #2d4484;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#2d4484</div>
+            </div>
+            <div
+              style="
+                background: #3a5295;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3a5295</div>
+            </div>
+            <div
+              style="
+                background: #4661ab;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#4661ab</div>
+            </div>
+            <div
+              style="
+                background: #3e63dd;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3e63dd</div>
+            </div>
+            <div
+              style="
+                background: #5472e4;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#5472e4</div>
+            </div>
+            <div
+              style="
+                background: #9eb1ff;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#9eb1ff</div>
+            </div>
+            <div
+              style="
+                background: #d6e1ff;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#d6e1ff</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            info
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #0d1520;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#0d1520</div>
+            </div>
+            <div
+              style="
+                background: #111927;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#111927</div>
+            </div>
+            <div
+              style="
+                background: #0d2847;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#0d2847</div>
+            </div>
+            <div
+              style="
+                background: #003362;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#003362</div>
+            </div>
+            <div
+              style="
+                background: #004074;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#004074</div>
+            </div>
+            <div
+              style="
+                background: #104d87;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#104d87</div>
+            </div>
+            <div
+              style="
+                background: #205d9e;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#205d9e</div>
+            </div>
+            <div
+              style="
+                background: #2870bd;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#2870bd</div>
+            </div>
+            <div
+              style="
+                background: #0090ff;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#0090ff</div>
+            </div>
+            <div
+              style="
+                background: #3b9eff;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3b9eff</div>
+            </div>
+            <div
+              style="
+                background: #70b8ff;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#70b8ff</div>
+            </div>
+            <div
+              style="
+                background: #c2e6ff;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#c2e6ff</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            success
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #0e1511;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#0e1511</div>
+            </div>
+            <div
+              style="
+                background: #141a15;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#141a15</div>
+            </div>
+            <div
+              style="
+                background: #1b2a1e;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#1b2a1e</div>
+            </div>
+            <div
+              style="
+                background: #1d3a24;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#1d3a24</div>
+            </div>
+            <div
+              style="
+                background: #25482d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#25482d</div>
+            </div>
+            <div
+              style="
+                background: #2d5736;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#2d5736</div>
+            </div>
+            <div
+              style="
+                background: #366740;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#366740</div>
+            </div>
+            <div
+              style="
+                background: #3e7949;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3e7949</div>
+            </div>
+            <div
+              style="
+                background: #46a758;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#46a758</div>
+            </div>
+            <div
+              style="
+                background: #53b365;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#53b365</div>
+            </div>
+            <div
+              style="
+                background: #71d083;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#71d083</div>
+            </div>
+            <div
+              style="
+                background: #c2f0c2;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#c2f0c2</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            warning
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #16120c;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#16120c</div>
+            </div>
+            <div
+              style="
+                background: #1d180f;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#1d180f</div>
+            </div>
+            <div
+              style="
+                background: #302008;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#302008</div>
+            </div>
+            <div
+              style="
+                background: #3f2700;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3f2700</div>
+            </div>
+            <div
+              style="
+                background: #4d3000;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#4d3000</div>
+            </div>
+            <div
+              style="
+                background: #5c3d05;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#5c3d05</div>
+            </div>
+            <div
+              style="
+                background: #714f19;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#714f19</div>
+            </div>
+            <div
+              style="
+                background: #8f6424;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#8f6424</div>
+            </div>
+            <div
+              style="
+                background: #ffc53d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffc53d</div>
+            </div>
+            <div
+              style="
+                background: #ffd60a;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffd60a</div>
+            </div>
+            <div
+              style="
+                background: #ffca16;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffca16</div>
+            </div>
+            <div
+              style="
+                background: #ffe7b3;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffe7b3</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 8px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 500;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            "
+          >
+            danger
+          </div>
+          <div
+            style="
+              display: flex;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid rgba(0, 0, 0, 0.08);
+            "
+          >
+            <div
+              style="
+                background: #191111;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">1</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#191111</div>
+            </div>
+            <div
+              style="
+                background: #201314;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">2</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#201314</div>
+            </div>
+            <div
+              style="
+                background: #3b1219;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">3</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#3b1219</div>
+            </div>
+            <div
+              style="
+                background: #500f1c;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">4</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#500f1c</div>
+            </div>
+            <div
+              style="
+                background: #611623;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">5</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#611623</div>
+            </div>
+            <div
+              style="
+                background: #72232d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">6</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#72232d</div>
+            </div>
+            <div
+              style="
+                background: #8c333a;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">7</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#8c333a</div>
+            </div>
+            <div
+              style="
+                background: #b54548;
+                color: #000;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">8</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#b54548</div>
+            </div>
+            <div
+              style="
+                background: #e5484d;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">9</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#e5484d</div>
+            </div>
+            <div
+              style="
+                background: #ec5d5e;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">10</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ec5d5e</div>
+            </div>
+            <div
+              style="
+                background: #ff9592;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">11</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ff9592</div>
+            </div>
+            <div
+              style="
+                background: #ffd1d9;
+                color: #fff;
+                padding: 14px 8px;
+                font-size: 11px;
+                font-family: ui-monospace, monospace;
+                text-align: center;
+                flex: 1;
+                min-width: 0;
+              "
+            >
+              <div style="font-weight: 500">12</div>
+              <div style="opacity: 0.7; font-size: 10px; margin-top: 2px">#ffd1d9</div>
+            </div>
+          </div>
+        </div>
+        <div
+          style="
+            margin-top: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          "
+        >
+          Semantic tokens
+        </div>
+        <div
+          style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 8px"
+        >
+          <div
+            style="
+              background: #111113;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">background</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #111113
+            </div>
+          </div>
+          <div
+            style="
+              background: #edeef0;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">foreground</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #edeef0
+            </div>
+          </div>
+          <div
+            style="
+              background: #18191b;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">card</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #18191b
+            </div>
+          </div>
+          <div
+            style="
+              background: #18191b;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">popover</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #18191b
+            </div>
+          </div>
+          <div
+            style="
+              background: #3e63dd;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">primary</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #3e63dd
+            </div>
+          </div>
+          <div
+            style="
+              background: #212225;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">secondary</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #212225
+            </div>
+          </div>
+          <div
+            style="
+              background: #212225;
+              color: #b0b4ba;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">muted</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #212225
+            </div>
+          </div>
+          <div
+            style="
+              background: #272a2d;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">accent</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #272a2d
+            </div>
+          </div>
+          <div
+            style="
+              background: #e5484d;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">destructive</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #e5484d
+            </div>
+          </div>
+          <div
+            style="
+              background: #363a3f;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">border</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #363a3f
+            </div>
+          </div>
+          <div
+            style="
+              background: #363a3f;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">input</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #363a3f
+            </div>
+          </div>
+          <div
+            style="
+              background: #4661ab;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">ring</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #4661ab
+            </div>
+          </div>
+          <div
+            style="
+              background: #3e63dd;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-1</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #3e63dd
+            </div>
+          </div>
+          <div
+            style="
+              background: #0090ff;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-2</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #0090ff
+            </div>
+          </div>
+          <div
+            style="
+              background: #46a758;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-3</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #46a758
+            </div>
+          </div>
+          <div
+            style="
+              background: #ffc53d;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-4</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #ffc53d
+            </div>
+          </div>
+          <div
+            style="
+              background: #e5484d;
+              color: #edeef0;
+              padding: 14px;
+              font-size: 12px;
+              border-radius: 6px;
+              border: 1px solid #363a3f;
+              min-width: 0;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <div style="font-weight: 500">chart-5</div>
+            <div style="opacity: 0.7; font-family: ui-monospace, monospace; font-size: 10px">
+              #e5484d
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="
+            background: #18191b;
+            border: 1px solid #363a3f;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+          "
+        >
+          <div style="font-size: 14px; font-weight: 500; margin-bottom: 4px; color: #edeef0">
+            Schedule a post
+          </div>
+          <div style="font-size: 12px; color: #b0b4ba; margin-bottom: 12px">
+            Compose now, publish later. AI will suggest the best time.
+          </div>
+          <div style="display: flex; gap: 8px">
+            <button
+              style="
+                background: #3e63dd;
+                color: #fff;
+                border: none;
+                padding: 8px 14px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+              "
+            >
+              Schedule
+            </button>
+            <button
+              style="
+                background: #212225;
+                color: #edeef0;
+                border: 1px solid #363a3f;
+                padding: 8px 14px;
+                border-radius: 6px;
+                font-size: 13px;
+                cursor: pointer;
+              "
+            >
+              Save draft
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

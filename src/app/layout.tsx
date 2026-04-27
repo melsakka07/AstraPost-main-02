@@ -89,6 +89,14 @@ export async function generateMetadata(): Promise<Metadata> {
         ],
     authors: [{ name: "AstraPost Team" }],
     creator: "AstraPost",
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      ],
+      apple: "/app-icon-180.png",
+    },
+    manifest: "/manifest.json",
     openGraph: {
       type: "website",
       locale: isAr ? "ar_SA" : "en_US",
@@ -102,7 +110,7 @@ export async function generateMetadata(): Promise<Metadata> {
         : "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
       images: [
         {
-          url: "/og-image.png",
+          url: "/og-1200x630.png",
           width: 1200,
           height: 630,
           alt: isAr ? "معاينة لوحة تحكم أسترا بوست" : "AstraPost Dashboard Preview",
@@ -115,7 +123,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: isAr
         ? "جدول التغريدات، وأنشئ خيوطاً بالذكاء الاصطناعي، وحلل نموك مع أسترا بوست."
         : "Schedule tweets, generate threads with AI, and analyze your growth with AstraPost.",
-      images: ["/og-image.png"],
+      images: ["/og-1200x630.png"],
       creator: "@AstraPostApp",
     },
     robots: {

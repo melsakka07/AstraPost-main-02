@@ -8,6 +8,7 @@ src/
 │   ├── (auth)/                   # Auth: login, register, forgot/reset password
 │   ├── (marketing)/              # Public: blog, changelog, community, docs, features, pricing, legal
 │   ├── admin/                    # Admin panel (Dashboard, Users, Billing, System Health, Jobs, Notifications, Audit)
+│   ├── brand/                    # Internal brand kit reference page (noindex)
 │   ├── api/
 │   │   ├── admin/                # Admin APIs (Subscribers, AI Usage, Teams, Impersonation, Billing Analytics, Notifications)
 │   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score)
@@ -37,6 +38,7 @@ src/
 │   ├── analytics/                # Analytics components (Charts, Heatmaps, Drawers)
 │   ├── auth/                     # Auth components (Sign-in, Profile)
 │   ├── billing/                  # Billing components (Pricing cards, Payment forms)
+│   ├── brand/                    # Brand primitives (Logo lockup, LogoMark sparkle)
 │   ├── calendar/                 # Calendar components (Grid, Event cards)
 │   ├── community/                # Community components (Contact form)
 │   ├── composer/                 # Composer (Editor, Preview, AI Tools Panel, Best Time, Alerts)
@@ -63,7 +65,16 @@ src/
     ├── schemas/                  # Shared Zod validation schemas
     ├── security/                 # Token encryption
     ├── services/                 # Business logic (Agentic, AI Image, Analytics, Email, Plan Metadata, Stripe, X-API)
-    └── utils/                    # General utilities (cn, date formatting)
+    ├── utils/                    # General utilities (cn, date formatting)
+    └── tokens.ts                 # Color token constants (6 scales × 12 steps × 2 modes, charts, brand)
+```
+
+### Design Tokens
+
+Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral, brand, info, success, warning, danger) at 12 calibrated steps per mode. 21 semantic tokens feed shadcn/ui. Raw scale utilities: `bg-brand-9`, `text-success-11`, `border-danger-6`, etc. `src/lib/tokens.ts` exposes hex constants via `as const` tuples for runtime contexts (Recharts, OG images, transactional emails). Regenerate with `tmp_tokens/astrapost-tokens/generate.py`.
+
+**Scales:** neutral (slate), brand (indigo #3E63DD), info (blue #0090FF), success (green #46A758), warning (amber #FFC53D), danger (red #E5484D).
+
 ```
 
 ## Key Implementation Files
@@ -95,3 +106,4 @@ src/
 - `src/lib/team-context.ts` — Multi-account context resolver
 - `src/lib/middleware/require-plan.ts` — Subscription feature gates
 - `src/lib/admin.ts` — Admin role verification
+```

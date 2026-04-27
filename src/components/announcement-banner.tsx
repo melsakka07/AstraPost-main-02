@@ -11,9 +11,9 @@ interface Announcement {
 const DISMISSED_KEY = "astrapost_announcement_dismissed";
 
 const STYLES: Record<Announcement["type"], string> = {
-  info: "bg-blue-500/10 border-blue-500/20 text-blue-800 dark:text-blue-300",
-  warning: "bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300",
-  success: "bg-green-500/10 border-green-500/20 text-green-800 dark:text-green-300",
+  info: "bg-info-9/10 border-info-9/20 text-info-11 dark:text-info-11",
+  warning: "bg-warning-9/10 border-warning-9/20 text-warning-11 dark:text-warning-11",
+  success: "bg-success-9/10 border-success-9/20 text-success-11 dark:text-success-11",
 };
 
 export function AnnouncementBanner() {
