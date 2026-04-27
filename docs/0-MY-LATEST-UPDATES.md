@@ -1,5 +1,29 @@
 # Latest Updates
 
+## 2026-04-28: Fix — English Descender Clipping on Large Headings (CSS) + Edge DevTools Warnings
+
+**Problem:** English headings at `text-4xl+` with `leading-tight`/`leading-none` clipped descenders on g, j, p, q, y (e.g., "pricing", "typography", "journey"). The Arabic descender fix existed via `[dir="rtl"]` scoped rules, but no counterpart for LTR/Latin text. Additionally, Edge DevTools flagged two CSS compatibility issues: `text-size-adjust` (unprefixed) and `min-height: auto`.
+
+**Fix — English descender fix:** Added `line-height` overrides for English headings at `src/app/globals.css` (lines 1021–1059), scoped to `:not([dir="rtl"] *)` and `:not(.font-arabic)`. Sits directly after the Arabic descender fix block for co-located maintenance.
+
+| Heading | Default | Leading-None/Tight |
+| ------- | ------- | ------------------ |
+| h1      | 1.15    | 1.15               |
+| h2      | 1.2     | 1.15               |
+| h3      | 1.3     | 1.25               |
+
+**Fix — Edge DevTools compat warnings:**
+
+- Replaced `text-size-adjust: 100%` (unprefixed, not supported by Firefox/Safari) with `-moz-text-size-adjust: 100%` — `-webkit-text-size-adjust` was already present. Covers Safari, Chrome, Firefox Android.
+- Removed `min-height: auto` on `[data-app-shell]` — `auto` is the initial default value, so the declaration was redundant. Firefox doesn't support `auto` as a keyword value for `min-height`.
+
+**Files modified:**
+
+- `src/app/globals.css` — English descender fix block (+39 lines); swapped `text-size-adjust` for `-moz-` prefix; removed redundant `min-height: auto`
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+**Verification:** `pnpm run check` passes (lint + typecheck + i18n). Visual check needed: English headings on pricing page, landing hero, blog titles; Arabic headings should be unaffected (higher-specificity `[dir="rtl"]` rules still win).
+
 ## 2026-04-27: Fix — Logo Lockup Consistency Across All Pages (Brand + L-Junction)
 
 **Problem:** AstraPost lockup rendered with different size, weight, glyph, and row-height across surfaces:

@@ -79,5 +79,13 @@ public/sw.js.map
 public/workbox-*.js.map
 public/worker-*.js.map
 
+# Brand bundle artifacts (extract, install, then delete)
+astrapost-brand.zip
+astrapost-tokens.zip
+astrapost-brand-kit-page.zip
+tmp_brand/
+tmp_tokens/
+tmp_brand_kit/
+
 .vercel
 .env*.local
