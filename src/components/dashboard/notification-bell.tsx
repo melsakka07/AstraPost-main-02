@@ -160,12 +160,12 @@ export function NotificationBell() {
       }
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      toast.success("All notifications marked as read");
+      toast.success(t("notifications.mark_all_read_success"));
     } catch (error) {
       clientLogger.error("Failed to mark all notifications as read", {
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to mark all as read");
+      toast.error(t("notifications.mark_all_read_failed"));
     }
   };
 
@@ -191,13 +191,13 @@ export function NotificationBell() {
             />
           )}
           <span className="sr-only">
-            {unreadCount > 0 ? t("unread_count", { count: unreadCount }) : t("notifications")}
+            {unreadCount > 0 ? t("unread_count", { count: unreadCount }) : t("notifications.label")}
           </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <div className="flex items-center justify-between p-2">
-          <DropdownMenuLabel>{t("notifications")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("notifications.label")}</DropdownMenuLabel>
           {unreadCount > 0 && (
             <Button
               variant="ghost"

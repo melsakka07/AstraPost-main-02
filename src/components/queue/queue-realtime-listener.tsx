@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 
 const POLL_INTERVAL_MS = 10_000; // 10 seconds
@@ -15,6 +16,7 @@ const POLL_INTERVAL_MS = 10_000; // 10 seconds
  * concurrent connection limit on the free tier.
  */
 export function QueueRealtimeListener() {
+  const t = useTranslations("queue");
   const router = useRouter();
   const [announcement, setAnnouncement] = useState("");
   const sinceRef = useRef(new Date().toISOString());
@@ -57,8 +59,8 @@ export function QueueRealtimeListener() {
         let shouldRefresh = false;
         for (const e of events) {
           if (e.status === "published") {
-            toast.success("Post published successfully");
-            setAnnouncement("Post published successfully");
+            toast.success(t("toasts.post_published"));
+            setAnnouncement(t("toasts.post_published"));
             shouldRefresh = true;
           } else if (e.status === "failed") {
             toast.error(`Post failed: ${e.failReason ?? "unknown error"}`);
@@ -102,7 +104,7 @@ export function QueueRealtimeListener() {
         clearTimeout(refreshTimerRef.current);
       }
     };
-  }, [router]);
+  }, [router, t]);
 
   return (
     <div className="sr-only" aria-live="polite" aria-atomic="true">

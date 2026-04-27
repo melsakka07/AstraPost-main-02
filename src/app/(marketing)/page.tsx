@@ -5,6 +5,22 @@ import { HeroMockup } from "@/components/marketing/hero-mockup";
 import { SocialProof } from "@/components/marketing/social-proof";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { generateSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return generateSeoMetadata(
+    {
+      en: "AstraPost — AI-Powered X (Twitter) Management for MENA",
+      ar: "أسترا بوست — إدارة X (تويتر) بالذكاء الاصطناعي للشرق الأوسط",
+    },
+    {
+      en: "Schedule, generate with AI, analyze, and grow your X audience. Built for MENA creators and businesses.",
+      ar: "جدول المحتوى، وأنشئ بالذكاء الاصطناعي، وحلل، ونمِّ جمهورك على X. صُمم للمبدعين والشركات في الشرق الأوسط.",
+    },
+    { path: "/" }
+  );
+}
 
 export default async function Home() {
   const t = await getTranslations("marketing");

@@ -642,7 +642,7 @@ export function Composer() {
       setTemplateDescription("");
       setTemplateCategory("Personal");
     } catch (e) {
-      toast.error("Failed to save template");
+      toast.error(t("toasts.save_template_failed"));
       clientLogger.error("Failed to save template", {
         error: e instanceof Error ? e.message : String(e),
       });
@@ -821,7 +821,7 @@ export function Composer() {
         if (tweet.id === aiImageTargetTweetId) {
           const currentMediaCount = tweet.media.length;
           if (currentMediaCount >= 4) {
-            toast.error("Maximum 4 images per tweet");
+            toast.error(t("toasts.max_images"));
             return tweet; // return unchanged
           }
           return {
@@ -862,7 +862,7 @@ export function Composer() {
         niche: inspirationNiche,
         error: e instanceof Error ? e.message : String(e),
       });
-      toast.error("Failed to load inspiration topics");
+      toast.error(t("toasts.inspiration_load_failed"));
     } finally {
       setIsLoadingInspiration(false);
     }
@@ -898,7 +898,7 @@ export function Composer() {
         }))
       );
       setIsAiOpen(false);
-      toast.success("Restored thread from history");
+      toast.success(t("toasts.history_restored_thread"));
     } else if (
       (item.type === "hook" || item.type === "rewrite" || item.type === "cta") &&
       content.text
@@ -909,7 +909,7 @@ export function Composer() {
         updateTweet(tweets[0].id, content.text);
       }
       setIsAiOpen(false);
-      toast.success("Restored content from history");
+      toast.success(t("toasts.history_restored_content"));
     } else if (item.type === "translate" && content.tweets) {
       setTweets(
         content.tweets.map((t: string, idx: number) => ({
@@ -918,7 +918,7 @@ export function Composer() {
         }))
       );
       setIsAiOpen(false);
-      toast.success("Restored translation from history");
+      toast.success(t("toasts.history_restored_translation"));
     } else if (item.type === "hashtags" && content.hashtags) {
       setGeneratedHashtags(content.hashtags);
       setAiTool("hashtags");
@@ -964,7 +964,7 @@ export function Composer() {
     }
     setTweets(newTweets);
     setPreviewIndex(0);
-    toast.success("Template applied!");
+    toast.success(t("toasts.template_applied"));
   };
 
   const handleAiRun = async (overrides?: {
@@ -1046,7 +1046,7 @@ export function Composer() {
               label: t("toast.undo"),
               onClick: () => {
                 setTweets(previousTweets);
-                toast.info("Post restored");
+                toast.info(t("toasts.post_restored"));
               },
             },
             duration: 5000,
@@ -1087,7 +1087,7 @@ export function Composer() {
                 tweet?: string;
               };
               if (event.error) {
-                toast.error("Generation failed. Please try again.");
+                toast.error(t("toasts.generation_failed"));
                 streamDone = true;
                 break;
               }
@@ -1126,7 +1126,7 @@ export function Composer() {
                 label: t("toast.undo"),
                 onClick: () => {
                   setTweets(previousTweets);
-                  toast.info("Thread restored");
+                  toast.info(t("toasts.thread_restored"));
                 },
               }
             : undefined,
@@ -1138,11 +1138,11 @@ export function Composer() {
       // Phase 2: Template generation — uses same SSE streaming pattern as thread
       if (aiTool === "template") {
         if (!templateConfig) {
-          toast.error("Please select a template first");
+          toast.error(t("toasts.select_template_first"));
           return;
         }
         if (!aiTopic || aiTopic.trim().length < 3) {
-          toast.error("Topic must be at least 3 characters");
+          toast.error(t("toasts.topic_min_length"));
           return;
         }
 
@@ -1214,7 +1214,7 @@ export function Composer() {
                 tweet?: string;
               };
               if (event.error) {
-                toast.error("Generation failed. Please try again.");
+                toast.error(t("toasts.generation_failed"));
                 streamDone = true;
                 break;
               }
@@ -1261,7 +1261,7 @@ export function Composer() {
                 label: t("toast.undo"),
                 onClick: () => {
                   setTweets(previousTweets);
-                  toast.info("Content restored");
+                  toast.info(t("toasts.content_restored"));
                 },
               }
             : undefined,
@@ -1311,7 +1311,7 @@ export function Composer() {
                   if (previousTweetsRef.current) {
                     setTweets(previousTweetsRef.current);
                     previousTweetsRef.current = null;
-                    toast.info("Changes undone");
+                    toast.info(t("toasts.changes_undone"));
                   }
                 },
               }
@@ -1358,7 +1358,7 @@ export function Composer() {
       if (aiTool === "translate") {
         const nonEmptyTweets = tweets.filter((t) => t.content.trim());
         if (nonEmptyTweets.length === 0) {
-          toast.error("Please add some content to translate");
+          toast.error(t("toasts.add_content_to_translate"));
           return;
         }
 
@@ -1406,7 +1406,7 @@ export function Composer() {
               if (previousTweetsRef.current) {
                 setTweets(previousTweetsRef.current);
                 previousTweetsRef.current = null;
-                toast.info("Translation undone");
+                toast.info(t("toasts.translation_undone"));
               }
             },
           },
@@ -1481,7 +1481,7 @@ export function Composer() {
             if (previousTweetsRef.current) {
               setTweets(previousTweetsRef.current);
               previousTweetsRef.current = null;
-              toast.info("Rewrite undone");
+              toast.info(t("toasts.rewrite_undone"));
             }
           },
         },
@@ -1518,7 +1518,7 @@ export function Composer() {
     if (fileInputRef.current) fileInputRef.current.value = "";
 
     if (toUpload.length === 0) {
-      toast.error("Max 4 media per tweet");
+      toast.error(t("toasts.max_media"));
       return;
     }
 
@@ -1609,7 +1609,7 @@ export function Composer() {
   const handleSubmit = async (action: "draft" | "schedule" | "publish_now") => {
     const isUploading = tweets.some((t) => t.media.some((m) => m.uploading));
     if (isUploading) {
-      toast.error("Please wait for all media to finish uploading.");
+      toast.error(t("toasts.wait_for_upload"));
       return;
     }
 
@@ -2530,7 +2530,7 @@ export function Composer() {
                   setPreviewIndex(0);
                   setPendingTweets(null);
                   setIsAiOpen(false);
-                  toast.success("Thread generated!");
+                  toast.success(t("toasts.thread_generated"));
                 } else if (pendingAiStreamGenerate) {
                   // P2-F: AI streaming case — resume generation after confirmation
                   setPendingAiStreamGenerate(false);

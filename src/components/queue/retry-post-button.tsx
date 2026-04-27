@@ -26,7 +26,7 @@ export function RetryPostButton({ postId, ariaLabel }: { postId: string; ariaLab
             const body = await res.json().catch(() => null);
             throw new Error(body?.error || "Retry failed");
           }
-          toast.success("Retry scheduled");
+          toast.success(t("toasts.retry_scheduled"));
           router.refresh();
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Retry failed");

@@ -105,7 +105,7 @@ export default function CompetitorAnalyzerPage() {
   const handleAnalyze = async () => {
     const cleaned = username.replace(/^@/, "").trim();
     if (!cleaned) {
-      toast.error("Please enter a username");
+      toast.error(t("toasts.enter_username"));
       return;
     }
 
@@ -147,7 +147,7 @@ export default function CompetitorAnalyzerPage() {
           return;
         }
         const err = (await competitorRes.json().catch(() => ({}))) as { error?: string };
-        toast.error(err.error ?? "Failed to analyze account");
+        toast.error(err.error ?? t("toasts.analysis_failed"));
         return;
       }
 
@@ -161,7 +161,7 @@ export default function CompetitorAnalyzerPage() {
         setSelfStats({ hasData: false });
       }
     } catch {
-      toast.error("Failed to analyze account. Please try again.");
+      toast.error(t("toasts.analysis_failed_retry"));
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +174,7 @@ export default function CompetitorAnalyzerPage() {
         <CardContent className="p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1.5">
-              <Label htmlFor="username">X Username</Label>
+              <Label htmlFor="username">{t("username_label")}</Label>
               <div className="relative">
                 <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
                   @
@@ -496,7 +496,7 @@ export default function CompetitorAnalyzerPage() {
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {theirTags.length === 0 ? (
                                 <span className="text-muted-foreground text-xs">
-                                  No hashtags found
+                                  {t("empty.no_hashtags")}
                                 </span>
                               ) : (
                                 theirTags.map((tag, i) => {
@@ -550,7 +550,9 @@ export default function CompetitorAnalyzerPage() {
                             </div>
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {theirTypes.length === 0 ? (
-                                <span className="text-muted-foreground text-xs">No data found</span>
+                                <span className="text-muted-foreground text-xs">
+                                  {t("empty.no_data")}
+                                </span>
                               ) : (
                                 theirTypes.map((type, i) => (
                                   <Badge
@@ -618,27 +620,27 @@ export default function CompetitorAnalyzerPage() {
                   <div>
                     <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                       <Hash className="text-primary h-3.5 w-3.5" />
-                      Hashtag Prominence
+                      {t("charts.hashtag_prominence")}
                     </p>
                     <ViralBarChart
                       data={rankToChartData(result.analysis.topHashtags, "#")}
                       orientation="horizontal"
                       highlightTop={3}
                       height={200}
-                      emptyText="No hashtags found"
+                      emptyText={t("empty.no_hashtags")}
                     />
                   </div>
                   <div>
                     <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                       <LayoutGrid className="text-primary h-3.5 w-3.5" />
-                      Content Mix
+                      {t("charts.content_mix")}
                     </p>
                     <ViralBarChart
                       data={rankToChartData(result.analysis.preferredContentTypes)}
                       orientation="horizontal"
                       highlightTop={2}
                       height={200}
-                      emptyText="No content types found"
+                      emptyText={t("empty.no_content_types")}
                     />
                   </div>
                 </div>

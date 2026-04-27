@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { Copy, Calendar, ExternalLink, Loader2, Package, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,10 +33,11 @@ interface AffiliateLink {
 }
 
 export function RecentAffiliateLinks() {
+  const t = useTranslations("affiliate");
   const [links, setLinks] = useState<AffiliateLink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchLinks = async () => {
+  const fetchLinks = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await fetch("/api/affiliate");
@@ -43,20 +45,20 @@ export function RecentAffiliateLinks() {
         const data = await res.json();
         setLinks(data);
       }
-    } catch (error) {
-      toast.error("Failed to load history");
+    } catch {
+      toast.error(t("toasts.history_failed"));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchLinks();
-  }, []);
+  }, [fetchLinks]);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Copied to clipboard");
+    toast.success(t("toasts.copied"));
   };
 
   const handleSchedule = (link: AffiliateLink) => {
@@ -74,12 +76,12 @@ export function RecentAffiliateLinks() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Generations</CardTitle>
+          <CardTitle>{t("recent_generations")}</CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center p-8">
-          <div role="status" aria-label="Loading recent generations">
+          <div role="status" aria-label={t("loading")}>
             <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" aria-hidden="true" />
-            <span className="sr-only">Loading recent generations...</span>
+            <span className="sr-only">{t("loading")}</span>
           </div>
         </CardContent>
       </Card>
@@ -89,10 +91,10 @@ export function RecentAffiliateLinks() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Generations</CardTitle>
+        <CardTitle>{t("recent_generations")}</CardTitle>
         <Button variant="ghost" size="sm" onClick={fetchLinks}>
           <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
+          {t("refresh")}
         </Button>
       </CardHeader>
       <CardContent>
@@ -101,22 +103,24 @@ export function RecentAffiliateLinks() {
             <div className="bg-muted mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
               <Package className="text-muted-foreground/50 h-6 w-6" />
             </div>
-            <h3 className="text-sm font-semibold">No affiliate links yet</h3>
+            <h3 className="text-sm font-semibold">{t("no_links_title")}</h3>
             <p className="text-muted-foreground mt-1 max-w-xs text-xs">
-              Generate your first affiliate tweet above to start tracking clicks and conversions.
+              {t("no_links_description")}
             </p>
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Platform</TableHead>
-                <TableHead>Clicks</TableHead>
-                <TableHead className="hidden md:table-cell">Generated Content</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("table.product")}</TableHead>
+                <TableHead>{t("table.platform")}</TableHead>
+                <TableHead>{t("table.clicks")}</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  {t("table.generated_content")}
+                </TableHead>
+                <TableHead>{t("table.date")}</TableHead>
+                <TableHead>{t("table.status")}</TableHead>
+                <TableHead className="text-right">{t("table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -127,7 +131,7 @@ export function RecentAffiliateLinks() {
                       {link.productImageUrl && (
                         <Image
                           src={link.productImageUrl}
-                          alt="Product thumbnail"
+                          alt={t("table.product_thumbnail")}
                           width={40}
                           height={40}
                           className="rounded border object-cover"
@@ -137,9 +141,9 @@ export function RecentAffiliateLinks() {
                       <div className="truncate">
                         <div
                           className="truncate font-semibold"
-                          title={link.productTitle || "Unknown"}
+                          title={link.productTitle || t("table.unknown")}
                         >
-                          {link.productTitle || "Unknown Product"}
+                          {link.productTitle || t("table.unknown_product")}
                         </div>
                         <a
                           href={link.destinationUrl}
@@ -147,14 +151,14 @@ export function RecentAffiliateLinks() {
                           rel="noreferrer"
                           className="text-muted-foreground flex items-center gap-1 text-xs hover:underline"
                         >
-                          View Product <ExternalLink className="h-3 w-3" />
+                          {t("table.view_product")} <ExternalLink className="h-3 w-3" />
                         </a>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">
-                      {link.platform || "Amazon"}
+                      {link.platform || t("platforms.amazon")}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -177,10 +181,10 @@ export function RecentAffiliateLinks() {
                         variant="default"
                         className="border-green-200 bg-green-500/15 text-green-700 hover:bg-green-500/25"
                       >
-                        Scheduled
+                        {t("table.scheduled")}
                       </Badge>
                     ) : (
-                      <Badge variant="secondary">Generated</Badge>
+                      <Badge variant="secondary">{t("table.generated")}</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -189,7 +193,7 @@ export function RecentAffiliateLinks() {
                         variant="ghost"
                         size="icon"
                         onClick={() => handleCopy(link.generatedTweet || "")}
-                        title="Copy Tweet"
+                        title={t("table.copy_tweet")}
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
@@ -200,7 +204,7 @@ export function RecentAffiliateLinks() {
                         className="gap-2"
                       >
                         <Calendar className="h-4 w-4" />
-                        <span className="hidden sm:inline">Schedule</span>
+                        <span className="hidden sm:inline">{t("table.schedule")}</span>
                       </Button>
                     </div>
                   </TableCell>

@@ -251,8 +251,8 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
   // ── Submit pipeline ────────────────────────────────────────────────────────
   const startPipeline = useCallback(
     async (topicOverride?: string) => {
-      const t = (topicOverride ?? topic).trim();
-      if (t.length < 3 || !selectedAccountId) return;
+      const trimmed = (topicOverride ?? topic).trim();
+      if (trimmed.length < 3 || !selectedAccountId) return;
 
       // Reset processing state
       setSteps(
@@ -271,7 +271,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            topic: t,
+            topic: trimmed,
             xAccountId: selectedAccountId,
             language,
             preferences: {
@@ -337,7 +337,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
         }
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
-        toast.error("Pipeline failed. Please try again.");
+        toast.error(t("toasts.pipeline_failed"));
         setScreen("input");
       }
     },
@@ -350,6 +350,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
       audience,
       handleProgressEvent,
       openWithContext,
+      t,
     ]
   );
 
@@ -361,8 +362,8 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
 
   // ── Enhance topic ──────────────────────────────────────────────────────────
   const handleEnhanceTopic = useCallback(async () => {
-    const t = topic.trim();
-    if (t.length < 3) return;
+    const trimmed = topic.trim();
+    if (trimmed.length < 3) return;
 
     enhanceAbortRef.current?.abort();
     const abort = new AbortController();
@@ -373,7 +374,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
       const res = await fetch("/api/ai/enhance-topic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: t }),
+        body: JSON.stringify({ topic: trimmed }),
         signal: abort.signal,
       });
 
@@ -387,11 +388,11 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
       setTopic(enhanced);
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
-      toast.error("Enhancement failed. Please try again.");
+      toast.error(t("toasts.enhancement_failed"));
     } finally {
       setIsEnhancing(false);
     }
-  }, [topic]);
+  }, [topic, t]);
 
   // ── Recovery on mount — check for in-progress sessions ───────────────────
   useEffect(() => {
@@ -431,7 +432,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
           setAgenticPost(reconstructed as AgenticPost);
           setEditedTweets(reconstructed.tweets);
           setTopic(session.topic);
-          toast.info("Resumed your previous session.", { duration: 3000 });
+          toast.info(t("toasts.session_resumed"), { duration: 3000 });
           setScreen("review");
         } else if (session.status === "generating") {
           // Show a non-blocking toast — session is still running server-side
@@ -445,7 +446,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
       }
     }
     void checkRecovery();
-  }, []); // empty deps — run once on mount
+  }, [t]); // run once on mount
 
   // ── Review actions ─────────────────────────────────────────────────────────
   const handleApprove = useCallback(
@@ -493,29 +494,32 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
     [editedTweets, scheduleDate]
   );
 
-  const handleRewriteTweet = useCallback(async (idx: number) => {
-    if (!agenticPostIdRef.current) return;
-    setRewritingIndex(idx);
-    try {
-      const res = await fetch(`/api/ai/agentic/${agenticPostIdRef.current}/regenerate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweetIndex: idx, regenerateImage: false }),
-      });
-      if (!res.ok) {
-        toast.error("Rewrite failed");
-        return;
+  const handleRewriteTweet = useCallback(
+    async (idx: number) => {
+      if (!agenticPostIdRef.current) return;
+      setRewritingIndex(idx);
+      try {
+        const res = await fetch(`/api/ai/agentic/${agenticPostIdRef.current}/regenerate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tweetIndex: idx, regenerateImage: false }),
+        });
+        if (!res.ok) {
+          toast.error(t("toasts.rewrite_failed"));
+          return;
+        }
+        const { tweet } = (await res.json()) as { tweet: AgenticTweet };
+        setEditedTweets((prev) => {
+          const next = [...prev];
+          next[idx] = tweet;
+          return next;
+        });
+      } finally {
+        setRewritingIndex(null);
       }
-      const { tweet } = (await res.json()) as { tweet: AgenticTweet };
-      setEditedTweets((prev) => {
-        const next = [...prev];
-        next[idx] = tweet;
-        return next;
-      });
-    } finally {
-      setRewritingIndex(null);
-    }
-  }, []);
+    },
+    [t]
+  );
 
   const handleRemoveTweet = useCallback(
     (idx: number) => {

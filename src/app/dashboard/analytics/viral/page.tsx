@@ -161,7 +161,7 @@ export default function ViralAnalyzerPage() {
     }
 
     void navigator.clipboard.writeText(lines.join("\n"));
-    toast.success("Report copied to clipboard");
+    toast.success(t("toasts.report_copied"));
   };
 
   const handleDownloadCSV = () => {
@@ -188,7 +188,7 @@ export default function ViralAnalyzerPage() {
     a.download = `viral-analysis-${days}d-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("CSV downloaded");
+    toast.success(t("toasts.csv_downloaded"));
   };
 
   return (
@@ -290,11 +290,8 @@ export default function ViralAnalyzerPage() {
                 <div className="bg-primary/10 mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
                   <TrendingUp className="text-primary h-6 w-6" />
                 </div>
-                <h2 className="text-lg font-semibold">Unlock Viral Insights</h2>
-                <p className="text-muted-foreground mt-2 text-sm">
-                  Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your
-                  top-performing content patterns.
-                </p>
+                <h2 className="text-lg font-semibold">{t("unlock_title")}</h2>
+                <p className="text-muted-foreground mt-2 text-sm">{t("unlock_description")}</p>
               </div>
             </div>
           </div>
@@ -466,9 +463,9 @@ export default function ViralAnalyzerPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Hash className="text-primary h-5 w-5" />
-                  Top Hashtags
+                  {t("cards.top_hashtags")}
                 </CardTitle>
-                <CardDescription>Hashtags that drive the most engagement</CardDescription>
+                <CardDescription>{t("cards.top_hashtags_desc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -481,7 +478,7 @@ export default function ViralAnalyzerPage() {
                   highlightTop={3}
                   formatValue={fmt}
                   height={Math.max(160, analysis.hashtags.slice(0, 8).length * 34)}
-                  emptyText="No hashtag data yet"
+                  emptyText={t("empty.no_hashtags")}
                 />
               </CardContent>
             </Card>
@@ -491,9 +488,9 @@ export default function ViralAnalyzerPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Type className="text-primary h-5 w-5" />
-                  Top Keywords
+                  {t("cards.top_keywords")}
                 </CardTitle>
-                <CardDescription>Word patterns that resonate with your audience</CardDescription>
+                <CardDescription>{t("cards.top_keywords_desc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -506,7 +503,7 @@ export default function ViralAnalyzerPage() {
                   highlightTop={3}
                   formatValue={fmt}
                   height={Math.max(160, analysis.keywords.slice(0, 8).length * 34)}
-                  emptyText="No keyword data yet"
+                  emptyText={t("empty.no_keywords")}
                 />
               </CardContent>
             </Card>
@@ -516,9 +513,9 @@ export default function ViralAnalyzerPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <BarChart3 className="text-primary h-5 w-5" />
-                  Tweet Length Performance
+                  {t("cards.tweet_length")}
                 </CardTitle>
-                <CardDescription>Which lengths perform best for you</CardDescription>
+                <CardDescription>{t("cards.tweet_length_desc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -531,10 +528,10 @@ export default function ViralAnalyzerPage() {
                   highlightTop={1}
                   formatValue={fmt}
                   height={200}
-                  emptyText="No length data yet"
+                  emptyText={t("empty.no_length")}
                 />
                 <p className="text-muted-foreground mt-2 text-right text-xs">
-                  Short &lt;100 · Medium 100–200 · Long &gt;200 chars
+                  {t("length_legend")}
                 </p>
               </CardContent>
             </Card>
@@ -544,9 +541,9 @@ export default function ViralAnalyzerPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Clock className="text-primary h-5 w-5" />
-                  Best Days to Post
+                  {t("cards.best_days")}
                 </CardTitle>
-                <CardDescription>Days when your content gets the most engagement</CardDescription>
+                <CardDescription>{t("cards.best_days_desc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -561,7 +558,7 @@ export default function ViralAnalyzerPage() {
                   highlightTop={2}
                   formatValue={fmt}
                   height={200}
-                  emptyText="No day data yet"
+                  emptyText={t("empty.no_days")}
                 />
               </CardContent>
             </Card>
@@ -571,9 +568,9 @@ export default function ViralAnalyzerPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Clock className="text-primary h-5 w-5" />
-                  Best Hours to Post
+                  {t("cards.best_hours")}
                 </CardTitle>
-                <CardDescription>24-hour engagement — top 3 highlighted</CardDescription>
+                <CardDescription>{t("cards.best_hours_desc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralHourChart data={analysis.bestHours} formatValue={fmt} highlightTop={3} />
@@ -585,9 +582,9 @@ export default function ViralAnalyzerPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Type className="text-primary h-5 w-5" />
-                  Content Type Performance
+                  {t("cards.content_types")}
                 </CardTitle>
-                <CardDescription>Which types of content work best for you</CardDescription>
+                <CardDescription>{t("cards.content_types_desc")}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ViralBarChart
@@ -602,7 +599,7 @@ export default function ViralAnalyzerPage() {
                   highlightTop={2}
                   formatValue={fmt}
                   height={Math.max(160, analysis.contentTypes.length * 36)}
-                  emptyText="No content type data yet"
+                  emptyText={t("empty.no_content_types")}
                 />
               </CardContent>
             </Card>

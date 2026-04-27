@@ -111,7 +111,7 @@ export default function AffiliatePage() {
       const data = await res.json();
       setResult(data);
     } catch (error) {
-      toast.error("Failed to generate affiliate tweet");
+      toast.error(t("toasts.generation_failed"));
     } finally {
       setIsGenerating(false);
     }
@@ -123,7 +123,7 @@ export default function AffiliatePage() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    toast.success("Copied to clipboard");
+    toast.success(t("toasts.copied"));
   };
 
   return (
@@ -133,66 +133,64 @@ export default function AffiliatePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="text-primary h-5 w-5" />
-              Product Details
+              {t("product_details")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="product-url">Product URL</Label>
+              <Label htmlFor="product-url">{t("product_url_label")}</Label>
               <Input
                 id="product-url"
-                placeholder="https://amazon.com/product..."
+                placeholder={t("product_url_placeholder")}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
-              <p className="text-muted-foreground text-xs">
-                Paste the product link you want to promote.
-              </p>
+              <p className="text-muted-foreground text-xs">{t("product_url_help")}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="platform">Platform</Label>
+              <Label htmlFor="platform">{t("platform_label")}</Label>
               <Select value={platform} onValueChange={setPlatform}>
                 <SelectTrigger id="platform">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="amazon">Amazon</SelectItem>
-                  <SelectItem value="noon">Noon</SelectItem>
-                  <SelectItem value="aliexpress">AliExpress</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="amazon">{t("platforms.amazon")}</SelectItem>
+                  <SelectItem value="noon">{t("platforms.noon")}</SelectItem>
+                  <SelectItem value="aliexpress">{t("platforms.aliexpress")}</SelectItem>
+                  <SelectItem value="other">{t("platforms.other")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Tweet Language</Label>
+              <Label>{t("language_label")}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">Arabic</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="tr">Turkish</SelectItem>
+                  <SelectItem value="ar">{t("languages.ar")}</SelectItem>
+                  <SelectItem value="en">{t("languages.en")}</SelectItem>
+                  <SelectItem value="fr">{t("languages.fr")}</SelectItem>
+                  <SelectItem value="de">{t("languages.de")}</SelectItem>
+                  <SelectItem value="es">{t("languages.es")}</SelectItem>
+                  <SelectItem value="tr">{t("languages.tr")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="affiliate-tag">Affiliate Tag (Optional)</Label>
+              <Label htmlFor="affiliate-tag">{t("tag_label")}</Label>
               <Input
                 id="affiliate-tag"
-                placeholder={platform === "amazon" ? "your-tag-20" : "Coupon Code / ID"}
+                placeholder={
+                  platform === "amazon" ? t("tag_placeholder_amazon") : t("tag_placeholder_other")
+                }
                 value={tag}
                 onChange={(e) => setTag(e.target.value)}
               />
-              <p className="text-muted-foreground text-xs">
-                Your affiliate tag will be added to the generated tweet.
-              </p>
+              <p className="text-muted-foreground text-xs">{t("tag_help")}</p>
             </div>
 
             <Button
@@ -204,12 +202,12 @@ export default function AffiliatePage() {
               {isGenerating ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  Analyzing... ({elapsed}s)
+                  {t("generating", { elapsed })}
                 </>
               ) : (
                 <>
                   <Sparkles className="me-2 h-4 w-4" />
-                  Generate Tweet
+                  {t("generate_tweet")}
                 </>
               )}
             </Button>
@@ -218,24 +216,24 @@ export default function AffiliatePage() {
 
         <Card className="flex h-full flex-col">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Generated Result</CardTitle>
+            <CardTitle>{t("generated_result")}</CardTitle>
             {result && (
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={copyToClipboard}
-                  aria-label="Copy affiliate tweet"
+                  aria-label={t("copy_aria_label")}
                 >
                   {copied ? (
                     <>
                       <Check className="me-2 h-4 w-4" />
-                      Copied!
+                      {t("copied_button")}
                     </>
                   ) : (
                     <>
                       <Copy className="me-2 h-4 w-4" />
-                      Copy
+                      {t("copy_button")}
                     </>
                   )}
                 </Button>
@@ -247,7 +245,7 @@ export default function AffiliatePage() {
                   }}
                 >
                   <PenSquare className="me-2 h-4 w-4" />
-                  Compose
+                  {t("compose_button")}
                 </Button>
               </div>
             )}
@@ -258,7 +256,7 @@ export default function AffiliatePage() {
                 {result.productTitle && (
                   <div className="text-muted-foreground flex items-center gap-2 border-b pb-2 text-sm font-medium">
                     <Package className="h-4 w-4" />
-                    Detected: {result.productTitle}
+                    {t("detected_prefix")} {result.productTitle}
                   </div>
                 )}
                 <div className="bg-muted flex-1 rounded-md border p-4 text-lg leading-relaxed break-words whitespace-pre-wrap">
@@ -304,10 +302,8 @@ export default function AffiliatePage() {
                   </div>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium">Your affiliate tweet will appear here</p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Paste a product URL above and click Generate Tweet
-                  </p>
+                  <p className="text-sm font-medium">{t("empty_title")}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">{t("empty_description")}</p>
                 </div>
               </div>
             )}

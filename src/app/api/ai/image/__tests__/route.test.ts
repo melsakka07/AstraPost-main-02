@@ -68,6 +68,15 @@ vi.mock("@/lib/middleware/require-plan", () => ({
   getUserPlanType: vi.fn().mockResolvedValue("pro_monthly"),
 }));
 
+vi.mock("@/lib/services/request-dedup", () => ({
+  RequestDedup: {
+    generateKey: vi.fn().mockReturnValue("dedup:test:key"),
+    check: vi.fn().mockResolvedValue(null),
+    cache: vi.fn().mockResolvedValue(undefined),
+    invalidate: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 vi.mock("ai", () => ({
   generateText: vi.fn().mockResolvedValue({ text: "generated prompt" }),
 }));

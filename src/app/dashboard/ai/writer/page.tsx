@@ -263,13 +263,13 @@ function AIWriterContent() {
     navigator.clipboard.writeText(generatedTweets.join("\n\n---\n\n"));
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
-    toast.success("Copied to clipboard");
+    toast.success(t("toasts.copied"));
   };
 
   const copyTweet = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedTweetIdx(idx);
-    toast.success("Copied to clipboard");
+    toast.success(t("toasts.copied"));
     setTimeout(() => setCopiedTweetIdx(null), 2000);
   };
 
@@ -340,7 +340,7 @@ function AIWriterContent() {
     navigator.clipboard.writeText(urlResult.tweets.join("\n\n---\n\n"));
     setUrlCopied(true);
     setTimeout(() => setUrlCopied(false), 2000);
-    toast.success("Copied to clipboard");
+    toast.success(t("toasts.copied"));
   };
 
   // ── A/B Variants ───────────────────────────────────────────────────────────
@@ -392,12 +392,12 @@ function AIWriterContent() {
     navigator.clipboard.writeText(text);
     setVariantCopied(idx);
     setTimeout(() => setVariantCopied(null), 2000);
-    toast.success("Copied to clipboard");
+    toast.success(t("toasts.copied"));
   };
 
   const applyVariant = (text: string) => {
     setVariantTweet(text);
-    toast.success("Loaded into editor");
+    toast.success(t("toasts.loaded_editor"));
   };
 
   return (

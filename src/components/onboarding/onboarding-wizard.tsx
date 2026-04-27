@@ -54,7 +54,7 @@ function getSteps(t: (key: string) => string): {
       id: 1,
       title: t("onboarding.steps.connect"),
       icon: Twitter,
-      description: "Confirm your connected X account.",
+      description: t("onboarding.steps.confirm_account"),
     },
     {
       id: 2,
@@ -72,7 +72,7 @@ function getSteps(t: (key: string) => string): {
       id: 4,
       title: t("onboarding.steps.schedule"),
       icon: Calendar,
-      description: "Pick a time to publish.",
+      description: t("onboarding.steps.pick_time"),
     },
     {
       id: 5,
@@ -290,14 +290,14 @@ export function OnboardingWizard() {
       onboardingCompleteRef.current = fetch("/api/user/onboarding-complete", { method: "POST" })
         .then((res) => {
           if (!res.ok) {
-            toast.error("Could not save onboarding status. Please try again.");
+            toast.error(t("onboarding.save_error"));
           }
         })
         .catch(() => {
-          toast.error("Could not save onboarding status. Please try again.");
+          toast.error(t("onboarding.save_error"));
         });
     }
-  }, [currentStep, steps]);
+  }, [currentStep, steps, t]);
 
   // All step-4 navigation must go through here.
   // Awaiting the promise ensures onboardingCompleted is committed to the DB
@@ -323,7 +323,7 @@ export function OnboardingWizard() {
     try {
       const res = await fetch("/api/user/onboarding/skip", { method: "POST" });
       if (!res.ok) {
-        toast.error("Failed to skip onboarding");
+        toast.error(t("onboarding.skip_failed"));
         setLoading(false);
         return;
       }
@@ -333,7 +333,7 @@ export function OnboardingWizard() {
       clientLogger.error("Failed to skip onboarding", {
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to skip onboarding");
+      toast.error(t("onboarding.skip_failed"));
       setLoading(false);
     }
   };
@@ -348,11 +348,11 @@ export function OnboardingWizard() {
           body: JSON.stringify({ action: "publish_now" }),
         });
         if (!res.ok) throw new Error("Failed to publish");
-        toast.success("Post queued for immediate publishing!");
+        toast.success(t("onboarding.post_queued"));
       }
       setCurrentStep(5);
     } catch {
-      toast.error("Failed to send post");
+      toast.error(t("onboarding.post_failed"));
     } finally {
       setLoading(false);
     }
@@ -372,7 +372,7 @@ export function OnboardingWizard() {
           body: JSON.stringify({ timezone: prefTimezone, language: prefLanguage }),
         });
         if (!res.ok) {
-          toast.error("Failed to save preferences");
+          toast.error(t("onboarding.prefs_failed"));
           setLoading(false);
           return;
         }
@@ -380,7 +380,7 @@ export function OnboardingWizard() {
       } else if (currentStep === 3) {
         // Step 3 — Compose
         if (!tweetContent.trim()) {
-          toast.error("Please write something");
+          toast.error(t("onboarding.write_something"));
           setLoading(false);
           return;
         }
@@ -408,7 +408,7 @@ export function OnboardingWizard() {
         // Step 4 — Schedule
         const iso = getScheduledISO();
         if (!iso) {
-          toast.error("Please select a date");
+          toast.error(t("onboarding.select_date"));
           setLoading(false);
           return;
         }
@@ -431,7 +431,7 @@ export function OnboardingWizard() {
         step: currentStep,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Something went wrong");
+      toast.error(t("onboarding.something_wrong"));
     } finally {
       setLoading(false);
     }
@@ -577,8 +577,8 @@ export function OnboardingWizard() {
                   Preferred Language
                 </label>
                 <Select value={prefLanguage} onValueChange={setPrefLanguage}>
-                  <SelectTrigger className="w-full" aria-label="Select language">
-                    <SelectValue placeholder="Select language" />
+                  <SelectTrigger className="w-full" aria-label={t("onboarding.select_language")}>
+                    <SelectValue placeholder={t("onboarding.select_language")} />
                   </SelectTrigger>
                   <SelectContent>
                     {LANGUAGES.map((lang) => (
@@ -599,8 +599,8 @@ export function OnboardingWizard() {
                   Time Zone
                 </label>
                 <Select value={prefTimezone} onValueChange={setPrefTimezone}>
-                  <SelectTrigger className="w-full" aria-label="Select timezone">
-                    <SelectValue placeholder="Select timezone" />
+                  <SelectTrigger className="w-full" aria-label={t("onboarding.select_timezone")}>
+                    <SelectValue placeholder={t("onboarding.select_timezone")} />
                   </SelectTrigger>
                   <SelectContent>
                     {TIMEZONE_GROUPS.map((group) => (
@@ -631,7 +631,7 @@ export function OnboardingWizard() {
                 value={tweetContent}
                 onChange={(e) => setTweetContent(e.target.value)}
                 className="min-h-[150px] resize-none"
-                placeholder="Hello World! This is my first tweet via AstraPost. 🚀"
+                placeholder={t("onboarding.first_tweet_placeholder")}
                 autoFocus
               />
               {/* O2 — char counter with amber/destructive thresholds */}
@@ -681,13 +681,13 @@ export function OnboardingWizard() {
                 <DatePicker
                   value={scheduledDate}
                   onChange={setScheduledDate}
-                  placeholder="Pick a date"
+                  placeholder={t("onboarding.pick_date")}
                 />
               </div>
               <div className="space-y-2 text-left">
                 <label className="text-muted-foreground text-xs">Time</label>
                 <Select value={scheduledTime} onValueChange={setScheduledTime}>
-                  <SelectTrigger className="w-full" aria-label="Select time">
+                  <SelectTrigger className="w-full" aria-label={t("onboarding.select_time")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

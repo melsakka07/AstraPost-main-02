@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, XCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { clientLogger } from "@/lib/client-logger";
 
 export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLabel?: string }) {
+  const t = useTranslations("queue");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -33,14 +35,14 @@ export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLa
 
       if (!res.ok) throw new Error("Failed to cancel post");
 
-      toast.success("Post cancelled");
+      toast.success(t("toasts.post_cancelled"));
       router.refresh();
     } catch (error) {
       clientLogger.error("Failed to cancel post", {
         postId,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Something went wrong");
+      toast.error(t("toasts.something_wrong"));
     } finally {
       setLoading(false);
     }

@@ -21,7 +21,7 @@ export function ResumeOnboardingButton() {
       clientLogger.error("Failed to navigate to onboarding", {
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to resume onboarding");
+      toast.error(t("toasts.resume_onboarding_failed"));
       setIsLoading(false);
     }
   };

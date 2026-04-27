@@ -152,7 +152,10 @@
   "errors": {
     "unauthorized": "You are not authorized to perform this action",
     "not_found": "Not found",
-    "server_error": "Something went wrong. Please try again later."
+    "server_error": "Something went wrong. Please try again later.",
+    "unexpected": "An unexpected error occurred. Please try again.",
+    "try_again": "Try again",
+    "something_wrong": "Something went wrong"
   },
   "auth": {
     "login": {
@@ -252,7 +255,9 @@
         "compose": "Compose",
         "compose_description": "Write your first tweet or thread.",
         "explore_ai": "Explore AI",
-        "explore_ai_description": "Discover AI-powered features."
+        "explore_ai_description": "Discover AI-powered features.",
+        "confirm_account": "Confirm your connected X account.",
+        "pick_time": "Pick a time to publish."
       },
       "feature_cards": {
         "ai_writer": "AI Writer",
@@ -270,19 +275,45 @@
       "loading_account": "Loading your account...",
       "account_connected": "Your X Account is Connected!",
       "ready_to_start": "You're ready to start scheduling posts with AstraPost.",
-      "default_label": "Default"
-    }
+      "default_label": "Default",
+      "save_error": "Could not save onboarding status. Please try again.",
+      "skip_failed": "Failed to skip onboarding",
+      "post_queued": "Post queued for immediate publishing!",
+      "post_failed": "Failed to send post",
+      "prefs_failed": "Failed to save preferences",
+      "write_something": "Please write something",
+      "select_date": "Please select a date",
+      "something_wrong": "Something went wrong",
+      "select_language": "Select language",
+      "select_timezone": "Select timezone",
+      "first_tweet_placeholder": "Hello World! This is my first tweet via AstraPost.",
+      "pick_date": "Pick a date",
+      "select_time": "Select time"
+    },
+    "sign_in_with_x": "Sign in with X",
+    "loading": "Loading...",
+    "redirecting": "Redirecting...",
+    "sign_in_error": "Failed to redirect to X. Please try again.",
+    "sign_in_aria": "Sign in with X"
   },
   "dashboard_shell": {
     "open_navigation": "Open navigation",
     "close_navigation": "Close navigation",
     "switch_language": "Switch language",
     "switch_language_failed": "Failed to switch language",
-    "notifications": "Notifications",
+    "notifications": {
+      "label": "Notifications",
+      "mark_all_read_success": "All notifications marked as read",
+      "mark_all_read_failed": "Failed to mark all as read"
+    },
     "mark_all_read": "Mark all as read",
     "no_notifications": "No notifications",
     "unread_count": "{count, plural, one {# unread notification} other {# unread notifications}}",
     "theme_switch": "Switch theme",
+    "toggle_theme": "Toggle theme",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "theme_system": "System",
     "account_switcher": {
       "label": "Switch account",
       "personal_workspace": "Personal Workspace",
@@ -478,7 +509,29 @@
       "long": "Long post"
     },
     "over_standard_limit_warning": "This exceeds 280 characters.",
-    "exceeds_280_thread_warning": "Exceeds 280 chars — threads use standard tweet length"
+    "exceeds_280_thread_warning": "Exceeds 280 chars — threads use standard tweet length",
+    "toasts": {
+      "save_template_failed": "Failed to save template",
+      "max_images": "Maximum 4 images per tweet",
+      "inspiration_load_failed": "Failed to load inspiration topics",
+      "history_restored_thread": "Restored thread from history",
+      "history_restored_content": "Restored content from history",
+      "history_restored_translation": "Restored translation from history",
+      "template_applied": "Template applied!",
+      "post_restored": "Post restored",
+      "generation_failed": "Generation failed. Please try again.",
+      "thread_restored": "Thread restored",
+      "select_template_first": "Please select a template first",
+      "topic_min_length": "Topic must be at least 3 characters",
+      "content_restored": "Content restored",
+      "changes_undone": "Changes undone",
+      "add_content_to_translate": "Please add some content to translate",
+      "translation_undone": "Translation undone",
+      "rewrite_undone": "Rewrite undone",
+      "max_media": "Max 4 media per tweet",
+      "wait_for_upload": "Please wait for all media to finish uploading.",
+      "thread_generated": "Thread generated!"
+    }
   },
   "queue": {
     "title": "Queue",
@@ -513,7 +566,14 @@
     "failed_posts_heading": "Failed Posts",
     "retry_failed_hint": "Retry or edit failed content quickly",
     "all_clear": "All clear!",
-    "no_failed_posts": "No failed posts. All queue jobs are healthy."
+    "no_failed_posts": "No failed posts. All queue jobs are healthy.",
+    "toasts": {
+      "retry_scheduled": "Retry scheduled",
+      "post_cancelled": "Post cancelled",
+      "something_wrong": "Something went wrong",
+      "post_published": "Post published successfully",
+      "bulk_update_failed": "Some posts could not be updated"
+    }
   },
   "calendar": {
     "title": "Calendar",
@@ -531,7 +591,12 @@
     "paste_tweets": "Paste your tweets here, one per line...",
     "import_button": "Import",
     "importing": "Importing...",
-    "import_csv": "Import CSV"
+    "import_csv": "Import CSV",
+    "toasts": {
+      "rescheduled": "Post rescheduled",
+      "reschedule_failed": "Failed to reschedule post",
+      "rescheduled_short": "Rescheduled"
+    }
   },
   "drafts": {
     "title": "Drafts",
@@ -584,22 +649,84 @@
     "connect_x_cta": "Connect your X account to view analytics",
     "no_data_cta": "No analytics data yet. Start publishing!",
     "impressions_history_cta": "Upgrade to view impressions history",
-    "engagement_history_cta": "Upgrade to view engagement history"
+    "engagement_history_cta": "Upgrade to view engagement history",
+    "toasts": {
+      "refresh_queued": "Refresh queued",
+      "export_failed": "Failed to export analytics"
+    }
   },
   "analytics_viral": {
     "title": "Viral Analyzer",
-    "description": "Analyze viral content trends"
+    "description": "Analyze viral content trends",
+    "unlock_title": "Unlock Viral Insights",
+    "unlock_description": "Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your top-performing content patterns.",
+    "cards": {
+      "top_hashtags": "Top Hashtags",
+      "top_hashtags_desc": "Hashtags that drive the most engagement",
+      "top_keywords": "Top Keywords",
+      "top_keywords_desc": "Word patterns that resonate with your audience",
+      "tweet_length": "Tweet Length Performance",
+      "tweet_length_desc": "Which lengths perform best for you",
+      "best_days": "Best Days to Post",
+      "best_days_desc": "Days when your content gets the most engagement",
+      "best_hours": "Best Hours to Post",
+      "best_hours_desc": "24-hour engagement — top 3 highlighted",
+      "content_types": "Content Type Performance",
+      "content_types_desc": "Which types of content work best for you"
+    },
+    "empty": {
+      "no_hashtags": "No hashtag data yet",
+      "no_keywords": "No keyword data yet",
+      "no_length": "No length data yet",
+      "no_days": "No day data yet",
+      "no_content_types": "No content type data yet"
+    },
+    "length_legend": "Short <100 · Medium 100–200 · Long >200 chars",
+    "toasts": {
+      "report_copied": "Report copied to clipboard",
+      "csv_downloaded": "CSV downloaded"
+    }
   },
   "analytics_competitor": {
     "title": "Competitor Analysis",
-    "description": "Track and analyze competitor performance"
+    "description": "Track and analyze competitor performance",
+    "username_label": "X Username",
+    "charts": {
+      "hashtag_prominence": "Hashtag Prominence",
+      "content_mix": "Content Mix"
+    },
+    "empty": {
+      "no_hashtags": "No hashtags found",
+      "no_data": "No data found",
+      "no_content_types": "No content types found"
+    },
+    "toasts": {
+      "enter_username": "Please enter a username",
+      "analysis_failed": "Failed to analyze account",
+      "analysis_failed_retry": "Failed to analyze account. Please try again."
+    }
   },
   "achievements": {
     "title": "Achievements",
     "description": "Track your milestones and rewards",
     "unlocked": "Unlocked",
     "locked": "Locked",
-    "progress": "Progress"
+    "progress": "Progress",
+    "empty_title": "No achievements yet",
+    "empty_description": "Start creating content to unlock badges and track your progress.",
+    "create_first_post": "Create Your First Post",
+    "view_analytics": "View Analytics",
+    "unlock_message": "Unlock badges by growing your audience and posting consistently.",
+    "milestones": {
+      "first_post": "First Post",
+      "first_post_desc": "Published your first post",
+      "10_posts": "Consistent Creator",
+      "10_posts_desc": "Published 10 posts",
+      "100_followers": "Growing Audience",
+      "100_followers_desc": "Reached 100 followers",
+      "10_day_streak": "On Fire",
+      "10_day_streak_desc": "Posted for 10 consecutive days"
+    }
   },
   "referrals": {
     "title": "Referrals",
@@ -607,7 +734,23 @@
     "invite_link": "Your Invite Link",
     "copied": "Copied!",
     "referral_count": "Referrals",
-    "rewards": "Rewards"
+    "rewards": "Rewards",
+    "total_referrals": "Total Referrals",
+    "friends_joined": "Friends joined using your code",
+    "earned_credits": "Earned Credits",
+    "available_for_invoice": "Available for next invoice",
+    "share_your_link": "Share Your Link",
+    "share_description": "Share this link with your friends to earn rewards.",
+    "referral_link_label": "Referral Link",
+    "your_code": "Your Code",
+    "generating": "Generating...",
+    "how_it_works": "How it works",
+    "how_step_1": "Share your unique referral link or code.",
+    "how_step_2": "Friends sign up and get a 21-day extended trial.",
+    "how_step_3": "You get $5 credit for every friend who subscribes to Pro.",
+    "no_referrals_yet": "No referrals yet",
+    "empty_description": "Share your unique referral link with friends to start earning credits. Every friend who subscribes gets you $5 in account credit.",
+    "copy_referral_link": "Copy Referral Link"
   },
   "affiliate": {
     "title": "Affiliate Dashboard",
@@ -615,7 +758,68 @@
     "earnings": "Earnings",
     "clicks": "Clicks",
     "conversions": "Conversions",
-    "link": "Affiliate Link"
+    "link": "Affiliate Link",
+    "product_details": "Product Details",
+    "product_url_label": "Product URL",
+    "product_url_placeholder": "https://amazon.com/product...",
+    "product_url_help": "Paste the product link you want to promote.",
+    "platform_label": "Platform",
+    "platforms": {
+      "amazon": "Amazon",
+      "noon": "Noon",
+      "aliexpress": "AliExpress",
+      "other": "Other"
+    },
+    "language_label": "Tweet Language",
+    "languages": {
+      "ar": "Arabic",
+      "en": "English",
+      "fr": "French",
+      "de": "German",
+      "es": "Spanish",
+      "tr": "Turkish"
+    },
+    "tag_label": "Affiliate Tag (Optional)",
+    "tag_placeholder_amazon": "your-tag-20",
+    "tag_placeholder_other": "Coupon Code / ID",
+    "tag_help": "Your affiliate tag will be added to the generated tweet.",
+    "generating": "Analyzing... ({elapsed}s)",
+    "generate_tweet": "Generate Tweet",
+    "generated_result": "Generated Result",
+    "copy_aria_label": "Copy affiliate tweet",
+    "copied_button": "Copied!",
+    "copy_button": "Copy",
+    "compose_button": "Compose",
+    "detected_prefix": "Detected:",
+    "empty_title": "Your affiliate tweet will appear here",
+    "empty_description": "Paste a product URL above and click Generate Tweet",
+    "recent_generations": "Recent Generations",
+    "loading": "Loading recent generations...",
+    "refresh": "Refresh",
+    "no_links_title": "No affiliate links yet",
+    "no_links_description": "Generate your first affiliate tweet above to start tracking clicks and conversions.",
+    "table": {
+      "product": "Product",
+      "platform": "Platform",
+      "clicks": "Clicks",
+      "generated_content": "Generated Content",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions",
+      "product_thumbnail": "Product thumbnail",
+      "unknown": "Unknown",
+      "unknown_product": "Unknown Product",
+      "view_product": "View Product",
+      "scheduled": "Scheduled",
+      "generated": "Generated",
+      "copy_tweet": "Copy Tweet",
+      "schedule": "Schedule"
+    },
+    "toasts": {
+      "generation_failed": "Failed to generate affiliate tweet",
+      "copied": "Copied to clipboard",
+      "history_failed": "Failed to load history"
+    }
   },
   "jobs": {
     "title": "Jobs",
@@ -733,6 +937,10 @@
     "errors": {
       "generation_failed": "Failed to generate content. Please try again.",
       "quota_exceeded": "AI quota exceeded. Upgrade your plan to generate more content."
+    },
+    "toasts": {
+      "copied": "Copied to clipboard",
+      "loaded_editor": "Loaded into editor"
     }
   },
   "ai_agentic": {
@@ -823,6 +1031,12 @@
       "discard_description": "This thread will be deleted and you'll return to input screen. This can't be undone.",
       "cancel_button": "Cancel",
       "discard_button": "Discard"
+    },
+    "toasts": {
+      "pipeline_failed": "Pipeline failed. Please try again.",
+      "enhancement_failed": "Enhancement failed. Please try again.",
+      "session_resumed": "Resumed your previous session.",
+      "rewrite_failed": "Rewrite failed"
     }
   },
   "ai_bio": {
@@ -849,7 +1063,10 @@
     "open_x_settings": "Open X Settings",
     "copy": "Copy",
     "copied": "Copied!",
-    "error": "Failed to generate bio variants. Please try again."
+    "error": "Failed to generate bio variants. Please try again.",
+    "toasts": {
+      "copied": "Copied to clipboard"
+    }
   },
   "ai_reply": {
     "title": "Reply Suggester",
@@ -885,7 +1102,10 @@
     "fetch_error": "Failed to preview tweet. Please try again.",
     "generation_error": "Failed to generate replies. Please try again.",
     "3_replies_appear": "3 reply suggestions will appear here",
-    "works_with_any": "Works with any public tweet from x.com or twitter.com"
+    "works_with_any": "Works with any public tweet from x.com or twitter.com",
+    "toasts": {
+      "copied": "Copied to clipboard"
+    }
   },
   "ai_calendar": {
     "title": "AI Content Calendar",
@@ -914,6 +1134,14 @@
       "thread": "Thread",
       "poll": "Poll",
       "question": "Question"
+    },
+    "toasts": {
+      "enter_topic": "Please enter your niche or topic focus",
+      "generation_failed": "Failed to generate calendar. Please try again.",
+      "load_accounts_failed": "Failed to load accounts",
+      "select_account": "Please select an X account",
+      "select_start_date": "Please set a start date for Week 1",
+      "schedule_failed": "Failed to schedule posts. Please try again."
     }
   },
   "ai_history": {
@@ -928,6 +1156,17 @@
     "no_content": "No content",
     "reuse": "Reuse",
     "template_streamed": "Content was streamed directly to the Composer. Re-generate from the Templates dialog to produce new content."
+  },
+  "ai_image": {
+    "service_busy": "Service busy — retrying automatically...",
+    "switching_model": "Switching to backup model...",
+    "generated_success": "Image generated successfully!",
+    "quota_reached": "You've reached your monthly AI image quota. Upgrade to continue.",
+    "enter_prompt": "Please enter a prompt or write tweet content first.",
+    "rate_limited": "Rate limit exceeded. Please wait a moment.",
+    "generation_failed": "Failed to generate image. Please try again.",
+    "download_failed": "Failed to download image",
+    "attached": "Image attached to tweet!"
   },
   "inspiration": {
     "title": "Inspiration",
@@ -1346,6 +1585,9 @@
       "account_deactivated": "Account @{username} deactivated successfully",
       "account_deactivate_failed": "Failed to deactivate account",
       "default_update_failed": "Failed to update default"
+    },
+    "toasts": {
+      "resume_onboarding_failed": "Failed to resume onboarding"
     }
   },
   "hashtag_generator": {
@@ -1503,6 +1745,13 @@
     "type_imp": "imp",
     "type_fix": "fix"
   },
+  "command_palette": {
+    "open": "Open command palette",
+    "title": "Command Palette",
+    "hint": "Press ESC to close, or type to search",
+    "placeholder": "Search commands...",
+    "no_results": "No commands found for \"{search}\""
+  },
   "docs": {
     "badge": "Documentation",
     "title": "How can we help?",
@@ -1631,5 +1880,13 @@
     "subtitle": "Help us build the features you need. Submit your ideas and suggestions below — our development team reviews every submission.",
     "always_improving": "We're always looking for ways to improve",
     "feedback_cta": "Tell us what you'd like to see next. Every submission helps shape the future of AstraPost."
+  },
+  "trial_banner": {
+    "expired": "Your free trial has expired. Upgrade to continue using Pro features.",
+    "upgrade_now": "Upgrade Now",
+    "dismiss": "Dismiss trial banner",
+    "ending_today": "Your free trial ends today.",
+    "ending_in_days": "Your free trial ends in {days} days.",
+    "upgrade_to_pro": "Upgrade to Pro"
   }
 }

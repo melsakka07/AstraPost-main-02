@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { differenceInCalendarDays } from "date-fns";
 import { AlertCircle, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface TrialBannerProps {
   trialEndsAt: Date | null;
@@ -14,6 +15,7 @@ interface TrialBannerProps {
 export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
   const pathname = usePathname();
   const [dismissed, setDismissed] = useState(false);
+  const t = useTranslations("trial_banner");
 
   const isDashboardRoute = pathname.startsWith("/dashboard");
   // Show when there is a trial end date (regardless of current plan).
@@ -56,15 +58,15 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
       <div className="bg-destructive text-destructive-foreground px-4 py-2 text-sm font-medium">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-2">
           <AlertCircle className="h-4 w-4" />
-          <span>Your free trial has expired. Upgrade to continue using Pro features.</span>
+          <span>{t("expired")}</span>
           <Link href="/pricing" className="ml-2 underline hover:text-white/90">
-            Upgrade Now
+            {t("upgrade_now")}
           </Link>
           <button
             type="button"
             onClick={dismiss}
             className="ml-2 inline-flex items-center justify-center rounded p-1 hover:bg-black/10"
-            aria-label="Dismiss trial banner"
+            aria-label={t("dismiss")}
           >
             <X className="h-4 w-4" />
           </button>
@@ -83,7 +85,7 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
     >
       <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-2">
         <AlertCircle className="h-4 w-4" />
-        <span>Your free trial ends in {daysLeft === 0 ? "today" : `${daysLeft} days`}.</span>
+        <span>{daysLeft === 0 ? t("ending_today") : t("ending_in_days", { days: daysLeft })}</span>
         <Link
           href="/pricing"
           className={
@@ -92,7 +94,7 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
               : "hover:text-foreground/80 ml-2 underline"
           }
         >
-          Upgrade to Pro
+          {t("upgrade_to_pro")}
         </Link>
         <button
           type="button"
@@ -102,7 +104,7 @@ export function TrialBanner({ trialEndsAt, plan }: TrialBannerProps) {
               ? "ml-2 inline-flex items-center justify-center rounded p-1 hover:bg-black/10"
               : "hover:bg-muted ml-2 inline-flex items-center justify-center rounded p-1"
           }
-          aria-label="Dismiss trial banner"
+          aria-label={t("dismiss")}
         >
           <X className="h-4 w-4" />
         </button>

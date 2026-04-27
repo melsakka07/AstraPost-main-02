@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
@@ -12,6 +13,7 @@ export function ManualRefreshButton({
   xAccountId: string;
   lastRefreshedAt?: Date | null;
 }) {
+  const t = useTranslations("analytics");
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [_tick, setTick] = useState(0);
@@ -51,7 +53,7 @@ export function ManualRefreshButton({
               const body = await res.json().catch(() => null);
               throw new Error(body?.error || "Refresh failed");
             }
-            toast.success("Refresh queued");
+            toast.success(t("toasts.refresh_queued"));
             router.refresh();
           } catch (e) {
             toast.error(e instanceof Error ? e.message : "Refresh failed");

@@ -44,7 +44,7 @@ export function ExportButton({ range }: { range: string }) {
       toast.success(`Analytics exported as ${format.toUpperCase()}`);
     } catch (error) {
       toast.dismiss(loadingToast);
-      toast.error("Failed to export analytics");
+      toast.error(t("toasts.export_failed"));
       clientLogger.error("Analytics export failed", {
         format,
         range,

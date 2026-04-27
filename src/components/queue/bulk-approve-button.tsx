@@ -38,7 +38,7 @@ export function BulkApproveButton({ postIds, action }: BulkApproveButtonProps) {
       );
       router.refresh();
     } catch {
-      toast.error("Some posts could not be updated");
+      toast.error(t("toasts.bulk_update_failed"));
     } finally {
       setLoading(false);
     }

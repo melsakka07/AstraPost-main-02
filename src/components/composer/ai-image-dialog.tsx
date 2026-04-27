@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Download,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -101,6 +102,7 @@ export function AiImageDialog({
   remainingQuota,
   attachedCount,
 }: AiImageDialogProps) {
+  const t = useTranslations("ai_image");
   // State
   const [prompt, setPrompt] = useState("");
   const [model, setModel] = useState<ImageModel>(
@@ -230,7 +232,7 @@ export function AiImageDialog({
             // was already deleted by the status route, so we start from scratch.
             setIsGenerating(false);
             activePollingIdRef.current = null;
-            toast.info("Service busy — retrying automatically…", { duration: 3000 });
+            toast.info(t("service_busy"), { duration: 3000 });
             // Short delay so the user sees the retrying message before we re-fire.
             pollTimerRef.current = setTimeout(() => {
               void handleGenerate();
@@ -257,7 +259,7 @@ export function AiImageDialog({
           // model and returned a new prediction ID. Swap polling targets silently.
           const newId: string = data.predictionId;
           activePollingIdRef.current = newId;
-          toast.info("Switching to backup model…", { duration: 3000 });
+          toast.info(t("switching_model"), { duration: 3000 });
           pollForResult(newId);
         } else if (data.status === "succeeded") {
           stopProgressAnimation();
@@ -272,7 +274,7 @@ export function AiImageDialog({
           };
           setGeneratedImage(generated);
           setImageHistory((prev) => [...prev, generated]);
-          toast.success("Image generated successfully!");
+          toast.success(t("generated_success"));
           setIsGenerating(false);
           activePollingIdRef.current = null;
         }
@@ -292,7 +294,7 @@ export function AiImageDialog({
   // Auto-generate prompt from tweet content if prompt is empty
   const handleGenerate = async () => {
     if (remainingQuota === 0) {
-      toast.error("You've reached your monthly AI image quota. Please upgrade to continue.", {
+      toast.error(t("quota_reached"), {
         action: {
           label: "Upgrade",
           onClick: () => (window.location.href = "/pricing"),
@@ -321,7 +323,7 @@ export function AiImageDialog({
       } else if (tweetContent.trim()) {
         requestBody.tweetContent = tweetContent.trim();
       } else {
-        toast.error("Please enter a prompt or write tweet content first.");
+        toast.error(t("enter_prompt"));
         stopProgressAnimation();
         setIsGenerating(false);
         return;
@@ -347,7 +349,7 @@ export function AiImageDialog({
             },
           });
         } else if (response.status === 429) {
-          toast.error("Rate limit exceeded. Please wait a moment.");
+          toast.error(t("rate_limited"));
         } else {
           toast.error(error.error || "Failed to start image generation");
         }
@@ -366,7 +368,7 @@ export function AiImageDialog({
         error: error instanceof Error ? error.message : String(error),
       });
       stopProgressAnimation();
-      toast.error("Failed to generate image. Please try again.");
+      toast.error(t("generation_failed"));
       setIsGenerating(false);
     }
   };
@@ -391,7 +393,7 @@ export function AiImageDialog({
       a.click();
       URL.revokeObjectURL(objectUrl);
     } catch {
-      toast.error("Failed to download image");
+      toast.error(t("download_failed"));
     } finally {
       setIsDownloading(false);
     }
@@ -400,7 +402,7 @@ export function AiImageDialog({
   const handleAttach = () => {
     if (generatedImage) {
       onImageAttach(generatedImage);
-      toast.success("Image attached to tweet!");
+      toast.success(t("attached"));
     }
   };
 

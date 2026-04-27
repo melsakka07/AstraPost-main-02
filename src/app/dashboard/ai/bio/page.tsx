@@ -117,7 +117,7 @@ export default function BioOptimizerPage() {
   const copyBio = (text: string, idx: number) => {
     navigator.clipboard.writeText(text);
     setCopiedIdx(idx);
-    toast.success("Copied to clipboard");
+    toast.success(t("toasts.copied"));
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 

@@ -44,24 +44,22 @@ export default async function AchievementsPage() {
       {unlockedIds.length === 0 ? (
         <EmptyState
           icon={<Award className="h-6 w-6" />}
-          title="No achievements yet"
-          description="Start creating content to unlock badges. Post consistently, grow your audience, and reach milestones."
+          title={t("empty_title")}
+          description={t("empty_description")}
           primaryAction={
             <Button asChild>
-              <Link href="/dashboard/compose">Create Your First Post</Link>
+              <Link href="/dashboard/compose">{t("create_first_post")}</Link>
             </Button>
           }
           secondaryAction={
             <Button variant="outline" asChild>
-              <Link href="/dashboard/analytics">View Analytics</Link>
+              <Link href="/dashboard/analytics">{t("view_analytics")}</Link>
             </Button>
           }
         />
       ) : (
         <div className="space-y-4">
-          <p className="text-muted-foreground">
-            Unlock badges by growing your audience and posting consistently.
-          </p>
+          <p className="text-muted-foreground">{t("unlock_message")}</p>
           <MilestoneList unlockedMilestoneIds={unlockedIds} />
         </div>
       )}

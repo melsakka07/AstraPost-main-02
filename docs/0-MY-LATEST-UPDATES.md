@@ -1,5 +1,82 @@
 # Latest Updates
 
+## 2026-04-26: Affiliate Page Arabic Localization
+
+**Summary:** Wired full Arabic localization into the affiliate page and its `RecentAffiliateLinks` child component. Added 47 new i18n keys across both `en.json` and `ar.json` under the existing `affiliate` namespace (form labels, placeholders, buttons, table headers, empty states, status badges). Replaced all 53 hardcoded English strings across 2 components with `t()` calls. Sidebar entry already existed.
+
+**Files modified:**
+
+- `src/i18n/messages/en.json` — expanded `affiliate` namespace from 6 keys to 53 keys (47 new)
+- `src/i18n/messages/ar.json` — expanded `affiliate` namespace from 6 keys to 53 keys (47 new) with Modern Standard Arabic translations
+- `src/app/dashboard/affiliate/page.tsx` — 29 hardcoded strings replaced with `t()` calls
+- `src/components/affiliate/recent-affiliate-links.tsx` — 24 hardcoded strings replaced with `t()` calls
+
+## 2026-04-26: Referrals Page Arabic Localization
+
+**Summary:** Wired full Arabic localization into the referrals page and empty-state component. Added 15 new i18n keys (stats cards, share section, "how it works" steps, empty state) to both `en.json` and `ar.json` under the existing `referrals` namespace. Replaced all 13 hardcoded English strings in `page.tsx` with `t()` calls. Updated `empty-state-client.tsx` to use `useTranslations("referrals")` for its 3 strings.
+
+**Files modified:**
+
+- `src/i18n/messages/en.json` — 15 new keys under `referrals` namespace
+- `src/i18n/messages/ar.json` — 15 new keys with Modern Standard Arabic translations
+- `src/app/dashboard/referrals/page.tsx` — 13 hardcoded strings replaced with `t()` calls
+- `src/components/referrals/empty-state-client.tsx` — added `useTranslations("referrals")` + 3 strings replaced
+
+## 2026-04-26: Achievements Page Arabic Localization
+
+**Summary:** Wired full Arabic localization into the achievements page and milestone-list component. Added 14 new i18n keys (empty state, actions, unlock message, 4 milestone titles + 4 milestone descriptions) to both `en.json` and `ar.json` under the `achievements` namespace. Replaced all hardcoded English strings in `page.tsx` with `t()` calls. Updated `milestone-list.tsx` to use `useTranslations` with a `getMilestones(t)` pattern (matching the established `getSteps(t)` convention from `onboarding-wizard.tsx`) to resolve translated milestone data at render time.
+
+**Files modified:**
+
+- `src/i18n/messages/en.json` — 14 new keys under `achievements` namespace
+- `src/i18n/messages/ar.json` — 14 new keys with Modern Standard Arabic translations
+- `src/app/dashboard/achievements/page.tsx` — 5 hardcoded strings replaced with `t()` calls
+- `src/components/gamification/milestone-list.tsx` — added `"use client"` + `useTranslations("achievements")` + `getMilestones(t)` function
+
+## 2026-04-26: i18n Toast Messages — Wired Translations Across 21 Components
+
+**Summary:** Replaced hardcoded English toast/notification strings with `next-intl` translation calls across 21 components. Added `useTranslations` imports to 7 files that were missing them. All keys already existed in `en.json` and `ar.json`.
+
+**Files modified (21):**
+
+1. `src/components/composer/composer.tsx` — 20 toast strings replaced with `t("toasts.*")` from `compose` namespace
+2. `src/components/composer/ai-image-dialog.tsx` — added `useTranslations("ai_image")` + 9 strings replaced
+3. `src/components/ai/agentic-posting-client.tsx` — 4 toast strings replaced with `t("toasts.*")` from `ai_agentic` namespace
+4. `src/components/dashboard/notification-bell.tsx` — 2 strings replaced with `t("notifications.*")` from `dashboard_shell`
+5. `src/components/queue/retry-post-button.tsx` — 1 string replaced with `t("toasts.retry_scheduled")` from `queue`
+6. `src/components/queue/cancel-post-button.tsx` — added `useTranslations("queue")` + 2 strings replaced
+7. `src/components/queue/bulk-approve-button.tsx` — 1 string replaced with `t("toasts.bulk_update_failed")` from `queue`
+8. `src/components/queue/queue-realtime-listener.tsx` — added `useTranslations("queue")` + 2 occurrences replaced
+9. `src/components/calendar/calendar-view.tsx` — 2 strings replaced with `t("toasts.*")` from `calendar`
+10. `src/components/calendar/reschedule-post-form.tsx` — added `useTranslations("calendar")` + 1 string replaced
+11. `src/app/dashboard/ai/writer/page.tsx` — 5 strings replaced with `t("toasts.*")` from `ai_writer`
+12. `src/app/dashboard/ai/reply/page.tsx` — 1 string replaced with `t("toasts.copied")` from `ai_reply`
+13. `src/app/dashboard/ai/bio/page.tsx` — 1 string replaced with `t("toasts.copied")` from `ai_bio`
+14. `src/app/dashboard/ai/calendar/page.tsx` — added `useTranslations("ai_calendar")` + 7 strings replaced
+15. `src/app/dashboard/affiliate/page.tsx` — 2 strings replaced with `t("toasts.*")` from `affiliate`
+16. `src/app/dashboard/analytics/viral/page.tsx` — 2 strings replaced with `t("toasts.*")` from `analytics_viral`
+17. `src/app/dashboard/analytics/competitor/page.tsx` — 3 strings replaced with `t("toasts.*")` from `analytics_competitor`
+18. `src/components/analytics/manual-refresh-button.tsx` — added `useTranslations("analytics")` + 1 string replaced
+19. `src/components/analytics/export-button.tsx` — 1 string replaced with `t("toasts.export_failed")` from `analytics`
+20. `src/components/settings/resume-onboarding-button.tsx` — 1 string replaced with `t("toasts.resume_onboarding_failed")` from `settings`
+21. `src/components/affiliate/recent-affiliate-links.tsx` — added `useTranslations("affiliate")` + 2 strings replaced
+
+**Namespaces used:** compose, ai_image, ai_agentic, dashboard_shell, queue, calendar, ai_writer, ai_reply, ai_bio, ai_calendar, affiliate, analytics_viral, analytics_competitor, analytics, settings
+
+---
+
+## 2026-04-26: i18n Wiring — Trial Banner, Mode Toggle, and Sign-In Button (3 components)
+
+**Summary:** Wired `useTranslations` into three Client Components that had hardcoded English strings, replacing them with `next-intl` message keys from the `trial_banner`, `dashboard_shell`, and `auth` namespaces.
+
+**Files modified (3):**
+
+1. `src/components/ui/trial-banner.tsx` — replaced 6 hardcoded strings with `t("expired")`, `t("upgrade_now")`, `t("dismiss")`, `t("ending_today")`, `t("ending_in_days", { days })`, `t("upgrade_to_pro")`
+2. `src/components/ui/mode-toggle.tsx` — replaced 5 hardcoded strings with `t("toggle_theme")`, `t("theme_light")`, `t("theme_dark")`, `t("theme_system")` from `dashboard_shell` namespace
+3. `src/components/auth/sign-in-button.tsx` — replaced 5 hardcoded strings with `t("loading")`, `t("redirecting")`, `t("sign_in_with_x")`, `t("sign_in_error")`, `t("sign_in_aria")` from `auth` namespace
+
+---
+
 ## 2026-04-26: RTL Directional Icons — Added `rtl:scale-x-[-1]` to All Directional Icons (15 files, 27 instances)
 
 **Summary:** Added `rtl:scale-x-[-1]` Tailwind class to every directional icon (ChevronLeft, ChevronRight, ArrowLeft, ArrowRight, CaretLeft, CaretRight) that was missing it across the entire codebase. This ensures icons visually flip in RTL mode (Arabic) so that a "left" chevron points left in LTR and right in RTL, matching the natural reading direction.

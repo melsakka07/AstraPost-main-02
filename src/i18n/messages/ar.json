@@ -152,7 +152,10 @@
   "errors": {
     "unauthorized": "أنت غير مصرح بإجراء هذا الإجراء",
     "not_found": "غير موجود",
-    "server_error": "حدث خطأ ما. يرجى المحاولة لاحقا."
+    "server_error": "حدث خطأ ما. يرجى المحاولة لاحقا.",
+    "unexpected": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+    "try_again": "حاول مرة أخرى",
+    "something_wrong": "حدث خطأ ما"
   },
   "auth": {
     "login": {
@@ -252,7 +255,9 @@
         "compose": "إنشاء",
         "compose_description": "اكتب أول تغريدة أو خيط لك.",
         "explore_ai": "استكشاف الذكاء الاصطناعي",
-        "explore_ai_description": "اكتشف الميزات المدعومة بالذكاء الاصطناعي."
+        "explore_ai_description": "اكتشف الميزات المدعومة بالذكاء الاصطناعي.",
+        "confirm_account": "تأكيد حساب X المتصل.",
+        "pick_time": "اختر وقتاً للنشر."
       },
       "feature_cards": {
         "ai_writer": "الكاتب الذكي",
@@ -270,19 +275,45 @@
       "loading_account": "جارٍ تحميل حسابك...",
       "account_connected": "تم ربط حساب X الخاص بك!",
       "ready_to_start": "أنت جاهز لبدء جدولة المنشورات مع AstraPost.",
-      "default_label": "افتراضي"
-    }
+      "default_label": "افتراضي",
+      "save_error": "تعذر حفظ حالة الإعداد. يرجى المحاولة مرة أخرى.",
+      "skip_failed": "فشل تخطي الإعداد",
+      "post_queued": "تمت جدولة المنشور للنشر الفوري!",
+      "post_failed": "فشل إرسال المنشور",
+      "prefs_failed": "فشل حفظ التفضيلات",
+      "write_something": "يرجى كتابة شيء ما",
+      "select_date": "يرجى اختيار تاريخ",
+      "something_wrong": "حدث خطأ ما",
+      "select_language": "اختر اللغة",
+      "select_timezone": "اختر المنطقة الزمنية",
+      "first_tweet_placeholder": "مرحباً بالعالم! هذه أول تغريدة لي عبر AstraPost.",
+      "pick_date": "اختر تاريخاً",
+      "select_time": "اختر الوقت"
+    },
+    "sign_in_with_x": "تسجيل الدخول باستخدام X",
+    "loading": "جاري التحميل...",
+    "redirecting": "جاري التوجيه...",
+    "sign_in_error": "فشل التوجيه إلى X. يرجى المحاولة مرة أخرى.",
+    "sign_in_aria": "تسجيل الدخول باستخدام X"
   },
   "dashboard_shell": {
     "open_navigation": "فتح التنقل",
     "close_navigation": "إغلاق التنقل",
     "switch_language": "تغيير اللغة",
     "switch_language_failed": "فشل تغيير اللغة",
-    "notifications": "الإشعارات",
+    "notifications": {
+      "label": "الإشعارات",
+      "mark_all_read_success": "تم تعليم جميع الإشعارات كمقروءة",
+      "mark_all_read_failed": "فشل تعليم الكل كمقروء"
+    },
     "mark_all_read": "تحديد الكل كمقروء",
     "no_notifications": "لا توجد إشعارات",
     "unread_count": "{count, plural, zero {لا إشعارات غير مقروءة} one {إشعار واحد غير مقروء} two {إشعاران غير مقروءان} few {{count} إشعارات غير مقروءة} many {{count} إشعاراً غير مقروء} other {{count} إشعار غير مقروء}}",
     "theme_switch": "تغيير المظهر",
+    "toggle_theme": "تغيير المظهر",
+    "theme_light": "فاتح",
+    "theme_dark": "داكن",
+    "theme_system": "النظام",
     "account_switcher": {
       "label": "تغيير الحساب",
       "personal_workspace": "مساحة العمل الشخصية",
@@ -478,7 +509,29 @@
       "long": "منشور طويل"
     },
     "over_standard_limit_warning": "هذا يتجاوز 280 حرفاً.",
-    "exceeds_280_thread_warning": "يتجاوز 280 حرفاً — تستخدم سلاسل التغريدات الطول القياسي"
+    "exceeds_280_thread_warning": "يتجاوز 280 حرفاً — تستخدم سلاسل التغريدات الطول القياسي",
+    "toasts": {
+      "save_template_failed": "فشل حفظ القالب",
+      "max_images": "4 صور كحد أقصى لكل تغريدة",
+      "inspiration_load_failed": "فشل تحميل مواضيع الإلهام",
+      "history_restored_thread": "تم استعادة السلسلة من السجل",
+      "history_restored_content": "تم استعادة المحتوى من السجل",
+      "history_restored_translation": "تم استعادة الترجمة من السجل",
+      "template_applied": "تم تطبيق القالب!",
+      "post_restored": "تم استعادة المنشور",
+      "generation_failed": "فشل التوليد. يرجى المحاولة مرة أخرى.",
+      "thread_restored": "تم استعادة السلسلة",
+      "select_template_first": "يرجى اختيار قالب أولاً",
+      "topic_min_length": "يجب أن يكون الموضوع 3 أحرف على الأقل",
+      "content_restored": "تم استعادة المحتوى",
+      "changes_undone": "تم التراجع عن التغييرات",
+      "add_content_to_translate": "يرجى إضافة محتوى للترجمة",
+      "translation_undone": "تم التراجع عن الترجمة",
+      "rewrite_undone": "تم التراجع عن إعادة الكتابة",
+      "max_media": "4 وسائط كحد أقصى لكل تغريدة",
+      "wait_for_upload": "يرجى الانتظار حتى اكتمال رفع جميع الوسائط.",
+      "thread_generated": "تم توليد السلسلة!"
+    }
   },
   "queue": {
     "title": "قائمة الانتظار",
@@ -513,7 +566,14 @@
     "failed_posts_heading": "المنشورات الفاشلة",
     "retry_failed_hint": "أعد المحاولة أو عدل المحتوى الفاشل بسرعة",
     "all_clear": "كل شيء على ما يرام!",
-    "no_failed_posts": "لا توجد منشورات فاشلة. جميع مهام قائمة الانتظار سليمة."
+    "no_failed_posts": "لا توجد منشورات فاشلة. جميع مهام قائمة الانتظار سليمة.",
+    "toasts": {
+      "retry_scheduled": "تمت جدولة إعادة المحاولة",
+      "post_cancelled": "تم إلغاء المنشور",
+      "something_wrong": "حدث خطأ ما",
+      "post_published": "تم نشر المنشور بنجاح",
+      "bulk_update_failed": "تعذر تحديث بعض المنشورات"
+    }
   },
   "calendar": {
     "title": "التقويم",
@@ -531,7 +591,12 @@
     "paste_tweets": "الصق تغريداتك هنا، واحدة في كل سطر...",
     "import_button": "استيراد",
     "importing": "جارٍ الاستيراد...",
-    "import_csv": "استيراد CSV"
+    "import_csv": "استيراد CSV",
+    "toasts": {
+      "rescheduled": "تمت إعادة جدولة المنشور",
+      "reschedule_failed": "فشلت إعادة جدولة المنشور",
+      "rescheduled_short": "تمت إعادة الجدولة"
+    }
   },
   "drafts": {
     "title": "المسودات",
@@ -584,22 +649,84 @@
     "connect_x_cta": "اربط حساب X لعرض التحليلات",
     "no_data_cta": "لا توجد بيانات تحليلية بعد. ابدأ بالنشر!",
     "impressions_history_cta": "قم بالترقية لعرض سجل مرات الظهور",
-    "engagement_history_cta": "قم بالترقية لعرض سجل التفاعل"
+    "engagement_history_cta": "قم بالترقية لعرض سجل التفاعل",
+    "toasts": {
+      "refresh_queued": "تمت جدولة التحديث",
+      "export_failed": "فشل تصدير التحليلات"
+    }
   },
   "analytics_viral": {
     "title": "محلل الفيروسية",
-    "description": "تحليل اتجاهات المحتوى الفيروسي"
+    "description": "تحليل اتجاهات المحتوى الفيروسي",
+    "unlock_title": "اكتشف رؤى الانتشار",
+    "unlock_description": "انشر 5+ تغريدات مع 100+ ظهور لفتح تحليل مدعوم بالذكاء الاصطناعي لأنماط المحتوى الأعلى أداءً.",
+    "cards": {
+      "top_hashtags": "أفضل الوسوم",
+      "top_hashtags_desc": "الوسوم التي تحقق أكبر قدر من التفاعل",
+      "top_keywords": "أفضل الكلمات المفتاحية",
+      "top_keywords_desc": "أنماط الكلمات التي تتفاعل مع جمهورك",
+      "tweet_length": "أداء طول التغريدة",
+      "tweet_length_desc": "أي الأطوال تحقق أفضل أداء لك",
+      "best_days": "أفضل أيام النشر",
+      "best_days_desc": "الأيام التي يحصل فيها محتواك على أكبر قدر من التفاعل",
+      "best_hours": "أفضل ساعات النشر",
+      "best_hours_desc": "التفاعل على مدار 24 ساعة — أفضل 3 مميزة",
+      "content_types": "أداء نوع المحتوى",
+      "content_types_desc": "أنواع المحتوى الأفضل أداءً لك"
+    },
+    "empty": {
+      "no_hashtags": "لا توجد بيانات وسوم بعد",
+      "no_keywords": "لا توجد بيانات كلمات مفتاحية بعد",
+      "no_length": "لا توجد بيانات طول بعد",
+      "no_days": "لا توجد بيانات أيام بعد",
+      "no_content_types": "لا توجد بيانات نوع محتوى بعد"
+    },
+    "length_legend": "قصير <100 · متوسط 100–200 · طويل >200 حرف",
+    "toasts": {
+      "report_copied": "تم نسخ التقرير إلى الحافظة",
+      "csv_downloaded": "تم تنزيل CSV"
+    }
   },
   "analytics_competitor": {
     "title": "تحليل المنافسين",
-    "description": "تتبع وتحليل أداء المنافسين"
+    "description": "تتبع وتحليل أداء المنافسين",
+    "username_label": "اسم مستخدم X",
+    "charts": {
+      "hashtag_prominence": "بروز الوسوم",
+      "content_mix": "مزيج المحتوى"
+    },
+    "empty": {
+      "no_hashtags": "لم يتم العثور على وسوم",
+      "no_data": "لم يتم العثور على بيانات",
+      "no_content_types": "لم يتم العثور على أنواع محتوى"
+    },
+    "toasts": {
+      "enter_username": "يرجى إدخال اسم مستخدم",
+      "analysis_failed": "فشل تحليل الحساب",
+      "analysis_failed_retry": "فشل تحليل الحساب. يرجى المحاولة مرة أخرى."
+    }
   },
   "achievements": {
     "title": "الإنجازات",
     "description": "تتبع معالمك ومكافآتك",
     "unlocked": "مفتوح",
     "locked": "مقفل",
-    "progress": "التقدم"
+    "progress": "التقدم",
+    "empty_title": "لا توجد إنجازات بعد",
+    "empty_description": "ابدأ في إنشاء محتوى لفتح الشارات وتتبع تقدمك.",
+    "create_first_post": "أنشئ أول منشور لك",
+    "view_analytics": "عرض التحليلات",
+    "unlock_message": "افتح الشارات عن طريق تنمية جمهورك والنشر باستمرار.",
+    "milestones": {
+      "first_post": "أول منشور",
+      "first_post_desc": "نشرت أول منشور لك",
+      "10_posts": "منشئ منتظم",
+      "10_posts_desc": "نشرت 10 منشورات",
+      "100_followers": "جمهور متنامٍ",
+      "100_followers_desc": "وصلت إلى 100 متابع",
+      "10_day_streak": "متألق",
+      "10_day_streak_desc": "نشرت لمدة 10 أيام متتالية"
+    }
   },
   "referrals": {
     "title": "الإحالات",
@@ -607,7 +734,23 @@
     "invite_link": "رابط الدعوة الخاص بك",
     "copied": "تم النسخ!",
     "referral_count": "الإحالات",
-    "rewards": "المكافآت"
+    "rewards": "المكافآت",
+    "total_referrals": "إجمالي الإحالات",
+    "friends_joined": "أصدقاء انضموا باستخدام كودك",
+    "earned_credits": "الرصيد المكتسب",
+    "available_for_invoice": "متاح للفاتورة القادمة",
+    "share_your_link": "شارك رابطك",
+    "share_description": "شارك هذا الرابط مع أصدقائك لتربح مكافآت.",
+    "referral_link_label": "رابط الإحالة",
+    "your_code": "كودك",
+    "generating": "جارٍ التوليد...",
+    "how_it_works": "كيف تعمل",
+    "how_step_1": "شارك رابط أو كود الإحالة الفريد الخاص بك.",
+    "how_step_2": "يسجل الأصدقاء ويحصلون على فترة تجريبية ممتدة 21 يوماً.",
+    "how_step_3": "تربح رصيد 5$ عن كل صديق يشترك في Pro.",
+    "no_referrals_yet": "لا توجد إحالات بعد",
+    "empty_description": "شارك رابط الإحالة الفريد الخاص بك مع الأصدقاء لبدء كسب الرصيد. كل صديق يشترك يمنحك رصيد 5$ في حسابك.",
+    "copy_referral_link": "نسخ رابط الإحالة"
   },
   "affiliate": {
     "title": "لوحة الشركاء",
@@ -615,7 +758,68 @@
     "earnings": "الأرباح",
     "clicks": "النقرات",
     "conversions": "التحويلات",
-    "link": "رابط الشريك"
+    "link": "رابط الشريك",
+    "product_details": "تفاصيل المنتج",
+    "product_url_label": "رابط المنتج",
+    "product_url_placeholder": "https://amazon.com/product...",
+    "product_url_help": "الصق رابط المنتج الذي تريد الترويج له.",
+    "platform_label": "المنصة",
+    "platforms": {
+      "amazon": "أمازون",
+      "noon": "نون",
+      "aliexpress": "علي إكسبريس",
+      "other": "أخرى"
+    },
+    "language_label": "لغة التغريدة",
+    "languages": {
+      "ar": "العربية",
+      "en": "الإنجليزية",
+      "fr": "الفرنسية",
+      "de": "الألمانية",
+      "es": "الإسبانية",
+      "tr": "التركية"
+    },
+    "tag_label": "وسم الشريك (اختياري)",
+    "tag_placeholder_amazon": "your-tag-20",
+    "tag_placeholder_other": "كود الخصم / المعرّف",
+    "tag_help": "سيُضاف وسم الشريك الخاص بك إلى التغريدة المُنشأة.",
+    "generating": "جاري التحليل... ({elapsed} ث)",
+    "generate_tweet": "توليد تغريدة",
+    "generated_result": "النتيجة المُنشأة",
+    "copy_aria_label": "نسخ تغريدة التسويق",
+    "copied_button": "تم النسخ!",
+    "copy_button": "نسخ",
+    "compose_button": "تحرير",
+    "detected_prefix": "تم التعرّف:",
+    "empty_title": "ستظهر تغريدتك التسويقية هنا",
+    "empty_description": "الصق رابط منتج أعلاه وانقر على \"توليد تغريدة\"",
+    "recent_generations": "آخر التوليدات",
+    "loading": "جاري تحميل آخر التوليدات...",
+    "refresh": "تحديث",
+    "no_links_title": "لا توجد روابط تسويقية بعد",
+    "no_links_description": "ولّد أول تغريدة تسويقية لك أعلاه لبدء تتبع النقرات والتحويلات.",
+    "table": {
+      "product": "المنتج",
+      "platform": "المنصة",
+      "clicks": "النقرات",
+      "generated_content": "المحتوى المُنشأ",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "product_thumbnail": "صورة المنتج",
+      "unknown": "غير معروف",
+      "unknown_product": "منتج غير معروف",
+      "view_product": "عرض المنتج",
+      "scheduled": "مجدول",
+      "generated": "مُنشأ",
+      "copy_tweet": "نسخ التغريدة",
+      "schedule": "جدولة"
+    },
+    "toasts": {
+      "generation_failed": "فشل توليد تغريدة التسويق",
+      "copied": "تم النسخ إلى الحافظة",
+      "history_failed": "فشل تحميل السجل"
+    }
   },
   "jobs": {
     "title": "المهام",
@@ -733,6 +937,10 @@
     "errors": {
       "generation_failed": "فشل توليد المحتوى. يرجى المحاولة مرة أخرى.",
       "quota_exceeded": "تم تجاوز حصة الذكاء الاصطناعي. رقِّ خطتك لتوليد المزيد من المحتوى."
+    },
+    "toasts": {
+      "copied": "تم النسخ إلى الحافظة",
+      "loaded_editor": "تم التحميل إلى المحرر"
     }
   },
   "ai_agentic": {
@@ -823,6 +1031,12 @@
       "discard_description": "سيتم حذف هذا الخيط وستعود إلى شاشة الإدخال. لا يمكن التراجع عن هذا الإجراء.",
       "cancel_button": "إلغاء",
       "discard_button": "تجاهل"
+    },
+    "toasts": {
+      "pipeline_failed": "فشل المسار. يرجى المحاولة مرة أخرى.",
+      "enhancement_failed": "فشل التحسين. يرجى المحاولة مرة أخرى.",
+      "session_resumed": "تم استئناف الجلسة السابقة.",
+      "rewrite_failed": "فشلت إعادة الكتابة"
     }
   },
   "ai_bio": {
@@ -849,7 +1063,10 @@
     "open_x_settings": "فتح إعدادات X",
     "copy": "نسخ",
     "copied": "تم النسخ!",
-    "error": "فشل توليد خيارات السيرة الذاتية. يرجى المحاولة مرة أخرى."
+    "error": "فشل توليد خيارات السيرة الذاتية. يرجى المحاولة مرة أخرى.",
+    "toasts": {
+      "copied": "تم النسخ إلى الحافظة"
+    }
   },
   "ai_reply": {
     "title": "مولد الردود المقترحة",
@@ -885,7 +1102,10 @@
     "fetch_error": "فشل معاينة التغريدة. يرجى المحاولة مرة أخرى.",
     "generation_error": "فشل توليد الردود. يرجى المحاولة مرة أخرى.",
     "3_replies_appear": "ستظهر 3 مقترحات للرد هنا",
-    "works_with_any": "يعمل مع أي تغريدة عامة من x.com أو twitter.com"
+    "works_with_any": "يعمل مع أي تغريدة عامة من x.com أو twitter.com",
+    "toasts": {
+      "copied": "تم النسخ إلى الحافظة"
+    }
   },
   "ai_calendar": {
     "title": "تقويم محتوى الذكاء الاصطناعي",
@@ -914,6 +1134,14 @@
       "thread": "خيط",
       "poll": "استطلاع رأي",
       "question": "سؤال"
+    },
+    "toasts": {
+      "enter_topic": "يرجى إدخال مجال تخصصك أو موضوعك",
+      "generation_failed": "فشل توليد التقويم. يرجى المحاولة مرة أخرى.",
+      "load_accounts_failed": "فشل تحميل الحسابات",
+      "select_account": "يرجى اختيار حساب X",
+      "select_start_date": "يرجى تحديد تاريخ بداية للأسبوع الأول",
+      "schedule_failed": "فشل جدولة المنشورات. يرجى المحاولة مرة أخرى."
     }
   },
   "ai_history": {
@@ -928,6 +1156,17 @@
     "no_content": "لا يوجد محتوى",
     "reuse": "إعادة الاستخدام",
     "template_streamed": "تم بث المحتوى مباشرة إلى المحرر. أعد التوليد من مربع الحوار القوالب لإنتاج محتوى جديد."
+  },
+  "ai_image": {
+    "service_busy": "الخدمة مشغولة — جاري إعادة المحاولة تلقائياً...",
+    "switching_model": "جاري التبديل إلى النموذج الاحتياطي...",
+    "generated_success": "تم توليد الصورة بنجاح!",
+    "quota_reached": "لقد وصلت إلى الحد الأقصى الشهري لصور الذكاء الاصطناعي. قم بالترقية للمتابعة.",
+    "enter_prompt": "يرجى إدخال وصف أو كتابة محتوى التغريدة أولاً.",
+    "rate_limited": "تم تجاوز الحد الأقصى للمعدل. يرجى الانتظار لحظة.",
+    "generation_failed": "فشل توليد الصورة. يرجى المحاولة مرة أخرى.",
+    "download_failed": "فشل تنزيل الصورة",
+    "attached": "تم إرفاق الصورة بالتغريدة!"
   },
   "inspiration": {
     "title": "الإلهام",
@@ -1346,6 +1585,9 @@
       "account_deactivated": "تم تعطيل الحساب @{username} بنجاح",
       "account_deactivate_failed": "فشل تعطيل الحساب",
       "default_update_failed": "فشل تحديث الإعداد الافتراضي"
+    },
+    "toasts": {
+      "resume_onboarding_failed": "فشل استئناف الإعداد"
     }
   },
   "hashtag_generator": {
@@ -1503,6 +1745,13 @@
     "type_imp": "تحسين",
     "type_fix": "إصلاح"
   },
+  "command_palette": {
+    "open": "افتح لوحة الأوامر",
+    "title": "لوحة الأوامر",
+    "hint": "اضغط ESC للإغلاق، أو اكتب للبحث",
+    "placeholder": "ابحث عن الأوامر...",
+    "no_results": "لا توجد أوامر لـ \"{search}\""
+  },
   "docs": {
     "badge": "التوثيق",
     "title": "كيف يمكننا مساعدتك؟",
@@ -1631,5 +1880,13 @@
     "subtitle": "ساعدنا في بناء الميزات التي تحتاجها. أرسل أفكارك واقتراحاتك أدناه — يراجع فريق التطوير كل مشاركة.",
     "always_improving": "نسعى دائماً لإيجاد طرق للتحسين",
     "feedback_cta": "أخبرنا بما تود رؤيته لاحقاً. كل مشاركة تساعد في تشكيل مستقبل AstraPost."
+  },
+  "trial_banner": {
+    "expired": "انتهت الفترة التجريبية المجانية. قم بالترقية للاستمرار في استخدام ميزات Pro.",
+    "upgrade_now": "ترقية الآن",
+    "dismiss": "إخفاء شريط التجربة",
+    "ending_today": "تنتهي الفترة التجريبية المجانية اليوم.",
+    "ending_in_days": "تنتهي الفترة التجريبية المجانية خلال {days} أيام.",
+    "upgrade_to_pro": "الترقية إلى Pro"
   }
 }

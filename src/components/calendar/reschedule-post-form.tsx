@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ export function ReschedulePostForm({
   postId: string;
   initialDate: string;
 }) {
+  const t = useTranslations("calendar");
   const router = useRouter();
   const [scheduledAt, setScheduledAt] = useState(initialDate);
   const [isPending, setIsPending] = useState(false);
@@ -41,7 +43,7 @@ export function ReschedulePostForm({
               const body = await res.json().catch(() => null);
               throw new Error(body?.error || "Reschedule failed");
             }
-            toast.success("Rescheduled");
+            toast.success(t("toasts.rescheduled_short"));
             router.refresh();
           } catch (err) {
             toast.error(err instanceof Error ? err.message : "Reschedule failed");

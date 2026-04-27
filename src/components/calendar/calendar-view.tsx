@@ -209,10 +209,10 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
 
       if (!res.ok) throw new Error("Failed to reschedule");
 
-      toast.success("Post rescheduled");
+      toast.success(t("toasts.rescheduled"));
       router.refresh();
     } catch (error) {
-      toast.error("Failed to reschedule post");
+      toast.error(t("toasts.reschedule_failed"));
     } finally {
       setIsUpdating(false);
     }

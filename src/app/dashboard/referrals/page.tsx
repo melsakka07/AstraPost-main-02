@@ -64,7 +64,7 @@ export default async function ReferralsPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("total_referrals")}</CardTitle>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -82,12 +82,12 @@ export default async function ReferralsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{referralCount}</div>
-                <p className="text-muted-foreground text-xs">Friends joined using your code</p>
+                <p className="text-muted-foreground text-xs">{t("friends_joined")}</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Earned Credits</CardTitle>
+                <CardTitle className="text-sm font-medium">{t("earned_credits")}</CardTitle>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
@@ -103,7 +103,7 @@ export default async function ReferralsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">${currentUser.referralCredits || 0}</div>
-                <p className="text-muted-foreground text-xs">Available for next invoice</p>
+                <p className="text-muted-foreground text-xs">{t("available_for_invoice")}</p>
               </CardContent>
             </Card>
           </div>
@@ -111,15 +111,13 @@ export default async function ReferralsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="md:col-span-1">
               <CardHeader>
-                <CardTitle>Share Your Link</CardTitle>
-                <CardDescription>
-                  Share this link with your friends to earn rewards.
-                </CardDescription>
+                <CardTitle>{t("share_your_link")}</CardTitle>
+                <CardDescription>{t("share_description")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Referral Link
+                    {t("referral_link_label")}
                   </label>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input readOnly value={referralLink} className="flex-1" />
@@ -131,12 +129,12 @@ export default async function ReferralsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                    Your Code
+                    {t("your_code")}
                   </label>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Input
                       readOnly
-                      value={currentUser.referralCode || "Generating..."}
+                      value={currentUser.referralCode || t("generating")}
                       className="flex-1"
                     />
                     <CopyButton
@@ -151,13 +149,13 @@ export default async function ReferralsPage() {
 
             <Card className="md:col-span-1">
               <CardHeader>
-                <CardTitle>How it works</CardTitle>
+                <CardTitle>{t("how_it_works")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="text-muted-foreground list-disc space-y-2 pl-4 text-sm">
-                  <li>Share your unique referral link or code.</li>
-                  <li>Friends sign up and get a 21-day extended trial.</li>
-                  <li>You get $5 credit for every friend who subscribes to Pro.</li>
+                  <li>{t("how_step_1")}</li>
+                  <li>{t("how_step_2")}</li>
+                  <li>{t("how_step_3")}</li>
                 </ul>
               </CardContent>
             </Card>

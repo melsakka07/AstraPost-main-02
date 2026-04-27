@@ -11,6 +11,7 @@ import {
   CalendarCheck,
   User,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +108,7 @@ function getWeekLabel(weekNum: number, baseDate: Date): string {
 }
 
 export default function ContentCalendarPage() {
+  const t = useTranslations("ai_calendar");
   const router = useRouter();
   const { openWithContext } = useUpgradeModal();
 
@@ -130,7 +132,7 @@ export default function ContentCalendarPage() {
 
   const handleGenerate = async () => {
     if (!niche.trim()) {
-      toast.error("Please enter your niche or topic focus");
+      toast.error(t("toasts.enter_topic"));
       return;
     }
 
@@ -173,7 +175,7 @@ export default function ContentCalendarPage() {
       setItems(data.items ?? []);
       setGeneratedAt(new Date());
     } catch {
-      toast.error("Failed to generate calendar. Please try again.");
+      toast.error(t("toasts.generation_failed"));
     } finally {
       setIsGenerating(false);
     }
@@ -244,10 +246,10 @@ export default function ContentCalendarPage() {
         const def = accounts.find((a) => a.isDefault) ?? accounts[0];
         if (def) setScheduleAllAccountId(def.id);
       } else {
-        toast.error("Failed to load accounts");
+        toast.error(t("toasts.load_accounts_failed"));
       }
     } catch {
-      toast.error("Failed to load accounts");
+      toast.error(t("toasts.load_accounts_failed"));
     } finally {
       setScheduleAllFetching(false);
     }
@@ -255,11 +257,11 @@ export default function ContentCalendarPage() {
 
   const handleScheduleAll = async () => {
     if (!scheduleAllAccountId) {
-      toast.error("Please select an X account");
+      toast.error(t("toasts.select_account"));
       return;
     }
     if (!scheduleAllStartDate) {
-      toast.error("Please set a start date for Week 1");
+      toast.error(t("toasts.select_start_date"));
       return;
     }
 
@@ -307,7 +309,7 @@ export default function ContentCalendarPage() {
       toast.warning(`${successCount} scheduled, ${errorCount} failed`);
       router.push("/dashboard/queue");
     } else {
-      toast.error("Failed to schedule posts. Please try again.");
+      toast.error(t("toasts.schedule_failed"));
     }
   };
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Command, Search, ChevronRight, Sun, Moon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ interface CommandItem {
 }
 
 export function CommandPalette() {
+  const t = useTranslations("command_palette");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const router = useRouter();
@@ -125,7 +127,7 @@ export function CommandPalette() {
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Open command palette"
+        aria-label={t("open")}
         className="h-9 w-9 shrink-0 lg:hidden"
         onClick={() => setOpen(true)}
       >
@@ -137,18 +139,16 @@ export function CommandPalette() {
           <DialogHeader className="space-y-0 border-b px-4 py-3">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Command className="h-4 w-4" />
-              Command Palette
+              {t("title")}
             </DialogTitle>
-            <DialogDescription className="text-xs">
-              Press ESC to close, or type to search
-            </DialogDescription>
+            <DialogDescription className="text-xs">{t("hint")}</DialogDescription>
           </DialogHeader>
 
           <div className="border-b px-3 py-2">
             <div className="relative">
               <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
               <Input
-                placeholder="Search commands..."
+                placeholder={t("placeholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="border-0 pl-8 focus-visible:ring-0"
@@ -160,7 +160,7 @@ export function CommandPalette() {
           <div className="max-h-[calc(70vh-120px)] overflow-y-auto">
             {Object.entries(groupedItems).length === 0 ? (
               <div className="text-muted-foreground p-8 text-center text-sm">
-                No commands found for &quot;{search}&quot;
+                {t("no_results", { search })}
               </div>
             ) : (
               Object.entries(groupedItems).map(([category, items]) => (

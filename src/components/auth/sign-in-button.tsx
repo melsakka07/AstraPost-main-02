@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { signIn, useSession } from "@/lib/auth-client";
 
 export function SignInButton({ referralCode }: { referralCode?: string }) {
   const { data: session, isPending: sessionPending } = useSession();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("auth");
 
   if (sessionPending) {
     return (
@@ -29,7 +31,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
           />
         </svg>
-        Loading...
+        {t("loading")}
       </button>
     );
   }
@@ -52,7 +54,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
         callbackURL: "/dashboard",
       });
     } catch {
-      setError("Failed to redirect to X. Please try again.");
+      setError(t("sign_in_error"));
       setIsPending(false);
     }
   }
@@ -64,7 +66,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
         onClick={handleSignIn}
         disabled={isPending}
         className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:bg-black/90 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
-        aria-label="Sign in with X"
+        aria-label={t("sign_in_aria")}
       >
         {isPending ? (
           <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
@@ -87,7 +89,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
           </svg>
         )}
-        {isPending ? "Redirecting..." : "Sign in with X"}
+        {isPending ? t("redirecting") : t("sign_in_with_x")}
       </button>
 
       {error && (
