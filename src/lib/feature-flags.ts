@@ -1,3 +1,5 @@
+import "server-only";
+
 import { eq } from "drizzle-orm";
 import { cachedQuery, cache } from "@/lib/cache";
 import { db } from "@/lib/db";

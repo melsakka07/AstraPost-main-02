@@ -23,10 +23,7 @@ export function LogoMark({ size = 24, className, ...props }: LogoMarkProps) {
       className={className}
       {...props}
     >
-      <path
-        d="M28.0 0 Q33.6 22.4 56 28.0 Q33.6 33.6 28.0 56 Q22.4 33.6 0 28.0 Q22.4 22.4 28.0 0 Z"
-        fill="currentColor"
-      />
+      <path d="M28 0 Q35 21 56 28 Q35 35 28 56 Q21 35 0 28 Q21 21 28 0 Z" fill="currentColor" />
     </svg>
   );
 }

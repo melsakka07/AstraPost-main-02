@@ -7,7 +7,7 @@ export function SidebarSkeleton() {
     <div className="bg-card border-border hidden flex-col border-r md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0">
       <div className="flex h-full flex-col">
         {/* Brand */}
-        <div className="border-border flex h-16 shrink-0 items-center gap-2 border-b px-6">
+        <div className="border-border flex h-14 shrink-0 items-center gap-2 border-b px-6">
           <Skeleton className="h-6 w-6 rounded-md" />
           <Skeleton className="h-5 w-24 rounded-md" />
         </div>

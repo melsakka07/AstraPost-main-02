@@ -1,3 +1,5 @@
+import "server-only";
+
 import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { cachedQuery } from "@/lib/cache";
 import { db } from "@/lib/db";

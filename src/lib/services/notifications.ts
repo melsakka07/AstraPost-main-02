@@ -1,3 +1,5 @@
+import "server-only";
+
 import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";

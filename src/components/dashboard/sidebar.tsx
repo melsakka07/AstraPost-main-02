@@ -130,11 +130,11 @@ function SidebarContent({
       {/* Brand */}
       <Link
         href="/"
-        className="border-border flex h-16 shrink-0 items-center gap-2 border-b px-6 transition-opacity hover:opacity-80 rtl:flex-row-reverse"
+        className="border-border flex h-14 shrink-0 items-center gap-2 border-b px-6 text-xl font-bold transition-opacity hover:opacity-80 rtl:flex-row-reverse"
         aria-label={t("go_home")}
       >
         <LogoMark size={24} className="text-primary" />
-        <span className="text-xl font-bold tracking-tight">AstraPost</span>
+        <span>AstraPost</span>
       </Link>
 
       {/* Navigation sections */}

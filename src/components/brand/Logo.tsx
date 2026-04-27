@@ -50,10 +50,7 @@ function LogoLtr({ height, className, ...props }: Omit<LogoProps, "variant">) {
       {...props}
     >
       <g transform="translate(0 17.0)">
-        <path
-          d="M28.0 0 Q33.6 22.4 56 28.0 Q33.6 33.6 28.0 56 Q22.4 33.6 0 28.0 Q22.4 22.4 28.0 0 Z"
-          fill="currentColor"
-        />
+        <path d="M28 0 Q35 21 56 28 Q35 35 28 56 Q21 35 0 28 Q21 21 28 0 Z" fill="currentColor" />
       </g>
       <line
         x1="80"
@@ -179,10 +176,7 @@ function LogoRtl({ height, className, ...props }: Omit<LogoProps, "variant">) {
         opacity="0.2"
       />
       <g transform="translate(235.27 17.0)">
-        <path
-          d="M28.0 0 Q33.6 22.4 56 28.0 Q33.6 33.6 28.0 56 Q22.4 33.6 0 28.0 Q22.4 22.4 28.0 0 Z"
-          fill="currentColor"
-        />
+        <path d="M28 0 Q35 21 56 28 Q35 35 28 56 Q21 35 0 28 Q21 21 28 0 Z" fill="currentColor" />
       </g>
     </svg>
   );

@@ -979,3 +979,41 @@ body:has([data-dashboard-layout]) [data-main-content] {
 [dir="rtl"] .rtl-mirror {
   transform: scaleX(-1);
 }
+
+/* ---------------------------------------------------------------------------
+   Arabic descender fix
+   Cairo (and most Arabic fonts) have descenders that extend further below
+   the baseline than Latin scripts. Tailwind's tight line-height utilities
+   (leading-tight, leading-none) and default heading line-heights clip these
+   at large sizes — visible on letters like ج ح ع ي. Loosen line-height for
+   Arabic-locale content only, leaving Latin typography unchanged.
+   --------------------------------------------------------------------------- */
+[dir="rtl"] h1,
+.font-arabic h1 {
+  line-height: 1.35;
+}
+
+[dir="rtl"] h2,
+.font-arabic h2 {
+  line-height: 1.4;
+}
+
+[dir="rtl"] h3,
+.font-arabic h3 {
+  line-height: 1.45;
+}
+
+[dir="rtl"] .leading-none,
+.font-arabic .leading-none {
+  line-height: 1.3;
+}
+
+[dir="rtl"] .leading-tight,
+.font-arabic .leading-tight {
+  line-height: 1.4;
+}
+
+[dir="rtl"] .leading-snug,
+.font-arabic .leading-snug {
+  line-height: 1.5;
+}

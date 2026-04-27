@@ -1,3 +1,5 @@
+import "server-only";
+
 import { eq, and, gte, ne, sql, type ExtractTablesWithRelations } from "drizzle-orm";
 import { type PgQueryResultHKT, type PgTransaction } from "drizzle-orm/pg-core";
 import { cache } from "@/lib/cache";

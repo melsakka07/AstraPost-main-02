@@ -1,8 +1,10 @@
+import "server-only";
+
 import { eq, and, count, gte, desc } from "drizzle-orm";
 import { nanoid } from "nanoid";
-import { MILESTONES } from "@/lib/milestones";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { MILESTONES } from "@/lib/milestones";
 import { milestones, posts, xAccounts } from "@/lib/schema";
 
 export { MILESTONES };

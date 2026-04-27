@@ -1,5 +1,100 @@
 # Latest Updates
 
+## 2026-04-27: Fix — Logo Lockup Consistency Across All Pages (Brand + L-Junction)
+
+**Problem:** AstraPost lockup rendered with different size, weight, glyph, and row-height across surfaces:
+
+1. Landing `site-header` brand row was ~48 px (`py-3`).
+2. Dashboard `sidebar` brand link had **no fixed height** → ~30 px content-driven row, plus the sibling `sidebar-skeleton` reserved `h-16` (64 px) → noticeable layout shift on first paint.
+3. Onboarding header used `<Rocket>` (lucide) + `text-lg` instead of `<LogoMark>` + `text-xl font-bold` — wrong glyph entirely.
+4. After a first pass aligning everything to `h-12` (48 px), the sidebar brand row's bottom border landed 8 px above the bottom border of `DashboardHeader` (which is `h-14` / 56 px), breaking the L-junction at the sidebar/header corner.
+
+**Fix — single canonical lockup:** Every primary surface now renders `LogoMark size={24}` + `text-xl font-bold "AstraPost"` inside an explicit fixed-height row. RTL handled by `flex-row-reverse` only where the parent doesn't already inherit dir; dark/light is `currentColor`-driven via Tailwind text utilities — no further changes needed.
+
+**Fix — L-junction alignment:** Sidebar brand row + its skeleton bumped from `h-12` → `h-14` so they match `DashboardHeader`'s `h-14`. The brand row's bottom border now sits flush with the header's bottom border at the corner, producing a clean L. The standalone onboarding header stays at `h-12` (no adjacent top bar to align against).
+
+**Files modified:**
+
+- `src/components/dashboard/sidebar.tsx` — brand `<Link>` gets explicit `h-14`
+- `src/components/dashboard/sidebar-skeleton.tsx` — brand row `h-16` → `h-14` (eliminates first-paint layout shift)
+- `src/app/dashboard/layout.tsx` — onboarding header `<Rocket>` + `text-lg` replaced with `<LogoMark size={24}>` + `text-xl font-bold`; height set to `h-12`; dropped `Rocket` import, added `LogoMark` import
+
+**Heights summary (new canonical values):**
+
+| Surface                 | File                   | Height                                         |
+| ----------------------- | ---------------------- | ---------------------------------------------- |
+| Landing site-header     | `site-header.tsx`      | `py-3` (~48 px)                                |
+| Dashboard sidebar brand | `sidebar.tsx`          | `h-14` (56 px) — matches `DashboardHeader`     |
+| Sidebar skeleton brand  | `sidebar-skeleton.tsx` | `h-14` (56 px)                                 |
+| Dashboard top header    | `dashboard-header.tsx` | `h-14` (56 px)                                 |
+| Onboarding header       | `dashboard/layout.tsx` | `h-12` (48 px)                                 |
+| Footer mark             | `site-footer.tsx`      | `LogoMark size={20}` (intentional small scale) |
+
+**Verification:** `pnpm run check` passes (lint + typecheck + i18n keys aligned, en=ar=1598). Visual check across `/`, `/dashboard`, `/dashboard/onboarding` in EN + AR, light + dark — logo identical, no layout shift on sidebar skeleton swap, sidebar/header L-junction aligned.
+
+## 2026-04-27: Fix — Sparkle Logo Shape & Sidebar Consistency
+
+**Problem:** The AstraPost sparkle logo (LogoMark) appeared visually stretched in the lower half. The quadratic bezier control points at `(33.6, 22.4)` were too close to center (~7.9 units), creating deeply pinched arms. Additionally, the dashboard sidebar brand link used `h-16` + `tracking-tight` while the home page used natural height + no tracking, making the logo look different between pages.
+
+**Fix — sparkle path:** Changed control points from `(33.6, 22.4)` [~73% toward center] to `(35, 21)` [50% toward center], creating fatter, more visually balanced arms.
+
+Old: `M28.0 0 Q33.6 22.4 56 28.0 Q33.6 33.6 28.0 56 Q22.4 33.6 0 28.0 Q22.4 22.4 28.0 0 Z`
+New: `M28 0 Q35 21 56 28 Q35 35 28 56 Q21 35 0 28 Q21 21 28 0 Z`
+
+**Fix — sidebar consistency:** Aligned `sidebar.tsx` brand link to match `site-header.tsx`:
+
+- Removed `h-16` (was forcing 64px height → extra vertical space → stretched appearance)
+- Moved `text-xl font-bold` from `<span>` to `<a>` (matches home page pattern)
+- Removed `tracking-tight` from `<span>`
+
+**Files modified:** `src/components/brand/LogoMark.tsx`, `src/components/brand/Logo.tsx`, `src/components/dashboard/sidebar.tsx`, + 14 `public/brand/` SVG assets
+
+## 2026-04-27: Fix — `server-only` Broke Tests and Worker
+
+**Problem:** Adding `import "server-only"` to 6 DB modules (see entry below) broke `pnpm test` (7 test files loaded 0 tests) and `pnpm run worker` (crashed at startup). The `server-only` package unconditionally throws at import time — only bundlers (webpack/turbopack) with the `"react-server"` export condition resolve it to its harmless `empty.js`. Vitest and tsx (Worker) both run raw Node.js which uses the `"default"` export condition → throws.
+
+**Root cause:** `server-only/index.js` always throws. Its `package.json` exports map `"react-server"` → `empty.js` (empty module) and `"default"` → `index.js` (throws). Next.js bundler uses the `"react-server"` condition; raw Node.js does not.
+
+**Fix — two runtimes, two mechanisms:**
+
+| Runtime      | Mechanism                                           | File                                              |
+| ------------ | --------------------------------------------------- | ------------------------------------------------- |
+| Vitest       | `resolve.alias` in config                           | `vitest.config.ts` → `vitest-server-only-stub.ts` |
+| Worker (tsx) | CJS `Module._resolveFilename` patch via `--require` | `scripts/server-only-stub.cjs` (preload)          |
+
+**Why CJS for the worker:** tsx transpiles TypeScript via CJS `require()` calls, which bypass ESM loader hooks. An ESM `register()` hook has no effect on CJS-loaded modules. The CJS preload monkey-patches `Module._resolveFilename` to redirect `"server-only"` → `empty.js` before tsx processes any files.
+
+**Files created:**
+
+- `vitest-server-only-stub.ts` — empty module, aliased by vitest config
+- `scripts/server-only-stub.cjs` — CJS preload for worker (and any `tsx`-based script)
+
+**Files modified:**
+
+- `vitest.config.ts` — added `"server-only"` alias
+- `package.json` — all 6 `tsx`-based scripts (`worker`, `tokens:rotate`, `tokens:encrypt-access`, `smoke:e2e`, `smoke:full`, `test:twitter-perms`) now include `--require ./scripts/server-only-stub.cjs`
+
+**Verification:** `pnpm test` → 28/28 files, 240/240 tests. `pnpm run worker` → starts successfully. `pnpm run check` → passes.
+
+## 2026-04-27: Server/Client Boundary — Safety Nets for DB Modules
+
+**Summary:** Added `import "server-only"` to 6 core `src/lib/` modules that instantiate or directly query the database: `db.ts`, `gamification.ts`, `services/ai-quota.ts`, `feature-flags.ts`, `services/notifications.ts`, and `middleware/require-plan.ts`. Without this guard, a future Client Component that transitively imports one of these modules would produce cryptic Webpack errors ("Module not found: Can't resolve 'fs'") instead of a clear build error pointing to the offending file.
+
+The described leak chain `milestone-list.tsx → gamification.ts → db.ts → postgres` was already resolved — `milestones.ts` (pure constants) had been extracted, and `milestone-list.tsx` imports from it, not from `gamification.ts`. No active client-bundle leaks exist; these are preventive safety nets.
+
+**Files modified:**
+
+- `src/lib/db.ts` — added `import "server-only"`
+- `src/lib/gamification.ts` — added `import "server-only"`
+- `src/lib/services/ai-quota.ts` — added `import "server-only"`
+- `src/lib/feature-flags.ts` — added `import "server-only"`
+- `src/lib/services/notifications.ts` — added `import "server-only"`
+- `src/lib/middleware/require-plan.ts` — added `import "server-only"`
+
+**New rule:** Any `src/lib/` module that imports from `db.ts` MUST include `import "server-only"` as its first line (added as Hard Rule #14 in CLAUDE.md).
+
+**Verification:** `pnpm build` passes clean (178 routes), `pnpm run check` passes (lint + typecheck + i18n).
+
 ## 2026-04-27: Brand Kit Reference Page Installation
 
 **Summary:** Installed a self-contained `/brand` reference page from `astrapost-brand-kit-page.zip`. The page documents the full AstraPost identity (logo system, color tokens, typography, component samples, downloadable assets) in one scrollable URL. It is a server component with a single client island (`CopyButton` for click-to-copy swatches). Marked `noindex, nofollow` — internal reference only.
