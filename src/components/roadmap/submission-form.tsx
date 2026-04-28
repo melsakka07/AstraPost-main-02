@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Lightbulb } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -25,27 +26,27 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-const feedbackSchema = z.object({
-  title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or fewer"),
-  description: z
-    .string()
-    .min(1, "Description is required")
-    .max(2000, "Description must be 2000 characters or fewer"),
-  category: z.enum(["feature", "bug", "other"]),
-});
-
-type FeedbackFormValues = z.infer<typeof feedbackSchema>;
-
 interface SubmissionFormProps {
   isLoggedIn: boolean;
 }
 
 export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
+  const t = useTranslations("roadmap");
+
+  const formSchema = z.object({
+    title: z.string().min(5, t("submit_validation_title_min")).max(100).trim(),
+    category: z.enum(["feature", "improvement", "bug", "other"], {
+      errorMap: () => ({ message: t("submit_validation_category") }),
+    } as any),
+    description: z.string().min(20, t("submit_validation_description_min")).max(2000).trim(),
+  });
+
+  type FormValues = z.infer<typeof formSchema>;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const form = useForm<FeedbackFormValues>({
-    resolver: zodResolver(feedbackSchema),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -53,9 +54,9 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
     },
   });
 
-  const onSubmit = async (data: FeedbackFormValues) => {
+  const onSubmit = async (data: FormValues) => {
     if (!isLoggedIn) {
-      toast.error("Please sign in to submit feedback");
+      toast.error(t("submit_toast_auth_required"));
       window.location.href = "/login";
       return;
     }
@@ -71,17 +72,15 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
       const result = await res.json();
 
       if (!res.ok) {
-        toast.error(result.error || "Failed to submit feedback");
+        toast.error(result.error || t("submit_toast_error_submit"));
         return;
       }
 
-      toast.success(
-        "Thank you for your feedback! Our development team will review your submission."
-      );
+      toast.success(t("submit_toast_success"));
       form.reset();
       setShowSuccess(true);
     } catch (error) {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(t("submit_toast_error_generic"));
     } finally {
       setIsSubmitting(false);
     }
@@ -91,12 +90,10 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
     return (
       <div className="border-border/50 from-muted/50 to-muted/20 rounded-2xl border bg-gradient-to-br p-8 text-center">
         <div className="mx-auto max-w-md space-y-4">
-          <h3 className="text-xl font-semibold">Sign in to Submit Feedback</h3>
-          <p className="text-muted-foreground">
-            Please sign in to share your ideas and help us improve AstraPost.
-          </p>
+          <h3 className="text-xl font-semibold">{t("submit_auth_title")}</h3>
+          <p className="text-muted-foreground">{t("submit_auth_message")}</p>
           <Button asChild className="w-full">
-            <a href="/login">Sign In</a>
+            <a href="/login">{t("submit_auth_button")}</a>
           </Button>
         </div>
       </div>
@@ -110,23 +107,18 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
             <Lightbulb className="h-8 w-8 text-green-600 dark:text-green-400" />
           </div>
-          <h3 className="text-xl font-semibold">Thank You!</h3>
-          <p className="text-muted-foreground mx-auto max-w-md">
-            Your feedback has been submitted successfully. Our development team will review your
-            submission and get back to you if needed.
-          </p>
+          <h3 className="text-xl font-semibold">{t("submit_success_title")}</h3>
+          <p className="text-muted-foreground mx-auto max-w-md">{t("submit_success_message")}</p>
           <Button variant="outline" onClick={() => setShowSuccess(false)}>
-            Submit Another Idea
+            {t("submit_success_another")}
           </Button>
         </div>
       ) : (
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Share Your Ideas</h3>
-              <p className="text-muted-foreground text-sm">
-                Help us build the features you need. Submit your ideas and suggestions below.
-              </p>
+              <h3 className="text-lg font-semibold">{t("submit_title")}</h3>
+              <p className="text-muted-foreground text-sm">{t("submit_subtitle")}</p>
             </div>
 
             <FormField
@@ -134,9 +126,9 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>{t("submit_label_title")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Brief summary of your idea" {...field} />
+                    <Input placeholder={t("submit_placeholder_title")} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,10 +140,10 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t("submit_label_description")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Describe your idea in detail..."
+                      placeholder={t("submit_placeholder_description")}
                       className="min-h-[120px] resize-none"
                       {...field}
                     />
@@ -166,17 +158,20 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>{t("submit_label_category")}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
+                        <SelectValue placeholder={t("submit_placeholder_category")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="feature">Feature</SelectItem>
-                      <SelectItem value="bug">Bug Report</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="feature">{t("submit_category_feature")}</SelectItem>
+                      <SelectItem value="improvement">
+                        {t("submit_category_improvement")}
+                      </SelectItem>
+                      <SelectItem value="bug">{t("submit_category_bug")}</SelectItem>
+                      <SelectItem value="other">{t("submit_category_other")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -185,7 +180,7 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
             />
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit Feedback"}
+              {isSubmitting ? t("submit_button_submitting") : t("submit_button")}
             </Button>
           </form>
         </Form>

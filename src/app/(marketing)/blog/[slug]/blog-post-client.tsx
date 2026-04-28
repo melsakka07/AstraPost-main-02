@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Share2, BookOpen } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { MDXRemote } from "next-mdx-remote";
 import type { BlogPost } from "@/lib/blog";
 
@@ -96,6 +97,8 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
     return () => clearTimeout(timer);
   }, [post.slug]); // Only depend on slug to avoid re-running on content object changes
 
+  const t = useTranslations("blog");
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -124,7 +127,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
       <button
         onClick={handleShare}
         className="from-primary fixed right-6 bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
-        aria-label="Share article"
+        aria-label={t("share_article")}
       >
         <Share2 className="h-5 w-5" />
       </button>
@@ -135,7 +138,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
           <div className="bg-muted/30 border-border/50 rounded-xl border p-6">
             <h3 className="mb-4 flex items-center gap-2 font-semibold">
               <BookOpen className="h-5 w-5" />
-              Table of Contents
+              {t("table_of_contents")}
             </h3>
             <nav className="space-y-2">
               {headings.map((heading) => (

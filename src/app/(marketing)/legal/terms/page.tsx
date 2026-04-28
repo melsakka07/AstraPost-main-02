@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Scale, FileCheck, ShieldAlert, Mail } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,65 +18,69 @@ export async function generateMetadata(): Promise<Metadata> {
   );
 }
 
-export default function TermsPage() {
+interface Section {
+  number: string;
+  title: string;
+  content?: string;
+  items?: string[];
+}
+
+export default async function TermsPage() {
+  const t = await getTranslations("legal");
+
   const cards = [
     {
       icon: <Scale className="text-primary h-8 w-8" />,
-      title: "Fair Usage",
-      description: "Guidelines for using our platform responsibly.",
+      title: t("terms_card_1_title"),
+      description: t("terms_card_1_desc"),
     },
     {
       icon: <FileCheck className="text-primary h-8 w-8" />,
-      title: "Content Rights",
-      description: "You own your content, we just help you post it.",
+      title: t("terms_card_2_title"),
+      description: t("terms_card_2_desc"),
     },
     {
       icon: <ShieldAlert className="text-primary h-8 w-8" />,
-      title: "Limitations",
-      description: "Our liability and service warranties explained.",
+      title: t("terms_card_3_title"),
+      description: t("terms_card_3_desc"),
     },
   ];
 
-  const sections = [
+  const sections: Section[] = [
     {
       number: "1",
-      title: "Introduction",
-      content:
-        'These Terms of Service ("Terms") govern your access to and use of AstraPost\'s website, products, and services ("Services"). Please read these Terms carefully, and contact us if you have any questions. By accessing or using our Services, you agree to be bound by these Terms and by our Privacy Policy.',
+      title: t("terms_section_1_title"),
+      content: t("terms_section_1_content"),
     },
     {
       number: "2",
-      title: "Use of Services",
-      content:
-        "You may use our Services only if you can form a binding contract with AstraPost, and only in compliance with these Terms and all applicable local, state, national, and international laws, rules, and regulations.",
+      title: t("terms_section_2_title"),
+      content: t("terms_section_2_content"),
     },
     {
       number: "3",
-      title: "Your Content",
-      content:
-        "You retain your rights to any content you submit, post or display on or through the Services. By submitting, posting or displaying content on or through the Services, you grant us a worldwide, non-exclusive, royalty-free license (with the right to sublicense) to use, copy, reproduce, process, adapt, modify, publish, transmit, display and distribute such content in any and all media or distribution methods (now known or later developed).",
+      title: t("terms_section_3_title"),
+      content: t("terms_section_3_content"),
     },
     {
       number: "4",
-      title: "AstraPost Rights",
-      content:
-        "All right, title, and interest in and to the Services (excluding Content provided by users) are and will remain the exclusive property of AstraPost and its licensors. The Services are protected by copyright, trademark, and other laws of both the United States and foreign countries.",
+      title: t("terms_section_4_title"),
+      content: t("terms_section_4_content"),
     },
     {
       number: "5",
-      title: "Restrictions",
+      title: t("terms_section_5_title"),
       items: [
-        "Access, tamper with, or use non-public areas of the Services, AstraPost's computer systems, or the technical delivery systems of AstraPost's providers.",
-        "Probe, scan, or test the vulnerability of any system or network or breach or circumvent any security or authentication measures.",
-        "Access or search or attempt to access or search the Services by any means (automated or otherwise) other than through our currently available, published interfaces that are provided by AstraPost.",
-        "Interfere with, or disrupt, (or attempt to do so), the access of any user, host or network, including, without limitation, sending a virus, overloading, flooding, spamming, mail-bombing the Services.",
+        t("terms_section_5_item_1"),
+        t("terms_section_5_item_2"),
+        t("terms_section_5_item_3"),
+        t("terms_section_5_item_4"),
       ],
     },
     {
       number: "6",
-      title: "Termination",
-      content:
-        "We may suspend or terminate your access to and use of the Services, at our sole discretion, at any time and without notice to you. Upon any termination, discontinuation or cancellation of Services or your Account, the following provisions will survive: ownership provisions, warranty disclaimers, limitations of liability, and dispute resolution provisions.",
+      title: t("terms_section_6_title"),
+      content: t("terms_section_6_content"),
     },
   ];
 
@@ -90,14 +95,12 @@ export default function TermsPage() {
         {/* Header */}
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge variant="outline" className="px-3 py-1 text-sm">
-            Legal
+            {t("terms_badge")}
           </Badge>
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
-            Terms of Service
+            {t("terms_title")}
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Last updated: <time dateTime="2026-03-09">March 9, 2026</time>
-          </p>
+          <p className="text-muted-foreground text-lg">{t("terms_last_updated")}</p>
         </div>
 
         {/* Info Cards */}
@@ -147,12 +150,12 @@ export default function TermsPage() {
                 <Mail className="text-primary h-5 w-5" />
               </div>
               <div>
-                <h4 className="font-semibold">Have questions?</h4>
-                <p className="text-muted-foreground text-sm">Contact our legal team</p>
+                <h4 className="font-semibold">{t("terms_cta_heading")}</h4>
+                <p className="text-muted-foreground text-sm">{t("terms_cta_desc")}</p>
               </div>
             </div>
             <Button asChild>
-              <Link href="mailto:terms@astrapost.com">Email Legal Team</Link>
+              <Link href="mailto:terms@astrapost.com">{t("terms_cta_button")}</Link>
             </Button>
           </div>
         </div>

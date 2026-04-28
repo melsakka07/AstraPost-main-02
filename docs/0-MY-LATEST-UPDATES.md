@@ -1,5 +1,90 @@
 # Latest Updates
 
+## 2026-04-28: Complete Arabic Localization Gap Coverage (All 5 Phases)
+
+**Change:** Audited and fixed Arabic localization gaps across the entire AstraPost codebase. 14 files that had hardcoded English text are now fully wired to next-intl with Arabic translations. Three new top-level namespaces added (`legal`, `chat`, `profile`, `teams`); four existing namespaces extended (`community`, `pricing`, `marketing`, `roadmap`, `blog`, `docs`, `changelog`).
+
+### Summary by Phase
+
+| Phase     | Scope                                                            | New Keys      | Files Wired  |
+| --------- | ---------------------------------------------------------------- | ------------- | ------------ |
+| 1         | Legal pages (Privacy + Terms)                                    | 57            | 2 pages      |
+| 2         | Community (FAQ + Contact form)                                   | 66            | 2 files      |
+| 3         | Marketing components (Pricing table, Social proof, Roadmap form) | 96            | 3 components |
+| 4         | Blog detail, Docs articles, Changelog releases                   | 63            | 4 files      |
+| 5         | App pages (Chat, Profile, Join Team)                             | 80            | 3 pages      |
+| **Total** |                                                                  | **~362 keys** | **14 files** |
+
+### Files modified (all phases)
+
+- `src/i18n/messages/en.json` — 5 new namespaces, 4 extended
+- `src/i18n/messages/ar.json` — matching Arabic translations for all keys
+- `src/i18n/messages/pseudo.json` — RTL markers for all new keys
+- `src/app/(marketing)/legal/privacy/page.tsx`
+- `src/app/(marketing)/legal/terms/page.tsx`
+- `src/app/(marketing)/community/page.tsx`
+- `src/components/community/contact-form.tsx`
+- `src/components/billing/pricing-table.tsx`
+- `src/components/marketing/social-proof.tsx`
+- `src/components/roadmap/submission-form.tsx`
+- `src/app/(marketing)/blog/[slug]/page.tsx`
+- `src/app/(marketing)/blog/[slug]/blog-post-client.tsx`
+- `src/app/(marketing)/docs/page.tsx`
+- `src/app/(marketing)/changelog/page.tsx`
+- `src/app/chat/page.tsx`
+- `src/app/profile/page.tsx`
+- `src/app/join-team/page.tsx`
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+**Verification:** `pnpm run check` passes (lint + typecheck + i18n). 1937 leaf keys matched between en.json and ar.json across 51 namespaces. `pnpm test` passes (28 test files, 240 tests).
+
+## 2026-04-28: i18n — Blog, Docs, and Changelog Namespaces Extended
+
+**Change:** Added 63 new translation keys across three namespaces (`blog`, `docs`, `changelog`) in all three locale files (`en.json`, `ar.json`, `pseudo.json`).
+
+- **blog** (14 keys): Blog post detail page keys — back_to_blog, featured_post, astra_team, written_by_team, team_bio, cta_title/description/start_trial/explore_features, trust_no_card/free_trial/cancel, table_of_contents, share_article
+- **docs** (13 keys): Article title keys — article_intro through article_privacy
+- **changelog** (36 keys): Release content keys for 4 releases (March 12, Feb 28, Feb 10, Jan 20 2026) with dates, titles, descriptions, and feature items
+
+Arabic translations use natural Modern Standard Arabic with technical terms (Flux Pro, SDXL, Instagram, Stripe, etc.) preserved in original form. Pseudo wraps all values in RTL markers with word-end duplication.
+
+**Files modified:**
+
+- `src/i18n/messages/en.json` — 63 new keys inside existing `blog`, `docs`, `changelog` objects
+- `src/i18n/messages/ar.json` — 63 new keys with Modern Standard Arabic translations
+- `src/i18n/messages/pseudo.json` — 63 new keys with RTL markers and word-end duplication
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+**Verification:** Key count matches between `en.json` and `ar.json` (28 blog, 30 docs, 40 changelog keys per file). `pnpm run check` needed (typecheck + lint + i18n).
+
+## 2026-04-28: Legal Pages i18n — Privacy & Terms Wired to next-intl
+
+**Change:** Both legal pages (`privacy` and `terms`) converted from hardcoded English strings to `getTranslations("legal")` from next-intl. Cards, sections, headers, and CTAs now all use translation keys under the `legal` namespace. Data arrays moved inside the async server component to enable `t()` calls.
+
+**Files modified:**
+
+- `src/app/(marketing)/legal/privacy/page.tsx` — async component, `getTranslations("legal")`, 21 translation keys
+- `src/app/(marketing)/legal/terms/page.tsx` — async component, `getTranslations("legal")`, 17 translation keys
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+**Verification:** `pnpm run check` needed (typecheck + lint). The i18n-dev agent is simultaneously adding the `legal` namespace to `en.json` and `ar.json` with all required keys.
+
+## 2026-04-28: i18n — Community Namespace Extended with FAQ and Contact Form Keys
+
+**Change:** Added 39 new translation keys to the existing `community` namespace across all three locale files (`en.json`, `ar.json`, `pseudo.json`). Keys cover:
+
+- 6 FAQ question/answer pairs (`faq_1_question` through `faq_6_answer`) about Discord community, feedback loops, challenges, partnerships, AMAs, and bug reporting
+- 27 contact form keys (`contact_form_title` through `contact_validation_message_min`) covering labels, placeholders, category options, buttons, success/error states, and validation messages
+
+**Files modified:**
+
+- `src/i18n/messages/en.json` — 39 new keys inside existing `community` object
+- `src/i18n/messages/ar.json` — 39 new keys with Modern Standard Arabic translations
+- `src/i18n/messages/pseudo.json` — 39 new keys with RTL markers and word-end duplication
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+**Verification:** Key count matches between `en.json` and `ar.json` (65 total `community` keys per file). `pnpm run check` needed (typecheck + lint + i18n).
+
 ## 2026-04-28: Fix — English Descender Clipping on Large Headings (CSS) + Edge DevTools Warnings
 
 **Problem:** English headings at `text-4xl+` with `leading-tight`/`leading-none` clipped descenders on g, j, p, q, y (e.g., "pricing", "typography", "journey"). The Arabic descender fix existed via `[dir="rtl"]` scoped rules, but no counterpart for LTR/Latin text. Additionally, Edge DevTools flagged two CSS compatibility issues: `text-size-adjust` (unprefixed) and `min-height: auto`.

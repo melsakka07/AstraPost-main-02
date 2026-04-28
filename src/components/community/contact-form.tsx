@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -27,27 +28,29 @@ import { Textarea } from "@/components/ui/textarea";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
-const CATEGORIES = [
-  { value: "general", label: "General Question" },
-  { value: "bug", label: "Bug Report" },
-  { value: "feature", label: "Feature Request" },
-  { value: "partnership", label: "Partnership / Business" },
-  { value: "billing", label: "Billing & Plans" },
-] as const;
-
-const contactFormSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(100).trim(),
-  email: z.string().email("Invalid email address").max(254).toLowerCase().trim(),
-  category: z.enum(["general", "bug", "feature", "partnership", "billing"], {
-    errorMap: () => ({ message: "Please select a category" }),
-  } as any),
-  subject: z.string().min(5, "Subject must be at least 5 characters").max(150).trim(),
-  message: z.string().min(20, "Message must be at least 20 characters").max(2000).trim(),
-});
-
-type ContactFormValues = z.infer<typeof contactFormSchema>;
-
 export function ContactForm() {
+  const t = useTranslations("community");
+
+  const CATEGORIES = [
+    { value: "general", label: t("contact_category_general") },
+    { value: "bug", label: t("contact_category_bug") },
+    { value: "feature", label: t("contact_category_feature") },
+    { value: "partnership", label: t("contact_category_partnership") },
+    { value: "billing", label: t("contact_category_billing") },
+  ] as const;
+
+  const contactFormSchema = z.object({
+    name: z.string().min(2, t("contact_validation_name_min")).max(100).trim(),
+    email: z.string().email(t("contact_validation_email")).max(254).toLowerCase().trim(),
+    category: z.enum(["general", "bug", "feature", "partnership", "billing"], {
+      errorMap: () => ({ message: t("contact_validation_category") }),
+    } as any),
+    subject: z.string().min(5, t("contact_validation_subject_min")).max(150).trim(),
+    message: z.string().min(20, t("contact_validation_message_min")).max(2000).trim(),
+  });
+
+  type ContactFormValues = z.infer<typeof contactFormSchema>;
+
   const [formState, setFormState] = useState<FormState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -80,7 +83,7 @@ export function ContactForm() {
       };
 
       if (res.status === 429) {
-        setErrorMessage("Too many submissions. Please wait before trying again.");
+        setErrorMessage(t("contact_error_too_many"));
         setFormState("error");
         return;
       }
@@ -90,18 +93,18 @@ export function ContactForm() {
           Object.entries(data.details).forEach(([key, messages]) => {
             form.setError(key as keyof ContactFormValues, {
               type: "server",
-              message: messages[0] || "Invalid field",
+              message: messages[0] || t("contact_error_invalid_field"),
             });
           });
         }
-        setErrorMessage(data.error ?? "Something went wrong. Please try again.");
+        setErrorMessage(data.error ?? t("contact_error_generic"));
         setFormState("error");
         return;
       }
 
       setFormState("success");
     } catch {
-      setErrorMessage("Network error. Please check your connection and try again.");
+      setErrorMessage(t("contact_error_network"));
       setFormState("error");
     }
   }
@@ -114,14 +117,11 @@ export function ContactForm() {
             <CheckCircle2 className="text-success h-7 w-7" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold">Message sent!</h3>
-            <p className="text-muted-foreground max-w-xs text-sm">
-              We&apos;ve received your message and will reply within 1–2 business days. Check your
-              inbox for a confirmation email.
-            </p>
+            <h3 className="text-xl font-semibold">{t("contact_success_title")}</h3>
+            <p className="text-muted-foreground max-w-xs text-sm">{t("contact_success_message")}</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => setFormState("idle")}>
-            Send another message
+            {t("contact_success_button")}
           </Button>
         </CardContent>
       </Card>
@@ -133,8 +133,8 @@ export function ContactForm() {
   return (
     <Card className="rounded-2xl border shadow-sm">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl">Send us a message</CardTitle>
-        <CardDescription>We typically respond within 1–2 business days.</CardDescription>
+        <CardTitle className="text-xl">{t("contact_form_title")}</CardTitle>
+        <CardDescription>{t("contact_form_desc")}</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -146,9 +146,13 @@ export function ContactForm() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Your name</FormLabel>
+                    <FormLabel>{t("contact_label_name")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Fatima Al-Rashid" disabled={isSubmitting} {...field} />
+                      <Input
+                        placeholder={t("contact_placeholder_name")}
+                        disabled={isSubmitting}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -159,11 +163,11 @@ export function ContactForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email address</FormLabel>
+                    <FormLabel>{t("contact_label_email")}</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder={t("contact_placeholder_email")}
                         disabled={isSubmitting}
                         {...field}
                       />
@@ -180,7 +184,7 @@ export function ContactForm() {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
+                  <FormLabel>{t("contact_label_category")}</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value}
@@ -188,7 +192,7 @@ export function ContactForm() {
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select a category…" />
+                        <SelectValue placeholder={t("contact_placeholder_category")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -210,10 +214,10 @@ export function ContactForm() {
               name="subject"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Subject</FormLabel>
+                  <FormLabel>{t("contact_label_subject")}</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Brief description of your question"
+                      placeholder={t("contact_placeholder_subject")}
                       disabled={isSubmitting}
                       {...field}
                     />
@@ -229,10 +233,10 @@ export function ContactForm() {
               name="message"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Message</FormLabel>
+                  <FormLabel>{t("contact_label_message")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Tell us more about your question or issue…"
+                      placeholder={t("contact_placeholder_message")}
                       rows={5}
                       disabled={isSubmitting}
                       className="resize-none"
@@ -255,12 +259,12 @@ export function ContactForm() {
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending…
+                  {t("contact_button_sending")}
                 </>
               ) : (
                 <>
                   <Send className="mr-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  Send Message
+                  {t("contact_button_submit")}
                 </>
               )}
             </Button>

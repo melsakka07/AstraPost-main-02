@@ -39,13 +39,13 @@ export default async function DocsPage() {
       icon: <Rocket className="h-5 w-5" />,
       description: t("getting_started_desc"),
       articles: [
-        { title: "Introduction to AstraPost", href: "/docs/intro", comingSoon: true },
+        { title: t("article_intro"), href: "/docs/intro", comingSoon: true },
         {
-          title: "Connecting Your Social Accounts",
+          title: t("article_connect_accounts"),
           href: "/docs/connecting-accounts",
           comingSoon: true,
         },
-        { title: "Your First Post", href: "/docs/first-post", comingSoon: true },
+        { title: t("article_first_post"), href: "/docs/first-post", comingSoon: true },
       ],
     },
     {
@@ -53,10 +53,10 @@ export default async function DocsPage() {
       icon: <LayoutGrid className="h-5 w-5" />,
       description: t("core_features_desc"),
       articles: [
-        { title: "Using the Smart Scheduler", href: "/docs/scheduler", comingSoon: true },
-        { title: "Generating Content with AI", href: "/docs/ai-writer", comingSoon: true },
-        { title: "Creating Threads (Sard)", href: "/docs/threads", comingSoon: true },
-        { title: "Affiliate Link Generator", href: "/docs/affiliate", comingSoon: true },
+        { title: t("article_smart_scheduler"), href: "/docs/scheduler", comingSoon: true },
+        { title: t("article_ai_content"), href: "/docs/ai-writer", comingSoon: true },
+        { title: t("article_threads"), href: "/docs/threads", comingSoon: true },
+        { title: t("article_affiliate"), href: "/docs/affiliate", comingSoon: true },
       ],
     },
     {
@@ -64,9 +64,9 @@ export default async function DocsPage() {
       icon: <CreditCard className="h-5 w-5" />,
       description: t("account_billing_desc"),
       articles: [
-        { title: "Plans and Pricing", href: "/docs/pricing", comingSoon: true },
-        { title: "Managing Your Subscription", href: "/docs/subscription", comingSoon: true },
-        { title: "Team Management", href: "/docs/teams", comingSoon: true },
+        { title: t("article_plans"), href: "/docs/pricing", comingSoon: true },
+        { title: t("article_subscription"), href: "/docs/subscription", comingSoon: true },
+        { title: t("article_team"), href: "/docs/teams", comingSoon: true },
       ],
     },
     {
@@ -74,9 +74,9 @@ export default async function DocsPage() {
       icon: <Shield className="h-5 w-5" />,
       description: t("security_privacy_desc"),
       articles: [
-        { title: "Two-Factor Authentication", href: "/docs/2fa", comingSoon: true },
-        { title: "GDPR & Data Export", href: "/docs/gdpr", comingSoon: true },
-        { title: "Privacy Policy", href: "/legal/privacy" },
+        { title: t("article_2fa"), href: "/docs/2fa", comingSoon: true },
+        { title: t("article_gdpr"), href: "/docs/gdpr", comingSoon: true },
+        { title: t("article_privacy"), href: "/legal/privacy" },
       ],
     },
   ];

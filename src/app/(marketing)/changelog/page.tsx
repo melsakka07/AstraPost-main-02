@@ -24,100 +24,91 @@ export default async function ChangelogPage() {
   const releases = [
     {
       version: "v1.2.0",
-      date: "March 12, 2026",
-      title: "AI-Powered Content Suite",
-      description:
-        "Massive AI expansion with image generation, viral analysis, and content inspiration features.",
+      date: t("release_1_date"),
+      title: t("release_1_title"),
+      description: t("release_1_desc"),
       changes: [
         {
           type: "new",
-          content:
-            "AI Image Generation: Create stunning images directly in Composer using Flux AI models.",
+          content: t("release_1_item_1"),
         },
         {
           type: "new",
-          content:
-            "Inspiration Feature: Import public tweets from X/Twitter and adapt them for your content.",
+          content: t("release_1_item_2"),
         },
         {
           type: "new",
-          content:
-            "AI Hashtag Generator: Generate relevant hashtags for your tweets in multiple languages.",
+          content: t("release_1_item_3"),
         },
         {
           type: "new",
-          content:
-            "Viral Content Analyzer: Discover what makes your content go viral with pattern analysis.",
+          content: t("release_1_item_4"),
         },
         {
           type: "new",
-          content: "AI Content Inspiration: Get creative ideas with Gemini-powered suggestions.",
+          content: t("release_1_item_5"),
         },
         {
           type: "new",
-          content: "Tweet Bookmark System: Save and organize inspiring tweets for later reference.",
+          content: t("release_1_item_6"),
         },
         {
           type: "new",
-          content:
-            "Manual Editor with Similarity Check: Ensure your content is unique before posting.",
+          content: t("release_1_item_7"),
         },
         {
           type: "new",
-          content:
-            "Multi-Language Support: Generate content in 10 languages including Arabic (MENA optimized).",
+          content: t("release_1_item_8"),
         },
         {
           type: "imp",
-          content: "Thread Writer: Added 7 tone options including humorous and viral styles.",
+          content: t("release_1_item_9"),
         },
         {
           type: "imp",
-          content:
-            "Expanded AI provider support: OpenRouter, Google Gemini, and Replicate integration.",
+          content: t("release_1_item_10"),
         },
       ],
     },
     {
       version: "v1.1.0",
-      date: "March 12, 2026",
-      title: "Multi-Platform & Security",
-      description:
-        "Major update adding LinkedIn support, Admin dashboard, and critical security features.",
+      date: t("release_2_date"),
+      title: t("release_2_title"),
+      description: t("release_2_desc"),
       changes: [
-        { type: "new", content: "LinkedIn Support: Connect and post to LinkedIn profiles." },
-        { type: "new", content: "Admin Dashboard: User management, metrics, and job monitoring." },
+        { type: "new", content: t("release_2_item_1") },
+        { type: "new", content: t("release_2_item_2") },
         {
           type: "new",
-          content: "2FA Security: Secure your account with Two-Factor Authentication.",
+          content: t("release_2_item_3"),
         },
-        { type: "new", content: "GDPR Compliance: Export your data or delete your account." },
-        { type: "imp", content: "Composer: Now supports multi-platform selection." },
-        { type: "fix", content: "Improved scheduling reliability with BullMQ." },
+        { type: "new", content: t("release_2_item_4") },
+        { type: "imp", content: t("release_2_item_5") },
+        { type: "fix", content: t("release_2_item_6") },
       ],
     },
     {
       version: "v1.0.0",
-      date: "March 10, 2026",
-      title: "Official Launch",
-      description: "We are out of beta! AstraPost is now available for everyone.",
+      date: t("release_3_date"),
+      title: t("release_3_title"),
+      description: t("release_3_desc"),
       changes: [
-        { type: "new", content: "Smart Scheduler: Drag & drop calendar interface." },
-        { type: "new", content: "AI Writer: Generate threads and hooks using GPT-4o." },
-        { type: "new", content: "Affiliate Generator: Create product promotion tweets instantly." },
-        { type: "new", content: "Analytics Dashboard: Track impressions and engagement." },
-        { type: "fix", content: "Resolved authentication issues with X API." },
+        { type: "new", content: t("release_3_item_1") },
+        { type: "new", content: t("release_3_item_2") },
+        { type: "new", content: t("release_3_item_3") },
+        { type: "new", content: t("release_3_item_4") },
+        { type: "fix", content: t("release_3_item_5") },
       ],
     },
     {
       version: "v0.9.0",
-      date: "February 20, 2026",
-      title: "Beta Preview",
-      description: "Private beta release for early adopters.",
+      date: t("release_4_date"),
+      title: t("release_4_title"),
+      description: t("release_4_desc"),
       changes: [
-        { type: "new", content: "Basic post composer." },
-        { type: "new", content: "User authentication via Twitter." },
-        { type: "imp", content: "Improved mobile responsiveness." },
+        { type: "new", content: t("release_4_item_1") },
+        { type: "new", content: t("release_4_item_2") },
+        { type: "imp", content: t("release_4_item_3") },
       ],
     },
   ];

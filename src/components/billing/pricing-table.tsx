@@ -2,150 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChangePlanDialog } from "@/components/billing/change-plan-dialog";
 import { PricingCard, PricingPlan } from "@/components/billing/pricing-card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-
-const MONTHLY_PLANS: PricingPlan[] = [
-  {
-    name: "Free",
-    description: "For individuals starting out.",
-    price: "$0",
-    interval: "month",
-    features: [
-      "20 Posts per month",
-      "1 X Account",
-      "20 AI Text Generations/month",
-      "10 AI Image Generations/month",
-      "7-day Analytics",
-      "Tweet Inspiration & Import",
-      "5 Bookmarks",
-      "14-day Pro Trial Included",
-    ],
-    actionLabel: "Get Started",
-    priceId: "free",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    description: "For growing creators.",
-    price: "$29",
-    interval: "month",
-    features: [
-      "Unlimited Posts",
-      "3 X Accounts",
-      "100 AI Text Generations/month",
-      "50 AI Image Generations/month",
-      "Thread Scheduling",
-      "AI Agentic Posting",
-      "A/B Variant Generator",
-      "Viral Score & Best Times",
-      "Competitor Analyzer",
-      "Content Calendar & URL-to-Thread",
-      "Reply Generator & Bio Optimizer",
-      "Voice Profile",
-      "Video & GIF Uploads",
-      "90-day Analytics + CSV/PDF Export",
-      "Unlimited Bookmarks",
-    ],
-    actionLabel: "Upgrade to Pro",
-    priceId: "pro_monthly",
-    popular: true,
-  },
-  {
-    name: "Agency",
-    description: "For teams and businesses.",
-    price: "$99",
-    interval: "month",
-    features: [
-      "Everything in Pro",
-      "10 X Accounts",
-      "Unlimited AI Generations",
-      "Team Collaboration (up to 5)",
-      "LinkedIn Integration",
-      "1-year Analytics History",
-      "White-label PDF Reports",
-    ],
-    actionLabel: "Upgrade to Agency",
-    priceId: "agency_monthly",
-    popular: false,
-  },
-];
-
-const ANNUAL_PLANS: PricingPlan[] = [
-  {
-    name: "Free",
-    description: "For individuals starting out.",
-    price: "$0",
-    interval: "year",
-    features: [
-      "20 Posts per month",
-      "1 X Account",
-      "20 AI Text Generations/month",
-      "10 AI Image Generations/month",
-      "7-day Analytics",
-      "Tweet Inspiration & Import",
-      "5 Bookmarks",
-      "14-day Pro Trial Included",
-    ],
-    actionLabel: "Get Started",
-    priceId: "free",
-    popular: false,
-  },
-  {
-    name: "Pro",
-    description: "For growing creators.",
-    price: "$290",
-    interval: "year",
-    features: [
-      "Unlimited Posts",
-      "4 X Accounts",
-      "150 AI Text Generations/month",
-      "50 AI Image Generations/month",
-      "Thread Scheduling",
-      "AI Agentic Posting",
-      "A/B Variant Generator",
-      "Viral Score & Best Times",
-      "Competitor Analyzer",
-      "Content Calendar & URL-to-Thread",
-      "Reply Generator & Bio Optimizer",
-      "Voice Profile",
-      "Video & GIF Uploads",
-      "90-day Analytics + CSV/PDF Export",
-      "Unlimited Bookmarks",
-      "Annual Bonus: +50 AI gens & extra X account",
-      "2 Months Free",
-    ],
-    actionLabel: "Upgrade to Pro",
-    priceId: "pro_annual",
-    popular: true,
-    perMonthEquivalent: "~$24/mo",
-    savingsPercent: 17,
-  },
-  {
-    name: "Agency",
-    description: "For teams and businesses.",
-    price: "$990",
-    interval: "year",
-    features: [
-      "Everything in Pro",
-      "10 X Accounts",
-      "Unlimited AI Generations",
-      "Team Collaboration (up to 5)",
-      "LinkedIn Integration",
-      "1-year Analytics History",
-      "White-label PDF Reports",
-      "2 Months Free",
-    ],
-    actionLabel: "Upgrade to Agency",
-    priceId: "agency_annual",
-    popular: false,
-    perMonthEquivalent: "~$83/mo",
-    savingsPercent: 17,
-  },
-];
 
 interface PricingTableProps {
   currentPlan?: string;
@@ -159,6 +21,7 @@ export function PricingTable({
   currentBillingCycle,
 }: PricingTableProps) {
   const router = useRouter();
+  const t = useTranslations("pricing");
   const [isAnnual, setIsAnnual] = useState(false);
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [changePlanDialog, setChangePlanDialog] = useState<{
@@ -173,7 +36,146 @@ export function PricingTable({
     isUpgrade: false,
   });
 
-  const plans = isAnnual ? ANNUAL_PLANS : MONTHLY_PLANS;
+  const monthlyPlans: PricingPlan[] = [
+    {
+      name: t("plan_free_name"),
+      description: t("plan_free_desc"),
+      price: "$0",
+      interval: "month",
+      features: [
+        t("plan_free_feature_1"),
+        t("plan_free_feature_2"),
+        t("plan_free_feature_3"),
+        t("plan_free_feature_4"),
+        t("plan_free_feature_5"),
+        t("plan_free_feature_6"),
+        t("plan_free_feature_7"),
+        t("plan_free_feature_8"),
+      ],
+      actionLabel: t("plan_free_action"),
+      priceId: "free",
+      popular: false,
+    },
+    {
+      name: t("plan_pro_name"),
+      description: t("plan_pro_desc"),
+      price: "$29",
+      interval: "month",
+      features: [
+        t("plan_pro_feature_1"),
+        t("plan_pro_feature_2"),
+        t("plan_pro_feature_3"),
+        t("plan_pro_feature_4"),
+        t("plan_pro_feature_5"),
+        t("plan_pro_feature_6"),
+        t("plan_pro_feature_7"),
+        t("plan_pro_feature_8"),
+        t("plan_pro_feature_9"),
+        t("plan_pro_feature_10"),
+        t("plan_pro_feature_11"),
+        t("plan_pro_feature_12"),
+        t("plan_pro_feature_13"),
+        t("plan_pro_feature_14"),
+        t("plan_pro_feature_15"),
+      ],
+      actionLabel: t("plan_pro_action"),
+      priceId: "pro_monthly",
+      popular: true,
+    },
+    {
+      name: t("plan_agency_name"),
+      description: t("plan_agency_desc"),
+      price: "$99",
+      interval: "month",
+      features: [
+        t("plan_agency_feature_1"),
+        t("plan_agency_feature_2"),
+        t("plan_agency_feature_3"),
+        t("plan_agency_feature_4"),
+        t("plan_agency_feature_5"),
+        t("plan_agency_feature_6"),
+        t("plan_agency_feature_7"),
+      ],
+      actionLabel: t("plan_agency_action"),
+      priceId: "agency_monthly",
+      popular: false,
+    },
+  ];
+
+  const annualPlans: PricingPlan[] = [
+    {
+      name: t("plan_free_name"),
+      description: t("plan_free_desc"),
+      price: "$0",
+      interval: "year",
+      features: [
+        t("plan_free_feature_1"),
+        t("plan_free_feature_2"),
+        t("plan_free_feature_3"),
+        t("plan_free_feature_4"),
+        t("plan_free_feature_5"),
+        t("plan_free_feature_6"),
+        t("plan_free_feature_7"),
+        t("plan_free_feature_8"),
+      ],
+      actionLabel: t("plan_free_action"),
+      priceId: "free",
+      popular: false,
+    },
+    {
+      name: t("plan_pro_name"),
+      description: t("plan_pro_desc"),
+      price: "$290",
+      interval: "year",
+      features: [
+        t("plan_pro_feature_1"),
+        t("plan_pro_annual_feature_2"),
+        t("plan_pro_annual_feature_3"),
+        t("plan_pro_feature_4"),
+        t("plan_pro_feature_5"),
+        t("plan_pro_feature_6"),
+        t("plan_pro_feature_7"),
+        t("plan_pro_feature_8"),
+        t("plan_pro_feature_9"),
+        t("plan_pro_feature_10"),
+        t("plan_pro_feature_11"),
+        t("plan_pro_feature_12"),
+        t("plan_pro_feature_13"),
+        t("plan_pro_feature_14"),
+        t("plan_pro_feature_15"),
+        t("plan_pro_annual_feature_16"),
+        t("plan_pro_annual_feature_17"),
+      ],
+      actionLabel: t("plan_pro_action"),
+      priceId: "pro_annual",
+      popular: true,
+      perMonthEquivalent: "~$24/mo",
+      savingsPercent: 17,
+    },
+    {
+      name: t("plan_agency_name"),
+      description: t("plan_agency_desc"),
+      price: "$990",
+      interval: "year",
+      features: [
+        t("plan_agency_feature_1"),
+        t("plan_agency_feature_2"),
+        t("plan_agency_feature_3"),
+        t("plan_agency_feature_4"),
+        t("plan_agency_feature_5"),
+        t("plan_agency_feature_6"),
+        t("plan_agency_feature_7"),
+        t("plan_agency_annual_feature_8"),
+      ],
+      actionLabel: t("plan_agency_action"),
+      priceId: "agency_annual",
+      popular: false,
+      perMonthEquivalent: "~$83/mo",
+      savingsPercent: 17,
+    },
+  ];
+
+  const plans = isAnnual ? annualPlans : monthlyPlans;
 
   const handleSelect = async (priceId: string) => {
     // Not logged in → redirect to register with plan pre-selected
@@ -241,14 +243,15 @@ export function PricingTable({
           htmlFor="billing-interval"
           className={!isAnnual ? "font-bold" : "text-muted-foreground"}
         >
-          Monthly
+          {t("toggle_monthly")}
         </Label>
         <Switch id="billing-interval" checked={isAnnual} onCheckedChange={setIsAnnual} />
         <Label
           htmlFor="billing-interval"
           className={isAnnual ? "font-bold" : "text-muted-foreground"}
         >
-          Annual <span className="text-primary ml-1 text-xs">(Save 17%)</span>
+          {t("toggle_annual")}{" "}
+          <span className="text-primary ml-1 text-xs">({t("toggle_save")})</span>
         </Label>
       </div>
 

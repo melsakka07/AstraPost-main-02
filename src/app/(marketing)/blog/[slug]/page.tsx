@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, BookOpen, CheckCircle2, Sparkles } from "lucide-react";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getBlogPost } from "@/lib/blog";
@@ -52,6 +53,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     notFound();
   }
 
+  const t = await getTranslations("blog");
+
   return (
     <>
       {/* Hero Section with Gradient */}
@@ -65,13 +68,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             className="text-muted-foreground hover:text-primary group mb-8 inline-flex items-center text-sm transition-colors"
           >
             <ArrowLeft className="me-2 h-4 w-4 transition-transform group-hover:-translate-x-1 rtl:scale-x-[-1] rtl:group-hover:translate-x-1" />{" "}
-            Back to Blog
+            {t("back_to_blog")}
           </Link>
 
           <div className="space-y-6">
             <Badge className="from-primary border-0 bg-gradient-to-r to-purple-500 text-white transition-opacity hover:opacity-90">
               <Sparkles className="mr-1 h-3 w-3" />
-              Featured Post
+              {t("featured_post")}
             </Badge>
 
             <h1 className="from-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
@@ -88,7 +91,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   A
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-foreground font-medium">AstraPost Team</span>
+                  <span className="text-foreground font-medium">{t("astra_team")}</span>
                   <span className="text-xs">{post.date}</span>
                 </div>
               </div>
@@ -133,12 +136,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
               A
             </div>
             <div>
-              <h3 className="text-lg font-bold">Written by the AstraPost Team</h3>
-              <p className="text-muted-foreground mt-2">
-                We're building the best AI-powered social media management platform for content
-                creators in the MENA region. Join thousands of creators scaling their presence with
-                AstraPost.
-              </p>
+              <h3 className="text-lg font-bold">{t("written_by_team")}</h3>
+              <p className="text-muted-foreground mt-2">{t("team_bio")}</p>
             </div>
           </div>
         </div>
@@ -154,10 +153,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             <div className="from-primary mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-white">
               <Sparkles className="h-8 w-8" />
             </div>
-            <h3 className="text-3xl font-bold md:text-4xl">Ready to Grow Your Audience?</h3>
+            <h3 className="text-3xl font-bold md:text-4xl">{t("cta_title")}</h3>
             <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-              Join thousands of creators using AstraPost to schedule posts, analyze performance, and
-              create viral content with AI.
+              {t("cta_description")}
             </p>
             <div className="flex flex-col items-center justify-center gap-4 pt-4 sm:flex-row">
               <Button
@@ -165,24 +163,24 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                 className="from-primary bg-gradient-to-r to-purple-500 transition-opacity hover:opacity-90"
                 asChild
               >
-                <Link href="/login">Start Free Trial</Link>
+                <Link href="/login">{t("cta_start_trial")}</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link href="/features">Explore Features</Link>
+                <Link href="/features">{t("cta_explore_features")}</Link>
               </Button>
             </div>
             <div className="text-muted-foreground flex items-center justify-center gap-6 pt-4 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                No credit card required
+                {t("trust_no_card")}
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                14-day free trial
+                {t("trust_free_trial")}
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                Cancel anytime
+                {t("trust_cancel")}
               </div>
             </div>
           </div>

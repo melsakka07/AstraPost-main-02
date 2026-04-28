@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Copy, Check, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { UserProfile } from "@/components/auth/user-profile";
@@ -178,17 +179,23 @@ function formatTimestamp(date: Date): string {
   }).format(date);
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({
+  text,
+  labels,
+}: {
+  text: string;
+  labels: { copied: string; failed: string; tooltip: string };
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success("Copied to clipboard");
+      toast.success(labels.copied);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Failed to copy");
+      toast.error(labels.failed);
     }
   };
 
@@ -196,7 +203,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className="hover:bg-muted rounded p-1 transition-colors"
-      title="Copy to clipboard"
+      title={labels.tooltip}
     >
       {copied ? (
         <Check className="h-3.5 w-3.5 text-green-500" />
@@ -207,11 +214,11 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-function ThinkingIndicator() {
+function ThinkingIndicator({ label }: { label: string }) {
   return (
     <div className="bg-muted flex max-w-[80%] items-center gap-2 rounded-lg p-3">
       <Loader2 className="h-4 w-4 animate-spin" />
-      <span className="text-muted-foreground text-sm">AI is thinking...</span>
+      <span className="text-muted-foreground text-sm">{label}</span>
     </div>
   );
 }
@@ -219,6 +226,7 @@ function ThinkingIndicator() {
 const STORAGE_KEY = "chat-messages";
 
 export default function ChatPage() {
+  const t = useTranslations("chat");
   const { data: session, isPending } = useSession();
   const { openWithContext } = useUpgradeModal();
   const { messages, sendMessage, status, error, setMessages } = useChat({
@@ -240,7 +248,7 @@ export default function ChatPage() {
           resetAt: payload.reset_at,
         });
       }
-      toast.error(err.message || "Failed to send message");
+      toast.error(err.message || t("failed_to_send"));
     },
   });
   const [input, setInput] = useState("");
@@ -295,11 +303,11 @@ export default function ChatPage() {
   const clearMessages = () => {
     setMessages([]);
     localStorage.removeItem(STORAGE_KEY);
-    toast.success("Chat cleared");
+    toast.success(t("chat_cleared"));
   };
 
   if (isPending) {
-    return <div className="container mx-auto px-4 py-12">Loading...</div>;
+    return <div className="container mx-auto px-4 py-12">{t("loading")}</div>;
   }
 
   if (!session) {
@@ -325,14 +333,14 @@ export default function ChatPage() {
       <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-4">
         {/* Header */}
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b py-4">
-          <h1 className="text-xl font-bold sm:text-2xl">AstraPost Assistant</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">{t("title")}</h1>
           <div className="flex items-center gap-2 sm:gap-4">
             <span className="text-muted-foreground hidden text-sm sm:block">
-              Welcome, {session.user.name}!
+              {t("welcome", { name: session.user.name })}
             </span>
             {messages.length > 0 && (
               <Button variant="ghost" size="sm" onClick={clearMessages} className="min-h-[44px]">
-                Clear chat
+                {t("clear_chat")}
               </Button>
             )}
           </div>
@@ -343,7 +351,7 @@ export default function ChatPage() {
           <div className="shrink-0 py-2">
             <div className="bg-destructive/10 border-destructive/20 rounded-lg border p-3">
               <p className="text-destructive text-sm">
-                Error: {error.message || "Something went wrong"}
+                Error: {error.message || t("error_generic")}
               </p>
             </div>
           </div>
@@ -352,9 +360,7 @@ export default function ChatPage() {
         {/* Messages — flex-1 so it fills available space and scrolls independently */}
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4">
           {messages.length === 0 && (
-            <div className="text-muted-foreground py-12 text-center">
-              Start a conversation with AI
-            </div>
+            <div className="text-muted-foreground py-12 text-center">{t("empty_state")}</div>
           )}
           {messages.map((message) => {
             const messageText = getMessageText(message as MaybePartsMessage);
@@ -373,13 +379,20 @@ export default function ChatPage() {
                 <div className="mb-1 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">
-                      {message.role === "user" ? "You" : "AI"}
+                      {message.role === "user" ? t("you") : t("ai")}
                     </span>
                     {timestamp && <span className="text-xs opacity-60">{timestamp}</span>}
                   </div>
                   {message.role === "assistant" && messageText && (
                     <div className="opacity-0 transition-opacity group-hover:opacity-100">
-                      <CopyButton text={messageText} />
+                      <CopyButton
+                        text={messageText}
+                        labels={{
+                          copied: t("copied"),
+                          failed: t("failed_to_copy"),
+                          tooltip: t("copy_tooltip"),
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -387,7 +400,9 @@ export default function ChatPage() {
               </div>
             );
           })}
-          {isStreaming && messages[messages.length - 1]?.role === "user" && <ThinkingIndicator />}
+          {isStreaming && messages[messages.length - 1]?.role === "user" && (
+            <ThinkingIndicator label={t("ai_thinking")} />
+          )}
           {/* Scroll anchor — auto-scroll targets this element */}
           <div ref={messagesEndRef} aria-hidden="true" />
         </div>
@@ -408,7 +423,7 @@ export default function ChatPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={t("placeholder")}
             className="border-border focus:ring-ring min-h-[44px] flex-1 rounded-md border px-3 py-2 text-base focus:ring-2 focus:outline-none"
             disabled={isStreaming}
           />
@@ -416,10 +431,10 @@ export default function ChatPage() {
             {isStreaming ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending
+                {t("sending")}
               </>
             ) : (
-              "Send"
+              t("send")
             )}
           </Button>
         </form>

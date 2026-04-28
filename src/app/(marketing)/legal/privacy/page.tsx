@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Shield, Lock, Eye, Mail } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,74 +18,76 @@ export async function generateMetadata(): Promise<Metadata> {
   );
 }
 
-export default function PrivacyPage() {
+interface Section {
+  number: string;
+  title: string;
+  content?: string;
+  items?: Array<string | { label: string; description: string }>;
+}
+
+export default async function PrivacyPage() {
+  const t = await getTranslations("legal");
+
   const cards = [
     {
       icon: <Shield className="text-primary h-8 w-8" />,
-      title: "Data Protection",
-      description: "We use industry standard encryption to protect your data.",
+      title: t("privacy_card_1_title"),
+      description: t("privacy_card_1_desc"),
     },
     {
       icon: <Lock className="text-primary h-8 w-8" />,
-      title: "Secure Access",
-      description: "Only you have access to your connected social accounts.",
+      title: t("privacy_card_2_title"),
+      description: t("privacy_card_2_desc"),
     },
     {
       icon: <Eye className="text-primary h-8 w-8" />,
-      title: "Transparency",
-      description: "We are clear about what data we collect and why.",
+      title: t("privacy_card_3_title"),
+      description: t("privacy_card_3_desc"),
     },
   ];
-
-  interface Section {
-    number: string;
-    title: string;
-    content?: string;
-    items?: Array<string | { label: string; description: string }>;
-  }
 
   const sections: Section[] = [
     {
       number: "1",
-      title: "Introduction",
-      content:
-        'Welcome to AstraPost ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website (regardless of where you visit it from) and tell you about your privacy rights and how the law protects you.',
+      title: t("privacy_section_1_title"),
+      content: t("privacy_section_1_content"),
     },
     {
       number: "2",
-      title: "Data We Collect",
-      content:
-        "We may collect, use, store and transfer different kinds of personal data about you which we have grouped together follows:",
+      title: t("privacy_section_2_title"),
+      content: t("privacy_section_2_content"),
       items: [
         {
-          label: "Identity Data",
-          description: "First name, last name, username or similar identifier.",
-        },
-        { label: "Contact Data", description: "Email address and communication preferences." },
-        {
-          label: "Technical Data",
-          description: "IP address, login data, browser type, and time zone setting.",
+          label: t("privacy_section_2_item_1_label"),
+          description: t("privacy_section_2_item_1_desc"),
         },
         {
-          label: "Social Media Data",
-          description: "X (Twitter) profile info, tokens, and posted content.",
+          label: t("privacy_section_2_item_2_label"),
+          description: t("privacy_section_2_item_2_desc"),
+        },
+        {
+          label: t("privacy_section_2_item_3_label"),
+          description: t("privacy_section_2_item_3_desc"),
+        },
+        {
+          label: t("privacy_section_2_item_4_label"),
+          description: t("privacy_section_2_item_4_desc"),
         },
       ],
     },
     {
       number: "3",
-      title: "How We Use Your Data",
+      title: t("privacy_section_3_title"),
       items: [
-        "Where we need to perform the contract we are about to enter into or have entered into with you.",
-        "Where it is necessary for our legitimate interests (or those of a third party) and your interests and fundamental rights do not override those interests.",
-        "Where we need to comply with a legal or regulatory obligation.",
+        t("privacy_section_3_item_1"),
+        t("privacy_section_3_item_2"),
+        t("privacy_section_3_item_3"),
       ],
     },
     {
       number: "4",
-      title: "Data Security",
-      content:
-        "We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorized way, altered or disclosed. In addition, we limit access to your personal data to those employees, agents, contractors and other third parties who have a business need to know.",
+      title: t("privacy_section_4_title"),
+      content: t("privacy_section_4_content"),
     },
   ];
 
@@ -99,14 +102,12 @@ export default function PrivacyPage() {
         {/* Header */}
         <div className="mx-auto max-w-3xl space-y-6 text-center">
           <Badge variant="outline" className="px-3 py-1 text-sm">
-            Legal
+            {t("privacy_badge")}
           </Badge>
           <h1 className="from-foreground via-foreground to-foreground/70 bg-gradient-to-br bg-clip-text text-4xl font-bold tracking-tight text-transparent md:text-6xl">
-            Privacy Policy
+            {t("privacy_title")}
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Last updated: <time dateTime="2026-03-09">March 9, 2026</time>
-          </p>
+          <p className="text-muted-foreground text-lg">{t("privacy_last_updated")}</p>
         </div>
 
         {/* Info Cards */}
@@ -176,12 +177,12 @@ export default function PrivacyPage() {
                 <Mail className="text-primary h-5 w-5" />
               </div>
               <div>
-                <h4 className="font-semibold">Have questions?</h4>
-                <p className="text-muted-foreground text-sm">Contact our privacy team</p>
+                <h4 className="font-semibold">{t("privacy_cta_heading")}</h4>
+                <p className="text-muted-foreground text-sm">{t("privacy_cta_desc")}</p>
               </div>
             </div>
             <Button asChild>
-              <Link href="mailto:privacy@astrapost.com">Email Privacy Team</Link>
+              <Link href="mailto:privacy@astrapost.com">{t("privacy_cta_button")}</Link>
             </Button>
           </div>
         </div>

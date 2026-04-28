@@ -32,41 +32,35 @@ export async function generateMetadata(): Promise<Metadata> {
   );
 }
 
-const faqs = [
-  {
-    question: "How do I join the AstraPost Discord community?",
-    answer:
-      'Click the "Join Discord" button on this page. Once inside, introduce yourself in #introductions and head to #content-feedback to start sharing your work. All plans get free community access.',
-  },
-  {
-    question: "How do I get feedback on my threads before posting?",
-    answer:
-      "Share your draft in the #feedback-lounge channel on Discord. Tag it with your niche (e.g. #tech, #finance, #arabic-content) for targeted responses. Pro and Agency users also get access to dedicated review channels.",
-  },
-  {
-    question: "Is there a regular challenge or contest schedule?",
-    answer:
-      "Yes — every Monday we post a weekly content challenge in #weekly-challenge. Winners are announced on Fridays and featured in our newsletter. Prizes range from plan upgrades to sponsored shoutouts.",
-  },
-  {
-    question: "Who should I contact for partnership or business inquiries?",
-    answer:
-      'Use the contact form below and select "Partnership / Business" as the category. Our partnerships team reviews all submissions and responds within 2 business days.',
-  },
-  {
-    question: "How often are the Creator AMAs held?",
-    answer:
-      "We host at least one AMA per month, featuring a top creator or a member of the AstraPost team. Upcoming AMAs are announced in #announcements on Discord and on our roadmap page.",
-  },
-  {
-    question: "I found a bug. What's the fastest way to report it?",
-    answer:
-      'Use the contact form below and select "Bug Report". Include your browser, the page URL, and steps to reproduce. For critical issues (e.g. posts not publishing), email us directly at support@astrapost.app.',
-  },
-];
-
 export default async function CommunityPage() {
   const t = await getTranslations("community");
+
+  const faqs = [
+    {
+      question: t("faq_1_question"),
+      answer: t("faq_1_answer"),
+    },
+    {
+      question: t("faq_2_question"),
+      answer: t("faq_2_answer"),
+    },
+    {
+      question: t("faq_3_question"),
+      answer: t("faq_3_answer"),
+    },
+    {
+      question: t("faq_4_question"),
+      answer: t("faq_4_answer"),
+    },
+    {
+      question: t("faq_5_question"),
+      answer: t("faq_5_answer"),
+    },
+    {
+      question: t("faq_6_question"),
+      answer: t("faq_6_answer"),
+    },
+  ];
 
   const translatedStats = [
     { label: t("stats_members"), value: "2,500+" },
