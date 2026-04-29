@@ -152,7 +152,11 @@ export default function ResetPasswordPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="text-muted-foreground hover:text-foreground absolute end-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center"
                 tabIndex={-1}
-                aria-label={showPassword ? t("hide_password") : t("show_password")}
+                aria-label={
+                  showPassword
+                    ? t("reset_password.hide_password")
+                    : t("reset_password.show_password")
+                }
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>

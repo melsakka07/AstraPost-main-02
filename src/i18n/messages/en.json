@@ -1176,7 +1176,9 @@
       "pipeline_failed": "Pipeline failed. Please try again.",
       "enhancement_failed": "Enhancement failed. Please try again.",
       "session_resumed": "Resumed your previous session.",
-      "rewrite_failed": "Rewrite failed"
+      "rewrite_failed": "Rewrite failed",
+      "tweet_removed": "Tweet removed",
+      "undo": "Undo"
     },
     "trends": {
       "trending_on_x": "Trending on X",
@@ -1205,6 +1207,13 @@
       },
       "post_count_high": "High",
       "post_count_normal": "Normal"
+    },
+    "suggestions": {
+      "coding": "AI coding tools",
+      "funding": "Startup funding",
+      "content_creation": "Content creation",
+      "mena_tech": "MENA tech scene",
+      "remote_work": "Remote work"
     }
   },
   "ai_bio": {
@@ -1763,6 +1772,7 @@
       "disconnect_linkedin_title": "Disconnect LinkedIn Account?",
       "disconnect_linkedin_desc": "Are you sure you want to disconnect {name}? You can reconnect it later.",
       "linkedin_disconnected_success": "LinkedIn account disconnected successfully",
+      "disconnect_error": "Failed to disconnect account. Please try again.",
       "voice_profile_title": "AI Voice Profile",
       "voice_profile_description": "Train the AI to write exactly like you by analyzing your best tweets.",
       "voice_profile_pro_title": "Voice Profile is a Pro feature",

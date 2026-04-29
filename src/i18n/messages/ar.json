@@ -14,7 +14,7 @@
     "ai_tools": "أدوات الذكاء الاصطناعي",
     "growth": "النمو",
     "system": "النظام",
-    "ai": "الذكاء الاصطناعي",
+    "ai": "ذكاء اصطناعي",
     "compose": "إنشاء",
     "drafts": "المسودات",
     "calendar": "التقويم",
@@ -1176,7 +1176,9 @@
       "pipeline_failed": "فشل المسار. يرجى المحاولة مرة أخرى.",
       "enhancement_failed": "فشل التحسين. يرجى المحاولة مرة أخرى.",
       "session_resumed": "تم استئناف الجلسة السابقة.",
-      "rewrite_failed": "فشلت إعادة الكتابة"
+      "rewrite_failed": "فشلت إعادة الكتابة",
+      "tweet_removed": "تمت إزالة التغريدة",
+      "undo": "تراجع"
     },
     "trends": {
       "trending_on_x": "رائج على X",
@@ -1205,6 +1207,13 @@
       },
       "post_count_high": "مرتفع",
       "post_count_normal": "عادي"
+    },
+    "suggestions": {
+      "coding": "أدوات البرمجة بالذكاء الاصطناعي",
+      "funding": "تمويل الشركات الناشئة",
+      "content_creation": "صناعة المحتوى",
+      "mena_tech": "التقنية في الشرق الأوسط",
+      "remote_work": "العمل عن بُعد"
     }
   },
   "ai_bio": {
@@ -1763,6 +1772,7 @@
       "disconnect_linkedin_title": "قطع اتصال حساب LinkedIn؟",
       "disconnect_linkedin_desc": "هل أنت متأكد من رغبتك في قطع اتصال {name}؟ يمكنك إعادة الاتصال لاحقاً.",
       "linkedin_disconnected_success": "تم قطع اتصال حساب LinkedIn بنجاح",
+      "disconnect_error": "فشل قطع اتصال الحساب. يرجى المحاولة مرة أخرى.",
       "voice_profile_title": "ملف صوت الذكاء الاصطناعي",
       "voice_profile_description": "درّب الذكاء الاصطناعي ليكتب تماماً مثلك من خلال تحليل أفضل تغريداتك.",
       "voice_profile_pro_title": "ملف الصوت ميزة احترافية",
