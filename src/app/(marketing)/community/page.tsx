@@ -204,6 +204,7 @@ export default async function CommunityPage() {
                   <a
                     href="mailto:support@astrapost.app"
                     className="text-foreground hover:text-primary font-medium underline underline-offset-4"
+                    dir="ltr"
                   >
                     support@astrapost.app
                   </a>

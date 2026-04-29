@@ -45,6 +45,7 @@ interface PlanLimitPayload {
 
 export default function BioOptimizerPage() {
   const t = useTranslations("ai_bio");
+  const langT = useTranslations("languages");
   const { openWithContext } = useUpgradeModal();
 
   const [currentBio, setCurrentBio] = useState("");
@@ -149,7 +150,7 @@ export default function BioOptimizerPage() {
                   maxLength={500}
                 />
                 <span
-                  className={`pointer-events-none absolute right-2 bottom-2 text-xs tabular-nums select-none ${
+                  className={`pointer-events-none absolute end-2 bottom-2 text-xs tabular-nums select-none ${
                     currentBio.length > 160
                       ? "text-destructive"
                       : currentBio.length >= 130
@@ -196,16 +197,16 @@ export default function BioOptimizerPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ar">Arabic</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="fr">French</SelectItem>
-                    <SelectItem value="de">German</SelectItem>
-                    <SelectItem value="es">Spanish</SelectItem>
-                    <SelectItem value="it">Italian</SelectItem>
-                    <SelectItem value="pt">Portuguese</SelectItem>
-                    <SelectItem value="tr">Turkish</SelectItem>
-                    <SelectItem value="ru">Russian</SelectItem>
-                    <SelectItem value="hi">Hindi</SelectItem>
+                    <SelectItem value="ar">{langT("ar")}</SelectItem>
+                    <SelectItem value="en">{langT("en")}</SelectItem>
+                    <SelectItem value="fr">{langT("fr")}</SelectItem>
+                    <SelectItem value="de">{langT("de")}</SelectItem>
+                    <SelectItem value="es">{langT("es")}</SelectItem>
+                    <SelectItem value="it">{langT("it")}</SelectItem>
+                    <SelectItem value="pt">{langT("pt")}</SelectItem>
+                    <SelectItem value="tr">{langT("tr")}</SelectItem>
+                    <SelectItem value="ru">{langT("ru")}</SelectItem>
+                    <SelectItem value="hi">{langT("hi")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -305,7 +306,8 @@ export default function BioOptimizerPage() {
                     href="https://x.com/settings/profile"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs transition-colors"
+                    className="text-muted-foreground hover:text-foreground inline-flex min-h-[44px] items-center gap-1 p-2 text-xs transition-colors"
+                    aria-label={t("open_x_settings")}
                   >
                     <ExternalLink className="h-3 w-3" />
                     {t("open_x_settings")}

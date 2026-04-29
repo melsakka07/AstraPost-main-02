@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ComposeLoading() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-busy="true">
       {/* Post usage bar */}
       <Skeleton className="h-12 w-full" />
 

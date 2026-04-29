@@ -48,10 +48,10 @@ export default async function AdminWebhooksPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b">
-                  <th className="p-2 text-left">Event ID</th>
-                  <th className="p-2 text-left">Type</th>
-                  <th className="p-2 text-left">Retries</th>
-                  <th className="p-2 text-left">Error</th>
+                  <th className="p-2 text-start">Event ID</th>
+                  <th className="p-2 text-start">Type</th>
+                  <th className="p-2 text-start">Retries</th>
+                  <th className="p-2 text-start">Error</th>
                 </tr>
               </thead>
               <tbody>
@@ -60,7 +60,7 @@ export default async function AdminWebhooksPage() {
                     <td className="p-2 font-mono">{e.stripeEventId}</td>
                     <td className="p-2">{e.eventType}</td>
                     <td className="p-2">{e.retryCount}</td>
-                    <td className="p-2 text-red-500">{e.errorMessage}</td>
+                    <td className="text-destructive p-2">{e.errorMessage}</td>
                   </tr>
                 ))}
                 {recentFailures.length === 0 && (
@@ -81,10 +81,10 @@ export default async function AdminWebhooksPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b">
-                  <th className="p-2 text-left">Time</th>
-                  <th className="p-2 text-left">Event ID</th>
-                  <th className="p-2 text-left">Type</th>
-                  <th className="p-2 text-left">Status</th>
+                  <th className="p-2 text-start">Time</th>
+                  <th className="p-2 text-start">Event ID</th>
+                  <th className="p-2 text-start">Type</th>
+                  <th className="p-2 text-start">Status</th>
                 </tr>
               </thead>
               <tbody>

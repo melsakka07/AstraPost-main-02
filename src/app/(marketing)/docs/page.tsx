@@ -102,7 +102,9 @@ export default async function DocsPage() {
             <Input
               type="search"
               placeholder={t("search_placeholder")}
-              className="bg-card h-12 pl-10 shadow-sm"
+              aria-label={t("search_placeholder")}
+              disabled
+              className="bg-card h-12 cursor-not-allowed pl-10 opacity-60 shadow-sm"
             />
             <div className="text-muted-foreground absolute top-[calc(1rem+0.875rem)] left-3">
               <svg
@@ -120,6 +122,9 @@ export default async function DocsPage() {
                 <circle cx="11" cy="11" r="8" />
                 <path d="m21 21-4.3-4.3" />
               </svg>
+            </div>
+            <div className="mt-2 flex justify-center">
+              <Badge variant="secondary">{t("soon_badge")}</Badge>
             </div>
           </div>
         </div>

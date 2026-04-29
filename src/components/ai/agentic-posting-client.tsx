@@ -101,11 +101,11 @@ interface PlanLimitPayload {
 
 // ── Suggestion chips ──────────────────────────────────────────────────────────
 const DEFAULT_SUGGESTIONS = [
-  "AI coding tools",
-  "Startup funding tips",
-  "Content creation in 2026",
-  "MENA tech scene",
-  "Remote work productivity",
+  "suggestions.coding",
+  "suggestions.funding",
+  "suggestions.content_creation",
+  "suggestions.mena_tech",
+  "suggestions.remote_work",
 ];
 
 // ── Step metadata ─────────────────────────────────────────────────────────────
@@ -436,7 +436,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
           setScreen("review");
         } else if (session.status === "generating") {
           // Show a non-blocking toast — session is still running server-side
-          toast.info(`A generation is in progress for "${session.topic}". It may have completed.`, {
+          toast.info(t("toasts.session_in_progress", { topic: session.topic }), {
             duration: 5000,
             action: { label: "Refresh", onClick: () => window.location.reload() },
           });
@@ -529,9 +529,9 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
       const timer = setTimeout(() => {
         /* auto-dismiss */
       }, 5000);
-      toast("Tweet removed", {
+      toast(t("toasts.tweet_removed"), {
         action: {
-          label: "Undo",
+          label: t("toasts.undo"),
           onClick: () => {
             clearTimeout(timer);
             setEditedTweets((prev) => {
@@ -845,11 +845,11 @@ function InputScreen({
               key={s}
               type="button"
               onClick={() => {
-                setTopic(s);
+                setTopic(t(s));
               }}
               className="border-border bg-muted/50 text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex cursor-pointer items-center rounded-full border px-4 py-2 text-sm transition-colors duration-150 select-none"
             >
-              {s}
+              {t(s)}
             </button>
           ))}
         </div>
@@ -1327,7 +1327,7 @@ function ReviewScreen({
               {editedTweets.map((tweet, idx) => (
                 <div key={idx} className="relative">
                   {idx < editedTweets.length - 1 && (
-                    <div className="bg-border absolute top-full left-5 z-10 h-4 w-0.5" />
+                    <div className="bg-border absolute start-5 top-full z-10 h-4 w-0.5" />
                   )}
                   <SortableTweetCard
                     id={String(idx)}
@@ -1397,7 +1397,7 @@ function ReviewScreen({
         </div>
 
         {/* Sticky action bar */}
-        <div className="bg-background/95 fixed right-0 bottom-0 left-0 z-50 border-t px-4 py-4 backdrop-blur-sm md:static md:bottom-auto md:rounded-xl md:border md:px-6">
+        <div className="bg-background/95 fixed start-0 end-0 bottom-0 z-50 border-t px-4 py-4 backdrop-blur-sm md:static md:bottom-auto md:rounded-xl md:border md:px-6">
           {showSchedulePicker && (
             <div className="mb-4 flex items-center gap-3">
               <DatePicker value={scheduleDate} onChange={setScheduleDate} />
@@ -1601,7 +1601,7 @@ function AgenticTweetCard({
               <button
                 type="button"
                 aria-label="Drag to reorder tweet"
-                className="text-muted-foreground/40 hover:text-muted-foreground cursor-grab touch-none transition-colors active:cursor-grabbing"
+                className="text-muted-foreground/40 hover:text-muted-foreground focus-visible:ring-ring min-h-[44px] min-w-[44px] cursor-grab touch-none rounded p-2 transition-colors focus-visible:ring-2 active:cursor-grabbing"
                 {...dragHandleProps}
               >
                 <GripVertical className="h-4 w-4" />

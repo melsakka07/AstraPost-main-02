@@ -30,7 +30,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="bg-background/95 supports-[backdrop-filter]:bg-background/60 fixed right-0 bottom-0 left-0 z-50 border-t pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-sm md:hidden"
+      className="bg-background/95 supports-[backdrop-filter]:bg-background/60 fixed start-0 end-0 bottom-0 z-50 border-t pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-sm md:hidden"
       aria-label={tMobileNav("mobile_navigation")}
       // Safe area inset keeps nav items above the device home indicator
     >
@@ -49,7 +49,7 @@ export function BottomNav() {
               aria-current={isActive ? "page" : undefined}
               aria-label={translatedLabel}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors",
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -65,7 +65,7 @@ export function BottomNav() {
         <button
           type="button"
           aria-label={tShell("open_navigation")}
-          className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors"
+          className="text-muted-foreground hover:text-foreground flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors"
           onClick={() => document.dispatchEvent(new CustomEvent("sidebar:open"))}
         >
           <Menu className="h-5 w-5 shrink-0" />

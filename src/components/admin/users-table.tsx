@@ -68,10 +68,10 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
         <TableBody>
           {users.map((user) => (
             <TableRow key={user.id}>
-              <TableCell className="font-medium">
+              <TableCell className="max-w-[200px] font-medium">
                 <div className="flex flex-col">
-                  <span>{user.name}</span>
-                  <span className="text-muted-foreground text-xs">{user.email}</span>
+                  <span className="truncate">{user.name}</span>
+                  <span className="text-muted-foreground truncate text-xs">{user.email}</span>
                 </div>
               </TableCell>
               <TableCell>

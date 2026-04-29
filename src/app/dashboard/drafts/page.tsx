@@ -39,7 +39,7 @@ export default async function DraftsPage() {
       actions={
         <Button asChild>
           <Link href="/dashboard/compose">
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="me-2 h-4 w-4" />
             {t("new_draft")}
           </Link>
         </Button>

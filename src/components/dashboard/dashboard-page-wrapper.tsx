@@ -36,7 +36,7 @@ export function DashboardPageWrapper({
           <div className="min-w-0">
             <h1 className="text-page-title">{title}</h1>
             {description && (
-              <p className="text-muted-foreground mt-0.5 text-xs sm:mt-1 sm:text-sm">
+              <p className="text-muted-foreground mt-0.5 max-w-[320px] truncate text-xs sm:mt-1 sm:text-sm">
                 {description}
               </p>
             )}

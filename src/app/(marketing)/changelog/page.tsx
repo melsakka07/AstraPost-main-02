@@ -135,7 +135,7 @@ export default async function ChangelogPage() {
         </div>
 
         {/* Timeline */}
-        <div className="border-muted relative ml-4 space-y-12 border-l pl-8 md:ml-8 md:pl-12">
+        <div className="border-muted relative ml-4 space-y-12 border-l pl-8 md:ms-8 md:ps-12">
           {releases.map((release, index) => (
             <div key={index} className="relative">
               <div className="border-primary/40 bg-background ring-primary/10 absolute top-1.5 -left-[2.35rem] h-3 w-3 rounded-full border-2 ring-4 md:-left-[3.35rem]" />

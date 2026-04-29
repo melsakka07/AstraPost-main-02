@@ -1,5 +1,85 @@
 # Latest Updates
 
+## 2026-04-28: Session 4 — Competitor + Viral Analytics i18n (PLT-001, PLT-004)
+
+**Change:** Replaced all hardcoded English strings in competitor analytics and viral analytics pages with `t()` calls. Expanded both i18n namespaces with full Arabic translations.
+
+### Competitor Analytics (`analytics_competitor`) — PLT-001
+
+- Expanded from 11 keys → 44 keys
+- Sections added: `language_label`, `language_arabic`, `language_english`, `analyze_button`, `analyzing`, `empty_title`, `empty_description`, `loading_label`, `results.*` (3 keys), `metrics.*` (4 keys), `compare.*` (14 keys), `charts.title`, `summary.title`, `insights.*` (5 keys), `tone.title`
+
+### Viral Analytics (`analytics_viral`) — PLT-004
+
+- Expanded from 24 keys → 39 keys
+- Sections added: `periods.*` (5 keys), `analyze_button`, `analyzing`, `export_button`, `export_copy_markdown`, `export_download_csv`, `error_fetch`, `error_analyze`, `insufficient_description`, `stats.*` (4 keys), `insights_title`, `action_plan.*` (5 keys)
+
+### Action Plan Rich Text
+
+- Used `t.rich()` with `<strong>` tags for action plan items in viral analytics (next-intl 4.x rich text API)
+
+### Files modified
+
+- `src/app/dashboard/analytics/competitor/page.tsx` — ~35 string replacements
+- `src/app/dashboard/analytics/viral/page.tsx` — ~20 string replacements
+- `src/i18n/messages/en.json` — 48 new keys across 2 namespaces
+- `src/i18n/messages/ar.json` — 48 new Arabic translations across 2 namespaces
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+**Verification:** `pnpm run check` passes (lint + typecheck + i18n key parity). `pnpm test` passes (28 test files, 240 tests). 2020 leaf keys matched between en.json and ar.json across 51 namespaces.
+
+## 2026-04-28: Session 3 — Touch Target + Accessibility Quick Wins
+
+**Change:** Fixed 21 audit items (PLQ-009 through PLQ-019, PLQ-088 through PLQ-097) covering touch target minimums (44px) and accessibility attributes across 9 files.
+
+### Touch Targets Fixed (11 items)
+
+- **PLQ-009/010**: Writer page — copy buttons and variant action buttons to `min-h-[44px] min-w-[44px]`
+- **PLQ-011**: Agentic posting drag handle — `p-2 min-h-[44px] min-w-[44px]` + focus-visible ring (PLQ-097)
+- **PLQ-012**: Agentic trends Post button — `h-8` → `h-10 min-h-[44px]`
+- **PLQ-013**: Chat copy button — converted raw `<button>` to `<Button variant="ghost" size="icon">` with min dimensions
+- **PLQ-014**: Inspiration bookmark/clear buttons — `h-8 w-8 sm:h-10 sm:w-10` → `h-10 w-10`
+- **PLQ-015**: Password visibility toggle — `h-10 w-10 inline-flex items-center justify-center`
+- **PLQ-016**: Bio external link — `inline-flex p-2 min-h-[44px]`
+- **PLQ-017**: Jobs filter button — `h-10` → `h-11`
+- **PLQ-018**: Trends category tabs — `py-1.5` → `py-2.5`
+- **PLQ-019**: Hashtag generator badges — `py-1.5` → `py-2.5 min-h-[44px]`
+
+### Accessibility Fixed (10 items)
+
+- **PLQ-088/094**: Writer aria-labels — already present in code, verified
+- **PLQ-089**: Password toggle — `aria-label={showPassword ? t("hide_password") : t("show_password")}`
+- **PLQ-090**: Chat copy button — `aria-label={labels.tooltip}`
+- **PLQ-091/092**: BottomNav + Admin sidebar — already present, verified
+- **PLQ-093**: Jobs search input — `htmlFor`/`id` association added
+- **PLQ-095**: Inspiration action buttons — `aria-label` replacing `title`
+- **PLQ-096**: Chat loading skeleton — `aria-busy="true"` added
+- **PLQ-097**: Drag handle — `focus-visible:ring-2 focus-visible:ring-ring`
+
+### New Translation Keys
+
+- `auth.hide_password` / `auth.show_password` (en + ar)
+- `hashtag_generator.remove_hashtag` (en + ar)
+
+### Files modified
+
+- `src/app/dashboard/ai/writer/page.tsx`
+- `src/components/ai/agentic-posting-client.tsx`
+- `src/components/ai/agentic-trends-panel.tsx`
+- `src/app/chat/page.tsx`
+- `src/app/chat/loading.tsx`
+- `src/app/dashboard/inspiration/page.tsx`
+- `src/app/(auth)/reset-password/page.tsx`
+- `src/app/dashboard/ai/bio/page.tsx`
+- `src/app/dashboard/jobs/page.tsx`
+- `src/components/ai/hashtag-generator.tsx`
+- `src/i18n/messages/en.json` — 3 new keys
+- `src/i18n/messages/ar.json` — 3 new keys
+- `docs/audit/pre-launch-ui-ux-audit-plan.md` — status markers updated
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
+**Verification:** `pnpm run check` passes (lint + typecheck + i18n). 1957 leaf keys matched between en.json and ar.json across 51 namespaces.
+
 ## 2026-04-28: Complete Arabic Localization Gap Coverage (All 5 Phases)
 
 **Change:** Audited and fixed Arabic localization gaps across the entire AstraPost codebase. 14 files that had hardcoded English text are now fully wired to next-intl with Arabic translations. Three new top-level namespaces added (`legal`, `chat`, `profile`, `teams`); four existing namespaces extended (`community`, `pricing`, `marketing`, `roadmap`, `blog`, `docs`, `changelog`).

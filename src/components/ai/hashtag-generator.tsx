@@ -245,7 +245,7 @@ export function HashtagGenerator() {
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="group hover:bg-primary/20 relative cursor-pointer px-3 py-1.5 text-sm transition-colors"
+                  className="group hover:bg-primary/20 relative inline-flex min-h-[44px] cursor-pointer items-center px-3 py-2.5 text-sm transition-colors"
                   onClick={() => copyHashtag(hashtag, index)}
                 >
                   {hashtag}
@@ -256,6 +256,7 @@ export function HashtagGenerator() {
                       removeHashtag(index);
                     }}
                     className="hover:text-destructive ms-1 opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-label={t("remove_hashtag")}
                   >
                     ×
                   </button>

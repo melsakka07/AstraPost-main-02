@@ -155,7 +155,12 @@
     "server_error": "حدث خطأ ما. يرجى المحاولة لاحقا.",
     "unexpected": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
     "try_again": "حاول مرة أخرى",
-    "something_wrong": "حدث خطأ ما"
+    "something_wrong": "حدث خطأ ما",
+    "error_id": "معرف الخطأ: {id}",
+    "go_home": "الذهاب للرئيسية",
+    "page_not_found": "الصفحة غير موجودة",
+    "page_not_found_description": "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+    "unexpected_with_support": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى أو الاتصال بالدعم إذا استمرت المشكلة."
   },
   "auth": {
     "login": {
@@ -241,7 +246,9 @@
         "invalid_token": "رابط إعادة التعيين غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.",
         "password_mismatch": "كلمتا المرور غير متطابقتين.",
         "weak_password": "يجب أن تكون كلمة المرور 8 أحرف على الأقل."
-      }
+      },
+      "hide_password": "إخفاء كلمة المرور",
+      "show_password": "إظهار كلمة المرور"
     },
     "onboarding": {
       "title": "مرحباً بك في AstraPost",
@@ -294,7 +301,12 @@
     "loading": "جاري التحميل...",
     "redirecting": "جاري التوجيه...",
     "sign_in_error": "فشل التوجيه إلى X. يرجى المحاولة مرة أخرى.",
-    "sign_in_aria": "تسجيل الدخول باستخدام X"
+    "sign_in_aria": "تسجيل الدخول باستخدام X",
+    "sign_out": "تسجيل الخروج",
+    "sign_up": "إنشاء حساب",
+    "user": "مستخدم",
+    "your_profile": "ملفك الشخصي",
+    "log_out": "تسجيل الخروج"
   },
   "dashboard_shell": {
     "open_navigation": "فتح التنقل",
@@ -647,9 +659,21 @@
     "no_tweet_analytics_description": "انشر منشورات لبدء رؤية التحليلات",
     "publish_post": "نشر منشور",
     "connect_x_cta": "اربط حساب X لعرض التحليلات",
+    "connect_x_description": "تظهر رؤى المتابعين والأداء بعد ربط حساب نشط.",
     "no_data_cta": "لا توجد بيانات تحليلية بعد. ابدأ بالنشر!",
+    "upgrade_banner_title": "اكتشف التحليلات المتقدمة",
+    "upgrade_banner_description": "شاهد تاريخ 30 يوماً، أفضل التغريدات أداءً، ورؤى أعمق مع Pro.",
+    "switch_to_comfortable": "التبديل إلى العرض المريح",
+    "switch_to_compact": "التبديل إلى العرض المدمج",
+    "follower_history_cta": "قم بالترقية إلى Pro لرؤية نمو المتابعين المفصل عبر الزمن.",
     "impressions_history_cta": "قم بالترقية لعرض سجل مرات الظهور",
+    "impressions_history_cta_detail": "قم بالترقية إلى Pro لرؤية سجل مرات الظهور المفصل عبر الزمن.",
+    "engagement_rate_title": "معدل التفاعل ({range})",
     "engagement_history_cta": "قم بالترقية لعرض سجل التفاعل",
+    "engagement_history_cta_detail": "قم بالترقية إلى Pro لرؤية اتجاهات معدل التفاعل عبر الزمن.",
+    "optimization_cta_detail": "قم بالترقية إلى Pro لمعرفة متى يكون جمهورك أكثر نشاطاً.",
+    "top_tweets_cta_detail": "شاهد أفضل محتوى أداءً مع تحليلات Pro.",
+    "vs_prev": "مقابل السابق",
     "toasts": {
       "refresh_queued": "تمت جدولة التحديث",
       "export_failed": "فشل تصدير التحليلات"
@@ -660,6 +684,36 @@
     "description": "تحليل اتجاهات المحتوى الفيروسي",
     "unlock_title": "اكتشف رؤى الانتشار",
     "unlock_description": "انشر 5+ تغريدات مع 100+ ظهور لفتح تحليل مدعوم بالذكاء الاصطناعي لأنماط المحتوى الأعلى أداءً.",
+    "periods": {
+      "30": "آخر 30 يومًا",
+      "60": "آخر 60 يومًا",
+      "90": "آخر 90 يومًا",
+      "180": "آخر 180 يومًا",
+      "365": "آخر سنة"
+    },
+    "analyze_button": "تحليل",
+    "analyzing": "جاري التحليل...",
+    "export_button": "تصدير",
+    "export_copy_markdown": "نسخ كـ Markdown",
+    "export_download_csv": "تنزيل CSV",
+    "error_fetch": "فشل جلب التحليل",
+    "error_analyze": "فشل تحليل المحتوى الفيروسي",
+    "insufficient_title": "بيانات غير كافية للتحليل",
+    "insufficient_description": "انشر المزيد من التغريدات (على الأقل 5 مع 100+ ظهور) للحصول على رؤى المحتوى الفيروسي.",
+    "stats": {
+      "tweets_analyzed": "تغريدات محللة",
+      "avg_engagement": "متوسط التفاعل",
+      "top_engagement": "أعلى تفاعل",
+      "total_impressions": "إجمالي الظهور"
+    },
+    "insights_title": "رؤى مولدة بالذكاء الاصطناعي",
+    "action_plan": {
+      "title": "خطة العمل الخاصة بك",
+      "description": "3 خطوات محددة لتحسين تفاعلك بناءً على بياناتك.",
+      "post_on": "انشر يوم {day} الساعة {hour} — تفاعلك في أعلى مستوياته حينها.",
+      "include_hashtag": "أضف #{tag} — أفضل وسم لديك من حيث معدل التفاعل.",
+      "write_length": "اكتب تغريدات {length} — تحصل على أكبر قدر من التفاعل في حسابك."
+    },
     "cards": {
       "top_hashtags": "أفضل الوسوم",
       "top_hashtags_desc": "الوسوم التي تحقق أكبر قدر من التفاعل",
@@ -691,9 +745,60 @@
     "title": "تحليل المنافسين",
     "description": "تتبع وتحليل أداء المنافسين",
     "username_label": "اسم مستخدم X",
+    "username_placeholder": "اسم المستخدم",
+    "language_label": "لغة التحليل",
+    "language_arabic": "العربية",
+    "language_english": "الإنجليزية",
+    "analyze_button": "تحليل",
+    "analyzing": "جاري التحليل...",
+    "empty_title": "أدخل اسم مستخدم X عام للتحليل",
+    "empty_description": "حلل أي حساب X عام لاكتشاف أنماط النشر والمواضيع الرئيسية واستراتيجية التفاعل.",
+    "loading_label": "جاري تحميل تحليل المنافس",
+    "results": {
+      "followers": "متابع",
+      "tweets_analyzed": "تغريدة محللة",
+      "analyze_another": "تحليل آخر"
+    },
+    "metrics": {
+      "followers": "المتابعون",
+      "tweets_analyzed": "تغريدات محللة",
+      "content_types": "أنواع المحتوى",
+      "top_hashtags": "أفضل الوسوم"
+    },
+    "compare": {
+      "title": "مقارنة مع حسابك",
+      "no_data_title": "لا توجد بيانات للمقارنة بعد",
+      "no_data_description": "انشر منشورات من AstraPost لترى كيف تقارن مع @{username}.",
+      "your_account": "حسابك",
+      "tweets_last_90_days": "{count} تغريدات · آخر 90 يومًا",
+      "their_tweets_analyzed": "{count} تغريدات محللة",
+      "posting_frequency": "معدل النشر",
+      "top_hashtags": "أفضل الوسوم",
+      "shared_tags_highlighted": "الوسوم المشتركة مظللة",
+      "no_hashtags_yet": "لا توجد وسوم بعد",
+      "content_types": "أنواع المحتوى",
+      "no_data_yet": "لا توجد بيانات بعد",
+      "best_posting_times": "أفضل أوقات النشر",
+      "your_account_label": "حسابك",
+      "see_best_time_predictor": "راجع مُتنبئ أفضل وقت للنشر للتفاصيل"
+    },
     "charts": {
+      "title": "الرسوم البيانية",
       "hashtag_prominence": "بروز الوسوم",
       "content_mix": "مزيج المحتوى"
+    },
+    "summary": {
+      "title": "ملخص استراتيجي"
+    },
+    "insights": {
+      "title": "المواضيع والوسوم والرؤى",
+      "top_topics": "أهم المواضيع",
+      "top_hashtags": "أفضل الوسوم",
+      "key_strengths": "نقاط القوة الرئيسية",
+      "your_opportunities": "فرصك"
+    },
+    "tone": {
+      "title": "ملف النبرة"
     },
     "empty": {
       "no_hashtags": "لم يتم العثور على وسوم",
@@ -824,12 +929,47 @@
   "jobs": {
     "title": "المهام",
     "description": "حالة المهام الخلفية وسجلها",
+    "filter_title": "تصفية المهام",
+    "filter_status_label": "الحالة",
+    "filter_status_all": "جميع الحالات",
+    "filter_queue_label": "الطابور",
+    "filter_queue_all": "جميع الطوابير",
+    "filter_queue_schedule": "طابور الجدولة",
+    "filter_queue_analytics": "طابور التحليلات",
+    "filter_search_label": "بحث",
+    "filter_search_placeholder": "ابحث عن postId / jobId / correlationId",
+    "filter_apply": "تطبيق التصفية",
+    "empty_title": "لا توجد مهام",
+    "empty_description": "جرّب تعديل عوامل التصفية أو تحقق لاحقاً من سجل المهام.",
+    "job_id": "معرف المهمة:",
+    "correlation": "معرف الترابط:",
+    "attempts": "المحاولات:",
+    "duration": "المدة:",
+    "unknown": "—",
+    "previous": "→ السابق",
+    "next": "التالي ←",
+    "page": "الصفحة {page}",
     "status": {
+      "running": "قيد التشغيل",
+      "retrying": "إعادة المحاولة",
+      "success": "نجاح",
+      "failed": "فشل",
       "pending": "قيد الانتظار",
       "processing": "قيد المعالجة",
-      "completed": "مكتمل",
-      "failed": "فشل"
+      "completed": "مكتمل"
     }
+  },
+  "languages": {
+    "ar": "العربية",
+    "en": "الإنجليزية",
+    "fr": "الفرنسية",
+    "de": "الألمانية",
+    "es": "الإسبانية",
+    "it": "الإيطالية",
+    "pt": "البرتغالية",
+    "tr": "التركية",
+    "ru": "الروسية",
+    "hi": "الهندية"
   },
   "ai_hub": {
     "title": "مركز الذكاء الاصطناعي",
@@ -1037,6 +1177,34 @@
       "enhancement_failed": "فشل التحسين. يرجى المحاولة مرة أخرى.",
       "session_resumed": "تم استئناف الجلسة السابقة.",
       "rewrite_failed": "فشلت إعادة الكتابة"
+    },
+    "trends": {
+      "trending_on_x": "رائج على X",
+      "updated": "تم التحديث {time}",
+      "just_now": "الآن",
+      "min_ago": "منذ دقيقة",
+      "mins_ago": "منذ {count} دقائق",
+      "hide": "إخفاء",
+      "show": "إظهار",
+      "loading": "جاري تحميل المواضيع الرائجة",
+      "couldnt_load": "تعذّر تحميل المواضيع الرائجة حالياً.",
+      "retry": "إعادة المحاولة",
+      "trending_topics": "المواضيع الرائجة",
+      "post": "نشر",
+      "post_about": "نشر عن: {topic}",
+      "collapse": "طي المواضيع الرائجة",
+      "show_trending": "إظهار المواضيع الرائجة",
+      "categories": {
+        "all": "الكل",
+        "technology": "التكنولوجيا",
+        "business": "الأعمال",
+        "news": "الأخبار",
+        "lifestyle": "نمط الحياة",
+        "sports": "الرياضة",
+        "entertainment": "الترفيه"
+      },
+      "post_count_high": "مرتفع",
+      "post_count_normal": "عادي"
     }
   },
   "ai_bio": {
@@ -1141,7 +1309,56 @@
       "load_accounts_failed": "فشل تحميل الحسابات",
       "select_account": "يرجى اختيار حساب X",
       "select_start_date": "يرجى تحديد تاريخ بداية للأسبوع الأول",
-      "schedule_failed": "فشل جدولة المنشورات. يرجى المحاولة مرة أخرى."
+      "schedule_failed": "فشل جدولة المنشورات. يرجى المحاولة مرة أخرى.",
+      "scheduled_count": "{count, plural, zero {لا منشورات مجدولة} one {تمت جدولة منشور واحد} two {تمت جدولة منشورين} few {تمت جدولة # منشورات} many {تمت جدولة # منشوراً} other {تمت جدولة # منشور}}",
+      "scheduled_partial": "تمت جدولة {success}، فشل {failed}"
+    },
+    "schedule_dialog_title": "جدولة جميع عناصر التقويم",
+    "schedule_dialog_description": "جدولة جميع {count} منشور من تقويم المحتوى الخاص بك. سيتم استخدام ملخص كل عنصر كمحتوى أولي للمسودة — راجع وحسّن في قائمة الانتظار قبل النشر.",
+    "post_to": "النشر إلى",
+    "loading_accounts": "جاري تحميل الحسابات…",
+    "no_connected_accounts": "لم يتم العثور على حسابات X متصلة.",
+    "connect_in_settings": "اربط واحداً في الإعدادات",
+    "account_placeholder": "اختر حساباً",
+    "default_badge": "(افتراضي)",
+    "week_starts_on": "يبدأ الأسبوع 1 في",
+    "week_start_help": "الاثنين من الأسبوع الأول. سيتم تحويل أسماء الأيام في التقويم إلى تواريخ فعلية بدءاً من هذا التاريخ.",
+    "cancel": "إلغاء",
+    "scheduling": "جاري الجدولة…",
+    "schedule_n_posts": "جدولة {count} {count, plural, zero {منشور} one {منشور} two {منشورين} few {منشورات} many {منشوراً} other {منشور}}",
+    "open_in_composer": "فتح في المحرر",
+    "breadcrumb": "تقويم المحتوى",
+    "generating_with_time": "جاري التوليد... ({elapsed} ثانية)",
+    "week_label_same_month": "الأسبوع {weekNum} · {startMonth} {startDay}–{endDay}",
+    "week_label_cross_month": "الأسبوع {weekNum} · {startMonth} {startDay}–{endMonth} {endDay}",
+    "language_options": {
+      "ar": "العربية",
+      "en": "الإنجليزية",
+      "fr": "الفرنسية",
+      "de": "الألمانية",
+      "es": "الإسبانية",
+      "it": "الإيطالية",
+      "pt": "البرتغالية",
+      "tr": "التركية",
+      "ru": "الروسية",
+      "hi": "الهندية"
+    },
+    "tone_options": {
+      "professional": "احترافي",
+      "casual": "عفوي",
+      "educational": "تعليمي",
+      "inspirational": "ملهم",
+      "humorous": "مرح",
+      "viral": "انتشار واسع"
+    },
+    "days_short": {
+      "mon": "الاثنين",
+      "tue": "الثلاثاء",
+      "wed": "الأربعاء",
+      "thu": "الخميس",
+      "fri": "الجمعة",
+      "sat": "السبت",
+      "sun": "الأحد"
     }
   },
   "ai_history": {
@@ -1155,7 +1372,21 @@
     "output": "الإخراج",
     "no_content": "لا يوجد محتوى",
     "reuse": "إعادة الاستخدام",
-    "template_streamed": "تم بث المحتوى مباشرة إلى المحرر. أعد التوليد من مربع الحوار القوالب لإنتاج محتوى جديد."
+    "template_streamed": "تم بث المحتوى مباشرة إلى المحرر. أعد التوليد من مربع الحوار القوالب لإنتاج محتوى جديد.",
+    "tweet_number": "تغريدة {index}",
+    "type": {
+      "thread": "خيط",
+      "template": "قالب",
+      "hashtags": "وسوم",
+      "bio": "سيرة ذاتية",
+      "reply": "رد",
+      "translate": "ترجمة",
+      "inspire": "إلهام",
+      "calendar": "تقويم",
+      "agentic": "توليد تلقائي",
+      "variant": "متغير",
+      "image": "صورة"
+    }
   },
   "ai_image": {
     "service_busy": "الخدمة مشغولة — جاري إعادة المحاولة تلقائياً...",
@@ -1605,6 +1836,7 @@
     "generated_hashtags": "الوسوم المُولَّدة",
     "count": "{count}",
     "click_copy": "انقر على أي وسم لنسخه، أو استخدم \"نسخ الكل\" للحصول على كل شيء. انقر × لإزالة وسم.",
+    "remove_hashtag": "إزالة الوسم",
     "error_enter_content": "يرجى إدخال بعض المحتوى",
     "error_generation": "فشل توليد الوسوم"
   },

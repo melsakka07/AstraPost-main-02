@@ -126,7 +126,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
       {/* Share Button - Floating */}
       <button
         onClick={handleShare}
-        className="from-primary fixed right-6 bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
+        className="from-primary fixed end-6 bottom-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br to-purple-500 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl"
         aria-label={t("share_article")}
       >
         <Share2 className="h-5 w-5" />

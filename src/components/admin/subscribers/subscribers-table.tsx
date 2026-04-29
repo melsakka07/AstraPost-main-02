@@ -232,6 +232,7 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-9"
+            aria-label="Search subscribers"
           />
         </div>
         <Button onClick={() => setAddOpen(true)} size="sm">

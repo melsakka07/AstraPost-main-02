@@ -2,6 +2,11 @@ import { Lightbulb } from "lucide-react";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { RoadmapTable } from "@/components/admin/roadmap/roadmap-table";
 import { fetchAdminData } from "@/lib/admin/fetch-server-data";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Roadmap — Admin",
+};
 
 export default async function AdminRoadmapPage() {
   const response = await fetchAdminData<any>("/roadmap", {

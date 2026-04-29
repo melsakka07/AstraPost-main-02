@@ -140,7 +140,7 @@ async function JobsList({ jobs }: { jobs: any[] }) {
               <div className="text-muted-foreground text-sm">
                 {job.name} • {job.timeAgo}
                 {(job as any).failureCount && (
-                  <span className="ml-2">({(job as any).failureCount} attempts)</span>
+                  <span className="ms-2">({(job as any).failureCount} attempts)</span>
                 )}
               </div>
               {job.failedReason && (

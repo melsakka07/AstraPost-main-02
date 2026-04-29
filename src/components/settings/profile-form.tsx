@@ -255,7 +255,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   <FormItem>
                     <FormLabel>{t("profile.display_name_label")}</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} maxLength={50} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

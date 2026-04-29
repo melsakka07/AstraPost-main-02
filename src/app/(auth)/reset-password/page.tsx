@@ -150,8 +150,9 @@ export default function ResetPasswordPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                className="text-muted-foreground hover:text-foreground absolute end-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center"
                 tabIndex={-1}
+                aria-label={showPassword ? t("hide_password") : t("show_password")}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -177,7 +178,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {t("reset_password.submit")}
           </Button>
         </form>

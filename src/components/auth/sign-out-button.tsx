@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { signOut, useSession } from "@/lib/auth-client";
 
 export function SignOutButton() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
+  const t = useTranslations("auth");
 
   if (isPending) {
-    return <Button disabled>Loading...</Button>;
+    return <Button disabled>{t("loading")}</Button>;
   }
 
   if (!session) {
@@ -25,7 +27,7 @@ export function SignOutButton() {
         router.refresh();
       }}
     >
-      Sign out
+      {t("sign_out")}
     </Button>
   );
 }

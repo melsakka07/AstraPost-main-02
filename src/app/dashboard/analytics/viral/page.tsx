@@ -80,7 +80,7 @@ export default function ViralAnalyzerPage() {
 
     try {
       const res = await fetch(`/api/analytics/viral?days=${days}`);
-      if (!res.ok) throw new Error("Failed to fetch analysis");
+      if (!res.ok) throw new Error(t("error_fetch"));
       const data = await res.json();
       if (data.insufficientData) {
         setInsufficientData(true);
@@ -88,7 +88,7 @@ export default function ViralAnalyzerPage() {
         setAnalysis(data.analysis);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to analyze viral content");
+      setError(err instanceof Error ? err.message : t("error_analyze"));
     } finally {
       setIsLoading(false);
     }
@@ -203,23 +203,23 @@ export default function ViralAnalyzerPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="60">Last 60 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-              <SelectItem value="180">Last 180 days</SelectItem>
-              <SelectItem value="365">Last year</SelectItem>
+              <SelectItem value="30">{t("periods.30")}</SelectItem>
+              <SelectItem value="60">{t("periods.60")}</SelectItem>
+              <SelectItem value="90">{t("periods.90")}</SelectItem>
+              <SelectItem value="180">{t("periods.180")}</SelectItem>
+              <SelectItem value="365">{t("periods.365")}</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={fetchAnalysis} disabled={isLoading} size="default">
             {isLoading ? (
               <>
                 <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                Analyzing...
+                {t("analyzing")}
               </>
             ) : (
               <>
                 <Sparkles className="me-2 h-4 w-4" />
-                Analyze
+                {t("analyze_button")}
               </>
             )}
           </Button>
@@ -228,17 +228,17 @@ export default function ViralAnalyzerPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="default">
                   <Download className="me-2 h-4 w-4" />
-                  Export
+                  {t("export_button")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleCopyMarkdown}>
                   <Copy className="me-2 h-4 w-4" />
-                  Copy as Markdown
+                  {t("export_copy_markdown")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDownloadCSV}>
                   <Download className="me-2 h-4 w-4" />
-                  Download CSV
+                  {t("export_download_csv")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -258,19 +258,16 @@ export default function ViralAnalyzerPage() {
         <div className="space-y-6">
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Not enough tweet data to analyze. Publish more tweets (at least 5 with 100+
-              impressions) to get viral content insights.
-            </AlertDescription>
+            <AlertDescription>{t("insufficient_description")}</AlertDescription>
           </Alert>
           <div className="relative">
             <div className="pointer-events-none opacity-40 blur-[2px] select-none">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                 {[
-                  { label: "Tweets Analyzed", value: "24" },
-                  { label: "Avg Engagement", value: "3.2%" },
-                  { label: "Top Engagement", value: "12.8%" },
-                  { label: "Total Impressions", value: "48,320" },
+                  { label: t("stats.tweets_analyzed"), value: "24" },
+                  { label: t("stats.avg_engagement"), value: "3.2%" },
+                  { label: t("stats.top_engagement"), value: "12.8%" },
+                  { label: t("stats.total_impressions"), value: "48,320" },
                 ].map((item) => (
                   <Card key={item.label}>
                     <CardHeader className="pb-2">
@@ -321,20 +318,20 @@ export default function ViralAnalyzerPage() {
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
             {[
               {
-                label: "Tweets Analyzed",
+                label: t("stats.tweets_analyzed"),
                 value: String(analysis.overall.tweetsAnalyzed),
               },
               {
-                label: "Avg Engagement",
+                label: t("stats.avg_engagement"),
                 value: fmt(analysis.overall.avgEngagement),
               },
               {
-                label: "Top Engagement",
+                label: t("stats.top_engagement"),
                 value: fmt(analysis.overall.topEngagement),
                 highlight: true,
               },
               {
-                label: "Total Impressions",
+                label: t("stats.total_impressions"),
                 value: analysis.overall.totalImpressions.toLocaleString(userLocale),
               },
             ].map((s) => (
@@ -358,7 +355,7 @@ export default function ViralAnalyzerPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="text-primary h-5 w-5" />
-                AI-Generated Insights
+                {t("insights_title")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -392,39 +389,31 @@ export default function ViralAnalyzerPage() {
             if (bestDay && bestHour) {
               actions.push({
                 icon: Clock,
-                text: (
-                  <>
-                    Post on{" "}
-                    <strong>
-                      {bestDay.day}s at {bestHour.hour}
-                    </strong>{" "}
-                    — your engagement is highest then.
-                  </>
-                ),
+                text: t.rich("action_plan.post_on", {
+                  day: bestDay.day,
+                  hour: bestHour.hour,
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                }),
               });
             }
 
             if (topHashtag) {
               actions.push({
                 icon: Hash,
-                text: (
-                  <>
-                    Include <strong>#{topHashtag.tag}</strong> — your top hashtag by engagement
-                    rate.
-                  </>
-                ),
+                text: t.rich("action_plan.include_hashtag", {
+                  tag: topHashtag.tag,
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                }),
               });
             }
 
             if (bestLength) {
               actions.push({
                 icon: Type,
-                text: (
-                  <>
-                    Write <strong>{bestLength.category.toLowerCase()}</strong> tweets — they get the
-                    most engagement in your account.
-                  </>
-                ),
+                text: t.rich("action_plan.write_length", {
+                  length: bestLength.category.toLowerCase(),
+                  strong: (chunks) => <strong>{chunks}</strong>,
+                }),
               });
             }
 
@@ -435,11 +424,9 @@ export default function ViralAnalyzerPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
                     <CheckCircle2 className="text-primary h-5 w-5" />
-                    Your Action Plan
+                    {t("action_plan.title")}
                   </CardTitle>
-                  <CardDescription>
-                    3 specific steps to improve your engagement based on your data.
-                  </CardDescription>
+                  <CardDescription>{t("action_plan.description")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ol className="space-y-3">
@@ -530,9 +517,7 @@ export default function ViralAnalyzerPage() {
                   height={200}
                   emptyText={t("empty.no_length")}
                 />
-                <p className="text-muted-foreground mt-2 text-right text-xs">
-                  {t("length_legend")}
-                </p>
+                <p className="text-muted-foreground mt-2 text-end text-xs">{t("length_legend")}</p>
               </CardContent>
             </Card>
 

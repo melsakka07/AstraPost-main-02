@@ -96,60 +96,75 @@ export default async function JobsPage({
     return "outline";
   };
 
+  const statusLabel: Record<string, string> = {
+    running: t("status.running"),
+    retrying: t("status.retrying"),
+    success: t("status.success"),
+    failed: t("status.failed"),
+  };
+
+  const queueLabel: Record<string, string> = {
+    "schedule-queue": t("filter_queue_schedule"),
+    "analytics-queue": t("filter_queue_analytics"),
+  };
+
   return (
     <DashboardPageWrapper icon={Settings2Icon} title={t("title")} description={t("description")}>
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Filter Jobs</CardTitle>
+          <CardTitle className="text-base">{t("filter_title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end" method="GET">
             <div className="space-y-1.5">
-              <Label className="text-muted-foreground text-xs">Status</Label>
+              <Label className="text-muted-foreground text-xs">{t("filter_status_label")}</Label>
               <Select name="status" defaultValue={status || "all"}>
                 <SelectTrigger className="h-10 sm:min-w-[180px]">
-                  <SelectValue placeholder="All statuses" />
+                  <SelectValue placeholder={t("filter_status_all")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="running">Running</SelectItem>
-                  <SelectItem value="retrying">Retrying</SelectItem>
-                  <SelectItem value="success">Success</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="all">{t("filter_status_all")}</SelectItem>
+                  <SelectItem value="running">{t("status.running")}</SelectItem>
+                  <SelectItem value="retrying">{t("status.retrying")}</SelectItem>
+                  <SelectItem value="success">{t("status.success")}</SelectItem>
+                  <SelectItem value="failed">{t("status.failed")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-muted-foreground text-xs">Queue</Label>
+              <Label className="text-muted-foreground text-xs">{t("filter_queue_label")}</Label>
               <Select name="queue" defaultValue={queue || "all"}>
                 <SelectTrigger className="h-10 sm:min-w-[180px]">
-                  <SelectValue placeholder="All queues" />
+                  <SelectValue placeholder={t("filter_queue_all")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All queues</SelectItem>
-                  <SelectItem value="schedule-queue">Schedule Queue</SelectItem>
-                  <SelectItem value="analytics-queue">Analytics Queue</SelectItem>
+                  <SelectItem value="all">{t("filter_queue_all")}</SelectItem>
+                  <SelectItem value="schedule-queue">{t("filter_queue_schedule")}</SelectItem>
+                  <SelectItem value="analytics-queue">{t("filter_queue_analytics")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="min-w-0 flex-1 space-y-1.5">
-              <Label className="text-muted-foreground text-xs">Search</Label>
+              <Label htmlFor="jobs-search" className="text-muted-foreground text-xs">
+                {t("filter_search_label")}
+              </Label>
               <Input
+                id="jobs-search"
                 name="q"
                 defaultValue={q || ""}
-                placeholder="Search postId / jobId / correlationId"
+                placeholder={t("filter_search_placeholder")}
                 className="h-10 sm:min-w-[280px]"
               />
             </div>
 
             <button
               type="submit"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 rounded-md px-4 text-sm font-medium transition-colors sm:w-auto"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-11 rounded-md px-4 text-sm font-medium transition-colors sm:w-auto"
             >
-              Apply Filters
+              {t("filter_apply")}
             </button>
           </form>
         </CardContent>
@@ -162,10 +177,8 @@ export default async function JobsPage({
             <div className="bg-muted mb-4 flex h-16 w-16 items-center justify-center rounded-full">
               <Settings2Icon className="text-muted-foreground h-8 w-8" />
             </div>
-            <h3 className="mb-2 text-lg font-semibold">No jobs found</h3>
-            <p className="text-muted-foreground max-w-md">
-              Try adjusting your filters or check back later for job history.
-            </p>
+            <h3 className="mb-2 text-lg font-semibold">{t("empty_title")}</h3>
+            <p className="text-muted-foreground max-w-md">{t("empty_description")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -178,10 +191,10 @@ export default async function JobsPage({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant={badgeVariant(String(r.status)) as any}>
-                        {String(r.status)}
+                        {statusLabel[String(r.status)] ?? String(r.status)}
                       </Badge>
                       <Badge variant="outline" className="text-xs">
-                        {String(r.queueName)}
+                        {queueLabel[String(r.queueName)] ?? String(r.queueName)}
                       </Badge>
                       {r.postId && (
                         <Link href={`/dashboard/jobs?q=${encodeURIComponent(String(r.postId))}`}>
@@ -207,14 +220,14 @@ export default async function JobsPage({
 
                   {/* Post content preview */}
                   {preview && (
-                    <p className="text-muted-foreground border-border line-clamp-2 border-l-2 pl-3 text-sm italic">
+                    <p className="text-muted-foreground border-border line-clamp-2 border-s-2 ps-3 text-sm italic">
                       {preview}
                     </p>
                   )}
 
                   <div className="bg-muted/30 grid gap-2 rounded-md p-3 text-sm">
                     <div className="text-muted-foreground flex items-center gap-1 text-xs">
-                      <span>Job ID:</span>
+                      <span>{t("job_id")}</span>
                       <span className="text-foreground font-mono">
                         {truncateId(String(r.jobId))}
                       </span>
@@ -222,7 +235,7 @@ export default async function JobsPage({
                     </div>
                     {r.correlationId && (
                       <div className="text-muted-foreground flex items-center gap-1 text-xs">
-                        <span>Correlation:</span>
+                        <span>{t("correlation")}</span>
                         <span className="text-foreground font-mono">
                           {truncateId(String(r.correlationId))}
                         </span>
@@ -232,18 +245,18 @@ export default async function JobsPage({
                     <div className="flex items-center gap-4 text-xs">
                       {(r.attempts || r.attemptsMade) && (
                         <div className="text-muted-foreground">
-                          Attempts:{" "}
+                          {t("attempts")}{" "}
                           <span className="text-foreground font-medium">{r.attemptsMade || 0}</span>
                           {" / "}
                           <span className="text-foreground font-medium">{r.attempts || "?"}</span>
                         </div>
                       )}
                       <div className="text-muted-foreground">
-                        Duration:{" "}
+                        {t("duration")}{" "}
                         <span className="text-foreground font-medium">
                           {r.finishedAt
                             ? `${Math.max(0, Math.round((new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime()) / 1000))}s`
-                            : "—"}
+                            : t("unknown")}
                         </span>
                       </div>
                     </div>
@@ -279,9 +292,9 @@ export default async function JobsPage({
                 page: String(Math.max(0, page - 1)),
               }).toString()}`}
             >
-              ← Previous
+              {t("previous")}
             </Link>
-            <div className="text-muted-foreground text-sm">Page {page + 1}</div>
+            <div className="text-muted-foreground text-sm">{t("page", { page: page + 1 })}</div>
             <Link
               className={
                 runs.length < limit
@@ -295,7 +308,7 @@ export default async function JobsPage({
                 page: String(page + 1),
               }).toString()}`}
             >
-              Next →
+              {t("next")}
             </Link>
           </div>
         </div>

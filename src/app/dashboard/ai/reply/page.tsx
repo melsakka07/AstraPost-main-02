@@ -50,6 +50,7 @@ interface PlanLimitPayload {
 
 export default function ReplyGeneratorPage() {
   const t = useTranslations("ai_reply");
+  const langT = useTranslations("languages");
   const router = useRouter();
   const { openWithContext } = useUpgradeModal();
 
@@ -223,16 +224,16 @@ export default function ReplyGeneratorPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">Arabic</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="it">Italian</SelectItem>
-                  <SelectItem value="pt">Portuguese</SelectItem>
-                  <SelectItem value="tr">Turkish</SelectItem>
-                  <SelectItem value="ru">Russian</SelectItem>
-                  <SelectItem value="hi">Hindi</SelectItem>
+                  <SelectItem value="ar">{langT("ar")}</SelectItem>
+                  <SelectItem value="en">{langT("en")}</SelectItem>
+                  <SelectItem value="fr">{langT("fr")}</SelectItem>
+                  <SelectItem value="de">{langT("de")}</SelectItem>
+                  <SelectItem value="es">{langT("es")}</SelectItem>
+                  <SelectItem value="it">{langT("it")}</SelectItem>
+                  <SelectItem value="pt">{langT("pt")}</SelectItem>
+                  <SelectItem value="tr">{langT("tr")}</SelectItem>
+                  <SelectItem value="ru">{langT("ru")}</SelectItem>
+                  <SelectItem value="hi">{langT("hi")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -387,7 +388,7 @@ export default function ReplyGeneratorPage() {
                       onClick={() => sendToComposer(reply.text)}
                       aria-label="Send reply to Composer"
                     >
-                      <ChevronRight className="h-3.5 w-3.5" />
+                      <ChevronRight className="h-3.5 w-3.5 rtl:scale-x-[-1]" />
                     </Button>
                   </div>
                 </div>

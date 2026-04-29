@@ -96,7 +96,7 @@ export default function ProfilePage() {
                   <span>{user.email}</span>
                   {user.emailVerified && (
                     <Badge variant="outline" className="border-green-600 text-green-600">
-                      <Shield className="mr-1 h-3 w-3" />
+                      <Shield className="me-1 h-3 w-3" />
                       {t("verified")}
                     </Badge>
                   )}
@@ -208,7 +208,7 @@ export default function ProfilePage() {
                 className="h-auto justify-start p-4"
                 onClick={() => setEditProfileOpen(true)}
               >
-                <User className="mr-2 h-4 w-4" />
+                <User className="me-2 h-4 w-4" />
                 <div className="text-left">
                   <div className="font-medium">{t("edit_profile")}</div>
                   <div className="text-muted-foreground text-xs">
@@ -221,7 +221,7 @@ export default function ProfilePage() {
                 className="h-auto justify-start p-4"
                 onClick={() => setSecurityOpen(true)}
               >
-                <Shield className="mr-2 h-4 w-4" />
+                <Shield className="me-2 h-4 w-4" />
                 <div className="text-left">
                   <div className="font-medium">{t("security_settings")}</div>
                   <div className="text-muted-foreground text-xs">
@@ -234,7 +234,7 @@ export default function ProfilePage() {
                 className="h-auto justify-start p-4"
                 onClick={() => setEmailPrefsOpen(true)}
               >
-                <Mail className="mr-2 h-4 w-4" />
+                <Mail className="me-2 h-4 w-4" />
                 <div className="text-left">
                   <div className="font-medium">{t("email_preferences")}</div>
                   <div className="text-muted-foreground text-xs">

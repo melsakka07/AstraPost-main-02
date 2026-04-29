@@ -92,19 +92,34 @@ const MONTH_NAMES = [
   "Dec",
 ];
 
-function getWeekLabel(weekNum: number, baseDate: Date): string {
-  const day = baseDate.getDay(); // 0=Sun
+function getWeekLabel(
+  weekNum: number,
+  baseDate: Date,
+  t: ReturnType<typeof useTranslations<"ai_calendar">>
+): string {
+  const day = baseDate.getDay();
   const diffToMonday = day === 0 ? -6 : 1 - day;
   const monday = new Date(baseDate);
   monday.setDate(baseDate.getDate() + diffToMonday + (weekNum - 1) * 7);
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const sm = MONTH_NAMES[monday.getMonth()];
-  const em = MONTH_NAMES[sunday.getMonth()];
+  const sm = MONTH_NAMES[monday.getMonth()]!;
+  const em = MONTH_NAMES[sunday.getMonth()]!;
   if (monday.getMonth() === sunday.getMonth()) {
-    return `Week ${weekNum} · ${sm} ${monday.getDate()}–${sunday.getDate()}`;
+    return t("week_label_same_month", {
+      weekNum,
+      startMonth: sm,
+      startDay: monday.getDate(),
+      endDay: sunday.getDate(),
+    });
   }
-  return `Week ${weekNum} · ${sm} ${monday.getDate()}–${em} ${sunday.getDate()}`;
+  return t("week_label_cross_month", {
+    weekNum,
+    startMonth: sm,
+    startDay: monday.getDate(),
+    endMonth: em,
+    endDay: sunday.getDate(),
+  });
 }
 
 export default function ContentCalendarPage() {
@@ -185,7 +200,6 @@ export default function ContentCalendarPage() {
     const params = new URLSearchParams({
       prefill: item.brief,
       type: item.tweetType === "thread" ? "thread" : "tweet",
-      // W5: Pass full metadata so Composer can show tone + topic hint
       tone: item.tone,
       topic: item.topic,
     });
@@ -195,7 +209,7 @@ export default function ContentCalendarPage() {
   // Returns next Monday as YYYY-MM-DD
   function nextMonday(): string {
     const d = new Date();
-    const day = d.getDay(); // 0=Sun, 1=Mon, ...
+    const day = d.getDay();
     const diff = day === 0 ? 1 : day === 1 ? 7 : 8 - day;
     d.setDate(d.getDate() + diff);
     return d.toISOString().slice(0, 10);
@@ -220,7 +234,6 @@ export default function ContentCalendarPage() {
     const dayOffset = DAY_OFFSETS[dayName] ?? 0;
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + (weekNum - 1) * 7 + dayOffset);
-    // Parse "9:00 AM" / "2:30 PM" / "14:00"
     const match = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
     if (match) {
       let h = parseInt(match[1]!, 10);
@@ -266,7 +279,6 @@ export default function ContentCalendarPage() {
     }
 
     setScheduleAllLoading(true);
-    // Parse the start date as local midnight to avoid timezone shifts
     const [y, mo, d] = scheduleAllStartDate.split("-").map(Number);
     const startDate = new Date(y!, mo! - 1, d!, 0, 0, 0, 0);
 
@@ -303,10 +315,10 @@ export default function ContentCalendarPage() {
     setScheduleAllOpen(false);
 
     if (errorCount === 0) {
-      toast.success(`${successCount} post${successCount !== 1 ? "s" : ""} scheduled`);
+      toast.success(t("toasts.scheduled_count", { count: successCount }));
       router.push("/dashboard/queue");
     } else if (successCount > 0) {
-      toast.warning(`${successCount} scheduled, ${errorCount} failed`);
+      toast.warning(t("toasts.scheduled_partial", { success: successCount, failed: errorCount }));
       router.push("/dashboard/queue");
     } else {
       toast.error(t("toasts.schedule_failed"));
@@ -326,71 +338,74 @@ export default function ContentCalendarPage() {
     []
   );
 
+  const DAYS_SHORT = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+
   return (
-    <DashboardPageWrapper
-      icon={CalendarDays}
-      title="AI Content Calendar"
-      description="Set your niche and schedule to get a week of AI-planned content — topics, tones, and posting times."
-    >
-      <Breadcrumb items={[{ label: "Content Calendar" }]} className="mb-2" />
+    <DashboardPageWrapper icon={CalendarDays} title={t("title")} description={t("description")}>
+      <Breadcrumb items={[{ label: t("breadcrumb") }]} className="mb-2" />
       <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
         {/* Config Panel */}
         <Card className="h-fit lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base">Configure Calendar</CardTitle>
+            <CardTitle className="text-base">{t("configure_calendar")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="niche">Your Niche / Topic Focus</Label>
+              <Label htmlFor="niche">{t("niche_topic")}</Label>
               <Input
                 id="niche"
-                placeholder="e.g. Islamic finance, tech entrepreneurship..."
+                placeholder={t("niche_placeholder")}
                 value={niche}
                 onChange={(e) => setNiche(e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Language</Label>
+              <Label>{t("language")}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">Arabic</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
-                  <SelectItem value="it">Italian</SelectItem>
-                  <SelectItem value="pt">Portuguese</SelectItem>
-                  <SelectItem value="tr">Turkish</SelectItem>
-                  <SelectItem value="ru">Russian</SelectItem>
-                  <SelectItem value="hi">Hindi</SelectItem>
+                  {(["ar", "en", "fr", "de", "es", "it", "pt", "tr", "ru", "hi"] as const).map(
+                    (code) => (
+                      <SelectItem key={code} value={code}>
+                        {t(`language_options.${code}`)}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Default Tone</Label>
+              <Label>{t("default_tone")}</Label>
               <Select value={tone} onValueChange={setTone}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="professional">Professional</SelectItem>
-                  <SelectItem value="casual">Casual</SelectItem>
-                  <SelectItem value="educational">Educational</SelectItem>
-                  <SelectItem value="inspirational">Inspirational</SelectItem>
-                  <SelectItem value="humorous">Humorous</SelectItem>
-                  <SelectItem value="viral">Viral</SelectItem>
+                  {(
+                    [
+                      "professional",
+                      "casual",
+                      "educational",
+                      "inspirational",
+                      "humorous",
+                      "viral",
+                    ] as const
+                  ).map((toneKey) => (
+                    <SelectItem key={toneKey} value={toneKey}>
+                      {t(`tone_options.${toneKey}`)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Posts Per Week</Label>
+                <Label>{t("posts_per_week")}</Label>
                 <span className="text-muted-foreground text-sm font-medium">{postsPerWeek}</span>
               </div>
               <Slider
@@ -399,16 +414,16 @@ export default function ContentCalendarPage() {
                 min={1}
                 max={7}
                 step={1}
-                aria-label="Posts per week"
-                aria-valuetext={`${postsPerWeek} posts per week`}
+                aria-label={t("posts_per_week")}
+                aria-valuetext={`${postsPerWeek} ${t("tweets")}`}
               />
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label>Weeks to Plan</Label>
+                <Label>{t("weeks_to_plan")}</Label>
                 <span className="text-muted-foreground text-sm font-medium">
-                  {weeks} week{weeks > 1 ? "s" : ""}
+                  {weeks} {weeks > 1 ? t("weeks") : t("week")}
                 </span>
               </div>
               <Slider
@@ -417,8 +432,8 @@ export default function ContentCalendarPage() {
                 min={1}
                 max={4}
                 step={1}
-                aria-label="Weeks to plan"
-                aria-valuetext={`${weeks} ${weeks === 1 ? "week" : "weeks"}`}
+                aria-label={t("weeks_to_plan")}
+                aria-valuetext={`${weeks} ${weeks === 1 ? t("week") : t("weeks")}`}
               />
             </div>
 
@@ -431,12 +446,12 @@ export default function ContentCalendarPage() {
               {isGenerating ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  Generating... ({elapsed}s)
+                  {t("generating_with_time", { elapsed })}
                 </>
               ) : (
                 <>
                   <Sparkles className="me-2 h-4 w-4" />
-                  Generate Calendar
+                  {t("generate_calendar")}
                 </>
               )}
             </Button>
@@ -445,33 +460,33 @@ export default function ContentCalendarPage() {
 
         {/* Calendar Results */}
         <div className="space-y-4 lg:col-span-2">
-          {/* Schedule All header bar — only shown when results are ready */}
           {items.length > 0 && !isGenerating && (
             <div className="border-border bg-muted/30 flex items-center justify-between rounded-lg border px-4 py-2.5">
               <p className="text-muted-foreground text-sm">
-                <span className="text-foreground font-medium">{items.length}</span> post
-                {items.length !== 1 ? "s" : ""} planned
+                <span className="text-foreground font-medium">{items.length}</span>{" "}
+                {items.length === 1
+                  ? t("posts_planned", { count: 1 })
+                  : t("posts_planned", { count: items.length })}
               </p>
               <Button size="sm" onClick={openScheduleAll}>
                 <CalendarCheck className="me-2 h-4 w-4" />
-                Schedule All
+                {t("schedule_all")}
               </Button>
             </div>
           )}
           {items.length === 0 && !isGenerating ? (
             <div className="border-border bg-muted/20 space-y-4 rounded-xl border border-dashed p-5">
-              {/* Blurred weekly grid preview */}
               <div
                 className="pointer-events-none opacity-25 blur-[1.5px] select-none"
                 aria-hidden="true"
               >
                 <div className="mb-1.5 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                  {["Mon", "Tue", "Wed", "Thu"].map((d) => (
+                  {DAYS_SHORT.slice(0, 4).map((d) => (
                     <div
                       key={d}
                       className="text-muted-foreground py-0.5 text-center text-[10px] font-semibold"
                     >
-                      {d}
+                      {t(`days_short.${d}`)}
                     </div>
                   ))}
                 </div>
@@ -486,23 +501,28 @@ export default function ContentCalendarPage() {
                 </div>
               </div>
               <div className="text-center">
-                <p className="text-sm font-semibold">Your content calendar will appear here</p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Set your niche and schedule, then click Generate Calendar
-                </p>
+                <p className="text-sm font-semibold">{t("calendar_appears")}</p>
+                <p className="text-muted-foreground mt-1 text-xs">{t("set_niche_schedule")}</p>
               </div>
             </div>
           ) : isGenerating ? (
             <div className="border-border bg-muted/20 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-16 text-center">
               <Loader2 className="text-primary h-8 w-8 animate-spin" />
-              <p className="text-muted-foreground text-sm">Building your content calendar...</p>
+              <p className="text-muted-foreground text-sm">{t("building_calendar")}</p>
             </div>
           ) : (
             byWeek.map(({ weekNum, byDay }) => (
               <div key={weekNum} className="space-y-4">
                 <div className="flex items-center gap-3">
                   <h2 className="text-base font-semibold">
-                    {generatedAt ? getWeekLabel(weekNum, generatedAt) : `Week ${weekNum}`}
+                    {generatedAt
+                      ? getWeekLabel(weekNum, generatedAt, t)
+                      : t("week_label_same_month", {
+                          weekNum,
+                          startMonth: "",
+                          startDay: "",
+                          endDay: "",
+                        })}
                   </h2>
                   <div className="bg-border h-px flex-1" />
                 </div>
@@ -523,10 +543,12 @@ export default function ContentCalendarPage() {
                                       TWEET_TYPE_COLORS[item.tweetType] ?? ""
                                     }`}
                                   >
-                                    {item.tweetType}
+                                    {t(
+                                      `tweet_type.${item.tweetType as "tweet" | "thread" | "poll" | "question"}`
+                                    )}
                                   </span>
                                   <Badge variant="outline" className="text-xs">
-                                    {item.tone}
+                                    {t(`tone_options.${item.tone}` as any) || item.tone}
                                   </Badge>
                                   <span className="text-muted-foreground flex items-center gap-1 text-xs">
                                     <Clock className="h-3 w-3" />
@@ -543,9 +565,12 @@ export default function ContentCalendarPage() {
                                 variant="ghost"
                                 className="shrink-0"
                                 onClick={() => openInComposer(item)}
-                                aria-label="Open in Composer"
+                                aria-label={t("open_in_composer")}
                               >
-                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                                <ChevronRight
+                                  className="h-4 w-4 rtl:scale-x-[-1]"
+                                  aria-hidden="true"
+                                />
                               </Button>
                             </div>
                           </CardContent>
@@ -565,47 +590,47 @@ export default function ContentCalendarPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarCheck className="text-primary h-5 w-5" />
-              Schedule All Calendar Items
+              {t("schedule_dialog_title")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-5 py-2">
             <p className="text-muted-foreground text-sm">
-              Schedule all <span className="text-foreground font-medium">{items.length} posts</span>{" "}
-              from your content calendar. Each item's brief will be used as the initial draft
-              content — review and refine in your queue before publishing.
+              {t("schedule_dialog_description", { count: items.length })}
             </p>
 
             {/* Account selector */}
             <div className="space-y-2">
               <Label htmlFor="sa-account" className="flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5" />
-                Post to
+                {t("post_to")}
               </Label>
               {scheduleAllFetching ? (
                 <div className="text-muted-foreground flex items-center gap-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading accounts…
+                  {t("loading_accounts")}
                 </div>
               ) : scheduleAllAccounts.length === 0 ? (
                 <p className="text-destructive text-sm">
-                  No connected X accounts found.{" "}
+                  {t("no_connected_accounts")}{" "}
                   <a href="/dashboard/settings" className="underline">
-                    Connect one in Settings
+                    {t("connect_in_settings")}
                   </a>
                   .
                 </p>
               ) : (
                 <Select value={scheduleAllAccountId} onValueChange={setScheduleAllAccountId}>
                   <SelectTrigger id="sa-account">
-                    <SelectValue placeholder="Select account" />
+                    <SelectValue placeholder={t("account_placeholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {scheduleAllAccounts.map((acc) => (
                       <SelectItem key={acc.id} value={acc.id}>
                         @{acc.xUsername}
                         {acc.isDefault && (
-                          <span className="text-muted-foreground ms-2 text-xs">(default)</span>
+                          <span className="text-muted-foreground ms-2 text-xs">
+                            {t("default_badge")}
+                          </span>
                         )}
                       </SelectItem>
                     ))}
@@ -618,7 +643,7 @@ export default function ContentCalendarPage() {
             <div className="space-y-2">
               <Label htmlFor="sa-start" className="flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5" />
-                Week 1 starts on
+                {t("week_starts_on")}
               </Label>
               <Input
                 id="sa-start"
@@ -627,10 +652,7 @@ export default function ContentCalendarPage() {
                 onChange={(e) => setScheduleAllStartDate(e.target.value)}
                 min={new Date().toISOString().slice(0, 10)}
               />
-              <p className="text-muted-foreground text-xs">
-                Monday of the first week. Day names in the calendar will be resolved to actual dates
-                from this anchor.
-              </p>
+              <p className="text-muted-foreground text-xs">{t("week_start_help")}</p>
             </div>
           </div>
 
@@ -640,7 +662,7 @@ export default function ContentCalendarPage() {
               onClick={() => setScheduleAllOpen(false)}
               disabled={scheduleAllLoading}
             >
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               onClick={handleScheduleAll}
@@ -654,12 +676,12 @@ export default function ContentCalendarPage() {
               {scheduleAllLoading ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  Scheduling…
+                  {t("scheduling")}
                 </>
               ) : (
                 <>
                   <CalendarCheck className="me-2 h-4 w-4" />
-                  Schedule {items.length} Post{items.length !== 1 ? "s" : ""}
+                  {t("schedule_n_posts", { count: items.length })}
                 </>
               )}
             </Button>

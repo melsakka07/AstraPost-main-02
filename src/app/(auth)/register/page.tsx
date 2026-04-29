@@ -191,7 +191,7 @@ export default function RegisterPage() {
               control={form.control}
               name="terms"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-y-0 space-x-3">
+                <FormItem className="flex flex-row items-start space-y-0 space-x-3 rtl:space-x-reverse">
                   <FormControl>
                     <Checkbox checked={field.value as boolean} onCheckedChange={field.onChange} />
                   </FormControl>
@@ -225,7 +225,7 @@ export default function RegisterPage() {
               {isPending ? (
                 <>
                   <svg
-                    className="mr-2 h-4 w-4 animate-spin"
+                    className="me-2 h-4 w-4 animate-spin"
                     fill="none"
                     viewBox="0 0 24 24"
                     aria-hidden="true"

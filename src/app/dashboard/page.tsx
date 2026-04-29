@@ -144,28 +144,28 @@ const STAT_CARDS = [
   {
     key: "publishedToday",
     icon: CheckCircle2,
-    accent: "border-l-emerald-500",
+    accent: "border-s-emerald-500",
     iconColor: "text-emerald-500",
     iconBg: "bg-emerald-500/10",
   },
   {
     key: "scheduledToday",
     icon: Calendar,
-    accent: "border-l-blue-500",
+    accent: "border-s-blue-500",
     iconColor: "text-blue-500",
     iconBg: "bg-blue-500/10",
   },
   {
     key: "scheduled",
     icon: Clock,
-    accent: "border-l-amber-500",
+    accent: "border-s-amber-500",
     iconColor: "text-amber-500",
     iconBg: "bg-amber-500/10",
   },
   {
     key: "engagement",
     icon: TrendingUp,
-    accent: "border-l-purple-500",
+    accent: "border-s-purple-500",
     iconColor: "text-purple-500",
     iconBg: "bg-purple-500/10",
   },
@@ -227,7 +227,7 @@ export default async function DashboardPage() {
       actions={
         <Button asChild>
           <Link href="/dashboard/compose">
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle className="me-2 h-4 w-4" />
             {t("new_post")}
           </Link>
         </Button>
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
           return (
             <Card
               key={card.key}
-              className={`border-l-4 ${card.accent} transition-shadow hover:shadow-md`}
+              className={`border-s-4 ${card.accent} transition-shadow hover:shadow-md`}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3 pb-2">
                 <CardTitle className="text-muted-foreground text-xs font-medium sm:text-sm">
@@ -300,13 +300,13 @@ export default async function DashboardPage() {
                 </p>
                 <Button size="sm" asChild className="mt-4">
                   <Link href="/dashboard/compose">
-                    <PenSquare className="mr-2 h-3.5 w-3.5" />
+                    <PenSquare className="me-2 h-3.5 w-3.5" />
                     {t("create_post")}
                   </Link>
                 </Button>
                 <Button size="sm" variant="outline" asChild className="mt-2">
                   <Link href="/dashboard/ai/agentic">
-                    <Wand2 className="mr-2 h-3.5 w-3.5" />
+                    <Wand2 className="me-2 h-3.5 w-3.5" />
                     {t("generate_ai")}
                   </Link>
                 </Button>

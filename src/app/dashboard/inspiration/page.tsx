@@ -507,8 +507,8 @@ function InspirationContent() {
                       size="icon"
                       onClick={handleBookmark}
                       disabled={isBookmarking}
-                      title={isBookmarking ? t("saving") : t("bookmark")}
-                      className="h-8 w-8 sm:h-10 sm:w-10"
+                      aria-label={isBookmarking ? t("saving") : t("bookmark")}
+                      className="h-10 w-10"
                     >
                       <Bookmark className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
@@ -516,8 +516,8 @@ function InspirationContent() {
                       variant="outline"
                       size="icon"
                       onClick={handleClear}
-                      title={t("clear")}
-                      className="h-8 w-8 sm:h-10 sm:w-10"
+                      aria-label={t("clear")}
+                      className="h-10 w-10"
                     >
                       <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </Button>
@@ -607,7 +607,7 @@ function InspirationContent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 text-xs"
+                            className="h-9 min-h-[36px] text-xs"
                             onClick={() => {
                               const tweetUrl = `https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`;
                               setTweetUrl(tweetUrl);
@@ -622,7 +622,8 @@ function InspirationContent() {
                             href={`https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-muted-foreground hover:text-foreground hover:bg-accent inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs font-medium transition-colors"
+                            dir="ltr"
+                            className="text-muted-foreground hover:text-foreground hover:bg-accent inline-flex h-9 min-h-[36px] items-center justify-center gap-1 rounded-md px-2 text-xs font-medium transition-colors"
                           >
                             <ExternalLink className="h-3 w-3" />
                             {t("view_on_x")}

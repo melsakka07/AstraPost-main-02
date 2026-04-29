@@ -152,7 +152,7 @@ export default async function ReferralsPage() {
                 <CardTitle>{t("how_it_works")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="text-muted-foreground list-disc space-y-2 pl-4 text-sm">
+                <ul className="text-muted-foreground list-disc space-y-2 ps-4 text-sm">
                   <li>{t("how_step_1")}</li>
                   <li>{t("how_step_2")}</li>
                   <li>{t("how_step_3")}</li>

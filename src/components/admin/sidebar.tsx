@@ -105,7 +105,7 @@ export function AdminSidebar() {
       {/* Desktop Sidebar */}
       <div
         className={cn(
-          "bg-muted/30 fixed top-0 bottom-0 left-0 flex h-dvh flex-col border-r transition-all duration-300",
+          "bg-muted/30 fixed start-0 top-0 bottom-0 flex h-dvh flex-col border-e transition-all duration-300",
           collapsed ? "w-20" : "w-64"
         )}
       >
@@ -116,7 +116,7 @@ export function AdminSidebar() {
           </Link>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hover:bg-muted ml-auto hidden rounded-lg p-1 md:flex"
+            className="hover:bg-muted ms-auto hidden rounded-lg p-1 md:flex"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <Menu className="h-4 w-4" />
@@ -136,7 +136,7 @@ export function AdminSidebar() {
                 <LayoutDashboard className="h-4 w-4" />
               ) : (
                 <>
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <LayoutDashboard className="me-2 h-4 w-4" />
                   Back to App
                 </>
               )}
@@ -147,7 +147,7 @@ export function AdminSidebar() {
 
       {/* Mobile Menu Button & Drawer - only render after hydration to avoid ID mismatch */}
       {hydrated && (
-        <div className="fixed top-4 left-4 z-50 md:hidden">
+        <div className="fixed start-4 top-4 z-50 md:hidden">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="h-11 w-11">
@@ -170,7 +170,7 @@ export function AdminSidebar() {
               <div className="mt-auto border-t p-3">
                 <Link href="/dashboard">
                   <Button variant="outline" className="w-full justify-start">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    <LayoutDashboard className="me-2 h-4 w-4" />
                     Back to App
                   </Button>
                 </Link>

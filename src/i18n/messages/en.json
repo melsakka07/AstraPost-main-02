@@ -155,7 +155,12 @@
     "server_error": "Something went wrong. Please try again later.",
     "unexpected": "An unexpected error occurred. Please try again.",
     "try_again": "Try again",
-    "something_wrong": "Something went wrong"
+    "something_wrong": "Something went wrong",
+    "error_id": "Error ID: {id}",
+    "go_home": "Go home",
+    "page_not_found": "Page Not Found",
+    "page_not_found_description": "The page you're looking for doesn't exist or has been moved.",
+    "unexpected_with_support": "An unexpected error occurred. Please try again or contact support if the problem persists."
   },
   "auth": {
     "login": {
@@ -241,7 +246,9 @@
         "invalid_token": "This reset link is invalid or has expired. Please request a new one.",
         "password_mismatch": "Passwords do not match.",
         "weak_password": "Password must be at least 8 characters."
-      }
+      },
+      "hide_password": "Hide password",
+      "show_password": "Show password"
     },
     "onboarding": {
       "title": "Welcome to AstraPost",
@@ -294,7 +301,12 @@
     "loading": "Loading...",
     "redirecting": "Redirecting...",
     "sign_in_error": "Failed to redirect to X. Please try again.",
-    "sign_in_aria": "Sign in with X"
+    "sign_in_aria": "Sign in with X",
+    "sign_out": "Sign out",
+    "sign_up": "Sign up",
+    "user": "User",
+    "your_profile": "Your Profile",
+    "log_out": "Log out"
   },
   "dashboard_shell": {
     "open_navigation": "Open navigation",
@@ -647,9 +659,21 @@
     "no_tweet_analytics_description": "Publish posts to start seeing analytics",
     "publish_post": "Publish a Post",
     "connect_x_cta": "Connect your X account to view analytics",
+    "connect_x_description": "Follower and performance insights appear after an active account is connected.",
     "no_data_cta": "No analytics data yet. Start publishing!",
+    "upgrade_banner_title": "Unlock Advanced Analytics",
+    "upgrade_banner_description": "See 30-day history, top performing tweets, and deeper insights with Pro.",
+    "switch_to_comfortable": "Switch to comfortable view",
+    "switch_to_compact": "Switch to compact view",
+    "follower_history_cta": "Upgrade to Pro to see detailed follower growth over time.",
     "impressions_history_cta": "Upgrade to view impressions history",
+    "impressions_history_cta_detail": "Upgrade to Pro to see detailed impressions history over time.",
+    "engagement_rate_title": "Engagement Rate ({range})",
     "engagement_history_cta": "Upgrade to view engagement history",
+    "engagement_history_cta_detail": "Upgrade to Pro to see your engagement rate trends over time.",
+    "optimization_cta_detail": "Upgrade to Pro to see when your audience is most active.",
+    "top_tweets_cta_detail": "See your best performing content with Pro analytics.",
+    "vs_prev": "vs prev",
     "toasts": {
       "refresh_queued": "Refresh queued",
       "export_failed": "Failed to export analytics"
@@ -660,6 +684,36 @@
     "description": "Analyze viral content trends",
     "unlock_title": "Unlock Viral Insights",
     "unlock_description": "Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your top-performing content patterns.",
+    "periods": {
+      "30": "Last 30 days",
+      "60": "Last 60 days",
+      "90": "Last 90 days",
+      "180": "Last 180 days",
+      "365": "Last year"
+    },
+    "analyze_button": "Analyze",
+    "analyzing": "Analyzing...",
+    "export_button": "Export",
+    "export_copy_markdown": "Copy as Markdown",
+    "export_download_csv": "Download CSV",
+    "error_fetch": "Failed to fetch analysis",
+    "error_analyze": "Failed to analyze viral content",
+    "insufficient_title": "Not enough data to analyze",
+    "insufficient_description": "Publish more tweets (at least 5 with 100+ impressions) to get viral content insights.",
+    "stats": {
+      "tweets_analyzed": "Tweets Analyzed",
+      "avg_engagement": "Avg Engagement",
+      "top_engagement": "Top Engagement",
+      "total_impressions": "Total Impressions"
+    },
+    "insights_title": "AI-Generated Insights",
+    "action_plan": {
+      "title": "Your Action Plan",
+      "description": "3 specific steps to improve your engagement based on your data.",
+      "post_on": "Post on {day}s at {hour} — your engagement is highest then.",
+      "include_hashtag": "Include #{tag} — your top hashtag by engagement rate.",
+      "write_length": "Write {length} tweets — they get the most engagement in your account."
+    },
     "cards": {
       "top_hashtags": "Top Hashtags",
       "top_hashtags_desc": "Hashtags that drive the most engagement",
@@ -691,9 +745,60 @@
     "title": "Competitor Analysis",
     "description": "Track and analyze competitor performance",
     "username_label": "X Username",
+    "username_placeholder": "username",
+    "language_label": "Analysis Language",
+    "language_arabic": "Arabic",
+    "language_english": "English",
+    "analyze_button": "Analyze",
+    "analyzing": "Analyzing...",
+    "empty_title": "Enter a public X username to analyze",
+    "empty_description": "Analyze any public X account to discover their posting patterns, top topics, and engagement strategy.",
+    "loading_label": "Loading competitor analysis",
+    "results": {
+      "followers": "followers",
+      "tweets_analyzed": "tweets analyzed",
+      "analyze_another": "Analyze Another"
+    },
+    "metrics": {
+      "followers": "Followers",
+      "tweets_analyzed": "Tweets Analyzed",
+      "content_types": "Content Types",
+      "top_hashtags": "Top Hashtags"
+    },
+    "compare": {
+      "title": "Compare with Your Account",
+      "no_data_title": "No data to compare yet",
+      "no_data_description": "Publish posts from AstraPost to see how you stack up against @{username}.",
+      "your_account": "Your Account",
+      "tweets_last_90_days": "{count} tweets · last 90 days",
+      "their_tweets_analyzed": "{count} tweets analyzed",
+      "posting_frequency": "Posting Frequency",
+      "top_hashtags": "Top Hashtags",
+      "shared_tags_highlighted": "shared tags highlighted",
+      "no_hashtags_yet": "No hashtags yet",
+      "content_types": "Content Types",
+      "no_data_yet": "No data yet",
+      "best_posting_times": "Best Posting Times",
+      "your_account_label": "Your account",
+      "see_best_time_predictor": "See Best Time Predictor for details"
+    },
     "charts": {
+      "title": "Charts",
       "hashtag_prominence": "Hashtag Prominence",
       "content_mix": "Content Mix"
+    },
+    "summary": {
+      "title": "Strategic Summary"
+    },
+    "insights": {
+      "title": "Topics, Hashtags & Insights",
+      "top_topics": "Top Topics",
+      "top_hashtags": "Top Hashtags",
+      "key_strengths": "Key Strengths",
+      "your_opportunities": "Your Opportunities"
+    },
+    "tone": {
+      "title": "Tone Profile"
     },
     "empty": {
       "no_hashtags": "No hashtags found",
@@ -824,12 +929,47 @@
   "jobs": {
     "title": "Jobs",
     "description": "Background job status and history",
+    "filter_title": "Filter Jobs",
+    "filter_status_label": "Status",
+    "filter_status_all": "All statuses",
+    "filter_queue_label": "Queue",
+    "filter_queue_all": "All queues",
+    "filter_queue_schedule": "Schedule Queue",
+    "filter_queue_analytics": "Analytics Queue",
+    "filter_search_label": "Search",
+    "filter_search_placeholder": "Search postId / jobId / correlationId",
+    "filter_apply": "Apply Filters",
+    "empty_title": "No jobs found",
+    "empty_description": "Try adjusting your filters or check back later for job history.",
+    "job_id": "Job ID:",
+    "correlation": "Correlation:",
+    "attempts": "Attempts:",
+    "duration": "Duration:",
+    "unknown": "—",
+    "previous": "← Previous",
+    "next": "Next →",
+    "page": "Page {page}",
     "status": {
+      "running": "Running",
+      "retrying": "Retrying",
+      "success": "Success",
+      "failed": "Failed",
       "pending": "Pending",
       "processing": "Processing",
-      "completed": "Completed",
-      "failed": "Failed"
+      "completed": "Completed"
     }
+  },
+  "languages": {
+    "ar": "Arabic",
+    "en": "English",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "tr": "Turkish",
+    "ru": "Russian",
+    "hi": "Hindi"
   },
   "ai_hub": {
     "title": "AI Hub",
@@ -1037,6 +1177,34 @@
       "enhancement_failed": "Enhancement failed. Please try again.",
       "session_resumed": "Resumed your previous session.",
       "rewrite_failed": "Rewrite failed"
+    },
+    "trends": {
+      "trending_on_x": "Trending on X",
+      "updated": "Updated {time}",
+      "just_now": "just now",
+      "min_ago": "{count} min ago",
+      "mins_ago": "{count} mins ago",
+      "hide": "Hide",
+      "show": "Show",
+      "loading": "Loading trends",
+      "couldnt_load": "Couldn't load trends right now.",
+      "retry": "Retry",
+      "trending_topics": "Trending topics",
+      "post": "Post",
+      "post_about": "Post about: {topic}",
+      "collapse": "Collapse trending topics",
+      "show_trending": "Show trending topics",
+      "categories": {
+        "all": "All",
+        "technology": "Technology",
+        "business": "Business",
+        "news": "News",
+        "lifestyle": "Lifestyle",
+        "sports": "Sports",
+        "entertainment": "Entertainment"
+      },
+      "post_count_high": "High",
+      "post_count_normal": "Normal"
     }
   },
   "ai_bio": {
@@ -1141,7 +1309,56 @@
       "load_accounts_failed": "Failed to load accounts",
       "select_account": "Please select an X account",
       "select_start_date": "Please set a start date for Week 1",
-      "schedule_failed": "Failed to schedule posts. Please try again."
+      "schedule_failed": "Failed to schedule posts. Please try again.",
+      "scheduled_count": "{count, plural, one {# post scheduled} other {# posts scheduled}}",
+      "scheduled_partial": "{success} scheduled, {failed} failed"
+    },
+    "schedule_dialog_title": "Schedule All Calendar Items",
+    "schedule_dialog_description": "Schedule all {count} posts from your content calendar. Each item's brief will be used as the initial draft content — review and refine in your queue before publishing.",
+    "post_to": "Post to",
+    "loading_accounts": "Loading accounts…",
+    "no_connected_accounts": "No connected X accounts found.",
+    "connect_in_settings": "Connect one in Settings",
+    "account_placeholder": "Select account",
+    "default_badge": "(default)",
+    "week_starts_on": "Week 1 starts on",
+    "week_start_help": "Monday of the first week. Day names in the calendar will be resolved to actual dates from this anchor.",
+    "cancel": "Cancel",
+    "scheduling": "Scheduling…",
+    "schedule_n_posts": "Schedule {count} {count, plural, one {Post} other {Posts}}",
+    "open_in_composer": "Open in Composer",
+    "breadcrumb": "Content Calendar",
+    "generating_with_time": "Generating... ({elapsed}s)",
+    "week_label_same_month": "Week {weekNum} · {startMonth} {startDay}–{endDay}",
+    "week_label_cross_month": "Week {weekNum} · {startMonth} {startDay}–{endMonth} {endDay}",
+    "language_options": {
+      "ar": "Arabic",
+      "en": "English",
+      "fr": "French",
+      "de": "German",
+      "es": "Spanish",
+      "it": "Italian",
+      "pt": "Portuguese",
+      "tr": "Turkish",
+      "ru": "Russian",
+      "hi": "Hindi"
+    },
+    "tone_options": {
+      "professional": "Professional",
+      "casual": "Casual",
+      "educational": "Educational",
+      "inspirational": "Inspirational",
+      "humorous": "Humorous",
+      "viral": "Viral"
+    },
+    "days_short": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
     }
   },
   "ai_history": {
@@ -1155,7 +1372,21 @@
     "output": "Output",
     "no_content": "No content",
     "reuse": "Reuse",
-    "template_streamed": "Content was streamed directly to the Composer. Re-generate from the Templates dialog to produce new content."
+    "template_streamed": "Content was streamed directly to the Composer. Re-generate from the Templates dialog to produce new content.",
+    "tweet_number": "Tweet {index}",
+    "type": {
+      "thread": "Thread",
+      "template": "Template",
+      "hashtags": "Hashtags",
+      "bio": "Bio",
+      "reply": "Reply",
+      "translate": "Translation",
+      "inspire": "Inspiration",
+      "calendar": "Calendar",
+      "agentic": "Agentic",
+      "variant": "Variant",
+      "image": "Image"
+    }
   },
   "ai_image": {
     "service_busy": "Service busy — retrying automatically...",
@@ -1605,6 +1836,7 @@
     "generated_hashtags": "Generated Hashtags",
     "count": "{count}",
     "click_copy": "Click any hashtag to copy it, or use \"Copy All\" to get everything. Click × to remove a hashtag.",
+    "remove_hashtag": "Remove hashtag",
     "error_enter_content": "Please enter some content",
     "error_generation": "Failed to generate hashtags"
   },

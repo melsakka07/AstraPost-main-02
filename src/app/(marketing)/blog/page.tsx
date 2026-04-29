@@ -171,9 +171,13 @@ export default async function BlogPage() {
               <Input
                 type="email"
                 placeholder={t("newsletter_placeholder")}
-                className="bg-background h-11 w-full min-w-[280px] sm:w-auto"
+                disabled
+                className="bg-background h-11 w-full min-w-[280px] cursor-not-allowed opacity-60 sm:w-auto"
               />
-              <Button className="from-primary w-full border-0 bg-gradient-to-r to-purple-500 transition-opacity hover:opacity-90 sm:w-auto">
+              <Button
+                disabled
+                className="from-primary w-full border-0 bg-gradient-to-r to-purple-500 transition-opacity sm:w-auto"
+              >
                 {t("newsletter_subscribe")}
               </Button>
             </div>

@@ -176,28 +176,28 @@ export default function CompetitorAnalyzerPage() {
             <div className="flex-1 space-y-1.5">
               <Label htmlFor="username">{t("username_label")}</Label>
               <div className="relative">
-                <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
+                <span className="text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2 text-sm">
                   @
                 </span>
                 <Input
                   id="username"
-                  placeholder="username"
+                  placeholder={t("username_placeholder")}
                   value={username.replace(/^@/, "")}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pl-7"
+                  className="ps-7"
                   onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
                 />
               </div>
             </div>
             <div className="space-y-1.5 sm:w-36">
-              <Label>Analysis Language</Label>
+              <Label>{t("language_label")}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">Arabic</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="ar">{t("language_arabic")}</SelectItem>
+                  <SelectItem value="en">{t("language_english")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -209,12 +209,12 @@ export default function CompetitorAnalyzerPage() {
               {isLoading ? (
                 <>
                   <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  Analyzing...
+                  {t("analyzing")}
                 </>
               ) : (
                 <>
                   <Sparkles className="me-2 h-4 w-4" />
-                  Analyze
+                  {t("analyze_button")}
                 </>
               )}
             </Button>
@@ -228,16 +228,13 @@ export default function CompetitorAnalyzerPage() {
           <div className="bg-primary/10 mb-4 flex h-14 w-14 items-center justify-center rounded-full">
             <Users className="text-primary h-7 w-7" />
           </div>
-          <p className="font-semibold">Enter a public X username to analyze</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Analyze any public X account to discover their posting patterns, top topics, and
-            engagement strategy.
-          </p>
+          <p className="font-semibold">{t("empty_title")}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{t("empty_description")}</p>
         </div>
       )}
 
       {isLoading && (
-        <div className="space-y-5" aria-busy="true" aria-label="Loading competitor analysis">
+        <div className="space-y-5" aria-busy="true" aria-label={t("loading_label")}>
           {/* Metric card skeletons — mirrors 4-column result row */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -311,8 +308,8 @@ export default function CompetitorAnalyzerPage() {
             <p className="truncate text-sm font-medium">
               @{result.username}
               <span className="text-muted-foreground ms-2 text-xs font-normal">
-                {result.followerCount.toLocaleString(userLocale)} followers · {result.tweetCount}{" "}
-                tweets analyzed
+                {result.followerCount?.toLocaleString(userLocale) ?? "—"} {t("results.followers")} ·{" "}
+                {result.tweetCount} {t("results.tweets_analyzed")}
               </span>
             </p>
             <Button
@@ -325,7 +322,7 @@ export default function CompetitorAnalyzerPage() {
               className="shrink-0"
             >
               <Sparkles className="me-1.5 h-3.5 w-3.5" />
-              Analyze Another
+              {t("results.analyze_another")}
             </Button>
           </div>
 
@@ -334,8 +331,8 @@ export default function CompetitorAnalyzerPage() {
             <div>
               <h2 className="text-xl font-bold">@{result.username}</h2>
               <p className="text-muted-foreground text-sm">
-                {result.displayName} · {result.followerCount.toLocaleString(userLocale)} followers ·{" "}
-                {result.tweetCount} tweets analyzed
+                {result.displayName} · {result.followerCount.toLocaleString(userLocale)}{" "}
+                {t("results.followers")} · {result.tweetCount} {t("results.tweets_analyzed")}
               </p>
             </div>
           </div>
@@ -344,7 +341,7 @@ export default function CompetitorAnalyzerPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardContent className="p-4">
-                <p className="text-muted-foreground mb-1 text-xs">Followers</p>
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.followers")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   {result.followerCount.toLocaleString(userLocale)}
                 </p>
@@ -352,13 +349,13 @@ export default function CompetitorAnalyzerPage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-muted-foreground mb-1 text-xs">Tweets Analyzed</p>
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.tweets_analyzed")}</p>
                 <p className="text-2xl font-bold tabular-nums">{result.tweetCount}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-muted-foreground mb-1 text-xs">Content Types</p>
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.content_types")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   {result.analysis.preferredContentTypes.length}
                 </p>
@@ -366,7 +363,7 @@ export default function CompetitorAnalyzerPage() {
             </Card>
             <Card>
               <CardContent className="p-4">
-                <p className="text-muted-foreground mb-1 text-xs">Top Hashtags</p>
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.top_hashtags")}</p>
                 <p className="text-2xl font-bold tabular-nums">
                   {result.analysis.topHashtags.length}
                 </p>
@@ -385,7 +382,7 @@ export default function CompetitorAnalyzerPage() {
             >
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <ArrowLeftRight className="text-primary h-4 w-4" />
-                Compare with Your Account
+                {t("compare.title")}
               </span>
               <ChevronDown
                 className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${compareOpen ? "" : "-rotate-90"}`}
@@ -407,10 +404,9 @@ export default function CompetitorAnalyzerPage() {
                     <div className="bg-muted mb-3 flex h-10 w-10 items-center justify-center rounded-full">
                       <ArrowLeftRight className="text-muted-foreground h-5 w-5" />
                     </div>
-                    <p className="text-sm font-medium">No data to compare yet</p>
+                    <p className="text-sm font-medium">{t("compare.no_data_title")}</p>
                     <p className="text-muted-foreground mt-1 max-w-xs text-xs">
-                      Publish posts from AstraPost to see how you stack up against @
-                      {result.username}.
+                      {t("compare.no_data_description", { username: result.username })}
                     </p>
                   </div>
                 ) : (
@@ -418,15 +414,17 @@ export default function CompetitorAnalyzerPage() {
                     {/* Column headers */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-muted/40 rounded-lg border px-3 py-2 text-center">
-                        <p className="text-xs font-semibold">Your Account</p>
+                        <p className="text-xs font-semibold">{t("compare.your_account")}</p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
-                          {selfStats.tweetsAnalyzed} tweets · last 90 days
+                          {t("compare.tweets_last_90_days", {
+                            count: selfStats.tweetsAnalyzed ?? 0,
+                          })}
                         </p>
                       </div>
                       <div className="bg-muted/40 rounded-lg border px-3 py-2 text-center">
                         <p className="text-xs font-semibold">@{result.username}</p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
-                          {result.tweetCount} tweets analyzed
+                          {t("compare.their_tweets_analyzed", { count: result.tweetCount })}
                         </p>
                       </div>
                     </div>
@@ -435,7 +433,7 @@ export default function CompetitorAnalyzerPage() {
                     <div>
                       <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                         <TrendingUp className="text-primary h-3.5 w-3.5" />
-                        Posting Frequency
+                        {t("compare.posting_frequency")}
                       </p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-lg border px-3 py-2.5 text-center">
@@ -464,11 +462,11 @@ export default function CompetitorAnalyzerPage() {
                         <div>
                           <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                             <Hash className="text-primary h-3.5 w-3.5" />
-                            Top Hashtags
+                            {t("compare.top_hashtags")}
                             {hasOverlap && (
                               <span className="text-muted-foreground ms-auto flex items-center gap-1 text-xs">
                                 <span className="bg-primary/70 inline-block h-2 w-2 rounded-full" />
-                                shared tags highlighted
+                                {t("compare.shared_tags_highlighted")}
                               </span>
                             )}
                           </p>
@@ -476,7 +474,7 @@ export default function CompetitorAnalyzerPage() {
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {myTags.length === 0 ? (
                                 <span className="text-muted-foreground text-xs">
-                                  No hashtags yet
+                                  {t("compare.no_hashtags_yet")}
                                 </span>
                               ) : (
                                 myTags.map((tag, i) => {
@@ -528,12 +526,14 @@ export default function CompetitorAnalyzerPage() {
                         <div>
                           <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                             <LayoutGrid className="text-primary h-3.5 w-3.5" />
-                            Content Types
+                            {t("compare.content_types")}
                           </p>
                           <div className="grid grid-cols-2 gap-3">
                             <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
                               {myTypes.length === 0 ? (
-                                <span className="text-muted-foreground text-xs">No data yet</span>
+                                <span className="text-muted-foreground text-xs">
+                                  {t("compare.no_data_yet")}
+                                </span>
                               ) : (
                                 myTypes.map((type, i) => (
                                   <Badge
@@ -576,13 +576,15 @@ export default function CompetitorAnalyzerPage() {
                     <div>
                       <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                         <MessageSquare className="text-primary h-3.5 w-3.5" />
-                        Best Posting Times
+                        {t("compare.best_posting_times")}
                       </p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-lg border px-3 py-2.5">
-                          <p className="text-muted-foreground mb-1 text-xs">Your account</p>
+                          <p className="text-muted-foreground mb-1 text-xs">
+                            {t("compare.your_account_label")}
+                          </p>
                           <p className="text-muted-foreground text-sm italic">
-                            See Best Time Predictor for details
+                            {t("compare.see_best_time_predictor")}
                           </p>
                         </div>
                         <div className="rounded-lg border px-3 py-2.5">
@@ -608,7 +610,7 @@ export default function CompetitorAnalyzerPage() {
             >
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <LayoutGrid className="text-primary h-4 w-4" />
-                Charts
+                {t("charts.title")}
               </span>
               <ChevronDown
                 className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${chartsOpen ? "" : "-rotate-90"}`}
@@ -659,7 +661,7 @@ export default function CompetitorAnalyzerPage() {
             >
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <MessageSquare className="text-primary h-4 w-4" />
-                Strategic Summary
+                {t("summary.title")}
               </span>
               <ChevronDown
                 className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${summaryOpen ? "" : "-rotate-90"}`}
@@ -691,7 +693,7 @@ export default function CompetitorAnalyzerPage() {
             >
               <span className="flex items-center gap-2 text-sm font-semibold">
                 <TrendingUp className="text-primary h-4 w-4" />
-                Topics, Hashtags & Insights
+                {t("insights.title")}
               </span>
               <ChevronDown
                 className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${insightsOpen ? "" : "-rotate-90"}`}
@@ -704,7 +706,7 @@ export default function CompetitorAnalyzerPage() {
                   <div>
                     <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                       <TrendingUp className="text-primary h-3.5 w-3.5" />
-                      Top Topics
+                      {t("insights.top_topics")}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {result.analysis.topTopics.map((t, i) => (
@@ -719,7 +721,7 @@ export default function CompetitorAnalyzerPage() {
                   <div>
                     <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                       <Hash className="text-primary h-3.5 w-3.5" />
-                      Top Hashtags
+                      {t("insights.top_hashtags")}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {result.analysis.topHashtags.map((h, i) => (
@@ -732,7 +734,9 @@ export default function CompetitorAnalyzerPage() {
 
                   {/* Key Strengths */}
                   <div>
-                    <p className="text-muted-foreground mb-2 text-xs font-medium">Key Strengths</p>
+                    <p className="text-muted-foreground mb-2 text-xs font-medium">
+                      {t("insights.key_strengths")}
+                    </p>
                     <ul className="space-y-1.5">
                       {result.analysis.keyStrengths.map((s, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm">
@@ -747,7 +751,7 @@ export default function CompetitorAnalyzerPage() {
                   <div>
                     <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
                       <Lightbulb className="text-primary h-3.5 w-3.5" />
-                      Your Opportunities
+                      {t("insights.your_opportunities")}
                     </p>
                     <ul className="space-y-1.5">
                       {result.analysis.differentiationOpportunities.map((o, i) => (
@@ -772,7 +776,7 @@ export default function CompetitorAnalyzerPage() {
               aria-expanded={toneOpen}
               aria-controls="competitor-tone-panel"
             >
-              <span className="text-sm font-semibold">Tone Profile</span>
+              <span className="text-sm font-semibold">{t("tone.title")}</span>
               <ChevronDown
                 className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${toneOpen ? "" : "-rotate-90"}`}
               />

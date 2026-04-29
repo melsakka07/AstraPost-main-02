@@ -76,7 +76,7 @@ export default async function CalendarPage({
           </Button>
           <Button asChild>
             <Link href="/dashboard/compose">
-              <PlusCircle className="mr-2 h-4 w-4" />
+              <PlusCircle className="me-2 h-4 w-4" />
               {t("schedule_new")}
             </Link>
           </Button>

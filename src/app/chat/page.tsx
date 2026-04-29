@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Copy, Check, Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { UserProfile } from "@/components/auth/user-profile";
@@ -25,10 +25,10 @@ const Paragraph: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = (props) 
   <p className="mb-3 text-sm leading-7" {...props} />
 );
 const UL: React.FC<React.HTMLAttributes<HTMLUListElement>> = (props) => (
-  <ul className="mb-3 ml-5 list-disc space-y-1 text-sm" {...props} />
+  <ul className="ms-5 mb-3 list-disc space-y-1 text-sm" {...props} />
 );
 const OL: React.FC<React.OlHTMLAttributes<HTMLOListElement>> = (props) => (
-  <ol className="mb-3 ml-5 list-decimal space-y-1 text-sm" {...props} />
+  <ol className="ms-5 mb-3 list-decimal space-y-1 text-sm" {...props} />
 );
 const LI: React.FC<React.LiHTMLAttributes<HTMLLIElement>> = (props) => (
   <li className="leading-6" {...props} />
@@ -42,7 +42,7 @@ const Anchor: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = (props) 
   />
 );
 const Blockquote: React.FC<React.BlockquoteHTMLAttributes<HTMLElement>> = (props) => (
-  <blockquote className="border-border text-muted-foreground mb-3 border-l-2 pl-3" {...props} />
+  <blockquote className="border-border text-muted-foreground mb-3 border-s-2 ps-3" {...props} />
 );
 const Code: Components["code"] = ({ children, className, ...props }) => {
   const match = /language-(\w+)/.exec(className || "");
@@ -72,7 +72,7 @@ const Table: React.FC<React.TableHTMLAttributes<HTMLTableElement>> = (props) => 
   </div>
 );
 const TH: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = (props) => (
-  <th className="border-border bg-muted border px-2 py-1 text-left" {...props} />
+  <th className="border-border bg-muted border px-2 py-1 text-start" {...props} />
 );
 const TD: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = (props) => (
   <td className="border-border border px-2 py-1" {...props} />
@@ -171,8 +171,8 @@ function renderMessageContent(message: MaybePartsMessage): ReactNode {
   );
 }
 
-function formatTimestamp(date: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
+function formatTimestamp(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -200,17 +200,19 @@ function CopyButton({
   };
 
   return (
-    <button
+    <Button
+      variant="ghost"
+      size="icon"
       onClick={handleCopy}
-      className="hover:bg-muted rounded p-1 transition-colors"
-      title={labels.tooltip}
+      className="min-h-[44px] min-w-[44px]"
+      aria-label={labels.tooltip}
     >
       {copied ? (
         <Check className="h-3.5 w-3.5 text-green-500" />
       ) : (
         <Copy className="text-muted-foreground h-3.5 w-3.5" />
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -227,6 +229,7 @@ const STORAGE_KEY = "chat-messages";
 
 export default function ChatPage() {
   const t = useTranslations("chat");
+  const locale = useLocale();
   const { data: session, isPending } = useSession();
   const { openWithContext } = useUpgradeModal();
   const { messages, sendMessage, status, error, setMessages } = useChat({
@@ -365,7 +368,7 @@ export default function ChatPage() {
           {messages.map((message) => {
             const messageText = getMessageText(message as MaybePartsMessage);
             const createdAt = (message as { createdAt?: Date }).createdAt;
-            const timestamp = createdAt ? formatTimestamp(new Date(createdAt)) : null;
+            const timestamp = createdAt ? formatTimestamp(new Date(createdAt), locale) : null;
 
             return (
               <div
@@ -430,7 +433,7 @@ export default function ChatPage() {
           <Button type="submit" disabled={!input.trim() || isStreaming} className="min-h-[44px]">
             {isStreaming ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
                 {t("sending")}
               </>
             ) : (

@@ -77,6 +77,7 @@ type ActiveTab = "thread" | "url" | "variants" | "hashtags";
 function AIWriterContent() {
   const searchParams = useSearchParams();
   const t = useTranslations("ai_writer");
+  const langT = useTranslations("languages");
   const initialTab = (searchParams?.get("tab") as ActiveTab | null) ?? "thread";
   const { openWithContext } = useUpgradeModal();
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
@@ -477,16 +478,16 @@ function AIWriterContent() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ar">Arabic</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                      <SelectItem value="de">German</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="it">Italian</SelectItem>
-                      <SelectItem value="pt">Portuguese</SelectItem>
-                      <SelectItem value="tr">Turkish</SelectItem>
-                      <SelectItem value="ru">Russian</SelectItem>
-                      <SelectItem value="hi">Hindi</SelectItem>
+                      <SelectItem value="ar">{langT("ar")}</SelectItem>
+                      <SelectItem value="en">{langT("en")}</SelectItem>
+                      <SelectItem value="fr">{langT("fr")}</SelectItem>
+                      <SelectItem value="de">{langT("de")}</SelectItem>
+                      <SelectItem value="es">{langT("es")}</SelectItem>
+                      <SelectItem value="it">{langT("it")}</SelectItem>
+                      <SelectItem value="pt">{langT("pt")}</SelectItem>
+                      <SelectItem value="tr">{langT("tr")}</SelectItem>
+                      <SelectItem value="ru">{langT("ru")}</SelectItem>
+                      <SelectItem value="hi">{langT("hi")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -694,7 +695,7 @@ function AIWriterContent() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 shrink-0 p-0"
+                              className="h-10 min-h-[44px] w-10 min-w-[44px] shrink-0 p-0"
                               onClick={() => copyTweet(tweet, idx)}
                               aria-label={`Copy tweet ${idx + 1}`}
                             >
@@ -813,16 +814,16 @@ function AIWriterContent() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ar">Arabic</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                      <SelectItem value="de">German</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="it">Italian</SelectItem>
-                      <SelectItem value="pt">Portuguese</SelectItem>
-                      <SelectItem value="tr">Turkish</SelectItem>
-                      <SelectItem value="ru">Russian</SelectItem>
-                      <SelectItem value="hi">Hindi</SelectItem>
+                      <SelectItem value="ar">{langT("ar")}</SelectItem>
+                      <SelectItem value="en">{langT("en")}</SelectItem>
+                      <SelectItem value="fr">{langT("fr")}</SelectItem>
+                      <SelectItem value="de">{langT("de")}</SelectItem>
+                      <SelectItem value="es">{langT("es")}</SelectItem>
+                      <SelectItem value="it">{langT("it")}</SelectItem>
+                      <SelectItem value="pt">{langT("pt")}</SelectItem>
+                      <SelectItem value="tr">{langT("tr")}</SelectItem>
+                      <SelectItem value="ru">{langT("ru")}</SelectItem>
+                      <SelectItem value="hi">{langT("hi")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1000,16 +1001,16 @@ function AIWriterContent() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ar">Arabic</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="fr">French</SelectItem>
-                    <SelectItem value="de">German</SelectItem>
-                    <SelectItem value="es">Spanish</SelectItem>
-                    <SelectItem value="it">Italian</SelectItem>
-                    <SelectItem value="pt">Portuguese</SelectItem>
-                    <SelectItem value="tr">Turkish</SelectItem>
-                    <SelectItem value="ru">Russian</SelectItem>
-                    <SelectItem value="hi">Hindi</SelectItem>
+                    <SelectItem value="ar">{langT("ar")}</SelectItem>
+                    <SelectItem value="en">{langT("en")}</SelectItem>
+                    <SelectItem value="fr">{langT("fr")}</SelectItem>
+                    <SelectItem value="de">{langT("de")}</SelectItem>
+                    <SelectItem value="es">{langT("es")}</SelectItem>
+                    <SelectItem value="it">{langT("it")}</SelectItem>
+                    <SelectItem value="pt">{langT("pt")}</SelectItem>
+                    <SelectItem value="tr">{langT("tr")}</SelectItem>
+                    <SelectItem value="ru">{langT("ru")}</SelectItem>
+                    <SelectItem value="hi">{langT("hi")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1077,6 +1078,7 @@ function AIWriterContent() {
                         <Button
                           size="sm"
                           variant="ghost"
+                          className="min-h-[44px] min-w-[44px]"
                           onClick={() => copyVariant(v.text, idx)}
                           aria-label={`Copy variant ${idx + 1}`}
                         >
@@ -1086,12 +1088,19 @@ function AIWriterContent() {
                             <Copy className="h-3.5 w-3.5" />
                           )}
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => applyVariant(v.text)}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="min-h-[44px] min-w-[44px]"
+                          onClick={() => applyVariant(v.text)}
+                          aria-label={t("use")}
+                        >
                           {t("use")}
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
+                          className="min-h-[44px] min-w-[44px]"
                           onClick={() => sendToComposer([v.text], { source: "ai-writer" })}
                           aria-label={`Open variant ${idx + 1} in Composer`}
                         >

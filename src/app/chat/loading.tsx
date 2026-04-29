@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ChatLoading() {
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8" aria-busy="true">
       <div className="mx-auto max-w-4xl">
         {/* Header skeleton */}
         <div className="mb-6 flex items-center justify-between border-b pb-4">
@@ -19,8 +19,8 @@ export default function ChatLoading() {
           </div>
 
           {/* User message */}
-          <div className="ml-auto max-w-[80%]">
-            <Skeleton className="mb-2 ml-auto h-4 w-12" />
+          <div className="ms-auto max-w-[80%]">
+            <Skeleton className="ms-auto mb-2 h-4 w-12" />
             <Skeleton className="h-12 w-full rounded-lg" />
           </div>
 

@@ -125,7 +125,7 @@ export default async function TeamSettingsPage() {
           <AlertTitle>{t("team.upgrade_required_title")}</AlertTitle>
           <AlertDescription>
             {t("team.upgrade_required_desc")}
-            <Button variant="link" className="ml-1 h-auto p-0 font-semibold" asChild>
+            <Button variant="link" className="ms-1 h-auto p-0 font-semibold" asChild>
               <a href="/pricing">{t("team.upgrade_cta")}</a>
             </Button>
           </AlertDescription>

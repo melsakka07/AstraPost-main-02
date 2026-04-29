@@ -302,7 +302,7 @@ export default async function AnalyticsPage({
           <ExportButton range={effectiveRange} />
           <Link
             href={analyticsHref(isCompact ? "comfortable" : "compact")}
-            aria-label={isCompact ? "Switch to comfortable view" : "Switch to compact view"}
+            aria-label={isCompact ? t("switch_to_comfortable") : t("switch_to_compact")}
           >
             <Button variant="outline" size="icon" className="h-9 w-9">
               {isCompact ? (
@@ -317,8 +317,8 @@ export default async function AnalyticsPage({
     >
       {isFree && (
         <UpgradeBanner
-          title="Unlock Advanced Analytics"
-          description="See 30-day history, top performing tweets, and deeper insights with Pro."
+          title={t("upgrade_banner_title")}
+          description={t("upgrade_banner_description")}
         />
       )}
 
@@ -390,13 +390,13 @@ export default async function AnalyticsPage({
             <BlurredOverlay
               isLocked={isFree && rangeDays > 7}
               title={t("follower_history")}
-              description="Upgrade to Pro to see detailed follower growth over time."
+              description={t("follower_history_cta")}
             >
               {accounts.length === 0 ? (
                 <EmptyState
                   icon={<BarChart3 className="h-6 w-6" />}
                   title={t("connect_x_cta")}
-                  description="Follower and performance insights appear after an active account is connected."
+                  description={t("connect_x_description")}
                   primaryAction={
                     <Button asChild>
                       <Link href="/dashboard/settings">{t("connect_account")}</Link>
@@ -536,7 +536,7 @@ export default async function AnalyticsPage({
                 </div>
                 {d !== null && (
                   <p className={`mt-1 text-xs ${d >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                    {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString(userLocale)} vs prev{" "}
+                    {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString(userLocale)} {t("vs_prev")}{" "}
                     {effectiveRange}
                   </p>
                 )}
@@ -553,18 +553,20 @@ export default async function AnalyticsPage({
         <BlurredOverlay
           isLocked={isFree && rangeDays > 7}
           title={t("impressions_history_cta")}
-          description="Upgrade to Pro to see detailed impressions history over time."
+          description={t("impressions_history_cta_detail")}
         >
           <ImpressionsChart data={impressionsChartData} />
         </BlurredOverlay>
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-xl font-semibold">Engagement Rate ({effectiveRange})</h2>
+        <h2 className="text-xl font-semibold">
+          {t("engagement_rate_title", { range: effectiveRange })}
+        </h2>
         <BlurredOverlay
           isLocked={isFree && rangeDays > 7}
           title={t("engagement_history_cta")}
-          description="Upgrade to Pro to see your engagement rate trends over time."
+          description={t("engagement_history_cta_detail")}
         >
           <EngagementRateChart data={engagementChartData} />
         </BlurredOverlay>
@@ -581,7 +583,7 @@ export default async function AnalyticsPage({
         <BlurredOverlay
           isLocked={isFree}
           title={t("optimization_insights")}
-          description="Upgrade to Pro to see when your audience is most active."
+          description={t("optimization_cta_detail")}
         >
           <Suspense fallback={<Skeleton className="h-[400px] w-full rounded-lg" />}>
             <BestTimeHeatmap data={bestTimeData} />
@@ -594,7 +596,7 @@ export default async function AnalyticsPage({
         <BlurredOverlay
           isLocked={isFree}
           title={t("top_tweets")}
-          description="See your best performing content with Pro analytics."
+          description={t("top_tweets_cta_detail")}
         >
           {topTweets.length === 0 ? (
             <EmptyState

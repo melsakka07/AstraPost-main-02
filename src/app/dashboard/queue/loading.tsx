@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function QueueLoading() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-busy="true">
       {/* Queue stats bar */}
       <div className="flex items-center justify-between">
         <Skeleton className="h-6 w-48" />
