@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { UserProfile } from "@/components/auth/user-profile";
 import { LogoMark } from "@/components/brand";
+import { LanguageSwitcher } from "@/components/dashboard/language-switcher";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { HeaderNav } from "@/components/header-nav";
 import { MobileMenu } from "@/components/mobile-menu";
@@ -43,6 +44,7 @@ export async function SiteHeader() {
         {/* Right: theme toggle + desktop auth + mobile hamburger */}
         <div className="flex items-center gap-3">
           <ModeToggle />
+          <LanguageSwitcher />
 
           {/* Desktop auth — hidden on mobile */}
           {isAuthenticated ? (

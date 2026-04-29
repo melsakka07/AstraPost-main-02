@@ -48,6 +48,13 @@ export function LanguageSwitcher() {
   const handleLanguageChange = async (code: string) => {
     if (code === currentLang) return;
     setLoading(true);
+
+    if (!session) {
+      document.cookie = `locale=${code}; path=/; max-age=31536000; SameSite=Lax`;
+      window.location.reload();
+      return;
+    }
+
     try {
       const res = await fetch("/api/user/preferences", {
         method: "PATCH",
