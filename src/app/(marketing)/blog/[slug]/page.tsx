@@ -4,9 +4,13 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, BookOpen, CheckCircle2, Sparkles } from "lucide-react";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { MDXRemote } from "next-mdx-remote/rsc";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypeSlug from "rehype-slug";
+import remarkGfm from "remark-gfm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getBlogPost } from "@/lib/blog";
+import { getBlogPostSource } from "@/lib/blog";
 import { getSeoLocale } from "@/lib/seo";
 import { BlogPostClient } from "./blog-post-client";
 
@@ -17,7 +21,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const locale = await getSeoLocale();
-  const post = await getBlogPost(slug);
+  const post = await getBlogPostSource(slug);
 
   if (!post) {
     return {
@@ -47,7 +51,7 @@ export async function generateMetadata({
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = await getBlogPost(slug);
+  const post = await getBlogPostSource(slug);
 
   if (!post) {
     notFound();
@@ -126,7 +130,31 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       </div>
 
       {/* Client Component for interactive elements */}
-      <BlogPostClient post={post} />
+      <BlogPostClient title={post.title} excerpt={post.excerpt} slug={slug}>
+        <MDXRemote
+          source={post.source}
+          options={{
+            parseFrontmatter: false,
+            mdxOptions: {
+              remarkPlugins: [remarkGfm],
+              rehypePlugins: [
+                rehypeSlug,
+                [
+                  rehypeAutolinkHeadings,
+                  {
+                    behavior: "prepend" as const,
+                    properties: {
+                      className: ["anchor-link"],
+                      ariaHidden: "true",
+                      tabIndex: -1,
+                    },
+                  },
+                ],
+              ],
+            },
+          }}
+        />
+      </BlogPostClient>
 
       {/* Author Section */}
       <div className="container mx-auto max-w-4xl px-4 py-12">

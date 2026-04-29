@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Share2, BookOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { MDXRemote } from "next-mdx-remote";
-import type { BlogPost } from "@/lib/blog";
 
 interface BlogPostClientProps {
-  post: BlogPost;
+  title: string;
+  excerpt: string;
+  slug: string;
+  children: ReactNode;
 }
 
 // Slugify function to generate valid IDs from text
@@ -20,7 +21,7 @@ function slugify(text: string): string {
     .replace(/-+/g, "-"); // Replace multiple - with single -
 }
 
-export function BlogPostClient({ post }: BlogPostClientProps) {
+export function BlogPostClient({ title, excerpt, slug, children }: BlogPostClientProps) {
   const [readingProgress, setReadingProgress] = useState(0);
   const [activeHeading, setActiveHeading] = useState("");
   const [headings, setHeadings] = useState<Array<{ id: string; text: string; level: number }>>([]);
@@ -95,7 +96,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [post.slug]); // Only depend on slug to avoid re-running on content object changes
+  }, [slug]);
 
   const t = useTranslations("blog");
 
@@ -103,8 +104,8 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: post.title,
-          text: post.excerpt,
+          title: title,
+          text: excerpt,
           url: window.location.href,
         });
       } catch {
@@ -164,7 +165,7 @@ export function BlogPostClient({ post }: BlogPostClientProps) {
       {/* Article Content */}
       <div className="container mx-auto max-w-4xl px-4 py-8">
         <div ref={contentRef} className="prose prose-lg dark:prose-invert max-w-none">
-          <MDXRemote {...post.content} />
+          {children}
         </div>
       </div>
     </>

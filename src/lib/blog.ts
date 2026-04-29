@@ -8,6 +8,27 @@ import { logger } from "@/lib/logger";
 
 const BLOG_CONTENT_PATH = path.join(process.cwd(), "content/blog");
 
+const blogMdxOptions = {
+  development: process.env.NODE_ENV === "development",
+  jsx: false,
+  format: "mdx" as const,
+  remarkPlugins: [remarkGfm],
+  rehypePlugins: [
+    rehypeSlug,
+    [
+      rehypeAutolinkHeadings,
+      {
+        behavior: "prepend" as const,
+        properties: {
+          className: ["anchor-link"],
+          ariaHidden: "true",
+          tabIndex: -1,
+        },
+      },
+    ],
+  ] as any,
+};
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -60,6 +81,36 @@ function extractFrontmatter(content: string) {
   return frontmatter;
 }
 
+export async function getBlogPostSource(slug: string): Promise<{
+  source: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  readTime: string;
+  image?: string | undefined;
+} | null> {
+  try {
+    const filePath = path.join(BLOG_CONTENT_PATH, `${slug}.mdx`);
+    const fileContent = fs.readFileSync(filePath, "utf8");
+    const frontmatter = extractFrontmatter(fileContent);
+
+    if (!frontmatter || !frontmatter.title) return null;
+
+    const source = fileContent.replace(/^---[\s\S]*?---\n*/, "");
+
+    return {
+      source,
+      title: frontmatter.title,
+      excerpt: frontmatter.excerpt || "",
+      date: frontmatter.date || "",
+      readTime: frontmatter.readTime || "",
+      image: frontmatter.image,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   try {
     const filePath = path.join(BLOG_CONTENT_PATH, `${slug}.mdx`);
@@ -67,26 +118,7 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
 
     const mdxSource = await serialize(fileContent, {
       parseFrontmatter: true,
-      mdxOptions: {
-        development: process.env.NODE_ENV === "development",
-        jsx: false,
-        format: "mdx",
-        remarkPlugins: [remarkGfm],
-        rehypePlugins: [
-          rehypeSlug,
-          [
-            rehypeAutolinkHeadings,
-            {
-              behavior: "prepend",
-              properties: {
-                className: ["anchor-link"],
-                ariaHidden: "true",
-                tabIndex: -1,
-              },
-            },
-          ],
-        ],
-      },
+      mdxOptions: blogMdxOptions,
     });
 
     // Get frontmatter from compiled source
