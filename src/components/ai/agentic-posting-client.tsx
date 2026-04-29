@@ -543,7 +543,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
         },
       });
     },
-    [editedTweets]
+    [editedTweets, t]
   );
 
   const handleSaveEdit = useCallback(
