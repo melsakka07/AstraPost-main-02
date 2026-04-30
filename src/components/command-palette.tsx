@@ -146,7 +146,7 @@ export function CommandPalette() {
 
           <div className="border-b px-3 py-2">
             <div className="relative">
-              <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+              <Search className="text-muted-foreground absolute start-2.5 top-2.5 h-4 w-4" />
               <Input
                 placeholder={t("placeholder")}
                 value={search}
@@ -201,7 +201,7 @@ export function CommandPalette() {
             )}
           </div>
 
-          <div className="border-t px-3 py-2 text-right">
+          <div className="border-t px-3 py-2 text-end">
             <p className="text-muted-foreground text-xs">
               Press <kbd className="bg-muted rounded px-2 py-1 text-xs font-medium">⌘K</kbd> or{" "}
               <kbd className="bg-muted rounded px-2 py-1 text-xs font-medium">Ctrl+K</kbd> anytime

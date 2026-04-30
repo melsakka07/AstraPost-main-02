@@ -617,7 +617,7 @@ body:has([data-dashboard-layout]) [data-main-content] {
 
   /* Beautiful blockquotes */
   .prose blockquote {
-    @apply my-8 rounded-xl border-l-4 p-6;
+    @apply my-8 rounded-xl border-s-4 p-6;
     background: linear-gradient(135deg, hsl(var(--muted) / 0.5), hsl(var(--muted) / 0.2));
     border-color: hsl(var(--primary));
     position: relative;

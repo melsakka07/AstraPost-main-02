@@ -1358,7 +1358,8 @@
       "educational": "Educational",
       "inspirational": "Inspirational",
       "humorous": "Humorous",
-      "viral": "Viral"
+      "viral": "Viral",
+      "controversial": "Controversial"
     },
     "days_short": {
       "mon": "Mon",
@@ -1394,7 +1395,26 @@
       "calendar": "Calendar",
       "agentic": "Agentic",
       "variant": "Variant",
-      "image": "Image"
+      "image": "Image",
+      "image_prompt": "Image Prompt",
+      "affiliate": "Affiliate",
+      "inspiration": "Inspiration",
+      "agentic_pipeline": "Agentic Pipeline",
+      "agentic_regenerate": "Agentic Regenerate",
+      "bio_optimizer": "Bio Optimizer",
+      "content_calendar": "Content Calendar",
+      "tools": "Tools",
+      "hook": "Hook",
+      "cta": "CTA",
+      "rewrite": "Rewrite",
+      "reply_generator": "Reply Generator",
+      "url_to_thread": "URL to Thread",
+      "variant_generator": "Variant Generator",
+      "competitor_analyzer": "Competitor Analyzer",
+      "chat": "Chat",
+      "voice_profile": "Voice Profile",
+      "viral_score": "Viral Score",
+      "agentic_approve": "Agentic Approve"
     }
   },
   "ai_image": {

@@ -279,7 +279,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
               {WEEKDAYS.map((day, i) => (
                 <div
                   key={i}
-                  className="text-muted-foreground border-r p-1 text-center text-xs font-medium last:border-r-0 sm:p-2 sm:text-sm"
+                  className="text-muted-foreground border-e p-1 text-center text-xs font-medium last:border-e-0 sm:p-2 sm:text-sm"
                 >
                   <span className="sm:hidden">{day.short}</span>
                   <span className="hidden sm:inline">{day.full}</span>

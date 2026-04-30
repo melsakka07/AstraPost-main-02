@@ -484,7 +484,7 @@ export function QueueContent({
                           </span>
                         </div>
                         {tip.isTierLimit && (
-                          <div className="ml-5 flex items-center gap-2">
+                          <div className="ms-5 flex items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"

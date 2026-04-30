@@ -71,7 +71,7 @@ export function SocialProof() {
               {/* Left accent border */}
               <div
                 aria-hidden="true"
-                className="from-primary/60 via-primary/30 absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b to-transparent"
+                className="from-primary/60 via-primary/30 absolute inset-y-0 start-0 w-0.5 bg-gradient-to-b to-transparent"
               />
 
               <CardContent className="p-6">

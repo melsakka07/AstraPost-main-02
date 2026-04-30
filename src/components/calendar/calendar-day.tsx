@@ -36,7 +36,7 @@ export function CalendarDay({
     <div
       ref={setNodeRef}
       className={cn(
-        "group relative flex flex-col gap-1 overflow-hidden border-r border-b p-2 transition-colors last:border-r-0",
+        "group relative flex flex-col gap-1 overflow-hidden border-e border-b p-2 transition-colors last:border-e-0",
         !isCurrentMonth && "bg-muted/10 text-muted-foreground",
         isOver && "bg-accent/50",
         view === "month" && "min-h-[80px]",

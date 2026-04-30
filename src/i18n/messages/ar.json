@@ -1358,7 +1358,8 @@
       "educational": "تعليمي",
       "inspirational": "ملهم",
       "humorous": "مرح",
-      "viral": "انتشار واسع"
+      "viral": "انتشار واسع",
+      "controversial": "جدلي"
     },
     "days_short": {
       "mon": "الاثنين",
@@ -1394,7 +1395,26 @@
       "calendar": "تقويم",
       "agentic": "توليد تلقائي",
       "variant": "متغير",
-      "image": "صورة"
+      "image": "صورة",
+      "image_prompt": "موجه صورة",
+      "affiliate": "تسويق بالعمولة",
+      "inspiration": "إلهام",
+      "agentic_pipeline": "توليد تلقائي",
+      "agentic_regenerate": "إعادة توليد تلقائي",
+      "bio_optimizer": "تحسين السيرة الذاتية",
+      "content_calendar": "تقويم محتوى",
+      "tools": "أدوات",
+      "hook": "خطاف",
+      "cta": "دعوة لإجراء",
+      "rewrite": "إعادة كتابة",
+      "reply_generator": "مولد ردود",
+      "url_to_thread": "رابط إلى خيط",
+      "variant_generator": "مولد متغيرات",
+      "competitor_analyzer": "تحليل المنافسين",
+      "chat": "محادثة",
+      "voice_profile": "ملف صوتي",
+      "viral_score": "درجة الانتشار",
+      "agentic_approve": "موافقة تلقائية"
     }
   },
   "ai_image": {

@@ -914,6 +914,36 @@
       "thread": "‏[Thread]‏",
       "poll": "‏[Poll]‏",
       "question": "‏[Question]‏"
+    },
+    "tone_options": {
+      "professional": "‏[Professional]‏",
+      "casual": "‏[Casual]‏",
+      "educational": "‏[Educational]‏",
+      "inspirational": "‏[Inspirational]‏",
+      "humorous": "‏[Humorous]‏",
+      "viral": "‏[Viral]‏",
+      "controversial": "‏[Controversial]‏"
+    },
+    "days_short": {
+      "mon": "‏[Mon]‏",
+      "tue": "‏[Tue]‏",
+      "wed": "‏[Wed]‏",
+      "thu": "‏[Thu]‏",
+      "fri": "‏[Fri]‏",
+      "sat": "‏[Sat]‏",
+      "sun": "‏[Sun]‏"
+    },
+    "language_options": {
+      "ar": "‏[Arabic]‏",
+      "en": "‏[English]‏",
+      "fr": "‏[French]‏",
+      "de": "‏[German]‏",
+      "es": "‏[Spanish]‏",
+      "it": "‏[Italian]‏",
+      "pt": "‏[Portuguese]‏",
+      "tr": "‏[Turkish]‏",
+      "ru": "‏[Russian]‏",
+      "hi": "‏[Hindi]‏"
     }
   },
   "ai_history": {
@@ -927,7 +957,40 @@
     "output": "‏[Output]‏",
     "no_content": "‏[No content contentnt]‏",
     "reuse": "‏[Reuse]‏",
-    "template_streamed": "‏[Content was streamed directly to the Composer. Re-generate from the Templates dialog to produce new content. content.t.]‏"
+    "template_streamed": "‏[Content was streamed directly to the Composer. Re-generate from the Templates dialog to produce new content. content.t.]‏",
+    "tweet_number": "‏[Tweet {index} {index}ex]‏",
+    "type": {
+      "thread": "‏[Thread]‏",
+      "template": "‏[Template]‏",
+      "hashtags": "‏[Hashtags]‏",
+      "bio": "‏[Bio]‏",
+      "reply": "‏[Reply]‏",
+      "translate": "‏[Translation]‏",
+      "inspire": "‏[Inspiration]‏",
+      "calendar": "‏[Calendar]‏",
+      "agentic": "‏[Agentic]‏",
+      "variant": "‏[Variant]‏",
+      "image": "‏[Image]‏",
+      "image_prompt": "‏[Image Prompt]‏",
+      "affiliate": "‏[Affiliate]‏",
+      "inspiration": "‏[Inspiration]‏",
+      "agentic_pipeline": "‏[Agentic Pipeline]‏",
+      "agentic_regenerate": "‏[Agentic Regenerate]‏",
+      "bio_optimizer": "‏[Bio Optimizer]‏",
+      "content_calendar": "‏[Content Calendar]‏",
+      "tools": "‏[Tools]‏",
+      "hook": "‏[Hook]‏",
+      "cta": "‏[CTA]‏",
+      "rewrite": "‏[Rewrite]‏",
+      "reply_generator": "‏[Reply Generator]‏",
+      "url_to_thread": "‏[URL to Thread]‏",
+      "variant_generator": "‏[Variant Generator]‏",
+      "competitor_analyzer": "‏[Competitor Analyzer]‏",
+      "chat": "‏[Chat]‏",
+      "voice_profile": "‏[Voice Profile]‏",
+      "viral_score": "‏[Viral Score]‏",
+      "agentic_approve": "‏[Agentic Approve]‏"
+    }
   },
   "inspiration": {
     "title": "‏[Inspiration]‏",

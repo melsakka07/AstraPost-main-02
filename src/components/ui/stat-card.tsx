@@ -28,8 +28,8 @@ export interface StatCardProps {
    */
   trend?: "up" | "down" | "neutral";
   /**
-   * Optional left-border accent class (e.g. "border-l-emerald-500").
-   * When provided the card gets a `border-l-4` accent stripe.
+   * Optional inline-start border accent class (e.g. "border-s-emerald-500").
+   * When provided the card gets a `border-s-4` accent stripe.
    */
   accentClass?: string;
   /** Icon wrapper background class (e.g. "bg-emerald-500/10"). Overrides variant. */
@@ -73,7 +73,7 @@ export function StatCard({
     <Card
       className={cn(
         "transition-shadow hover:shadow-md",
-        accentClass && `border-l-4 ${accentClass}`,
+        accentClass && `border-s-4 ${accentClass}`,
         className
       )}
     >

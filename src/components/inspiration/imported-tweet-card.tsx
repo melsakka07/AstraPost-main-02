@@ -96,7 +96,7 @@ function highlightEntities(text: string): React.ReactNode {
 function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: boolean }) {
   const locale = useLocale();
   return (
-    <div className={cn("flex gap-2 sm:gap-3", isReply && "ml-8 sm:ml-12")}>
+    <div className={cn("flex gap-2 sm:gap-3", isReply && "ms-8 sm:ms-12")}>
       {/* Avatar */}
       <div className="flex-shrink-0">
         <div className="bg-muted h-10 w-10 overflow-hidden rounded-full sm:h-12 sm:w-12">

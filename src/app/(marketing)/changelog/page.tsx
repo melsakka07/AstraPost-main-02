@@ -135,10 +135,10 @@ export default async function ChangelogPage() {
         </div>
 
         {/* Timeline */}
-        <div className="border-muted relative ml-4 space-y-12 border-l pl-8 md:ms-8 md:ps-12">
+        <div className="border-muted relative ms-4 space-y-12 border-s ps-8 md:ms-8 md:ps-12">
           {releases.map((release, index) => (
             <div key={index} className="relative">
-              <div className="border-primary/40 bg-background ring-primary/10 absolute top-1.5 -left-[2.35rem] h-3 w-3 rounded-full border-2 ring-4 md:-left-[3.35rem]" />
+              <div className="border-primary/40 bg-background ring-primary/10 absolute -start-[2.35rem] top-1.5 h-3 w-3 rounded-full border-2 ring-4 md:-start-[3.35rem]" />
 
               <div className="mb-2 flex flex-col gap-2 md:flex-row md:items-baseline">
                 <h2 className="text-2xl font-bold">{release.title}</h2>

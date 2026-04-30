@@ -370,7 +370,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="bg-card border-border hidden flex-col border-r md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0">
+      <div className="bg-card border-border hidden flex-col border-e md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0">
         <SidebarContent
           pathname={pathname}
           aiUsage={aiUsage}
@@ -390,8 +390,8 @@ export function Sidebar({
             className={cn(
               "bg-card fixed top-0 z-50 h-full w-64 overflow-auto outline-none",
               sheetSide === "left"
-                ? "border-border left-0 border-r"
-                : "border-border right-0 border-l"
+                ? "border-border start-0 border-e"
+                : "border-border end-0 border-s"
             )}
           >
             <DrawerPrimitive.Title className="sr-only">

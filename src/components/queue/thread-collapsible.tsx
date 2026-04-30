@@ -47,10 +47,10 @@ export function ThreadCollapsible({
       </Button>
 
       {open && (
-        <ol className="border-muted mt-3 space-y-3 border-l-2 pl-4">
+        <ol className="border-muted mt-3 space-y-3 border-s-2 ps-4">
           {tweets.slice(1).map((tweet, idx) => (
             <li key={tweet.id} className="relative">
-              <span className="bg-muted text-muted-foreground absolute top-0.5 -left-6 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium">
+              <span className="bg-muted text-muted-foreground absolute -start-6 top-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-medium">
                 {idx + 2}
               </span>
               <p

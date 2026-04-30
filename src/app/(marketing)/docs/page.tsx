@@ -104,9 +104,9 @@ export default async function DocsPage() {
               placeholder={t("search_placeholder")}
               aria-label={t("search_placeholder")}
               disabled
-              className="bg-card h-12 cursor-not-allowed pl-10 opacity-60 shadow-sm"
+              className="bg-card h-12 cursor-not-allowed ps-10 opacity-60 shadow-sm"
             />
-            <div className="text-muted-foreground absolute top-[calc(1rem+0.875rem)] left-3">
+            <div className="text-muted-foreground absolute start-3 top-[calc(1rem+0.875rem)]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18"
@@ -146,7 +146,7 @@ export default async function DocsPage() {
                 </div>
               </div>
 
-              <ul className="border-muted ml-12 space-y-3 border-l pl-4">
+              <ul className="border-muted ms-12 space-y-3 border-s ps-4">
                 {category.articles.map((article, i) => (
                   <li key={i}>
                     {article.comingSoon ? (

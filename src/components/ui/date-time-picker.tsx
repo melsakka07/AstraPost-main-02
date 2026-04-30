@@ -106,8 +106,8 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
             variant="outline"
             disabled={disabled}
             className={cn(
-              "w-full justify-start text-left font-normal",
-              value && "pr-8", // leave room for the clear button
+              "w-full justify-start text-start font-normal",
+              value && "pe-8", // leave room for the clear button
               !value && "text-muted-foreground",
               className
             )}

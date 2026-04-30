@@ -198,7 +198,7 @@ export function TweetCard({
         tabIndex={0}
         aria-label={`Drag to reorder tweet ${index + 1}`}
         aria-roledescription="sortable"
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute top-4 -left-8 hidden cursor-grab items-center transition-colors focus-visible:rounded focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing md:flex"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute -start-8 top-4 hidden cursor-grab items-center transition-colors focus-visible:rounded focus-visible:ring-2 focus-visible:outline-none active:cursor-grabbing md:flex"
         {...dragHandleProps}
       >
         <GripVertical className="h-5 w-5" />
@@ -206,8 +206,8 @@ export function TweetCard({
 
       <Card
         className={cn(
-          "border-l-4",
-          isOverLimit(tweet.content) ? "border-l-destructive" : "border-l-primary",
+          "border-s-4",
+          isOverLimit(tweet.content) ? "border-s-destructive" : "border-s-primary",
           // Phase 3: Highlight target tweets when AI panel is open
           isAiTarget && "ring-primary/20 ring-2 transition-all"
         )}
@@ -613,7 +613,7 @@ export function TweetCard({
 
       {/* Connector Line */}
       {index < totalTweets - 1 && (
-        <div className="bg-border absolute top-[2.5rem] bottom-[-1.5rem] left-[-1.5rem] -z-10 w-0.5 sm:top-[3rem] sm:bottom-[-2rem] sm:left-[-1.9rem]" />
+        <div className="bg-border absolute start-[-1.5rem] top-[2.5rem] bottom-[-1.5rem] -z-10 w-0.5 sm:start-[-1.9rem] sm:top-[3rem] sm:bottom-[-2rem]" />
       )}
     </div>
   );

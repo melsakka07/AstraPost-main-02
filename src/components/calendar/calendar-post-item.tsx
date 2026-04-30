@@ -37,11 +37,11 @@ export function CalendarPostItem({ post, isOverlay, view, accentColor }: Calenda
     return (
       <div
         ref={setNodeRef}
-        style={{ ...dndStyle, borderLeftColor: borderColor }}
+        style={{ ...dndStyle, borderInlineStartColor: borderColor }}
         {...attributes}
         {...listeners}
         className={cn(
-          "cursor-grab rounded-sm border-l-[3px] px-1 py-0.5 active:cursor-grabbing",
+          "cursor-grab rounded-sm border-s-[3px] px-1 py-0.5 active:cursor-grabbing",
           "bg-primary/5 hover:bg-primary/10 min-h-[20px] overflow-hidden transition-colors",
           isDragging && "opacity-50",
           isOverlay && "scale-105 rotate-2 cursor-grabbing opacity-90 shadow-xl"
@@ -65,7 +65,7 @@ export function CalendarPostItem({ post, isOverlay, view, accentColor }: Calenda
         "cursor-grab transition-shadow hover:shadow-md active:cursor-grabbing",
         isDragging && "opacity-50",
         isOverlay && "scale-105 rotate-2 cursor-grabbing opacity-90 shadow-xl",
-        "bg-card border-l-4"
+        "bg-card border-s-4"
       )}
     >
       <CardContent className="flex min-h-[44px] flex-col justify-center space-y-1 p-2">
