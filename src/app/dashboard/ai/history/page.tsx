@@ -10,6 +10,33 @@ import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { aiGenerations } from "@/lib/schema";
 
+const CONTENT_TYPES = new Set([
+  "thread",
+  "template",
+  "hook",
+  "cta",
+  "rewrite",
+  "variant_generator",
+  "bio_optimizer",
+  "reply_generator",
+  "translate",
+  "hashtags",
+]);
+
+const ANALYSIS_TYPES = new Set(["viral_score", "competitor_analyzer", "content_calendar", "tools"]);
+
+const MEDIA_TYPES = new Set(["image", "image_prompt"]);
+
+const AGENTIC_TYPES = new Set(["agentic_pipeline", "agentic_regenerate", "agentic_approve"]);
+
+function getBadgeVariant(type: string): "secondary" | "default" | "outline" {
+  if (CONTENT_TYPES.has(type)) return "secondary";
+  if (ANALYSIS_TYPES.has(type)) return "default";
+  if (MEDIA_TYPES.has(type)) return "default";
+  if (AGENTIC_TYPES.has(type)) return "outline";
+  return "outline";
+}
+
 export default async function AiHistoryPage() {
   const session = await requireAdmin();
   const userLocale =
@@ -48,43 +75,41 @@ export default async function AiHistoryPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {history.map((item) => (
-            <Card key={item.id} className="overflow-hidden">
-              <CardHeader className="bg-muted/30 flex flex-row items-center justify-between py-3">
+            <Card key={item.id}>
+              <CardHeader className="flex flex-row items-center justify-between py-3">
                 <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="capitalize">
+                  <Badge variant={getBadgeVariant(item.type ?? "")} className="capitalize">
                     {t(`type.${item.type}` as any) ?? item.type}
                   </Badge>
                   <span className="text-muted-foreground text-xs">
                     {new Date(item.createdAt).toLocaleString(userLocale)}
                   </span>
                 </div>
-                <div className="flex gap-2">
-                  {item.type !== "template" && (
-                    <Link href={`/dashboard/compose?restore=${item.id}`}>
-                      <Button variant="ghost" size="sm" className="h-8">
-                        <RefreshCcw className="me-2 h-3.5 w-3.5" />
-                        {t("reuse")}
-                      </Button>
-                    </Link>
-                  )}
-                </div>
+                {item.type !== "template" && (
+                  <Link href={`/dashboard/compose?restore=${item.id}`}>
+                    <Button variant="ghost" size="sm" className="h-8">
+                      <RefreshCcw className="me-2 h-3.5 w-3.5" />
+                      {t("reuse")}
+                    </Button>
+                  </Link>
+                )}
               </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+              <CardContent className="space-y-4">
                 {item.inputPrompt && (
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
                       {t("prompt")}
                     </span>
-                    <p className="text-foreground/80 line-clamp-2 text-sm">{item.inputPrompt}</p>
+                    <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
+                      {item.inputPrompt}
+                    </p>
                   </div>
                 )}
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
                     {t("output")}
                   </span>
-                  <div className="bg-muted/50 overflow-wrap-anywhere rounded p-3 text-sm break-words whitespace-pre-wrap">
-                    {renderOutput(item, t)}
-                  </div>
+                  <RenderOutput item={item} t={t} />
                 </div>
               </CardContent>
             </Card>
@@ -95,27 +120,185 @@ export default async function AiHistoryPage() {
   );
 }
 
-function renderOutput(item: any, t: Awaited<ReturnType<typeof getTranslations<"ai_history">>>) {
+type TFunc = Awaited<ReturnType<typeof getTranslations<"ai_history">>>;
+
+function RenderOutput({ item, t }: { item: any; t: TFunc }) {
   const content = item.outputContent;
 
   if (item.type === "template") {
-    return t("template_streamed");
+    return <p className="text-muted-foreground text-sm italic">{t("template_streamed")}</p>;
   }
 
-  if (!content) return t("no_content");
-
-  if (item.type === "thread" && Array.isArray(content.tweets)) {
-    return content.tweets
-      .map((tweet: string, i: number) => t("tweet_number", { index: i + 1 }) + "\n" + tweet)
-      .join("\n\n");
+  if (content === null || content === undefined) {
+    return <p className="text-muted-foreground text-sm">{t("no_content")}</p>;
   }
 
-  if (item.type === "hashtags" && Array.isArray(content.hashtags)) {
-    return content.hashtags.join(" ");
+  if (typeof content === "string") {
+    const parsed = tryParseJson(content);
+    if (parsed !== null) {
+      return <RenderStructured content={parsed} t={t} />;
+    }
+    return <TextBlock text={content} />;
   }
 
-  if (content.text) return content.text;
-  if (content.tweets && Array.isArray(content.tweets)) return content.tweets.join("\n\n");
+  return <RenderStructured content={content} t={t} />;
+}
 
-  return typeof content === "string" ? content : JSON.stringify(content, null, 2);
+function tryParseJson(str: string): unknown | null {
+  try {
+    const parsed = JSON.parse(str);
+    if (parsed && typeof parsed === "object") return parsed;
+  } catch {
+    /* not json */
+  }
+  return null;
+}
+
+function TextBlock({ text }: { text: string }) {
+  return (
+    <div className="bg-muted/40 rounded-lg border p-3.5 text-sm leading-relaxed whitespace-pre-wrap">
+      {text}
+    </div>
+  );
+}
+
+function RenderStructured({ content, t }: { content: unknown; t: TFunc }) {
+  if (Array.isArray(content)) {
+    return (
+      <div className="space-y-2">
+        {content.map((item, i) => (
+          <div key={i} className="bg-muted/40 rounded-lg border p-3">
+            <span className="text-muted-foreground/70 mb-1.5 block text-[10px] font-bold tracking-wider uppercase">
+              #{i + 1}
+            </span>
+            {typeof item === "object" && item !== null ? (
+              <div className="space-y-1">
+                {Object.entries(item as Record<string, unknown>)
+                  .filter(([, v]) => v !== null && v !== undefined && v !== "")
+                  .map(([key, value]) => (
+                    <div key={key} className="flex items-start gap-3 text-sm">
+                      <span className="text-muted-foreground/80 min-w-[80px] shrink-0 text-xs font-semibold tracking-wide capitalize">
+                        {key.replace(/([A-Z])/g, " $1").trim()}
+                      </span>
+                      <span className="text-foreground/85 min-w-0 leading-relaxed break-words">
+                        {formatValue(value)}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <span className="text-sm">{String(item)}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (typeof content !== "object" || content === null) {
+    return <TextBlock text={String(content)} />;
+  }
+
+  const obj = content as Record<string, unknown>;
+  const hasTweets = Array.isArray(obj.tweets) && obj.tweets.length > 0;
+  const hasHashtags = Array.isArray(obj.hashtags) && obj.hashtags.length > 0;
+  const hasText = typeof obj.text === "string" && obj.text.length > 0;
+  const hasFeedback = typeof obj.feedback === "string" && obj.feedback.length > 0;
+
+  if (hasTweets) {
+    const meta = extractMeta(obj, ["tweets", "action", "tone", "language"]);
+    return (
+      <div className="space-y-3">
+        {meta.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {meta.map(({ key, value }) => (
+              <span key={key} className="text-muted-foreground text-xs">
+                <span className="font-semibold capitalize">{key}</span>: {String(value)}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="space-y-2">
+          {(obj.tweets as string[]).map((tweet, i) => (
+            <div key={i} className="border-border/60 bg-muted/30 flex gap-3 rounded-lg border p-3">
+              <span className="text-muted-foreground/70 shrink-0 pt-0.5 text-xs font-semibold tabular-nums">
+                {i + 1}
+              </span>
+              <p className="min-w-0 text-sm leading-relaxed break-words whitespace-pre-wrap">
+                {tweet}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (hasHashtags) {
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {(obj.hashtags as string[]).map((tag, i) => (
+          <Badge key={i} variant="secondary" className="text-xs font-normal">
+            {tag.startsWith("#") ? tag : `#${tag}`}
+          </Badge>
+        ))}
+      </div>
+    );
+  }
+
+  if (hasText) {
+    return <TextBlock text={obj.text as string} />;
+  }
+
+  if (hasFeedback) {
+    return <TextBlock text={obj.feedback as string} />;
+  }
+
+  const entries = Object.entries(obj).filter(([, v]) => v !== null && v !== undefined && v !== "");
+
+  if (entries.length === 0) {
+    return <p className="text-muted-foreground text-sm">{t("no_content")}</p>;
+  }
+
+  return (
+    <div className="bg-muted/40 rounded-lg border">
+      {entries.map(([key, value], i) => (
+        <div
+          key={key}
+          className={`flex items-start gap-4 px-3.5 py-2.5 text-sm ${
+            i < entries.length - 1 ? "border-border/40 border-b" : ""
+          }`}
+        >
+          <span className="text-muted-foreground/80 min-w-[100px] shrink-0 text-xs font-semibold tracking-wide capitalize">
+            {key.replace(/([A-Z])/g, " $1").trim()}
+          </span>
+          <span className="text-foreground/85 min-w-0 leading-relaxed break-words">
+            {formatValue(value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function extractMeta(
+  content: Record<string, unknown>,
+  exclude: string[]
+): { key: string; value: unknown }[] {
+  return Object.entries(content)
+    .filter(([k, v]) => !exclude.includes(k) && v !== null && v !== undefined && v !== "")
+    .map(([key, value]) => ({ key, value }));
+}
+
+function formatValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "—";
+    return value.map((v) => (typeof v === "object" ? JSON.stringify(v) : String(v))).join(", ");
+  }
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value);
+  }
+  return String(value);
 }
