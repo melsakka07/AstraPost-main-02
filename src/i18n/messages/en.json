@@ -468,8 +468,45 @@
     },
     "ai_tools": {
       "title": "AI Tools",
-      "description": "Generate content with AI assistance",
-      "generate": "Generate"
+      "sheet_description": "Generate content with AI assistance",
+      "description": {
+        "thread": "Generate a full thread or single post from a topic you provide.",
+        "inspire": "Get trending topic ideas and example opening hooks for your chosen niche.",
+        "template": "Generate content using a structured template — great for consistent brand voice.",
+        "hook": "Craft a scroll-stopping opening line that grabs attention immediately.",
+        "cta": "Append a compelling call-to-action to encourage engagement.",
+        "rewrite": "Improve your tweet's clarity, tone, or impact while keeping its meaning.",
+        "translate": "Translate your tweets to reach a broader audience.",
+        "hashtags": "Get AI-suggested hashtags — click to add them to your tweet."
+      },
+      "generate": "Generate",
+      "tooltip": {
+        "thread": "Generate a full thread or single post from a topic",
+        "inspire": "Get trending topic ideas and opening hooks for your niche",
+        "template": "Generate content using structured templates like How-To or Product Launch",
+        "hook": "Craft an attention-grabbing opening line",
+        "cta": "Add a call-to-action to the end of your thread",
+        "rewrite": "Rewrite and improve existing tweet text",
+        "translate": "Translate tweets between English and Arabic",
+        "hashtags": "Generate relevant hashtags for your tweet"
+      },
+      "generating": {
+        "thread": "Generating thread…",
+        "hook": "Crafting an opening hook…",
+        "cta": "Writing a call-to-action…",
+        "rewrite": "Rewriting your tweet…",
+        "translate": "Translating tweets…",
+        "hashtags": "Generating hashtags…"
+      },
+      "template": {
+        "select_prompt": "Choose a template to get started",
+        "select_description": "Browse structured templates like How-To Guide, Personal Story, or Product Launch.",
+        "browse": "Browse Templates"
+      },
+      "hashtags": {
+        "dismiss": "Dismiss",
+        "all_added": "All hashtags added!"
+      }
     },
     "dialog": {
       "replace_title": "Replace existing content?",
@@ -542,7 +579,8 @@
       "rewrite_undone": "Rewrite undone",
       "max_media": "Max 4 media per tweet",
       "wait_for_upload": "Please wait for all media to finish uploading.",
-      "thread_generated": "Thread generated!"
+      "thread_generated": "Thread generated!",
+      "inspiration_topic_set": "Topic set from inspiration — click Generate when ready"
     }
   },
   "queue": {

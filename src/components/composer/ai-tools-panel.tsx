@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   FileText,
   Globe,
@@ -31,7 +31,9 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { XSubscriptionTier } from "@/components/ui/x-subscription-badge";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import type { OutputFormat, TemplatePromptConfig } from "@/lib/ai/template-prompts";
 import { LANGUAGES } from "@/lib/constants";
 
@@ -85,6 +87,17 @@ const TOOLS: {
   { id: "hashtags", label: "#Tags", Icon: Hash },
 ];
 
+const TOOL_DESCRIPTIONS: Record<AiToolType, string> = {
+  thread: "ai_tools.description.thread",
+  inspire: "ai_tools.description.inspire",
+  template: "ai_tools.description.template",
+  hook: "ai_tools.description.hook",
+  cta: "ai_tools.description.cta",
+  rewrite: "ai_tools.description.rewrite",
+  translate: "ai_tools.description.translate",
+  hashtags: "ai_tools.description.hashtags",
+};
+
 interface AiToolsPanelProps {
   aiTool: AiToolType;
   onToolChange: (tool: AiToolType) => void;
@@ -129,6 +142,7 @@ interface AiToolsPanelProps {
   generatedHashtags: string[];
   onHashtagClick: (tag: string) => void;
   onHashtagsDone: () => void;
+  onBrowseTemplates?: () => void;
   isAiOpen: boolean;
 }
 
@@ -176,6 +190,7 @@ export function AiToolsPanel({
   generatedHashtags,
   onHashtagClick,
   onHashtagsDone,
+  onBrowseTemplates,
   isAiOpen,
 }: AiToolsPanelProps) {
   const t = useTranslations("compose");
@@ -220,6 +235,21 @@ export function AiToolsPanel({
     }
   }, [aiTone, aiTool, onToneChange]);
 
+  // Auto-dismiss hashtags when all chips are consumed
+  const prevHashtagsLengthRef = useRef(generatedHashtags.length);
+  useEffect(() => {
+    if (
+      aiTool === "hashtags" &&
+      prevHashtagsLengthRef.current > 0 &&
+      generatedHashtags.length === 0
+    ) {
+      onHashtagsDone();
+    }
+    prevHashtagsLengthRef.current = generatedHashtags.length;
+  }, [generatedHashtags.length, aiTool, onHashtagsDone]);
+
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
   const isGenerateDisabled =
     aiTool === "inspire" ||
     isGenerating ||
@@ -234,27 +264,51 @@ export function AiToolsPanel({
 
   return (
     <div className="space-y-4">
-      {/* P1-C / P4-D: Tool tab switcher — pill buttons with ARIA tab semantics */}
-      <div role="tablist" aria-label="AI tool" className="flex flex-wrap gap-1.5 sm:gap-2">
-        {TOOLS.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            role="tab"
-            aria-selected={aiTool === id}
-            type="button"
-            disabled={isGenerating}
-            onClick={() => onToolChange(id)}
-            className="focus-visible:border-ring focus-visible:ring-ring/50 aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary/90 bg-background hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 inline-flex h-9 min-w-[44px] shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 sm:h-8 sm:min-w-0 sm:gap-2 sm:px-3 sm:text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-          >
-            <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-            <span className="xs:inline hidden">{label}</span>
-          </button>
-        ))}
-      </div>
+      {/* Tool tab switcher — grid on mobile (all 8 visible), flex-wrap on desktop */}
+      <TooltipProvider>
+        <div
+          role="tablist"
+          aria-label="AI tool"
+          className="grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap sm:gap-2"
+        >
+          {TOOLS.map(({ id, label, Icon }) => {
+            const button = (
+              <button
+                role="tab"
+                aria-selected={aiTool === id}
+                type="button"
+                disabled={isGenerating}
+                onClick={() => onToolChange(id)}
+                className="focus-visible:border-ring focus-visible:ring-ring/50 aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary/90 bg-background hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 inline-flex h-9 min-w-[44px] shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 sm:h-8 sm:min-w-0 sm:gap-2 sm:px-3 sm:text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+              >
+                <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                <span className="xs:inline hidden">{label}</span>
+              </button>
+            );
+
+            // Tooltips only on desktop — hover tooltips don't work on touch devices
+            if (!isDesktop) return <React.Fragment key={id}>{button}</React.Fragment>;
+
+            return (
+              <Tooltip key={id}>
+                <TooltipTrigger asChild>{button}</TooltipTrigger>
+                <TooltipContent>{t(`ai_tools.tooltip.${id}`)}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </TooltipProvider>
+
+      {/* Active tool description */}
+      {isAiOpen && !isGenerating && (
+        <p className="text-muted-foreground text-xs leading-relaxed sm:text-sm">
+          {t(TOOL_DESCRIPTIONS[aiTool])}
+        </p>
+      )}
 
       {/* Phase 3: Scope indicator - shows which tweets are affected */}
       {isAiOpen && !isGenerating && (
-        <div className="text-muted-foreground flex items-center gap-1.5 px-1 text-xs sm:gap-2 sm:text-sm">
+        <div className="bg-primary/5 border-primary/10 text-primary/80 flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-xs sm:gap-2 sm:px-2.5 sm:text-sm">
           <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           {(() => {
             const nonEmptyCount = tweets.filter((t) => t.content.trim()).length;
@@ -389,7 +443,8 @@ export function AiToolsPanel({
                     className="h-10 w-full text-sm sm:h-9"
                     onClick={onHashtagsDone}
                   >
-                    Done
+                    <X className="mr-1 h-4 w-4" />
+                    {t("ai_tools.hashtags.dismiss")}
                   </Button>
                 </div>
               )}
@@ -485,6 +540,26 @@ export function AiToolsPanel({
                   Select a niche and click "Get Ideas" to start.
                 </p>
               )}
+            </div>
+          )}
+
+          {aiTool === "template" && !templateConfig && (
+            <div className="space-y-3 py-2 sm:space-y-4">
+              <div className="bg-muted/30 flex flex-col items-center gap-3 rounded-lg border border-dashed px-4 py-6 text-center">
+                <LayoutTemplate className="text-muted-foreground h-8 w-8 sm:h-10 sm:w-10" />
+                <div>
+                  <p className="text-sm font-medium">{t("ai_tools.template.select_prompt")}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    {t("ai_tools.template.select_description")}
+                  </p>
+                </div>
+                {onBrowseTemplates && (
+                  <Button variant="outline" size="sm" onClick={onBrowseTemplates} className="mt-1">
+                    <FileText className="mr-1.5 h-4 w-4" />
+                    {t("ai_tools.template.browse")}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -630,6 +705,19 @@ export function AiToolsPanel({
                 </div>
               </>
             )}
+
+          {isGenerating && !isStreamingThread && (
+            <div className="flex items-center gap-2 py-2 sm:gap-3 sm:py-3">
+              <Loader2 className="text-primary h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+              <span
+                role="status"
+                aria-live="polite"
+                className="text-muted-foreground text-xs sm:text-sm"
+              >
+                {t(`ai_tools.generating.${aiTool}`)}
+              </span>
+            </div>
+          )}
 
           {!hideActions && aiTool !== "inspire" && (
             <div className="flex justify-end gap-2 border-t pt-3 sm:gap-3 sm:pt-4">

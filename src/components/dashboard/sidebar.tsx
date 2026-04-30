@@ -390,8 +390,8 @@ export function Sidebar({
             className={cn(
               "bg-card fixed top-0 z-50 h-full w-64 overflow-auto outline-none",
               sheetSide === "left"
-                ? "border-border start-0 border-e"
-                : "border-border end-0 border-s"
+                ? "border-border left-0 border-r"
+                : "border-border right-0 border-l"
             )}
           >
             <DrawerPrimitive.Title className="sr-only">

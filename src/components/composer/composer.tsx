@@ -872,6 +872,7 @@ export function Composer() {
     setAiTopic(topic);
     setAiHook(hook);
     setAiTool("thread"); // Switch to Write tab
+    toast.success(t("toasts.inspiration_topic_set"));
     // User manually clicks Generate - no auto-fire
   };
 
@@ -2045,9 +2046,6 @@ export function Composer() {
                     if (tool === "hashtags" || tool === "hook" || tool === "rewrite") {
                       setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
                     }
-                    if (tool === "template" && !templateConfig) {
-                      setTemplatesDialogOpen(true);
-                    }
                     if (tool === "thread") {
                       setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
                     }
@@ -2062,6 +2060,7 @@ export function Composer() {
                   onCountChange={setAiCount}
                   aiAddNumbering={aiAddNumbering}
                   onAddNumberingChange={setAiAddNumbering}
+                  onBrowseTemplates={() => setTemplatesDialogOpen(true)}
                   aiLengthOption={aiLengthOption}
                   onLengthOptionChange={setAiLengthOption}
                   selectedTier={selectedTier ?? null}
@@ -2410,7 +2409,7 @@ export function Composer() {
           >
             <SheetHeader className="shrink-0 px-4 pb-2 sm:px-6">
               <SheetTitle>{t("ai_tools.title")}</SheetTitle>
-              <SheetDescription>{t("ai_tools.description")}</SheetDescription>
+              <SheetDescription>{t("ai_tools.sheet_description")}</SheetDescription>
             </SheetHeader>
             <div className="flex-1 overflow-y-auto px-4 py-2 sm:px-6">
               <AiToolsPanel
@@ -2420,9 +2419,6 @@ export function Composer() {
                   setGeneratedHashtags([]);
                   if (tool === "hashtags" || tool === "hook" || tool === "rewrite") {
                     setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
-                  }
-                  if (tool === "template" && !templateConfig) {
-                    setTemplatesDialogOpen(true);
                   }
                   if (tool === "thread") {
                     setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
@@ -2438,6 +2434,7 @@ export function Composer() {
                 onCountChange={setAiCount}
                 aiAddNumbering={aiAddNumbering}
                 onAddNumberingChange={setAiAddNumbering}
+                onBrowseTemplates={() => setTemplatesDialogOpen(true)}
                 aiLengthOption={aiLengthOption}
                 onLengthOptionChange={setAiLengthOption}
                 selectedTier={selectedTier ?? null}

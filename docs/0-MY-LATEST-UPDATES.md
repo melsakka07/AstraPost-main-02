@@ -1,5 +1,36 @@
 # Latest Updates
 
+## 2026-04-30: AI Tools Panel — 7 UI/UX Improvements
+
+**Change:** Applied 7 incremental UI/UX improvements to `src/components/composer/ai-tools-panel.tsx`.
+
+### Improvements
+
+1. **Tab Tooltips** — Each of 8 tab buttons wrapped in `TooltipProvider`/`Tooltip`/`TooltipTrigger`/`TooltipContent` from shadcn/ui; uses `compose.ai_tools.tooltip.{id}` i18n keys.
+
+2. **Active Tool Description** — One-line descriptive text paragraph shown between tab bar and scope badge when panel is open; driven by `TOOL_DESCRIPTIONS` lookup object mapping `AiToolType` to i18n keys.
+
+3. **Scope Badge** — Changed from muted text to a visible primary-tinted badge (`bg-primary/5 border border-primary/10 text-primary/80 rounded-md`).
+
+4. **Progress Status for Non-Streaming Tools** — Added `Loader2` spinner + status text when `isGenerating && !isStreamingThread`, using `compose.ai_tools.generating.{tool}` i18n keys.
+
+5. **Mobile Tab Scroll** — Tab bar changed from `flex-wrap` to `overflow-x-auto` with `sm:flex-wrap` breakpoint for horizontal scrolling on narrow viewports; buttons retain `shrink-0`.
+
+6. **Inline "No Template" Browse Button** — When template tool is selected but no template is configured, shows a dashed-border CTA card with `LayoutTemplate` icon, explanatory text, and a "Browse Templates" button. New optional `onBrowseTemplates?: () => void` prop.
+
+7. **Hashtag Dismiss Button** — "Done" button renamed with `X` icon and `compose.ai_tools.hashtags.dismiss` key. Added `useEffect` + `useRef` auto-dismiss when all hashtag chips are consumed.
+
+### i18n
+
+- Added missing `generating.thread` key to `en.json` and `ar.json` inside `compose.ai_tools.generating`.
+
+### Files modified
+
+- `src/components/composer/ai-tools-panel.tsx` — all 7 improvements
+- `src/i18n/messages/en.json` — 1 new key (`generating.thread`)
+- `src/i18n/messages/ar.json` — 1 new key (`generating.thread`)
+- `docs/0-MY-LATEST-UPDATES.md` — this entry
+
 ## 2026-04-28: Session 4 — Competitor + Viral Analytics i18n (PLT-001, PLT-004)
 
 **Change:** Replaced all hardcoded English strings in competitor analytics and viral analytics pages with `t()` calls. Expanded both i18n namespaces with full Arabic translations.
