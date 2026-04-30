@@ -16,7 +16,7 @@ import {
   ListOrdered,
   AlertCircle,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import twitter from "twitter-text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -109,6 +109,8 @@ export function TweetCard({
   // to avoid flooding assistive technology on every keystroke.
   const [announcedCharCount, setAnnouncedCharCount] = useState(0);
   const t = useTranslations("compose");
+  const locale = useLocale();
+  const isRtl = locale === "ar";
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const getCharCount = (text: string) => twitter.parseTweet(text).weightedLength;
@@ -215,7 +217,7 @@ export function TweetCard({
             value={tweet.content}
             onChange={(e) => updateTweet(tweet.id, e.target.value)}
             placeholder={t("tweet_placeholder")}
-            dir="auto"
+            dir={isRtl ? "rtl" : "auto"}
             autoFocus={isFirst}
             className="min-h-[120px] resize-none border-none p-0 text-base focus-visible:ring-0 sm:min-h-[160px] sm:text-lg"
           />

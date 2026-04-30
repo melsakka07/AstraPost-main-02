@@ -6,18 +6,15 @@ import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrap
 import { PostUsageBar } from "@/components/dashboard/post-usage-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const ComposerWrapper = dynamic(
-  () => import("@/components/composer/composer-wrapper").then((m) => m.ComposerWrapper),
-  {
-    loading: () => (
-      <div className="animate-pulse space-y-4">
-        <Skeleton className="h-32 w-full rounded-lg" />
-        <Skeleton className="h-10 w-32 rounded" />
-        <Skeleton className="h-10 w-full rounded" />
-      </div>
-    ),
-  }
-);
+const Composer = dynamic(() => import("@/components/composer/composer").then((m) => m.Composer), {
+  loading: () => (
+    <div className="animate-pulse space-y-4">
+      <Skeleton className="h-32 w-full rounded-lg" />
+      <Skeleton className="h-10 w-32 rounded" />
+      <Skeleton className="h-10 w-full rounded" />
+    </div>
+  ),
+});
 
 export default async function ComposePage() {
   const t = await getTranslations("compose");
@@ -26,7 +23,7 @@ export default async function ComposePage() {
     <DashboardPageWrapper icon={PenSquare} title={t("title")} description={t("description")}>
       <PostUsageBar />
       <Suspense fallback={<Skeleton className="h-[600px] w-full rounded-lg" />}>
-        <ComposerWrapper />
+        <Composer />
       </Suspense>
     </DashboardPageWrapper>
   );

@@ -56,6 +56,9 @@ export function LanguageSwitcher() {
     }
 
     try {
+      // Set cookie before the API call so the server reads the correct locale on reload,
+      // even if the session token is cached with a stale language value.
+      document.cookie = `locale=${code}; path=/; max-age=31536000; SameSite=Lax`;
       const res = await fetch("/api/user/preferences", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
