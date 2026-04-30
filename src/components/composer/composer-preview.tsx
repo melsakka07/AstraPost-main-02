@@ -46,7 +46,7 @@ export function ComposerPreview({
 }: ComposerPreviewProps) {
   const t = useTranslations("compose");
   return (
-    <div className="space-y-2 px-3 pt-3 sm:space-y-3 sm:px-6 sm:pt-5">
+    <div className="space-y-2 px-3 py-3 sm:space-y-3 sm:px-6 sm:py-5">
       <div className="mb-1.5 flex items-center justify-between sm:mb-2">
         <p className="text-muted-foreground/70 text-xs font-medium">{t("preview_label")}</p>
         <div className="flex items-center gap-1">

@@ -29,6 +29,7 @@ Next.js 16 (App Router), React 19, TypeScript 5.9, PostgreSQL 18 (pgvector), Dri
 12. **Never use `NextResponse.json()`** — use `Response.json()` in route handlers
 13. **Queue jobs must be enqueued AFTER `db.transaction()` commits** — never call `queue.add()` inside a transaction block
 14. **Any `src/lib/` module that imports from `db.ts` MUST have `import "server-only"` as its first line** — prevents Node.js builtins (`fs`, `net`, `tls`) from leaking into client bundles via transitive imports
+15. **Any UI/UX design or frontend change, you must follow industry best practices** such as using accessible color contrasts, intuitive navigation, and adhering to WCAG guidelines. Ensure all UI/UX and frontend designs are mobile friendly, dynamic (adapt to user input), and responsive (with fluid layouts that adjust to screen size).
 
 ## Definition of Done
 
