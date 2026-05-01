@@ -179,7 +179,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
+      <Tabs value={activeTab} onValueChange={handleTabChange} suppressHydrationWarning>
         <TabsList>
           <TabsTrigger value="teams">Teams</TabsTrigger>
           <TabsTrigger value="invitations">

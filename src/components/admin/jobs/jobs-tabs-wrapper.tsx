@@ -16,7 +16,12 @@ export function JobsTabsWrapper({ defaultTab, children }: JobsTabsWrapperProps) 
   }
 
   return (
-    <Tabs defaultValue={defaultTab} onValueChange={handleTabChange} className="space-y-4">
+    <Tabs
+      defaultValue={defaultTab}
+      onValueChange={handleTabChange}
+      className="space-y-4"
+      suppressHydrationWarning
+    >
       {children}
     </Tabs>
   );
