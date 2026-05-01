@@ -2731,7 +2731,12 @@
       "dead_letter_queue": "طابور الرسائل الميتة",
       "recent_jobs": "المهام الأخيرة",
       "permanently_failed": "مهام فاشلة بشكل دائم",
-      "attempts": "{count} محاولات"
+      "attempts": "{count} محاولات",
+      "clear_queue": "مسح الطابور",
+      "clear_confirm_title": "مسح طابور {queue}؟",
+      "clear_confirm_desc": "سيؤدي هذا إلى إزالة جميع المهام المكتملة والفاشلة والمنتظرة والمؤجلة من طابور {queue}. لن تتأثر المهام النشطة. لا يمكن التراجع عن هذا الإجراء.",
+      "cleared": "تم مسح طابور {queue}",
+      "clear_failed": "فشل مسح طابور {queue}"
     },
     "notifications": {
       "history": "سجل الإشعارات",
@@ -2755,7 +2760,12 @@
       "send_now": "إرسال الآن",
       "send_scheduled": "جدولة",
       "target_count": "{count} مستلم",
-      "delivered_read": "تم التسليم / مقروء"
+      "delivered_read": "تم التسليم / مقروء",
+      "clear_all": "مسح الكل",
+      "clear_confirm_title": "مسح جميع الإشعارات؟",
+      "clear_confirm_desc": "سيؤدي هذا إلى مسح سجل الإشعارات بالكامل بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+      "cleared": "تم مسح جميع الإشعارات",
+      "clear_failed": "فشل مسح الإشعارات"
     }
   }
 }

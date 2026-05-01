@@ -10,6 +10,8 @@ import {
   AlertTriangle,
   Ban,
   Bell,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   FileText,
   Flag,
@@ -21,7 +23,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -104,12 +106,17 @@ function ActivityFeedSkeleton() {
 
 export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
   const locale = useLocale();
+  const t = useTranslations("admin");
   const [activities, setActivities] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const pathname = usePathname();
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const inFlightRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -125,7 +132,8 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
-      const res = await fetch(`/api/admin/audit?limit=${limit}&sort=desc`, {
+      const offset = (page - 1) * limit;
+      const res = await fetch(`/api/admin/activity-feed?limit=${limit}&offset=${offset}`, {
         signal: controller.signal,
       });
 
@@ -135,8 +143,9 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
 
       if (!inFlightRef.current) return;
 
-      const { data } = (await res.json()) as { data: AuditLog[] };
-      setActivities(data);
+      const json = (await res.json()) as { data: AuditLog[]; pagination: { total: number } };
+      setActivities(json.data);
+      setTotal(json.pagination?.total ?? 0);
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
@@ -154,11 +163,15 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
       }
       setLoading(false);
     }
-  }, [limit]);
+  }, [limit, page]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [pathname]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -280,6 +293,46 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
                 </div>
               );
             })}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2">
+                <p className="text-muted-foreground text-xs">
+                  {t("common.showing_x_to_y_of_z", {
+                    from: (page - 1) * limit + 1,
+                    to: Math.min(page * limit, total),
+                    total,
+                  })}
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => p - 1)}
+                    className="h-8 px-2"
+                    aria-label={t("common.previous")}
+                  >
+                    <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
+                    <span className="sr-only">{t("common.previous")}</span>
+                  </Button>
+                  <span className="text-muted-foreground px-1 text-xs tabular-nums">
+                    {t("common.page_x_of_y", { page, total: totalPages })}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => p + 1)}
+                    className="h-8 px-2"
+                    aria-label={t("common.next")}
+                  >
+                    <span className="sr-only">{t("common.next")}</span>
+                    <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

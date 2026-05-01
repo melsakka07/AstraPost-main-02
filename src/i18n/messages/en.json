@@ -2737,7 +2737,12 @@
       "dead_letter_queue": "Dead Letter Queue",
       "recent_jobs": "Recent Jobs",
       "permanently_failed": "Permanently Failed Jobs",
-      "attempts": "{count} attempts"
+      "attempts": "{count} attempts",
+      "clear_queue": "Clear Queue",
+      "clear_confirm_title": "Clear {queue} queue?",
+      "clear_confirm_desc": "This will remove all completed, failed, waiting, and delayed jobs from the {queue} queue. Active jobs will not be affected. This action cannot be undone.",
+      "cleared": "{queue} queue cleared",
+      "clear_failed": "Failed to clear {queue} queue"
     },
     "notifications": {
       "history": "Notification History",
@@ -2761,7 +2766,12 @@
       "send_now": "Send Now",
       "send_scheduled": "Schedule",
       "target_count": "{count} recipients",
-      "delivered_read": "Delivered / Read"
+      "delivered_read": "Delivered / Read",
+      "clear_all": "Clear All",
+      "clear_confirm_title": "Clear all notifications?",
+      "clear_confirm_desc": "This will permanently clear all notification history. This action cannot be undone.",
+      "cleared": "All notifications cleared",
+      "clear_failed": "Failed to clear notifications"
     }
   }
 }

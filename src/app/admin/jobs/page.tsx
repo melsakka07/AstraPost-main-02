@@ -3,10 +3,12 @@ import { Activity } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { EmptyState } from "@/components/admin/empty-state";
+import { ClearQueueButton } from "@/components/admin/jobs/clear-queue-button";
 import { JobsPagination } from "@/components/admin/jobs/jobs-pagination";
+import { JobsTabsWrapper } from "@/components/admin/jobs/jobs-tabs-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireAdmin } from "@/lib/admin";
 import { formatDistance } from "@/lib/date-utils";
 import { db } from "@/lib/db";
@@ -217,27 +219,28 @@ export default async function AdminJobsPage({
       title={t("pages.jobs.title")}
       description={t("pages.jobs.description")}
     >
-      <Tabs defaultValue={tab} value={tab} className="space-y-4">
+      <JobsTabsWrapper defaultTab={tab}>
         <TabsList>
-          <TabsTrigger value="schedule" asChild>
-            <a href="?tab=schedule">Schedule Queue</a>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" asChild>
-            <a href="?tab=analytics">Analytics Queue</a>
-          </TabsTrigger>
-          <TabsTrigger value="dlq" asChild>
-            <a
-              href="?tab=dlq"
-              className={dlqData.total > 0 ? "bg-destructive/10 text-destructive" : ""}
-            >
-              Dead Letter Queue ({dlqData.total})
-            </a>
+          <TabsTrigger value="schedule">{t("jobs.schedule_queue")}</TabsTrigger>
+          <TabsTrigger value="analytics">{t("jobs.analytics_queue")}</TabsTrigger>
+          <TabsTrigger
+            value="dlq"
+            className={dlqData.total > 0 ? "bg-destructive/10 text-destructive" : ""}
+          >
+            {t("jobs.dead_letter_queue")} ({dlqData.total})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="schedule" className="space-y-4">
           <QueueStats counts={scheduleData.counts} />
-          <h3 className="text-lg font-medium">{t("jobs.recent_jobs")}</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-lg font-medium">{t("jobs.recent_jobs")}</h3>
+            <ClearQueueButton
+              queueName="schedule"
+              queueLabel={t("jobs.schedule_queue")}
+              disabled={scheduleData.total === 0}
+            />
+          </div>
           <JobsList
             jobs={scheduleData.jobs}
             emptyTitle={t("jobs.no_active_jobs")}
@@ -254,7 +257,14 @@ export default async function AdminJobsPage({
 
         <TabsContent value="analytics" className="space-y-4">
           <QueueStats counts={analyticsData.counts} />
-          <h3 className="text-lg font-medium">{t("jobs.recent_jobs")}</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-lg font-medium">{t("jobs.recent_jobs")}</h3>
+            <ClearQueueButton
+              queueName="analytics"
+              queueLabel={t("jobs.analytics_queue")}
+              disabled={analyticsData.total === 0}
+            />
+          </div>
           <JobsList
             jobs={analyticsData.jobs}
             emptyTitle={t("jobs.no_active_jobs")}
@@ -270,7 +280,14 @@ export default async function AdminJobsPage({
         </TabsContent>
 
         <TabsContent value="dlq" className="space-y-4">
-          <h3 className="text-lg font-medium">{t("jobs.permanently_failed")}</h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-lg font-medium">{t("jobs.permanently_failed")}</h3>
+            <ClearQueueButton
+              queueName="dlq"
+              queueLabel={t("jobs.dead_letter_queue")}
+              disabled={dlqData.total === 0}
+            />
+          </div>
           <JobsList
             jobs={dlqData.jobs}
             emptyTitle={t("jobs.no_active_jobs")}
@@ -284,7 +301,7 @@ export default async function AdminJobsPage({
             preserveTab="dlq"
           />
         </TabsContent>
-      </Tabs>
+      </JobsTabsWrapper>
     </AdminPageWrapper>
   );
 }

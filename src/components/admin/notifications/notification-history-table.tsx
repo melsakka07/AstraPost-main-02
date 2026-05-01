@@ -5,11 +5,23 @@ import { usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { Trash2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -56,10 +68,14 @@ interface NotificationHistoryTableProps {
 
 export function NotificationHistoryTable({ initialData }: NotificationHistoryTableProps) {
   const locale = useLocale();
+  const t = useTranslations("admin");
   const [notifications, setNotifications] = useState<NotificationRow[]>(initialData ?? []);
   const [loading, setLoading] = useState(initialData === null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearConfirmText, setClearConfirmText] = useState("");
+  const [clearing, setClearing] = useState(false);
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const pathname = usePathname();
 
@@ -126,9 +142,31 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, status: "draft" as const } : n))
       );
-      toast.success("Notification cancelled");
-    } catch (error) {
-      toast.error("Failed to cancel notification");
+      toast.success(t("notifications.cancelled"));
+    } catch {
+      toast.error(t("notifications.cancel_failed"));
+    }
+  };
+
+  const handleClearAll = async () => {
+    setClearing(true);
+    try {
+      const response = await fetch("/api/admin/notifications/clear", {
+        method: "POST",
+      });
+
+      if (!response.ok) throw new Error("Failed to clear");
+
+      await response.json();
+      toast.success(t("notifications.cleared"));
+      setClearOpen(false);
+      setNotifications([]);
+      setTotal(0);
+      setPage(1);
+    } catch {
+      toast.error(t("notifications.clear_failed"));
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -136,8 +174,54 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Notification History</CardTitle>
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle>{t("notifications.history")}</CardTitle>
+        {total > 0 && (
+          <AlertDialog
+            open={clearOpen}
+            onOpenChange={(v) => {
+              setClearOpen(v);
+              if (!v) setClearConfirmText("");
+            }}
+          >
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" className="shrink-0">
+                <Trash2 className="me-2 h-4 w-4" />
+                {t("notifications.clear_all")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("notifications.clear_confirm_title")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("notifications.clear_confirm_desc")}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">
+                  Type <code className="bg-muted rounded px-1">CLEAR</code> to confirm
+                </label>
+                <Input
+                  value={clearConfirmText}
+                  onChange={(e) => setClearConfirmText(e.target.value)}
+                  placeholder="CLEAR"
+                  disabled={clearing}
+                  className="font-mono"
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={clearing}>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleClearAll}
+                  disabled={clearing || clearConfirmText !== "CLEAR"}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {clearing ? `${t("common.delete")}...` : t("common.confirm")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </CardHeader>
       <CardContent>
         <div className="overflow-hidden rounded-lg border">
