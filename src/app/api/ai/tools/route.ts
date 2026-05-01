@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
@@ -101,6 +101,10 @@ ${input || ""}`;
       schema: responseSchema,
       prompt,
     });
+
+    // Moderation check on generated tool output
+    const modResult = await checkModeration(object.text);
+    if (modResult) return modResult;
 
     await recordAiUsage(session.user.id, tool, 0, prompt, object, userLanguage);
 

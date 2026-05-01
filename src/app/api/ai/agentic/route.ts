@@ -100,7 +100,7 @@ export async function POST(req: Request) {
       featureGate: checkAgenticPostingAccessDetailed,
     });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser } = preamble;
+    const { session, dbUser, checkModeration } = preamble;
 
     // 2. Validate request body
     const json = (await req.json()) as unknown;
@@ -189,6 +189,31 @@ export async function POST(req: Request) {
               summary: agenticPost.summary,
             })
             .where(eq(agenticPosts.id, agenticPostId));
+
+          // Phase 1 moderation: check the final assembled tweets
+          const fullText =
+            agenticPost.tweets?.map((t: { text?: string }) => t.text ?? "").join("\n") ?? "";
+          const modResult = await checkModeration(fullText, agenticPostId);
+          if (modResult) {
+            logger.warn("moderation_flagged_stream", {
+              userId: session.user.id,
+              correlationId,
+              mode: "agentic",
+              agenticPostId,
+              textLength: fullText.length,
+            });
+            sendEvent({
+              step: "done",
+              status: "complete",
+              data: {
+                moderationFlagged: true,
+                message: "Content moderated — please rephrase your request",
+                agenticPostId,
+              },
+            });
+            controller.close();
+            return;
+          }
 
           sendEvent({ step: "done", status: "complete", data: agenticPost });
         } catch (err) {

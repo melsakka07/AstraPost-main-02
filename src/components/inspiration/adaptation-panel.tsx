@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Loader2, Sparkles, RefreshCw, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { PiiRedactionBanner } from "@/components/ai/pii-redaction-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -55,6 +56,7 @@ const LANGUAGES = [
 interface GeneratedContent {
   tweets: string[];
   action: string;
+  redactions?: string[];
 }
 
 export function AdaptationPanel({
@@ -110,7 +112,11 @@ export function AdaptationPanel({
       }
 
       const data = await response.json();
-      setGeneratedContent({ tweets: data.tweets, action: data.action });
+      setGeneratedContent({
+        tweets: data.tweets,
+        action: data.action,
+        redactions: data.redactions,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate content");
     } finally {
@@ -250,6 +256,7 @@ export function AdaptationPanel({
               </Button>
             ) : (
               <div className="space-y-4">
+                <PiiRedactionBanner redactions={generatedContent.redactions} />
                 {/* Generated Content Display */}
                 <div className="border-border space-y-3 rounded-lg border p-4">
                   <div className="flex items-center justify-between">

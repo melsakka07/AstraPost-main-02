@@ -1,6 +1,9 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
+import { INPUT_LIMITS, truncate } from "@/lib/ai/input-limits";
+import { redactPII } from "@/lib/ai/pii";
+import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
@@ -26,11 +29,11 @@ const threadSchema = z.object({
 export async function POST(req: Request) {
   const correlationId = getCorrelationId(req);
 
-  try {
-    const preamble = await aiPreamble({ featureGate: checkUrlToThreadAccessDetailed });
-    if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+  const preamble = await aiPreamble({ featureGate: checkUrlToThreadAccessDetailed });
+  if (preamble instanceof Response) return preamble;
+  const { session, dbUser, model, releaseQuota, checkModeration } = preamble;
 
+  try {
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
@@ -73,6 +76,17 @@ export async function POST(req: Request) {
       return ApiError.badRequest("Not enough content found at this URL.");
     }
 
+    // Truncate article body to protect against excessive token consumption
+    const safeText = truncate(articleText, INPUT_LIMITS.summarizeBody);
+
+    // Redact PII from fetched content before embedding in prompt
+    const { cleaned: cleanTitle, redactions: titleRedactions } = redactPII(articleTitle);
+    const { cleaned: cleanBody, redactions: bodyRedactions } = redactPII(safeText);
+    const allRedactions = [...titleRedactions, ...bodyRedactions];
+    if (allRedactions.length > 0) {
+      logger.info("pii_redacted", { correlationId, type: "summarize", redactions: allRedactions });
+    }
+
     const langInstruction = getArabicInstructions(userLanguage);
     const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
 
@@ -81,9 +95,8 @@ Read the following article and write a ${tweetCount}-tweet thread that summarize
 ${langInstruction} ${toneGuidance}
 Auto-detect the source language and note it in sourceLanguage.
 
-ARTICLE TITLE: ${articleTitle}
-ARTICLE TEXT:
-${articleText}
+ARTICLE TITLE: ${cleanTitle}
+${wrapUntrusted("ARTICLE TEXT", cleanBody, 30_000)}
 
 Constraints:
 - Each tweet MUST be strictly under 800 characters.
@@ -112,10 +125,18 @@ Constraints:
       tweets: object.tweets.map((t) => (t.length > 1000 ? t.slice(0, 997) + "..." : t)),
     };
 
-    const res = Response.json(sanitized);
+    // Moderation check on generated thread text
+    const modResult = await checkModeration(sanitized.tweets.join("\n"));
+    if (modResult) return modResult;
+
+    const res = Response.json({
+      ...sanitized,
+      redactions: allRedactions.length > 0 ? allRedactions : undefined,
+    });
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("url_summarize_error", {
       correlationId,
       error: error instanceof Error ? error.message : String(error),

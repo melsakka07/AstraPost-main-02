@@ -3,12 +3,15 @@ import * as cheerio from "cheerio";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
+import { INPUT_LIMITS, truncate } from "@/lib/ai/input-limits";
+import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkAffiliateGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
 import { affiliateLinks } from "@/lib/schema";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
@@ -28,12 +31,12 @@ const tweetSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  try {
-    const correlationId = getCorrelationId(req);
-    const preamble = await aiPreamble();
-    if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+  const correlationId = getCorrelationId(req);
+  const preamble = await aiPreamble({ featureGate: checkAffiliateGeneratorAccessDetailed });
+  if (preamble instanceof Response) return preamble;
+  const { session, dbUser, model, releaseQuota, checkModeration } = preamble;
 
+  try {
     const json = await req.json();
     const result = affiliateRequestSchema.safeParse(json);
 
@@ -91,8 +94,7 @@ export async function POST(req: Request) {
     const prompt = `
       You are an expert affiliate marketer on X (Twitter).
       Write a compelling, high-converting tweet to promote this product:
-
-      Product Title: ${productTitle}
+      ${wrapUntrusted("PRODUCT TITLE", truncate(productTitle, INPUT_LIMITS.productTitle), INPUT_LIMITS.productTitle)}
       URL: ${url}
       Platform: ${platform}
       Affiliate Tag/Coupon: ${affiliateTag || "None"}
@@ -105,6 +107,7 @@ export async function POST(req: Request) {
       - Do NOT include the URL in the output text (it will be attached as a card).
       - Include 2-3 relevant hashtags.
       - If a coupon code (Affiliate Tag) is provided, explicitly mention it in the tweet (e.g., "Use code XYZ for discount").
+      - You must end every tweet with #ad to comply with platform disclosure requirements.
     `;
 
     const { object } = await generateObject({
@@ -112,6 +115,18 @@ export async function POST(req: Request) {
       schema: tweetSchema,
       prompt,
     });
+
+    // Server-side #ad enforcement — ensure every affiliate tweet has disclosure
+    let enforcedTweet = object.tweet;
+    if (!/^.*#ad\s*$/i.test(enforcedTweet.trim())) {
+      const disclosure = userLanguage === "ar" ? " #إعلان" : " #ad";
+      enforcedTweet = `${enforcedTweet.trim()}${disclosure}`;
+      logger.info("affiliate_ad_enforced", { correlationId });
+    }
+
+    // Moderation check on generated tweet
+    const modResult = await checkModeration(enforcedTweet);
+    if (modResult) return modResult;
 
     // 3. Construct Affiliate URL
     let affiliateUrl = url;
@@ -139,7 +154,7 @@ export async function POST(req: Request) {
     const shortLink = `${appUrl}/go/${shortCode}`;
 
     const output = {
-      tweet: object.tweet,
+      tweet: enforcedTweet,
       hashtags: object.hashtags,
       productTitle,
       productImage,
@@ -159,7 +174,7 @@ export async function POST(req: Request) {
         productTitle: productTitle || "Unknown Product",
         productImageUrl: productImage || null,
         affiliateTag: affiliateTag || null,
-        generatedTweet: `${object.tweet}\n\n${object.hashtags.join(" ")}`,
+        generatedTweet: `${enforcedTweet}\n\n${object.hashtags.join(" ")}`,
         wasScheduled: false,
       });
 
@@ -170,6 +185,7 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("affiliate_generation_failed", {
       error: error instanceof Error ? error.message : String(error),
     });

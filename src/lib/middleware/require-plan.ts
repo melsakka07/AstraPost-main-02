@@ -33,7 +33,8 @@ export type GatedFeature =
   | "inspiration_bookmarks"
   | "ai_image_model"
   | "inspiration"
-  | "agentic_posting";
+  | "agentic_posting"
+  | "affiliate_generator";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -194,7 +195,7 @@ export async function checkAccountLimitDetailed(
   return buildFailure({
     error: "upgrade_required",
     feature: "x_accounts",
-    message: "Your current plan has reached the connected X accounts limit.",
+    message: "Connect more X accounts to manage multiple brands — available on Pro",
     plan: context.plan,
     limit: Number.isFinite(limits.maxXAccounts) ? limits.maxXAccounts : null,
     used,
@@ -226,7 +227,7 @@ export async function checkPostLimitDetailed(userId: string, count = 1): Promise
   return buildFailure({
     error: "upgrade_required",
     feature: "scheduled_posts",
-    message: "You have reached your monthly scheduled posts limit for this plan.",
+    message: "Scale your content output with more scheduled posts — available on Pro",
     plan: context.plan,
     limit: Number.isFinite(limits.postsPerMonth) ? limits.postsPerMonth : null,
     used,
@@ -249,7 +250,7 @@ export async function checkAiLimitDetailed(userId: string): Promise<PlanGateResu
   return buildFailure({
     error: "upgrade_required",
     feature: "ai_writer",
-    message: "AI tools are not available on your current plan.",
+    message: "Unlock AI-powered content creation to grow your audience — available on Pro",
     plan: context.plan,
     limit: Number.isFinite(limits.aiGenerationsPerMonth) ? limits.aiGenerationsPerMonth : null,
     used: 0,
@@ -287,7 +288,7 @@ export async function checkAiQuotaDetailed(userId: string): Promise<PlanGateResu
   return buildFailure({
     error: "quota_exceeded",
     feature: "ai_quota",
-    message: "You have reached your monthly AI generation quota.",
+    message: "Need more AI generations? Upgrade to Pro for unlimited creative power.",
     plan: context.plan,
     limit: Number.isFinite(limits.aiGenerationsPerMonth) ? limits.aiGenerationsPerMonth : null,
     used,
@@ -305,7 +306,7 @@ export async function checkAnalyticsExportLimitDetailed(userId: string): Promise
   return buildFailure({
     error: "upgrade_required",
     feature: "analytics_export",
-    message: "Analytics export is not available on your current plan.",
+    message: "Export detailed analytics to track your growth and prove ROI — available on Pro",
     plan: context.plan,
     limit: 0,
     used: 1,
@@ -336,7 +337,7 @@ export async function checkBookmarkLimitDetailed(userId: string): Promise<PlanGa
   return buildFailure({
     error: "upgrade_required",
     feature: "inspiration_bookmarks",
-    message: `You have reached your bookmark limit of ${limits.maxInspirationBookmarks}. Upgrade to save unlimited inspirations.`,
+    message: `You've saved ${limits.maxInspirationBookmarks} inspirations — upgrade to Pro for unlimited bookmarks.`,
     plan: context.plan,
     limit: limits.maxInspirationBookmarks,
     used,
@@ -351,74 +352,80 @@ export async function checkBookmarkLimitDetailed(userId: string): Promise<PlanGa
 export const checkViralScoreAccessDetailed = makeFeatureGate(
   "viral_score",
   "canUseViralScore",
-  "AI Viral Score is a Pro feature."
+  "Predict your tweet's viral potential before posting — available on Pro"
 );
 
 export const checkBestTimesAccessDetailed = makeFeatureGate(
   "best_times",
   "canViewBestTimes",
-  "Best Times to Post is a Pro feature."
+  "Schedule when your audience is most engaged — available on Pro"
 );
 
 export const checkVoiceProfileAccessDetailed = makeFeatureGate(
   "voice_profile",
   "canUseVoiceProfile",
-  "AI Voice Profile is a Pro feature."
+  "Let AI learn your unique writing style for authentic content — available on Pro"
 );
 
 export const checkLinkedinAccessDetailed = makeFeatureGate(
   "linkedin_access",
   "canUseLinkedin",
-  "LinkedIn integration is an Agency plan feature.",
+  "Manage LinkedIn alongside X from one dashboard — available on Agency",
   "agency"
 );
 
 export const checkContentCalendarAccessDetailed = makeFeatureGate(
   "content_calendar",
   "canUseContentCalendar",
-  "AI Content Calendar is a Pro feature."
+  "Plan a month of content in seconds with AI Calendar — available on Pro"
 );
 
 export const checkUrlToThreadAccessDetailed = makeFeatureGate(
   "url_to_thread",
   "canUseUrlToThread",
-  "URL → Thread Converter is a Pro feature."
+  "Turn any article into a compelling thread — available on Pro"
 );
 
 export const checkVariantGeneratorAccessDetailed = makeFeatureGate(
   "variant_generator",
   "canUseVariantGenerator",
-  "A/B Variant Generator is a Pro feature."
+  "Test multiple versions of your tweet to find what resonates — available on Pro"
 );
 
 export const checkCompetitorAnalyzerAccessDetailed = makeFeatureGate(
   "competitor_analyzer",
   "canUseCompetitorAnalyzer",
-  "Competitor Analyzer is a Pro feature."
+  "See what's working for your competitors and adapt — available on Pro"
 );
 
 export const checkReplyGeneratorAccessDetailed = makeFeatureGate(
   "reply_generator",
   "canUseReplyGenerator",
-  "Reply Suggester is a Pro feature."
+  "Never miss an engagement opportunity with smart reply suggestions — available on Pro"
 );
 
 export const checkBioOptimizerAccessDetailed = makeFeatureGate(
   "bio_optimizer",
   "canUseBioOptimizer",
-  "AI Bio Optimizer is a Pro feature."
+  "Craft a bio that converts visitors into followers — available on Pro"
 );
 
 export const checkInspirationAccessDetailed = makeFeatureGate(
   "inspiration",
   "canUseInspiration",
-  "Inspiration feature is not available on your plan."
+  "Discover trending content ideas that match your niche — available on Pro"
 );
 
 export const checkAgenticPostingAccessDetailed = makeFeatureGate(
   "agentic_posting",
   "canUseAgenticPosting",
-  "Agentic Posting is a Pro feature."
+  "Let AI research, write, and optimize a complete thread automatically — available on Pro"
+);
+
+export const checkAffiliateGeneratorAccessDetailed = makeFeatureGate(
+  "affiliate_generator",
+  "canUseAffiliateGenerator",
+  "Turn any product link into a high-converting tweet — available on Pro"
 );
 
 // ─── Image-specific gates ──────────────────────────────────────────────────────
@@ -438,7 +445,7 @@ export async function checkImageModelAccessDetailed(
   return buildFailure({
     error: "upgrade_required",
     feature: "ai_image_model",
-    message: `The ${model} model is not available on your current plan.`,
+    message: `Generate high-quality images with ${model} for eye-catching posts — available on Pro`,
     plan: context.plan,
     limit: 0,
     used: 1,
@@ -476,7 +483,8 @@ export async function checkAiImageQuotaDetailed(userId: string): Promise<PlanGat
   return buildFailure({
     error: "quota_exceeded",
     feature: "ai_quota",
-    message: "You have reached your monthly AI image quota.",
+    message:
+      "Create more AI images this month to keep your feed visually engaging — upgrade to Pro",
     plan: context.plan,
     limit: limits.aiImagesPerMonth,
     used,

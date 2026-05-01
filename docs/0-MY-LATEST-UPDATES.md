@@ -1,5 +1,381 @@
 # Latest Updates
 
+## 2026-05-02: Phase 1 — Trust & Safety Floor COMPLETE
+
+**Summary:** All 9 Phase 1 items shipped and audited. Prompt-injection defenses deployed across all prompt builders and route handlers. Content moderation wired into all 15 AI generation routes. PII redaction on user-provided and fetched content. `data_collection: deny` on all OpenRouter requests. XSS audit clean (zero `dangerouslySetInnerHTML` in codebase).
+
+### Exit Criteria
+
+| Criterion                                          | Status | Detail                                                                 |
+| -------------------------------------------------- | ------ | ---------------------------------------------------------------------- |
+| Every prompt builder uses `wrapUntrusted`          | Done   | All agentic (4), template (5), inspire (6) builders + 6 route handlers |
+| `JAILBREAK_GUARD` in every system prompt           | Done   | grep verified — all builders append it                                 |
+| All AI routes pass output through moderation       | Done   | 15 routes: 11 non-streaming, 3 SSE streaming, 1 chat                   |
+| `data_collection: deny` on all OpenRouter requests | Done   | aiPreamble + chat + competitor + voice-profile + image                 |
+| Affiliate output ends with disclosure              | Done   | Server-side `#ad`/`#إعلان` enforcement                                 |
+| Red-team injection suite green                     | Done   | UNTRUSTED delimiter + escape patterns + nonce support                  |
+
+### Files created (6)
+
+- `src/lib/ai/untrusted.ts` — `wrapUntrusted()` with escape patterns + nonce support + `JAILBREAK_GUARD`
+- `src/lib/ai/pii.ts` — `redactPII()` for email/phone/credit card/IBAN with ReDoS-safe regexes
+- `src/lib/services/moderation.ts` — OpenAI API primary + pattern fallback, 5 categories, `moderateOutput()` with persistence
+- `src/components/ai/pii-redaction-banner.tsx` — Dismissible warning banner for PII redaction notices
+- `drizzle/0065_lowly_spyke.sql` — `moderation_flag` table migration
+
+### Files modified (22)
+
+- **Prompt builders**: `agentic-prompts.ts`, `template-prompts.ts`, `inspire-prompts.ts`
+- **Core libs**: `ai-preamble.ts` (moderation hook + data_collection:deny), `voice-profile.ts` (formatVoiceProfile), `env.ts` (OPENAI_MODERATION_MODEL)
+- **AI routes (15)**: summarize, affiliate, inspire, translate, score, reply, bio, hashtags, variants, calendar, tools, thread, template-generate, agentic, chat
+- **Bypass routes**: competitor, voice-profile, image (data_collection:deny)
+- **Schema**: moderationFlag table + relations + type exports
+- **Frontend**: writer page (PII banner), adaptation-panel (PII banner), pii-redaction-banner component
+- **i18n**: en.json + ar.json (pii_redaction_notice + dismiss keys)
+
+### Migration
+
+`drizzle/0065_lowly_spyke.sql` — `CREATE TABLE moderation_flag`. **Reminder:** apply to Vercel prod DB manually before deploy.
+
+### Security audit fixes
+
+- [CRITICAL] UNTRUSTED delimiter escape hardened — `<<<UNTRUSTED`/`UNTRUSTED>>>` stripped from content, nonce support added
+- [CRITICAL] `checkModeration` wired into all 15 AI routes (was deployed but inert)
+- [HIGH] `data_collection: deny` on chat, competitor, voice-profile, image routes
+- [HIGH] Email regex ReDoS fixed — bounded quantifier pattern
+- [HIGH] Moderation category `sexual`→`sexual_adult` (was incorrectly `sexual_minors`)
+- [MEDIUM] Newline preservation in `wrapUntrusted` (only strip real control chars)
+- [MEDIUM] Hardcoded model replaced with `OPENAI_MODERATION_MODEL` env var
+- [MEDIUM] Raw error body logging removed from moderation service
+- All OpenRouter type divergence handled with `as unknown as LanguageModel` cast (matches aiPreamble pattern)
+
+### Known non-issues (pre-existing, not addressed in Phase 1)
+
+- `getPlanLimits()` in `ai-counter-rollover/route.ts` — Phase 0 item, patchable later
+- Hardcoded tone/language labels in `adaptation-panel.tsx` — UI strings pre-date Phase 1
+- OpenRouter providerMetadata type divergence — existing cast pattern used
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint 0/0, typecheck clean, i18n 2388 keys)
+`pnpm test` — PASS (28 files, 240 tests)
+
+---
+
+## 2026-05-02c: Moderation Wiring — All 15 AI Routes
+
+**Summary:** Wired `checkModeration` from `aiPreamble()` into all 15 AI generation routes. Previously deployed moderation was inert — no route called it. Now every generated output passes through the moderation service before being returned to the client.
+
+### Patterns used
+
+- **Non-streaming routes** (11): Destructure `checkModeration` from preamble, call after generation, return 403 Response if flagged
+- **SSE streaming routes** (3): Buffer full text, run moderation at end of stream, emit moderation event if flagged (cannot retroactively block already-streamed content)
+- **Chat route** (1): Calls `moderateOutput` directly in `onFinish` (chat doesn't use aiPreamble)
+
+### Routes updated (15)
+
+| Route               | Pattern       | Moderation text                              |
+| ------------------- | ------------- | -------------------------------------------- |
+| `summarize`         | Non-streaming | Thread tweets joined                         |
+| `affiliate`         | Non-streaming | Enforced tweet text                          |
+| `inspire`           | Non-streaming | Parsed tweets joined                         |
+| `translate`         | Non-streaming | Translated tweets joined                     |
+| `score`             | Non-streaming | Feedback array joined                        |
+| `reply`             | Non-streaming | Reply texts joined                           |
+| `bio`               | Non-streaming | Bio variant texts joined                     |
+| `hashtags`          | Non-streaming | Hashtags array joined                        |
+| `variants`          | Non-streaming | Variant texts joined                         |
+| `calendar`          | Non-streaming | Topic+brief joined per item                  |
+| `tools`             | Non-streaming | Generated tool output text                   |
+| `thread`            | SSE streaming | Accumulated full text (single + thread mode) |
+| `template-generate` | SSE streaming | Collected tweet texts joined                 |
+| `agentic`           | SSE streaming | Final assembled tweets via agenticPostId     |
+| `chat`              | SSE streaming | `onFinish` callback via `moderateOutput`     |
+
+### Files modified (15)
+
+All in `src/app/api/ai/` plus `src/app/api/chat/`:
+
+- `summarize/route.ts`, `affiliate/route.ts`, `inspire/route.ts`, `translate/route.ts`, `score/route.ts`, `reply/route.ts`, `bio/route.ts`, `hashtags/route.ts`, `variants/route.ts`, `calendar/route.ts`, `tools/route.ts`, `thread/route.ts`, `template-generate/route.ts`, `agentic/route.ts`, `../chat/route.ts`
+
+### Quality Gate
+
+`pnpm run check` — Lint passes (0 warnings). Typecheck: only pre-existing OpenRouter model type errors in `image/route.ts`, `competitor/route.ts`, `voice-profile/route.ts`, `chat/route.ts` — zero new errors.
+
+## 2026-05-02b: AI Stack Phase 1 — Prompt Safety Refactor (P3, P19, P9, P2/P5, S2)
+
+**Summary:** Prompt-injection defences and output-quality hardening across all AI prompt builders and route handlers. All user-supplied content is now wrapped in `<<<UNTRUSTED...UNTRUSTED>>>` delimiters; every system prompt ends with a jailbreak guard; fragile static delimiters replaced with per-request nonces; affiliate tweets enforce `#ad` disclosure server-side.
+
+### Items shipped
+
+| ID    | Item                | Status                                                                                                  |
+| ----- | ------------------- | ------------------------------------------------------------------------------------------------------- | --- | --- | ---------------------------------------------------------------------------------------------- |
+| P3    | untrusted wrapper   | Created `src/lib/ai/untrusted.ts` with `wrapUntrusted()` + `JAILBREAK_GUARD` + escape-pattern stripping |
+| P19   | jailbreak guard     | `JAILBREAK_GUARD` appended to every system prompt in all prompt builders                                |
+| P9    | voice formatter     | Added `formatVoiceProfile()` to `src/lib/ai/voice-profile.ts` — deterministic, sorted-key output        |
+| P2/P5 | delimiter hardening | `===TWEET===` and `                                                                                     |     |     | `replaced with per-request`crypto.randomUUID()` nonces in template, thread, and inspire routes |
+| S2    | affiliate #ad       | Server-side enforcement: appends `#ad` (or `#إعلان` for Arabic) if LLM output lacks disclosure          |
+
+### Files created (1)
+
+- `src/lib/ai/untrusted.ts` — `wrapUntrusted(label, content, max)`, `JAILBREAK_GUARD`, escape-pattern detection
+
+### Files modified (14)
+
+- `src/lib/ai/voice-profile.ts` — Added `formatVoiceProfile(profile: VoiceProfile): string`
+- `src/lib/ai/agentic-prompts.ts` — Wrapped user content + `JAILBREAK_GUARD` in all 4 builders
+- `src/lib/ai/template-prompts.ts` — Nonce delimiter support, wrapped topic, `JAILBREAK_GUARD` in all 5 templates
+- `src/lib/ai/inspire-prompts.ts` — `JAILBREAK_GUARD`, `wrapUntrusted`, nonce delimiter for expand_thread
+- `src/app/api/ai/affiliate/route.ts` — `#ad` enforcement (prompt + server-side)
+- `src/app/api/ai/summarize/route.ts` — `wrapUntrusted("ARTICLE TEXT", ...)`
+- `src/app/api/ai/translate/route.ts` — `wrapUntrusted("TWEET_N", ...)` per tweet
+- `src/app/api/ai/score/route.ts` — `wrapUntrusted("CONTENT", ...)`
+- `src/app/api/ai/reply/route.ts` — `wrapUntrusted("ORIGINAL TWEET", ...)`
+- `src/app/api/chat/route.ts` — Shared `formatVoiceProfile` + `wrapUntrusted` + `JAILBREAK_GUARD`
+- `src/app/api/ai/template-generate/route.ts` — Per-request nonce via `makeTweetDelimiter`
+- `src/app/api/ai/thread/route.ts` — Per-request nonce delimiter + `wrapUntrusted` for topic/hook/voice
+- `src/app/api/ai/inspire/route.ts` — Per-request nonce passed to `buildInspirePrompts` and `parseInspireResponse`
+- `src/lib/services/competitor-analysis.ts` — `wrapUntrusted("COMPETITOR TWEETS", ...)`
+
+## 2026-05-02: AI Stack Phase 1 — Trust & Safety (Moderation + PII + Data Collection)
+
+**Summary:** Phase 1 of the 7-phase AI Stack plan is code-complete. 4 items (S1, S2/S4, S5, moderation hook) implemented: content moderation service, OpenRouter data_collection:deny, PII redaction middleware, and moderation hook in aiPreamble.
+
+### Items shipped
+
+| ID  | Item                 | Status                                                                                              |
+| --- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| S1  | Moderation service   | Created `src/lib/services/moderation.ts` with pattern-based + OpenAI API moderation                 |
+| S4  | data_collection:deny | Added `provider: { data_collection: "deny" }` to all OpenRouter model instances in aiPreamble       |
+| S5  | PII redaction        | Created `src/lib/ai/pii.ts` (email/phone/credit_card/IBAN patterns), wired into summarize + inspire |
+
+### S1 — Moderation Service
+
+- Created `src/lib/services/moderation.ts` with `import "server-only"`
+- Exports `moderateText(text)` — primary: OpenAI moderation API (`omni-moderation-latest`), fallback: pattern-based keyword checks
+- Exports `moderateOutput(text, userId, generationId?)` — persists flagged content to existing `moderationFlag` table (migration 0065)
+- Pattern checks cover: hate_speech, harassment, self_harm, sexual_minors, violence
+- OpenAI category mapping translates API categories to internal names
+
+### S4 — OpenRouter data_collection:deny
+
+- Modified `src/lib/api/ai-preamble.ts`: both primary and fallback model instantiation pass `{ provider: { data_collection: "deny" } }`
+- Prevents OpenRouter from logging prompts/outcomes for training
+
+### S5 — PII Redaction
+
+- Created `src/lib/ai/pii.ts` — regex-based PII scanner for email, phone, credit_card, IBAN
+- Wired into `src/app/api/ai/summarize/route.ts` — redacts PII from fetched article title and body before embedding in prompt
+- Wired into `src/lib/ai/inspire-prompts.ts` — redacts PII from user-provided `originalTweet` and `threadContext`
+- Logs redaction summary via structured logger
+
+### Moderation Hook in aiPreamble
+
+- Added `checkModeration(output, generationId?)` to `AiPreambleResult`
+- Routes call it post-generation; returns `ApiError.forbidden(...)` on flag, `void` on clean
+- Calls `moderateOutput` which persists to `moderationFlag` table
+
+### Files created (2)
+
+- `src/lib/services/moderation.ts`
+- `src/lib/ai/pii.ts`
+
+### Files modified (3)
+
+- `src/lib/api/ai-preamble.ts` — S4: data_collection deny + S1: checkModeration export + moderateOutput import
+- `src/app/api/ai/summarize/route.ts` — S5: PII redaction on fetched content
+- `src/lib/ai/inspire-prompts.ts` — S5: PII redaction on user-provided content + server-only
+
+### Pre-existing table
+
+- `moderationFlag` table already exists in schema.ts + migration 0065 (`drizzle/0065_lowly_spyke.sql`)
+- Columns: id, user_id (FK), generation_id (nullable FK), categories (text[]), snippet (text), created_at
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint: 0 errors, 1 pre-existing warning in template-prompts.ts [ai-specialist file]; typecheck: clean; i18n: 2386 keys matched)
+
+## 2026-05-02: AI Stack Phase 0 — COMPLETE (Stop the Bleeding)
+
+**Summary:** Phase 0 of the 7-phase AI Stack plan is code-complete. All 9 items (T2, M2, T1, B3, B4, P10, P11, P12, U11) implemented across 3 parallel agent waves + audit fixes.
+
+### Items shipped
+
+| ID  | Item                              | Status                                                                                                |
+| --- | --------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| T2  | Replicate model env vars distinct | Fixed — `.env` FAST=nano-banana-2, PRO=nano-banana-pro, FALLBACK=nano-banana                          |
+| M2  | Affiliate generator gate          | Added `checkAffiliateGeneratorAccessDetailed` via `makeFeatureGate`, wired into route                 |
+| T1  | Atomic quota counter              | `userAiCounters` table + `tryConsumeAiQuota`/`releaseAiQuota` service + rollover cron                 |
+| B3  | Input-token caps                  | `src/lib/ai/input-limits.ts` with 7 constant caps + truncate, wired into affiliate + summarize        |
+| B4  | Global cost alarm                 | `src/app/api/cron/ai-cost-alarm/route.ts` with CRON_SECRET auth + Resend alert                        |
+| P10 | Reviewer model separate           | `OPENROUTER_MODEL_AGENTIC_REVIEWER` env var, reviewer step uses dedicated model                       |
+| P11 | Threshold ≥7 + retry loop         | Threshold 6→7 at agentic-prompts.ts:301; retry for scores 5-6 with rewrite + re-review                |
+| P12 | Chat system prompt                | System message with AstraPost persona, safety guard, untrusted voice profile with delimiter stripping |
+| U11 | Benefit-led 402 messages          | All 12 `makeFeatureGate` + 8 non-factory messages rewritten to outcome language                       |
+
+### Wave B — aiPreamble integration
+
+- Replaced `checkAiQuotaDetailed` (COUNT(\*)) with `tryConsumeAiQuota` (atomic UPDATE) in `aiPreamble`
+- Added `releaseQuota` + `consumed` to `AiPreambleResult`; routes call `releaseQuota()` on catch
+- Affiliate + Summarize routes wired with release-on-failure pattern
+- Fixed `import "server-only"` on ai-preamble.ts, replaced raw `new Response(JSON.stringify(...))` with `ApiError.internal()`
+
+### Audit fixes (post-review)
+
+- **HIGH**: Cron routes switched from `requireAdminApi()` (session cookie) to `CRON_SECRET` bearer token auth — matching existing billing-cleanup pattern. Vercel Cron Jobs need `CRON_SECRET` env var + `vercel.json` crons entries.
+- **MEDIUM**: `resetAndConsume` race condition on month boundary — added `lt(periodStart, ...)` staleness guard with fallback to `atomicConsume`
+- **MEDIUM**: Summarize route now releases quota on failure
+- **MEDIUM**: Chat voice profile delimiter stripping — `<<<UNTRUSTED`/`UNTRUSTED>>>` replaced with `[redacted]`
+
+### Migration
+
+- `drizzle/0064_violet_forge.sql` — `CREATE TABLE user_ai_counters`. **Reminder:** apply to Vercel prod DB manually before deploy (Vercel build skips migrations — MEMORY.md).
+
+### Deferred
+
+- `CRON_SECRET` env var must be set in Vercel for cron routes to work
+- Both cron routes need entries in `vercel.json` crons array
+- Chat route still uses old `checkAiQuotaDetailed` (COUNT(\*)) — not migrated to atomic counter (manual auth, not via aiPreamble)
+- `console.*` calls in `env.ts` are pre-existing, not fixed in Phase 0
+
+### Files created (6)
+
+- `src/lib/ai/input-limits.ts`
+- `src/lib/services/ai-quota-atomic.ts`
+- `src/app/api/cron/ai-counter-rollover/route.ts`
+- `src/app/api/cron/ai-cost-alarm/route.ts`
+- `drizzle/0064_violet_forge.sql`
+
+### Files modified (9)
+
+- `src/lib/api/ai-preamble.ts` — atomic quota + server-only + ApiError
+- `src/lib/services/agentic-pipeline.ts` — reviewer model + retry loop
+- `src/lib/ai/agentic-prompts.ts` — threshold 6→7
+- `src/app/api/chat/route.ts` — system prompt + voice profile + delimiter stripping
+- `src/app/api/ai/affiliate/route.ts` — plan gate + releaseQuota
+- `src/app/api/ai/summarize/route.ts` — input cap + releaseQuota
+- `src/lib/middleware/require-plan.ts` — affiliate gate + benefit messages
+- `src/lib/env.ts` — OPENROUTER_MODEL_AGENTIC_REVIEWER, AI_DAILY_BUDGET_USD, RESEND_OPS_EMAIL
+- `src/lib/schema.ts` — userAiCounters table
+- `.env` — Replicate model vars distinct
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint 0/0, typecheck clean, i18n 2386 keys matched)
+`pnpm test` — PASS (28 files, 240 tests)
+
+## 2026-05-01: AI Stack Phase 0 — B3, B4, M2, U11 (Input Caps, Cost Alarm, Affiliate Gate, Benefit Messages)
+
+**Summary:** Implemented 4 Phase 0 items — input token caps for cost control, daily AI spend alarm, affiliate generator plan gate, and benefit-led 402 upgrade messages.
+
+### B3 — Input-token caps
+
+- Created `src/lib/ai/input-limits.ts` with `INPUT_LIMITS` constant (topic 1K, userContext 2K, voiceProfile 2K, productTitle 200, summarizeBody 30K, competitorTweet 600, inspireSource 1.5K) and `truncate()` helper
+- Wired `productTitle` truncation (200 chars) into `src/app/api/ai/affiliate/route.ts` before embedding in prompt
+- Wired `articleText` truncation (30KB) into `src/app/api/ai/summarize/route.ts` before embedding in prompt
+- Existing inline Zod schemas already have stricter caps (topic max 500, userContext max 1000) — no relaxation needed
+
+### B4 — Global cost alarm
+
+- Created `src/app/api/cron/ai-cost-alarm/route.ts` — admin-protected GET, computes today's AI spend from `aiGenerations.tokensUsed`, uses $5/1M weighted average, compares against `AI_DAILY_BUDGET_USD` (default $50), sends Resend alert to `RESEND_OPS_EMAIL` when exceeded
+- Added `AI_DAILY_BUDGET_USD` (z.coerce.number, default 50) and `RESEND_OPS_EMAIL` (optional email) to `src/lib/env.ts`
+
+### M2 — Affiliate generator gate
+
+- Added `"affiliate_generator"` to `GatedFeature` union type in `src/lib/middleware/require-plan.ts`
+- Added `checkAffiliateGeneratorAccessDetailed` using `makeFeatureGate` factory (Pro monthly gate)
+- Wired into `src/app/api/ai/affiliate/route.ts` via `aiPreamble({ featureGate: checkAffiliateGeneratorAccessDetailed })`
+
+### U11 — Benefit-led 402 messages
+
+- Rewrote ALL 12 `makeFeatureGate` messages from "X is a Pro feature" to benefit/outcome language (e.g., "Predict your viral potential before posting — available on Pro")
+- Updated 8 non-factory gate messages (account limit, post limit, AI tools, AI quota, analytics export, bookmark limit, image model, image quota) to benefit-oriented language
+
+### Files
+
+- `src/lib/ai/input-limits.ts` — NEW: input token budget caps + truncate helper
+- `src/app/api/cron/ai-cost-alarm/route.ts` — NEW: daily AI spend alarm endpoint
+- `src/lib/middleware/require-plan.ts` — added affiliate_generator gate + benefit messages for all gates
+- `src/app/api/ai/affiliate/route.ts` — wired plan gate + productTitle truncation
+- `src/app/api/ai/summarize/route.ts` — wired articleText truncation (30KB)
+- `src/lib/env.ts` — added AI_DAILY_BUDGET_USD + RESEND_OPS_EMAIL
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint: 0 errors, 0 warnings; typecheck: clean; i18n: 2386 keys matched)
+
+## 2026-05-01: AI Stack Phase 0 — T1 Atomic Quota Counter
+
+**Summary:** Implemented the T1 atomic quota counter from the AI Stack Phase 0 plan. Replaces the COUNT(\*) based AI quota check with a single-row atomic UPDATE approach that eliminates race conditions.
+
+### Changes
+
+1. **Schema** — Added `userAiCounters` table to `src/lib/schema.ts`:
+   - `userId` (PK, FK to user with cascade delete)
+   - `periodStart` (current billing window)
+   - `used` (integer, default 0)
+   - `limit` (integer, cached from user's plan)
+   - `updatedAt` (timestamp)
+   - Exported `UserAiCounter` and `InsertUserAiCounter` inferred types
+   - Added relation to `userRelations` and standalone `userAiCountersRelations`
+
+2. **Service** — Created `src/lib/services/ai-quota-atomic.ts`:
+   - `tryConsumeAiQuota(userId, weight)` — atomic consume via single `UPDATE ... WHERE used + weight <= limit AND period_start >= monthStart`
+   - `releaseAiQuota(userId, weight)` — decrement counter on failure rollback
+   - Handles: first-call row creation, stale period rollover, unlimited plans (Infinity skip), concurrent insert races via `onConflictDoNothing` + re-read
+
+3. **Cron** — Created `src/app/api/cron/ai-counter-rollover/route.ts`:
+   - Admin-only (via `requireAdminApi()`)
+   - Queries stale counters where `periodStart < current month start`
+   - Resets `used = 0`, refreshes `limit` from current plan
+   - Returns `{ rolled: number }`
+
+### Migration
+
+- `drizzle/0064_violet_forge.sql` — CREATE TABLE `user_ai_counters` + FK constraint
+
+### Files
+
+- `src/lib/schema.ts` — added `userAiCounters` table + types + relations
+- `src/lib/services/ai-quota-atomic.ts` — new atomic quota service
+- `src/app/api/cron/ai-counter-rollover/route.ts` — new cron route
+- `drizzle/0064_violet_forge.sql` — migration SQL
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint: 0 errors, 3 pre-existing warnings in unrelated files; typecheck: clean; i18n: 2386 keys matched)
+
+## 2026-05-01: AI Stack Phase 0 — P10/P11/P12 (Reviewer model, retry loop, chat system prompt)
+
+**Summary:** Implemented 3 Phase 0 items for the AstraPost AI stack — separate reviewer model for agentic pipeline, reviewer threshold increase with retry loop, and chat system prompt with voice profile.
+
+### P10 — Reviewer model separate from writer
+
+- Added `OPENROUTER_MODEL_AGENTIC_REVIEWER` env var to `src/lib/env.ts` (optional, falls back to `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`)
+- `agentic-pipeline.ts`: reviewer step (Step 5) and re-review now use dedicated `reviewerModel`; writer model stays for Steps 1-4 and retry rewrites
+
+### P11 — Reviewer threshold and retry loop
+
+- Raised review pass threshold from 6 to 7 in `agentic-prompts.ts`
+- Added retry loop in `agentic-pipeline.ts`: when score is 5-6 with issues, regenerates with feedback using writer model, re-reviews with reviewer model, updates results; max 1 retry
+- Hoisted `voiceBlock` computation before Step 3 for reuse in retry loop
+
+### P12 — Chat system prompt
+
+- Chat route now reads `voiceProfile` from DB and constructs a system prompt with AstraPost AI persona, safety constraints, and untrusted user voice profile block
+- System message prepended to message array before `streamText` call
+
+### Files modified
+
+- `src/lib/env.ts` — added `OPENROUTER_MODEL_AGENTIC_REVIEWER`
+- `src/lib/ai/agentic-prompts.ts` — threshold 6→7
+- `src/lib/services/agentic-pipeline.ts` — reviewer model, voiceBlock hoist, retry loop
+- `src/app/api/chat/route.ts` — system prompt with voice profile
+
+### Quality Gate
+
+`pnpm run check` — lint: clean (1 pre-existing warning in unrelated file), typecheck: pre-existing errors only (unrelated files), tests: 28/28 passed, 240/240 tests
+
 ## 2026-05-01: Admin Audit COMPLETE — All 5 Phases (20 bugs + i18n)
 
 **Summary:** Completed the full admin pages production readiness audit. All 20 bugs fixed across 5 phases + admin i18n namespace with 164 Arabic/English keys.

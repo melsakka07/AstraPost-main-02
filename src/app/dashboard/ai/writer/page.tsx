@@ -18,6 +18,7 @@ import {
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { HashtagGenerator } from "@/components/ai/hashtag-generator";
+import { PiiRedactionBanner } from "@/components/ai/pii-redaction-banner";
 import { AiLengthSelector } from "@/components/composer/ai-length-selector";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +131,11 @@ function AIWriterContent() {
   const [urlTone, setUrlTone] = useState("educational");
   const [urlLanguage, setUrlLanguage] = useState("en");
   const [urlTweetCount, setUrlTweetCount] = useState(5);
-  const [urlResult, setUrlResult] = useState<{ tweets: string[]; title: string } | null>(null);
+  const [urlResult, setUrlResult] = useState<{
+    tweets: string[];
+    title: string;
+    redactions?: string[];
+  } | null>(null);
   const [urlLoading, setUrlLoading] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const urlElapsed = useElapsedTime(urlLoading);
@@ -327,7 +332,7 @@ function AIWriterContent() {
         toast.error(err.error ?? t("errors.generation_failed"));
         return;
       }
-      const data = (await res.json()) as { tweets: string[]; title: string };
+      const data = (await res.json()) as { tweets: string[]; title: string; redactions?: string[] };
       setUrlResult(data);
     } catch {
       toast.error(t("errors.generation_failed"));
@@ -868,6 +873,7 @@ function AIWriterContent() {
           <div className="flex flex-col gap-3">
             {urlResult ? (
               <>
+                <PiiRedactionBanner redactions={urlResult.redactions} />
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-muted-foreground text-sm font-medium">

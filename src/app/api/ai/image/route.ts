@@ -7,7 +7,7 @@
 
 import { NextRequest } from "next/server";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, type LanguageModel } from "ai";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { ApiError } from "@/lib/api/errors";
@@ -75,7 +75,9 @@ async function generateImagePromptFromTweet(tweetContent: string): Promise<strin
     // regardless of the user's language preference. The generated images will be
     // visual representations that work across languages.
     const { text } = await generateText({
-      model: openrouterProvider(process.env.OPENROUTER_MODEL),
+      model: openrouterProvider(process.env.OPENROUTER_MODEL, {
+        provider: { data_collection: "deny" as const },
+      }) as unknown as LanguageModel,
       system: `You are an expert at creating vivid, specific image prompts for social media content.
 Generate a visual prompt that captures the essence of the post.
 Keep the prompt under 200 words. Focus on visual elements, composition, mood, and style.

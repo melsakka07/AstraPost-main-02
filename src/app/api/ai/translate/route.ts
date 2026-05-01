@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
+import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, model } = preamble;
+    const { session, model, checkModeration } = preamble;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
@@ -48,13 +49,17 @@ Constraints:
 - Keep numbering prefixes like "1/5" if the original tweet already has them, but do NOT add any new numbering or bracket labels.
 
 Thread:
-${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${t}`).join("\n\n")}`;
+${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${wrapUntrusted(`TWEET_${i + 1}`, t, 5_000)}`).join("\n\n")}`;
 
     const { object } = await generateObject({
       model,
       schema: responseSchema,
       prompt,
     });
+
+    // Moderation check on translated output
+    const modResult = await checkModeration(object.tweets.join("\n"));
+    if (modResult) return modResult;
 
     await recordAiUsage(session.user.id, "translate", 0, prompt, object, targetLanguage);
 

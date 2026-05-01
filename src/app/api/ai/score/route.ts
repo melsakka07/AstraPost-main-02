@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
+import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
-    const { model, session, dbUser } = preamble;
+    const { model, session, dbUser, checkModeration } = preamble;
 
     const json = await req.json();
     const result = scoreRequestSchema.safeParse(json);
@@ -50,9 +51,7 @@ export async function POST(req: Request) {
       You are an expert social media analyst for X (Twitter).
       Analyze the following tweet/thread content and provide a viral potential score (0-100) and 3 specific, actionable feedback points to improve it.
       ${langInstruction}
-
-      Content:
-      "${sanitizedContent}"
+      ${wrapUntrusted("CONTENT", sanitizedContent, 5_000)}
 
       Scoring Criteria:
       - Hooks (first line/tweet)
@@ -69,6 +68,10 @@ export async function POST(req: Request) {
       schema: scoreResponseSchema,
       prompt,
     });
+
+    // Moderation check on generated feedback
+    const modResult = await checkModeration(object.feedback.join("\n"));
+    if (modResult) return modResult;
 
     await recordAiUsage(
       session.user.id,

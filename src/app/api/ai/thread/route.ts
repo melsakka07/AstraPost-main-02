@@ -3,6 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { getLengthPrompt, getLengthMaxChars, THREAD_MODE_PROMPT } from "@/lib/ai/length-prompts";
+import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
@@ -17,8 +18,9 @@ import { RequestDedup } from "@/lib/services/request-dedup";
 import { XApiService } from "@/lib/services/x-api";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 
-// Delimiter used to separate tweets in the streamed AI output (thread mode only)
-const TWEET_DELIMITER = "===TWEET===";
+function makeThreadDelimiter(nonce: string): string {
+  return `===TWEET-${nonce}===`;
+}
 
 /** How stale the cached tier can be before we refresh inline (24 hours). */
 const TIER_STALENESS_MS = 24 * 60 * 60 * 1_000;
@@ -52,7 +54,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const parsed = threadRequestSchema.safeParse(json);
@@ -150,6 +152,11 @@ export async function POST(req: Request) {
     }
 
     const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
+    const wrappedVoice = voiceInstructions ? wrapUntrusted("VOICE PROFILE", voiceInstructions) : "";
+
+    // Per-request nonce for delimiter hardening
+    const delimiterNonce = crypto.randomUUID();
+    const threadDelimiter = makeThreadDelimiter(delimiterNonce);
 
     // ── Build prompt based on mode ────────────────────────────────────────────
     let prompt: string;
@@ -159,10 +166,10 @@ export async function POST(req: Request) {
       const maxChars = getLengthMaxChars(lengthOption);
 
       prompt = `You are an expert social media content writer for X (Twitter).
-Write exactly ONE post about "${topic}".
-${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle, but adapt freely.\n` : ""}${toneGuidance}
+Write exactly ONE post about the topic below.
+${wrapUntrusted("TOPIC", topic)}${hook ? `${wrapUntrusted("CREATIVE DIRECTION", hook)}(Use the above as inspiration for tone and angle, but adapt freely.)\n` : ""}${toneGuidance}
 ${langInstruction}
-${voiceInstructions}
+${wrappedVoice}
 
 ${lengthGuidance}
 
@@ -174,22 +181,22 @@ Requirements:
     } else {
       // Thread mode (existing behavior)
       prompt = `You are an expert social media content writer for X (Twitter).
-Write exactly ${tweetCount} tweets about "${topic}".
-${hook ? `Suggested creative direction:\n"${hook}"\nUse this as inspiration for the tone and angle of the first tweet, but adapt freely.\n` : ""}${toneGuidance}
+Write exactly ${tweetCount} tweets about the topic below.
+${wrapUntrusted("TOPIC", topic)}${hook ? `${wrapUntrusted("CREATIVE DIRECTION", hook)}(Use the above as inspiration for the tone and angle of the first tweet, but adapt freely.)\n` : ""}${toneGuidance}
 ${langInstruction}
-${voiceInstructions}
+${wrappedVoice}
 
 Requirements:
 ${THREAD_MODE_PROMPT}
 
 Format: Output each tweet as plain text. Separate tweets with this exact delimiter on its own line:
-${TWEET_DELIMITER}
+${threadDelimiter}
 
 Example format:
 First tweet content goes here.
-${TWEET_DELIMITER}
+${threadDelimiter}
 Second tweet content goes here.
-${TWEET_DELIMITER}
+${threadDelimiter}
 Third tweet content goes here.
 
 Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
@@ -237,6 +244,20 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
               });
             }
 
+            // Phase 1 moderation: buffer the full text and check at end of stream
+            const modResult = await checkModeration(accumulated);
+            if (modResult) {
+              logger.warn("moderation_flagged_stream", {
+                userId,
+                correlationId,
+                mode: "single",
+                textLength: accumulated.length,
+              });
+              controller.enqueue(
+                encoder.encode("\n\n[Content moderated — please rephrase your request]")
+              );
+            }
+
             controller.close();
 
             // Record AI usage
@@ -277,6 +298,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
     // ── Thread mode (existing SSE streaming) ──────────────────────────────────
     let buffer = "";
     let tweetIndex = 0;
+    const tweetTexts: string[] = []; // Accumulate for moderation
 
     const sseStream = new ReadableStream({
       async start(controller) {
@@ -286,11 +308,12 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
 
             // Emit each completed tweet as soon as we see the delimiter
             let delimIdx: number;
-            while ((delimIdx = buffer.indexOf(TWEET_DELIMITER)) !== -1) {
+            while ((delimIdx = buffer.indexOf(threadDelimiter)) !== -1) {
               const tweetText = buffer.slice(0, delimIdx).trim();
-              buffer = buffer.slice(delimIdx + TWEET_DELIMITER.length);
+              buffer = buffer.slice(delimIdx + threadDelimiter.length);
 
               if (tweetText.length > 0) {
+                tweetTexts.push(tweetText);
                 const content =
                   tweetText.length > 1000 ? tweetText.slice(0, 997) + "..." : tweetText;
                 const event = JSON.stringify({ index: tweetIndex, tweet: content });
@@ -303,9 +326,28 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           // Flush the last tweet (no trailing delimiter)
           const remaining = buffer.trim();
           if (remaining.length > 0) {
+            tweetTexts.push(remaining);
             const content = remaining.length > 1000 ? remaining.slice(0, 997) + "..." : remaining;
             const event = JSON.stringify({ index: tweetIndex, tweet: content });
             controller.enqueue(encoder.encode(`data: ${event}\n\n`));
+          }
+
+          // Phase 1 moderation: check the full thread text at end of stream
+          const fullText = tweetTexts.join("\n");
+          const modResult = await checkModeration(fullText);
+          if (modResult) {
+            logger.warn("moderation_flagged_stream", {
+              userId,
+              correlationId,
+              mode: "thread",
+              textLength: fullText.length,
+              tweetCount: tweetTexts.length,
+            });
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ moderation_flagged: true, message: "Content moderated — please rephrase your request" })}\n\n`
+              )
+            );
           }
 
           // Signal completion to the client before recording usage

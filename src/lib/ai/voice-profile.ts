@@ -134,3 +134,43 @@ export function buildVoiceInstructions(raw: unknown): string {
     "ADHERE STRICTLY TO THIS WRITING STYLE. Mimic the user's voice perfectly.",
   ].join("\n");
 }
+
+// ── Deterministic voice formatter ────────────────────────────────────────────
+
+/**
+ * Format a validated VoiceProfile into a deterministic, cache-friendly string
+ * suitable for wrapping via {@link wrapUntrusted}.
+ *
+ * - Iterates fields in sorted-key order for deterministic output
+ * - Strips control characters and newlines from every value
+ * - Caps each field at 200 characters
+ * - Joins array fields with ", " and "; " respectively
+ *
+ * Intended usage:
+ * ```ts
+ * const formatted = formatVoiceProfile(profile);
+ * const safe = wrapUntrusted("VOICE PROFILE", formatted);
+ * ```
+ */
+export function formatVoiceProfile(profile: VoiceProfile): string {
+  // Deterministic key order for cacheability
+  const sortedKeys = (Object.keys(profile) as (keyof VoiceProfile)[]).sort();
+
+  const lines: string[] = [];
+  for (const key of sortedKeys) {
+    const value = profile[key];
+    if (Array.isArray(value)) {
+      const joined = value
+        .map((v) => sanitizeFieldValue(v, 200))
+        .filter(Boolean)
+        .join(", ");
+      if (joined) {
+        lines.push(`${key}: ${joined.slice(0, 200)}`);
+      }
+    } else if (typeof value === "string" && value.length > 0) {
+      lines.push(`${key}: ${sanitizeFieldValue(value, 200)}`);
+    }
+  }
+
+  return lines.join("\n") || "Not configured";
+}

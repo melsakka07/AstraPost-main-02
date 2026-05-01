@@ -1,3 +1,4 @@
+import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import { LANGUAGES } from "@/lib/constants";
 import type { ToneCode } from "@/lib/constants";
 
@@ -18,10 +19,26 @@ export interface TemplatePromptConfig {
   defaultTone: ToneCode;
   defaultFormat: OutputFormat;
   placeholderTopic: string;
-  buildPrompt(topic: string, tone: ToneCode, language: string, format: OutputFormat): string;
+  buildPrompt(
+    topic: string,
+    tone: ToneCode,
+    language: string,
+    format: OutputFormat,
+    nonce?: string
+  ): string;
 }
 
-const TWEET_DELIMITER = "===TWEET===";
+/** Build a nonce-based delimiter string for per-request uniqueness. */
+export function makeTweetDelimiter(nonce: string): string {
+  return `===TWEET-${nonce}===`;
+}
+
+/** Legacy static delimiter for backwards compatibility. */
+export const LEGACY_TWEET_DELIMITER = "===TWEET===";
+
+function tweetDelimiter(nonce?: string): string {
+  return nonce ? makeTweetDelimiter(nonce) : LEGACY_TWEET_DELIMITER;
+}
 
 function languageLabel(code: string): string {
   return LANGUAGES.find((l) => l.code === code)?.label ?? "English";
@@ -38,9 +55,15 @@ function tweetCountInstruction(format: OutputFormat): string {
   }
 }
 
-function baseConstraints(tone: ToneCode, language: string, format: OutputFormat): string {
+function baseConstraints(
+  tone: ToneCode,
+  language: string,
+  format: OutputFormat,
+  nonce?: string
+): string {
   const lang = languageLabel(language);
   const countInstruction = tweetCountInstruction(format);
+  const delim = tweetDelimiter(nonce);
   return `
 Language: ${lang}.
 Tone: ${tone}.
@@ -55,13 +78,13 @@ Hard requirements:
 
 Output format — CRITICAL:
 Separate each tweet with this exact delimiter on its own line (nothing else on that line):
-${TWEET_DELIMITER}
+${delim}
 
 Correct example:
 First tweet text here.
-${TWEET_DELIMITER}
+${delim}
 Second tweet text here.
-${TWEET_DELIMITER}
+${delim}
 Third tweet text here.
 
 Do NOT put the delimiter at the very start or very end. Output only tweets + delimiters.`;
@@ -77,9 +100,10 @@ export const TEMPLATE_PROMPTS: TemplatePromptConfig[] = [
     defaultTone: "educational",
     defaultFormat: "thread-short",
     placeholderTopic: "e.g., Time management for remote developers",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, nonce?) {
       return `You are an expert social media content writer for X (Twitter).
-Write a How-To Guide thread about: "${topic}".
+Write a How-To Guide thread about the topic below.
+${wrapUntrusted("TOPIC", topic)}
 
 Content structure:
 ${
@@ -91,7 +115,8 @@ ${
 - Final tweet (Wrap-up): Summarise the key takeaway, add encouragement, and include a soft CTA (e.g., "Save this for later", "Which step will you try first?").
 `
 }
-${baseConstraints(tone, language, format)}`;
+${baseConstraints(tone, language, format, nonce)}
+${JAILBREAK_GUARD}`;
     },
   },
 
@@ -102,9 +127,10 @@ ${baseConstraints(tone, language, format)}`;
     defaultTone: "casual",
     defaultFormat: "thread-short",
     placeholderTopic: "e.g., How I landed my first freelance client",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, nonce?) {
       return `You are an expert social media content writer for X (Twitter).
-Write a Personal Story thread about: "${topic}".
+Write a Personal Story thread about the topic below.
+${wrapUntrusted("TOPIC", topic)}
 
 Content structure:
 ${
@@ -116,7 +142,8 @@ ${
 - Final tweet (Lesson): Distil the core lesson or advice others can apply. End with something that invites connection ("Have you experienced this? 👇").
 `
 }
-${baseConstraints(tone, language, format)}`;
+${baseConstraints(tone, language, format, nonce)}
+${JAILBREAK_GUARD}`;
     },
   },
 
@@ -127,9 +154,10 @@ ${baseConstraints(tone, language, format)}`;
     defaultTone: "viral",
     defaultFormat: "single",
     placeholderTopic: "e.g., Why hustle culture is making you less productive",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, nonce?) {
       return `You are an expert social media content writer for X (Twitter).
-Write a Contrarian Take about: "${topic}".
+Write a Contrarian Take about the topic below.
+${wrapUntrusted("TOPIC", topic)}
 
 Content structure:
 ${
@@ -141,7 +169,8 @@ ${
 - Final tweet (Call for debate): End with a question or challenge that invites discussion. Acknowledge the other side briefly, then restate your conviction.
 `
 }
-${baseConstraints(tone, language, format)}`;
+${baseConstraints(tone, language, format, nonce)}
+${JAILBREAK_GUARD}`;
     },
   },
 
@@ -152,9 +181,10 @@ ${baseConstraints(tone, language, format)}`;
     defaultTone: "professional",
     defaultFormat: "thread-long",
     placeholderTopic: "e.g., 7 productivity tools that save me 5 hours a week",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, nonce?) {
       return `You are an expert social media content writer for X (Twitter).
-Write a Curated List thread about: "${topic}".
+Write a Curated List thread about the topic below.
+${wrapUntrusted("TOPIC", topic)}
 
 Content structure:
 ${
@@ -166,7 +196,8 @@ ${
 - Final tweet (Bonus + CTA): Add a bonus pick not in the main list. End with a CTA: "Follow for more", "Which will you try?", or "Repost to help others."
 `
 }
-${baseConstraints(tone, language, format)}`;
+${baseConstraints(tone, language, format, nonce)}
+${JAILBREAK_GUARD}`;
     },
   },
 
@@ -177,9 +208,10 @@ ${baseConstraints(tone, language, format)}`;
     defaultTone: "inspirational",
     defaultFormat: "thread-short",
     placeholderTopic: "e.g., Launching my new course on personal finance for beginners",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, nonce?) {
       return `You are an expert social media content writer for X (Twitter).
-Write a Product Launch announcement thread about: "${topic}".
+Write a Product Launch announcement thread about the topic below.
+${wrapUntrusted("TOPIC", topic)}
 
 Content structure:
 ${
@@ -192,7 +224,8 @@ ${
 - Final tweet (CTA): Direct, clear call-to-action. Tell people exactly what to do next. Add urgency or exclusivity only if genuine.
 `
 }
-${baseConstraints(tone, language, format)}`;
+${baseConstraints(tone, language, format, nonce)}
+${JAILBREAK_GUARD}`;
     },
   },
 ];

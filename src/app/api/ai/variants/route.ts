@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkVariantGeneratorAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -91,6 +91,10 @@ For each variant:
       object,
       userLanguage
     );
+
+    // Moderation check on generated variant texts
+    const modResult = await checkModeration(object.variants.map((v) => v.text).join("\n"));
+    if (modResult) return modResult;
 
     const sanitized = {
       variants: object.variants.map((v) => ({

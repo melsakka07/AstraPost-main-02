@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkBioOptimizerAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -130,6 +130,10 @@ For each variant provide:
         throw err;
       }
     }
+
+    // Moderation check on generated bio variants
+    const modResult = await checkModeration(object.variants.map((v) => v.text).join("\n"));
+    if (modResult) return modResult;
 
     await recordAiUsage(
       session.user.id,

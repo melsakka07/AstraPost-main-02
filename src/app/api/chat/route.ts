@@ -1,8 +1,10 @@
 import { headers } from "next/headers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { streamText, UIMessage, convertToModelMessages } from "ai";
+import { streamText, UIMessage, convertToModelMessages, type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
+import { formatVoiceProfile, voiceProfileSchema } from "@/lib/ai/voice-profile";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -15,6 +17,7 @@ import {
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 import { recordAiUsage } from "@/lib/services/ai-quota";
+import { moderateOutput } from "@/lib/services/moderation";
 
 // Zod schema for message validation
 const messagePartSchema = z.object({
@@ -41,7 +44,7 @@ export async function POST(req: Request) {
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
-    columns: { plan: true },
+    columns: { plan: true, language: true, voiceProfile: true },
   });
 
   const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
@@ -71,6 +74,16 @@ export async function POST(req: Request) {
 
   const { messages }: { messages: UIMessage[] } = parsed.data as { messages: UIMessage[] };
 
+  // Resolve voice profile: validate raw DB value, format deterministically, wrap as untrusted
+  const parsedVoice = voiceProfileSchema.safeParse(dbUser?.voiceProfile ?? undefined);
+  const voiceBlock = parsedVoice.success
+    ? wrapUntrusted("VOICE PROFILE", formatVoiceProfile(parsedVoice.data))
+    : "";
+
+  const systemMessage = `You are AstraPost AI, a social media assistant for X (Twitter) creators in MENA. Help with content strategy, tweet writing, and best practices. Default to Arabic unless the user writes English. Refuse: hate speech, election misinfo, harassment, illegal content.
+${voiceBlock}
+${JAILBREAK_GUARD}`;
+
   // Initialize OpenRouter with API key from environment
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -80,10 +93,16 @@ export async function POST(req: Request) {
   const openrouter = createOpenRouter({ apiKey });
 
   try {
+    // Prepend system message
+    const modelMessages = convertToModelMessages(messages);
+    const allMessages = [{ role: "system" as const, content: systemMessage }, ...modelMessages];
+
     const result = streamText({
-      model: openrouter(process.env.OPENROUTER_MODEL!),
-      messages: convertToModelMessages(messages),
-      onFinish: async ({ usage }) => {
+      model: openrouter(process.env.OPENROUTER_MODEL!, {
+        provider: { data_collection: "deny" as const },
+      }) as unknown as LanguageModel,
+      messages: allMessages,
+      onFinish: async ({ text, usage }) => {
         // Record AI usage after stream completes (fire-and-forget)
         recordAiUsage(
           session.user.id,
@@ -95,6 +114,23 @@ export async function POST(req: Request) {
         ).catch((err) => {
           logger.error("[chat] recordAiUsage error:", { error: err });
         });
+
+        // Phase 1 moderation: check the completed stream text (can't block, but can log)
+        if (text) {
+          moderateOutput(text, session.user.id)
+            .then((result) => {
+              if (result.flagged) {
+                logger.warn("moderation_flagged_chat", {
+                  userId: session.user.id,
+                  categories: result.categories,
+                  textLength: text.length,
+                });
+              }
+            })
+            .catch((err) => {
+              logger.error("[chat] moderation check error:", { error: err });
+            });
+        }
       },
     });
 

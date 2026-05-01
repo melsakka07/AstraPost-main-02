@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       featureGate: async (userId) => checkInspirationAccessDetailed(userId),
     });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
     const userId = session.user.id;
 
     const body = await req.json();
@@ -71,12 +71,20 @@ export async function POST(req: Request) {
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
 
-    const { systemPrompt, userPrompt } = buildInspirePrompts(action, originalTweet, {
-      ...(tone !== undefined && { tone }),
-      language: userLanguage,
-      ...(userContext !== undefined && { userContext }),
-      ...(threadContext !== undefined && { threadContext }),
-    });
+    // Per-request nonce for delimiter hardening (expand_thread only)
+    const nonce = crypto.randomUUID();
+
+    const { systemPrompt, userPrompt, delimiter, redactions } = buildInspirePrompts(
+      action,
+      originalTweet,
+      {
+        ...(tone !== undefined && { tone }),
+        language: userLanguage,
+        ...(userContext !== undefined && { userContext }),
+        ...(threadContext !== undefined && { threadContext }),
+        nonce,
+      }
+    );
 
     const { text } = await generateText({
       model,
@@ -84,7 +92,11 @@ export async function POST(req: Request) {
       prompt: userPrompt,
     });
 
-    const tweets = parseInspireResponse(action, text);
+    const tweets = parseInspireResponse(action, text, delimiter);
+
+    // Moderation check on generated content
+    const modResult = await checkModeration(tweets.join("\n"));
+    if (modResult) return modResult;
 
     await recordAiUsage(
       userId,
@@ -95,7 +107,7 @@ export async function POST(req: Request) {
       userLanguage
     );
 
-    const res = Response.json({ tweets, action });
+    const res = Response.json({ tweets, action, ...(redactions && { redactions }) });
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {

@@ -1,6 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
+import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkReplyGeneratorAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -70,9 +71,7 @@ export async function POST(req: Request) {
 
     const prompt = `You are an expert social media engagement writer.
 Generate 5 high-quality replies to the following tweet from ${tweetAuthor}.
-
-ORIGINAL TWEET:
-"${tweetText}"
+${wrapUntrusted("ORIGINAL TWEET", tweetText, 2_000)}
 
 Requirements:
 - ${langInstruction}
@@ -101,6 +100,10 @@ For each reply include:
       object,
       userLanguage
     );
+
+    // Moderation check on generated replies
+    const modResult = await checkModeration(object.replies.map((r) => r.text).join("\n"));
+    if (modResult) return modResult;
 
     const sanitized = {
       tweetText,

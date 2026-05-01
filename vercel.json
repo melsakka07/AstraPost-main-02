@@ -4,6 +4,14 @@
     {
       "path": "/api/cron/billing-cleanup",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/ai-cost-alarm",
+      "schedule": "7 * * * *"
+    },
+    {
+      "path": "/api/cron/ai-counter-rollover",
+      "schedule": "3 * * * *"
     }
   ]
 }

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const result = hashtagRequestSchema.safeParse(json);
@@ -56,6 +56,10 @@ export async function POST(req: Request) {
       schema: hashtagResponseSchema,
       prompt,
     });
+
+    // Moderation check on generated hashtags
+    const modResult = await checkModeration(object.hashtags.join(" "));
+    if (modResult) return modResult;
 
     await recordAiUsage(
       session.user.id,

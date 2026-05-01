@@ -1,4 +1,5 @@
 import type { AgenticTweet, ContentPlan, ResearchBrief } from "@/lib/ai/agentic-types";
+import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { canPostLongContent, getMaxCharacterLimit } from "@/lib/services/x-subscription";
 
@@ -30,8 +31,7 @@ export function buildResearchPrompt(
   return `You are a social media research analyst specializing in viral content for the MENA region and global markets.
 
 TASK: Analyze the topic below and identify the most engaging angles for a Twitter/X post.
-
-TOPIC: "${topic}"
+${wrapUntrusted("TOPIC", topic)}
 AUDIENCE: ${audience}
 
 ${languageInstruction(language)}
@@ -49,7 +49,7 @@ If the topic is too vague or broad to produce focused content (e.g., "technology
 Return ONLY valid JSON. No markdown, no explanation, no preamble.
 
 {
-  "topic": "${topic}",
+  "topic": "${topic.replace(/"/g, '\\"')}",
   "angles": [
     {
       "title": "concise angle title (max 60 chars)",
@@ -69,7 +69,9 @@ RULES:
 - Include 5–8 hashtags (no spaces, no # prefix needed — the system adds it)
 - List 3–5 key facts or statistics; cite source type if relevant (e.g., "According to recent reports...")
 - The recommendedAngle MUST match the title of the angle with the highest viral score
-- Omit "too_broad" and "broadSuggestions" entirely if the topic is specific enough`;
+- Omit "too_broad" and "broadSuggestions" entirely if the topic is specific enough
+
+${JAILBREAK_GUARD}`;
 }
 
 // ── 5B: Strategy prompt ───────────────────────────────────────────────────────
@@ -110,9 +112,7 @@ Available formats:
 TASK: Choose the optimal content format and structure for the following research brief.
 
 ${tierBlock}
-
-RESEARCH BRIEF:
-${JSON.stringify(brief, null, 2)}
+${wrapUntrusted("RESEARCH BRIEF", JSON.stringify(brief, null, 2))}
 
 TONE PREFERENCE: ${toneHint === "auto" ? "Choose the tone that best fits the topic and recommended angle" : toneHint}
 AUDIENCE: ${audience}
@@ -148,7 +148,9 @@ RULES:
 - imageSlots: 0-based indices of tweets that should have images; max 2 images per thread; empty array [] if includeImages is false
 - Choose image slots strategically: tweet 0 (hook) and the most data-rich tweet
 - ${canUseLong ? `lengthOption may be "short", "medium", or "long" for single posts` : `lengthOption MUST be "short" — this account cannot use medium or long`}
-- rationale should explain why this format beats alternatives for this specific topic`;
+- rationale should explain why this format beats alternatives for this specific topic
+
+${JAILBREAK_GUARD}`;
 }
 
 // ── 5C: Writing prompt ────────────────────────────────────────────────────────
@@ -173,21 +175,13 @@ export function buildWritingPrompt(
 - Maximum ${charLimit} characters total (including hashtags)
 - Open strong — the first sentence determines whether anyone stops scrolling`;
 
-  const voiceBlock = voiceProfile
-    ? `\nVOICE & STYLE (match this user's writing style exactly):
-${voiceProfile}
-`
-    : "";
+  const voiceBlock = voiceProfile ? wrapUntrusted("VOICE PROFILE", voiceProfile) : "";
 
   return `You are a world-class social media copywriter who creates content that people actually want to read and share.
 
 TASK: Write the complete content following the strategy below.
-
-RESEARCH BRIEF:
-${JSON.stringify(brief, null, 2)}
-
-CONTENT PLAN:
-${JSON.stringify(plan, null, 2)}
+${wrapUntrusted("RESEARCH BRIEF", JSON.stringify(brief, null, 2))}
+${wrapUntrusted("CONTENT PLAN", JSON.stringify(plan, null, 2))}
 ${voiceBlock}
 ${languageInstruction(language)}
 
@@ -229,7 +223,9 @@ RULES:
 - hashtags: 2–3 tags maximum per tweet; only include in tweet[0] and tweet[last]; others should be []
 - charCount: character count of text + space + all hashtags combined (with # prefix)
 - hasImage: true ONLY for tweets at indices ${JSON.stringify(plan.imageSlots)}
-- imagePrompt: include ONLY when hasImage is true; omit the field entirely when hasImage is false`;
+- imagePrompt: include ONLY when hasImage is true; omit the field entirely when hasImage is false
+
+${JAILBREAK_GUARD}`;
 }
 
 // ── 5D: Review prompt ─────────────────────────────────────────────────────────
@@ -257,17 +253,14 @@ export function buildReviewPrompt(
   return `You are a senior editor and content quality reviewer for a social media publishing platform.
 
 TASK: Review the generated content for quality, accuracy, and compliance before publishing.
-
-ORIGINAL TOPIC: "${brief.topic}"
-RECOMMENDED ANGLE: "${brief.recommendedAngle}"
+${wrapUntrusted("ORIGINAL TOPIC", brief.topic)}
+${wrapUntrusted("RECOMMENDED ANGLE", brief.recommendedAngle)}
 FORMAT: ${plan.format === "thread" ? `Thread (${plan.tweetCount} tweets)` : `Single post (${plan.lengthOption})`}
 CHARACTER LIMIT: ${charLimit} chars per tweet${plan.format === "thread" ? " (hard X platform limit)" : ""}
 
 CONTENT TO REVIEW:
 ${tweetSummaries}
-
-FULL CONTENT:
-${JSON.stringify(tweets, null, 2)}
+${wrapUntrusted("FULL CONTENT", JSON.stringify(tweets, null, 2))}
 
 REVIEW CHECKLIST:
 1. CHARACTER LIMITS: Does every tweet comply? (${charLimit} char max)
@@ -298,7 +291,9 @@ Return ONLY valid JSON. No markdown, no explanation, no preamble.
 }
 
 RULES:
-- passed: true if qualityScore ≥ 6 and no character limit violations; false otherwise
+- passed: true if qualityScore ≥ 7 and no character limit violations; false otherwise
 - issues: empty array [] if no problems found; be specific and actionable
-- summary: write the summary in the same language as the content`;
+- summary: write the summary in the same language as the content
+
+${JAILBREAK_GUARD}`;
 }

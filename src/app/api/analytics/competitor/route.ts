@@ -1,5 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateObject, type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
@@ -94,7 +94,9 @@ export async function POST(req: Request) {
     }
 
     const openrouter = createOpenRouter({ apiKey });
-    const model = openrouter(process.env.OPENROUTER_MODEL!);
+    const model = openrouter(process.env.OPENROUTER_MODEL!, {
+      provider: { data_collection: "deny" as const },
+    }) as unknown as LanguageModel;
 
     const prompt = buildCompetitorAnalysisPrompt(username, twitterData.tweets, language);
 

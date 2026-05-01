@@ -1,9 +1,20 @@
+import "server-only";
+
+import { redactPII } from "@/lib/ai/pii";
+import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
+
 /**
  * Prompt builders for the AI Inspire feature.
  *
  * Each action has its own system-prompt factory that accepts optional tone,
  * language, and user-context parameters. The user prompt is built separately
  * by `buildInspireUserPrompt`.
+ *
+ * PII is redacted from all user-provided content before embedding in prompts
+ * to prevent personal data from being sent to third-party AI providers.
+ *
+ * All user-supplied content is wrapped with `<<<UNTRUSTED...UNTRUSTED>>>`
+ * delimiters to defend against prompt injection attacks.
  */
 
 export type InspireAction =
@@ -33,7 +44,7 @@ export interface InspirePrompts {
 
 const ACTION_SYSTEM_PROMPTS: Record<
   InspireAction,
-  (tone?: string, language?: string, userContext?: string) => string
+  (tone?: string, language?: string, userContext?: string, delimiter?: string) => string
 > = {
   rephrase: (
     tone,
@@ -49,7 +60,9 @@ ${tone ? `Use a ${tone} tone.` : ""}
 ${language === "ar" ? "Respond in Arabic." : "Respond in English."}
 ${userContext ? `User context: ${userContext}` : ""}
 
-Return ONLY the rephrased tweet text. No explanation or additional text.`,
+Return ONLY the rephrased tweet text. No explanation or additional text.
+
+${JAILBREAK_GUARD}`,
 
   change_tone: (
     tone,
@@ -65,12 +78,15 @@ ${tone ? `Target tone: ${tone}.` : "Choose a different tone than the original."}
 ${language === "ar" ? "Respond in Arabic." : "Respond in English."}
 ${userContext ? `User context: ${userContext}` : ""}
 
-Return ONLY the adapted tweet text. No explanation or additional text.`,
+Return ONLY the adapted tweet text. No explanation or additional text.
+
+${JAILBREAK_GUARD}`,
 
   expand_thread: (
     tone,
     language,
-    userContext
+    userContext,
+    delimiter = "|||"
   ) => `You are helping a user expand a single tweet into an engaging thread.
 
 IMPORTANT: Never plagiarize. Build upon the original idea with substantial new content, perspective, and value.
@@ -86,8 +102,10 @@ Thread structure:
 - Tweet 2-3: Main content with elaboration
 - Final Tweet: Conclusion or CTA
 
-Return ONLY the thread tweets, one per line, separated by |||.
-Example: First tweet hook...|||Second tweet...|||Third tweet...`,
+Return ONLY the thread tweets, one per line, separated by ${delimiter}.
+Example: First tweet hook...${delimiter}Second tweet...${delimiter}Third tweet...
+
+${JAILBREAK_GUARD}`,
 
   add_take: (
     tone,
@@ -103,7 +121,9 @@ ${tone ? `Use a ${tone} tone.` : ""}
 ${language === "ar" ? "Respond in Arabic." : "Respond in English."}
 ${userContext ? `User's perspective to inject: ${userContext}` : ""}
 
-Return ONLY the adapted tweet text. No explanation or additional text.`,
+Return ONLY the adapted tweet text. No explanation or additional text.
+
+${JAILBREAK_GUARD}`,
 
   translate: (
     _tone,
@@ -118,7 +138,9 @@ Your task: Translate and culturally adapt the tweet.
 ${language === "ar" ? "Translate from English to Arabic, adapting idioms appropriately." : "Translate from Arabic to English, adapting idioms appropriately."}
 ${userContext ? `User context: ${userContext}` : ""}
 
-Return ONLY the translated and adapted tweet text. No explanation or additional text.`,
+Return ONLY the translated and adapted tweet text. No explanation or additional text.
+
+${JAILBREAK_GUARD}`,
 
   counter_point: (
     tone,
@@ -134,7 +156,9 @@ ${tone ? `Use a ${tone} tone.` : ""}
 ${language === "ar" ? "Respond in Arabic." : "Respond in English."}
 ${userContext ? `User's perspective: ${userContext}` : ""}
 
-Return ONLY the counter-argument tweet text. No explanation or additional text.`,
+Return ONLY the counter-argument tweet text. No explanation or additional text.
+
+${JAILBREAK_GUARD}`,
 };
 
 // ============================================================================
@@ -144,10 +168,13 @@ Return ONLY the counter-argument tweet text. No explanation or additional text.`
 /**
  * Builds the system and user prompts for an inspire action.
  *
- * @param action      - The inspire action to perform
+ * All user-supplied content is PII-redacted and wrapped in untrusted-content
+ * delimiters to prevent prompt injection.
+ *
+ * @param action        - The inspire action to perform
  * @param originalTweet - The source tweet text
- * @param options     - Optional tone, language, userContext, and threadContext
- * @returns           An object with `systemPrompt` and `userPrompt` strings
+ * @param options       - Optional tone, language, userContext, threadContext, and nonce
+ * @returns             An object with `systemPrompt`, `userPrompt`, and `delimiter` (expand_thread only)
  */
 export function buildInspirePrompts(
   action: InspireAction,
@@ -157,29 +184,62 @@ export function buildInspirePrompts(
     language?: string;
     userContext?: string;
     threadContext?: string[];
+    nonce?: string;
   } = {}
-): InspirePrompts {
-  const { tone, language, userContext, threadContext } = options;
-  const builder = ACTION_SYSTEM_PROMPTS[action];
-  const systemPrompt = builder(tone, language, userContext);
+): InspirePrompts & { delimiter?: string; redactions?: string[] } {
+  // Redact PII from user-provided content before embedding in prompts
+  const { cleaned: cleanTweet, redactions: tweetRedactions } = redactPII(originalTweet);
+  const allRedactions = [...tweetRedactions];
 
-  let userPrompt = `Original tweet:\n${originalTweet}`;
-  if (threadContext && threadContext.length > 0) {
-    userPrompt += `\n\nThread context (previous tweets/replies):\n${threadContext.join("\n\n")}`;
+  const rawContext = options.threadContext;
+  let cleanThreadContext: string[] | undefined;
+  if (rawContext && rawContext.length > 0) {
+    cleanThreadContext = rawContext.map((t) => {
+      const { cleaned, redactions } = redactPII(t);
+      allRedactions.push(...redactions);
+      return cleaned;
+    });
   }
 
-  return { systemPrompt, userPrompt };
+  const { tone, language, userContext } = options;
+
+  // Per-request delimiter for expand_thread to prevent injection via |||
+  const delimiter = options.nonce ? `|||TWEET-${options.nonce}|||` : "|||";
+
+  const builder = ACTION_SYSTEM_PROMPTS[action];
+  const systemPrompt = builder(
+    tone,
+    language,
+    userContext,
+    action === "expand_thread" ? delimiter : undefined
+  );
+
+  // Wrap user-supplied content in untrusted delimiters for injection defence
+  let userPrompt = wrapUntrusted("SOURCE TWEET", cleanTweet, 5_000);
+  if (cleanThreadContext && cleanThreadContext.length > 0) {
+    userPrompt += `\n\nThread context (previous tweets/replies):\n${cleanThreadContext.join("\n\n")}`;
+  }
+
+  return {
+    systemPrompt,
+    userPrompt,
+    ...(allRedactions.length > 0 && { redactions: allRedactions }),
+    ...(action === "expand_thread" ? { delimiter } : {}),
+  };
 }
 
 /**
  * Parses the raw AI text output into an array of tweet strings.
- * For `expand_thread` actions the response uses ||| as a delimiter;
- * all other actions produce a single tweet.
+ * For `expand_thread` actions the response uses a delimiter (configurable for per-request nonce).
  */
-export function parseInspireResponse(action: InspireAction, text: string): string[] {
+export function parseInspireResponse(
+  action: InspireAction,
+  text: string,
+  delimiter = "|||"
+): string[] {
   if (action === "expand_thread") {
     return text
-      .split("|||")
+      .split(delimiter)
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
   }

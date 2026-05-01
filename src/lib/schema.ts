@@ -667,6 +667,31 @@ export const aiGenerations = pgTable(
   ]
 );
 
+/**
+ * Trust & Safety: moderation flags for AI-generated content.
+ *
+ * Each row records a flagged piece of content (snippet) with one or more
+ * violation categories. Optionally linked to an aiGenerations row via
+ * generationId to trace the source generation.
+ */
+export const moderationFlag = pgTable(
+  "moderation_flag",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    generationId: text("generation_id"), // nullable — optional link to aiGenerations row
+    categories: text("categories").array().notNull(), // e.g. ["hate_speech", "harassment"]
+    snippet: text("snippet").notNull(), // first 200 chars of flagged content
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("moderation_flag_user_id_idx").on(table.userId),
+    index("moderation_flag_created_at_idx").on(table.createdAt),
+  ]
+);
+
 export const inspirationBookmarks = pgTable(
   "inspiration_bookmarks",
   {
@@ -1060,6 +1085,11 @@ export const userRelations = relations(user, ({ one, many }) => ({
   feedbackVotes: many(feedbackVotes),
   socialAnalytics: many(socialAnalytics),
   auditLogEntries: many(adminAuditLog),
+  moderationFlags: many(moderationFlag),
+  aiCounter: one(userAiCounters, {
+    fields: [user.id],
+    references: [userAiCounters.userId],
+  }),
 }));
 
 export const socialAnalyticsRelations = relations(socialAnalytics, ({ one }) => ({
@@ -1088,9 +1118,50 @@ export const feedbackVotesRelations = relations(feedbackVotes, ({ one }) => ({
   }),
 }));
 
-export const aiGenerationsRelations = relations(aiGenerations, ({ one }) => ({
+export const aiGenerationsRelations = relations(aiGenerations, ({ one, many }) => ({
   user: one(user, {
     fields: [aiGenerations.userId],
+    references: [user.id],
+  }),
+  moderationFlags: many(moderationFlag),
+}));
+
+export const moderationFlagRelations = relations(moderationFlag, ({ one }) => ({
+  user: one(user, {
+    fields: [moderationFlag.userId],
+    references: [user.id],
+  }),
+  generation: one(aiGenerations, {
+    fields: [moderationFlag.generationId],
+    references: [aiGenerations.id],
+  }),
+}));
+
+/**
+ * Atomic per-user quota counter for AI generations.
+ *
+ * Replaces COUNT(*) on aiGenerations with a single-row counter that is
+ * atomically incremented/decremented to enforce quota without race conditions.
+ *
+ * - `periodStart` defines the current billing window (calendar month).
+ * - When periodStart is stale (< start of current month), the row is reset
+ *   by either the tryConsumeAiQuota service or the ai-counter-rollover cron.
+ * - `limit` is cached from the user's plan at the time of counter creation
+ *   or rollover; it is refreshed on every period reset.
+ */
+export const userAiCounters = pgTable("user_ai_counters", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  periodStart: timestamp("period_start").notNull(),
+  used: integer("used").default(0).notNull(),
+  limit: integer("limit").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const userAiCountersRelations = relations(userAiCounters, ({ one }) => ({
+  user: one(user, {
+    fields: [userAiCounters.userId],
     references: [user.id],
   }),
 }));
@@ -1434,6 +1505,10 @@ export type Post = typeof posts.$inferSelect;
 export type InsertPost = typeof posts.$inferInsert;
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect;
 export type InsertAdminAuditLog = typeof adminAuditLog.$inferInsert;
+export type UserAiCounter = typeof userAiCounters.$inferSelect;
+export type InsertUserAiCounter = typeof userAiCounters.$inferInsert;
 export type SessionWithImpersonation = typeof session.$inferSelect & {
   impersonatedByUser?: typeof user.$inferSelect;
 };
+export type ModerationFlag = typeof moderationFlag.$inferSelect;
+export type InsertModerationFlag = typeof moderationFlag.$inferInsert;

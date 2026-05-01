@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkContentCalendarAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -73,6 +73,12 @@ Return exactly ${totalPosts} items.`;
       schema: calendarSchema,
       prompt,
     });
+
+    // Moderation check on generated calendar items
+    const modResult = await checkModeration(
+      object.items.map((i) => `${i.topic}: ${i.brief}`).join("\n")
+    );
+    if (modResult) return modResult;
 
     await recordAiUsage(
       session.user.id,

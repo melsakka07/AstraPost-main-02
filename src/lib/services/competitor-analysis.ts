@@ -1,3 +1,4 @@
+import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { logger } from "@/lib/logger";
 
 // ============================================================================
@@ -152,9 +153,7 @@ export function buildCompetitorAnalysisPrompt(
 
   return `You are a social media strategist. Analyze the following ${tweets.length} tweets from @${username} and provide a comprehensive competitor analysis.
 Output language: ${language === "ar" ? "Arabic" : "English"}.
-
-TWEETS:
-${tweetDigest}
+${wrapUntrusted("COMPETITOR TWEETS", tweetDigest, 30_000)}
 
 Based on these tweets, analyze:
 - topTopics: main subjects/themes they tweet about (up to 10)

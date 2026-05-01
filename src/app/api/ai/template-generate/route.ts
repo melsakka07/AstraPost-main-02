@@ -1,6 +1,10 @@
 import { streamText } from "ai";
 import { z } from "zod";
-import { getTemplatePrompt, type OutputFormat } from "@/lib/ai/template-prompts";
+import {
+  getTemplatePrompt,
+  makeTweetDelimiter,
+  type OutputFormat,
+} from "@/lib/ai/template-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
@@ -8,8 +12,11 @@ import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
-// Re-export the delimiter so the frontend can share it
-export const TWEET_DELIMITER = "===TWEET===";
+// Re-export for frontend backwards compatibility
+export {
+  LEGACY_TWEET_DELIMITER as TWEET_DELIMITER,
+  makeTweetDelimiter,
+} from "@/lib/ai/template-prompts";
 
 const OUTPUT_FORMAT_ENUM = z.enum(["single", "thread-short", "thread-long"]);
 
@@ -26,7 +33,7 @@ export async function POST(req: Request) {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, checkModeration } = preamble;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
@@ -48,7 +55,10 @@ export async function POST(req: Request) {
     const tone = parsed.data.tone ?? config.defaultTone;
     const format: OutputFormat = parsed.data.outputFormat ?? config.defaultFormat;
 
-    const prompt = config.buildPrompt(topic, tone, userLanguage, format);
+    // Per-request nonce for delimiter hardening
+    const nonce = crypto.randomUUID();
+    const delimiter = makeTweetDelimiter(nonce);
+    const prompt = config.buildPrompt(topic, tone, userLanguage, format, nonce);
 
     const streamResult = streamText({ model, prompt });
 
@@ -56,6 +66,7 @@ export async function POST(req: Request) {
     const userId = session.user.id;
     let buffer = "";
     let tweetIndex = 0;
+    const tweetTexts: string[] = []; // Accumulate for moderation
 
     const sseStream = new ReadableStream({
       async start(controller) {
@@ -64,11 +75,12 @@ export async function POST(req: Request) {
             buffer += chunk;
 
             let delimIdx: number;
-            while ((delimIdx = buffer.indexOf(TWEET_DELIMITER)) !== -1) {
+            while ((delimIdx = buffer.indexOf(delimiter)) !== -1) {
               const tweetText = buffer.slice(0, delimIdx).trim();
-              buffer = buffer.slice(delimIdx + TWEET_DELIMITER.length);
+              buffer = buffer.slice(delimIdx + delimiter.length);
 
               if (tweetText.length > 0) {
+                tweetTexts.push(tweetText);
                 const content =
                   tweetText.length > 1000 ? tweetText.slice(0, 997) + "..." : tweetText;
                 controller.enqueue(
@@ -84,9 +96,28 @@ export async function POST(req: Request) {
           // Flush the last tweet (no trailing delimiter)
           const remaining = buffer.trim();
           if (remaining.length > 0) {
+            tweetTexts.push(remaining);
             const content = remaining.length > 1000 ? remaining.slice(0, 997) + "..." : remaining;
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ index: tweetIndex, tweet: content })}\n\n`)
+            );
+          }
+
+          // Phase 1 moderation: check the full generated text at end of stream
+          const fullText = tweetTexts.join("\n");
+          const modResult = await checkModeration(fullText);
+          if (modResult) {
+            logger.warn("moderation_flagged_stream", {
+              userId,
+              correlationId,
+              mode: "template",
+              textLength: fullText.length,
+              tweetCount: tweetTexts.length,
+            });
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ moderation_flagged: true, message: "Content moderated — please rephrase your request" })}\n\n`
+              )
             );
           }
 

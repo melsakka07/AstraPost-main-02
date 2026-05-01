@@ -115,7 +115,9 @@
     "generate_thread": "Generate Thread",
     "generate_image": "Generate Image",
     "generating": "Generating...",
-    "quota_exceeded": "AI quota exceeded. Upgrade your plan to generate more content."
+    "quota_exceeded": "AI quota exceeded. Upgrade your plan to generate more content.",
+    "pii_redaction_notice": "Personal info was redacted from the source for your privacy",
+    "dismiss": "Dismiss"
   },
   "billing": {
     "upgrade": "Upgrade Plan",

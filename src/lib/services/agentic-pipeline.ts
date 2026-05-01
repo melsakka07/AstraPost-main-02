@@ -78,6 +78,12 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
   // Use dedicated agentic model if configured, otherwise fall back to the default model.
   const modelId = process.env.OPENROUTER_MODEL_AGENTIC ?? process.env.OPENROUTER_MODEL!;
   const model = openrouter(modelId);
+  // Separate reviewer model for unbiased review — defaults to agentic model → main model
+  const reviewerModelId =
+    process.env.OPENROUTER_MODEL_AGENTIC_REVIEWER ??
+    process.env.OPENROUTER_MODEL_AGENTIC ??
+    process.env.OPENROUTER_MODEL!;
+  const reviewerModel = openrouter(reviewerModelId);
   const canUseLong = canPostLongContent(xSubscriptionTier);
   const toneHint = preferences?.tone ?? "professional";
   const audienceHint = preferences?.audience ?? "general audience";
@@ -179,9 +185,10 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
   emit("writing", "in_progress");
   log("agentic_write_start");
 
+  const voiceBlock = buildVoiceInstructions(voiceProfile);
+
   let tweets: AgenticTweet[];
   try {
-    const voiceBlock = buildVoiceInstructions(voiceProfile);
     const writePrompt = buildWritingPrompt(research, plan, voiceBlock ?? null, language);
     const writeResult = await generateText({
       model,
@@ -271,7 +278,7 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
   const reviewPrompt = buildReviewPrompt(research, tweets, plan);
 
   const reviewResult = await generateText({
-    model,
+    model: reviewerModel,
     prompt: reviewPrompt,
     maxOutputTokens: 400,
     abortSignal: AbortSignal.timeout(30_000),
@@ -288,8 +295,57 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     passed: true,
   });
 
-  emit("review", "complete", { qualityScore: review.qualityScore, summary: review.summary });
-  log("agentic_review_done", { qualityScore: review.qualityScore });
+  // Re-write loop: if 5 ≤ score < 7, regenerate with feedback (1 retry max)
+  if (review.qualityScore >= 5 && review.qualityScore < 7 && review.issues.length > 0) {
+    log("agentic_review_retry", {
+      qualityScore: review.qualityScore,
+      issueCount: review.issues.length,
+    });
+
+    const rewritePrompt = buildWritingPrompt(research, plan, voiceBlock ?? null, language);
+    const rewriteUserPrompt = `REVISION REQUEST: The previous draft scored ${review.qualityScore}/10. Fix these issues:\n${review.issues.map((issue: string, i: number) => `${i + 1}. ${issue}`).join("\n")}\n\nRewrite the full thread addressing ALL issues above. Return the same JSON format.`;
+
+    const rewriteResult = await generateText({
+      model, // use writer model for rewrite, not reviewer
+      prompt: rewritePrompt + "\n\n" + rewriteUserPrompt,
+      maxOutputTokens: 3000,
+      abortSignal: AbortSignal.timeout(90_000),
+    });
+
+    tweets = safeJsonParse<AgenticTweet[]>(rewriteResult.text, tweets); // fall back to original on parse failure
+
+    // Re-review
+    const reReviewPrompt = buildReviewPrompt(research, tweets, plan);
+    const reReviewResult = await generateText({
+      model: reviewerModel,
+      prompt: reReviewPrompt,
+      maxOutputTokens: 400,
+      abortSignal: AbortSignal.timeout(30_000),
+    });
+
+    const reReview = safeJsonParse<{
+      qualityScore: number;
+      summary: string;
+      issues: string[];
+      passed: boolean;
+    }>(reReviewResult.text, review); // fall back to original review on parse failure
+
+    // Use the re-review result
+    review.qualityScore = reReview.qualityScore;
+    review.summary = reReview.summary;
+    review.issues = reReview.issues;
+    review.passed = reReview.passed;
+
+    emit("review", "complete", {
+      qualityScore: review.qualityScore,
+      summary: review.summary,
+      retried: true,
+    });
+    log("agentic_review_retry_done", { qualityScore: review.qualityScore });
+  } else {
+    emit("review", "complete", { qualityScore: review.qualityScore, summary: review.summary });
+    log("agentic_review_done", { qualityScore: review.qualityScore });
+  }
 
   // ── Record AI quota usage ────────────────────────────────────────────────────
   try {

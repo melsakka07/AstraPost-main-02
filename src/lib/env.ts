@@ -24,6 +24,9 @@ const serverEnvSchema = z.object({
   OPENROUTER_MODEL: z.string().min(1, "OPENROUTER_MODEL is required"),
   // Optional: dedicated model for Agentic Posting pipeline. Falls back to OPENROUTER_MODEL if not set.
   OPENROUTER_MODEL_AGENTIC: z.string().optional(),
+  // Optional: dedicated model for the Agentic review step. Different family from the writer
+  // for unbiased review. Falls back to OPENROUTER_MODEL_AGENTIC → OPENROUTER_MODEL if not set.
+  OPENROUTER_MODEL_AGENTIC_REVIEWER: z.string().optional(),
   // Optional: web-search-capable model for trends discovery (e.g. perplexity/llama-3.1-sonar-large-128k-online).
   // Falls back through OPENROUTER_MODEL_FREE → OPENROUTER_MODEL_AGENTIC → OPENROUTER_MODEL if not set.
   OPENROUTER_MODEL_TRENDS: z.string().optional(),
@@ -54,6 +57,16 @@ const serverEnvSchema = z.object({
   // Email (Resend)
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().email().optional(),
+
+  // AI Cost Monitoring
+  AI_DAILY_BUDGET_USD: z.coerce.number().positive().default(50),
+  RESEND_OPS_EMAIL: z.string().email().optional(),
+
+  // Content Moderation (Phase 1)
+  OPENAI_MODERATION_MODEL: z.string().default("omni-moderation-latest"),
+
+  // Cron jobs (Vercel Cron Jobs use Bearer token auth)
+  CRON_SECRET: z.string().optional(),
 
   // App
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
