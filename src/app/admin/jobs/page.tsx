@@ -1,5 +1,9 @@
-import { desc } from "drizzle-orm";
+import { count, desc } from "drizzle-orm";
+import { Activity } from "lucide-react";
+import { getTranslations } from "next-intl/server";
+import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
 import { EmptyState } from "@/components/admin/empty-state";
+import { JobsPagination } from "@/components/admin/jobs/jobs-pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,12 +14,18 @@ import { analyticsQueue, scheduleQueue } from "@/lib/queue/client";
 import { failedJobs } from "@/lib/schema";
 import type { Queue, Job } from "bullmq";
 
-async function getQueueData(queueName: string, queue: Queue) {
-  const counts = await queue.getJobCounts("active", "waiting", "delayed", "failed", "completed");
-  // Get active/failed/delayed jobs
-  const jobs = await queue.getJobs(["active", "waiting", "delayed", "failed"], 0, 19, true);
+const PAGE_SIZE = 10;
 
-  // We need to fetch state for each job as it's not directly in the object sometimes depending on version
+async function getQueueDataInternal(queueName: string, queue: Queue, page: number) {
+  const start = (page - 1) * PAGE_SIZE;
+  const end = page * PAGE_SIZE - 1;
+
+  const counts = await queue.getJobCounts("active", "waiting", "delayed", "failed", "completed");
+  const totalJobs =
+    (counts.active || 0) + (counts.waiting || 0) + (counts.delayed || 0) + (counts.failed || 0);
+
+  const jobs = await queue.getJobs(["active", "waiting", "delayed", "failed"], start, end, true);
+
   const jobsWithState = await Promise.all(
     jobs.map(async (job: Job) => {
       const state = await job.getState();
@@ -30,16 +40,36 @@ async function getQueueData(queueName: string, queue: Queue) {
     })
   );
 
-  return { name: queueName, counts, jobs: jobsWithState };
+  return { name: queueName, counts, jobs: jobsWithState, total: totalJobs };
 }
 
-async function getDeadLetterQueueData() {
+async function getQueueData(queueName: string, queue: Queue, page: number) {
+  const timeout = new Promise<{
+    name: string;
+    counts: Record<string, number>;
+    jobs: never[];
+    total: number;
+    error: string;
+  }>((resolve) =>
+    setTimeout(
+      () => resolve({ name: queueName, counts: {}, jobs: [], total: 0, error: "Timed out" }),
+      5000
+    )
+  );
+  return Promise.race([getQueueDataInternal(queueName, queue, page), timeout]);
+}
+
+async function getDeadLetterQueueData(page: number) {
+  const [dlqResult] = await db.select({ count: count() }).from(failedJobs);
+  const total = dlqResult?.count ?? 0;
+
   const dlqJobs = await db.query.failedJobs.findMany({
     orderBy: [desc(failedJobs.createdAt)],
-    limit: 20,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
   });
 
-  return dlqJobs.map((job) => ({
+  const jobs = dlqJobs.map((job) => ({
     id: job.id,
     name: job.jobName,
     timestamp: job.createdAt.getTime(),
@@ -49,6 +79,8 @@ async function getDeadLetterQueueData() {
     failureCount: job.failureCount,
     lastAttemptAt: job.lastAttemptAt,
   }));
+
+  return { jobs, total };
 }
 
 function QueueStats({ counts }: { counts: any }) {
@@ -98,15 +130,17 @@ function QueueStats({ counts }: { counts: any }) {
   );
 }
 
-async function JobsList({ jobs }: { jobs: any[] }) {
+async function JobsList({
+  jobs,
+  emptyTitle,
+  emptyDescription,
+}: {
+  jobs: any[];
+  emptyTitle: string;
+  emptyDescription: string;
+}) {
   if (jobs.length === 0) {
-    return (
-      <EmptyState
-        variant="default"
-        title="No active jobs"
-        description="All jobs have been processed"
-      />
-    );
+    return <EmptyState variant="default" title={emptyTitle} description={emptyDescription} />;
   }
 
   // Pre-process dates to avoid async in render
@@ -149,7 +183,6 @@ async function JobsList({ jobs }: { jobs: any[] }) {
                 </p>
               )}
             </div>
-            {/* Actions could go here */}
           </div>
         ))}
       </div>
@@ -157,49 +190,101 @@ async function JobsList({ jobs }: { jobs: any[] }) {
   );
 }
 
-export default async function AdminJobsPage() {
+export default async function AdminJobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; tab?: string }>;
+}) {
   await requireAdmin();
+  const t = await getTranslations("admin");
+  const params = await searchParams;
 
-  const scheduleData = await getQueueData("Schedule", scheduleQueue);
-  const analyticsData = await getQueueData("Analytics", analyticsQueue);
-  const dlqData = await getDeadLetterQueueData();
+  const rawPage = parseInt(params.page || "1", 10);
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const tab = params.tab || "schedule";
+
+  const scheduleData = await getQueueData("Schedule", scheduleQueue, page);
+  const analyticsData = await getQueueData("Analytics", analyticsQueue, page);
+  const dlqData = await getDeadLetterQueueData(page);
+
+  const scheduleTotalPages = Math.max(1, Math.ceil(scheduleData.total / PAGE_SIZE));
+  const analyticsTotalPages = Math.max(1, Math.ceil(analyticsData.total / PAGE_SIZE));
+  const dlqTotalPages = Math.max(1, Math.ceil(dlqData.total / PAGE_SIZE));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Job Queues</h1>
-        <p className="text-muted-foreground">Monitor background processing status</p>
-      </div>
-
-      <Tabs defaultValue="schedule" className="space-y-4">
+    <AdminPageWrapper
+      icon={Activity}
+      title={t("pages.jobs.title")}
+      description={t("pages.jobs.description")}
+    >
+      <Tabs defaultValue={tab} value={tab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="schedule">Schedule Queue</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics Queue</TabsTrigger>
-          <TabsTrigger
-            value="dlq"
-            className={dlqData.length > 0 ? "bg-destructive/10 text-destructive" : ""}
-          >
-            Dead Letter Queue ({dlqData.length})
+          <TabsTrigger value="schedule" asChild>
+            <a href="?tab=schedule">Schedule Queue</a>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" asChild>
+            <a href="?tab=analytics">Analytics Queue</a>
+          </TabsTrigger>
+          <TabsTrigger value="dlq" asChild>
+            <a
+              href="?tab=dlq"
+              className={dlqData.total > 0 ? "bg-destructive/10 text-destructive" : ""}
+            >
+              Dead Letter Queue ({dlqData.total})
+            </a>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="schedule" className="space-y-4">
           <QueueStats counts={scheduleData.counts} />
-          <h3 className="text-lg font-medium">Recent Jobs</h3>
-          <JobsList jobs={scheduleData.jobs} />
+          <h3 className="text-lg font-medium">{t("jobs.recent_jobs")}</h3>
+          <JobsList
+            jobs={scheduleData.jobs}
+            emptyTitle={t("jobs.no_active_jobs")}
+            emptyDescription={t("jobs.all_processed")}
+          />
+          <JobsPagination
+            page={page}
+            totalPages={scheduleTotalPages}
+            total={scheduleData.total}
+            pageSize={PAGE_SIZE}
+            preserveTab="schedule"
+          />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
           <QueueStats counts={analyticsData.counts} />
-          <h3 className="text-lg font-medium">Recent Jobs</h3>
-          <JobsList jobs={analyticsData.jobs} />
+          <h3 className="text-lg font-medium">{t("jobs.recent_jobs")}</h3>
+          <JobsList
+            jobs={analyticsData.jobs}
+            emptyTitle={t("jobs.no_active_jobs")}
+            emptyDescription={t("jobs.all_processed")}
+          />
+          <JobsPagination
+            page={page}
+            totalPages={analyticsTotalPages}
+            total={analyticsData.total}
+            pageSize={PAGE_SIZE}
+            preserveTab="analytics"
+          />
         </TabsContent>
 
         <TabsContent value="dlq" className="space-y-4">
-          <h3 className="text-lg font-medium">Permanently Failed Jobs</h3>
-          <JobsList jobs={dlqData} />
+          <h3 className="text-lg font-medium">{t("jobs.permanently_failed")}</h3>
+          <JobsList
+            jobs={dlqData.jobs}
+            emptyTitle={t("jobs.no_active_jobs")}
+            emptyDescription={t("jobs.all_processed")}
+          />
+          <JobsPagination
+            page={page}
+            totalPages={dlqTotalPages}
+            total={dlqData.total}
+            pageSize={PAGE_SIZE}
+            preserveTab="dlq"
+          />
         </TabsContent>
       </Tabs>
-    </div>
+    </AdminPageWrapper>
   );
 }

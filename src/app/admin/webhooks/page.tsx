@@ -1,8 +1,9 @@
 import { desc } from "drizzle-orm";
 import { Webhook } from "lucide-react";
 import { AdminPageWrapper } from "@/components/admin/admin-page-wrapper";
+import { WebhookDeliveryLogTable } from "@/components/admin/webhook-delivery-log-table";
 import { WebhookDLQTable } from "@/components/admin/webhook-dlq-table";
-import { formatDateToLocaleString } from "@/lib/date-utils";
+import { WebhookRecentFailuresTable } from "@/components/admin/webhook-recent-failures-table";
 import { db } from "@/lib/db";
 import { webhookDeadLetterQueue, webhookDeliveryLog, processedWebhookEvents } from "@/lib/schema";
 
@@ -44,70 +45,12 @@ export default async function AdminWebhooksPage() {
 
         <div>
           <h2 className="text-lg font-semibold">Recent Failures (1-4 retries)</h2>
-          <div className="mt-4 rounded-md border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 border-b">
-                  <th className="p-2 text-start">Event ID</th>
-                  <th className="p-2 text-start">Type</th>
-                  <th className="p-2 text-start">Retries</th>
-                  <th className="p-2 text-start">Error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentFailures.map((e) => (
-                  <tr key={e.id} className="border-b">
-                    <td className="p-2 font-mono">{e.stripeEventId}</td>
-                    <td className="p-2">{e.eventType}</td>
-                    <td className="p-2">{e.retryCount}</td>
-                    <td className="text-destructive p-2">{e.errorMessage}</td>
-                  </tr>
-                ))}
-                {recentFailures.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="text-muted-foreground p-4 text-center">
-                      No recent failures
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <WebhookRecentFailuresTable entries={recentFailures} />
         </div>
 
         <div>
           <h2 className="text-lg font-semibold">Delivery Log (Last 100)</h2>
-          <div className="mt-4 rounded-md border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-muted/50 border-b">
-                  <th className="p-2 text-start">Time</th>
-                  <th className="p-2 text-start">Event ID</th>
-                  <th className="p-2 text-start">Type</th>
-                  <th className="p-2 text-start">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deliveryLogs.map((e) => (
-                  <tr key={e.id} className="border-b">
-                    <td className="p-2">{formatDateToLocaleString(e.processedAt)}</td>
-                    <td className="p-2 font-mono">{e.stripeEventId}</td>
-                    <td className="p-2">{e.eventType}</td>
-                    <td className="p-2">
-                      {e.status === "success" ? "✅" : "❌"} {e.status}
-                    </td>
-                  </tr>
-                ))}
-                {deliveryLogs.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="text-muted-foreground p-4 text-center">
-                      No logs
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <WebhookDeliveryLogTable entries={deliveryLogs} />
         </div>
       </div>
     </AdminPageWrapper>

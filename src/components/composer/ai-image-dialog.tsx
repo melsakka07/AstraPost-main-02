@@ -16,6 +16,7 @@ import {
   AlertCircle,
   RotateCcw,
   Download,
+  XIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -751,6 +752,10 @@ export function AiImageDialog({
                   : attachedCount > 0
                     ? `Attach to Tweet (${attachedCount}/4)`
                     : "Attach to Tweet"}
+              </Button>
+              <Button variant="ghost" onClick={() => handleOpenChange(false)}>
+                <XIcon className="mr-2 h-4 w-4" />
+                {t("close")}
               </Button>
             </>
           )}

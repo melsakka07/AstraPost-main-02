@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { cache } from "@/lib/cache";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { invalidateFeatureFlag } from "@/lib/feature-flags";
 import { featureFlags } from "@/lib/schema";
@@ -22,6 +23,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
 
   const rl = await checkAdminRateLimit("write");
   if (rl) return rl;
+
+  const correlationId = getCorrelationId(request);
 
   const { key } = await params;
 
@@ -73,5 +76,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ke
     },
   });
 
-  return Response.json({ data: updated });
+  const res = Response.json({ data: updated });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }

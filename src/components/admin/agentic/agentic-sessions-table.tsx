@@ -61,9 +61,9 @@ export function AgenticSessionsTable({ initialData }: AgenticSessionsTableProps)
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), 8000);
 
-    fetch("/api/admin/agentic/sessions", { signal: abortController.signal })
+    fetch("/api/admin/agentic", { signal: abortController.signal })
       .then((r) => r.json())
-      .then((json) => setSessions(json.data ?? []))
+      .then((json) => setSessions(json.data?.sessions ?? []))
       .catch((err) => {
         if (err instanceof Error && err.name !== "AbortError") {
           setSessions([]);

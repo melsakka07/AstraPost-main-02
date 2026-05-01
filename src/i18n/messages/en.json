@@ -496,7 +496,9 @@
         "cta": "Writing a call-to-action…",
         "rewrite": "Rewriting your tweet…",
         "translate": "Translating tweets…",
-        "hashtags": "Generating hashtags…"
+        "hashtags": "Generating hashtags…",
+        "template": "Generating with template…",
+        "inspire": "Finding inspiration…"
       },
       "template": {
         "select_prompt": "Choose a template to get started",
@@ -1452,8 +1454,13 @@
       "chat": "Chat",
       "voice_profile": "Voice Profile",
       "viral_score": "Viral Score",
-      "agentic_approve": "Agentic Approve"
-    }
+      "agentic_approve": "Agentic Approve",
+      "trends_discovery": "Trends"
+    },
+    "previous": "Previous",
+    "next": "Next",
+    "page_x_of_y": "Page {page} of {total}",
+    "showing_x_to_y": "{from}–{to} of {total}"
   },
   "ai_image": {
     "service_busy": "Service busy — retrying automatically...",
@@ -1464,7 +1471,8 @@
     "rate_limited": "Rate limit exceeded. Please wait a moment.",
     "generation_failed": "Failed to generate image. Please try again.",
     "download_failed": "Failed to download image",
-    "attached": "Image attached to tweet!"
+    "attached": "Image attached to tweet!",
+    "close": "Close"
   },
   "inspiration": {
     "title": "Inspiration",
@@ -2542,5 +2550,218 @@
     "accept_invite": "Accept Invitation",
     "loading_page": "Loading page",
     "loading": "Loading..."
+  },
+  "admin": {
+    "nav": {
+      "overview": "Overview",
+      "dashboard": "Dashboard",
+      "system_health": "System Health",
+      "users": "Users",
+      "subscribers": "Subscribers",
+      "ai_usage": "AI Usage",
+      "teams": "Teams",
+      "impersonation": "Impersonation",
+      "billing": "Billing",
+      "billing_overview": "Billing Overview",
+      "billing_analytics": "Analytics",
+      "billing_promo_codes": "Promo Codes",
+      "product": "Product",
+      "content_performance": "Content Performance",
+      "referrals": "Referrals",
+      "agentic_posts": "Agentic Posts",
+      "affiliate": "Affiliate",
+      "announcement": "Announcement",
+      "roadmap": "Roadmap",
+      "system": "System",
+      "audit_log": "Audit Log",
+      "feature_flags": "Feature Flags",
+      "jobs": "Jobs (BullMQ)",
+      "notifications": "Notifications",
+      "webhooks": "Webhooks",
+      "soft_delete_recovery": "Soft-Delete Recovery",
+      "back_to_app": "Back to App",
+      "expand_sidebar": "Expand sidebar",
+      "collapse_sidebar": "Collapse sidebar",
+      "open_menu": "Open admin menu"
+    },
+    "common": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "create": "Create",
+      "search": "Search",
+      "export": "Export",
+      "refresh": "Refresh",
+      "ban": "Ban",
+      "unban": "Unban",
+      "suspend": "Suspend",
+      "unsuspend": "Unsuspend",
+      "restore": "Restore",
+      "approve": "Approve",
+      "reject": "Reject",
+      "close": "Close",
+      "back": "Back",
+      "confirm": "Confirm",
+      "replay": "Replay",
+      "no_data": "No data available",
+      "loading": "Loading...",
+      "error": "An error occurred",
+      "confirm_delete": "Are you sure you want to delete this?",
+      "search_placeholder": "Search...",
+      "showing": "Showing",
+      "of": "of",
+      "page": "Page",
+      "no_results": "No results found",
+      "previous": "Previous",
+      "next": "Next",
+      "page_x_of_y": "Page {page} of {total}",
+      "showing_x_to_y_of_z": "{from}–{to} of {total}"
+    },
+    "pages": {
+      "dashboard": { "title": "Dashboard", "description": "Platform overview and key metrics" },
+      "health": {
+        "title": "System Health",
+        "description": "Real-time status of all infrastructure services"
+      },
+      "subscribers": {
+        "title": "Subscribers",
+        "description": "Manage users, plans, and account status"
+      },
+      "subscriber_detail": {
+        "title": "Subscriber Detail",
+        "description": "View and manage individual subscriber account"
+      },
+      "ai_usage": { "title": "AI Usage", "description": "Monitor AI generation usage and costs" },
+      "teams": { "title": "Teams", "description": "View and manage team accounts" },
+      "impersonation": {
+        "title": "Impersonation",
+        "description": "Active and past admin impersonation sessions"
+      },
+      "billing_overview": {
+        "title": "Billing Overview",
+        "description": "Subscription revenue, MRR, and plan distribution"
+      },
+      "billing_analytics": {
+        "title": "Billing Analytics",
+        "description": "Cohort retention, MRR trends, and LTV estimates"
+      },
+      "billing_promo_codes": {
+        "title": "Promo Codes",
+        "description": "Create and manage discount codes"
+      },
+      "content": {
+        "title": "Content Performance",
+        "description": "Top posts, engagement metrics, and content analytics"
+      },
+      "referrals": { "title": "Referrals", "description": "Track referral program performance" },
+      "agentic": {
+        "title": "Agentic Posts",
+        "description": "AI-powered autonomous posting sessions"
+      },
+      "affiliate": {
+        "title": "Affiliate",
+        "description": "Affiliate program management and performance"
+      },
+      "announcement": {
+        "title": "Announcement Banner",
+        "description": "Display a global banner at the top of the dashboard for all users"
+      },
+      "roadmap": {
+        "title": "Roadmap",
+        "description": "Manage feature requests and community voting"
+      },
+      "audit": {
+        "title": "Audit Log",
+        "description": "Track all admin actions across the platform"
+      },
+      "feature_flags": {
+        "title": "Feature Flags",
+        "description": "Toggle platform features on and off"
+      },
+      "jobs": { "title": "Job Queues", "description": "Monitor background processing status" },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Send and manage admin notifications"
+      },
+      "webhooks": {
+        "title": "Webhooks",
+        "description": "Stripe webhook status and dead-letter queue"
+      },
+      "soft_delete": {
+        "title": "Soft-Delete Recovery",
+        "description": "Restore deleted users and posts"
+      }
+    },
+    "audit": {
+      "empty": "No audit log entries found",
+      "filter_action": "Filter by action",
+      "filter_admin": "Filter by admin",
+      "all_actions": "All Actions",
+      "all_admins": "All Admins",
+      "export": "Export Logs",
+      "severity_critical": "Critical",
+      "severity_high": "High",
+      "severity_medium": "Medium",
+      "severity_low": "Low"
+    },
+    "subscribers": {
+      "empty": "No subscribers found",
+      "search_placeholder": "Search by name or email...",
+      "filter_plan": "Filter by plan",
+      "all_plans": "All Plans",
+      "sort_by": "Sort by",
+      "sort_newest": "Newest",
+      "sort_oldest": "Oldest",
+      "bulk_actions": "Bulk Actions",
+      "selected_count": "{count} selected",
+      "last_active": "Last active",
+      "never": "Never",
+      "sessions": "Recent sessions",
+      "no_sessions": "No sessions found",
+      "activity": "Recent activity",
+      "no_activity": "No recent activity",
+      "unknown_device": "Unknown device",
+      "expired": "Expired"
+    },
+    "jobs": {
+      "active": "Active",
+      "waiting": "Waiting",
+      "delayed": "Delayed",
+      "failed": "Failed",
+      "completed": "Completed",
+      "no_active_jobs": "No active jobs",
+      "all_processed": "All jobs have been processed",
+      "schedule_queue": "Schedule Queue",
+      "analytics_queue": "Analytics Queue",
+      "dead_letter_queue": "Dead Letter Queue",
+      "recent_jobs": "Recent Jobs",
+      "permanently_failed": "Permanently Failed Jobs",
+      "attempts": "{count} attempts"
+    },
+    "notifications": {
+      "history": "Notification History",
+      "no_notifications": "No notifications yet",
+      "delete_confirm": "Delete this notification?",
+      "cancel_confirm": "Cancel this scheduled notification?",
+      "deleted": "Notification deleted",
+      "cancelled": "Notification cancelled",
+      "delete_failed": "Failed to delete notification",
+      "cancel_failed": "Failed to cancel notification",
+      "create_title": "Create Notification",
+      "title_label": "Title",
+      "body_label": "Body",
+      "target_label": "Target",
+      "target_all": "All Users",
+      "target_segment": "Segment",
+      "target_individual": "Individual Users",
+      "segment_trial": "Trial Users",
+      "segment_inactive": "Inactive (90 days)",
+      "schedule_label": "Schedule (optional)",
+      "send_now": "Send Now",
+      "send_scheduled": "Schedule",
+      "target_count": "{count} recipients",
+      "delivered_read": "Delivered / Read"
+    }
   }
 }

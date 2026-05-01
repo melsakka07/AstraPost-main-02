@@ -24,64 +24,66 @@ import {
   UserPlus,
   Webhook,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { AdminSidebarContent } from "./sidebar-content";
 
-const sidebarSections = [
-  {
-    label: "Overview",
-    items: [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/admin/health", label: "System Health", icon: HeartPulse },
-    ],
-  },
-  {
-    label: "Users",
-    items: [
-      { href: "/admin/subscribers", label: "Subscribers", icon: Users },
-      { href: "/admin/ai-usage", label: "AI Usage", icon: Bot },
-      { href: "/admin/teams", label: "Teams", icon: Users },
-      { href: "/admin/impersonation", label: "Impersonation", icon: ShieldCheck },
-    ],
-  },
-  {
-    label: "Billing",
-    items: [
-      { href: "/admin/billing", label: "Billing Overview", icon: CreditCard },
-      { href: "/admin/billing/analytics", label: "Analytics", icon: TrendingUp },
-      { href: "/admin/billing/promo-codes", label: "Promo Codes", icon: Tag },
-    ],
-  },
-  {
-    label: "Product",
-    items: [
-      { href: "/admin/content", label: "Content Performance", icon: FileText },
-      { href: "/admin/referrals", label: "Referrals", icon: UserPlus },
-      { href: "/admin/agentic", label: "Agentic Posts", icon: Bot },
-      { href: "/admin/affiliate", label: "Affiliate", icon: Gift },
-      { href: "/admin/announcement", label: "Announcement", icon: Megaphone },
-      { href: "/admin/roadmap", label: "Roadmap", icon: Lightbulb },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { href: "/admin/audit", label: "Audit Log", icon: FileText },
-      { href: "/admin/feature-flags", label: "Feature Flags", icon: ToggleLeft },
-      { href: "/admin/jobs", label: "Jobs (BullMQ)", icon: Activity },
-      { href: "/admin/notifications", label: "Notifications", icon: Bell },
-      { href: "/admin/webhooks", label: "Webhooks", icon: Webhook },
-      { href: "/admin/soft-delete-recovery", label: "Soft-Delete Recovery", icon: Trash2 },
-    ],
-  },
-];
-
 export function AdminSidebar() {
+  const t = useTranslations("admin");
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+
+  const sidebarSections = [
+    {
+      label: t("nav.overview"),
+      items: [
+        { href: "/admin", label: t("nav.dashboard"), icon: LayoutDashboard },
+        { href: "/admin/health", label: t("nav.system_health"), icon: HeartPulse },
+      ],
+    },
+    {
+      label: t("nav.users"),
+      items: [
+        { href: "/admin/subscribers", label: t("nav.subscribers"), icon: Users },
+        { href: "/admin/ai-usage", label: t("nav.ai_usage"), icon: Bot },
+        { href: "/admin/teams", label: t("nav.teams"), icon: Users },
+        { href: "/admin/impersonation", label: t("nav.impersonation"), icon: ShieldCheck },
+      ],
+    },
+    {
+      label: t("nav.billing"),
+      items: [
+        { href: "/admin/billing", label: t("nav.billing_overview"), icon: CreditCard },
+        { href: "/admin/billing/analytics", label: t("nav.billing_analytics"), icon: TrendingUp },
+        { href: "/admin/billing/promo-codes", label: t("nav.billing_promo_codes"), icon: Tag },
+      ],
+    },
+    {
+      label: t("nav.product"),
+      items: [
+        { href: "/admin/content", label: t("nav.content_performance"), icon: FileText },
+        { href: "/admin/referrals", label: t("nav.referrals"), icon: UserPlus },
+        { href: "/admin/agentic", label: t("nav.agentic_posts"), icon: Bot },
+        { href: "/admin/affiliate", label: t("nav.affiliate"), icon: Gift },
+        { href: "/admin/announcement", label: t("nav.announcement"), icon: Megaphone },
+        { href: "/admin/roadmap", label: t("nav.roadmap"), icon: Lightbulb },
+      ],
+    },
+    {
+      label: t("nav.system"),
+      items: [
+        { href: "/admin/audit", label: t("nav.audit_log"), icon: FileText },
+        { href: "/admin/feature-flags", label: t("nav.feature_flags"), icon: ToggleLeft },
+        { href: "/admin/jobs", label: t("nav.jobs"), icon: Activity },
+        { href: "/admin/notifications", label: t("nav.notifications"), icon: Bell },
+        { href: "/admin/webhooks", label: t("nav.webhooks"), icon: Webhook },
+        { href: "/admin/soft-delete-recovery", label: t("nav.soft_delete_recovery"), icon: Trash2 },
+      ],
+    },
+  ];
 
   // Initialize from localStorage after hydration
   useEffect(() => {
@@ -117,7 +119,7 @@ export function AdminSidebar() {
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="hover:bg-muted ms-auto hidden rounded-lg p-1 md:flex"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? t("nav.expand_sidebar") : t("nav.collapse_sidebar")}
           >
             <Menu className="h-4 w-4" />
           </button>
@@ -137,7 +139,7 @@ export function AdminSidebar() {
               ) : (
                 <>
                   <LayoutDashboard className="me-2 h-4 w-4" />
-                  Back to App
+                  {t("nav.back_to_app")}
                 </>
               )}
             </Button>
@@ -152,7 +154,7 @@ export function AdminSidebar() {
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="h-11 w-11">
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">Open admin menu</span>
+                <span className="sr-only">{t("nav.open_menu")}</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 max-w-[calc(100vw-2rem)] p-0">
@@ -171,7 +173,7 @@ export function AdminSidebar() {
                 <Link href="/dashboard">
                   <Button variant="outline" className="w-full justify-start">
                     <LayoutDashboard className="me-2 h-4 w-4" />
-                    Back to App
+                    {t("nav.back_to_app")}
                   </Button>
                 </Link>
               </div>

@@ -24,7 +24,7 @@ const listQuerySchema = z.object({
   filter: z
     .enum(["all", "free", "trial", "pro_monthly", "pro_annual", "agency", "banned", "deleted"])
     .default("all"),
-  sort: z.enum(["createdAt", "lastLogin", "plan"]).default("createdAt"),
+  sort: z.enum(["createdAt", "plan"]).default("createdAt"),
   order: z.enum(["asc", "desc"]).default("desc"),
 });
 

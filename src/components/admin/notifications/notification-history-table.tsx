@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { Trash2, Edit2, XCircle } from "lucide-react";
+import { Trash2, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocale } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,8 @@ interface NotificationRow {
   readCount?: number;
 }
 
+const PAGE_SIZE = 10;
+
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-neutral-9/10 text-neutral-11 dark:text-neutral-11",
   scheduled: "bg-info-9/10 text-info-11 dark:text-info-11",
@@ -56,15 +58,24 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
   const locale = useLocale();
   const [notifications, setNotifications] = useState<NotificationRow[]>(initialData ?? []);
   const [loading, setLoading] = useState(initialData === null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
   const pathname = usePathname();
 
   useEffect(() => {
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), 8000);
 
-    fetch("/api/admin/notifications", { signal: abortController.signal })
+    const offset = (page - 1) * PAGE_SIZE;
+    fetch(`/api/admin/notifications?limit=${PAGE_SIZE}&offset=${offset}`, {
+      signal: abortController.signal,
+    })
       .then((r) => r.json())
-      .then((json) => setNotifications(json.data ?? []))
+      .then((json) => {
+        setNotifications(json.data ?? []);
+        setTotal(json.pagination?.total ?? 0);
+      })
       .catch((err) => {
         if (err instanceof Error && err.name !== "AbortError") {
           setNotifications([]);
@@ -79,7 +90,7 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
       abortController.abort();
       clearTimeout(timeoutId);
     };
-  }, [pathname]);
+  }, [pathname, page]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this notification?")) return;
@@ -91,7 +102,11 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
 
       if (!response.ok) throw new Error("Failed to delete");
 
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setNotifications((prev) => {
+        const next = prev.filter((n) => n.id !== id);
+        if (next.length === 0 && page > 1) setPage(page - 1);
+        return next;
+      });
       toast.success("Notification deleted");
     } catch (error) {
       toast.error("Failed to delete notification");
@@ -190,11 +205,6 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {notification.status === "draft" && (
-                          <Button variant="ghost" size="sm" onClick={() => {}} title="Edit draft">
-                            <Edit2 className="h-4 w-4" />
-                          </Button>
-                        )}
                         {notification.status === "scheduled" && (
                           <Button
                             variant="ghost"
@@ -222,6 +232,37 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
             </TableBody>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="text-muted-foreground flex items-center justify-between pt-4 text-sm">
+            <span>
+              Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
+              </Button>
+              <span className="px-2 tabular-nums">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

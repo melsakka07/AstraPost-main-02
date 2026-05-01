@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { ApiError } from "@/lib/api/errors";
 import { checkIpRateLimit } from "@/lib/rate-limiter";
 
 /**
@@ -40,14 +41,9 @@ export async function checkAdminRateLimit(tier: AdminRateLimitTier): Promise<Res
 
   if (result.limited) {
     const retryAfter = result.retryAfter ?? config.windowSec;
-    // eslint-disable-next-line no-restricted-syntax
-    return new Response(JSON.stringify({ error: "Too many requests" }), {
-      status: 429,
-      headers: {
-        "Content-Type": "application/json",
-        "Retry-After": retryAfter.toString(),
-      },
-    });
+    const res = ApiError.tooManyRequests("Too many requests");
+    res.headers.set("Retry-After", retryAfter.toString());
+    return res;
   }
 
   return null;

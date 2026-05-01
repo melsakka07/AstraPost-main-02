@@ -9,29 +9,17 @@ export const metadata = { title: "Soft-Delete Recovery — Admin" };
 export default async function SoftDeleteRecoveryPage() {
   await requireAdmin();
 
-  // Fetch soft-deleted users and posts (no where clause to get both deleted and active)
-  const [allUsers, allPosts] = await Promise.all([
+  // Fetch only soft-deleted users and posts (filter at DB level)
+  const [deletedUsers, deletedPosts] = await Promise.all([
     db.query.user.findMany({
       columns: { id: true, name: true, email: true, deletedAt: true },
+      where: (users, { isNotNull }) => isNotNull(users.deletedAt),
     }),
     db.query.posts.findMany({
       columns: { id: true, status: true, userId: true, deletedAt: true },
+      where: (posts, { isNotNull }) => isNotNull(posts.deletedAt),
     }),
   ]);
-
-  // Filter to only deleted items (where deletedAt is NOT null)
-  const actuallyDeletedUsers = allUsers.filter((u) => u.deletedAt !== null) as Array<{
-    id: string;
-    name: string | null;
-    email: string;
-    deletedAt: Date;
-  }>;
-  const actuallyDeletedPosts = allPosts.filter((p) => p.deletedAt !== null) as Array<{
-    id: string;
-    status: string;
-    userId: string;
-    deletedAt: Date;
-  }>;
 
   return (
     <AdminPageWrapper
@@ -39,7 +27,14 @@ export default async function SoftDeleteRecoveryPage() {
       title="Soft-Delete Recovery"
       description="Restore users and posts that were soft-deleted"
     >
-      <SoftDeleteRecovery deletedUsers={actuallyDeletedUsers} deletedPosts={actuallyDeletedPosts} />
+      <SoftDeleteRecovery
+        deletedUsers={
+          deletedUsers as Array<{ id: string; name: string | null; email: string; deletedAt: Date }>
+        }
+        deletedPosts={
+          deletedPosts as Array<{ id: string; status: string; userId: string; deletedAt: Date }>
+        }
+      />
     </AdminPageWrapper>
   );
 }

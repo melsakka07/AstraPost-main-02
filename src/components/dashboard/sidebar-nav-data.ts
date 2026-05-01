@@ -123,6 +123,9 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     label: "System",
     items: [
+      // ⚠️ ADMIN-ONLY PAGES: Each page referenced here MUST call `requireAdmin()` individually
+      // because they sit under the dashboard layout (which uses getTeamContext(), not requireAdmin()).
+      // Forgetting this leaves the page accessible to non-admin users who know the URL.
       { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true },
       { icon: Settings, label: "Settings", href: "/dashboard/settings" },
     ],

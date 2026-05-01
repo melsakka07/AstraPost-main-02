@@ -193,6 +193,12 @@ export const auth = betterAuth({
     },
   },
 
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "strict",
+    },
+  },
+
   socialProviders: {
     twitter: {
       clientId: process.env.TWITTER_CLIENT_ID!,

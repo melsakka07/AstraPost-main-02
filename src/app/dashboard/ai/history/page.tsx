@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm";
 import { History, RefreshCcw, Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { AiHistoryPagination } from "@/components/dashboard/ai-history-pagination";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,15 @@ const MEDIA_TYPES = new Set(["image", "image_prompt"]);
 
 const AGENTIC_TYPES = new Set(["agentic_pipeline", "agentic_regenerate", "agentic_approve"]);
 
+function safeTypeLabel(t: TFunc, type: string | null): string {
+  if (!type) return "";
+  try {
+    return t(`type.${type}` as any) as string;
+  } catch {
+    return type;
+  }
+}
+
 function getBadgeVariant(type: string): "secondary" | "default" | "outline" {
   if (CONTENT_TYPES.has(type)) return "secondary";
   if (ANALYSIS_TYPES.has(type)) return "default";
@@ -37,17 +47,36 @@ function getBadgeVariant(type: string): "secondary" | "default" | "outline" {
   return "outline";
 }
 
-export default async function AiHistoryPage() {
+const PAGE_SIZE = 25;
+
+export default async function AiHistoryPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ page?: string }>;
+}) {
+  const resolvedParams = searchParams ? await searchParams : undefined;
+  const page = Math.max(1, parseInt(resolvedParams?.page ?? "1", 10) || 1);
+
   const session = await requireAdmin();
   const userLocale =
     session?.user && "language" in session.user ? (session.user as any).language : "en";
   const t = await getTranslations("ai_history");
 
-  const history = await db.query.aiGenerations.findMany({
-    where: eq(aiGenerations.userId, session.user.id),
-    orderBy: [desc(aiGenerations.createdAt)],
-    limit: 50,
-  });
+  const [totalResult, history] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(aiGenerations)
+      .where(eq(aiGenerations.userId, session.user.id)),
+    db.query.aiGenerations.findMany({
+      where: eq(aiGenerations.userId, session.user.id),
+      orderBy: [desc(aiGenerations.createdAt)],
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    }),
+  ]);
+
+  const total = Number(totalResult[0]?.total ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <DashboardPageWrapper
@@ -73,47 +102,55 @@ export default async function AiHistoryPage() {
           </Link>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {history.map((item) => (
-            <Card key={item.id}>
-              <CardHeader className="flex flex-row items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <Badge variant={getBadgeVariant(item.type ?? "")} className="capitalize">
-                    {t(`type.${item.type}` as any) ?? item.type}
-                  </Badge>
-                  <span className="text-muted-foreground text-xs">
-                    {new Date(item.createdAt).toLocaleString(userLocale)}
-                  </span>
-                </div>
-                {item.type !== "template" && (
-                  <Link href={`/dashboard/compose?restore=${item.id}`}>
-                    <Button variant="ghost" size="sm" className="h-8">
-                      <RefreshCcw className="me-2 h-3.5 w-3.5" />
-                      {t("reuse")}
-                    </Button>
-                  </Link>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {item.inputPrompt && (
-                  <div className="space-y-1.5">
-                    <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                      {t("prompt")}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {history.map((item) => (
+              <Card key={item.id}>
+                <CardHeader className="flex flex-row items-center justify-between py-3">
+                  <div className="flex items-center gap-3">
+                    <Badge variant={getBadgeVariant(item.type ?? "")} className="capitalize">
+                      {safeTypeLabel(t, item.type)}
+                    </Badge>
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(item.createdAt).toLocaleString(userLocale)}
                     </span>
-                    <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
-                      {item.inputPrompt}
-                    </p>
                   </div>
-                )}
-                <div className="space-y-2">
-                  <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
-                    {t("output")}
-                  </span>
-                  <RenderOutput item={item} t={t} />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {item.type !== "template" && (
+                    <Link href={`/dashboard/compose?restore=${item.id}`}>
+                      <Button variant="ghost" size="sm" className="h-8">
+                        <RefreshCcw className="me-2 h-3.5 w-3.5" />
+                        {t("reuse")}
+                      </Button>
+                    </Link>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {item.inputPrompt && (
+                    <div className="space-y-1.5">
+                      <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                        {t("prompt")}
+                      </span>
+                      <p className="text-muted-foreground line-clamp-3 text-sm leading-relaxed">
+                        {item.inputPrompt}
+                      </p>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <span className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase">
+                      {t("output")}
+                    </span>
+                    <RenderOutput item={item} t={t} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <AiHistoryPagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={PAGE_SIZE}
+          />
         </div>
       )}
     </DashboardPageWrapper>

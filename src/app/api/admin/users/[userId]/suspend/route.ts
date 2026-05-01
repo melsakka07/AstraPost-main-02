@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { user, session } from "@/lib/schema";
@@ -18,6 +19,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
 
   const rl = await checkAdminRateLimit("destructive");
   if (rl) return rl;
+
+  const correlationId = getCorrelationId(req);
 
   try {
     const body = await req.json().catch(() => null);
@@ -59,7 +62,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
       details: { email: targetUser.email },
     });
 
-    return Response.json({ success: true });
+    const res = Response.json({ success: true });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (err) {
     logger.error("[suspend] Error", { error: err });
     return ApiError.internal("Failed to update suspension status");

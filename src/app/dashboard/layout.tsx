@@ -134,7 +134,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             sessionId={session.session.id}
             impersonatedBy={session.session.impersonatedBy as string}
             targetUserEmail={session.user.email}
-            impersonationStartedAt={(session.session as any).impersonationStartedAt}
+            expiresAt={session.session.expiresAt}
           />
         )}
         <Suspense fallback={<DashboardHeaderSkeleton />}>

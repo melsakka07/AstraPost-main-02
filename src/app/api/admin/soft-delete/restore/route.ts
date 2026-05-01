@@ -1,7 +1,10 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { posts, user } from "@/lib/schema";
@@ -18,6 +21,11 @@ const restoreSchema = z.object({
 export async function POST(req: Request) {
   const admin = await requireAdminApi();
   if (!admin.ok) return admin.response;
+
+  const rl = await checkAdminRateLimit("destructive");
+  if (rl) return rl;
+
+  const correlationId = getCorrelationId(req);
 
   const parsed = restoreSchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
@@ -49,6 +57,14 @@ export async function POST(req: Request) {
       // Restore the user
       await db.update(user).set({ deletedAt: null }).where(eq(user.id, id));
 
+      await logAdminAction({
+        adminId: admin.session.user.id,
+        action: "user_update",
+        targetType: "user",
+        targetId: id,
+        details: { action: "restore", email: deletedUser.email },
+      });
+
       logger.info("soft_delete_restore_success", {
         type: "user",
         id,
@@ -56,12 +72,14 @@ export async function POST(req: Request) {
         adminId: admin.session.user.id,
       });
 
-      return Response.json({
+      const userRes = Response.json({
         success: true,
         message: `User ${deletedUser.name || deletedUser.email} has been restored`,
         type: "user",
         id,
       });
+      userRes.headers.set("x-correlation-id", correlationId);
+      return userRes;
     }
 
     if (type === "post") {
@@ -82,6 +100,14 @@ export async function POST(req: Request) {
       // Restore the post
       await db.update(posts).set({ deletedAt: null }).where(eq(posts.id, id));
 
+      await logAdminAction({
+        adminId: admin.session.user.id,
+        action: "post_update",
+        targetType: "post",
+        targetId: id,
+        details: { action: "restore", userId: deletedPost.userId },
+      });
+
       logger.info("soft_delete_restore_success", {
         type: "post",
         id,
@@ -90,12 +116,14 @@ export async function POST(req: Request) {
         adminId: admin.session.user.id,
       });
 
-      return Response.json({
+      const postRes = Response.json({
         success: true,
         message: `Post ${id} (${deletedPost.status}) has been restored`,
         type: "post",
         id,
       });
+      postRes.headers.set("x-correlation-id", correlationId);
+      return postRes;
     }
 
     return ApiError.badRequest("Invalid restore type");

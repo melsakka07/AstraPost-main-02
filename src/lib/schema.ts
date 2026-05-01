@@ -91,6 +91,9 @@ export const adminAuditActionEnum = pgEnum("admin_audit_action", [
   "subscriber_update",
   "roadmap_update",
   "bulk_operation",
+  "user_update",
+  "post_update",
+  "webhook_replay",
 ]);
 
 /** Status of a background analytics refresh run. */
@@ -215,6 +218,7 @@ export const user = pgTable(
     // Admin fields
     bannedAt: timestamp("banned_at"), // set when admin bans; null = not banned
     deletedAt: timestamp("deleted_at"), // soft-delete; null = active account
+    lastActiveAt: timestamp("last_active_at"), // last user-initiated action (login, post, etc.)
   },
   (table) => [
     index("user_referred_by_idx").on(table.referredBy),
@@ -915,6 +919,9 @@ export const notifications = pgTable(
     message: text("message"),
     isRead: boolean("is_read").default(false),
     metadata: jsonb("metadata").default({}),
+    adminStatus: text("admin_status").default("draft"), // "draft" | "scheduled" | "sent" | "failed"
+    deletedAt: timestamp("deleted_at"), // soft-delete for admin notifications
+    targetType: text("target_type"), // "all" | "segment" | "individual"
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

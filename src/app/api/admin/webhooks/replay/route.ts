@@ -9,7 +9,10 @@ import {
   handleCheckoutExpired,
 } from "@/app/api/billing/webhook/route";
 import { requireAdminApi } from "@/lib/admin";
+import { logAdminAction } from "@/lib/admin/audit";
+import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { webhookDeadLetterQueue, webhookDeliveryLog } from "@/lib/schema";
@@ -50,6 +53,11 @@ async function invokeWebhookHandler(event: Stripe.Event): Promise<void> {
 export async function POST(req: Request) {
   const admin = await requireAdminApi();
   if (!admin.ok) return admin.response;
+
+  const rl = await checkAdminRateLimit("destructive");
+  if (rl) return rl;
+
+  const correlationId = getCorrelationId(req);
 
   const { stripeEventId } = await req.json().catch(() => ({}));
   if (!stripeEventId) return ApiError.badRequest("stripeEventId required");
@@ -116,12 +124,22 @@ export async function POST(req: Request) {
       message: "Webhook successfully replayed and processed through actual handler",
     });
 
-    return Response.json({
+    await logAdminAction({
+      adminId: admin.session.user.id,
+      action: "webhook_replay",
+      targetType: "webhook",
+      targetId: stripeEventId,
+      details: { eventType: event.type, processingTimeMs, resolution: "replayed" },
+    });
+
+    const res = Response.json({
       success: true,
       message: `Webhook ${stripeEventId} replayed and processed successfully`,
       eventType: event.type,
       processingTimeMs,
     });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (error) {
     const processingTimeMs = Date.now();
     const errorMsg = error instanceof Error ? error.message : String(error);

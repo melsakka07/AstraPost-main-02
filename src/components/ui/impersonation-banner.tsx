@@ -8,17 +8,15 @@ interface ImpersonationBannerProps {
   sessionId: string;
   impersonatedBy: string;
   targetUserEmail: string;
-  impersonationStartedAt?: Date | string;
+  expiresAt: Date | string;
 }
 
-// Impersonation sessions expire after 30 minutes
-const IMPERSONATION_TTL_MINUTES = 30;
 const WARNING_THRESHOLD_MINUTES = 5;
 
 export function ImpersonationBanner({
   sessionId,
   targetUserEmail,
-  impersonationStartedAt,
+  expiresAt,
 }: ImpersonationBannerProps) {
   const [stopping, setStopping] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
@@ -26,13 +24,10 @@ export function ImpersonationBanner({
 
   // Monitor session TTL and show warning when nearing expiration
   useEffect(() => {
-    if (!impersonationStartedAt) return;
-
     const checkTimeRemaining = () => {
-      const startTime = new Date(impersonationStartedAt).getTime();
-      const expiresAt = startTime + IMPERSONATION_TTL_MINUTES * 60 * 1000;
+      const expiresTimestamp = new Date(expiresAt).getTime();
       const now = Date.now();
-      const remaining = Math.max(0, expiresAt - now);
+      const remaining = Math.max(0, expiresTimestamp - now);
       const remainingMinutes = remaining / (60 * 1000);
 
       setTimeRemaining(remaining);
@@ -47,7 +42,7 @@ export function ImpersonationBanner({
     checkTimeRemaining();
     const interval = setInterval(checkTimeRemaining, 10000); // Check every 10 seconds
     return () => clearInterval(interval);
-  }, [impersonationStartedAt]);
+  }, [expiresAt]);
 
   const handleStop = async () => {
     setStopping(true);

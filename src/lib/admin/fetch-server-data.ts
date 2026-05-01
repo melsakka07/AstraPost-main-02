@@ -28,6 +28,12 @@ export async function fetchAdminData<T>(
     const cookieHeader = cookieStore.toString();
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL) {
+      logger.warn("admin_fetch_missing_app_url", {
+        message: "NEXT_PUBLIC_APP_URL is not set — admin SSR data fetching will fail",
+      });
+    }
     const url = new URL(`/api/admin${endpoint}`, baseUrl);
 
     if (params) {

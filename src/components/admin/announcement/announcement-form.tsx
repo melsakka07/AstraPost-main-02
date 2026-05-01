@@ -36,13 +36,19 @@ type FormValues = z.infer<typeof schema>;
 
 const TYPE_LABELS = { info: "Info (blue)", warning: "Warning (amber)", success: "Success (green)" };
 
-export function AnnouncementForm() {
+interface AnnouncementFormProps {
+  initialData?: { text: string; type: "info" | "warning" | "success"; enabled: boolean };
+}
+
+export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
   const form = useForm<FormValues, unknown, FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { text: "", type: "info", enabled: false },
+    defaultValues: initialData ?? { text: "", type: "info", enabled: false },
   });
 
+  // Fallback fetch when used without SSR initialData (keeps component self-contained)
   useEffect(() => {
+    if (initialData) return;
     fetch("/api/admin/announcement")
       .then((r) => r.json())
       .then((json) => {
@@ -55,7 +61,7 @@ export function AnnouncementForm() {
         }
       })
       .catch(() => {});
-  }, [form]);
+  }, [form, initialData]);
 
   const onSubmit = async (values: FormValues) => {
     try {

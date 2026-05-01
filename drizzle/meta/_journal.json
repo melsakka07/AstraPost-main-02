@@ -435,6 +435,20 @@
       "when": 1776527014574,
       "tag": "0061_busy_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1777612259685,
+      "tag": "0062_huge_mentallo",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1777616285033,
+      "tag": "0063_left_eternals",
+      "breakpoints": true
     }
   ]
 }

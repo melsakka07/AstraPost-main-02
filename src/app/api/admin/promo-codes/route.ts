@@ -55,6 +55,9 @@ export async function POST(request: Request) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
+  const rl = await checkAdminRateLimit("write");
+  if (rl) return rl;
+
   try {
     const body = await request.json().catch(() => null);
     if (!body) return ApiError.badRequest("Invalid JSON body");

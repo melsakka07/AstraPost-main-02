@@ -496,7 +496,9 @@
         "cta": "كتابة دعوة للإجراء…",
         "rewrite": "إعادة كتابة تغريدتك…",
         "translate": "ترجمة التغريدات…",
-        "hashtags": "توليد وسوم…"
+        "hashtags": "توليد وسوم…",
+        "template": "توليد باستخدام قالب…",
+        "inspire": "البحث عن إلهام…"
       },
       "template": {
         "select_prompt": "اختر قالباً للبدء",
@@ -1452,8 +1454,13 @@
       "chat": "محادثة",
       "voice_profile": "ملف صوتي",
       "viral_score": "درجة الانتشار",
-      "agentic_approve": "موافقة تلقائية"
-    }
+      "agentic_approve": "موافقة تلقائية",
+      "trends_discovery": "اتجاهات"
+    },
+    "previous": "السابق",
+    "next": "التالي",
+    "page_x_of_y": "صفحة {page} من {total}",
+    "showing_x_to_y": "{from}–{to} من {total}"
   },
   "ai_image": {
     "service_busy": "الخدمة مشغولة — جاري إعادة المحاولة تلقائياً...",
@@ -1464,7 +1471,8 @@
     "rate_limited": "تم تجاوز الحد الأقصى للمعدل. يرجى الانتظار لحظة.",
     "generation_failed": "فشل توليد الصورة. يرجى المحاولة مرة أخرى.",
     "download_failed": "فشل تنزيل الصورة",
-    "attached": "تم إرفاق الصورة بالتغريدة!"
+    "attached": "تم إرفاق الصورة بالتغريدة!",
+    "close": "إغلاق"
   },
   "inspiration": {
     "title": "الإلهام",
@@ -2542,5 +2550,212 @@
     "accept_invite": "قبول الدعوة",
     "loading_page": "جارٍ تحميل الصفحة",
     "loading": "جارٍ التحميل..."
+  },
+  "admin": {
+    "nav": {
+      "overview": "نظرة عامة",
+      "dashboard": "لوحة التحكم",
+      "system_health": "حالة النظام",
+      "users": "المستخدمون",
+      "subscribers": "المشتركون",
+      "ai_usage": "استخدام الذكاء الاصطناعي",
+      "teams": "الفرق",
+      "impersonation": "انتحال الهوية",
+      "billing": "الفواتير",
+      "billing_overview": "نظرة عامة على الفواتير",
+      "billing_analytics": "التحليلات",
+      "billing_promo_codes": "أكواد الخصم",
+      "product": "المنتج",
+      "content_performance": "أداء المحتوى",
+      "referrals": "الإحالات",
+      "agentic_posts": "المنشورات الذكية",
+      "affiliate": "التسويق بالعمولة",
+      "announcement": "الإعلانات",
+      "roadmap": "خريطة الطريق",
+      "system": "النظام",
+      "audit_log": "سجل التدقيق",
+      "feature_flags": "إشارات الميزات",
+      "jobs": "الوظائف (BullMQ)",
+      "notifications": "الإشعارات",
+      "webhooks": "Webhooks",
+      "soft_delete_recovery": "استعادة المحذوفات",
+      "back_to_app": "العودة للتطبيق",
+      "expand_sidebar": "توسيع الشريط الجانبي",
+      "collapse_sidebar": "طي الشريط الجانبي",
+      "open_menu": "فتح قائمة الإدارة"
+    },
+    "common": {
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "delete": "حذف",
+      "edit": "تعديل",
+      "create": "إنشاء",
+      "search": "بحث",
+      "export": "تصدير",
+      "refresh": "تحديث",
+      "ban": "حظر",
+      "unban": "إلغاء الحظر",
+      "suspend": "تعليق",
+      "unsuspend": "إلغاء التعليق",
+      "restore": "استعادة",
+      "approve": "موافقة",
+      "reject": "رفض",
+      "close": "إغلاق",
+      "back": "رجوع",
+      "confirm": "تأكيد",
+      "replay": "إعادة تشغيل",
+      "no_data": "لا توجد بيانات",
+      "loading": "جارٍ التحميل...",
+      "error": "حدث خطأ",
+      "confirm_delete": "هل أنت متأكد من الحذف؟",
+      "search_placeholder": "بحث...",
+      "showing": "عرض",
+      "of": "من",
+      "page": "صفحة",
+      "no_results": "لا توجد نتائج",
+      "previous": "السابق",
+      "next": "التالي",
+      "page_x_of_y": "صفحة {page} من {total}",
+      "showing_x_to_y_of_z": "{from}–{to} من {total}"
+    },
+    "pages": {
+      "dashboard": {
+        "title": "لوحة التحكم",
+        "description": "نظرة عامة على المنصة والمؤشرات الرئيسية"
+      },
+      "health": {
+        "title": "حالة النظام",
+        "description": "الحالة الفورية لجميع خدمات البنية التحتية"
+      },
+      "subscribers": {
+        "title": "المشتركون",
+        "description": "إدارة المستخدمين والخطط وحالة الحسابات"
+      },
+      "subscriber_detail": {
+        "title": "تفاصيل المشترك",
+        "description": "عرض وإدارة حساب المشترك الفردي"
+      },
+      "ai_usage": {
+        "title": "استخدام الذكاء الاصطناعي",
+        "description": "مراقبة استخدام وتكاليف توليد الذكاء الاصطناعي"
+      },
+      "teams": { "title": "الفرق", "description": "عرض وإدارة حسابات الفرق" },
+      "impersonation": {
+        "title": "انتحال الهوية",
+        "description": "جلسات انتحال الهوية النشطة والسابقة"
+      },
+      "billing_overview": {
+        "title": "نظرة عامة على الفواتير",
+        "description": "إيرادات الاشتراكات والإيراد الشهري المتكرر وتوزيع الخطط"
+      },
+      "billing_analytics": {
+        "title": "تحليلات الفواتير",
+        "description": "الاحتفاظ بالمجموعات واتجاهات الإيراد الشهري وتقديرات القيمة الدائمة"
+      },
+      "billing_promo_codes": { "title": "أكواد الخصم", "description": "إنشاء وإدارة أكواد الخصم" },
+      "content": {
+        "title": "أداء المحتوى",
+        "description": "أفضل المنشورات ومقاييس التفاعل وتحليلات المحتوى"
+      },
+      "referrals": { "title": "الإحالات", "description": "تتبع أداء برنامج الإحالات" },
+      "agentic": {
+        "title": "المنشورات الذكية",
+        "description": "جلسات النشر الذكي المدعوم بالذكاء الاصطناعي"
+      },
+      "affiliate": {
+        "title": "التسويق بالعمولة",
+        "description": "إدارة وأداء برنامج التسويق بالعمولة"
+      },
+      "announcement": {
+        "title": "شريط الإعلانات",
+        "description": "عرض شريط عام أعلى لوحة التحكم لجميع المستخدمين"
+      },
+      "roadmap": {
+        "title": "خريطة الطريق",
+        "description": "إدارة طلبات الميزات والتصويت المجتمعي"
+      },
+      "audit": { "title": "سجل التدقيق", "description": "تتبع جميع إجراءات الإدارة عبر المنصة" },
+      "feature_flags": { "title": "إشارات الميزات", "description": "تشغيل وإيقاف ميزات المنصة" },
+      "jobs": { "title": "طوابير المهام", "description": "مراقبة حالة المعالجة في الخلفية" },
+      "notifications": { "title": "الإشعارات", "description": "إرسال وإدارة إشعارات الإدارة" },
+      "webhooks": {
+        "title": "Webhooks",
+        "description": "حالة Stripe webhooks وقائمة الانتظار الميتة"
+      },
+      "soft_delete": {
+        "title": "استعادة المحذوفات",
+        "description": "استعادة المستخدمين والمنشورات المحذوفة"
+      }
+    },
+    "audit": {
+      "empty": "لا توجد إدخالات في سجل التدقيق",
+      "filter_action": "تصفية حسب الإجراء",
+      "filter_admin": "تصفية حسب المسؤول",
+      "all_actions": "جميع الإجراءات",
+      "all_admins": "جميع المسؤولين",
+      "export": "تصدير السجلات",
+      "severity_critical": "حرج",
+      "severity_high": "عالي",
+      "severity_medium": "متوسط",
+      "severity_low": "منخفض"
+    },
+    "subscribers": {
+      "empty": "لم يتم العثور على مشتركين",
+      "search_placeholder": "بحث بالاسم أو البريد الإلكتروني...",
+      "filter_plan": "تصفية حسب الخطة",
+      "all_plans": "جميع الخطط",
+      "sort_by": "ترتيب حسب",
+      "sort_newest": "الأحدث",
+      "sort_oldest": "الأقدم",
+      "bulk_actions": "إجراءات جماعية",
+      "selected_count": "{count} محدد",
+      "last_active": "آخر نشاط",
+      "never": "أبداً",
+      "sessions": "الجلسات الأخيرة",
+      "no_sessions": "لا توجد جلسات",
+      "activity": "النشاط الأخير",
+      "no_activity": "لا يوجد نشاط حديث",
+      "unknown_device": "جهاز غير معروف",
+      "expired": "منتهية"
+    },
+    "jobs": {
+      "active": "نشط",
+      "waiting": "منتظر",
+      "delayed": "مؤجل",
+      "failed": "فشل",
+      "completed": "مكتمل",
+      "no_active_jobs": "لا توجد مهام نشطة",
+      "all_processed": "تمت معالجة جميع المهام",
+      "schedule_queue": "طابور الجدولة",
+      "analytics_queue": "طابور التحليلات",
+      "dead_letter_queue": "طابور الرسائل الميتة",
+      "recent_jobs": "المهام الأخيرة",
+      "permanently_failed": "مهام فاشلة بشكل دائم",
+      "attempts": "{count} محاولات"
+    },
+    "notifications": {
+      "history": "سجل الإشعارات",
+      "no_notifications": "لا توجد إشعارات بعد",
+      "delete_confirm": "حذف هذا الإشعار؟",
+      "cancel_confirm": "إلغاء هذا الإشعار المجدول؟",
+      "deleted": "تم حذف الإشعار",
+      "cancelled": "تم إلغاء الإشعار",
+      "delete_failed": "فشل حذف الإشعار",
+      "cancel_failed": "فشل إلغاء الإشعار",
+      "create_title": "إنشاء إشعار",
+      "title_label": "العنوان",
+      "body_label": "المحتوى",
+      "target_label": "المستهدف",
+      "target_all": "جميع المستخدمين",
+      "target_segment": "شريحة",
+      "target_individual": "مستخدمين محددين",
+      "segment_trial": "المستخدمون التجريبيون",
+      "segment_inactive": "غير نشط (90 يوماً)",
+      "schedule_label": "جدولة (اختياري)",
+      "send_now": "إرسال الآن",
+      "send_scheduled": "جدولة",
+      "target_count": "{count} مستلم",
+      "delivered_read": "تم التسليم / مقروء"
+    }
   }
 }

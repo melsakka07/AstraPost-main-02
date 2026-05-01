@@ -70,9 +70,13 @@ function StatCard({
 
 interface SubscriberDetailViewProps {
   subscriberId: string;
+  initialSubscriber?: { name: string | null; email: string } | null;
 }
 
-export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps) {
+export function SubscriberDetailView({
+  subscriberId,
+  initialSubscriber,
+}: SubscriberDetailViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [detail, setDetail] = useState<SubscriberDetail | null>(null);
@@ -99,11 +103,51 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
     void fetchDetail();
   }, [fetchDetail, pathname]);
 
-  if (loading) {
+  if (loading && !initialSubscriber) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-24 w-full rounded-xl" />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  if (loading && initialSubscriber) {
+    const headerInitials = (initialSubscriber.name ?? "")
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
+    return (
+      <div className="space-y-6">
+        <Button variant="ghost" size="sm" asChild className="-ml-2">
+          <Link href="/admin/subscribers">
+            <ArrowLeft className="mr-2 h-4 w-4 rtl:scale-x-[-1]" />
+            All subscribers
+          </Link>
+        </Button>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <Avatar className="h-16 w-16 shrink-0">
+                <AvatarImage src={undefined} alt={initialSubscriber.name ?? ""} />
+                <AvatarFallback className="text-lg">{headerInitials}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 space-y-1">
+                <h2 className="text-xl font-bold">{initialSubscriber.name}</h2>
+                <p className="text-muted-foreground text-sm">{initialSubscriber.email}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
@@ -359,46 +403,6 @@ export function SubscriberDetailView({ subscriberId }: SubscriberDetailViewProps
           }))}
         />
       )}
-
-      {/* Recent sessions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Recent sessions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentSessions.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No sessions found</p>
-          ) : (
-            <div className="space-y-2">
-              {recentSessions.map((s) => (
-                <div key={s.id} className="flex items-start gap-3 rounded-md border p-2.5">
-                  <Monitor className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-muted-foreground truncate text-xs">
-                      {s.userAgent ?? "Unknown device"}
-                    </p>
-                    <div className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
-                      <span>
-                        <AtSign className="mr-0.5 inline h-3 w-3" />
-                        {s.ipAddress ?? "—"}
-                      </span>
-                      <span>
-                        <CreditCard className="mr-0.5 inline h-3 w-3" />
-                        {format(new Date(s.createdAt), "d MMM yyyy HH:mm")}
-                      </span>
-                    </div>
-                  </div>
-                  {new Date(s.expiresAt) < new Date() && (
-                    <Badge variant="outline" className="text-muted-foreground shrink-0 text-xs">
-                      Expired
-                    </Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Recent sessions */}
       <Card>

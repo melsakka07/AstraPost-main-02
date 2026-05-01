@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNull, lt, or, type SQL } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
@@ -45,12 +45,10 @@ export async function GET(request: Request) {
   const { limit, offset, status } = parsed.data;
 
   // Build WHERE conditions
-  const conditions: (SQL | undefined)[] = [
-    sql`(${notifications.metadata}->>'deletedAt' IS NULL OR ${notifications.metadata}->>'deletedAt' = 'null')`,
-  ];
+  const conditions: (SQL | undefined)[] = [isNull(notifications.deletedAt)];
 
   if (status) {
-    conditions.push(sql`${notifications.metadata}->>'adminStatus' = ${status}`);
+    conditions.push(eq(notifications.adminStatus, status));
   }
 
   const where = and(...(conditions as Parameters<typeof and>));
@@ -76,11 +74,11 @@ export async function GET(request: Request) {
       id: n.id,
       title: n.title ?? "",
       body: n.message ?? "",
-      targetType: meta.targetType ?? "all",
+      targetType: n.targetType ?? "all",
       targetCount: targetUserIds.length,
       targetSegment: meta.targetSegment,
       targetUserIds,
-      status: meta.adminStatus ?? "draft",
+      status: n.adminStatus ?? "draft",
       sentAt: meta.sentAt,
       deliveredCount: meta.deliveredCount,
       readCount: meta.readCount,
@@ -129,7 +127,10 @@ export async function POST(request: Request) {
   let actualTargetUserIds: string[] = [];
 
   if (targetType === "all") {
-    const allUsers = await db.select({ id: user.id }).from(user);
+    const allUsers = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(and(isNull(user.deletedAt), isNull(user.bannedAt)));
     actualTargetUserIds = allUsers.map((u) => u.id);
   } else if (targetType === "segment") {
     // Support common segments
@@ -138,7 +139,12 @@ export async function POST(request: Request) {
       const trialUsers = await db
         .select({ id: user.id })
         .from(user)
-        .where(and(eq(user.plan, "pro_monthly"), gte(user.trialEndsAt, now)));
+        .where(
+          and(
+            or(eq(user.plan, "pro_monthly"), eq(user.plan, "pro_annual")),
+            gte(user.trialEndsAt, now)
+          )
+        );
       actualTargetUserIds = trialUsers.map((u) => u.id);
     } else if (targetSegment === "inactive_90d") {
       // inactive_90d: last_login (from session) < 90 days ago
@@ -147,7 +153,7 @@ export async function POST(request: Request) {
       const inactiveUsers = await db
         .select({ id: user.id })
         .from(user)
-        .where(lte(user.updatedAt, ninetyDaysAgo));
+        .where(and(isNull(user.deletedAt), lt(user.lastActiveAt, ninetyDaysAgo)));
       actualTargetUserIds = inactiveUsers.map((u) => u.id);
     } else {
       return ApiError.badRequest(`Unknown segment: ${targetSegment}`);
@@ -159,10 +165,8 @@ export async function POST(request: Request) {
     actualTargetUserIds = targetUserIds;
   }
 
-  // Store admin notification metadata
+  // Store auxiliary metadata (targetUserIds is variable-length, stays in JSON)
   const adminMeta = {
-    adminStatus: isScheduled ? "scheduled" : "sent",
-    targetType,
     targetSegment,
     targetUserIds: actualTargetUserIds,
     createdBy: auth.session.user.id,
@@ -171,9 +175,6 @@ export async function POST(request: Request) {
   };
 
   try {
-    // For scheduled notifications in the future, we'd queue them via BullMQ
-    // For now, we'll store them with status 'scheduled' and a separate cron can process them
-
     // Create notifications for each target user
     const notificationRows = actualTargetUserIds.map((userId) => ({
       id: `${notificationId}-${userId}`,
@@ -182,6 +183,8 @@ export async function POST(request: Request) {
       title,
       message: msgBody,
       isRead: false,
+      adminStatus: isScheduled ? "scheduled" : "sent",
+      targetType,
       metadata: adminMeta,
     }));
 

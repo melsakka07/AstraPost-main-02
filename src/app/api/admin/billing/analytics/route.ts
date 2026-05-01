@@ -1,11 +1,10 @@
-import { eq, and, sql, desc, count, gte, gt, lt, lte, isNull, ne } from "drizzle-orm";
+import { eq, and, sql, desc, count, gte, gt, lt, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { PRICING } from "@/lib/pricing";
 import { planChangeLog, processedWebhookEvents, user } from "@/lib/schema";
 
 const listQuerySchema = z.object({
@@ -164,6 +163,23 @@ export async function GET(request: Request) {
   }
 }
 
+/** Shared price lookup matching billing/overview — uses DISPLAY_PRICE_* env vars. */
+function getPlanMonthlyCents(plan: string | null): number {
+  switch (plan) {
+    case "pro_monthly":
+      return Math.round(parseFloat(process.env.DISPLAY_PRICE_PRO_MONTHLY ?? "0") * 100);
+    case "pro_annual":
+      return Math.round((parseFloat(process.env.DISPLAY_PRICE_PRO_ANNUAL ?? "0") / 12) * 100);
+    case "agency":
+    case "agency_monthly":
+      return Math.round(parseFloat(process.env.DISPLAY_PRICE_AGENCY_MONTHLY ?? "0") * 100);
+    case "agency_annual":
+      return Math.round((parseFloat(process.env.DISPLAY_PRICE_AGENCY_ANNUAL ?? "0") / 12) * 100);
+    default:
+      return 0;
+  }
+}
+
 /**
  * Calculate MRR (Monthly Recurring Revenue) trends for the last 12 months.
  * For each month, sums up the pricing of all active paid plans.
@@ -205,26 +221,16 @@ async function calculateMRRTrends(): Promise<
 
       if (!plan || plan === "free") continue;
 
-      // Get monthly price in cents
-      let monthlyPrice = 0;
+      const monthlyPrice = getPlanMonthlyCents(plan);
+      mrr += userCount * monthlyPrice;
+
       if (plan === "pro_monthly") {
-        monthlyPrice = PRICING.pro_monthly.monthlyPrice;
         proMonthly += userCount * monthlyPrice;
       } else if (plan === "pro_annual") {
-        // Annual users: divide their annual price by 12 for monthly contribution
-        monthlyPrice = (PRICING.pro_annual.annualPrice ?? 0) / 12;
         proAnnual += userCount * monthlyPrice;
-      } else if (plan === "agency" || plan === "agency_monthly" || plan === "agency_annual") {
-        // Handle agency plans (in DB as "agency", but could be extended later)
-        if (plan === "agency" || plan === "agency_monthly") {
-          monthlyPrice = PRICING.agency_monthly.monthlyPrice;
-        } else if (plan === "agency_annual") {
-          monthlyPrice = (PRICING.agency_annual.annualPrice ?? 0) / 12;
-        }
+      } else {
         agency += userCount * monthlyPrice;
       }
-
-      mrr += userCount * monthlyPrice;
     }
 
     trends.push({
@@ -252,44 +258,50 @@ function calculateLTVEstimates(): Record<
     ltv: number;
   }
 > {
+  const pm = getPlanMonthlyCents("pro_monthly");
+  const pa = getPlanMonthlyCents("pro_annual");
+  const am = getPlanMonthlyCents("agency_monthly");
+  const aa = getPlanMonthlyCents("agency_annual");
+
   return {
     pro_monthly: {
       plan: "Pro Monthly",
-      monthlyPrice: PRICING.pro_monthly.monthlyPrice,
-      avgMonths: 12, // Baseline: 12-month average lifetime
-      ltv: Math.round(PRICING.pro_monthly.monthlyPrice * 12),
+      monthlyPrice: pm,
+      avgMonths: 12,
+      ltv: pm * 12,
     },
     pro_annual: {
       plan: "Pro Annual",
-      monthlyPrice: (PRICING.pro_annual.annualPrice ?? 0) / 12,
+      monthlyPrice: pa,
       avgMonths: 12,
-      ltv: PRICING.pro_annual.annualPrice ?? 0, // Full annual price
+      ltv: pa * 12,
     },
     agency_monthly: {
       plan: "Agency Monthly",
-      monthlyPrice: PRICING.agency_monthly.monthlyPrice,
-      avgMonths: 18, // Longer average lifetime for agency plans
-      ltv: Math.round(PRICING.agency_monthly.monthlyPrice * 18),
+      monthlyPrice: am,
+      avgMonths: 18,
+      ltv: am * 18,
     },
     agency_annual: {
       plan: "Agency Annual",
-      monthlyPrice: (PRICING.agency_annual.annualPrice ?? 0) / 12,
+      monthlyPrice: aa,
       avgMonths: 18,
-      ltv: Math.round((PRICING.agency_annual.annualPrice ?? 0) * 1.5), // 1.5 years
+      ltv: aa * 18,
     },
   };
 }
 
 /**
  * Calculate cohort retention analysis.
- * Groups users by signup month and tracks what percentage are still on paid plans.
+ * Groups users by signup month and tracks what percentage were on paid plans
+ * at each checkpoint month by inspecting planChangeLog history.
  */
 async function calculateCohortRetention(): Promise<
   Array<{
     cohort: string;
     totalUsers: number;
-    month0: number; // % still on paid at signup month
-    month1: number; // % still on paid in month 1 after
+    month0: number; // % on paid during signup month
+    month1: number; // % on paid in month 1 after
     month2: number;
     month3: number;
     month6: number;
@@ -322,7 +334,6 @@ async function calculateCohortRetention(): Promise<
     const cohortMonth = cohortDate.toISOString().substring(0, 7); // YYYY-MM
     const totalUsers = Number(cohort.totalCount);
 
-    // For this cohort, count how many are on paid plans at various months
     const checkPoints = [0, 1, 2, 3, 6];
     const retentionByMonth: Record<number, number> = {};
 
@@ -330,6 +341,9 @@ async function calculateCohortRetention(): Promise<
       const checkDate = new Date(cohortDate);
       checkDate.setMonth(checkDate.getMonth() + monthOffset);
 
+      // Determine each user's plan at the checkpoint date by finding their
+      // latest planChangeLog entry on or before that date. A user is "paid"
+      // at the checkpoint if that entry's newPlan is not "free" or null.
       const paidUsersAtMonth = await db
         .select({ count: count() })
         .from(user)
@@ -337,8 +351,13 @@ async function calculateCohortRetention(): Promise<
           and(
             sql`DATE_TRUNC('month', ${user.createdAt})::text = ${cohort.cohortMonth}`,
             isNull(user.deletedAt),
-            ne(user.plan, "free"),
-            lte(user.createdAt, checkDate)
+            sql`(
+              SELECT pcl.new_plan FROM ${planChangeLog} pcl
+              WHERE pcl.user_id = ${user.id}
+              AND pcl.created_at <= ${checkDate.toISOString()}::timestamp
+              ORDER BY pcl.created_at DESC
+              LIMIT 1
+            ) NOT IN ('free', NULL)`
           )
         );
 

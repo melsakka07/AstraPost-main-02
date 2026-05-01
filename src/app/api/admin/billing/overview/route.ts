@@ -95,8 +95,11 @@ export async function GET() {
       planBreakdown[row.plan] = { count: cnt, mrrCents: totalCents };
     }
 
-    // ── Trial-to-paid conversion rate ─────────────────────────────────────────
-    // Simple: active / (active + trialing) across all time
+    // ── Paid subscription ratio ──────────────────────────────────────────────
+    // Ratio of active (paid) subscriptions relative to all non-cancelled
+    // subscriptions (active + trialing). This is a rough proxy that does NOT
+    // distinguish direct signups from trial conversions — treat as a directional
+    // indicator, not a precise trial-to-paid measurement.
     const totalActiveCount = activeRows.reduce((sum, r) => sum + Number(r.total), 0);
     const totalTrialCount = Number(trialRows[0]?.total ?? 0);
     const conversionRate =

@@ -9,6 +9,7 @@ function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimi
     <AvatarPrimitive.Root
       data-slot="avatar"
       className={cn("relative flex size-8 shrink-0 overflow-hidden rounded-full", className)}
+      suppressHydrationWarning
       {...props}
     />
   );

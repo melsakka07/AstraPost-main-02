@@ -337,17 +337,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Handle plan change logging if plan is being updated
     const updates: Record<string, unknown> = { ...parsed.data };
-    if (parsed.data.plan !== undefined && parsed.data.plan !== existing.plan) {
-      await db.insert(planChangeLog).values({
-        id: crypto.randomUUID(),
-        userId: id,
-        oldPlan: existing.plan,
-        newPlan: parsed.data.plan,
-        reason: "admin",
-      });
-    }
-
-    await db.update(user).set(updates).where(eq(user.id, id));
+    await db.transaction(async (tx) => {
+      if (parsed.data.plan !== undefined && parsed.data.plan !== existing.plan) {
+        await tx.insert(planChangeLog).values({
+          id: crypto.randomUUID(),
+          userId: id,
+          oldPlan: existing.plan,
+          newPlan: parsed.data.plan,
+          reason: "admin",
+        });
+      }
+      await tx.update(user).set(updates).where(eq(user.id, id));
+    });
 
     const [updated] = await db.select().from(user).where(eq(user.id, id)).limit(1);
 

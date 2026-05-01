@@ -1,4 +1,4 @@
-import { and, count, eq, gte, sql } from "drizzle-orm";
+import { and, count, eq, gte, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
@@ -51,7 +51,7 @@ async function getStats() {
       and(
         eq(notifications.type, "admin"),
         gte(notifications.createdAt, startOfMonth),
-        sql`(${notifications.metadata}->>'deletedAt' IS NULL OR ${notifications.metadata}->>'deletedAt' = 'null')`
+        isNull(notifications.deletedAt)
       )
     );
 
@@ -63,8 +63,8 @@ async function getStats() {
     .where(
       and(
         eq(notifications.type, "admin"),
-        sql`${notifications.metadata}->>'adminStatus' = 'sent'`,
-        sql`(${notifications.metadata}->>'deletedAt' IS NULL OR ${notifications.metadata}->>'deletedAt' = 'null')`
+        eq(notifications.adminStatus, "sent"),
+        isNull(notifications.deletedAt)
       )
     );
 
@@ -139,18 +139,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return res;
   }
 
-  // Update metadata
+  // Update metadata (scheduledFor stays in JSON)
   const meta = (notif.metadata as any) ?? {};
-  if (status) {
-    meta.adminStatus = status;
-  }
   if (scheduledFor) {
     meta.scheduledFor = new Date(scheduledFor).toISOString();
   }
 
   await db
     .update(notifications)
-    .set({ metadata: meta })
+    .set({
+      ...(status && { adminStatus: status }),
+      metadata: meta,
+    })
     .where(eq(notifications.id, notificationId));
 
   await logAdminAction({
@@ -161,7 +161,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     details: { status, scheduledFor },
   });
 
-  const res = Response.json({ data: { id: notificationId, ...meta } });
+  const res = Response.json({ data: { id: notificationId, status, ...meta } });
   res.headers.set("x-correlation-id", correlationId);
   return res;
 }
@@ -200,12 +200,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   // Soft delete
   await db
     .update(notifications)
-    .set({
-      metadata: {
-        ...(notif.metadata as any),
-        deletedAt: new Date().toISOString(),
-      },
-    })
+    .set({ deletedAt: new Date() })
     .where(eq(notifications.id, notificationId));
 
   await logAdminAction({

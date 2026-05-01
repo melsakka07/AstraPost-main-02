@@ -1,4 +1,4 @@
-import { count, eq, gte, and, sql } from "drizzle-orm";
+import { count, eq, gte, and, sql, isNull } from "drizzle-orm";
 import { requireAdminApi } from "@/lib/admin";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
@@ -33,11 +33,14 @@ export async function GET() {
       [failedJobs24hRow],
       [successfulJobs24hRow],
     ] = await Promise.all([
-      db.select({ value: count(user.id) }).from(user),
       db
         .select({ value: count(user.id) })
         .from(user)
-        .where(gte(user.createdAt, sevenDaysAgo)),
+        .where(isNull(user.deletedAt)),
+      db
+        .select({ value: count(user.id) })
+        .from(user)
+        .where(and(isNull(user.deletedAt), gte(user.createdAt, sevenDaysAgo))),
       db
         .select({ value: count(posts.id) })
         .from(posts)

@@ -27,7 +27,12 @@ export default async function AdminSubscriberDetailPage({
         { label: subscriberName },
       ]}
     >
-      <SubscriberDetailView subscriberId={id} />
+      <SubscriberDetailView
+        subscriberId={id}
+        {...(subscriber
+          ? { initialSubscriber: { name: subscriber.name, email: subscriber.email } }
+          : {})}
+      />
     </AdminPageWrapper>
   );
 }

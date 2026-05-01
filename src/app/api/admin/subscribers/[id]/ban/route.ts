@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { session, user } from "@/lib/schema";
@@ -21,6 +22,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const rl = await checkAdminRateLimit("destructive");
   if (rl) return rl;
+
+  const correlationId = getCorrelationId(request);
 
   try {
     const { id } = await params;
@@ -71,7 +74,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       details: { email: existing.email, ...(parsed.data.reason && { reason: parsed.data.reason }) },
     });
 
-    return Response.json({ success: true, banned: ban });
+    const res = Response.json({ success: true, banned: ban });
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (err) {
     logger.error("[subscribers/ban] Error", { error: err });
     return ApiError.internal("Failed to update ban status");

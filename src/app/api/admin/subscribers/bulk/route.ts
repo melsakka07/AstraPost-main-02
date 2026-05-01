@@ -4,6 +4,7 @@ import { requireAdminApi } from "@/lib/admin";
 import { logAdminAction } from "@/lib/admin/audit";
 import { checkAdminRateLimit } from "@/lib/admin/rate-limit";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { planChangeLog, session, user } from "@/lib/schema";
@@ -72,6 +73,8 @@ export async function POST(request: Request): Promise<Response> {
   const rl = await checkAdminRateLimit("destructive");
   if (rl) return rl;
 
+  const correlationId = getCorrelationId(request);
+
   try {
     const body = await request.json().catch(() => null);
     if (!body) return ApiError.badRequest("Invalid JSON body");
@@ -128,7 +131,9 @@ export async function POST(request: Request): Promise<Response> {
       logger.error("[BULK_SUBSCRIBERS] Error", { error });
     }
 
-    return Response.json(response);
+    const res = Response.json(response);
+    res.headers.set("x-correlation-id", correlationId);
+    return res;
   } catch (err) {
     logger.error("[BULK_SUBSCRIBERS] Error", { error: err });
     return ApiError.internal("Failed to perform bulk action");

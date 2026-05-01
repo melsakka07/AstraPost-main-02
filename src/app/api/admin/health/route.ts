@@ -241,7 +241,7 @@ export async function GET() {
       .where(and(eq(jobRuns.status, "success"), gte(jobRuns.startedAt, oneDayAgo))),
   ]);
 
-  const httpStatus = status === "ok" ? 200 : status === "degraded" ? 200 : 503;
+  const httpStatus = status === "critical" ? 503 : 200;
 
   return Response.json(
     {
@@ -278,6 +278,9 @@ export async function GET() {
         failed24h: Number(failedJobs24hRow?.value ?? 0),
       },
     },
-    { status: httpStatus }
+    {
+      status: httpStatus,
+      headers: { "X-Health-Status": status },
+    }
   );
 }

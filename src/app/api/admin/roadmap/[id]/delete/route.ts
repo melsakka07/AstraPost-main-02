@@ -25,9 +25,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       return ApiError.notFound("Feedback");
     }
 
-    await db.delete(feedbackVotes).where(eq(feedbackVotes.feedbackId, id));
-
-    await db.delete(feedback).where(eq(feedback.id, id));
+    await db.transaction(async (tx) => {
+      await tx.delete(feedbackVotes).where(eq(feedbackVotes.feedbackId, id));
+      await tx.delete(feedback).where(eq(feedback.id, id));
+    });
 
     logAdminAction({
       adminId: auth.session.user.id,

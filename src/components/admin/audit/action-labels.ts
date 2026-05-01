@@ -21,6 +21,9 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   subscriber_update: "Subscriber Updated",
   roadmap_update: "Roadmap Updated",
   bulk_operation: "Bulk Operation",
+  user_update: "User Account Updated",
+  post_update: "Post Updated",
+  webhook_replay: "Webhook Replayed",
 };
 
 export const ACTION_DESCRIPTIONS: Record<AuditAction, string> = {
@@ -41,6 +44,9 @@ export const ACTION_DESCRIPTIONS: Record<AuditAction, string> = {
   subscriber_update: "User account details modified by admin.",
   roadmap_update: "Product roadmap item added or modified.",
   bulk_operation: "Mass action applied to multiple users simultaneously.",
+  user_update: "User account details modified by admin (e.g. restore, edit).",
+  post_update: "Post details modified by admin (e.g. restore).",
+  webhook_replay: "Failed Stripe webhook replayed through handler.",
 };
 
 export const ACTION_SEVERITY: Record<AuditAction, ActionSeverity> = {
@@ -61,6 +67,9 @@ export const ACTION_SEVERITY: Record<AuditAction, ActionSeverity> = {
   subscriber_update: "medium",
   roadmap_update: "low",
   bulk_operation: "high",
+  user_update: "medium",
+  post_update: "medium",
+  webhook_replay: "high",
 };
 
 /** Returns Tailwind badge classes for an action's severity level */
