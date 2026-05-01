@@ -1,5 +1,3 @@
-import "server-only";
-
 import { redactPII } from "@/lib/ai/pii";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 

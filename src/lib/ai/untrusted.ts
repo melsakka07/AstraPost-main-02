@@ -1,5 +1,3 @@
-import "server-only";
-
 /**
  * Prompt-injection defence: shared untrusted-content wrapper and jailbreak guard.
  *
