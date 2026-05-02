@@ -18,10 +18,9 @@ import {
 import { recordAiUsage } from "@/lib/services/ai-quota";
 
 // NOTE: A web-search-capable model produces significantly better results here.
-// Configure OPENROUTER_MODEL_TRENDS to something like:
-//   perplexity/llama-3.1-sonar-large-128k-online
-// which has real-time internet access. Without it, the model uses training data
-// which may not reflect current trends.
+// Configure OPENROUTER_MODEL_TRENDS to a model with online access via OpenRouter
+// (e.g. perplexity/sonar or perplexity/sonar-pro).
+// Without it, the fallback chain uses training data which may not reflect current trends.
 const TRENDS_CACHE_TTL_SECONDS = 1800; // 30 minutes
 
 function buildTrendsPrompt(category: TrendCategory, language: string): string {
