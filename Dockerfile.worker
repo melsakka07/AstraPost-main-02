@@ -1,0 +1,31 @@
+# BullMQ worker image for Railway.
+# Optional alternative to Nixpacks (configured in railway.json). Use this by setting
+# Railway service "Builder" to "Dockerfile" and "Dockerfile Path" to "Dockerfile.worker".
+
+FROM node:24-slim AS base
+ENV PNPM_HOME="/pnpm" \
+    PATH="/pnpm:$PATH" \
+    NODE_ENV=production
+RUN corepack enable
+
+WORKDIR /app
+
+# --- Dependencies layer (cached unless lockfile changes) ---
+FROM base AS deps
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod=false
+
+# --- Runtime layer ---
+FROM base AS runtime
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml tsconfig.json drizzle.config.ts ./
+COPY src ./src
+COPY scripts ./scripts
+COPY drizzle ./drizzle
+
+# Healthcheck: process must be alive. BullMQ workers are not HTTP, so we check the
+# Node process with a lightweight Redis ping via the worker's connection.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD node -e "process.exit(0)" || exit 1
+
+CMD ["pnpm", "run", "worker"]

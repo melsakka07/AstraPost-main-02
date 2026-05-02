@@ -1,0 +1,44 @@
+node_modules
+.next
+.turbo
+.vercel
+.git
+.github
+.claude
+.vscode
+.idea
+
+# Build artifacts
+*.tsbuildinfo
+coverage
+playwright-report
+test-results
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+env.example
+
+# Tests not needed in worker runtime
+tests
+**/*.test.ts
+**/*.spec.ts
+vitest.config.ts
+playwright.config.ts
+
+# Docs and assets unrelated to the worker
+docs
+content
+public
+*.md
+!README.md
+*.png
+*.jpg
+*.jpeg
+*.gif
+repomix-output.xml
+
+# Misc
+docker-compose.yml
+.DS_Store
