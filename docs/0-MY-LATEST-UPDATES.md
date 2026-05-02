@@ -1,5 +1,48 @@
 # Latest Updates
 
+## 2026-05-02: X account cleanup — diagnostic script + auto-deactivation safety net
+
+**Summary:** Railway worker had recurring `x_token_refresh_failed` and `x_tier_refresh_account_error` warnings from 3 X accounts with expired OAuth tokens. Created a diagnostic script to identify broken accounts and added auto-deactivation to the tier refresh processor so dead accounts don't retry forever.
+
+### Design: Two-layer token failure protection
+
+When a user schedules a post but their X token dies before publish time, the system catches it at two layers — whichever fires first:
+
+| Layer                                | Trigger                                                   | Mechanism                                                                                   |
+| ------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| **Daily tier refresh** (4 AM UTC)    | `refreshXTiersProcessor` calls `fetchXSubscriptionTier()` | Token refresh fails → `isActive = false`, account deactivated                               |
+| **Publish attempt** (scheduled time) | `scheduleProcessor` tries to post                         | Auth error (401/403) → `isActive = false`, post → `paused_needs_reconnect`, job delayed 72h |
+
+Both layers preserve the post (never deleted). The user sees `paused_needs_reconnect` in the dashboard with a notification to reconnect their X account.
+
+### Files created
+
+- `scripts/diagnose-x-accounts.ts` — lists all X accounts with token health (OK/EXPIRING_SOON/EXPIRED/NO_REFRESH_TOKEN/INACTIVE). `--fix` flag deactivates accounts with expired or missing refresh tokens.
+- `package.json` — new script entry: `"diagnose:x-accounts"`
+
+### Files modified
+
+- `src/lib/queue/processors.ts` — `refreshXTiersProcessor` error handler now detects auth failures (401, 403, "Session expired") and auto-deactivates the account, matching the pattern already used in `scheduleProcessor` line 477-496.
+
+### Account deactivation flow (end to end)
+
+```
+Token dies → daily tier refresh OR publish attempt hits auth error
+  → isActive = false
+  → post status → paused_needs_reconnect
+  → user reconnects X account via Settings → Connected X Accounts
+  → fresh OAuth tokens stored
+  → user manually retries post from dashboard
+```
+
+### Verification
+
+- `pnpm run check` passes
+- `pnpm diagnose:x-accounts` → 3 accounts deactivated, now show INACTIVE
+- Railway worker logs clean (no more refresh/tier errors)
+
+---
+
 ## 2026-05-02: Vercel migration gap closed + orphan migration removed
 
 **Summary:** X OAuth was failing in production with `column "user.last_active_at" does not exist`. Root cause: `vercel.json` pointed Vercel at `pnpm run build:ci` which was just `next build` — no migrate step. Schema changes 0062–0065 (`last_active_at`, `posts.deleted_at`, `user_ai_counters`, `moderation_flag`, three `admin_audit_action` enum values) had been committed for weeks but never reached the production DB.

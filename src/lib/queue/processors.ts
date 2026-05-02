@@ -745,8 +745,18 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
         }
       } catch (err) {
         const code = (err as any)?.code;
-        if (code === 401) {
+        const message = err instanceof Error ? err.message : String(err);
+        const isAuthError = code === 401 || code === 403 || message.includes("Session expired");
+
+        if (isAuthError) {
           logger.warn("x_tier_refresh_account_auth_error", {
+            accountId: account.id,
+            xUsername: account.xUsername,
+          });
+
+          await db.update(xAccounts).set({ isActive: false }).where(eq(xAccounts.id, account.id));
+
+          logger.warn("x_tier_refresh_account_deactivated", {
             accountId: account.id,
             xUsername: account.xUsername,
           });
@@ -755,7 +765,7 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
           logger.error("x_tier_refresh_account_error", {
             accountId: account.id,
             xUsername: account.xUsername,
-            error: err instanceof Error ? err.message : "Unknown",
+            error: message,
           });
           errors++;
         }

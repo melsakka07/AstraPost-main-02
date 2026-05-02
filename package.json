@@ -9,6 +9,7 @@
     "smoke:e2e": "node --require dotenv/config --require ./scripts/server-only-stub.cjs --import tsx scripts/smoke-e2e.ts",
     "smoke:full": "node --require dotenv/config --require ./scripts/server-only-stub.cjs --import tsx scripts/smoke-full.ts",
     "test:twitter-perms": "node --require dotenv/config --require ./scripts/server-only-stub.cjs --import tsx scripts/test-twitter-permissions.ts",
+    "diagnose:x-accounts": "node --require dotenv/config --require ./scripts/server-only-stub.cjs --import tsx scripts/diagnose-x-accounts.ts",
     "esbuild:rebuild": "pnpm rebuild esbuild",
     "build": "pnpm run db:migrate && next build",
     "build:ci": "if [ \"$VERCEL_ENV\" = \"production\" ]; then pnpm run db:migrate; fi && next build",
