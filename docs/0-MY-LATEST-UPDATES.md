@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-05-02: Vercel migration gap closed + orphan migration removed
+
+**Summary:** X OAuth was failing in production with `column "user.last_active_at" does not exist`. Root cause: `vercel.json` pointed Vercel at `pnpm run build:ci` which was just `next build` — no migrate step. Schema changes 0062–0065 (`last_active_at`, `posts.deleted_at`, `user_ai_counters`, `moderation_flag`, three `admin_audit_action` enum values) had been committed for weeks but never reached the production DB.
+
+### Hotfix (production DB)
+
+Manually applied missing migrations through the database console. SQL preserved at `docs/sql-runbooks/2026-05-02-apply-pending-migrations.sql` (verification → migrations → enum ALTERs → smoke test → re-verification).
+
+### Permanent fix
+
+- `package.json` — `build:ci` rewritten with a `VERCEL_ENV=production` shell gate so production deploys auto-run `db:migrate` while preview/CI builds skip it:
+  ```json
+  "build:ci": "if [ \"$VERCEL_ENV\" = \"production\" ]; then pnpm run db:migrate; fi && next build"
+  ```
+- `drizzle/0062_add_posts_deleted_at.sql` deleted — orphan file that was never in `_journal.json` and therefore unreachable by `drizzle-kit migrate`. Column is already in production and captured in `0065_snapshot.json`.
+- `.claude/rules/database.md` — deployment matrix added; new rule against hand-editing the journal or creating un-journaled SQL files.
+- `docs/claude/schema-consistency.md` — rewrote deployment-strategy section, added incident summary, removed stale "manual SQL on every deploy" guidance.
+
+### Verification
+
+- `pnpm run check` passes (lint + typecheck + i18n)
+- Production smoke test: X OAuth now lands on `/dashboard`
+- Step-1 verification query returns all `true` for the 7 schema markers
+
+### Watch on next production deploy
+
+Look for `drizzle-kit migrate` output in the Vercel build log. If migrate fails, the build will fail (intentional) — fix the migration and redeploy.
+
+---
+
 ## 2026-05-02: Phase 1 — Trust & Safety Floor COMPLETE
 
 **Summary:** All 9 Phase 1 items shipped and audited. Prompt-injection defenses deployed across all prompt builders and route handlers. Content moderation wired into all 15 AI generation routes. PII redaction on user-provided and fetched content. `data_collection: deny` on all OpenRouter requests. XSS audit clean (zero `dangerouslySetInnerHTML` in codebase).

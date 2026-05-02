@@ -11,7 +11,7 @@
     "test:twitter-perms": "node --require dotenv/config --require ./scripts/server-only-stub.cjs --import tsx scripts/test-twitter-permissions.ts",
     "esbuild:rebuild": "pnpm rebuild esbuild",
     "build": "pnpm run db:migrate && next build",
-    "build:ci": "next build",
+    "build:ci": "if [ \"$VERCEL_ENV\" = \"production\" ]; then pnpm run db:migrate; fi && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
