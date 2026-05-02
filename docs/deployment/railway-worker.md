@@ -213,6 +213,7 @@ If you need more throughput later, the right move is to shard by `userId` /
 | Duplicate tweets posted                        | Two worker replicas processing the same job. Set `Replicas: 1`.                                                               |
 
 ## 10. Questions
-Quick yes/no: Do I need Railway if, in my web app, I decided to post the tweet now without any scheduling in the future? Yes or no?                                                                                                                                                                                                 
-● Yes. 
-Even "post now" goes through BullMQ — /api/posts always inserts the job into Redis with delay: 0 and returns immediately. The actual call to X happens in the worker (scripts/worker.ts), which Vercel cannot host. No worker = the job sits in Redis and the tweet never publishes.  
+
+Quick yes/no: Do I need Railway if, in my web app, I decided to post the tweet now without any scheduling in the future? Yes or no?  
+● Yes.
+Even "post now" goes through BullMQ — /api/posts always inserts the job into Redis with delay: 0 and returns immediately. The actual call to X happens in the worker (scripts/worker.ts), which Vercel cannot host. No worker = the job sits in Redis and the tweet never publishes.
