@@ -5,9 +5,9 @@
  * AI-powered content adaptation from imported tweets
  */
 
-import { generateText } from "ai";
+import { generateText, generateObject } from "ai";
 import { z } from "zod";
-import { buildInspirePrompts, parseInspireResponse, VERSION } from "@/lib/ai/inspire-prompts";
+import { buildInspirePrompts, VERSION } from "@/lib/ai/inspire-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
@@ -36,6 +36,13 @@ const InspireRequestSchema = z.object({
     .optional(),
   language: LANGUAGE_ENUM.default("ar"),
   userContext: z.string().max(1000).optional(),
+});
+
+const ThreadSchema = z.object({
+  tweets: z
+    .array(z.object({ text: z.string().max(280) }))
+    .min(1)
+    .max(25),
 });
 
 // ============================================================================
@@ -71,32 +78,39 @@ export async function POST(req: Request) {
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
 
-    // Per-request nonce for delimiter hardening (expand_thread only)
-    const nonce = crypto.randomUUID();
-
-    const { systemPrompt, userPrompt, delimiter, redactions } = buildInspirePrompts(
-      action,
-      originalTweet,
-      {
-        ...(tone !== undefined && { tone }),
-        language: userLanguage,
-        ...(userContext !== undefined && { userContext }),
-        ...(threadContext !== undefined && { threadContext }),
-        nonce,
-      }
-    );
+    const { system, messages, redactions } = buildInspirePrompts(action, originalTweet, {
+      ...(tone !== undefined && { tone }),
+      language: userLanguage,
+      ...(userContext !== undefined && { userContext }),
+      ...(threadContext !== undefined && { threadContext }),
+    });
 
     const modelId = process.env.OPENROUTER_MODEL!;
-
     const t0 = performance.now();
-    const { text, usage } = await generateText({
-      model,
-      system: systemPrompt,
-      prompt: userPrompt,
-    });
-    const latencyMs = Math.round(performance.now() - t0);
 
-    const tweets = parseInspireResponse(action, text, delimiter);
+    let tweets: string[];
+    let usage: Awaited<ReturnType<typeof generateText>>["usage"];
+
+    if (action === "expand_thread") {
+      const result = await generateObject({
+        model,
+        system,
+        messages,
+        schema: ThreadSchema,
+      });
+      tweets = result.object.tweets.map((t) => t.text);
+      usage = result.usage;
+    } else {
+      const result = await generateText({
+        model,
+        system,
+        prompt: messages[0]?.content ?? "",
+      });
+      tweets = [result.text.trim()];
+      usage = result.usage;
+    }
+
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Moderation check on generated content
     const modResult = await checkModeration(tweets.join("\n"));
@@ -114,7 +128,7 @@ export async function POST(req: Request) {
       promptVersion: VERSION,
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: `${systemPrompt}\n\n${userPrompt}`,
+      inputPrompt: `${system}\n\n${messages.map((m) => m.content).join("\n\n")}`,
       outputContent: { action, tone, language: userLanguage, tweets },
       language: userLanguage,
     });

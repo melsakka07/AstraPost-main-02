@@ -2,7 +2,10 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject, type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { withRetry } from "@/lib/ai/with-retry";
+import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
+import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -50,6 +53,11 @@ export async function POST(req: Request) {
       where: eq(user.id, ctx.currentTeamId),
       columns: { plan: true },
     });
+
+    // Idempotency check — prevents duplicate analyses for the same client key.
+    const idempotencyKey = req.headers.get("x-idempotency-key") || correlationId;
+    const idemCheck = await checkIdempotency(ctx.currentTeamId, idempotencyKey);
+    if (idemCheck.cached) return idemCheck.response;
 
     const rlResult = await checkRateLimit(ctx.currentTeamId, dbUser?.plan || "free", "ai");
     if (!rlResult.success) return createRateLimitResponse(rlResult);
@@ -102,11 +110,15 @@ export async function POST(req: Request) {
     const modelId = process.env.OPENROUTER_MODEL!;
 
     const t0 = performance.now();
-    const { object, usage } = await generateObject({
-      model,
-      schema: analysisSchema,
-      prompt,
-    });
+    const { object, usage } = await withRetry(() =>
+      withTimeout(
+        generateObject({
+          model,
+          schema: analysisSchema,
+          prompt,
+        })
+      )
+    );
     const latencyMs = Math.round(performance.now() - t0);
 
     // Phase 2: uses new options-object signature
@@ -126,13 +138,21 @@ export async function POST(req: Request) {
       language,
     });
 
-    const res = Response.json({
+    const body = {
       username,
       displayName: twitterData.user.name,
       followerCount: twitterData.user.public_metrics?.followers_count ?? 0,
       tweetCount: twitterData.tweets.length,
       analysis: object,
+    };
+
+    // Cache successful response for idempotent replay.
+    await cacheIdempotentResponse(ctx.currentTeamId, idempotencyKey, 200, JSON.stringify(body), {
+      "x-correlation-id": correlationId,
+      "content-type": "application/json",
     });
+
+    const res = Response.json(body);
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {

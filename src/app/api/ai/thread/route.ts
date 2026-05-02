@@ -3,7 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { getLengthPrompt, getLengthMaxChars, THREAD_MODE_PROMPT } from "@/lib/ai/length-prompts";
-import { wrapUntrusted } from "@/lib/ai/untrusted";
+import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
@@ -158,19 +158,26 @@ export async function POST(req: Request) {
     const delimiterNonce = crypto.randomUUID();
     const threadDelimiter = makeThreadDelimiter(delimiterNonce);
 
-    // ── Build prompt based on mode ────────────────────────────────────────────
-    let prompt: string;
+    // ── Build system + messages based on mode ───────────────────────────────────
+    const systemIntro = `You are an expert social media content writer for X (Twitter).
+${toneGuidance}
+${langInstruction}
+${wrappedVoice}
+
+${JAILBREAK_GUARD}`;
+
+    let system: string;
+    let messages: Array<{ role: "user"; content: string }>;
+    let promptSnapshot: string; // for recordAiUsage logging
 
     if (mode === "single") {
       const lengthGuidance = getLengthPrompt(lengthOption);
       const maxChars = getLengthMaxChars(lengthOption);
 
-      prompt = `You are an expert social media content writer for X (Twitter).
-Write exactly ONE post about the topic below.
-${wrapUntrusted("TOPIC", topic)}${hook ? `${wrapUntrusted("CREATIVE DIRECTION", hook)}(Use the above as inspiration for tone and angle, but adapt freely.)\n` : ""}${toneGuidance}
-${langInstruction}
-${wrappedVoice}
+      system = systemIntro;
 
+      const userContent = `Write exactly ONE post about the topic below.
+${wrapUntrusted("TOPIC", topic)}${hook ? `${wrapUntrusted("CREATIVE DIRECTION", hook)}(Use the above as inspiration for tone and angle, but adapt freely.)\n` : ""}
 ${lengthGuidance}
 
 Requirements:
@@ -178,16 +185,16 @@ Requirements:
 - Count characters carefully — NEVER exceed ${maxChars} characters.
 - Ensure correct grammar and modern style.
 - Make it engaging and optimized for the platform.`;
+
+      messages = [{ role: "user", content: userContent }];
+      promptSnapshot = `${system}\n\n${userContent}`;
     } else {
       // Thread mode (existing behavior)
-      prompt = `You are an expert social media content writer for X (Twitter).
-Write exactly ${tweetCount} tweets about the topic below.
-${wrapUntrusted("TOPIC", topic)}${hook ? `${wrapUntrusted("CREATIVE DIRECTION", hook)}(Use the above as inspiration for the tone and angle of the first tweet, but adapt freely.)\n` : ""}${toneGuidance}
-${langInstruction}
-${wrappedVoice}
+      system = `${systemIntro}
+${THREAD_MODE_PROMPT}`;
 
-Requirements:
-${THREAD_MODE_PROMPT}
+      const userContent = `Write exactly ${tweetCount} tweets about the topic below.
+${wrapUntrusted("TOPIC", topic)}${hook ? `${wrapUntrusted("CREATIVE DIRECTION", hook)}(Use the above as inspiration for the tone and angle of the first tweet, but adapt freely.)\n` : ""}
 
 Format: Output each tweet as plain text. Separate tweets with this exact delimiter on its own line:
 ${threadDelimiter}
@@ -200,6 +207,9 @@ ${threadDelimiter}
 Third tweet content goes here.
 
 Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
+
+      messages = [{ role: "user", content: userContent }];
+      promptSnapshot = `${system}\n\n${userContent}`;
     }
 
     const modelId = process.env.OPENROUTER_MODEL!;
@@ -207,15 +217,12 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
     let fallbackUsed = false;
     const t0 = performance.now();
     try {
-      streamResult = streamText({ model, prompt });
-      // We explicitly await the first chunk or let it throw so we can catch 429s immediately
-      // before starting the ReadableStream. The Vercel AI SDK handles stream initialization
-      // lazily, so we must access the stream to trigger the actual fetch.
+      streamResult = streamText({ model, system, messages });
     } catch (err: any) {
       if (err?.statusCode === 429 && preamble.fallbackModel) {
         logger.warn("ai_primary_model_rate_limited", { fallback: true, userId: session.user.id });
         fallbackUsed = true;
-        streamResult = streamText({ model: preamble.fallbackModel, prompt });
+        streamResult = streamText({ model: preamble.fallbackModel, system, messages });
       } else {
         throw err;
       }
@@ -284,7 +291,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
                 promptVersion: "thread:v1",
                 latencyMs: latency,
                 fallbackUsed,
-                inputPrompt: prompt,
+                inputPrompt: promptSnapshot,
                 outputContent: null,
                 language: userLanguage,
               });
@@ -390,7 +397,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
               promptVersion: "thread:v1",
               latencyMs: latency,
               fallbackUsed,
-              inputPrompt: prompt,
+              inputPrompt: promptSnapshot,
               outputContent: null,
               language: userLanguage,
             });

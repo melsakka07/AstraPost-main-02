@@ -95,10 +95,15 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
 
   let research: ResearchBrief;
   try {
-    const researchPrompt = buildResearchPrompt(topic, language, audienceHint);
+    const { system: researchSystem, messages: researchMessages } = buildResearchPrompt(
+      topic,
+      language,
+      audienceHint
+    );
     const researchResult = await generateText({
       model,
-      prompt: researchPrompt,
+      system: researchSystem,
+      messages: researchMessages,
       maxOutputTokens: 1200,
       abortSignal: AbortSignal.timeout(45_000),
     });
@@ -144,14 +149,20 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
 
   let plan: ContentPlan;
   try {
-    const strategyPrompt = buildStrategyPrompt(research, xSubscriptionTier, language, {
-      tone: preferences?.tone,
-      audience: preferences?.audience,
-      includeImages: preferences?.includeImages,
-    });
+    const { system: strategySystem, messages: strategyMessages } = buildStrategyPrompt(
+      research,
+      xSubscriptionTier,
+      language,
+      {
+        tone: preferences?.tone,
+        audience: preferences?.audience,
+        includeImages: preferences?.includeImages,
+      }
+    );
     const strategyResult = await generateText({
       model,
-      prompt: strategyPrompt,
+      system: strategySystem,
+      messages: strategyMessages,
       maxOutputTokens: 400,
       abortSignal: AbortSignal.timeout(30_000),
     });
@@ -189,10 +200,16 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
 
   let tweets: AgenticTweet[];
   try {
-    const writePrompt = buildWritingPrompt(research, plan, voiceBlock ?? null, language);
+    const { system: writeSystem, messages: writeMessages } = buildWritingPrompt(
+      research,
+      plan,
+      voiceBlock ?? null,
+      language
+    );
     const writeResult = await generateText({
       model,
-      prompt: writePrompt,
+      system: writeSystem,
+      messages: writeMessages,
       maxOutputTokens: 3000,
       abortSignal: AbortSignal.timeout(90_000),
     });
@@ -275,11 +292,16 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
   emit("review", "in_progress");
   log("agentic_review_start");
 
-  const reviewPrompt = buildReviewPrompt(research, tweets, plan);
+  const { system: reviewSystem, messages: reviewMessages } = buildReviewPrompt(
+    research,
+    tweets,
+    plan
+  );
 
   const reviewResult = await generateText({
     model: reviewerModel,
-    prompt: reviewPrompt,
+    system: reviewSystem,
+    messages: reviewMessages,
     maxOutputTokens: 400,
     abortSignal: AbortSignal.timeout(30_000),
   });
@@ -302,12 +324,18 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
       issueCount: review.issues.length,
     });
 
-    const rewritePrompt = buildWritingPrompt(research, plan, voiceBlock ?? null, language);
-    const rewriteUserPrompt = `REVISION REQUEST: The previous draft scored ${review.qualityScore}/10. Fix these issues:\n${review.issues.map((issue: string, i: number) => `${i + 1}. ${issue}`).join("\n")}\n\nRewrite the full thread addressing ALL issues above. Return the same JSON format.`;
+    const { system: rewriteSystem, messages: rewriteMessages } = buildWritingPrompt(
+      research,
+      plan,
+      voiceBlock ?? null,
+      language
+    );
+    const rewriteUserInstruction = `REVISION REQUEST: The previous draft scored ${review.qualityScore}/10. Fix these issues:\n${review.issues.map((issue: string, i: number) => `${i + 1}. ${issue}`).join("\n")}\n\nRewrite the full thread addressing ALL issues above. Return the same JSON format.`;
 
     const rewriteResult = await generateText({
       model, // use writer model for rewrite, not reviewer
-      prompt: rewritePrompt + "\n\n" + rewriteUserPrompt,
+      system: rewriteSystem,
+      messages: [...rewriteMessages, { role: "user" as const, content: rewriteUserInstruction }],
       maxOutputTokens: 3000,
       abortSignal: AbortSignal.timeout(90_000),
     });
@@ -315,10 +343,15 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     tweets = safeJsonParse<AgenticTweet[]>(rewriteResult.text, tweets); // fall back to original on parse failure
 
     // Re-review
-    const reReviewPrompt = buildReviewPrompt(research, tweets, plan);
+    const { system: reReviewSystem, messages: reReviewMessages } = buildReviewPrompt(
+      research,
+      tweets,
+      plan
+    );
     const reReviewResult = await generateText({
       model: reviewerModel,
-      prompt: reReviewPrompt,
+      system: reReviewSystem,
+      messages: reReviewMessages,
       maxOutputTokens: 400,
       abortSignal: AbortSignal.timeout(30_000),
     });

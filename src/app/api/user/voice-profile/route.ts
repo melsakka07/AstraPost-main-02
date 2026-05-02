@@ -4,7 +4,10 @@ import { generateObject, type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { voiceProfileSchema as vpSchema } from "@/lib/ai/voice-profile";
+import { withRetry } from "@/lib/ai/with-retry";
+import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
+import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -37,6 +40,11 @@ export async function POST(req: Request) {
     if (!session) {
       return ApiError.unauthorized();
     }
+
+    // Idempotency check — prevents duplicate voice profile analyses.
+    const idempotencyKey = req.headers.get("x-idempotency-key") || crypto.randomUUID();
+    const idemCheck = await checkIdempotency(session.user.id, idempotencyKey);
+    if (idemCheck.cached) return idemCheck.response;
 
     // Analyzing voice is a Pro feature
     const aiAccess = await checkAiLimitDetailed(session.user.id);
@@ -93,11 +101,15 @@ export async function POST(req: Request) {
     const modelId = process.env.OPENROUTER_MODEL!;
 
     const t0 = performance.now();
-    const { object, usage } = await generateObject({
-      model,
-      schema: voiceProfileSchema,
-      prompt,
-    });
+    const { object, usage } = await withRetry(() =>
+      withTimeout(
+        generateObject({
+          model,
+          schema: voiceProfileSchema,
+          prompt,
+        })
+      )
+    );
     const latencyMs = Math.round(performance.now() - t0);
 
     // Re-validate the AI output against our strict application schema before
@@ -128,6 +140,11 @@ export async function POST(req: Request) {
       inputPrompt: `voice-profile:${tweets.length}-tweets`,
       outputContent: validated.data,
       language: "en",
+    });
+
+    // Cache successful response for idempotent replay.
+    await cacheIdempotentResponse(session.user.id, idempotencyKey, 200, JSON.stringify(object), {
+      "content-type": "application/json",
     });
 
     return Response.json(object);

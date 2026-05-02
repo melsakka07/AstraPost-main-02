@@ -29,14 +29,16 @@ export function buildResearchPrompt(
   topic: string,
   language: string,
   audience = "general audience"
-): string {
-  return `You are a social media research analyst specializing in viral content for the MENA region and global markets.
-
-TASK: Analyze the topic below and identify the most engaging angles for a Twitter/X post.
-${wrapUntrusted("TOPIC", topic)}
-AUDIENCE: ${audience}
+): { system: string; messages: Array<{ role: "user"; content: string }> } {
+  const system = `You are a social media research analyst specializing in viral content for the MENA region and global markets.
 
 ${languageInstruction(language)}
+
+${JAILBREAK_GUARD}`;
+
+  const userMessage = `TASK: Analyze the topic below and identify the most engaging angles for a Twitter/X post.
+${wrapUntrusted("TOPIC", topic)}
+AUDIENCE: ${audience}
 
 RESEARCH FRAMEWORK:
 - Think about what is currently driving engagement on X/Twitter for this topic
@@ -71,9 +73,9 @@ RULES:
 - Include 5–8 hashtags (no spaces, no # prefix needed — the system adds it)
 - List 3–5 key facts or statistics; cite source type if relevant (e.g., "According to recent reports...")
 - The recommendedAngle MUST match the title of the angle with the highest viral score
-- Omit "too_broad" and "broadSuggestions" entirely if the topic is specific enough
+- Omit "too_broad" and "broadSuggestions" entirely if the topic is specific enough`;
 
-${JAILBREAK_GUARD}`;
+  return { system, messages: [{ role: "user", content: userMessage }] };
 }
 
 // ── 5B: Strategy prompt ───────────────────────────────────────────────────────
@@ -89,7 +91,7 @@ export function buildStrategyPrompt(
         includeImages?: boolean | undefined;
       }
     | undefined
-): string {
+): { system: string; messages: Array<{ role: "user"; content: string }> } {
   const canUseLong = canPostLongContent(tier);
   const maxChars = getMaxCharacterLimit(tier);
   const toneHint = preferences?.tone ?? "auto";
@@ -109,9 +111,11 @@ Available formats:
   • Thread (3–10 tweets, each ≤280 chars): for topics requiring more depth
   NOTE: Medium and Long single posts are NOT available on this tier`;
 
-  return `You are an expert social media content strategist who maximizes engagement on X/Twitter.
+  const system = `You are an expert social media content strategist who maximizes engagement on X/Twitter.
 
-TASK: Choose the optimal content format and structure for the following research brief.
+${JAILBREAK_GUARD}`;
+
+  const userMessage = `TASK: Choose the optimal content format and structure for the following research brief.
 
 ${tierBlock}
 ${wrapUntrusted("RESEARCH BRIEF", JSON.stringify(brief, null, 2))}
@@ -150,9 +154,9 @@ RULES:
 - imageSlots: 0-based indices of tweets that should have images; max 2 images per thread; empty array [] if includeImages is false
 - Choose image slots strategically: tweet 0 (hook) and the most data-rich tweet
 - ${canUseLong ? `lengthOption may be "short", "medium", or "long" for single posts` : `lengthOption MUST be "short" — this account cannot use medium or long`}
-- rationale should explain why this format beats alternatives for this specific topic
+- rationale should explain why this format beats alternatives for this specific topic`;
 
-${JAILBREAK_GUARD}`;
+  return { system, messages: [{ role: "user", content: userMessage }] };
 }
 
 // ── 5C: Writing prompt ────────────────────────────────────────────────────────
@@ -162,7 +166,7 @@ export function buildWritingPrompt(
   plan: ContentPlan,
   voiceProfile: string | null,
   language: string
-): string {
+): { system: string; messages: Array<{ role: "user"; content: string }> } {
   const charLimit =
     plan.lengthOption === "long" ? 2000 : plan.lengthOption === "medium" ? 1000 : 280;
   const isThread = plan.format === "thread";
@@ -177,15 +181,17 @@ export function buildWritingPrompt(
 - Maximum ${charLimit} characters total (including hashtags)
 - Open strong — the first sentence determines whether anyone stops scrolling`;
 
-  const voiceBlock = voiceProfile ? wrapUntrusted("VOICE PROFILE", voiceProfile) : "";
+  const voiceBlock = voiceProfile ? `\n${wrapUntrusted("VOICE PROFILE", voiceProfile)}` : "";
 
-  return `You are a world-class social media copywriter who creates content that people actually want to read and share.
-
-TASK: Write the complete content following the strategy below.
-${wrapUntrusted("RESEARCH BRIEF", JSON.stringify(brief, null, 2))}
-${wrapUntrusted("CONTENT PLAN", JSON.stringify(plan, null, 2))}
+  const system = `You are a world-class social media copywriter who creates content that people actually want to read and share.
 ${voiceBlock}
 ${languageInstruction(language)}
+
+${JAILBREAK_GUARD}`;
+
+  const userMessage = `TASK: Write the complete content following the strategy below.
+${wrapUntrusted("RESEARCH BRIEF", JSON.stringify(brief, null, 2))}
+${wrapUntrusted("CONTENT PLAN", JSON.stringify(plan, null, 2))}
 
 ${formatRule}
 
@@ -225,9 +231,9 @@ RULES:
 - hashtags: 2–3 tags maximum per tweet; only include in tweet[0] and tweet[last]; others should be []
 - charCount: character count of text + space + all hashtags combined (with # prefix)
 - hasImage: true ONLY for tweets at indices ${JSON.stringify(plan.imageSlots)}
-- imagePrompt: include ONLY when hasImage is true; omit the field entirely when hasImage is false
+- imagePrompt: include ONLY when hasImage is true; omit the field entirely when hasImage is false`;
 
-${JAILBREAK_GUARD}`;
+  return { system, messages: [{ role: "user", content: userMessage }] };
 }
 
 // ── 5D: Review prompt ─────────────────────────────────────────────────────────
@@ -236,7 +242,7 @@ export function buildReviewPrompt(
   brief: ResearchBrief,
   tweets: AgenticTweet[],
   plan: ContentPlan
-): string {
+): { system: string; messages: Array<{ role: "user"; content: string }> } {
   const charLimit =
     plan.format === "thread"
       ? 280
@@ -252,9 +258,11 @@ export function buildReviewPrompt(
     )
     .join("\n");
 
-  return `You are a senior editor and content quality reviewer for a social media publishing platform.
+  const system = `You are a senior editor and content quality reviewer for a social media publishing platform.
 
-TASK: Review the generated content for quality, accuracy, and compliance before publishing.
+${JAILBREAK_GUARD}`;
+
+  const userMessage = `TASK: Review the generated content for quality, accuracy, and compliance before publishing.
 ${wrapUntrusted("ORIGINAL TOPIC", brief.topic)}
 ${wrapUntrusted("RECOMMENDED ANGLE", brief.recommendedAngle)}
 FORMAT: ${plan.format === "thread" ? `Thread (${plan.tweetCount} tweets)` : `Single post (${plan.lengthOption})`}
@@ -295,7 +303,7 @@ Return ONLY valid JSON. No markdown, no explanation, no preamble.
 RULES:
 - passed: true if qualityScore ≥ 7 and no character limit violations; false otherwise
 - issues: empty array [] if no problems found; be specific and actionable
-- summary: write the summary in the same language as the content
+- summary: write the summary in the same language as the content`;
 
-${JAILBREAK_GUARD}`;
+  return { system, messages: [{ role: "user", content: userMessage }] };
 }

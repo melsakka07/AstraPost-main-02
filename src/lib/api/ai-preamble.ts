@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { type LanguageModel } from "ai";
 import { eq } from "drizzle-orm";
+import { withRetry } from "@/lib/ai/with-retry";
+import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -99,6 +101,16 @@ export type AiPreambleResult = {
     outputContent?: unknown;
     language?: string;
   }) => Promise<void>;
+  /**
+   * Exponential-backoff retry helper (tries=2, baseMs=250).
+   * Re-exported for convenience — routes receive it via preamble.
+   */
+  withRetry: typeof withRetry;
+  /**
+   * Promise timeout helper (default 45 s).
+   * Re-exported for convenience — routes receive it via preamble.
+   */
+  withTimeout: typeof withTimeout;
 };
 
 /**
@@ -208,16 +220,27 @@ export async function aiPreamble(
 
   const openrouter = createOpenRouter({ apiKey: OPENROUTER_API_KEY });
 
+  // B1: Anthropic prompt caching via providerOptions
+  const isAnthropic = OPENROUTER_MODEL.startsWith("anthropic/");
+  const providerOptions: Record<string, unknown> | undefined = isAnthropic
+    ? { openrouter: { cacheControl: { type: "ephemeral" } } }
+    : undefined;
+
+  // T6: OpenRouter native fallback chain (handles 429s automatically)
+  const extraBody: Record<string, unknown> | undefined = OPENROUTER_MODEL_FREE
+    ? { models: [OPENROUTER_MODEL, OPENROUTER_MODEL_FREE], route: "fallback" }
+    : undefined;
+
   // Phase 2: propagate correlation ID via headers and metadata to every OpenRouter request
   const openRouterSettings = {
     provider: { data_collection: "deny" as const },
     headers: { "x-correlation-id": correlationId },
+    ...(providerOptions && { providerOptions }),
+    ...(extraBody && { extraBody }),
   };
 
   const model = openrouter(OPENROUTER_MODEL, openRouterSettings) as unknown as LanguageModel;
-  const fallbackModel = OPENROUTER_MODEL_FREE
-    ? (openrouter(OPENROUTER_MODEL_FREE, openRouterSettings) as unknown as LanguageModel)
-    : null;
+  // fallbackModel removed — OpenRouter handles model switching natively via extraBody.models + route:fallback
 
   // Capture context for telemetry closure
   const modelName = OPENROUTER_MODEL;
@@ -271,10 +294,12 @@ export async function aiPreamble(
     session,
     dbUser: dbUser ?? { plan: null, voiceProfile: null, language: null },
     model,
-    fallbackModel,
+    fallbackModel: null,
     releaseQuota,
     consumed,
     checkModeration,
     recordTelemetry,
+    withRetry,
+    withTimeout,
   };
 }

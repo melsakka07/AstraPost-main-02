@@ -199,6 +199,7 @@ export const user = pgTable(
     trialEndsAt: timestamp("trial_ends_at"),
     onboardingCompleted: boolean("onboarding_completed").default(false),
     voiceProfile: jsonb("voice_profile"),
+    notificationSettings: jsonb("notification_settings"),
     requiresApproval: boolean("requires_approval").default(false), // For Agency plan team workflows
 
     // Referral System

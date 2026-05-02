@@ -6,6 +6,7 @@ import { z } from "zod";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import { formatVoiceProfile, voiceProfileSchema } from "@/lib/ai/voice-profile";
 import { ApiError } from "@/lib/api/errors";
+import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -46,6 +47,31 @@ export async function POST(req: Request) {
     where: eq(user.id, session.user.id),
     columns: { plan: true, language: true, voiceProfile: true },
   });
+
+  // Idempotency check — prevents duplicate stream starts for the same client key.
+  // Chat responses are SSE streams that cannot be cached for replay, so we cache
+  // a "generation started" marker. Duplicate requests receive 409 Conflict.
+  const idempotencyKey = req.headers.get("x-idempotency-key");
+  if (idempotencyKey) {
+    const idemCheck = await checkIdempotency(session.user.id, idempotencyKey);
+    if (idemCheck.cached) {
+      return Response.json(
+        {
+          error: "A generation is already in progress for this key.",
+          code: "GENERATION_IN_PROGRESS",
+        },
+        { status: 409 }
+      );
+    }
+    // Mark generation as in-progress to prevent concurrent starts.
+    await cacheIdempotentResponse(
+      session.user.id,
+      idempotencyKey,
+      200,
+      JSON.stringify({ status: "generation_started" }),
+      {}
+    );
+  }
 
   const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
   if (!rlResult.success) return createRateLimitResponse(rlResult);

@@ -1,4 +1,4 @@
-export const VERSION = "inspire:v1";
+export const VERSION = "inspire:v2";
 
 import { redactPII } from "@/lib/ai/pii";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
@@ -6,9 +6,9 @@ import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 /**
  * Prompt builders for the AI Inspire feature.
  *
- * Each action has its own system-prompt factory that accepts optional tone,
- * language, and user-context parameters. The user prompt is built separately
- * by `buildInspireUserPrompt`.
+ * Each action has its own system-prompt factory. The user prompt is built
+ * separately by `buildInspirePrompts`. Returns `{ system, messages }` for
+ * Anthropic prompt-caching compatibility.
  *
  * PII is redacted from all user-provided content before embedding in prompts
  * to prevent personal data from being sent to third-party AI providers.
@@ -33,18 +33,13 @@ export type InspireTone =
   | "inspirational"
   | "viral";
 
-export interface InspirePrompts {
-  systemPrompt: string;
-  userPrompt: string;
-}
-
 // ============================================================================
 // System Prompt Builders
 // ============================================================================
 
 const ACTION_SYSTEM_PROMPTS: Record<
   InspireAction,
-  (tone?: string, language?: string, userContext?: string, delimiter?: string) => string
+  (tone?: string, language?: string, userContext?: string) => string
 > = {
   rephrase: (
     tone,
@@ -85,8 +80,7 @@ ${JAILBREAK_GUARD}`,
   expand_thread: (
     tone,
     language,
-    userContext,
-    delimiter = "|||"
+    userContext
   ) => `You are helping a user expand a single tweet into an engaging thread.
 
 IMPORTANT: Never plagiarize. Build upon the original idea with substantial new content, perspective, and value.
@@ -101,9 +95,6 @@ Thread structure:
 - Tweet 1: Hook/introduction (builds on original idea)
 - Tweet 2-3: Main content with elaboration
 - Final Tweet: Conclusion or CTA
-
-Return ONLY the thread tweets, one per line, separated by ${delimiter}.
-Example: First tweet hook...${delimiter}Second tweet...${delimiter}Third tweet...
 
 ${JAILBREAK_GUARD}`,
 
@@ -166,15 +157,15 @@ ${JAILBREAK_GUARD}`,
 // ============================================================================
 
 /**
- * Builds the system and user prompts for an inspire action.
+ * Builds the system and user messages for an inspire action.
  *
  * All user-supplied content is PII-redacted and wrapped in untrusted-content
  * delimiters to prevent prompt injection.
  *
  * @param action        - The inspire action to perform
  * @param originalTweet - The source tweet text
- * @param options       - Optional tone, language, userContext, threadContext, and nonce
- * @returns             An object with `systemPrompt`, `userPrompt`, and `delimiter` (expand_thread only)
+ * @param options       - Optional tone, language, userContext, threadContext
+ * @returns             An object with `system`, `messages`, and optional `redactions`
  */
 export function buildInspirePrompts(
   action: InspireAction,
@@ -184,9 +175,8 @@ export function buildInspirePrompts(
     language?: string;
     userContext?: string;
     threadContext?: string[];
-    nonce?: string;
   } = {}
-): InspirePrompts & { delimiter?: string; redactions?: string[] } {
+): { system: string; messages: Array<{ role: "user"; content: string }>; redactions?: string[] } {
   // Redact PII from user-provided content before embedding in prompts
   const { cleaned: cleanTweet, redactions: tweetRedactions } = redactPII(originalTweet);
   const allRedactions = [...tweetRedactions];
@@ -203,45 +193,18 @@ export function buildInspirePrompts(
 
   const { tone, language, userContext } = options;
 
-  // Per-request delimiter for expand_thread to prevent injection via |||
-  const delimiter = options.nonce ? `|||TWEET-${options.nonce}|||` : "|||";
-
   const builder = ACTION_SYSTEM_PROMPTS[action];
-  const systemPrompt = builder(
-    tone,
-    language,
-    userContext,
-    action === "expand_thread" ? delimiter : undefined
-  );
+  const system = builder(tone, language, userContext);
 
   // Wrap user-supplied content in untrusted delimiters for injection defence
-  let userPrompt = wrapUntrusted("SOURCE TWEET", cleanTweet, 5_000);
+  let userContent = wrapUntrusted("SOURCE TWEET", cleanTweet, 5_000);
   if (cleanThreadContext && cleanThreadContext.length > 0) {
-    userPrompt += `\n\nThread context (previous tweets/replies):\n${cleanThreadContext.join("\n\n")}`;
+    userContent += `\n\nThread context (previous tweets/replies):\n${cleanThreadContext.join("\n\n")}`;
   }
 
   return {
-    systemPrompt,
-    userPrompt,
+    system,
+    messages: [{ role: "user", content: userContent }],
     ...(allRedactions.length > 0 && { redactions: allRedactions }),
-    ...(action === "expand_thread" ? { delimiter } : {}),
   };
-}
-
-/**
- * Parses the raw AI text output into an array of tweet strings.
- * For `expand_thread` actions the response uses a delimiter (configurable for per-request nonce).
- */
-export function parseInspireResponse(
-  action: InspireAction,
-  text: string,
-  delimiter = "|||"
-): string[] {
-  if (action === "expand_thread") {
-    return text
-      .split(delimiter)
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-  }
-  return [text.trim()];
 }

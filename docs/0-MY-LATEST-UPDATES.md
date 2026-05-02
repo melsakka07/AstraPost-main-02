@@ -1,5 +1,56 @@
 # Latest Updates
 
+## 2026-05-02: Phase 3 Wave A — Caching, Fallback, Resilience Helpers, System/User Split, streamObject Migration
+
+**Summary:** Phase 3 Wave A complete. 6 of 9 exit criteria fully met, 2 partial (helpers exist, route composition in Wave B), 1 deferred to Wave B. Delivered via 2 parallel agents (ai-specialist + backend-dev), zero merge conflicts.
+
+### Wave A items shipped
+
+| Item    | Description                                                                                                                                                                                                                                                 | Agent         |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| **B1**  | Anthropic prompt caching — `providerOptions.openrouter.cacheControl` when model starts with `anthropic/`                                                                                                                                                    | backend-dev   |
+| **T6**  | OpenRouter native fallback chain — `extraBody.models` + `route:fallback`; `fallbackModel` deprecated                                                                                                                                                        | backend-dev   |
+| **T7**  | `withRetry` helper — exponential backoff, tries=2, baseMs=250                                                                                                                                                                                               | backend-dev   |
+| **T14** | `withTimeout` helper — `AbortSignal.timeout()`, default 45s                                                                                                                                                                                                 | backend-dev   |
+| **T9**  | Idempotency middleware — Redis key `ai:idem:{userId}:{key}`, 5-min TTL                                                                                                                                                                                      | backend-dev   |
+| **P4**  | System/user message split — all 4 agentic + all 5 template + inspire builders return `{ system, messages }`; agentic-pipeline + thread route destructure; chat already compliant                                                                            | ai-specialist |
+| **T15** | streamObject migration — `template-generate` uses `streamObject` + `ThreadSchema`; `inspire/expand_thread` uses `generateObject`; `LEGACY_TWEET_DELIMITER`, `makeTweetDelimiter`, `parseInspireResponse`, `\|\|\|`, `===TWEET===` all removed from codebase | ai-specialist |
+| **T10** | Agentic image parallel — pre-existing `Promise.allSettled` in `agentic-pipeline.ts:228-272`                                                                                                                                                                 | n/a           |
+
+### Files created (3)
+
+- `src/lib/ai/with-retry.ts` — Exponential-backoff retry helper
+- `src/lib/ai/with-timeout.ts` — Promise timeout wrapper
+- `src/lib/api/idempotency.ts` — Redis-based idempotency middleware
+
+### Files modified (10)
+
+- `src/lib/api/ai-preamble.ts` — B1 cacheControl + T6 fallback chain + withRetry/withTimeout exports
+- `src/lib/ai/agentic-prompts.ts` — All 4 builders return `{ system, messages }`
+- `src/lib/ai/template-prompts.ts` — `buildPrompt` returns `{ system, messages }`; removed `LEGACY_TWEET_DELIMITER`/`makeTweetDelimiter`
+- `src/lib/ai/inspire-prompts.ts` — Returns `{ system, messages, redactions? }`; removed `|||`/`parseInspireResponse`; version → `inspire:v2`
+- `src/lib/services/agentic-pipeline.ts` — Destructures `{ system, messages }` at all 4 call sites + rewrite loop
+- `src/app/api/ai/thread/route.ts` — Split into system + messages; added `JAILBREAK_GUARD`
+- `src/app/api/ai/template-generate/route.ts` — `streamText` → `streamObject` + `ThreadSchema`; removed re-exports
+- `src/app/api/ai/inspire/route.ts` — `expand_thread` uses `generateObject`; removed `parseInspireResponse`
+- `.claude/plans/in-my-codebase-please-cosmic-crane-suggestions-claude.md` — Exit criteria updated
+- `docs/0-MY-LATEST-UPDATES.md` — This entry
+
+### Wave B — pending (T5 + T11 + T13)
+
+| Item    | Description                                                                                             | Est. time |
+| ------- | ------------------------------------------------------------------------------------------------------- | --------- |
+| **T5**  | Compose withRetry/withTimeout/idempotency into 4 custom routes (competitor, image, voice-profile, chat) | ~1 hr     |
+| **T11** | Replicate poll cap via Redis `firstPolledAt` (90s max, no schema change)                                | ~30 min   |
+| **T13** | `mode: "json"` on all 12 `generateObject` calls across codebase                                         | ~30 min   |
+
+### Quality Gate (post-Wave A)
+
+`pnpm run check` — PASS (lint 0/0, typecheck clean, i18n 2390 keys)
+`pnpm test` — PASS (28 files, 240 tests)
+
+---
+
 ## 2026-05-02: Phase 2 — Cost Integrity & Observability COMPLETE
 
 **Summary:** All 6 Phase 2 exit criteria shipped. Schema migration adds 7 telemetry columns to `ai_generations` (model, subFeature, costEstimateCents, promptVersion, feedback, latencyMs, fallbackUsed). `recordAiUsage` refactored to options-object pattern with backward-compatible legacy path. `aiPreamble` returns `recordTelemetry` helper capturing correlation ID + model + prompt version. All 20 AI routes updated with full telemetry. New admin dashboards: `/admin/ai-cost` (COGS) and `/admin/ai-metrics` (latency SLO). New `POST /api/ai/feedback` endpoint. Cost-alarm cron overhauled for per-model breakdown.

@@ -11,6 +11,7 @@ import { generateText, type LanguageModel } from "ai";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
 import { ApiError } from "@/lib/api/errors";
+import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
@@ -125,6 +126,11 @@ export async function POST(req: NextRequest) {
     // 3. Auth identity
     const userId = session.user.id;
 
+    // Idempotency check — prevents double-starting predictions for the same client key.
+    const idempotencyKey = req.headers.get("x-idempotency-key") || correlationId;
+    const idemCheck = await checkIdempotency(userId, idempotencyKey);
+    if (idemCheck.cached) return idemCheck.response;
+
     const dedupKey = RequestDedup.generateKey(userId, "ai_image", validationResult.data);
     const cachedResult = await RequestDedup.check<{
       predictionId: string;
@@ -216,6 +222,12 @@ export async function POST(req: NextRequest) {
     // 10. Return prediction ID — client will poll for the result.
     const result = { predictionId, estimatedSeconds: 20 };
     await RequestDedup.cache(dedupKey, result, 60);
+
+    // Cache successful response for idempotent replay.
+    await cacheIdempotentResponse(userId, idempotencyKey, 200, JSON.stringify(result), {
+      "x-correlation-id": correlationId,
+      "content-type": "application/json",
+    });
 
     const res = Response.json(result);
     res.headers.set("x-correlation-id", correlationId);

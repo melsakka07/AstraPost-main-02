@@ -83,6 +83,7 @@ interface PredictionMeta {
   finalPrompt: string;
   aspectRatio: AspectRatio;
   style: ImageStyle | null;
+  firstPolledAt?: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -124,6 +125,29 @@ export async function GET(req: NextRequest) {
 
     // Still running — tell the client to keep polling.
     if (prediction.status === "starting" || prediction.status === "processing") {
+      if (meta.firstPolledAt === undefined) {
+        // First poll for this prediction — record the start time.
+        meta.firstPolledAt = Date.now();
+        await redis.setex(`ai:img:pred:${predictionId}`, 1800, JSON.stringify(meta));
+      } else if (Date.now() - meta.firstPolledAt > 90_000) {
+        // Exceeded 90-second poll cap — abort the prediction to avoid hanging.
+        await redis.del(`ai:img:pred:${predictionId}`);
+        logger.warn("image_poll_timeout", {
+          predictionId,
+          elapsedMs: Date.now() - meta.firstPolledAt,
+        });
+        const res = Response.json(
+          {
+            error: "Image generation timed out. Your credits were not used.",
+            code: "POLL_TIMEOUT",
+            retryable: true,
+          },
+          { status: 422 }
+        );
+        res.headers.set("x-correlation-id", correlationId);
+        return res;
+      }
+
       const res = Response.json({ status: prediction.status });
       res.headers.set("x-correlation-id", correlationId);
       return res;
@@ -161,8 +185,10 @@ export async function GET(req: NextRequest) {
           });
 
           // Cache fallback metadata under the new prediction ID.
+          // Reset firstPolledAt so the fallback gets a fresh 90 s poll window.
+          const { firstPolledAt: _unused, ...metaRest } = meta;
           const fallbackMeta: PredictionMeta = {
-            ...meta,
+            ...metaRest,
             model: "nano-banana" as ImageModel,
           };
           await redis.setex(

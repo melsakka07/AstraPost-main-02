@@ -19,6 +19,17 @@ const inspirationSchema = z.object({
   ),
 });
 
+const SYSTEM_BLOCK = `You are a social media trend analyst.
+Generate 5 trending or evergreen topic ideas for an X (Twitter) content creator.
+
+For each topic, provide:
+1. The Topic (short title)
+2. A "Hook" (engaging first tweet/line) to start a thread.
+
+Constraints:
+- Topics should be distinct.
+- Hooks must be viral-worthy (curiosity gaps, strong statements).`;
+
 export async function GET(req: Request) {
   try {
     const correlationId = getCorrelationId(req);
@@ -50,27 +61,19 @@ export async function GET(req: Request) {
 
     const langInstruction = getArabicInstructions(userLanguage);
 
-    const prompt = `
-      You are a social media trend analyst.
-      Generate 5 trending or evergreen topic ideas for a "${niche}" niche content creator on X (Twitter).
-      ${langInstruction}
-
-      For each topic, provide:
-      1. The Topic (short title)
-      2. A "Hook" (engaging first tweet/line) to start a thread.
-
-      Constraints:
-      - Topics should be distinct.
-      - Hooks must be viral-worthy (curiosity gaps, strong statements).
-    `;
-
     const modelId = process.env.OPENROUTER_MODEL!;
 
     const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: inspirationSchema,
-      prompt,
+      system: `${SYSTEM_BLOCK}\n${langInstruction}`,
+      messages: [
+        {
+          role: "user" as const,
+          content: `Generate topic ideas for: ${niche}`,
+        },
+      ],
     });
     const latencyMs = Math.round(performance.now() - t0);
 
@@ -83,7 +86,6 @@ export async function GET(req: Request) {
     }
 
     // Record AI usage (only for fresh generations, not cached responses)
-    // Phase 2: uses new options-object signature
     await recordAiUsage({
       userId: session.user.id,
       type: "inspiration",
@@ -104,8 +106,11 @@ export async function GET(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
     logger.error("inspiration_generation_failed", {
       error: error instanceof Error ? error.message : String(error),
+      ...(cause instanceof Error && { cause: cause.message }),
+      ...(error instanceof Error && { stack: error.stack }),
     });
     return ApiError.internal("Failed to generate inspiration");
   }

@@ -1,23 +1,12 @@
-import { streamText } from "ai";
+import { streamObject } from "ai";
 import { z } from "zod";
-import {
-  getTemplatePrompt,
-  makeTweetDelimiter,
-  VERSION,
-  type OutputFormat,
-} from "@/lib/ai/template-prompts";
+import { getTemplatePrompt, VERSION, type OutputFormat } from "@/lib/ai/template-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
-
-// Re-export for frontend backwards compatibility
-export {
-  LEGACY_TWEET_DELIMITER as TWEET_DELIMITER,
-  makeTweetDelimiter,
-} from "@/lib/ai/template-prompts";
 
 const OUTPUT_FORMAT_ENUM = z.enum(["single", "thread-short", "thread-long"]);
 
@@ -27,6 +16,13 @@ const requestSchema = z.object({
   tone: TONE_ENUM.optional(),
   language: LANGUAGE_ENUM.optional().default("en"),
   outputFormat: OUTPUT_FORMAT_ENUM.optional(),
+});
+
+const ThreadSchema = z.object({
+  tweets: z
+    .array(z.object({ text: z.string().max(280) }))
+    .min(1)
+    .max(25),
 });
 
 export async function POST(req: Request) {
@@ -56,54 +52,56 @@ export async function POST(req: Request) {
     const tone = parsed.data.tone ?? config.defaultTone;
     const format: OutputFormat = parsed.data.outputFormat ?? config.defaultFormat;
 
-    // Per-request nonce for delimiter hardening
-    const nonce = crypto.randomUUID();
-    const delimiter = makeTweetDelimiter(nonce);
-    const prompt = config.buildPrompt(topic, tone, userLanguage, format, nonce);
+    const { system, messages } = config.buildPrompt(topic, tone, userLanguage, format);
 
     const modelId = process.env.OPENROUTER_MODEL!;
     const t0 = performance.now();
-    const streamResult = streamText({ model, prompt });
+    const streamResult = streamObject({
+      model,
+      system,
+      messages,
+      schema: ThreadSchema,
+    });
 
     const encoder = new TextEncoder();
     const userId = session.user.id;
-    let buffer = "";
-    let tweetIndex = 0;
     const tweetTexts: string[] = []; // Accumulate for moderation
+    let lastEmittedIndex = -1;
 
     const sseStream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of streamResult.textStream) {
-            buffer += chunk;
+          for await (const partial of streamResult.partialObjectStream) {
+            const tweets = partial.tweets ?? [];
 
-            let delimIdx: number;
-            while ((delimIdx = buffer.indexOf(delimiter)) !== -1) {
-              const tweetText = buffer.slice(0, delimIdx).trim();
-              buffer = buffer.slice(delimIdx + delimiter.length);
-
-              if (tweetText.length > 0) {
+            // Emit any newly completed tweets
+            for (let i = lastEmittedIndex + 1; i < tweets.length; i++) {
+              const tweetText = tweets[i]?.text;
+              if (tweetText && tweetText.length > 0) {
                 tweetTexts.push(tweetText);
                 const content =
                   tweetText.length > 1000 ? tweetText.slice(0, 997) + "..." : tweetText;
                 controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ index: tweetIndex, tweet: content })}\n\n`
-                  )
+                  encoder.encode(`data: ${JSON.stringify({ index: i, tweet: content })}\n\n`)
                 );
-                tweetIndex++;
+                lastEmittedIndex = i;
               }
             }
           }
 
-          // Flush the last tweet (no trailing delimiter)
-          const remaining = buffer.trim();
-          if (remaining.length > 0) {
-            tweetTexts.push(remaining);
-            const content = remaining.length > 1000 ? remaining.slice(0, 997) + "..." : remaining;
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ index: tweetIndex, tweet: content })}\n\n`)
-            );
+          // Wait for the final validated object and emit any remaining tweets
+          const finalObject = await streamResult.object;
+          const finalTweets = finalObject.tweets ?? [];
+
+          for (let i = lastEmittedIndex + 1; i < finalTweets.length; i++) {
+            const tweetText = finalTweets[i]?.text;
+            if (tweetText && tweetText.length > 0) {
+              tweetTexts.push(tweetText);
+              const content = tweetText.length > 1000 ? tweetText.slice(0, 997) + "..." : tweetText;
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ index: i, tweet: content })}\n\n`)
+              );
+            }
           }
 
           // Phase 1 moderation: check the full generated text at end of stream
@@ -146,7 +144,7 @@ export async function POST(req: Request) {
               promptVersion: VERSION,
               latencyMs: latency,
               fallbackUsed: false,
-              inputPrompt: prompt,
+              inputPrompt: `${system}\n\n${messages.map((m) => m.content).join("\n\n")}`,
               outputContent: null,
               language: userLanguage,
             });
