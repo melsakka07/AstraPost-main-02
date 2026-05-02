@@ -5,7 +5,12 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db } from "./db";
 import { logger } from "./logger";
 import { generateReferralCode } from "./referral/utils";
-import { user as userTable } from "./schema";
+import {
+  user as userTable,
+  session as sessionTable,
+  account as accountTable,
+  verification as verificationTable,
+} from "./schema";
 import { decryptToken, encryptToken, isEncryptedToken } from "./security/token-encryption";
 
 export const auth = betterAuth({
@@ -16,7 +21,20 @@ export const auth = betterAuth({
   },
   database: drizzleAdapter(db, {
     provider: "pg",
+    schema: {
+      user: userTable,
+      session: sessionTable,
+      account: accountTable,
+      verification: verificationTable,
+    },
   }),
+  // Disable experimental joins — the full userRelations include custom tables
+  // (xAccounts, posts, etc.) that Better Auth doesn't know about, and would fail
+  // its join-based queries. Without joins, Better Auth uses plain queries which
+  // are simpler and don't require matching relations.
+  experimental: {
+    joins: false,
+  },
   plugins: [
     twoFactor(), // Enable TOTP-based 2FA with automatic backup code generation
   ],

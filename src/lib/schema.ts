@@ -296,6 +296,20 @@ export const verification = pgTable(
   ]
 );
 
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, {
+    fields: [session.userId],
+    references: [user.id],
+  }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, {
+    fields: [account.userId],
+    references: [user.id],
+  }),
+}));
+
 // AstraPost Tables
 
 export const xAccounts = pgTable(
@@ -1058,6 +1072,8 @@ export const affiliateClicksRelations = relations(affiliateClicks, ({ one }) => 
 }));
 
 export const userRelations = relations(user, ({ one, many }) => ({
+  sessions: many(session),
+  accounts: many(account),
   xAccounts: many(xAccounts),
   linkedinAccounts: many(linkedinAccounts),
   instagramAccounts: many(instagramAccounts),
