@@ -18,15 +18,28 @@ Manually applied missing migrations through the database console. SQL preserved 
 - `.claude/rules/database.md` — deployment matrix added; new rule against hand-editing the journal or creating un-journaled SQL files.
 - `docs/claude/schema-consistency.md` — rewrote deployment-strategy section, added incident summary, removed stale "manual SQL on every deploy" guidance.
 
+### One-time bootstrap required (db:push legacy)
+
+The first auto-migrate deploy failed with `relation "agentic_posts" already exists`. Root cause: production DB was originally created via `db:push`, so `drizzle.__drizzle_migrations` tracking table was empty. Drizzle iterated from migration 0000 and tried to recreate every existing object.
+
+Fix: bootstrapped the tracker table by inserting all 66 journal entries with their SHA-256 hashes (algorithm matches `drizzle-orm/migrator.js` — `crypto.createHash("sha256").update(fileContents).digest("hex")`).
+
+Artifacts:
+
+- `scripts/generate-migration-bootstrap.cjs` — generator (rerun if journal grows before another bootstrap is ever needed)
+- `docs/sql-runbooks/2026-05-02-bootstrap-drizzle-migrations.sql` — generated SQL applied to production
+- Verification result: `66 rows, max_created_at = 1777667795504` (matches highest journal `when`)
+
 ### Verification
 
 - `pnpm run check` passes (lint + typecheck + i18n)
 - Production smoke test: X OAuth now lands on `/dashboard`
 - Step-1 verification query returns all `true` for the 7 schema markers
+- **Vercel deploy succeeded** with `[✓] migrations applied successfully!` (no-op as expected)
 
 ### Watch on next production deploy
 
-Look for `drizzle-kit migrate` output in the Vercel build log. If migrate fails, the build will fail (intentional) — fix the migration and redeploy.
+Look for `drizzle-kit migrate` output in the Vercel build log. With the tracker table seeded, this will be a near-instant no-op until the next real schema change. If migrate fails, the build will fail (intentional) — fix the migration and redeploy.
 
 ---
 

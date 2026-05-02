@@ -19,6 +19,33 @@ The gate lives in `package.json`:
 
 If a production migration fails, the build fails and the deploy is rejected — production code can never ship referencing columns that don't exist yet.
 
+## Bootstrap (one-time, only when adopting `drizzle-kit migrate` on a `db:push`'d DB)
+
+Already done for the current production DB on 2026-05-02. Documented here only for future production rebuilds.
+
+If you ever provision a fresh production DB by running `db:push` (or by restoring a snapshot taken from one), `drizzle.__drizzle_migrations` will be empty. The first `db:migrate` will then try to replay every migration from 0000 and fail on the first `CREATE TABLE … already exists`.
+
+Bootstrap procedure:
+
+```bash
+node scripts/generate-migration-bootstrap.cjs > docs/sql-runbooks/<YYYY-MM-DD>-bootstrap-drizzle-migrations.sql
+```
+
+Apply the generated SQL to the new production DB. The script:
+
+- Reads `drizzle/meta/_journal.json`
+- Reads each `drizzle/*.sql` file
+- Computes `sha256(fileContents)` (the exact algorithm in `drizzle-orm/migrator.js`)
+- Emits `INSERT … WHERE NOT EXISTS` rows into `drizzle.__drizzle_migrations`
+
+Verify after applying:
+
+```sql
+SELECT COUNT(*), MAX(created_at) FROM "drizzle"."__drizzle_migrations";
+```
+
+The count must equal the number of journal entries; `MAX(created_at)` must equal the highest `when` in `_journal.json`. Then redeploy — `db:migrate` will be a no-op.
+
 ## Workflow for schema changes
 
 1. Edit `src/lib/schema.ts`
