@@ -1,3 +1,5 @@
+export const VERSION = "inspire:v1";
+
 import { redactPII } from "@/lib/ai/pii";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 

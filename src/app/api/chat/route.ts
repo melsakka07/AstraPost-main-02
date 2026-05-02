@@ -16,7 +16,7 @@ import {
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { moderateOutput } from "@/lib/services/moderation";
 
 // Zod schema for message validation
@@ -97,21 +97,37 @@ ${JAILBREAK_GUARD}`;
     const modelMessages = convertToModelMessages(messages);
     const allMessages = [{ role: "system" as const, content: systemMessage }, ...modelMessages];
 
+    const modelId = process.env.OPENROUTER_MODEL!;
+    const t0 = performance.now();
+
     const result = streamText({
-      model: openrouter(process.env.OPENROUTER_MODEL!, {
+      model: openrouter(modelId, {
         provider: { data_collection: "deny" as const },
       }) as unknown as LanguageModel,
       messages: allMessages,
       onFinish: async ({ text, usage }) => {
+        const latencyMs = Math.round(performance.now() - t0);
         // Record AI usage after stream completes (fire-and-forget)
-        recordAiUsage(
-          session.user.id,
-          "chat",
-          usage?.totalTokens ?? 0,
-          `chat:${messages.length}-messages`,
-          null,
-          "en"
-        ).catch((err) => {
+        // Phase 2: uses new options-object signature
+        recordAiUsage({
+          userId: session.user.id,
+          type: "chat",
+          model: modelId,
+          subFeature: "chat.message",
+          tokensIn: usage?.inputTokens ?? 0,
+          tokensOut: usage?.outputTokens ?? 0,
+          costEstimateCents: estimateCost(
+            modelId,
+            usage?.inputTokens ?? 0,
+            usage?.outputTokens ?? 0
+          ),
+          promptVersion: "chat:v1",
+          latencyMs,
+          fallbackUsed: false,
+          inputPrompt: `chat:${messages.length}-messages`,
+          outputContent: null,
+          language: "en",
+        }).catch((err) => {
           logger.error("[chat] recordAiUsage error:", { error: err });
         });
 

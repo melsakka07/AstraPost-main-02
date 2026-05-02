@@ -1,3 +1,5 @@
+export const VERSION = "untrusted:v1";
+
 /**
  * Prompt-injection defence: shared untrusted-content wrapper and jailbreak guard.
  *

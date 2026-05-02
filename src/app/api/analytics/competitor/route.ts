@@ -14,7 +14,7 @@ import {
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { buildCompetitorAnalysisPrompt, fetchUserTweets } from "@/lib/services/competitor-analysis";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -99,21 +99,32 @@ export async function POST(req: Request) {
     }) as unknown as LanguageModel;
 
     const prompt = buildCompetitorAnalysisPrompt(username, twitterData.tweets, language);
+    const modelId = process.env.OPENROUTER_MODEL!;
 
+    const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: analysisSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
-    await recordAiUsage(
-      ctx.currentTeamId,
-      "competitor_analyzer",
-      usage?.totalTokens ?? 0,
-      prompt,
-      object,
-      language
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: ctx.currentTeamId,
+      type: "competitor_analyzer",
+      model: modelId,
+      subFeature: "competitor.analyze",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "competitor:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: prompt,
+      outputContent: object,
+      language,
+    });
 
     const res = Response.json({
       username,

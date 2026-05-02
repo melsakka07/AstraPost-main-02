@@ -8,7 +8,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkViralScoreAccessDetailed } from "@/lib/middleware/require-plan";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const scoreRequestSchema = z.object({
   content: z.string().min(1).max(5000), // Allow thread content
@@ -63,24 +63,36 @@ export async function POST(req: Request) {
       Feedback should be short and direct (e.g., "Strong hook", "Add a question", "Use more spacing").
     `;
 
-    const { object } = await generateObject({
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
+    const { object, usage } = await generateObject({
       model,
       schema: scoreResponseSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Moderation check on generated feedback
     const modResult = await checkModeration(object.feedback.join("\n"));
     if (modResult) return modResult;
 
-    await recordAiUsage(
-      session.user.id,
-      "viral_score",
-      0,
-      content,
-      object.feedback.join("\n"),
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "viral_score",
+      model: modelId,
+      subFeature: "score.analyze",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "score:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: content,
+      outputContent: object.feedback.join("\n"),
+      language: userLanguage,
+    });
 
     // Clamp score to 0-100 in case the model returns out-of-range values
     const res = Response.json({ ...object, score: Math.min(100, Math.max(0, object.score)) });

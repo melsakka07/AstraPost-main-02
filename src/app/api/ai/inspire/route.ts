@@ -7,14 +7,14 @@
 
 import { generateText } from "ai";
 import { z } from "zod";
-import { buildInspirePrompts, parseInspireResponse } from "@/lib/ai/inspire-prompts";
+import { buildInspirePrompts, parseInspireResponse, VERSION } from "@/lib/ai/inspire-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkInspirationAccessDetailed } from "@/lib/middleware/require-plan";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 // ============================================================================
 // Schema Validation
@@ -86,11 +86,15 @@ export async function POST(req: Request) {
       }
     );
 
-    const { text } = await generateText({
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
+    const { text, usage } = await generateText({
       model,
       system: systemPrompt,
       prompt: userPrompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     const tweets = parseInspireResponse(action, text, delimiter);
 
@@ -98,14 +102,22 @@ export async function POST(req: Request) {
     const modResult = await checkModeration(tweets.join("\n"));
     if (modResult) return modResult;
 
-    await recordAiUsage(
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
       userId,
-      "inspire",
-      0,
-      `${systemPrompt}\n\n${userPrompt}`,
-      { action, tone, language: userLanguage, tweets },
-      userLanguage
-    );
+      type: "inspire",
+      model: modelId,
+      subFeature: "inspire.expand",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: VERSION,
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: `${systemPrompt}\n\n${userPrompt}`,
+      outputContent: { action, tone, language: userLanguage, tweets },
+      language: userLanguage,
+    });
 
     const res = Response.json({ tweets, action, ...(redactions && { redactions }) });
     res.headers.set("x-correlation-id", correlationId);

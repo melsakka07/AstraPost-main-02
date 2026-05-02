@@ -1,5 +1,73 @@
 # Latest Updates
 
+## 2026-05-02: Phase 2 — Cost Integrity & Observability COMPLETE
+
+**Summary:** All 6 Phase 2 exit criteria shipped. Schema migration adds 7 telemetry columns to `ai_generations` (model, subFeature, costEstimateCents, promptVersion, feedback, latencyMs, fallbackUsed). `recordAiUsage` refactored to options-object pattern with backward-compatible legacy path. `aiPreamble` returns `recordTelemetry` helper capturing correlation ID + model + prompt version. All 20 AI routes updated with full telemetry. New admin dashboards: `/admin/ai-cost` (COGS) and `/admin/ai-metrics` (latency SLO). New `POST /api/ai/feedback` endpoint. Cost-alarm cron overhauled for per-model breakdown.
+
+### Exit Criteria
+
+| Criterion                                        | Status        | Detail                                                                                  |
+| ------------------------------------------------ | ------------- | --------------------------------------------------------------------------------------- |
+| Migration applied to prod                        | Code-complete | `drizzle/0066_sad_justin_hammer.sql` — auto-applies on next Vercel production deploy    |
+| Zero tokensUsed rows with NULL model on new gens | Code-complete | All 20 routes pass `model` from env var. Legacy path sets "unknown". Verify post-deploy |
+| `/admin/ai-cost` shows last 24 h                 | Code-complete | Page + 8 query functions built. Verify post-deploy with real data                       |
+| OpenRouter receives `correlation_id`             | Done          | `aiPreamble` propagates `x-correlation-id` header on every model call                   |
+| Fallback telemetry visible in Sentry             | Code-complete | `logger.warn("ai.fallback")` on fallback; cost-alarm monitors rate                      |
+| All prompts carry a version tag                  | Done          | 4 prompt builders export `VERSION`; all routes pass `promptVersion`                     |
+
+### Schema migration
+
+`drizzle/0066_sad_justin_hammer.sql` adds to `ai_generations`:
+
+- `model` text, `sub_feature` text, `cost_estimate_cents` integer, `prompt_version` text, `feedback` text, `latency_ms` integer, `fallback_used` boolean DEFAULT false NOT NULL
+- Indexes: `ai_gen_model_idx`, `ai_gen_sub_feature_idx`
+- **Reminder:** auto-applies on next Vercel production deploy via `build:ci`
+
+### Files created (8)
+
+- `src/app/api/ai/feedback/route.ts` — POST endpoint, ownership-gated
+- `src/app/admin/ai-cost/page.tsx` — COGS dashboard (RSC with 6 parallel data fetches)
+- `src/app/admin/ai-cost/loading.tsx` — Skeleton loading state
+- `src/app/admin/ai-metrics/page.tsx` — Latency SLO dashboard (RSC)
+- `src/app/admin/ai-metrics/loading.tsx` — Skeleton loading state
+- `src/components/admin/ai-cost-charts.tsx` — 8 presentational chart components
+- `src/lib/services/admin-ai-metrics.ts` — 8 typed query functions
+- `drizzle/0066_sad_justin_hammer.sql` — Migration SQL
+
+### Files modified (28)
+
+- **Core libs**: `ai-quota.ts` (refactored + MODEL_PRICING + estimateCost), `ai-preamble.ts` (recordTelemetry + correlation), `schema.ts` (7 columns)
+- **Prompt builders**: `agentic-prompts.ts`, `template-prompts.ts`, `inspire-prompts.ts`, `untrusted.ts` (VERSION exports)
+- **AI routes (20)**: thread, template-generate, bio, reply, hashtags, translate, summarize, affiliate, inspire, score, variants, calendar, tools, agentic/regenerate, enhance-topic, inspiration, chat, trends, competitor, voice-profile
+- **Cron**: `ai-cost-alarm/route.ts` (overhauled)
+- **Admin**: `sidebar.tsx` (new nav links)
+- **i18n**: `en.json`, `ar.json` (nav.ai_cost, nav.ai_metrics)
+
+### Key patterns established
+
+- `recordAiUsage(opts: RecordAiUsageOptions)` — options object with model, subFeature, tokensIn/Out, costEstimateCents, promptVersion, latencyMs, fallbackUsed
+- `aiPreamble({ correlationId, promptVersion }).recordTelemetry(...)` — closure captures context
+- `MODEL_PRICING` lookup table + `estimateCost(model, tokensIn, tokensOut)` helper
+- `subFeature` convention: `route.step` (e.g. `thread.generate`, `agentic.research`)
+- Prompt builder `VERSION` export pattern
+- `performance.now()` latency tracking on every AI call
+- Streaming routes capture usage in `onFinish` / `await streamResult.usage`
+
+### Deferred / unresolved
+
+- 1 pre-existing `getPlanLimits()` call in `ai-counter-rollover/route.ts` (violates Hard Rule 6) — known non-issue from Phase 0, patch later
+- Backward-compatible legacy path in `recordAiUsage` — can be removed after all callers confirmed migrated
+- COGS dashboard charts use inline bars (no chart library) — revisit if data volume grows
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint 0/0, typecheck clean, i18n 2390 keys)
+`pnpm test` — PASS (28 files, 240 tests)
+Security review — PASS (0 CRITICAL, 0 HIGH, 0 MEDIUM)
+Convention audit — PASS (all hard rules verified, 1 violation found and fixed)
+
+---
+
 ## 2026-05-02: X account cleanup — diagnostic script + auto-deactivation safety net
 
 **Summary:** Railway worker had recurring `x_token_refresh_failed` and `x_tier_refresh_account_error` warnings from 3 X accounts with expired OAuth tokens. Created a diagnostic script to identify broken accounts and added auto-deactivation to the tier refresh processor so dead accounts don't retry forever.

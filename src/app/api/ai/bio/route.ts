@@ -12,7 +12,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkBioOptimizerAccessDetailed } from "@/lib/middleware/require-plan";
 import { xAccounts } from "@/lib/schema";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
   currentBio: z.string().max(500).optional().default(""),
@@ -107,7 +107,11 @@ For each variant provide:
 - goal: a short label for this variant's strategy (e.g., "Authority-focused", "Client-attraction", "Personality-driven")
 - rationale: why this version works (under 300 chars)`;
 
+    const modelId = process.env.OPENROUTER_MODEL!;
+
     let object, usage;
+    let fallbackUsed = false;
+    const t0 = performance.now();
     try {
       const gen = await generateObject({
         model,
@@ -119,6 +123,7 @@ For each variant provide:
     } catch (err: any) {
       if (err?.statusCode === 429 && preamble.fallbackModel) {
         logger.warn("ai_primary_model_rate_limited", { fallback: true, userId: session.user.id });
+        fallbackUsed = true;
         const gen = await generateObject({
           model: preamble.fallbackModel,
           schema: bioSchema,
@@ -130,19 +135,28 @@ For each variant provide:
         throw err;
       }
     }
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Moderation check on generated bio variants
     const modResult = await checkModeration(object.variants.map((v) => v.text).join("\n"));
     if (modResult) return modResult;
 
-    await recordAiUsage(
-      session.user.id,
-      "bio_optimizer",
-      usage?.totalTokens ?? 0,
-      prompt,
-      object,
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "bio_optimizer",
+      model: modelId,
+      subFeature: "bio.generate",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "bio:v1",
+      latencyMs,
+      fallbackUsed,
+      inputPrompt: prompt,
+      outputContent: object,
+      language: userLanguage,
+    });
 
     const res = Response.json(object);
     res.headers.set("x-correlation-id", correlationId);

@@ -13,7 +13,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { xAccounts } from "@/lib/schema";
 import { aiLengthOptionEnum, type XSubscriptionTier } from "@/lib/schemas/common";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { RequestDedup } from "@/lib/services/request-dedup";
 import { XApiService } from "@/lib/services/x-api";
 import { canPostLongContent } from "@/lib/services/x-subscription";
@@ -202,7 +202,10 @@ Third tweet content goes here.
 Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
     }
 
+    const modelId = process.env.OPENROUTER_MODEL!;
     let streamResult;
+    let fallbackUsed = false;
+    const t0 = performance.now();
     try {
       streamResult = streamText({ model, prompt });
       // We explicitly await the first chunk or let it throw so we can catch 429s immediately
@@ -211,6 +214,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
     } catch (err: any) {
       if (err?.statusCode === 429 && preamble.fallbackModel) {
         logger.warn("ai_primary_model_rate_limited", { fallback: true, userId: session.user.id });
+        fallbackUsed = true;
         streamResult = streamText({ model: preamble.fallbackModel, prompt });
       } else {
         throw err;
@@ -263,14 +267,27 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
             // Record AI usage
             try {
               const usage = await streamResult.usage;
-              await recordAiUsage(
+              const latency = Math.round(performance.now() - t0);
+              // Phase 2: uses new options-object signature
+              await recordAiUsage({
                 userId,
-                "thread",
-                usage?.totalTokens ?? 0,
-                prompt,
-                null,
-                userLanguage
-              );
+                type: "thread",
+                model: modelId,
+                subFeature: "thread.generate",
+                tokensIn: usage?.inputTokens ?? 0,
+                tokensOut: usage?.outputTokens ?? 0,
+                costEstimateCents: estimateCost(
+                  modelId,
+                  usage?.inputTokens ?? 0,
+                  usage?.outputTokens ?? 0
+                ),
+                promptVersion: "thread:v1",
+                latencyMs: latency,
+                fallbackUsed,
+                inputPrompt: prompt,
+                outputContent: null,
+                language: userLanguage,
+              });
             } catch {
               // Usage recording failure should not affect the user
             }
@@ -356,14 +373,27 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           // Record AI usage (non-critical — fire after responding)
           try {
             const usage = await streamResult.usage;
-            await recordAiUsage(
+            const latency = Math.round(performance.now() - t0);
+            // Phase 2: uses new options-object signature
+            await recordAiUsage({
               userId,
-              "thread",
-              usage?.totalTokens ?? 0,
-              prompt,
-              null,
-              userLanguage
-            );
+              type: "thread",
+              model: modelId,
+              subFeature: "thread.generate",
+              tokensIn: usage?.inputTokens ?? 0,
+              tokensOut: usage?.outputTokens ?? 0,
+              costEstimateCents: estimateCost(
+                modelId,
+                usage?.inputTokens ?? 0,
+                usage?.outputTokens ?? 0
+              ),
+              promptVersion: "thread:v1",
+              latencyMs: latency,
+              fallbackUsed,
+              inputPrompt: prompt,
+              outputContent: null,
+              language: userLanguage,
+            });
           } catch {
             // Usage recording failure should not affect the user
           }

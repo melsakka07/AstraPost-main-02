@@ -10,7 +10,7 @@ import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkUrlToThreadAccessDetailed } from "@/lib/middleware/require-plan";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { BLOCKED_HOSTS, fetchArticleText } from "@/lib/services/article-fetcher";
 
 const requestSchema = z.object({
@@ -105,20 +105,32 @@ Constraints:
 - Start with a hook tweet that grabs attention.
 - End with a takeaway or call-to-action tweet.`;
 
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: threadSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
-    await recordAiUsage(
-      session.user.id,
-      "url_to_thread",
-      usage?.totalTokens ?? 0,
-      prompt,
-      object,
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "url_to_thread",
+      model: modelId,
+      subFeature: "summarize.text",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "summarize:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: prompt,
+      outputContent: object,
+      language: userLanguage,
+    });
 
     const sanitized = {
       ...object,

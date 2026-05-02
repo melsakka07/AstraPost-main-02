@@ -8,7 +8,7 @@ import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkReplyGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { importTweet } from "@/lib/services/tweet-importer";
 
 const requestSchema = z.object({
@@ -86,20 +86,32 @@ For each reply include:
 - text: the reply text
 - style: one-word style label (e.g., "insightful", "witty", "empathetic", "provocative", "analytical")`;
 
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: repliesSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
-    await recordAiUsage(
-      session.user.id,
-      "reply_generator",
-      usage?.totalTokens ?? 0,
-      prompt,
-      object,
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "reply_generator",
+      model: modelId,
+      subFeature: "reply.generate",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "reply:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: prompt,
+      outputContent: object,
+      language: userLanguage,
+    });
 
     // Moderation check on generated replies
     const modResult = await checkModeration(object.replies.map((r) => r.text).join("\n"));

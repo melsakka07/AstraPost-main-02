@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   getTemplatePrompt,
   makeTweetDelimiter,
+  VERSION,
   type OutputFormat,
 } from "@/lib/ai/template-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
@@ -10,7 +11,7 @@ import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 // Re-export for frontend backwards compatibility
 export {
@@ -60,6 +61,8 @@ export async function POST(req: Request) {
     const delimiter = makeTweetDelimiter(nonce);
     const prompt = config.buildPrompt(topic, tone, userLanguage, format, nonce);
 
+    const modelId = process.env.OPENROUTER_MODEL!;
+    const t0 = performance.now();
     const streamResult = streamText({ model, prompt });
 
     const encoder = new TextEncoder();
@@ -126,14 +129,27 @@ export async function POST(req: Request) {
           // Record usage — non-critical, fire after responding
           try {
             const usage = await streamResult.usage;
-            await recordAiUsage(
+            const latency = Math.round(performance.now() - t0);
+            // Phase 2: uses new options-object signature
+            await recordAiUsage({
               userId,
-              "template",
-              usage?.totalTokens ?? 0,
-              prompt,
-              null,
-              userLanguage
-            );
+              type: "template",
+              model: modelId,
+              subFeature: "template.generate",
+              tokensIn: usage?.inputTokens ?? 0,
+              tokensOut: usage?.outputTokens ?? 0,
+              costEstimateCents: estimateCost(
+                modelId,
+                usage?.inputTokens ?? 0,
+                usage?.outputTokens ?? 0
+              ),
+              promptVersion: VERSION,
+              latencyMs: latency,
+              fallbackUsed: false,
+              inputPrompt: prompt,
+              outputContent: null,
+              language: userLanguage,
+            });
           } catch {
             // Usage recording failure must not affect the user
           }

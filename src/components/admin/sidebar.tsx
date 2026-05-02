@@ -8,7 +8,9 @@ import {
   Bell,
   Bot,
   CreditCard,
+  DollarSign,
   FileText,
+  Gauge,
   Gift,
   HeartPulse,
   LayoutDashboard,
@@ -59,6 +61,7 @@ export function AdminSidebar() {
         { href: "/admin/billing", label: t("nav.billing_overview"), icon: CreditCard },
         { href: "/admin/billing/analytics", label: t("nav.billing_analytics"), icon: TrendingUp },
         { href: "/admin/billing/promo-codes", label: t("nav.billing_promo_codes"), icon: Tag },
+        { href: "/admin/ai-cost", label: t("nav.ai_cost"), icon: DollarSign },
       ],
     },
     {
@@ -81,6 +84,7 @@ export function AdminSidebar() {
         { href: "/admin/notifications", label: t("nav.notifications"), icon: Bell },
         { href: "/admin/webhooks", label: t("nav.webhooks"), icon: Webhook },
         { href: "/admin/soft-delete-recovery", label: t("nav.soft_delete_recovery"), icon: Trash2 },
+        { href: "/admin/ai-metrics", label: t("nav.ai_metrics"), icon: Gauge },
       ],
     },
   ];

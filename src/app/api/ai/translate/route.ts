@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
   tweets: z.array(z.string()).min(1).max(15),
@@ -51,17 +51,36 @@ Constraints:
 Thread:
 ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${wrapUntrusted(`TWEET_${i + 1}`, t, 5_000)}`).join("\n\n")}`;
 
-    const { object } = await generateObject({
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
+    const { object, usage } = await generateObject({
       model,
       schema: responseSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Moderation check on translated output
     const modResult = await checkModeration(object.tweets.join("\n"));
     if (modResult) return modResult;
 
-    await recordAiUsage(session.user.id, "translate", 0, prompt, object, targetLanguage);
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "translate",
+      model: modelId,
+      subFeature: "translate.text",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "translate:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: prompt,
+      outputContent: object,
+      language: targetLanguage,
+    });
 
     const res = Response.json(object);
     res.headers.set("x-correlation-id", correlationId);

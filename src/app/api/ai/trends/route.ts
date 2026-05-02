@@ -15,7 +15,7 @@ import {
   type TrendCategory,
   type TrendItem,
 } from "@/lib/schemas/common";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 // NOTE: A web-search-capable model produces significantly better results here.
 // Configure OPENROUTER_MODEL_TRENDS to a model with online access via OpenRouter
@@ -115,6 +115,7 @@ export async function GET(req: Request) {
       process.env.OPENROUTER_MODEL!;
     const model = openrouter(modelId);
 
+    const t0 = performance.now();
     const result = await generateText({
       model,
       prompt: buildTrendsPrompt(category, userLanguage),
@@ -159,14 +160,26 @@ export async function GET(req: Request) {
       }
     }
 
-    await recordAiUsage(
-      session.user.id,
-      "tools",
-      result.usage?.totalTokens ?? 0,
-      buildTrendsPrompt(category, userLanguage),
-      JSON.stringify(trends),
-      userLanguage
-    );
+    const latencyMs = Math.round(performance.now() - t0);
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "tools",
+      model: modelId,
+      subFeature: "trends.analyze",
+      tokensIn: result.usage?.inputTokens ?? 0,
+      tokensOut: result.usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(
+        modelId,
+        result.usage?.inputTokens ?? 0,
+        result.usage?.outputTokens ?? 0
+      ),
+      promptVersion: "trends:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: buildTrendsPrompt(category, userLanguage),
+      outputContent: JSON.stringify(trends),
+      language: userLanguage,
+    });
 
     logger.info("trends_fetch_done", { category, count: trends.length, userId: session.user.id });
     const res = Response.json(responsePayload);

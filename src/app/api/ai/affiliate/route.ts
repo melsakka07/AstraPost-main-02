@@ -13,7 +13,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkAffiliateGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
 import { affiliateLinks } from "@/lib/schema";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const BLOCKED_HOSTS =
   /^(localhost|127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1$|0\.0\.0\.0)/i;
@@ -110,11 +110,15 @@ export async function POST(req: Request) {
       - You must end every tweet with #ad to comply with platform disclosure requirements.
     `;
 
-    const { object } = await generateObject({
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
+    const { object, usage } = await generateObject({
       model,
       schema: tweetSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Server-side #ad enforcement — ensure every affiliate tweet has disclosure
     let enforcedTweet = object.tweet;
@@ -178,7 +182,23 @@ export async function POST(req: Request) {
         wasScheduled: false,
       });
 
-      await recordAiUsage(session.user.id, "affiliate", 0, prompt, output, userLanguage, tx);
+      // Phase 2: uses new options-object signature
+      await recordAiUsage({
+        userId: session.user.id,
+        type: "affiliate",
+        model: modelId,
+        subFeature: "affiliate.generate",
+        tokensIn: usage?.inputTokens ?? 0,
+        tokensOut: usage?.outputTokens ?? 0,
+        costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+        promptVersion: "affiliate:v1",
+        latencyMs,
+        fallbackUsed: false,
+        inputPrompt: prompt,
+        outputContent: output,
+        language: userLanguage,
+        tx,
+      });
     });
 
     const res = Response.json(output);

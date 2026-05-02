@@ -2581,6 +2581,8 @@
       "notifications": "Notifications",
       "webhooks": "Webhooks",
       "soft_delete_recovery": "Soft-Delete Recovery",
+      "ai_cost": "AI Cost",
+      "ai_metrics": "AI Metrics",
       "back_to_app": "Back to App",
       "expand_sidebar": "Expand sidebar",
       "collapse_sidebar": "Collapse sidebar",

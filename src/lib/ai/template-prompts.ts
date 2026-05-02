@@ -1,3 +1,5 @@
+export const VERSION = "template:v1";
+
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import { LANGUAGES } from "@/lib/constants";
 import type { ToneCode } from "@/lib/constants";

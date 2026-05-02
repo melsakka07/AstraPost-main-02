@@ -7,7 +7,7 @@ import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { checkVariantGeneratorAccessDetailed } from "@/lib/middleware/require-plan";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { RequestDedup } from "@/lib/services/request-dedup";
 
 const requestSchema = z.object({
@@ -77,20 +77,32 @@ For each variant:
 - angle: one of emotional / factual / question / story / list
 - rationale: 1 sentence explaining why this angle works (under 200 chars)`;
 
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: variantSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
-    await recordAiUsage(
-      session.user.id,
-      "variant_generator",
-      usage?.totalTokens ?? 0,
-      prompt,
-      object,
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "variant_generator",
+      model: modelId,
+      subFeature: "variants.generate",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "variants:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: prompt,
+      outputContent: object,
+      language: userLanguage,
+    });
 
     // Moderation check on generated variant texts
     const modResult = await checkModeration(object.variants.map((v) => v.text).join("\n"));

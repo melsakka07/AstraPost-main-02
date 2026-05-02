@@ -1,3 +1,5 @@
+export const VERSION = "agentic:v1";
+
 import type { AgenticTweet, ContentPlan, ResearchBrief } from "@/lib/ai/agentic-types";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import type { XSubscriptionTier } from "@/lib/schemas/common";

@@ -6,7 +6,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const CACHE_TTL = 6 * 60 * 60; // 6 hours
 
@@ -64,11 +64,15 @@ export async function GET(req: Request) {
       - Hooks must be viral-worthy (curiosity gaps, strong statements).
     `;
 
-    const { object } = await generateObject({
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
+    const { object, usage } = await generateObject({
       model,
       schema: inspirationSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     try {
       await redis.set(cacheKey, JSON.stringify(object), "EX", CACHE_TTL);
@@ -79,14 +83,22 @@ export async function GET(req: Request) {
     }
 
     // Record AI usage (only for fresh generations, not cached responses)
-    await recordAiUsage(
-      session.user.id,
-      "inspiration",
-      0,
-      `inspiration:${niche}:${userLanguage}`,
-      object,
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "inspiration",
+      model: modelId,
+      subFeature: "inspiration.generate",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "inspiration:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: `inspiration:${niche}:${userLanguage}`,
+      outputContent: object,
+      language: userLanguage,
+    });
 
     const res = Response.json(object);
     res.headers.set("x-correlation-id", correlationId);

@@ -673,11 +673,20 @@ export const aiGenerations = pgTable(
     tone: text("tone"),
     language: text("language").default("ar"),
     tokensUsed: integer("tokens_used"),
+    model: text("model"),
+    subFeature: text("sub_feature"),
+    costEstimateCents: integer("cost_estimate_cents"),
+    promptVersion: text("prompt_version"),
+    feedback: text("feedback"),
+    latencyMs: integer("latency_ms"),
+    fallbackUsed: boolean("fallback_used").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
     index("ai_gen_user_id_idx").on(table.userId),
     index("ai_gen_user_created_idx").on(table.userId, table.createdAt),
+    index("ai_gen_model_idx").on(table.model),
+    index("ai_gen_sub_feature_idx").on(table.subFeature),
   ]
 );
 

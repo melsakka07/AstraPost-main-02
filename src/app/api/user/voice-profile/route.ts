@@ -10,7 +10,7 @@ import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
 import { user } from "@/lib/schema";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const analyzeRequestSchema = z.object({
   // Cap each tweet sample to prevent prompt-stuffing via the analysis endpoint.
@@ -90,11 +90,15 @@ export async function POST(req: Request) {
       - Vocabulary (e.g., technical jargon vs. simple English)
     `;
 
-    const { object } = await generateObject({
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
+    const { object, usage } = await generateObject({
       model,
       schema: voiceProfileSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Re-validate the AI output against our strict application schema before
     // persisting. generateObject constrains the shape but does not enforce our
@@ -109,14 +113,22 @@ export async function POST(req: Request) {
     await db.update(user).set({ voiceProfile: validated.data }).where(eq(user.id, session.user.id));
 
     // Record AI usage
-    await recordAiUsage(
-      session.user.id,
-      "voice_profile",
-      0,
-      `voice-profile:${tweets.length}-tweets`,
-      validated.data,
-      "en"
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "voice_profile",
+      model: modelId,
+      subFeature: "voice_profile.analyze",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "voice_profile:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: `voice-profile:${tweets.length}-tweets`,
+      outputContent: validated.data,
+      language: "en",
+    });
 
     return Response.json(object);
   } catch (error) {

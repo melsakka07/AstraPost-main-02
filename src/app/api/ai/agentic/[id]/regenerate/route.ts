@@ -3,6 +3,7 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { VERSION } from "@/lib/ai/agentic-prompts";
 import type { AgenticTweet, ResearchBrief, ContentPlan } from "@/lib/ai/agentic-types";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { ApiError } from "@/lib/api/errors";
@@ -18,7 +19,7 @@ import {
 import type { ImageModel } from "@/lib/plan-limits";
 import { agenticPosts } from "@/lib/schema";
 import { startImageGeneration, checkImagePrediction } from "@/lib/services/ai-image";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const regenerateSchema = z.object({
   tweetIndex: z.number().int().min(0),
@@ -115,17 +116,32 @@ Return ONLY a valid JSON object (no markdown):
   "charCount": 0
 }`;
 
+    const modelName = process.env.OPENROUTER_MODEL!;
+    const t0 = performance.now();
     const result = await generateText({ model, prompt });
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Record text generation usage
-    await recordAiUsage(
-      session.user.id,
-      "agentic_regenerate",
-      0,
-      `regenerate:tweet-${tweetIndex}`,
-      { tweetIndex, tweetText: result.text.slice(0, 100) },
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "agentic_regenerate",
+      model: modelName,
+      subFeature: "agentic.regenerate",
+      tokensIn: result.usage?.inputTokens ?? 0,
+      tokensOut: result.usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(
+        modelName,
+        result.usage?.inputTokens ?? 0,
+        result.usage?.outputTokens ?? 0
+      ),
+      promptVersion: VERSION,
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: `regenerate:tweet-${tweetIndex}`,
+      outputContent: { tweetIndex, tweetText: result.text.slice(0, 100) },
+      language: userLanguage,
+    });
 
     let newTweet: Partial<AgenticTweet> = {};
     try {
@@ -159,15 +175,23 @@ Return ONLY a valid JSON object (no markdown):
         const imageUrl = await pollImage(prediction.predictionId);
         if (imageUrl) {
           updatedTweet.imageUrl = imageUrl;
-          // Record image generation usage
-          await recordAiUsage(
-            session.user.id,
-            "image",
-            0,
-            `agentic-regen-image:tweet-${tweetIndex}`,
-            { tweetIndex, imagePrompt: updatedTweet.imagePrompt },
-            userLanguage
-          );
+          // Record image generation usage (no LLM tokens, so tokensIn/Out are 0)
+          // Phase 2: uses new options-object signature
+          await recordAiUsage({
+            userId: session.user.id,
+            type: "image",
+            model: "replicate",
+            subFeature: "agentic.image",
+            tokensIn: 0,
+            tokensOut: 0,
+            costEstimateCents: 0,
+            promptVersion: VERSION,
+            latencyMs: 0,
+            fallbackUsed: false,
+            inputPrompt: `agentic-regen-image:tweet-${tweetIndex}`,
+            outputContent: { tweetIndex, imagePrompt: updatedTweet.imagePrompt },
+            language: userLanguage,
+          });
         }
       } catch (err) {
         logger.warn("agentic_regen_image_failed", {

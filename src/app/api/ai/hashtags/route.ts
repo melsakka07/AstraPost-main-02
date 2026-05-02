@@ -6,7 +6,7 @@ import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const hashtagRequestSchema = z.object({
   content: z.string().min(1),
@@ -51,24 +51,36 @@ export async function POST(req: Request) {
       - Do not include the # symbol in the string values if the schema doesn't require it, but here we want the full tag e.g. "#growth".
     `;
 
-    const { object } = await generateObject({
+    const modelId = process.env.OPENROUTER_MODEL!;
+
+    const t0 = performance.now();
+    const { object, usage } = await generateObject({
       model,
       schema: hashtagResponseSchema,
       prompt,
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     // Moderation check on generated hashtags
     const modResult = await checkModeration(object.hashtags.join(" "));
     if (modResult) return modResult;
 
-    await recordAiUsage(
-      session.user.id,
-      "tools", // using "tools" type for now
-      0,
-      prompt,
-      JSON.stringify(object),
-      userLanguage
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "hashtags",
+      model: modelId,
+      subFeature: "hashtags.generate",
+      tokensIn: usage?.inputTokens ?? 0,
+      tokensOut: usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
+      promptVersion: "hashtags:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: prompt,
+      outputContent: object,
+      language: userLanguage,
+    });
 
     const res = Response.json(object);
     res.headers.set("x-correlation-id", correlationId);

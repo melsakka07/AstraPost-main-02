@@ -15,6 +15,7 @@ import {
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { releaseAiQuota, tryConsumeAiQuota } from "@/lib/services/ai-quota-atomic";
 import { moderateOutput } from "@/lib/services/moderation";
 
@@ -39,6 +40,16 @@ export interface AiPreambleOptions {
    * Default: 1.
    */
   quotaWeight?: number;
+  /**
+   * Correlation ID for distributed tracing. Passed through to OpenRouter
+   * requests and included in telemetry. If not provided, one is generated.
+   */
+  correlationId?: string;
+  /**
+   * Prompt version identifier for A/B testing and cost attribution.
+   * Stored on the ai_generations row for later analysis.
+   */
+  promptVersion?: string;
 }
 
 export type AiPreambleResult = {
@@ -59,6 +70,35 @@ export type AiPreambleResult = {
    * @param generationId - Optional link to an aiGenerations row for traceability
    */
   checkModeration: (output: string, generationId?: string) => Promise<Response | void>;
+  /**
+   * Phase 2 telemetry: records the AI generation with full telemetry context.
+   *
+   * Call this AFTER the generation completes. Captures the preamble's context
+   * (userId, model, promptVersion) and merges it with the route's per-call data.
+   * Handles cost estimation and fallback logging automatically.
+   *
+   * @example
+   *   const start = Date.now();
+   *   const result = await generateObject({ model, ... });
+   *   await recordTelemetry({
+   *     tokensIn: result.usage.promptTokens,
+   *     tokensOut: result.usage.completionTokens,
+   *     subFeature: "translate",
+   *     latencyMs: Date.now() - start,
+   *     inputPrompt: prompt,
+   *     outputContent: result.object,
+   *   });
+   */
+  recordTelemetry: (extra: {
+    tokensIn: number;
+    tokensOut: number;
+    subFeature: string;
+    latencyMs: number;
+    fallbackUsed?: boolean;
+    inputPrompt?: string;
+    outputContent?: unknown;
+    language?: string;
+  }) => Promise<void>;
 };
 
 /**
@@ -86,11 +126,32 @@ export type AiPreambleResult = {
  * @example Pro-gated route (calendar, variants, summarize, reply, bio)
  *   const preamble = await aiPreamble({ featureGate: checkContentCalendarAccessDetailed });
  *   if (preamble instanceof Response) return preamble;
+ *
+ * @example Phase 2 telemetry (correlation + prompt version + latency)
+ *   const correlationId = getCorrelationId(req);
+ *   const preamble = await aiPreamble({ correlationId, promptVersion: "v2" });
+ *   if (preamble instanceof Response) return preamble;
+ *   const { model, recordTelemetry } = preamble;
+ *   const start = Date.now();
+ *   const result = await generateObject({ model, ... });
+ *   await recordTelemetry({
+ *     tokensIn: result.usage.promptTokens,
+ *     tokensOut: result.usage.completionTokens,
+ *     subFeature: "translate",
+ *     latencyMs: Date.now() - start,
+ *   });
  */
 export async function aiPreamble(
   opts: AiPreambleOptions = {}
 ): Promise<AiPreambleResult | Response> {
-  const { featureGate, customAiAccess, skipQuotaCheck = false, quotaWeight = 1 } = opts;
+  const {
+    featureGate,
+    customAiAccess,
+    skipQuotaCheck = false,
+    quotaWeight = 1,
+    correlationId = crypto.randomUUID(),
+    promptVersion,
+  } = opts;
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return new Response("Unauthorized", { status: 401 });
@@ -146,13 +207,53 @@ export async function aiPreamble(
   }
 
   const openrouter = createOpenRouter({ apiKey: OPENROUTER_API_KEY });
-  // Cast needed: OpenRouterChatLanguageModel satisfies LanguageModel at runtime but has
-  // a minor type divergence in providerMetadata vs LanguageModelV2 interface.
-  const openRouterSettings = { provider: { data_collection: "deny" as const } };
+
+  // Phase 2: propagate correlation ID via headers and metadata to every OpenRouter request
+  const openRouterSettings = {
+    provider: { data_collection: "deny" as const },
+    headers: { "x-correlation-id": correlationId },
+  };
+
   const model = openrouter(OPENROUTER_MODEL, openRouterSettings) as unknown as LanguageModel;
   const fallbackModel = OPENROUTER_MODEL_FREE
     ? (openrouter(OPENROUTER_MODEL_FREE, openRouterSettings) as unknown as LanguageModel)
     : null;
+
+  // Capture context for telemetry closure
+  const modelName = OPENROUTER_MODEL;
+  const userId = session.user.id;
+
+  const recordTelemetry = async (extra: {
+    tokensIn: number;
+    tokensOut: number;
+    subFeature: string;
+    latencyMs: number;
+    fallbackUsed?: boolean;
+    inputPrompt?: string;
+    outputContent?: unknown;
+    language?: string;
+  }) => {
+    const costEstimateCents =
+      extra.tokensIn > 0 || extra.tokensOut > 0
+        ? Math.round(estimateCost(modelName, extra.tokensIn, extra.tokensOut))
+        : undefined;
+
+    await recordAiUsage({
+      userId,
+      type: extra.subFeature,
+      model: modelName,
+      subFeature: extra.subFeature,
+      tokensIn: extra.tokensIn,
+      tokensOut: extra.tokensOut,
+      ...(costEstimateCents !== undefined && { costEstimateCents }),
+      ...(promptVersion !== undefined && { promptVersion }),
+      latencyMs: extra.latencyMs,
+      ...(extra.fallbackUsed !== undefined && { fallbackUsed: extra.fallbackUsed }),
+      ...(extra.inputPrompt !== undefined && { inputPrompt: extra.inputPrompt }),
+      ...(extra.outputContent !== undefined && { outputContent: extra.outputContent }),
+      ...(extra.language !== undefined && { language: extra.language }),
+    });
+  };
 
   const checkModeration = async (
     output: string,
@@ -174,5 +275,6 @@ export async function aiPreamble(
     releaseQuota,
     consumed,
     checkModeration,
+    recordTelemetry,
   };
 }

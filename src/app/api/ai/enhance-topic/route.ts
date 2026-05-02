@@ -5,7 +5,7 @@ import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
-import { recordAiUsage } from "@/lib/services/ai-quota";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const enhanceRequestSchema = z.object({
   topic: z.string().min(3).max(500),
@@ -41,15 +41,17 @@ export async function POST(req: Request) {
       return ApiError.badRequest("Topic must be between 3 and 500 characters");
     }
 
-    const modelId = process.env.OPENROUTER_MODEL_FREE ?? process.env.OPENROUTER_MODEL!;
-    const model = openrouter(modelId);
+    const modelName = process.env.OPENROUTER_MODEL_FREE ?? process.env.OPENROUTER_MODEL!;
+    const model = openrouter(modelName);
 
+    const t0 = performance.now();
     const result = await generateText({
       model,
       prompt: `${buildEnhancePrompt(dbUser.language)}\n\nTopic: ${parsed.data.topic}`,
       maxOutputTokens: 100,
       abortSignal: AbortSignal.timeout(15_000),
     });
+    const latencyMs = Math.round(performance.now() - t0);
 
     const enhanced = result.text.trim().replace(/^["']|["']$/g, "");
 
@@ -57,14 +59,26 @@ export async function POST(req: Request) {
       return ApiError.internal("Failed to enhance topic");
     }
 
-    await recordAiUsage(
-      session.user.id,
-      "tools",
-      result.usage?.totalTokens ?? 0,
-      parsed.data.topic,
-      enhanced,
-      dbUser.language || "en"
-    );
+    // Phase 2: uses new options-object signature
+    await recordAiUsage({
+      userId: session.user.id,
+      type: "tools",
+      model: modelName,
+      subFeature: "tools.generate",
+      tokensIn: result.usage?.inputTokens ?? 0,
+      tokensOut: result.usage?.outputTokens ?? 0,
+      costEstimateCents: estimateCost(
+        modelName,
+        result.usage?.inputTokens ?? 0,
+        result.usage?.outputTokens ?? 0
+      ),
+      promptVersion: "tools:v1",
+      latencyMs,
+      fallbackUsed: false,
+      inputPrompt: parsed.data.topic,
+      outputContent: enhanced,
+      language: dbUser.language || "en",
+    });
 
     const res = Response.json({ enhanced });
     res.headers.set("x-correlation-id", correlationId);
