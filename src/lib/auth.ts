@@ -195,7 +195,7 @@ export const auth = betterAuth({
 
   advanced: {
     defaultCookieAttributes: {
-      sameSite: "strict",
+      sameSite: "lax", // Required: allows state/session cookie on OAuth top-level cross-site GET redirects
     },
   },
 
