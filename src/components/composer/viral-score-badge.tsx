@@ -34,6 +34,9 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
   const contentRef = useRef(content);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  const isProPlus =
+    userPlan === "pro_monthly" || userPlan === "pro_annual" || userPlan === "agency";
+
   const fetchScore = useCallback(async (contentToAnalyze: string) => {
     setData((prev) => ({ ...prev, state: "loading", errorMessage: null }));
     try {
@@ -104,9 +107,11 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
       clearTimeout(timerRef.current);
     }
 
-    const isProPlus =
-      userPlan === "pro_monthly" || userPlan === "pro_annual" || userPlan === "agency";
-    const debounceMs = isProPlus ? 3000 : 2000;
+    // Free and trial users don't have viral score access — skip the API call.
+    // The render path below derives the "restricted" UI from isProPlus.
+    if (!isProPlus) return;
+
+    const debounceMs = 3000;
 
     timerRef.current = setTimeout(() => {
       fetchScore(content);
@@ -117,9 +122,43 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
         clearTimeout(timerRef.current);
       }
     };
-  }, [content, fetchScore, userPlan]);
+  }, [content, fetchScore, isProPlus]);
 
   if (!content || content.length < 10) return null;
+
+  // Derive effective state: non-Pro users always see the restricted/upgrade view
+  // regardless of internal state (avoids firing guaranteed-402 API calls).
+  if (!isProPlus) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className="group relative cursor-pointer"
+              onClick={() =>
+                openWithContext({
+                  feature: "viral_score",
+                  message: "Unlock AI Viral Score to predict tweet performance before you post.",
+                  suggestedPlan: "pro_monthly",
+                })
+              }
+            >
+              <div className="bg-muted flex items-center gap-2 rounded-full border px-3 py-1.5 opacity-50 blur-[2px] select-none">
+                <Sparkles className="h-4 w-4" />
+                <span className="font-bold">85</span>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Lock className="text-primary h-4 w-4" />
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Upgrade to unlock Viral Score</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   const { state, score, feedback, errorMessage } = data;
 
