@@ -197,6 +197,7 @@ export const user = pgTable(
     planExpiresAt: timestamp("plan_expires_at"),
     stripeCustomerId: text("stripe_customer_id"),
     trialEndsAt: timestamp("trial_ends_at"),
+    trialExtendedAt: timestamp("trial_extended_at"),
     onboardingCompleted: boolean("onboarding_completed").default(false),
     voiceProfile: jsonb("voice_profile"),
     voiceVariant: text("voice_variant").default("default").notNull(),

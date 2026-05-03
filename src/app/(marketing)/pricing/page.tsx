@@ -3,6 +3,7 @@ import Link from "next/link";
 import { eq, desc } from "drizzle-orm";
 import { Check, ArrowRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { EnterpriseCard } from "@/components/billing/enterprise-card";
 import { PricingTable } from "@/components/billing/pricing-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,6 +111,9 @@ export default async function PricingPage() {
             {...(currentBillingCycle != null && { currentBillingCycle })}
           />
         </div>
+
+        {/* Enterprise Card */}
+        <EnterpriseCard />
 
         {/* Features Section */}
         <div className="mx-auto max-w-5xl">

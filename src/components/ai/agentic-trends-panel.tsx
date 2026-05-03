@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TrendingUp, RefreshCw, Sparkles, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ interface AgenticTrendsPanelProps {
 
 export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
   const t = useTranslations("ai_agentic");
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<TrendCategory>("all");
   const [trends, setTrends] = useState<TrendItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -266,17 +268,18 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-10 min-h-[44px] shrink-0 gap-1.5 px-3 text-xs transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                  className="h-10 min-h-[44px] shrink-0 gap-1.5 px-3 text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onSelectTrend(trend.suggestedAngle);
+                    const topicParam = encodeURIComponent(`${trend.title} ${trend.description}`);
+                    router.push(`/dashboard/ai/writer?topic=${topicParam}`);
                   }}
-                  aria-label={t("trends.post_about", {
+                  aria-label={t("trends.generate_about", {
                     topic: trend.suggestedAngle,
                   })}
                 >
                   <Sparkles className="h-3 w-3" />
-                  {t("trends.post")}
+                  {t("trends.generate")}
                 </Button>
               </div>
             ))}

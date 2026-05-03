@@ -1,5 +1,5 @@
 import { headers, cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
@@ -32,6 +32,8 @@ const profileSchema = z.object({
   timezone: z.string().refine(isValidIANATimezone, { message: "Invalid timezone" }),
   language: z.string().min(2).max(10),
   image: z.string().url().optional().or(z.literal("")),
+  voiceVariant: z.enum(["default", "professional", "casual"]).optional(),
+  showMadeWithAstraPost: z.boolean().optional(),
 });
 
 // One year in seconds — locale preference is stable, long TTL is appropriate
@@ -55,6 +57,8 @@ export async function GET() {
       timezone: true,
       language: true,
       image: true,
+      voiceVariant: true,
+      notificationSettings: true,
     },
   });
 
@@ -62,7 +66,14 @@ export async function GET() {
     return ApiError.notFound("User not found");
   }
 
-  return Response.json(dbUser);
+  const showMadeWithAstraPost =
+    (dbUser.notificationSettings as { showMadeWithAstraPost?: boolean } | null)
+      ?.showMadeWithAstraPost ?? true;
+
+  return Response.json({
+    ...dbUser,
+    showMadeWithAstraPost,
+  });
 }
 
 export async function PATCH(req: Request) {
@@ -91,7 +102,7 @@ export async function PATCH(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { name, timezone, language, image } = parsed.data;
+    const { name, timezone, language, image, voiceVariant, showMadeWithAstraPost } = parsed.data;
 
     await db
       .update(user)
@@ -100,6 +111,10 @@ export async function PATCH(req: Request) {
         timezone,
         language,
         ...(image !== undefined && { image: image || null }),
+        ...(voiceVariant !== undefined && { voiceVariant }),
+        ...(showMadeWithAstraPost !== undefined && {
+          notificationSettings: sql`COALESCE(notification_settings, '{}'::jsonb) || jsonb_build_object('showMadeWithAstraPost', ${showMadeWithAstraPost}::boolean)`,
+        }),
       })
       .where(eq(user.id, session.user.id));
 

@@ -36,6 +36,13 @@ export default async function ProfileSettingsPage() {
             timezone: userRow?.timezone ?? null,
             language: userRow?.language ?? null,
             image: userRow?.image ?? null,
+            voiceVariant: userRow?.voiceVariant ?? "default",
+            showMadeWithAstraPost:
+              (
+                userRow?.notificationSettings as {
+                  showMadeWithAstraPost?: boolean;
+                } | null
+              )?.showMadeWithAstraPost ?? true,
           }}
         />
 

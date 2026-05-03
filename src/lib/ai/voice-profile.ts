@@ -100,7 +100,7 @@ export function sanitizeForPrompt(text: string, maxLength: number): string {
  * This ensures that only schema-validated, length-bounded, single-line-safe
  * strings can reach the model prompt — never raw `jsonb` values.
  */
-export function buildVoiceInstructions(raw: unknown): string {
+export function buildVoiceInstructions(raw: unknown, voiceVariant: string = "default"): string {
   if (!raw) return "";
 
   const parsed = voiceProfileSchema.safeParse(raw);
@@ -121,8 +121,11 @@ export function buildVoiceInstructions(raw: unknown): string {
     .filter(Boolean)
     .join("; ");
 
+  const variantInstruction = getVariantInstruction(voiceVariant);
+
   return [
     "Voice Profile Instructions:",
+    variantInstruction,
     `- Tone: ${f(vp.tone, FIELD_MAX)}`,
     `- Style Keywords: ${keywords}`,
     `- Sentence Structure: ${f(vp.sentenceStructure, FIELD_MAX)}`,
@@ -133,6 +136,17 @@ export function buildVoiceInstructions(raw: unknown): string {
     "",
     "ADHERE STRICTLY TO THIS WRITING STYLE. Mimic the user's voice perfectly.",
   ].join("\n");
+}
+
+function getVariantInstruction(variant: string): string {
+  switch (variant) {
+    case "professional":
+      return "Tone: authoritative, concise, no slang. Write with domain expertise and clarity.";
+    case "casual":
+      return "Tone: conversational, warm, light humor. Write like you're texting a friend.";
+    default:
+      return "Tone: balanced — professional enough to be credible, casual enough to be relatable.";
+  }
 }
 
 // ── Deterministic voice formatter ────────────────────────────────────────────

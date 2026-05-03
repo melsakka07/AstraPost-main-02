@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
 
@@ -39,6 +40,8 @@ interface ProfileFormProps {
     timezone?: string | null;
     language?: string | null;
     image?: string | null;
+    voiceVariant?: string | null;
+    showMadeWithAstraPost?: boolean;
   };
 }
 
@@ -51,6 +54,8 @@ function getProfileFormSchema(t: ReturnType<typeof useTranslations<"settings">>)
     timezone: z.string().min(1, t("profile.validation.timezone_required")),
     language: z.string().min(2, t("profile.validation.language_required")).max(10),
     image: z.string().nullable().optional(),
+    voiceVariant: z.enum(["default", "professional", "casual"]).optional(),
+    showMadeWithAstraPost: z.boolean(),
   });
 }
 
@@ -72,6 +77,9 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       timezone: initialData.timezone || "Asia/Riyadh",
       language: initialData.language || "ar",
       image: initialData.image || null,
+      voiceVariant:
+        (initialData.voiceVariant as "default" | "professional" | "casual") || "default",
+      showMadeWithAstraPost: initialData.showMadeWithAstraPost ?? true,
     },
     mode: "onChange", // Enable real-time validation feedback
   });
@@ -314,7 +322,49 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="voiceVariant"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("profile.voice_variant_label")}</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? "default"}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("profile.voice_variant_placeholder")} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="default">
+                          {t("profile.voice_variant_default")}
+                        </SelectItem>
+                        <SelectItem value="professional">
+                          {t("profile.voice_variant_professional")}
+                        </SelectItem>
+                        <SelectItem value="casual">{t("profile.voice_variant_casual")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>{t("profile.voice_variant_description")}</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+            <FormField
+              control={form.control}
+              name="showMadeWithAstraPost"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>{t("profile.show_made_with_astrapost_label")}</FormLabel>
+                    <FormDescription>{t("profile.show_made_with_astrapost_desc")}</FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
             <div className="col-span-full">
               <p className="text-muted-foreground text-sm">
                 {t("profile.preview_text")}{" "}

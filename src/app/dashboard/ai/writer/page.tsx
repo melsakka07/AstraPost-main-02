@@ -80,11 +80,12 @@ function AIWriterContent() {
   const t = useTranslations("ai_writer");
   const langT = useTranslations("languages");
   const initialTab = (searchParams?.get("tab") as ActiveTab | null) ?? "thread";
+  const initialTopic = searchParams?.get("topic") ?? "";
   const { openWithContext } = useUpgradeModal();
   const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
 
   // --- Thread Writer State ---
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(initialTopic);
   const [tone, setTone] = useState("casual");
   const [language, setLanguage] = useState("en");
   const [tweetCount, setTweetCount] = useState(5);

@@ -1,5 +1,101 @@
 # Latest Updates
 
+## 2026-05-03: Phase 6 — Growth Engine COMPLETE
+
+**Summary:** All 5 exit criteria shipped. Referral infrastructure (pre-existing from Phase 4 with revised credit model), "Made with AstraPost" footer + Pro opt-out toggle, admin trial-extension endpoint with bilingual Resend email, and Enterprise card on /pricing.
+
+### Exit criteria (all [x])
+
+| #   | Criterion             | Detail                                                                                                                                                                                                                                                                |
+| --- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M7  | Referral codes live   | Pre-existing from Phase 4. Inviter gets $5 Stripe credit on referred user subscription (webhook `awardReferralCredit`); invitee gets +21 trial days on sign-up via `?ref=` cookie capture. Credit model revised from plan (+20 gens/+7 days) per 2026-05-03 decision. |
+| M7  | Share URL injection   | Referral dashboard at `/dashboard/referrals` generates `?ref=` links. "Made with AstraPost" footer component ready for future public template pages.                                                                                                                  |
+| M7  | Footer + Pro opt-out  | `src/components/brand/made-with-astrapost-footer.tsx` with LogoMark; opt-out toggle in profile settings stored via `notification_settings` JSONB (no new column).                                                                                                     |
+| M8  | Admin trial extension | `POST /api/admin/users/[id]/extend-trial` with `{ days, reason }`; updates `trialEndsAt` + `trialExtendedAt` audit column; bilingual Resend email with Arabic plural rules.                                                                                           |
+| M12 | Enterprise card       | `src/components/billing/enterprise-card.tsx` — static card with 4 features + mailto; placed between PricingTable and Features section on `/pricing`.                                                                                                                  |
+
+### Schema migration
+
+`drizzle/0069_public_punisher.sql` — `ALTER TABLE "user" ADD COLUMN "trial_extended_at" timestamp`. Auto-applies on next Vercel production deploy via `build:ci`.
+
+### Files created (4)
+
+- `src/app/api/admin/users/[userId]/extend-trial/route.ts` — M8 admin trial extension endpoint
+- `src/components/brand/made-with-astrapost-footer.tsx` — M7 footer component
+- `src/components/billing/enterprise-card.tsx` — M12 enterprise marketing card
+- `drizzle/0069_public_punisher.sql` — trialExtendedAt migration
+
+### Files modified (7)
+
+- `src/lib/schema.ts` — added `trialExtendedAt` column after `trialEndsAt`
+- `src/app/(marketing)/pricing/page.tsx` — imported `<EnterpriseCard />`
+- `src/components/settings/profile-form.tsx` — added `showMadeWithAstraPost` Switch field
+- `src/app/api/user/profile/route.ts` — GET/PATCH `showMadeWithAstraPost` via `notificationSettings` JSONB
+- `src/app/dashboard/settings/profile/page.tsx` — passes `showMadeWithAstraPost` to ProfileForm
+- `src/i18n/messages/en.json` — +13 keys (enterprise, common, email, settings namespaces)
+- `src/i18n/messages/ar.json` — +13 keys, matched
+
+### Post-deploy reminders
+
+- Run `pnpm db:migrate` to apply migration locally
+- Migration auto-applies on next Vercel production deploy via `build:ci`
+- Verify `<EnterpriseCard />` renders on `/pricing` page in production
+- Test admin trial extension flow: POST with valid admin session → verify email received
+
+### Quality Gate
+
+- `pnpm lint` — PASS (0 errors, 0 warnings)
+- `pnpm typecheck` — PASS
+- `pnpm check:i18n` — PASS (2453 keys matched)
+- `pnpm test` — PASS (28 files, 240 tests)
+
+---
+
+## 2026-05-03: Phase 5 Wave B — Voice Variants, Streaming, Trends CTA (3 items)
+
+**Summary:** Three user-facing Wave B items shipped: M4-lite voice variant (DB column + 3 prompt deltas + settings UI), U4 agentic streaming (Steps 3 & 5 converted from `generateText` to `streamText`), and U12 trends inline Generate CTA.
+
+### M4-lite — Voice variant enum + prompt deltas + settings UI
+
+- Added `voiceVariant: text("voice_variant").default("default")` to `user` table
+- `buildVoiceInstructions()` in `voice-profile.ts` now accepts `voiceVariant` parameter with 3 variants:
+  - `default`: "Tone: balanced — professional enough to be credible, casual enough to be relatable."
+  - `professional`: "Tone: authoritative, concise, no slang. Write with domain expertise and clarity."
+  - `casual`: "Tone: conversational, warm, light humor. Write like you're texting a friend."
+- `aiPreamble` queries `voiceVariant` from DB and passes it down; thread, tools, and agentic routes wired
+- Settings UI: `<Select>` toggle in Profile form (`/dashboard/settings/profile`) with 3 options
+- 6 new i18n keys per locale: `voice_variant_label`, `voice_variant_placeholder`, `voice_variant_default`, `voice_variant_professional`, `voice_variant_casual`, `voice_variant_description`
+- Profile PATCH endpoint (`/api/user/profile`) accepts and persists `voiceVariant`
+
+**Files:** `src/lib/ai/voice-profile.ts`, `src/lib/api/ai-preamble.ts`, `src/lib/services/agentic-pipeline.ts`, `src/app/api/ai/agentic/route.ts`, `src/app/api/ai/thread/route.ts`, `src/app/api/ai/tools/route.ts`, `src/app/api/user/profile/route.ts`, `src/components/settings/profile-form.tsx`, `src/app/dashboard/settings/profile/page.tsx`, `src/i18n/messages/en.json`, `src/i18n/messages/ar.json`
+
+### U4 — Agentic streaming Steps 3 & 5
+
+- Step 3 (Writing) and Step 5 (Review) converted from `generateText` to `streamText` in `agentic-pipeline.ts`
+- `onChunk` callbacks emit `status: "streaming"` events with `textDelta` chunks via the existing `onProgress` SSE channel
+- `PipelineProgressEvent` type already supported `"streaming"` status — no type changes needed
+- `ai` module mock in agentic-pipeline test updated: `streamText` added to `vi.mock("ai", ...)`, all 5 tests updated
+
+**Files:** `src/lib/services/agentic-pipeline.ts`, `src/lib/services/agentic-pipeline.test.ts`
+
+### U12 — Trends inline Generate CTA
+
+- Each trend card in `AgenticTrendsPanel` now shows an always-visible `<Button>` with Sparkles icon
+- On click: navigates to `/dashboard/ai/writer?topic=<encoded trend title + description>`
+- Writer page reads `topic` from `searchParams` and pre-fills the topic input
+- 2 new i18n keys per locale: `trends.generate` / `trends.generate_about`
+
+**Files:** `src/components/ai/agentic-trends-panel.tsx`, `src/app/dashboard/ai/writer/page.tsx`, `src/i18n/messages/en.json`, `src/i18n/messages/ar.json`
+
+### Quality Gate
+
+- `pnpm lint` — PASS (0 errors, 0 warnings)
+- `pnpm typecheck` — PASS
+- `pnpm check:i18n` — PASS (2433 keys matched)
+- `pnpm test` — PASS (all tests, including 5 agentic-pipeline streaming tests)
+
+---
+
 ## 2026-05-03: Phase 5 Wave A — AI Quality Items (7 items)
 
 **Summary:** Seven AI-side quality improvements shipped: server-side char-count enforcement, centralized language blocks, hashtag banlist, few-shot examples, trends evidenceUrl, translate mode param, and reply author stripping.

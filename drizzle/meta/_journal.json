@@ -484,6 +484,13 @@
       "when": 1777801429369,
       "tag": "0068_tough_chamber",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1777814126264,
+      "tag": "0069_public_punisher",
+      "breakpoints": true
     }
   ]
 }

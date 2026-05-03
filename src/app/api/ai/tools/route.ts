@@ -48,7 +48,10 @@ export async function POST(req: Request) {
 
     // Validate the stored voiceProfile against the strict schema and sanitize
     // every field before interpolation. Returns "" for null/invalid profiles.
-    const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
+    const voiceInstructions = buildVoiceInstructions(
+      dbUser?.voiceProfile,
+      dbUser?.voiceVariant ?? "default"
+    );
 
     const langInstruction = getArabicInstructions(userLanguage);
     const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;

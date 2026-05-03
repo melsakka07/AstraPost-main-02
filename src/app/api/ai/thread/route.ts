@@ -153,7 +153,10 @@ export async function POST(req: Request) {
       }
     }
 
-    const voiceInstructions = buildVoiceInstructions(dbUser?.voiceProfile);
+    const voiceInstructions = buildVoiceInstructions(
+      dbUser?.voiceProfile,
+      dbUser?.voiceVariant ?? "default"
+    );
     const wrappedVoice = voiceInstructions ? wrapUntrusted("VOICE PROFILE", voiceInstructions) : "";
 
     // Per-request nonce for delimiter hardening

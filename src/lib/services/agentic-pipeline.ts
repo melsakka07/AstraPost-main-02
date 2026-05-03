@@ -1,5 +1,5 @@
 import { openrouter } from "@openrouter/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, streamText } from "ai";
 import {
   buildResearchPrompt,
   buildStrategyPrompt,
@@ -29,6 +29,7 @@ interface RunAgenticPipelineParams {
   xAccountId: string;
   xSubscriptionTier: XSubscriptionTier;
   voiceProfile: unknown;
+  voiceVariant: string;
   language: string;
   userId: string;
   correlationId: string;
@@ -61,6 +62,7 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     xAccountId,
     xSubscriptionTier,
     voiceProfile,
+    voiceVariant,
     language,
     userId,
     correlationId,
@@ -198,7 +200,7 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
   emit("writing", "in_progress");
   log("agentic_write_start");
 
-  const voiceBlock = buildVoiceInstructions(voiceProfile);
+  const voiceBlock = buildVoiceInstructions(voiceProfile, voiceVariant);
 
   let tweets: AgenticTweet[];
   try {
@@ -208,14 +210,24 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
       voiceBlock ?? null,
       language
     );
-    const writeResult = await generateText({
+    const writeResult = streamText({
       model,
       system: writeSystem,
       messages: writeMessages,
       maxOutputTokens: 3000,
       abortSignal: AbortSignal.timeout(90_000),
+      onChunk({ chunk }) {
+        if (chunk.type === "text-delta") {
+          onProgress({
+            step: "writing",
+            status: "streaming",
+            data: { textDelta: chunk.text },
+          });
+        }
+      },
     });
-    tweets = safeJsonParse<AgenticTweet[]>(writeResult.text, []);
+    const fullText = await writeResult.text;
+    tweets = safeJsonParse<AgenticTweet[]>(fullText, []);
   } catch (err) {
     emit("writing", "failed");
     logger.error("agentic_writing_failed", {
@@ -300,19 +312,29 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     plan
   );
 
-  const reviewResult = await generateText({
+  const reviewStream = streamText({
     model: reviewerModel,
     system: reviewSystem,
     messages: reviewMessages,
     maxOutputTokens: 400,
     abortSignal: AbortSignal.timeout(30_000),
+    onChunk({ chunk }) {
+      if (chunk.type === "text-delta") {
+        onProgress({
+          step: "review",
+          status: "streaming",
+          data: { textDelta: chunk.text },
+        });
+      }
+    },
   });
+  const reviewText = await reviewStream.text;
   const review = safeJsonParse<{
     qualityScore: number;
     summary: string;
     issues: string[];
     passed: boolean;
-  }>(reviewResult.text, {
+  }>(reviewText, {
     qualityScore: 7,
     summary: `AI-generated content about ${topic}`,
     issues: [],

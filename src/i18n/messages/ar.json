@@ -1274,6 +1274,8 @@
       "trending_topics": "المواضيع الرائجة",
       "post": "نشر",
       "post_about": "نشر عن: {topic}",
+      "generate": "إنشاء",
+      "generate_about": "إنشاء ثريد عن: {topic}",
       "collapse": "طي المواضيع الرائجة",
       "show_trending": "إظهار المواضيع الرائجة",
       "categories": {
@@ -1644,6 +1646,12 @@
       "timezone_description": "ستُجدوَل المنشورات وفقاً لهذه المنطقة الزمنية.",
       "language_label": "لغة الواجهة",
       "language_placeholder": "اختر اللغة",
+      "voice_variant_label": "أسلوب الكتابة بالذكاء الاصطناعي",
+      "voice_variant_placeholder": "اختر أسلوب الكتابة",
+      "voice_variant_default": "متوازن — محترف لكن ودود",
+      "voice_variant_professional": "محترف — رسمي، موجز، بدون عامية",
+      "voice_variant_casual": "غير رسمي — حواري، دافئ، بروح مرحة",
+      "voice_variant_description": "يحدد النغمة الافتراضية لجميع المحتوى المُنشأ بالذكاء الاصطناعي",
       "avatar_upload": "رفع",
       "avatar_uploading": "جارٍ الرفع...",
       "avatar_remove": "إزالة",
@@ -1653,6 +1661,8 @@
       "save": "حفظ التغييرات",
       "saving": "جارٍ الحفظ...",
       "saved": "تم تحديث الملف الشخصي بنجاح",
+      "show_made_with_description": "يمكن لمستخدمي Pro إخفاء هذا التذييل على مشاركات القوالب العامة",
+      "show_made_with_label": "إظهار 'صُنع بواسطة AstraPost' على الصفحات المشتركة",
       "error_upload": "فشل رفع الصورة الرمزية",
       "error_save": "حدث خطأ ما",
       "error_file_type": "يُسمح فقط بصور JPEG و PNG و WebP و GIF",
@@ -1677,7 +1687,9 @@
       "onboarding_desc": "أكمل معالج الإعداد في أي وقت",
       "onboarding_body": "تخطيت معالج الإعداد سابقاً؟ يمكنك استئنافه في أي وقت لإكمال إعدادك وجدولة منشورك الأول واستكشاف الميزات المدعومة بالذكاء الاصطناعي.",
       "onboarding_button": "استئناف الإعداد",
-      "onboarding_loading": "جارٍ التحميل..."
+      "onboarding_loading": "جارٍ التحميل...",
+      "show_made_with_astrapost_label": "إظهار 'مصنوع باستخدام AstraPost' على الصفحات المشتركة",
+      "show_made_with_astrapost_desc": "عرض تذييل AstraPost على صفحاتك العامة المشتركة"
     },
     "billing": {
       "title": "الفوترة والاشتراك",
@@ -2063,6 +2075,13 @@
     "features_title": "جميع الخطط تشمل هذه الميزات الأساسية",
     "features_subtitle": "ابدأ بأدوات قوية وافتح المزيد مع نموّك.",
     "cta_start_free": "ابدأ مجاناً",
+    "enterprise_contact": "اتصل بنا",
+    "enterprise_description": "حلول مخصصة للفرق والوكالات. دعم مخصص، نماذج ذكاء اصطناعي مخصصة، وأسعار حسب الحجم.",
+    "enterprise_feature_1": "مدير حساب مخصص",
+    "enterprise_feature_2": "تدريب مخصص لنماذج الذكاء الاصطناعي",
+    "enterprise_feature_3": "وصول أولوي لواجهة API",
+    "enterprise_feature_4": "اتفاقية مستوى خدمة ودعم مخصصين",
+    "enterprise_title": "المؤسسات",
     "feature_1": "جدولة X (تويتر) — انشر وجدول عبر X",
     "feature_2": "جدولة ذكية مع دعم المناطق الزمنية",
     "feature_3": "توليد محتوى بالذكاء الاصطناعي مع نماذج متعددة",
@@ -2371,6 +2390,9 @@
     "release_4_item_2": "جدولة المنشورات: جدولة التغريدات والسلاسل للنشر المستقبلي",
     "release_4_item_3": "تحليلات أساسية: عرض مرات الظهور والإعجابات وإعادات التغريد"
   },
+  "common": {
+    "made_with_astrapost": "صُنع بواسطة AstraPost"
+  },
   "chat": {
     "title": "مساعد AstraPost",
     "welcome": "مرحباً، {name}!",
@@ -2458,6 +2480,13 @@
       "view_queue": "عرض قائمة الانتظار لإعادة المحاولة",
       "post_id": "معرّف المنشور"
     },
+    "trial_extended": {
+      "subject": "تم تمديد فترتك التجريبية في AstraPost بمقدار {days, plural, zero {لا أيام} one {يوم واحد} two {يومان} few {{days} أيام} many {{days} يوماً} other {{days} يوم}}",
+      "body": "أخبار رائعة! تم تمديد فترتك التجريبية المجانية لـ AstraPost Pro بمقدار {days, plural, zero {لا أيام} one {يوم واحد} two {يومان} few {{days} أيام} many {{days} يوماً} other {{days} يوم}}. تاريخ انتهاء فترتك التجريبية الجديد هو {endDate}. استمر في الاستمتاع بجميع ميزات Pro بما في ذلك كاتب الذكاء الاصطناعي والتحليلات والتعاون الجماعي.",
+      "login_cta": "تسجيل الدخول إلى AstraPost",
+      "reason_label": "سبب تمديد فترتك التجريبية",
+      "no_reason": "لم يتم تقديم سبب محدد."
+    },
     "trial_expired": {
       "subject": "انتهت الفترة التجريبية",
       "body": "انتهت الفترة التجريبية المجانية لمدة 14 يوماً لـ AstraPost Pro. قم بالترقية الآن للاستمرار في استخدام الميزات المتقدمة مثل كاتب الذكاء الاصطناعي والتحليلات والتعاون الجماعي.",
@@ -2509,6 +2538,11 @@
       "join_button": "قبول الدعوة",
       "expires": "تنتهي هذه الدعوة خلال 7 أيام."
     }
+  },
+  "email": {
+    "trial_extended_body": "أخبار رائعة! تم تمديد الفترة التجريبية الخاصة بك بمقدار {days} يوم. تنتهي الفترة التجريبية الآن في {endDate}. سجل الدخول لمواصلة إنشاء المحتوى.",
+    "trial_extended_cta": "تسجيل الدخول إلى AstraPost",
+    "trial_extended_subject": "تم تمديد الفترة التجريبية في AstraPost بمقدار {days} يوم"
   },
   "resources": {
     "badge": "الموارد",

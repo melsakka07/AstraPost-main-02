@@ -1922,6 +1922,13 @@
       "view_queue": "‏[View Queue to Retry Retryry]‏",
       "post_id": "‏[Post ID ID]‏"
     },
+    "trial_extended": {
+      "subject": "‏[Your AstraPost trial has been extended by {days} days daysys]‏",
+      "body": "‏[Great news! Your AstraPost Pro free trial has been extended... Your new trial end date is {endDate}. Continue enjoying all Pro features. features.s.]‏",
+      "login_cta": "‏[Log In to AstraPost AstraPostost]‏",
+      "reason_label": "‏[Why your trial was extended extendeded]‏",
+      "no_reason": "‏[No specific reason provided. provided.d.]‏"
+    },
     "trial_expired": {
       "subject": "‏[Your trial has ended endeded]‏",
       "body": "‏[Your 14-day free trial of AstraPost Pro has ended. Upgrade now to continue using advanced features like AI Writer, Analytics, and Team collaboration. collaboration.n.]‏",

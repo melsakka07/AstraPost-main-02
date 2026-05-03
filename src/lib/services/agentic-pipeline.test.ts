@@ -1,12 +1,12 @@
-import { generateText } from "ai";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { generateText, streamText } from "ai";
+import { Mock, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildWritingPrompt } from "@/lib/ai/agentic-prompts";
 import type { PipelineProgressEvent } from "@/lib/ai/agentic-types";
 import { runAgenticPipeline } from "@/lib/services/agentic-pipeline";
 import { generateAgenticImage } from "@/lib/services/ai-image";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 
-vi.mock("ai", () => ({ generateText: vi.fn() }));
+vi.mock("ai", () => ({ generateText: vi.fn(), streamText: vi.fn() }));
 vi.mock("@openrouter/ai-sdk-provider", () => ({ openrouter: vi.fn(() => ({})) }));
 vi.mock("@/lib/services/ai-image", () => ({ generateAgenticImage: vi.fn() }));
 vi.mock("@/lib/services/ai-quota", () => ({ recordAiUsage: vi.fn() }));
@@ -26,6 +26,7 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 const mockGenerateText = vi.mocked(generateText);
+const mockStreamText = streamText as unknown as Mock<() => { text: Promise<string> }>;
 const mockGenerateAgenticImage = vi.mocked(generateAgenticImage);
 const mockBuildWritingPrompt = vi.mocked(buildWritingPrompt);
 const mockCanPostLongContent = vi.mocked(canPostLongContent);
@@ -76,6 +77,7 @@ function makeBaseParams(onProgress = vi.fn()) {
     xAccountId: "acc-1",
     xSubscriptionTier: "None" as const,
     voiceProfile: null,
+    voiceVariant: "default",
     language: "en",
     userId: "user-1",
     correlationId: "corr-1",
@@ -98,9 +100,11 @@ describe("runAgenticPipeline", () => {
   it("happy path: returns AgenticPost with correct shape and image URL", async () => {
     mockGenerateText
       .mockResolvedValueOnce({ text: RESEARCH_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: STRATEGY_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: TWEETS_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: REVIEW_JSON } as Awaited<ReturnType<typeof generateText>>);
+      .mockResolvedValueOnce({ text: STRATEGY_JSON } as Awaited<ReturnType<typeof generateText>>);
+
+    mockStreamText
+      .mockReturnValueOnce({ text: Promise.resolve(TWEETS_JSON) })
+      .mockReturnValueOnce({ text: Promise.resolve(REVIEW_JSON) });
 
     mockGenerateAgenticImage.mockResolvedValue({ url: "https://stored.example.com/img.png" });
 
@@ -126,8 +130,9 @@ describe("runAgenticPipeline", () => {
     const progressCalls = onProgress.mock.calls.map((c) => c[0] as PipelineProgressEvent);
     expect(progressCalls.some((e) => e.step === "review" && e.status === "complete")).toBe(true);
 
-    // generateText called exactly 4 times
-    expect(mockGenerateText).toHaveBeenCalledTimes(4);
+    // generateText called for research + strategy; streamText called for writing + review
+    expect(mockGenerateText).toHaveBeenCalledTimes(2);
+    expect(mockStreamText).toHaveBeenCalledTimes(2);
   });
 
   // ── Test 2: Too-broad topic ───────────────────────────────────────────────
@@ -207,9 +212,11 @@ describe("runAgenticPipeline", () => {
       .mockResolvedValueOnce({ text: RESEARCH_JSON } as Awaited<ReturnType<typeof generateText>>)
       .mockResolvedValueOnce({ text: strategyAllImages } as Awaited<
         ReturnType<typeof generateText>
-      >)
-      .mockResolvedValueOnce({ text: tweetsAllImages } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: REVIEW_JSON } as Awaited<ReturnType<typeof generateText>>);
+      >);
+
+    mockStreamText
+      .mockReturnValueOnce({ text: Promise.resolve(tweetsAllImages) })
+      .mockReturnValueOnce({ text: Promise.resolve(REVIEW_JSON) });
 
     // First call succeeds, second fails, third succeeds
     mockGenerateAgenticImage
@@ -259,9 +266,11 @@ describe("runAgenticPipeline", () => {
 
     mockGenerateText
       .mockResolvedValueOnce({ text: RESEARCH_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: strategyMedium } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: tweetsNoImages } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: REVIEW_JSON } as Awaited<ReturnType<typeof generateText>>);
+      .mockResolvedValueOnce({ text: strategyMedium } as Awaited<ReturnType<typeof generateText>>);
+
+    mockStreamText
+      .mockReturnValueOnce({ text: Promise.resolve(tweetsNoImages) })
+      .mockReturnValueOnce({ text: Promise.resolve(REVIEW_JSON) });
 
     mockCanPostLongContent.mockReturnValue(false);
 
@@ -280,9 +289,11 @@ describe("runAgenticPipeline", () => {
   it("emits progress events in the correct sequence", async () => {
     mockGenerateText
       .mockResolvedValueOnce({ text: RESEARCH_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: STRATEGY_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: TWEETS_JSON } as Awaited<ReturnType<typeof generateText>>)
-      .mockResolvedValueOnce({ text: REVIEW_JSON } as Awaited<ReturnType<typeof generateText>>);
+      .mockResolvedValueOnce({ text: STRATEGY_JSON } as Awaited<ReturnType<typeof generateText>>);
+
+    mockStreamText
+      .mockReturnValueOnce({ text: Promise.resolve(TWEETS_JSON) })
+      .mockReturnValueOnce({ text: Promise.resolve(REVIEW_JSON) });
 
     mockGenerateAgenticImage.mockResolvedValue({ url: "https://stored.example.com/img.png" });
 
@@ -307,6 +318,7 @@ describe("runAgenticPipeline", () => {
       { step: "review", status: "in_progress" },
       { step: "review", status: "complete" },
       // "done" is emitted by the route handler after DB update, not by the pipeline itself
+      // NOTE: "streaming" events are not tested here — the mock streamText doesn't invoke onChunk
     ];
 
     // Verify each expected event appears in the emitted events in the correct relative order

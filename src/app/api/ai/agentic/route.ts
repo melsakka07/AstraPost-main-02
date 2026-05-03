@@ -203,6 +203,7 @@ export async function POST(req: Request) {
             xAccountId,
             xSubscriptionTier: tier,
             voiceProfile: dbUser.voiceProfile,
+            voiceVariant: dbUser.voiceVariant ?? "default",
             language: userLanguage,
             userId: session.user.id,
             correlationId,

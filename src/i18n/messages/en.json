@@ -1274,6 +1274,8 @@
       "trending_topics": "Trending topics",
       "post": "Post",
       "post_about": "Post about: {topic}",
+      "generate": "Generate",
+      "generate_about": "Generate thread about: {topic}",
       "collapse": "Collapse trending topics",
       "show_trending": "Show trending topics",
       "categories": {
@@ -1644,6 +1646,12 @@
       "timezone_description": "Posts will be scheduled in this timezone.",
       "language_label": "Interface Language",
       "language_placeholder": "Select language",
+      "voice_variant_label": "AI Writing Style",
+      "voice_variant_placeholder": "Select writing style",
+      "voice_variant_default": "Balanced — professional yet relatable",
+      "voice_variant_professional": "Professional — authoritative, concise, no slang",
+      "voice_variant_casual": "Casual — conversational, warm, light humor",
+      "voice_variant_description": "Sets the default tone for all AI-generated content",
       "avatar_upload": "Upload",
       "avatar_uploading": "Uploading...",
       "avatar_remove": "Remove",
@@ -1653,6 +1661,8 @@
       "save": "Save Changes",
       "saving": "Saving...",
       "saved": "Profile updated successfully",
+      "show_made_with_description": "Pro users can hide this footer on public template shares",
+      "show_made_with_label": "Show 'Made with AstraPost' on shared pages",
       "error_upload": "Failed to upload avatar",
       "error_save": "Something went wrong",
       "error_file_type": "Only JPEG, PNG, WebP, and GIF images are allowed",
@@ -1677,7 +1687,9 @@
       "onboarding_desc": "Complete the setup wizard anytime",
       "onboarding_body": "Skipped the onboarding wizard earlier? You can resume at any time to complete your setup, schedule your first post, and explore AI-powered features.",
       "onboarding_button": "Resume Onboarding",
-      "onboarding_loading": "Loading..."
+      "onboarding_loading": "Loading...",
+      "show_made_with_astrapost_label": "Show 'Made with AstraPost' on shared pages",
+      "show_made_with_astrapost_desc": "Display a subtle AstraPost credit footer on your public shared pages"
     },
     "billing": {
       "title": "Billing & Subscription",
@@ -2063,6 +2075,13 @@
     "features_title": "All plans include these core features",
     "features_subtitle": "Start with powerful tools and unlock more as you grow.",
     "cta_start_free": "Start for free",
+    "enterprise_contact": "Contact Us",
+    "enterprise_description": "Custom solutions for teams and agencies. Dedicated support, custom AI models, and volume pricing.",
+    "enterprise_feature_1": "Dedicated account manager",
+    "enterprise_feature_2": "Custom AI model training",
+    "enterprise_feature_3": "Priority API access",
+    "enterprise_feature_4": "Custom SLA & support",
+    "enterprise_title": "Enterprise",
     "feature_1": "X (Twitter) Scheduling — post and schedule across X",
     "feature_2": "Smart Scheduling with timezone support",
     "feature_3": "AI Content Generation with multiple models",
@@ -2309,6 +2328,9 @@
     "release_4_item_2": "Post Scheduling: Schedule tweets and threads for future publishing",
     "release_4_item_3": "Basic Analytics: View post impressions, likes, and retweets"
   },
+  "common": {
+    "made_with_astrapost": "Made with AstraPost"
+  },
   "command_palette": {
     "open": "Open command palette",
     "title": "Command Palette",
@@ -2377,6 +2399,13 @@
       "view_queue": "View Queue to Retry",
       "post_id": "Post ID"
     },
+    "trial_extended": {
+      "subject": "Your AstraPost trial has been extended by {days, plural, one {# day} other {# days}}",
+      "body": "Great news! Your AstraPost Pro free trial has been extended by {days, plural, one {# day} other {# days}}. Your new trial end date is {endDate}. Continue enjoying all Pro features including AI Writer, Analytics, and Team collaboration.",
+      "login_cta": "Log In to AstraPost",
+      "reason_label": "Why your trial was extended",
+      "no_reason": "No specific reason provided."
+    },
     "trial_expired": {
       "subject": "Your trial has ended",
       "body": "Your 14-day free trial of AstraPost Pro has ended. Upgrade now to continue using advanced features like AI Writer, Analytics, and Team collaboration.",
@@ -2428,6 +2457,11 @@
       "join_button": "Accept Invitation",
       "expires": "This invitation expires in 7 days."
     }
+  },
+  "email": {
+    "trial_extended_body": "Great news! Your trial period has been extended by {days} days. Your trial now ends on {endDate}. Log in to continue creating content.",
+    "trial_extended_cta": "Log in to AstraPost",
+    "trial_extended_subject": "Your AstraPost trial has been extended by {days} days"
   },
   "resources": {
     "badge": "Resources",

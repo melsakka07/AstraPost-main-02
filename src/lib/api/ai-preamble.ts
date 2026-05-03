@@ -57,7 +57,12 @@ export interface AiPreambleOptions {
 
 export type AiPreambleResult = {
   session: NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
-  dbUser: { plan: string | null; voiceProfile: unknown; language: string | null };
+  dbUser: {
+    plan: string | null;
+    voiceProfile: unknown;
+    language: string | null;
+    voiceVariant: string | null;
+  };
   model: LanguageModel;
   fallbackModel: LanguageModel | null;
   /** Release quota previously consumed by this preamble. Call in route catch blocks on generation failure. */
@@ -177,7 +182,7 @@ export async function aiPreamble(
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
-    columns: { plan: true, voiceProfile: true, language: true },
+    columns: { plan: true, voiceProfile: true, language: true, voiceVariant: true },
   });
 
   // T9: Idempotency check — short-circuits duplicate AI generations.
@@ -306,7 +311,7 @@ export async function aiPreamble(
 
   return {
     session,
-    dbUser: dbUser ?? { plan: null, voiceProfile: null, language: null },
+    dbUser: dbUser ?? { plan: null, voiceProfile: null, language: null, voiceVariant: null },
     model,
     fallbackModel: null,
     releaseQuota,
