@@ -7,6 +7,7 @@ import {
   getPlanLimits,
   normalizePlan,
   TRIAL_EFFECTIVE_PLAN,
+  IMAGE_MODEL_COST,
   type ImageModel,
   type PlanLimits,
   type PlanType,
@@ -34,7 +35,8 @@ export type GatedFeature =
   | "ai_image_model"
   | "inspiration"
   | "agentic_posting"
-  | "affiliate_generator";
+  | "affiliate_generator"
+  | "tools";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -104,7 +106,10 @@ function buildFailure(params: Omit<PlanGateFailure, "allowed">): PlanGateFailure
   return { allowed: false, ...params };
 }
 
-export function buildPlanLimitPayload(result: PlanGateFailure) {
+export function buildPlanLimitPayload(
+  result: PlanGateFailure,
+  stats?: { threadsCreated: number; totalImpressions: number | null } | null
+) {
   const remaining =
     typeof result.limit === "number" ? Math.max(0, result.limit - result.used) : null;
 
@@ -121,6 +126,7 @@ export function buildPlanLimitPayload(result: PlanGateFailure) {
     suggested_plan: result.suggestedPlan,
     trial_active: result.trialActive,
     reset_at: result.resetAt ? result.resetAt.toISOString() : null,
+    last30d_stats: stats ?? null,
   };
 }
 
@@ -133,12 +139,50 @@ export function createPlanLimitResponse(result: PlanGateFailure) {
 }
 
 /**
+ * Creates a 402 Plan Limit response enriched with the user's 30-day usage stats.
+ *
+ * Usage stats are queried asynchronously — if the query fails, stats are set to
+ * null (graceful degradation). Use this when the frontend benefits from showing
+ * the user their recent activity alongside the upgrade prompt.
+ */
+export async function createPlanLimitResponseWithStats(
+  result: PlanGateFailure,
+  userId: string
+): Promise<Response> {
+  let stats: { threadsCreated: number; totalImpressions: number | null } | null = null;
+  try {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [threadsRow] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(aiGenerations)
+      .where(
+        and(
+          eq(aiGenerations.userId, userId),
+          eq(aiGenerations.type, "thread"),
+          gte(aiGenerations.createdAt, thirtyDaysAgo)
+        )
+      );
+    // totalImpressions would come from tweet analytics — return null until
+    // the analytics table exposes a per-user impressions aggregate
+    stats = { threadsCreated: Number(threadsRow?.count ?? 0), totalImpressions: null };
+  } catch {
+    // graceful degradation — stats query is best-effort
+  }
+  const payload = buildPlanLimitPayload(result, stats);
+  // eslint-disable-next-line no-restricted-syntax
+  return new Response(JSON.stringify(payload), {
+    status: 402,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/**
  * Returns the normalised plan type for a given user.
  * Use when a non-gate caller (e.g. rate-limiter tier selection) needs the plan
  * string without triggering a full plan-limit gate response.
  */
 export async function getUserPlanType(userId: string): Promise<PlanType> {
-  return (await getPlanContext(userId)).plan;
+  return (await getPlanContext(userId)).effectivePlan;
 }
 
 // ─── Boolean-flag feature gate factory ────────────────────────────────────────
@@ -428,6 +472,12 @@ export const checkAffiliateGeneratorAccessDetailed = makeFeatureGate(
   "Turn any product link into a high-converting tweet — available on Pro"
 );
 
+export const checkToolsAccessDetailed = makeFeatureGate(
+  "tools",
+  "canUseTools",
+  "AI writing tools help you craft better hooks, CTAs, and rewrites — available on Pro"
+);
+
 // ─── Image-specific gates ──────────────────────────────────────────────────────
 
 /**
@@ -460,7 +510,10 @@ export async function checkImageModelAccessDetailed(
  * -1 in `aiImagesPerMonth` means unlimited (Agency plan).
  * Returns 402 + upgrade_url + reset_at when the quota is exhausted.
  */
-export async function checkAiImageQuotaDetailed(userId: string): Promise<PlanGateResult> {
+export async function checkAiImageQuotaDetailed(
+  userId: string,
+  model?: ImageModel
+): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
   const limits = getPlanLimits(context.effectivePlan);
   if (limits.aiImagesPerMonth === -1) return { allowed: true }; // unlimited
@@ -478,7 +531,11 @@ export async function checkAiImageQuotaDetailed(userId: string): Promise<PlanGat
     );
   const used = Number(countResult[0]?.count ?? 0);
 
-  if (used < limits.aiImagesPerMonth) return { allowed: true };
+  // Weight by model cost: pro models consume more quota credits per generation.
+  // When no model is passed, assume cost = 1 for backward compatibility.
+  const weight = model ? IMAGE_MODEL_COST[model] : 1;
+
+  if (used + weight <= limits.aiImagesPerMonth) return { allowed: true };
 
   return buildFailure({
     error: "quota_exceeded",

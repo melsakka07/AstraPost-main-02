@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Download,
   XIcon,
+  Lock,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -42,6 +43,7 @@ import { clientLogger } from "@/lib/client-logger";
 import { cn } from "@/lib/utils";
 
 type ImageModel = "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
+const ALL_MODELS: ImageModel[] = ["nano-banana-2", "nano-banana-pro", "nano-banana", "gpt-image-2"];
 type AspectRatio = "1:1" | "16:9" | "4:3" | "9:16";
 type ImageStyle =
   | "photorealistic"
@@ -481,13 +483,25 @@ export function AiImageDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableModels.map((m) => (
-                    <SelectItem key={m} value={m}>
-                      {MODEL_LABELS[m]}
-                    </SelectItem>
-                  ))}
+                  {ALL_MODELS.map((m) => {
+                    const isLocked = !availableModels.includes(m);
+                    return (
+                      <SelectItem key={m} value={m} disabled={isLocked}>
+                        <span className="flex items-center gap-2">
+                          {MODEL_LABELS[m]}
+                          {isLocked && <Lock className="text-muted-foreground h-3 w-3 shrink-0" />}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
+              {ALL_MODELS.some((m) => !availableModels.includes(m)) && (
+                <p className="text-muted-foreground flex items-center gap-1 text-xs">
+                  <Lock className="h-3 w-3" />
+                  Upgrade to Pro to unlock all models
+                </p>
+              )}
             </div>
 
             {/* Aspect Ratio */}

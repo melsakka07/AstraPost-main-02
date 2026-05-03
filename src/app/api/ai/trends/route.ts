@@ -64,7 +64,10 @@ export async function GET(req: Request) {
 
     // ── Redis cache check (BEFORE rate-limit) ────────────────────────────────
     // Cached responses skip the rate-limit entirely — they cost nothing.
-    const cacheKey = `trends:${category}`;
+    // Normalize: trim + lowercase to prevent cache fragmentation (e.g. "Tech" vs "tech").
+    // The category has already been validated against trendCategoryEnum above,
+    // which acts as an allow-list — only valid enum values reach this point.
+    const cacheKey = `trends:${category.trim().toLowerCase()}`;
     let cachedAt: string | null = null;
 
     try {

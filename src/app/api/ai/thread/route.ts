@@ -213,6 +213,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
     }
 
     const modelId = process.env.OPENROUTER_MODEL!;
+    const generationId = crypto.randomUUID(); // pre-generate for response
     let streamResult;
     let fallbackUsed = false;
     const t0 = performance.now();
@@ -294,6 +295,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
                 inputPrompt: promptSnapshot,
                 outputContent: null,
                 language: userLanguage,
+                id: generationId,
               });
             } catch {
               // Usage recording failure should not affect the user
@@ -308,6 +310,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
       return new Response(singleStream, {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
+          "X-Generation-Id": generationId,
           "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
           "X-Accel-Buffering": "no",
@@ -375,7 +378,9 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           }
 
           // Signal completion to the client before recording usage
-          controller.enqueue(encoder.encode(`data: {"done":true}\n\n`));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ done: true, generationId })}\n\n`)
+          );
 
           // Record AI usage (non-critical — fire after responding)
           try {
@@ -400,6 +405,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
               inputPrompt: promptSnapshot,
               outputContent: null,
               language: userLanguage,
+              id: generationId,
             });
           } catch {
             // Usage recording failure should not affect the user

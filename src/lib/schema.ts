@@ -1116,6 +1116,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
     fields: [user.id],
     references: [userAiCounters.userId],
   }),
+  aiQuotaGrants: many(aiQuotaGrants, { relationName: "quotaGrants" }),
 }));
 
 export const socialAnalyticsRelations = relations(socialAnalytics, ({ one }) => ({
@@ -1189,6 +1190,50 @@ export const userAiCountersRelations = relations(userAiCounters, ({ one }) => ({
   user: one(user, {
     fields: [userAiCounters.userId],
     references: [user.id],
+  }),
+}));
+
+/**
+ * Manual AI quota grants issued by admins for Phase 4 monetization capture.
+ *
+ * Each row represents a discrete quota top-up: an admin grants `amount`
+ * additional AI generations to a user. `remaining` tracks how many of
+ * those granted generations have NOT yet been consumed. The consuming
+ * code path decrements `remaining` atomically within a transaction;
+ * once `remaining` reaches 0 the grant is exhausted.
+ */
+export const aiQuotaGrants = pgTable(
+  "ai_quota_grants",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(),
+    remaining: integer("remaining").notNull(),
+    grantedBy: text("granted_by")
+      .notNull()
+      .references(() => user.id),
+    reason: text("reason").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("ai_quota_grants_user_id_idx").on(table.userId),
+    index("ai_quota_grants_granted_by_idx").on(table.grantedBy),
+    index("ai_quota_grants_user_remaining_idx").on(table.userId, table.remaining),
+  ]
+);
+
+export const aiQuotaGrantsRelations = relations(aiQuotaGrants, ({ one }) => ({
+  user: one(user, {
+    fields: [aiQuotaGrants.userId],
+    references: [user.id],
+    relationName: "quotaGrants",
+  }),
+  admin: one(user, {
+    fields: [aiQuotaGrants.grantedBy],
+    references: [user.id],
+    relationName: "grantedQuotas",
   }),
 }));
 
@@ -1536,5 +1581,7 @@ export type InsertUserAiCounter = typeof userAiCounters.$inferInsert;
 export type SessionWithImpersonation = typeof session.$inferSelect & {
   impersonatedByUser?: typeof user.$inferSelect;
 };
+export type AiQuotaGrant = typeof aiQuotaGrants.$inferSelect;
+export type InsertAiQuotaGrant = typeof aiQuotaGrants.$inferInsert;
 export type ModerationFlag = typeof moderationFlag.$inferSelect;
 export type InsertModerationFlag = typeof moderationFlag.$inferInsert;

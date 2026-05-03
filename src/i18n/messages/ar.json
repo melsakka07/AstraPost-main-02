@@ -117,13 +117,45 @@
     "generating": "جاري التوليد...",
     "quota_exceeded": "تم تجاوز حصة الذكاء الاصطناعي. رقِّ خطتك لتوليد المزيد من المحتوى.",
     "pii_redaction_notice": "تمت إزالة المعلومات الشخصية من المصدر لحماية خصوصيتك",
-    "dismiss": "إغلاق"
+    "dismiss": "إغلاق",
+    "refine": {
+      "title": "تحسين الناتج",
+      "feedback_label": "ما الذي تود تغييره؟",
+      "focus_tone": "النبرة",
+      "focus_length": "الطول",
+      "focus_hook": "المقدمة",
+      "focus_hashtags": "الوسوم",
+      "submit": "تحسين",
+      "refining": "جاري التحسين...",
+      "success": "تم تحسين الناتج!",
+      "error": "فشل التحسين. حاول مرة أخرى."
+    },
+    "feedback": {
+      "thanks": "شكراً على ملاحظاتك!",
+      "helpful": "مفيد",
+      "not_helpful": "غير مفيد"
+    },
+    "upsell": {
+      "banner_text": "النسخة الاحترافية تستخدم Sonnet 4.6 للحصول على نتائج أقوى.",
+      "upgrade_link": "ترقية ←",
+      "dismiss": "تجاهل"
+    },
+    "score": {
+      "tier_weak": "ضعيف",
+      "tier_ok": "جيد",
+      "tier_strong": "قوي",
+      "tier_viral": "انتشار واسع"
+    }
   },
   "billing": {
     "upgrade": "ترقية الخطة",
     "current_plan": "الخطة الحالية",
     "next_billing_date": "تاريخ الفاتورة التالية: {date}",
-    "cancel_subscription": "إلغاء الاشتراك"
+    "cancel_subscription": "إلغاء الاشتراك",
+    "pause": {
+      "link": "إيقاف الاشتراك مؤقتاً",
+      "description": "أوقف اشتراكك مؤقتاً بدلاً من الإلغاء"
+    }
   },
   "upgrade_modal": {
     "ai_generation": "توليد الذكاء الاصطناعي",
@@ -1474,7 +1506,9 @@
     "generation_failed": "فشل توليد الصورة. يرجى المحاولة مرة أخرى.",
     "download_failed": "فشل تنزيل الصورة",
     "attached": "تم إرفاق الصورة بالتغريدة!",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "locked_model": "ترقية إلى الاحترافية للحصول على {model}",
+    "free_models": "متاح في خطتك"
   },
   "inspiration": {
     "title": "الإلهام",
@@ -2770,6 +2804,13 @@
       "clear_confirm_desc": "سيؤدي هذا إلى مسح سجل الإشعارات بالكامل بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
       "cleared": "تم مسح جميع الإشعارات",
       "clear_failed": "فشل مسح الإشعارات"
+    },
+    "grant_quota": {
+      "title": "منح حصة ذكاء اصطناعي",
+      "amount": "الكمية",
+      "reason": "السبب",
+      "submit": "منح",
+      "success": "تم منح {amount} توليدة للمستخدم"
     }
   }
 }

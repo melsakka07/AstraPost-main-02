@@ -63,6 +63,7 @@ export default async function AgenticPostingPage() {
         xAccounts={typedAccounts}
         hasVoiceProfile={!!dbUser?.voiceProfile}
         isLocked={isLocked}
+        userPlan={dbUser?.plan ?? null}
       />
     </DashboardPageWrapper>
   );

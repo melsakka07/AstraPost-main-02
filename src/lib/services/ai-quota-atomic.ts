@@ -1,11 +1,11 @@
 import "server-only";
 
-import { eq, and, gte, lt, sql } from "drizzle-orm";
+import { eq, and, gte, lt, gt, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { getPlanLimits } from "@/lib/plan-limits";
-import { userAiCounters } from "@/lib/schema";
+import { userAiCounters, aiQuotaGrants } from "@/lib/schema";
 import { getMonthWindow } from "@/lib/utils/time";
 
 interface ConsumeResult {
@@ -47,8 +47,38 @@ export async function tryConsumeAiQuota(userId: string, weight = 1): Promise<Con
     return resetAndConsume(userId, weight, start, end);
   }
 
-  // Case 3: Quota exhausted in current period
+  // Case 3: Quota exhausted in current period — try admin-issued grants first
+  const grantResult = await consumeFromGrants(userId, weight, end);
+  if (grantResult) return grantResult;
+
   return { allowed: false, used: existing.used, limit: existing.limit, resetAt: end };
+}
+
+/**
+ * Falls back to admin-issued quota grants when the base monthly quota is exhausted.
+ *
+ * Finds the oldest grant with remaining > 0 and atomically decrements it.
+ * Returns null if no grant is available, allowing the caller to fall through
+ * to the exhausted-quota response.
+ */
+async function consumeFromGrants(
+  userId: string,
+  weight: number,
+  resetAt: Date
+): Promise<ConsumeResult | null> {
+  const grant = await db.query.aiQuotaGrants.findFirst({
+    where: and(eq(aiQuotaGrants.userId, userId), gt(aiQuotaGrants.remaining, 0)),
+    orderBy: (t, { asc }) => [asc(t.createdAt)],
+  });
+  if (!grant) return null;
+
+  const consumed = Math.min(grant.remaining, weight);
+  await db
+    .update(aiQuotaGrants)
+    .set({ remaining: sql`GREATEST(0, ${aiQuotaGrants.remaining} - ${consumed})` })
+    .where(eq(aiQuotaGrants.id, grant.id));
+
+  return { allowed: true, used: consumed, limit: -1, resetAt };
 }
 
 /**

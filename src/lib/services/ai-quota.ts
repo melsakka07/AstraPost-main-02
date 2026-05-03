@@ -62,6 +62,8 @@ export interface RecordAiUsageOptions {
   outputContent?: unknown;
   language?: string;
   tx?: DbClient;
+  /** Pre-generated ID — when provided, skips crypto.randomUUID() call */
+  id?: string;
 }
 
 export async function getMonthlyAiUsage(userId: string): Promise<MonthlyAiUsage> {
@@ -154,7 +156,7 @@ export async function recordAiUsage(
   output?: unknown,
   language?: string,
   tx?: DbClient
-): Promise<void> {
+): Promise<string> {
   let opts: RecordAiUsageOptions;
 
   // Detect call style: if first arg is a string, it's the legacy positional form
@@ -176,8 +178,9 @@ export async function recordAiUsage(
   }
 
   const client = opts.tx ?? db;
+  const generationId = opts.id ?? crypto.randomUUID();
   await client.insert(aiGenerations).values({
-    id: crypto.randomUUID(),
+    id: generationId,
     userId: opts.userId,
     type: opts.type as (typeof aiGenerationTypeEnum.enumValues)[number],
     model: opts.model,
@@ -211,4 +214,6 @@ export async function recordAiUsage(
       latencyMs: opts.latencyMs,
     });
   }
+
+  return generationId;
 }

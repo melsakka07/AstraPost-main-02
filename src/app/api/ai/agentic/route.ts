@@ -98,6 +98,7 @@ export async function POST(req: Request) {
     // 1. Auth + AI preamble (rate limit, quota, model)
     const preamble = await aiPreamble({
       featureGate: checkAgenticPostingAccessDetailed,
+      quotaWeight: 5,
     });
     if (preamble instanceof Response) return preamble;
     const { session, dbUser, checkModeration } = preamble;

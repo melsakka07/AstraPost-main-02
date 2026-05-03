@@ -3,8 +3,10 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { aiGenerations } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -22,6 +24,11 @@ export async function POST(req: Request) {
   if (ctx.role === "viewer") {
     return ApiError.forbidden("Viewers cannot submit feedback");
   }
+
+  // Step 5: Rate limit feedback submissions to prevent abuse
+  const correlationId = getCorrelationId(req);
+  const rl = await checkRateLimit(ctx.currentTeamId, "free", "contact");
+  if (!rl.success) return createRateLimitResponse(rl);
 
   // Step 4: Parse + validate
   let body: unknown;
@@ -59,8 +66,11 @@ export async function POST(req: Request) {
     generationId,
     value,
     userId: ctx.currentTeamId,
+    correlationId,
   });
 
   // Step 9: Return
-  return Response.json({ ok: true });
+  const res = Response.json({ ok: true });
+  res.headers.set("x-correlation-id", correlationId);
+  return res;
 }

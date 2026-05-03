@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
 import { getCorrelationId } from "@/lib/correlation";
 import { logger } from "@/lib/logger";
+import { checkToolsAccessDetailed } from "@/lib/middleware/require-plan";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
@@ -30,7 +31,7 @@ const responseSchema = z.object({
 export async function POST(req: Request) {
   try {
     const correlationId = getCorrelationId(req);
-    const preamble = await aiPreamble();
+    const preamble = await aiPreamble({ featureGate: checkToolsAccessDetailed });
     if (preamble instanceof Response) return preamble;
     const { session, dbUser, model, checkModeration } = preamble;
 
@@ -111,7 +112,7 @@ ${input || ""}`;
     if (modResult) return modResult;
 
     // Phase 2: uses new options-object signature
-    await recordAiUsage({
+    const generationId = await recordAiUsage({
       userId: session.user.id,
       type: tool,
       model: modelId,
@@ -127,7 +128,7 @@ ${input || ""}`;
       language: userLanguage,
     });
 
-    const res = Response.json(object);
+    const res = Response.json({ ...object, generationId });
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {

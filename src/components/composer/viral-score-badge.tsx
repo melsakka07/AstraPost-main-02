@@ -17,6 +17,7 @@ type BadgeState = "idle" | "loading" | "restricted" | "rate_limited" | "error" |
 interface BadgeData {
   state: BadgeState;
   score: number | null;
+  tier: string | null;
   feedback: string[];
   errorMessage: string | null;
 }
@@ -25,6 +26,7 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
   const [data, setData] = useState<BadgeData>({
     state: "idle",
     score: null,
+    tier: null,
     feedback: [],
     errorMessage: null,
   });
@@ -77,6 +79,7 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
       setData({
         state: "score",
         score: result.score,
+        tier: result.tier ?? null,
         feedback: result.feedback || [],
         errorMessage: null,
       });
@@ -224,13 +227,13 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
             )}
           >
             <Sparkles className="h-4 w-4" />
-            <span>{score}</span>
+            <span>{data.tier || score}</span>
           </div>
         </TooltipTrigger>
         <TooltipContent className="z-50 max-w-xs space-y-2 p-4">
           <p className="mb-1 flex items-center gap-2 font-semibold">
             <Sparkles className="text-primary h-3 w-3" />
-            Viral Potential: {score}/100
+            Viral Potential: {score}/100{data.tier ? ` (${data.tier})` : ""}
           </p>
           <ul className="text-muted-foreground list-disc space-y-1 pl-4 text-xs">
             {feedback.map((f, i) => (

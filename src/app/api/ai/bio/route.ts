@@ -100,7 +100,10 @@ Rules:
 - Use the specified language
 - Avoid generic buzzwords like "passionate" or "guru"
 - Include relevant keywords for discoverability
-- Each variant should have a distinct approach
+- DIVERSITY RULE: Each variant must combine a different tone (authoritative / playful / contrarian) with a different opening structure (role-led / outcome-led / question-led). No two variants may share both tone and structure. For example:
+  - Variant 1: authoritative tone + role-led opening ("CEO at X. Building Y.")
+  - Variant 2: playful tone + outcome-led opening ("I help founders 10x their revenue...")
+  - Variant 3: contrarian tone + question-led opening ("What if growth isn't about hustle?")
 
 For each variant provide:
 - text: the bio text (max 160 chars)
@@ -150,7 +153,7 @@ For each variant provide:
       tokensIn: usage?.inputTokens ?? 0,
       tokensOut: usage?.outputTokens ?? 0,
       costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "bio:v1",
+      promptVersion: "bio:v2",
       latencyMs,
       fallbackUsed,
       inputPrompt: prompt,

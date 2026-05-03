@@ -15,25 +15,18 @@ const requestSchema = z.object({
   tweetUrl: z.string().url(),
   language: LANGUAGE_ENUM.default("en"),
   tone: TONE_ENUM.default("casual"),
-  goal: z.enum(["agree", "add", "counter", "funny", "question"]).default("add"),
 });
 
 const repliesSchema = z.object({
-  replies: z.array(
-    z.object({
-      text: z.string().max(1100),
-      style: z.string().max(100),
-    })
-  ),
+  replies: z
+    .array(
+      z.object({
+        text: z.string().max(1100),
+        type: z.enum(["agree", "counter", "funny"]),
+      })
+    )
+    .length(3),
 });
-
-const GOAL_LABELS: Record<string, string> = {
-  agree: "agree with and amplify the original tweet",
-  add: "add valuable information or insight",
-  counter: "respectfully challenge or offer a counter-perspective",
-  funny: "be witty or humorous",
-  question: "ask a thoughtful follow-up question",
-};
 
 export async function POST(req: Request) {
   try {
@@ -48,7 +41,7 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { tweetUrl, language: clientLanguage, tone, goal } = result.data;
+    const { tweetUrl, language: clientLanguage, tone } = result.data;
 
     // Fetch target tweet
     let tweetText = "";
@@ -67,24 +60,26 @@ export async function POST(req: Request) {
 
     const langInstruction = getArabicInstructions(userLanguage);
     const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}`;
-    const goalLabel = GOAL_LABELS[goal] || "add value";
 
     const prompt = `You are an expert social media engagement writer.
-Generate 5 high-quality replies to the following tweet from ${tweetAuthor}.
+Generate exactly 3 replies to the following tweet from ${tweetAuthor}, one for each type below.
 ${wrapUntrusted("ORIGINAL TWEET", tweetText, 2_000)}
+
+Reply types (generate exactly one of each):
+- agree: amplify and support the original tweet's message
+- counter: respectfully challenge or offer an alternative perspective
+- funny: be witty, humorous, or playfully engaging
 
 Requirements:
 - ${langInstruction}
 - ${toneGuidance}
-- Goal: ${goalLabel}
-- Each reply should be genuinely engaging and contextually relevant
+- Each reply must be genuinely engaging and contextually relevant
 - Keep replies under 280 characters ideally (hard max: 800 chars)
-- Vary the style across the 5 replies
 - Do NOT start with "Great tweet!" or generic openers
 
 For each reply include:
 - text: the reply text
-- style: one-word style label (e.g., "insightful", "witty", "empathetic", "provocative", "analytical")`;
+- type: one of "agree", "counter", or "funny" (exactly one each across the 3 replies)`;
 
     const modelId = process.env.OPENROUTER_MODEL!;
 
@@ -105,7 +100,7 @@ For each reply include:
       tokensIn: usage?.inputTokens ?? 0,
       tokensOut: usage?.outputTokens ?? 0,
       costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "reply:v1",
+      promptVersion: "reply:v2",
       latencyMs,
       fallbackUsed: false,
       inputPrompt: prompt,
@@ -121,8 +116,8 @@ For each reply include:
       tweetText,
       tweetAuthor,
       replies: object.replies.map((r) => ({
-        ...r,
         text: r.text.length > 1000 ? r.text.slice(0, 997) + "..." : r.text,
+        type: r.type,
       })),
     };
 

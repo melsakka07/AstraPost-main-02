@@ -31,6 +31,9 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { FeedbackButtons } from "@/components/ai/feedback-buttons";
+import { RefineInlineForm } from "@/components/ai/refine-inline-form";
+import { UpsellBanner } from "@/components/ai/upsell-banner";
 import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
 import { ComposerAlerts } from "@/components/composer/composer-alerts";
 import { ComposerPreview } from "@/components/composer/composer-preview";
@@ -81,6 +84,8 @@ import { LANGUAGES } from "@/lib/constants";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
+
+// Phase 4: Feedback, refine, and upsell components for AI outputs
 
 const AiImageDialog = dynamic(() =>
   import("@/components/composer/ai-image-dialog").then((m) => m.AiImageDialog)
@@ -225,6 +230,10 @@ export function Composer() {
     if (session?.user && "language" in session.user && (session.user as any).language) {
       setAiLanguage((session.user as any).language);
     }
+    // Phase 4: Track plan for upsell banner
+    if (session?.user && "plan" in session.user) {
+      setUserPlan((session.user as { plan?: string }).plan ?? null);
+    }
   }, [session?.user]);
 
   // P3-A: Persist AI tone + language preferences across sessions
@@ -239,6 +248,11 @@ export function Composer() {
       // localStorage unavailable — non-critical
     }
   }, [aiTone, aiLanguage]);
+
+  // Phase 4: Feedback/Refine — track the last AI generation ID for feedback buttons
+  const [lastGenerationId, setLastGenerationId] = useState<string | null>(null);
+  // Phase 4: Track user plan for upsell banner visibility
+  const [userPlan, setUserPlan] = useState<string | null>(null);
 
   const [aiAddNumbering, setAiAddNumbering] = useState(true);
   const [aiTranslateTarget, setAiTranslateTarget] = useState<string>("en");
@@ -1027,6 +1041,8 @@ export function Composer() {
 
         if (isSinglePost) {
           // Single-post mode: plain text response (unchanged)
+          const genId = res.headers.get("X-Generation-Id");
+          if (genId) setLastGenerationId(genId);
           const text = await res.text();
           if (!text || text.trim().length === 0) throw new Error("No content generated");
 
@@ -1086,6 +1102,7 @@ export function Composer() {
                 error?: string;
                 index?: number;
                 tweet?: string;
+                generationId?: string;
               };
               if (event.error) {
                 toast.error(t("toasts.generation_failed"));
@@ -1093,6 +1110,7 @@ export function Composer() {
                 break;
               }
               if (event.done) {
+                if (event.generationId) setLastGenerationId(event.generationId);
                 streamDone = true;
                 break;
               }
@@ -1213,6 +1231,7 @@ export function Composer() {
                 error?: string;
                 index?: number;
                 tweet?: string;
+                generationId?: string;
               };
               if (event.error) {
                 toast.error(t("toasts.generation_failed"));
@@ -1220,6 +1239,7 @@ export function Composer() {
                 break;
               }
               if (event.done) {
+                if (event.generationId) setLastGenerationId(event.generationId);
                 streamDone = true;
                 break;
               }
@@ -1300,7 +1320,8 @@ export function Composer() {
           }
           throw new Error("Hook generation failed");
         }
-        const data = await res.json();
+        const data = (await res.json()) as { text: string; generationId?: string };
+        if (data.generationId) setLastGenerationId(data.generationId);
         updateTweet(targetTweet.id, data.text);
         setIsAiOpen(false);
         // Phase 3: Standardized toast messages
@@ -1346,7 +1367,8 @@ export function Composer() {
           }
           throw new Error("CTA generation failed");
         }
-        const data = await res.json();
+        const data = (await res.json()) as { text: string; generationId?: string };
+        if (data.generationId) setLastGenerationId(data.generationId);
         const last = tweets[tweets.length - 1];
         if (!last) throw new Error("No tweet to update");
         updateTweet(last.id, `${last.content}\n\n${data.text}`.trim());
@@ -1471,7 +1493,8 @@ export function Composer() {
         }
         throw new Error("Rewrite failed");
       }
-      const data = await res.json();
+      const data = (await res.json()) as { text: string; generationId?: string };
+      if (data.generationId) setLastGenerationId(data.generationId);
       updateTweet(targetId, data.text);
       setIsAiOpen(false);
       // Phase 3: Standardized toast messages
@@ -1917,6 +1940,38 @@ export function Composer() {
             })}
           </SortableContext>
         </DndContext>
+
+        {/* Phase 4: Feedback + Refine for last AI generation */}
+        {lastGenerationId && (
+          <div className="animate-in fade-in flex flex-wrap items-center gap-2 px-1 duration-200">
+            <FeedbackButtons generationId={lastGenerationId} />
+            <RefineInlineForm
+              generationId={lastGenerationId}
+              originalOutput={tweets.map((t) => t.content).join("\n\n")}
+              onRefined={(refined) => {
+                // Replace first tweet with refined output for single-post,
+                // or show refined text below for thread
+                if (!refined) return;
+                setLastGenerationId(null);
+                toast.success("Output refined! Review the changes below.", {
+                  description: refined.slice(0, 150) + (refined.length > 150 ? "..." : ""),
+                });
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground h-7 gap-1 text-xs"
+              onClick={() => setLastGenerationId(null)}
+            >
+              <XIcon className="h-3 w-3" />
+              Dismiss
+            </Button>
+          </div>
+        )}
+
+        {/* Phase 4: Upsell banner after AI generation for free/trial users */}
+        {lastGenerationId && <UpsellBanner plan={userPlan} className="mb-2" />}
 
         {lastSavedAt && showSavedLabel && (
           <div className="text-muted-foreground/60 flex items-center justify-end gap-1 px-1 text-xs">

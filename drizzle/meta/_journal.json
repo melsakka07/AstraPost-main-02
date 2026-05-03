@@ -470,6 +470,13 @@
       "when": 1777729543556,
       "tag": "0066_sad_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1777752544716,
+      "tag": "0067_soft_dark_beast",
+      "breakpoints": true
     }
   ]
 }

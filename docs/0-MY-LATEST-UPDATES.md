@@ -1,5 +1,138 @@
 # Latest Updates
 
+## 2026-05-02: Phase 4 — Monetization Capture COMPLETE
+
+**Summary:** All 13 exit criteria shipped. Converted Phase 0-2 trust + cost wins into revenue capture: trial tier (50 gens / 25 images, free-tier features), Pro quota bumps (150/250), AI tools gate, admin grant system, refine endpoint, feedback UI, upsell surfaces, image model cost weighting, and Stripe pause handler.
+
+### Exit criteria (all [x])
+
+| #       | Criterion                     | Detail                                                                                   |
+| ------- | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| M6      | Agentic 5× quota              | `agentic/route.ts` POST + regenerate pass `quotaWeight: 5`                               |
+| M3      | `/api/ai/tools` gated         | `checkToolsAccessDetailed` via `makeFeatureGate`; free/trial → 402                       |
+| M5-sub  | Admin grant endpoint          | `POST /api/admin/users/[userId]/grant-quota/` + `consumeFromGrants` fallback             |
+| M1/B5   | Trial tier                    | 50 gens, 25 images, base models only; `TRIAL_EFFECTIVE_PLAN = "trial"`                   |
+| M1/M11  | Quota bumps                   | Pro Monthly 100→150, Pro Annual 150→250                                                  |
+| U3      | Refine endpoint               | `POST /api/ai/refine` — ownership-gated, sanitized feedback, 1 quota unit                |
+| U5      | Feedback UI                   | `FeedbackButtons` in composer + agentic review; endpoint rate-limited                    |
+| U9/U10  | Reply 3 typed / bio diversity | agree/counter/funny; tone×structure diversity rule                                       |
+| U13/U15 | Score tier labels             | API returns Weak/OK/Strong/Viral; badge displays tier                                    |
+| M10     | Stripe pause                  | Webhook handles `customer.subscription.paused`/`resumed`; **enable in Stripe Dashboard** |
+| M9      | 402 usage anchor              | `createPlanLimitResponseWithStats()` includes 30-day thread count                        |
+| B6      | Trends cache                  | Normalized `category.trim().toLowerCase()` key; `trendCategoryEnum` allow-list           |
+| B7      | Image model cost              | `IMAGE_MODEL_COST` constant; `checkAiImageQuotaDetailed(model?)` weighted check          |
+
+### Schema migration
+
+`drizzle/0067_soft_dark_beast.sql` — new `ai_quota_grants` table (id, userId, amount, remaining, grantedBy, reason, createdAt). Auto-applies on next Vercel production deploy via `build:ci`.
+
+### Files created (6)
+
+- `src/app/api/ai/refine/route.ts`, `src/app/api/admin/users/[userId]/grant-quota/route.ts`
+- `src/components/ai/feedback-buttons.tsx`, `src/components/ai/refine-inline-form.tsx`, `src/components/ai/upsell-banner.tsx`
+- `drizzle/0067_soft_dark_beast.sql`
+
+### Files modified (22)
+
+**Core:** `plan-limits.ts`, `require-plan.ts`, `schema.ts`, `ai-quota-atomic.ts`
+**AI routes:** `agentic/route.ts`, `tools/route.ts`, `trends/route.ts`, `image/route.ts`, `reply/route.ts`, `bio/route.ts`, `score/route.ts`, `feedback/route.ts`
+**Billing:** `webhook/route.ts` (pause/resume + incomplete_expired transaction fix)
+**Frontend:** `composer.tsx`, `ai-image-dialog.tsx`, `agentic-posting-client.tsx`, `agentic/page.tsx`, `viral-score-badge.tsx`, `reply/page.tsx`
+**i18n:** `en.json`, `ar.json` (+29 keys each; 2419 total)
+**Tests:** `require-plan.test.ts`
+
+### Security fixes applied post-audit
+
+- Refine endpoint: changed from `skipQuotaCheck: true` to `quotaWeight: 1` (CRITICAL cost sink)
+- Feedback endpoint: added `checkRateLimit` (CRITICAL unbounded writes)
+- Refine prompt: user feedback sanitized via `sanitizeForPrompt` (HIGH injection risk)
+- Webhook incomplete_expired: wrapped in `db.transaction()` (convention violation)
+
+### Post-deploy reminders
+
+- Enable pause in Stripe Customer Portal config (Dashboard → Settings → Customer Portal)
+- Verify trial users see 50 gen limit and free-tier feature gates in production
+- Monitor refine endpoint quota consumption — adjust weight if overused
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint 0/0, typecheck clean, i18n 2419 keys)
+`pnpm test` — PASS (28 files, 240 tests)
+Convention audit — 1 violation found and fixed
+Security review — 2 CRITICAL + 3 HIGH found; all CRITICAL fixed, HIGH issues pre-existing or cosmetic
+
+---
+
+## 2026-05-02: Phase 4 (Monetization Capture) Wave A — Trial cliff fix, quota bumps, gates, grants
+
+**Summary:** Wave A delivers the foundational monetization capture infrastructure: dedicated trial tier with elevated quotas, Pro plan quota bumps, agentic 5x quota weighting, tools gate for Pro-only, trends cache normalization, image model cost weighting for quota, and admin manual quota grant endpoint. All changes are backward-compatible.
+
+### Items shipped
+
+| Item          | Description                                                                                                                                                                                                                     | Files                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **M1/M11/B5** | Trial cliff fix: new `"trial"` PlanType, free-tier feature gates but 50 AI gens / 25 images; Pro Monthly 100->150, Pro Annual 150->250; `TRIAL_EFFECTIVE_PLAN` now `"trial"`; `getUserPlanType` fixed to return `effectivePlan` | `src/lib/plan-limits.ts`, `src/lib/middleware/require-plan.ts`                                  |
+| **M6**        | Agentic 5x quota weight: `quotaWeight: 5` on POST handler                                                                                                                                                                       | `src/app/api/ai/agentic/route.ts`                                                               |
+| **M3**        | Tools gate: `checkToolsAccessDetailed` gate + `canUseTools` plan flag; `/api/ai/tools` gated for Pro                                                                                                                            | `src/lib/plan-limits.ts`, `src/lib/middleware/require-plan.ts`, `src/app/api/ai/tools/route.ts` |
+| **B6**        | Trends cache normalization: `.trim().toLowerCase()` on category cache key + allow-list comment                                                                                                                                  | `src/app/api/ai/trends/route.ts`                                                                |
+| **B7**        | IMAGE_MODEL_COST weighting: `checkAiImageQuotaDetailed` accepts optional `model`, weights by cost                                                                                                                               | `src/lib/plan-limits.ts`, `src/lib/middleware/require-plan.ts`, `src/app/api/ai/image/route.ts` |
+| **M5-sub**    | Admin manual quota grant endpoint: `POST /api/admin/users/[userId]/grant-quota`                                                                                                                                                 | `src/app/api/admin/users/[userId]/grant-quota/route.ts`, `src/lib/services/ai-quota-atomic.ts`  |
+
+### New exports
+
+- `IMAGE_MODEL_COST` from `src/lib/plan-limits.ts`
+- `checkToolsAccessDetailed` from `src/lib/middleware/require-plan.ts`
+
+### Files modified (8) + created (1)
+
+- `src/lib/plan-limits.ts` — trial tier, canUseTools, IMAGE_MODEL_COST, quota bumps
+- `src/lib/middleware/require-plan.ts` — tools gate, getUserPlanType fix, image quota model param
+- `src/app/api/ai/agentic/route.ts` — quotaWeight: 5
+- `src/app/api/ai/tools/route.ts` — featureGate: checkToolsAccessDetailed
+- `src/app/api/ai/trends/route.ts` — cache key normalization
+- `src/app/api/ai/image/route.ts` — pass model to checkAiImageQuotaDetailed
+- `src/lib/services/ai-quota-atomic.ts` — consumeFromGrants fallback
+- `src/app/api/admin/users/[userId]/grant-quota/route.ts` — new admin endpoint
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint clean, typecheck clean, i18n 2390 keys)
+
+---
+
+## 2026-05-02: Phase 4 (Monetization Capture) — AI route improvements (U9, U10, U13, U15)
+
+**Summary:** Four AI routes updated for monetization capture. Reply generator now produces exactly 3 typed replies (agree/counter/funny) instead of configurable goal-based generation. Bio optimizer enforces structural diversity across variants via tone+opening structure combinations. Viral score returns tier labels alongside raw scores. All changes are backward-compatible where possible.
+
+### Items shipped
+
+| Item    | Description                                                                                                                                                                 | Files                                                                            |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **U9**  | Reply: 3 typed replies (agree, counter, funny) — removed `goal` param, replaced `style` with `type` enum, `.length(3)` constraint, prompt v2                                | `src/app/api/ai/reply/route.ts`, `src/app/dashboard/ai/reply/page.tsx`           |
+| **U10** | Bio: diversity rule — each variant combines distinct tone (authoritative/playful/contrarian) with distinct opening structure (role-led/outcome-led/question-led), prompt v2 | `src/app/api/ai/bio/route.ts`                                                    |
+| **U13** | Score: tier labels — returns `{ score, tier, feedback }` where tier is Weak/OK/Strong/Viral based on clamped 0-100 score, prompt v2                                         | `src/app/api/ai/score/route.ts`, `src/components/composer/viral-score-badge.tsx` |
+| **U15** | Score language: verified `dbUser.language` is correctly passed to `recordAiUsage` and used in prompt (already wired, no changes)                                            | `src/app/api/ai/score/route.ts` (verification only)                              |
+
+### Prompt versions bumped
+
+- `reply:v1` → `reply:v2`
+- `bio:v1` → `bio:v2`
+- `score:v1` → `score:v2`
+
+### Files modified (5)
+
+- `src/app/api/ai/reply/route.ts` — U9: 3 typed replies + schema changes
+- `src/app/api/ai/bio/route.ts` — U10: diversity rule in prompt
+- `src/app/api/ai/score/route.ts` — U13: tier labels + prompt version
+- `src/app/dashboard/ai/reply/page.tsx` — Removed goal dropdown, updated Reply interface (style→type)
+- `src/components/composer/viral-score-badge.tsx` — Shows tier label on badge, tier in tooltip
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint clean, typecheck clean, i18n 2390 keys)
+
+---
+
 ## 2026-05-02: Phase 3 Wave A — Caching, Fallback, Resilience Helpers, System/User Split, streamObject Migration
 
 **Summary:** Phase 3 Wave A complete. 6 of 9 exit criteria fully met, 2 partial (helpers exist, route composition in Wave B), 1 deferred to Wave B. Delivered via 2 parallel agents (ai-specialist + backend-dev), zero merge conflicts.
@@ -36,13 +169,16 @@
 - `.claude/plans/in-my-codebase-please-cosmic-crane-suggestions-claude.md` — Exit criteria updated
 - `docs/0-MY-LATEST-UPDATES.md` — This entry
 
-### Wave B — pending (T5 + T11 + T13)
+### Wave B — pending (T5 + T11)
 
 | Item    | Description                                                                                             | Est. time |
 | ------- | ------------------------------------------------------------------------------------------------------- | --------- |
 | **T5**  | Compose withRetry/withTimeout/idempotency into 4 custom routes (competitor, image, voice-profile, chat) | ~1 hr     |
 | **T11** | Replicate poll cap via Redis `firstPolledAt` (90s max, no schema change)                                | ~30 min   |
-| **T13** | `mode: "json"` on all 12 `generateObject` calls across codebase                                         | ~30 min   |
+
+### T13 — RETIRED (2026-05-03)
+
+`mode: "json"` on `generateObject` calls — assessed and intentionally skipped. AI SDK v5 defaults to `mode: "auto"` which picks `"tool"` for capable models (Gemini, Anthropic) and `"json"` for ones that don't support tool-calling. Forcing `mode: "json"` everywhere risks regressions on weaker fallback models while saving only ~50-100 tokens per response. The current `"auto"` default is the safer choice for OpenRouter's mixed-model fleet. Revisit per-route only if specific routes show structured-output failures.
 
 ### Quality Gate (post-Wave A)
 

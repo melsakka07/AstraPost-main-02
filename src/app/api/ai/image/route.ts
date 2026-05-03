@@ -157,8 +157,8 @@ export async function POST(req: NextRequest) {
     const rateLimitResult = await checkRateLimit(userId, plan, "ai_image");
     if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
-    // 6. Monthly image quota
-    const imageQuota = await checkAiImageQuotaDetailed(userId);
+    // 6. Monthly image quota (weighted by model cost)
+    const imageQuota = await checkAiImageQuotaDetailed(userId, model as ImageModel);
     if (!imageQuota.allowed) return createPlanLimitResponse(imageQuota);
 
     // 7. Generate or use provided prompt

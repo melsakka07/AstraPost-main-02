@@ -46,6 +46,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { XAccountOption } from "@/app/dashboard/ai/agentic/page";
 import { AgenticTrendsPanel } from "@/components/ai/agentic-trends-panel";
+import { UpsellBanner } from "@/components/ai/upsell-banner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,9 +136,14 @@ interface AgenticPostingClientProps {
   xAccounts: XAccountOption[];
   hasVoiceProfile: boolean;
   isLocked?: boolean;
+  userPlan?: string | null;
 }
 
-export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPostingClientProps) {
+export function AgenticPostingClient({
+  xAccounts,
+  isLocked = false,
+  userPlan,
+}: AgenticPostingClientProps) {
   const t = useTranslations("ai_agentic");
   const { openWithContext } = useUpgradeModal();
   const [screen, setScreen] = useState<"input" | "processing" | "review">("input");
@@ -671,6 +677,7 @@ export function AgenticPostingClient({ xAccounts, isLocked = false }: AgenticPos
         setShowSchedulePicker={setShowSchedulePicker}
         isSubmitting={isSubmitting}
         selectedAccount={selectedAccount}
+        {...(userPlan !== undefined && { userPlan })}
         onEditStart={(idx) => {
           setEditingIndex(idx);
           setEditText(editedTweets[idx]?.text ?? "");
@@ -1245,6 +1252,7 @@ interface ReviewScreenProps {
   onChangeTopic: () => void;
   onRegenerateAll: () => void;
   onDiscard: () => void;
+  userPlan?: string | null;
 }
 
 function ReviewScreen({
@@ -1253,6 +1261,7 @@ function ReviewScreen({
   editingIndex,
   editText,
   setEditText,
+  userPlan,
   rewritingIndex,
   showResearch,
   setShowResearch,
@@ -1316,6 +1325,9 @@ function ReviewScreen({
         </div>
 
         <Separator />
+
+        {/* Phase 4: Upsell banner for free/trial users after agentic generation */}
+        <UpsellBanner {...(userPlan !== undefined && { plan: userPlan })} />
 
         {/* Tweet cards — sortable */}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

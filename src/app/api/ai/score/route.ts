@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       tokensIn: usage?.inputTokens ?? 0,
       tokensOut: usage?.outputTokens ?? 0,
       costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "score:v1",
+      promptVersion: "score:v2",
       latencyMs,
       fallbackUsed: false,
       inputPrompt: content,
@@ -95,7 +95,10 @@ export async function POST(req: Request) {
     });
 
     // Clamp score to 0-100 in case the model returns out-of-range values
-    const res = Response.json({ ...object, score: Math.min(100, Math.max(0, object.score)) });
+    const clamped = Math.min(100, Math.max(0, object.score));
+    const tier = clamped <= 25 ? "Weak" : clamped <= 50 ? "OK" : clamped <= 75 ? "Strong" : "Viral";
+
+    const res = Response.json({ score: clamped, tier, feedback: object.feedback });
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {

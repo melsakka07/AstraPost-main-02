@@ -117,13 +117,45 @@
     "generating": "Generating...",
     "quota_exceeded": "AI quota exceeded. Upgrade your plan to generate more content.",
     "pii_redaction_notice": "Personal info was redacted from the source for your privacy",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "refine": {
+      "title": "Refine Output",
+      "feedback_label": "What would you like to change?",
+      "focus_tone": "Tone",
+      "focus_length": "Length",
+      "focus_hook": "Hook",
+      "focus_hashtags": "Hashtags",
+      "submit": "Refine",
+      "refining": "Refining...",
+      "success": "Output refined!",
+      "error": "Refinement failed. Please try again."
+    },
+    "feedback": {
+      "thanks": "Thanks for your feedback!",
+      "helpful": "Helpful",
+      "not_helpful": "Not helpful"
+    },
+    "upsell": {
+      "banner_text": "Pro uses Sonnet 4.6 for stronger output.",
+      "upgrade_link": "Upgrade →",
+      "dismiss": "Dismiss"
+    },
+    "score": {
+      "tier_weak": "Weak",
+      "tier_ok": "OK",
+      "tier_strong": "Strong",
+      "tier_viral": "Viral"
+    }
   },
   "billing": {
     "upgrade": "Upgrade Plan",
     "current_plan": "Current Plan",
     "next_billing_date": "Next billing date: {date}",
-    "cancel_subscription": "Cancel Subscription"
+    "cancel_subscription": "Cancel Subscription",
+    "pause": {
+      "link": "Pause subscription",
+      "description": "Temporarily pause your subscription instead of canceling"
+    }
   },
   "upgrade_modal": {
     "ai_generation": "AI generation",
@@ -1474,7 +1506,9 @@
     "generation_failed": "Failed to generate image. Please try again.",
     "download_failed": "Failed to download image",
     "attached": "Image attached to tweet!",
-    "close": "Close"
+    "close": "Close",
+    "locked_model": "Upgrade to Pro for {model}",
+    "free_models": "Available on your plan"
   },
   "inspiration": {
     "title": "Inspiration",
@@ -2776,6 +2810,13 @@
       "clear_confirm_desc": "This will permanently clear all notification history. This action cannot be undone.",
       "cleared": "All notifications cleared",
       "clear_failed": "Failed to clear notifications"
+    },
+    "grant_quota": {
+      "title": "Grant AI Quota",
+      "amount": "Amount",
+      "reason": "Reason",
+      "submit": "Grant",
+      "success": "Granted {amount} generations to user"
     }
   }
 }

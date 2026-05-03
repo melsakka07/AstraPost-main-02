@@ -340,18 +340,20 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   // payment (e.g. trial ended with no payment method added). There is no
   // invoice.payment_failed in this path so we must handle it here.
   if (subscription.status === "incomplete_expired") {
-    await db
-      .update(user)
-      .set({ plan: "free", planExpiresAt: null })
-      .where(eq(user.id, existingRecord.userId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(user)
+        .set({ plan: "free", planExpiresAt: null })
+        .where(eq(user.id, existingRecord.userId));
 
-    await db.insert(planChangeLog).values({
-      id: crypto.randomUUID(),
-      userId: existingRecord.userId,
-      oldPlan: existingRecord.plan,
-      newPlan: "free",
-      reason: "incomplete_expired",
-      stripeSubscriptionId: subscription.id,
+      await tx.insert(planChangeLog).values({
+        id: crypto.randomUUID(),
+        userId: existingRecord.userId,
+        oldPlan: existingRecord.plan,
+        newPlan: "free",
+        reason: "incomplete_expired",
+        stripeSubscriptionId: subscription.id,
+      });
     });
 
     await cache.delete(`plan:${existingRecord.userId}`);
@@ -935,6 +937,130 @@ export async function handleTrialWillEnd(subscription: Stripe.Subscription) {
   }
 }
 
+export async function handleSubscriptionPaused(subscription: Stripe.Subscription) {
+  const subRecord = await getSubscriptionRecord(subscription.id);
+  if (!subRecord) return;
+
+  const period = getSubscriptionPeriod(subscription);
+
+  // Multi-table write — must be atomic.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(subscriptions)
+      .set({
+        status: toSubscriptionStatus(subscription.status),
+        currentPeriodStart: period.currentPeriodStart,
+        currentPeriodEnd: period.currentPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+      })
+      .where(eq(subscriptions.stripeSubscriptionId, subscription.id));
+
+    await tx
+      .update(user)
+      .set({
+        plan: "free",
+        planExpiresAt: null,
+      })
+      .where(eq(user.id, subRecord.userId));
+
+    await tx.insert(planChangeLog).values({
+      id: crypto.randomUUID(),
+      userId: subRecord.userId,
+      oldPlan: subRecord.plan,
+      newPlan: "free",
+      reason: "subscription_paused",
+      stripeSubscriptionId: subscription.id,
+    });
+  });
+
+  await cache.delete(`plan:${subRecord.userId}`);
+
+  logger.warn("webhook_subscription_paused", {
+    userId: subRecord.userId,
+    stripeSubscriptionId: subscription.id,
+    oldPlan: subRecord.plan,
+  });
+
+  await runSideEffect(
+    () =>
+      notifyBillingEvent({
+        userId: subRecord.userId,
+        type: "billing_plan_changed",
+        title: "Subscription paused",
+        message:
+          "Your subscription has been paused. Your account is now on the Free plan. Resume your subscription to regain full access.",
+        metadata: { stripeSubscriptionId: subscription.id },
+      }),
+    "billing_paused"
+  );
+}
+
+export async function handleSubscriptionResumed(subscription: Stripe.Subscription) {
+  const subRecord = await getSubscriptionRecord(subscription.id);
+  if (!subRecord) return;
+
+  const period = getSubscriptionPeriod(subscription);
+
+  // Determine plan from the price ID — same authoritative mapping used everywhere
+  const firstItem = subscription.items.data[0];
+  const newPriceId = firstItem?.price?.id ?? null;
+  const restoredPlan = getPlanFromPriceId(newPriceId) ?? subRecord.plan;
+
+  // Multi-table write — must be atomic.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(subscriptions)
+      .set({
+        status: toSubscriptionStatus(subscription.status),
+        currentPeriodStart: period.currentPeriodStart,
+        currentPeriodEnd: period.currentPeriodEnd,
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+        cancelledAt: null,
+      })
+      .where(eq(subscriptions.stripeSubscriptionId, subscription.id));
+
+    await tx
+      .update(user)
+      .set({
+        plan: restoredPlan,
+        planExpiresAt: null,
+      })
+      .where(eq(user.id, subRecord.userId));
+
+    await tx.insert(planChangeLog).values({
+      id: crypto.randomUUID(),
+      userId: subRecord.userId,
+      oldPlan: "free",
+      newPlan: restoredPlan,
+      reason: "subscription_resumed",
+      stripeSubscriptionId: subscription.id,
+    });
+  });
+
+  await cache.delete(`plan:${subRecord.userId}`);
+
+  logger.info("webhook_subscription_resumed", {
+    userId: subRecord.userId,
+    stripeSubscriptionId: subscription.id,
+    restoredPlan,
+  });
+
+  await runSideEffect(
+    () =>
+      notifyBillingEvent({
+        userId: subRecord.userId,
+        type: "billing_reactivated",
+        title: "Subscription resumed",
+        message: `Your subscription has been resumed and your ${restoredPlan.replace(/_/g, " ")} plan has been restored.`,
+        metadata: {
+          stripeSubscriptionId: subscription.id,
+          restoredPlan,
+        },
+      }),
+    "billing_resumed"
+  );
+}
+
 export async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId || null;
   const plan = session.metadata?.plan || null;
@@ -1038,6 +1164,12 @@ export async function POST(req: Request) {
             break;
           case "invoice.payment_succeeded":
             await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
+            break;
+          case "customer.subscription.paused":
+            await handleSubscriptionPaused(event.data.object as Stripe.Subscription);
+            break;
+          case "customer.subscription.resumed":
+            await handleSubscriptionResumed(event.data.object as Stripe.Subscription);
             break;
           case "customer.subscription.trial_will_end":
             await handleTrialWillEnd(event.data.object as Stripe.Subscription);

@@ -24,7 +24,7 @@ import { useElapsedTime } from "@/hooks/use-elapsed-time";
 
 interface Reply {
   text: string;
-  style: string;
+  type: string;
 }
 
 interface ReplyResult {
@@ -57,7 +57,6 @@ export default function ReplyGeneratorPage() {
   const [tweetUrl, setTweetUrl] = useState("");
   const [language, setLanguage] = useState("en");
   const [tone, setTone] = useState("casual");
-  const [goal, setGoal] = useState("add");
   const [result, setResult] = useState<ReplyResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const elapsed = useElapsedTime(isLoading);
@@ -82,7 +81,7 @@ export default function ReplyGeneratorPage() {
       const res = await fetch("/api/ai/reply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweetUrl, language, tone, goal }),
+        body: JSON.stringify({ tweetUrl, language, tone }),
       });
 
       if (!res.ok) {
@@ -216,7 +215,7 @@ export default function ReplyGeneratorPage() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>{t("language")}</Label>
               <Select value={language} onValueChange={setLanguage}>
@@ -250,22 +249,6 @@ export default function ReplyGeneratorPage() {
                   <SelectItem value="educational">{t("educational")}</SelectItem>
                   <SelectItem value="inspirational">{t("inspirational")}</SelectItem>
                   <SelectItem value="humorous">{t("humorous")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t("goal")}</Label>
-              <Select value={goal} onValueChange={setGoal}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="add">{t("add_value")}</SelectItem>
-                  <SelectItem value="agree">{t("agree_amplify")}</SelectItem>
-                  <SelectItem value="counter">{t("counter_perspective")}</SelectItem>
-                  <SelectItem value="funny">{t("be_funny")}</SelectItem>
-                  <SelectItem value="question">{t("ask_question")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -360,7 +343,7 @@ export default function ReplyGeneratorPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 space-y-2">
                     <Badge variant="outline" className="text-xs capitalize">
-                      {reply.style}
+                      {reply.type}
                     </Badge>
                     <p className="text-sm leading-relaxed">{reply.text}</p>
                     <p

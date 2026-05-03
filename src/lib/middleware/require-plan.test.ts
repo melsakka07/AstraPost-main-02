@@ -56,48 +56,48 @@ describe("Trial System", () => {
     mockZeroCount();
   });
 
-  it("trial user gets Pro feature access (agentic posting)", async () => {
+  it("trial user does NOT get Pro features (agentic posting is Pro-only)", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "free",
       trialEndsAt: futureDate,
       createdAt: new Date(),
     });
     const result = await checkAgenticPostingAccessDetailed("user-1");
-    expect(result.allowed).toBe(true);
+    expect(result.allowed).toBe(false); // Phase 4: trial = free-tier features
   });
 
-  it("trial user is capped at 3 X accounts (Pro limit)", async () => {
+  it("trial user is capped at 1 X accounts (same as free)", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "free",
       trialEndsAt: futureDate,
       createdAt: new Date(),
     });
-    // Simulate already having 3 accounts
+    // Simulate already having 1 account
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue([{ count: 3 }]),
+        where: vi.fn().mockResolvedValue([{ count: 1 }]),
       }),
     });
     const result = await checkAccountLimitDetailed("user-1", 1);
     expect(result.allowed).toBe(false);
   });
 
-  it("trial user AI quota is capped at Pro limit (100)", async () => {
+  it("trial user AI quota is capped at trial limit (50)", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "free",
       trialEndsAt: futureDate,
       createdAt: new Date(),
     });
-    // Simulate 100 AI generations used
+    // Simulate 50 AI generations used
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue([{ count: 100 }]),
+        where: vi.fn().mockResolvedValue([{ count: 50 }]),
       }),
     });
     const result = await checkAiQuotaDetailed("user-1");
     expect(result.allowed).toBe(false);
     if (!result.allowed) {
-      expect(result.limit).toBe(100);
+      expect(result.limit).toBe(50);
     }
   });
 
@@ -111,14 +111,14 @@ describe("Trial System", () => {
     expect(result.allowed).toBe(false);
   });
 
-  it("trial user gets csv_pdf analytics export (not white_label_pdf)", async () => {
+  it("trial user has no analytics export (same as free)", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "free",
       trialEndsAt: futureDate,
       createdAt: new Date(),
     });
     const result = await checkAnalyticsExportLimitDetailed("user-1");
-    expect(result.allowed).toBe(true); // csv_pdf is allowed (not "none")
+    expect(result.allowed).toBe(false); // Phase 4: trial = "none"
   });
 
   it("expired trial user is blocked from Pro features", async () => {
