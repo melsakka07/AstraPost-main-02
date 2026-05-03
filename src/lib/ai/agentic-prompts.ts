@@ -1,27 +1,10 @@
-export const VERSION = "agentic:v1";
+export const VERSION = "agentic:v2";
 
 import type { AgenticTweet, ContentPlan, ResearchBrief } from "@/lib/ai/agentic-types";
+import { buildLanguageBlock } from "@/lib/ai/language";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { canPostLongContent, getMaxCharacterLimit } from "@/lib/services/x-subscription";
-
-// ── Language helpers ──────────────────────────────────────────────────────────
-
-function languageInstruction(language: string): string {
-  if (language === "ar") {
-    return `LANGUAGE: Arabic (ar)
-- Write ALL content natively in Modern Standard Arabic or Gulf/Levantine dialect as appropriate for social media
-- Do NOT translate from English — think and write directly in Arabic
-- Use Arabic-native expressions, idioms, and cultural references relevant to the MENA region
-- Hashtags: mix Arabic hashtags (with # prefix) and relevant English hashtags
-- Numbers, statistics, and proper nouns may remain in their conventional form
-- JSON keys MUST remain in English — only the content values should be in Arabic`;
-  }
-  return `LANGUAGE: ${language}
-- Write ALL content in ${language}
-- Use natural, idiomatic expressions for this language — not literal translations
-- JSON keys MUST remain in English`;
-}
 
 // ── 5A: Research prompt ───────────────────────────────────────────────────────
 
@@ -32,7 +15,7 @@ export function buildResearchPrompt(
 ): { system: string; messages: Array<{ role: "user"; content: string }> } {
   const system = `You are a social media research analyst specializing in viral content for the MENA region and global markets.
 
-${languageInstruction(language)}
+${buildLanguageBlock(language, "social")}
 
 ${JAILBREAK_GUARD}`;
 
@@ -185,7 +168,7 @@ export function buildWritingPrompt(
 
   const system = `You are a world-class social media copywriter who creates content that people actually want to read and share.
 ${voiceBlock}
-${languageInstruction(language)}
+${buildLanguageBlock(language, "social")}
 
 ${JAILBREAK_GUARD}`;
 
@@ -219,8 +202,7 @@ Return ONLY valid JSON. No markdown, no explanation, no preamble.
     "text": "tweet text (NO hashtags in text — they go in the hashtags array)",
     "hashtags": ["tag1", "tag2"],
     "hasImage": false,
-    "imagePrompt": "only include this field when hasImage is true",
-    "charCount": 142
+    "imagePrompt": "only include this field when hasImage is true"
   }
 ]
 
@@ -229,7 +211,6 @@ RULES:
 - position is 0-based
 - text must NOT contain # hashtags — put them in hashtags array only
 - hashtags: 2–3 tags maximum per tweet; only include in tweet[0] and tweet[last]; others should be []
-- charCount: character count of text + space + all hashtags combined (with # prefix)
 - hasImage: true ONLY for tweets at indices ${JSON.stringify(plan.imageSlots)}
 - imagePrompt: include ONLY when hasImage is true; omit the field entirely when hasImage is false`;
 
@@ -254,7 +235,7 @@ export function buildReviewPrompt(
   const tweetSummaries = tweets
     .map(
       (t, i) =>
-        `[${i}] (${t.charCount} chars) "${t.text.slice(0, 80)}${t.text.length > 80 ? "…" : ""}"`
+        `[${i}] (${t.text.length} chars) "${t.text.slice(0, 80)}${t.text.length > 80 ? "…" : ""}"`
     )
     .join("\n");
 

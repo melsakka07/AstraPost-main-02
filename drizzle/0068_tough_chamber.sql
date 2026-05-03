@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "voice_variant" text DEFAULT 'default' NOT NULL;

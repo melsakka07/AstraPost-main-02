@@ -60,11 +60,17 @@ const ACCOUNT_COLORS = ["#3b82f6", "#22c55e", "#f97316", "#a855f7", "#ec4899"];
 
 interface CalendarViewProps {
   posts: CalendarPost[];
+  drafts?: CalendarPost[];
   currentDate: Date;
   initialView?: ViewType;
 }
 
-export function CalendarView({ posts, currentDate, initialView = "month" }: CalendarViewProps) {
+export function CalendarView({
+  posts,
+  drafts = [],
+  currentDate,
+  initialView = "month",
+}: CalendarViewProps) {
   const t = useTranslations("calendar");
   const locale = useLocale();
   const dateLocale = locale === "ar" ? ar : undefined;
@@ -75,6 +81,84 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
   const [view, setView] = React.useState<ViewType>(initialView);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [isUpdating, setIsUpdating] = React.useState(false);
+
+  // Schedule-all state
+  const [isSchedulingAll, setIsSchedulingAll] = React.useState(false);
+  const [scheduleProgress, setScheduleProgress] = React.useState({ current: 0, total: 0 });
+  const scheduleAbortRef = React.useRef<AbortController | null>(null);
+
+  const draftCount = drafts.length;
+
+  const handleScheduleAll = async () => {
+    if (draftCount === 0) return;
+
+    scheduleAbortRef.current?.abort();
+    const abort = new AbortController();
+    scheduleAbortRef.current = abort;
+
+    setIsSchedulingAll(true);
+    setScheduleProgress({ current: 0, total: draftCount });
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < draftCount; i++) {
+      const draft = drafts[i];
+      if (!draft) continue;
+
+      if (abort.signal.aborted) break;
+
+      try {
+        const res = await fetch(`/api/posts/${draft.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Idempotency-Key": `schedule-all:${draft.id}`,
+          },
+          body: JSON.stringify({
+            action: "schedule",
+            scheduledAt: draft.scheduledAt?.toISOString() ?? new Date().toISOString(),
+          }),
+          signal: AbortSignal.timeout(8000),
+        });
+
+        if (res.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        if ((abort.signal as AbortSignal & { reason?: string }).reason !== "cancel") {
+          errorCount++;
+        }
+      }
+
+      setScheduleProgress({ current: i + 1, total: draftCount });
+    }
+
+    setIsSchedulingAll(false);
+
+    if (errorCount === 0) {
+      toast.success(t("toasts.scheduled_count", { count: successCount }));
+      router.refresh();
+    } else if (successCount > 0) {
+      toast.warning(t("toasts.scheduled_partial", { success: successCount, failed: errorCount }));
+      router.refresh();
+    } else {
+      toast.error(t("toasts.schedule_failed"));
+    }
+  };
+
+  const handleCancelScheduleAll = () => {
+    scheduleAbortRef.current?.abort();
+    setIsSchedulingAll(false);
+  };
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      scheduleAbortRef.current?.abort();
+    };
+  }, []);
 
   const weekdayFormatter = React.useMemo(
     () => new Intl.DateTimeFormat(locale, { weekday: "short" }),
@@ -254,6 +338,24 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
         </div>
         <div className="flex items-center gap-2">
           {isUpdating && <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />}
+          {isSchedulingAll ? (
+            <>
+              <Loader2 className="text-primary h-4 w-4 animate-spin" />
+              <span className="text-muted-foreground text-xs">
+                {t("scheduling_progress", {
+                  current: scheduleProgress.current,
+                  total: scheduleProgress.total,
+                })}
+              </span>
+              <Button variant="ghost" size="sm" onClick={handleCancelScheduleAll}>
+                {t("cancel")}
+              </Button>
+            </>
+          ) : draftCount > 0 ? (
+            <Button variant="outline" size="sm" onClick={handleScheduleAll}>
+              {t("schedule_n_posts", { count: draftCount })}
+            </Button>
+          ) : null}
           <Select
             value={view}
             onValueChange={(v) => {
@@ -303,6 +405,9 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
               const dayPosts = posts.filter(
                 (p) => p.scheduledAt && isSameDay(new Date(p.scheduledAt), day)
               );
+              const dayDrafts = drafts.filter(
+                (d) => d.scheduledAt && isSameDay(new Date(d.scheduledAt), day)
+              );
 
               return (
                 <CalendarDay
@@ -310,6 +415,7 @@ export function CalendarView({ posts, currentDate, initialView = "month" }: Cale
                   date={day}
                   id={dayKey}
                   posts={dayPosts}
+                  drafts={dayDrafts}
                   isCurrentMonth={isSameMonth(day, currentDate)}
                   view={view}
                   onDateClick={handleDateClick}

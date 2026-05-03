@@ -1,7 +1,7 @@
-export const VERSION = "template:v2";
+export const VERSION = "template:v3";
 
+import { buildLanguageBlock } from "@/lib/ai/language";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
-import { LANGUAGES } from "@/lib/constants";
 import type { ToneCode } from "@/lib/constants";
 
 export type OutputFormat = "single" | "thread-short" | "thread-long";
@@ -21,16 +21,15 @@ export interface TemplatePromptConfig {
   defaultTone: ToneCode;
   defaultFormat: OutputFormat;
   placeholderTopic: string;
+  /** Few-shot examples for this template. Rides in the system prompt (cacheable). */
+  examples?: { ar: string[]; en: string[] } | undefined;
   buildPrompt(
     topic: string,
     tone: ToneCode,
     language: string,
-    format: OutputFormat
+    format: OutputFormat,
+    examples?: { ar: string[]; en: string[] } | undefined
   ): { system: string; messages: Array<{ role: "user"; content: string }> };
-}
-
-function languageLabel(code: string): string {
-  return LANGUAGES.find((l) => l.code === code)?.label ?? "English";
 }
 
 function tweetCountInstruction(format: OutputFormat): string {
@@ -49,18 +48,31 @@ function tweetCountInstruction(format: OutputFormat): string {
  * These are cacheable because the prefix (up to the variable parts) stays
  * stable across requests for the same language/tone.
  */
-function systemBlock(tone: ToneCode, language: string): string {
-  const lang = languageLabel(language);
-  return `Language: ${lang}.
+function systemBlock(
+  tone: ToneCode,
+  language: string,
+  examples?: { ar: string[]; en: string[] } | undefined
+): string {
+  const langBlock = buildLanguageBlock(language, "social");
+
+  let examplesBlock = "";
+  if (examples) {
+    const langExamples = language === "ar" ? examples.ar : examples.en;
+    if (langExamples.length > 0) {
+      examplesBlock = `\nExample tweets in this style:\n${langExamples.map((e) => `• ${e}`).join("\n")}\n`;
+    }
+  }
+
+  return `${langBlock}
 Tone: ${tone}.
 
 Hard requirements:
-- EACH tweet must be under 280 characters (standard X limit). Count carefully — this is a firm limit.
+- Aim for ~250 characters per tweet. The system enforces hard character limits server-side — no need to count.
 - Do NOT include thread numbering like "1/5" or "Tweet 1:" anywhere in the tweet text.
 - Do NOT output any explanation, commentary, headers, or meta-text. Only tweets.
-- Write in ${lang}.${lang === "Arabic" ? " Use Modern Standard Arabic (فصحى معاصرة) with natural phrasing. Emojis are fine." : ""}
 - Match the ${tone} tone throughout — every tweet should feel consistent.
 
+${examplesBlock}
 ${JAILBREAK_GUARD}`;
 }
 
@@ -74,13 +86,13 @@ export const TEMPLATE_PROMPTS: TemplatePromptConfig[] = [
     defaultTone: "educational",
     defaultFormat: "thread-short",
     placeholderTopic: "e.g., Time management for remote developers",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, examples) {
       const countInstruction = tweetCountInstruction(format);
 
       const system = `You are an expert social media content writer for X (Twitter).
 Write a How-To Guide thread about the topic below.
 
-${systemBlock(tone, language)}`;
+${systemBlock(tone, language, examples)}`;
 
       const userMessage = `${wrapUntrusted("TOPIC", topic)}
 
@@ -107,13 +119,25 @@ ${countInstruction}`;
     defaultTone: "casual",
     defaultFormat: "thread-short",
     placeholderTopic: "e.g., How I landed my first freelance client",
-    buildPrompt(topic, tone, language, format) {
+    examples: {
+      ar: [
+        "أرسلت ٢٠٠ بريد إلكتروني. تلقيت ١٩٧ رفضًا و٣ ردود فقط. أحد هذه الردود غير مساري المهني بالكامل. 'الحظ' ليس صدفة — إنه إصرار يرتدي قناعًا.",
+        "قبل عام، تركت وظيفتي براتب ٦ أرقام دون خطة بديلة. ظن الجميع أنني فقدت عقلي. اليوم، مشروعي الخاص يحقق دخلًا أكبر من راتبي السابق. لكن المكسب الحقيقي لم يكن المال — بل هذا القرار...",
+        "شخص غريب أرسل لي رسالة: 'محتواك ممل.' كدت أحظره. بدلًا من ذلك، سألته: لماذا؟ تلك المحادثة القصيرة علمتني عن الكتابة أكثر مما تعلمته في عامين كاملين. إليكم ما قاله...",
+      ],
+      en: [
+        "I sent 200 cold emails. Got 197 rejections and 3 replies. One of those replies changed my career. Here's the part most people miss about 'luck': it's just persistence wearing a disguise.",
+        "Last year I quit my 6-figure job with no backup plan. My family thought I'd lost it. Today I run a business that makes more than my old salary. But the real win wasn't the money — it was this one decision...",
+        "A stranger DM'd me 'your content is boring.' I almost blocked them. Instead, I asked why. That 5-minute conversation taught me more about writing than 2 years of posting. Here's what they said...",
+      ],
+    },
+    buildPrompt(topic, tone, language, format, examples) {
       const countInstruction = tweetCountInstruction(format);
 
       const system = `You are an expert social media content writer for X (Twitter).
 Write a Personal Story thread about the topic below.
 
-${systemBlock(tone, language)}`;
+${systemBlock(tone, language, examples)}`;
 
       const userMessage = `${wrapUntrusted("TOPIC", topic)}
 
@@ -140,13 +164,25 @@ ${countInstruction}`;
     defaultTone: "viral",
     defaultFormat: "single",
     placeholderTopic: "e.g., Why hustle culture is making you less productive",
-    buildPrompt(topic, tone, language, format) {
+    examples: {
+      ar: [
+        "رأي غير شائع: 'التوازن بين العمل والحياة' خرافة يروج لها من وصل بالفعل. أول 5 سنوات من بناء أي شيء حقيقي تتطلب هوسًا كاملًا. السؤال ليس هل هو متوازن — بل هل يستحق العناء.",
+        "معظم نصائح 'الإنتاجية' مجرد مزيد من التسويف. لا تحتاج تطبيقًا جديدًا أو نظامًا معقدًا. تحتاج أن تقوم بالعمل الفعلي فقط. كل شيء آخر مجرد ضوضاء.",
+        "أفضل نصيحة مهنية تلقيتها: 'توقف عن تحسين خطة الأمان قبل أن تبني شيئًا يستحق الحماية.' معظم الناس يخططون أكثر مما ينفذون. انشر أولًا، ثم حسّن لاحقًا.",
+      ],
+      en: [
+        "Hot take: 'Work-life balance' is a myth sold by people who've already made it. The first 5 years of building anything meaningful require obsession. The question isn't whether it's balanced — it's whether it's worth it.",
+        "Unpopular opinion: Most 'productivity advice' is just procrastination in disguise. You don't need another app or system. You need to do the actual work. Everything else is noise.",
+        "The best career advice I ever got: 'Stop optimizing for safety before you've built anything worth protecting.' Most people over-plan and under-execute. Ship first, optimize later.",
+      ],
+    },
+    buildPrompt(topic, tone, language, format, examples) {
       const countInstruction = tweetCountInstruction(format);
 
       const system = `You are an expert social media content writer for X (Twitter).
 Write a Contrarian Take about the topic below.
 
-${systemBlock(tone, language)}`;
+${systemBlock(tone, language, examples)}`;
 
       const userMessage = `${wrapUntrusted("TOPIC", topic)}
 
@@ -173,13 +209,13 @@ ${countInstruction}`;
     defaultTone: "professional",
     defaultFormat: "thread-long",
     placeholderTopic: "e.g., 7 productivity tools that save me 5 hours a week",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, examples) {
       const countInstruction = tweetCountInstruction(format);
 
       const system = `You are an expert social media content writer for X (Twitter).
 Write a Curated List thread about the topic below.
 
-${systemBlock(tone, language)}`;
+${systemBlock(tone, language, examples)}`;
 
       const userMessage = `${wrapUntrusted("TOPIC", topic)}
 
@@ -206,13 +242,13 @@ ${countInstruction}`;
     defaultTone: "inspirational",
     defaultFormat: "thread-short",
     placeholderTopic: "e.g., Launching my new course on personal finance for beginners",
-    buildPrompt(topic, tone, language, format) {
+    buildPrompt(topic, tone, language, format, examples) {
       const countInstruction = tweetCountInstruction(format);
 
       const system = `You are an expert social media content writer for X (Twitter).
 Write a Product Launch announcement thread about the topic below.
 
-${systemBlock(tone, language)}`;
+${systemBlock(tone, language, examples)}`;
 
       const userMessage = `${wrapUntrusted("TOPIC", topic)}
 

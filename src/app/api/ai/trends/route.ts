@@ -36,6 +36,7 @@ Return EXACTLY 5 trending topics as a JSON array. For each topic, include:
 - "postCount": estimated engagement level ("High", "Medium", or "Trending")
 - "category": "${category}"
 - "suggestedAngle": a one-sentence content angle a creator could use for a post about this trend
+- "evidenceUrl": if possible, include a relevant source URL as evidenceUrl (omit if no source is available)
 
 Focus on topics that are genuinely trending RIGHT NOW on X/Twitter, not general evergreen topics. Prioritize topics with high engagement and conversation volume.
 
@@ -176,7 +177,7 @@ export async function GET(req: Request) {
         result.usage?.inputTokens ?? 0,
         result.usage?.outputTokens ?? 0
       ),
-      promptVersion: "trends:v1",
+      promptVersion: "trends:v2",
       latencyMs,
       fallbackUsed: false,
       inputPrompt: buildTrendsPrompt(category, userLanguage),

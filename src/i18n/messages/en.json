@@ -681,8 +681,14 @@
     "toasts": {
       "rescheduled": "Post rescheduled",
       "reschedule_failed": "Failed to reschedule post",
-      "rescheduled_short": "Rescheduled"
-    }
+      "rescheduled_short": "Rescheduled",
+      "scheduled_count": "{count, plural, one {# post scheduled} other {# posts scheduled}}",
+      "scheduled_partial": "{success} scheduled, {failed} failed — check your calendar",
+      "schedule_failed": "Failed to schedule posts. Please try again."
+    },
+    "scheduling_progress": "{current} of {total}",
+    "schedule_n_posts": "Schedule {count} {count, plural, one {Draft} other {Drafts}}",
+    "cancel": "Cancel"
   },
   "drafts": {
     "title": "Drafts",

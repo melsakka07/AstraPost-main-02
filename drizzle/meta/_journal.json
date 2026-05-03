@@ -477,6 +477,13 @@
       "when": 1777752544716,
       "tag": "0067_soft_dark_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1777801429369,
+      "tag": "0068_tough_chamber",
+      "breakpoints": true
     }
   ]
 }

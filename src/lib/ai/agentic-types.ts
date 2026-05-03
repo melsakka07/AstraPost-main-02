@@ -83,7 +83,7 @@ export const AgenticTweetSchema = z.object({
   hasImage: z.boolean(),
   imagePrompt: z.string().optional(),
   imageUrl: z.string().optional(),
-  charCount: z.number().int().min(0),
+  charCount: z.number().int().min(0).optional(),
 });
 
 export const AgenticTweetsSchema = z.array(AgenticTweetSchema);

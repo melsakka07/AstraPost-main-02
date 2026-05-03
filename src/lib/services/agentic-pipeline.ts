@@ -133,7 +133,9 @@ export async function runAgenticPipeline(params: RunAgenticPipelineParams): Prom
     });
     // Store partial state and throw a special error so the API route can update DB to "needs_input"
     const err = new Error("TOPIC_TOO_BROAD");
-    (err as Error & { suggestions: string[] }).suggestions = research.broadSuggestions;
+    (err as Error & { suggestions: string[]; research: ResearchBrief }).suggestions =
+      research.broadSuggestions;
+    (err as Error & { suggestions: string[]; research: ResearchBrief }).research = research;
     throw err;
   }
 

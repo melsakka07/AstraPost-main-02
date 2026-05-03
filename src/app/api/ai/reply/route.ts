@@ -15,6 +15,7 @@ const requestSchema = z.object({
   tweetUrl: z.string().url(),
   language: LANGUAGE_ENUM.default("en"),
   tone: TONE_ENUM.default("casual"),
+  includeAuthor: z.boolean().default(false),
 });
 
 const repliesSchema = z.object({
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       return ApiError.badRequest(result.error.issues);
     }
 
-    const { tweetUrl, language: clientLanguage, tone } = result.data;
+    const { tweetUrl, language: clientLanguage, tone, includeAuthor } = result.data;
 
     // Fetch target tweet
     let tweetText = "";
@@ -61,8 +62,10 @@ export async function POST(req: Request) {
     const langInstruction = getArabicInstructions(userLanguage);
     const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}`;
 
+    const authorContext = includeAuthor ? ` from ${tweetAuthor}` : "";
+
     const prompt = `You are an expert social media engagement writer.
-Generate exactly 3 replies to the following tweet from ${tweetAuthor}, one for each type below.
+Generate exactly 3 replies to the following tweet${authorContext}, one for each type below.
 ${wrapUntrusted("ORIGINAL TWEET", tweetText, 2_000)}
 
 Reply types (generate exactly one of each):
@@ -100,7 +103,7 @@ For each reply include:
       tokensIn: usage?.inputTokens ?? 0,
       tokensOut: usage?.outputTokens ?? 0,
       costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "reply:v2",
+      promptVersion: "reply:v3",
       latencyMs,
       fallbackUsed: false,
       inputPrompt: prompt,

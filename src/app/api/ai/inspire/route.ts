@@ -8,6 +8,7 @@
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
 import { buildInspirePrompts, VERSION } from "@/lib/ai/inspire-prompts";
+import { fitTweet } from "@/lib/ai/text-fit";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM } from "@/lib/constants";
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
         messages,
         schema: ThreadSchema,
       });
-      tweets = result.object.tweets.map((t) => t.text);
+      tweets = result.object.tweets.map((t) => fitTweet(t.text));
       usage = result.usage;
     } else {
       const result = await generateText({

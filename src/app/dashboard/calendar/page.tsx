@@ -47,21 +47,38 @@ export default async function CalendarPage({
   const start = startOfWeek(startOfMonth(currentDate));
   const end = endOfWeek(endOfMonth(currentDate));
 
-  const scheduledPosts = await db.query.posts.findMany({
-    where: and(
-      eq(posts.userId, session.user.id),
-      eq(posts.status, "scheduled"),
-      isNotNull(posts.scheduledAt),
-      gte(posts.scheduledAt, start),
-      lte(posts.scheduledAt, end)
-    ),
-    orderBy: [asc(posts.scheduledAt)],
-    with: {
-      tweets: {
-        orderBy: (tweets, { asc }) => [asc(tweets.position)],
+  const [scheduledPosts, draftPosts] = await Promise.all([
+    db.query.posts.findMany({
+      where: and(
+        eq(posts.userId, session.user.id),
+        eq(posts.status, "scheduled"),
+        isNotNull(posts.scheduledAt),
+        gte(posts.scheduledAt, start),
+        lte(posts.scheduledAt, end)
+      ),
+      orderBy: [asc(posts.scheduledAt)],
+      with: {
+        tweets: {
+          orderBy: (tweets, { asc }) => [asc(tweets.position)],
+        },
       },
-    },
-  });
+    }),
+    db.query.posts.findMany({
+      where: and(
+        eq(posts.userId, session.user.id),
+        eq(posts.status, "draft"),
+        isNotNull(posts.scheduledAt),
+        gte(posts.scheduledAt, start),
+        lte(posts.scheduledAt, end)
+      ),
+      orderBy: [asc(posts.scheduledAt)],
+      with: {
+        tweets: {
+          orderBy: (tweets, { asc }) => [asc(tweets.position)],
+        },
+      },
+    }),
+  ]);
 
   return (
     <DashboardPageWrapper
@@ -86,6 +103,7 @@ export default async function CalendarPage({
       <div className="bg-background -mx-1 overflow-hidden rounded-lg border p-4 shadow-sm">
         <CalendarViewClient
           posts={scheduledPosts}
+          drafts={draftPosts}
           currentDate={currentDate}
           initialView={initialView}
         />

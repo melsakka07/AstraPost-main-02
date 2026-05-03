@@ -1,9 +1,12 @@
 /**
- * Centralized Arabic AI prompt helper.
+ * Centralized Arabic AI prompt helper — single source of Arabic style guidance.
  *
  * Replaces the duplicated inline `langInstruction` pattern that was scattered
  * across 15+ AI routes. Provides enhanced, culturally-aware Arabic instructions
  * for language quality, punctuation, numeral consistency, and tone guidance.
+ *
+ * All Arabic prompt text in the codebase should originate from this module.
+ * Other modules (language.ts, prompt builders) import the style blocks from here.
  */
 
 const ARABIC_INSTRUCTIONS = [
@@ -12,6 +15,32 @@ const ARABIC_INSTRUCTIONS = [
   "Use Western numerals (0–9) consistently throughout. Do not mix Eastern Arabic numerals (٠-٩).",
   "Avoid translations of English idioms; use natural Arabic equivalents. Reference MENA region context where relevant.",
 ] as const;
+
+/** Comprehensive Arabic style block for social media content creation. */
+export const ARABIC_SOCIAL_STYLE = [
+  "LANGUAGE: Arabic (العربية)",
+  "- Write ALL content natively in Modern Standard Arabic (فصحى معاصرة) or appropriate dialect for social media",
+  "- Do NOT translate from English — think and write directly in Arabic",
+  "- Use Arabic punctuation marks: ، (comma), ؛ (semicolon), ؟ (question mark). Never use Latin punctuation in Arabic text.",
+  "- Use Western numerals (0–9) consistently. Do not mix Eastern Arabic numerals (٠-٩).",
+  "- Avoid translations of English idioms; use natural Arabic equivalents",
+  "- Reference MENA region context and culture where relevant",
+  "- Use Arabic-native expressions, idioms, and cultural references relevant to the MENA region",
+  "- Hashtags: mix Arabic hashtags (with # prefix) and relevant English hashtags",
+  "- JSON keys MUST remain in English — only the content values should be in Arabic",
+].join("\n");
+
+/** Arabic style block for translation tasks (culturally adapted, not literal). */
+export const ARABIC_TRANSLATION_STYLE = [
+  "LANGUAGE: Arabic (العربية)",
+  "- Translate into natural, culturally-adapted Arabic",
+  "- Use Modern Standard Arabic (فصحى معاصرة) with natural phrasing suitable for the target audience",
+  "- Adapt idioms and cultural references to Arabic equivalents",
+  "- Do NOT produce literal word-for-word translations",
+  "- Preserve the original tone and intent",
+  "- Use Arabic punctuation marks: ، (comma), ؛ (semicolon), ؟ (question mark)",
+  "- Use Western numerals (0–9) consistently",
+].join("\n");
 
 const ARABIC_TONE_MAP: Record<string, string> = {
   professional: "احترافي",

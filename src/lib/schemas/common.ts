@@ -69,6 +69,7 @@ export const trendItemSchema = z.object({
   postCount: z.string(),
   category: z.string(),
   suggestedAngle: z.string(),
+  evidenceUrl: z.string().url().optional(),
 });
 export type TrendItem = z.infer<typeof trendItemSchema>;
 

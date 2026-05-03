@@ -1,6 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
+import { buildLanguageBlock } from "@/lib/ai/language";
 import { wrapUntrusted } from "@/lib/ai/untrusted";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
@@ -10,8 +10,9 @@ import { logger } from "@/lib/logger";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const requestSchema = z.object({
-  tweets: z.array(z.string()).min(1).max(15),
+  tweets: z.array(z.string().max(5000)).min(1).max(15),
   targetLanguage: LANGUAGE_ENUM,
+  mode: z.enum(["literal", "localized"]).default("localized"),
 });
 
 const responseSchema = z.object({
@@ -31,20 +32,26 @@ export async function POST(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { tweets, targetLanguage } = parsed.data;
+    const { tweets, targetLanguage, mode } = parsed.data;
 
     const emptyTweets = tweets.filter((t) => !t.trim());
     if (emptyTweets.length > 0) {
       return ApiError.badRequest("Cannot translate empty tweets. Please add content first.");
     }
 
-    const langInstruction = getArabicInstructions(targetLanguage);
+    const langBlock = buildLanguageBlock(targetLanguage, "translation");
 
-    const prompt = `${langInstruction}
+    const modeInstruction =
+      mode === "literal"
+        ? "TRANSLATION MODE: Literal. Translate word-for-word. Preserve original phrasing, idioms, and structure exactly. Do NOT adapt or localize any expressions."
+        : "TRANSLATION MODE: Localized. Adapt expressions, idioms, and cultural references to make sense in the target language. Preserve meaning, tone, and style as closely as possible.";
+
+    const prompt = `${langBlock}
+
+${modeInstruction}
 
 Constraints:
 - Keep each translated tweet under 280 characters. If a translation would exceed 280 characters, split it into multiple shorter tweets to stay within the limit.
-- Preserve meaning, tone, and style as closely as possible.
 - Output at least as many tweets as the input (more is OK when splitting long translations).
 - Keep numbering prefixes like "1/5" if the original tweet already has them, but do NOT add any new numbering or bracket labels.
 
@@ -74,7 +81,7 @@ ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${wrapUntrusted(`TWEET_${i + 1}`
       tokensIn: usage?.inputTokens ?? 0,
       tokensOut: usage?.outputTokens ?? 0,
       costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "translate:v1",
+      promptVersion: "translate:v2",
       latencyMs,
       fallbackUsed: false,
       inputPrompt: prompt,

@@ -1,5 +1,6 @@
-export const VERSION = "inspire:v2";
+export const VERSION = "inspire:v3";
 
+import { buildLanguageBlock } from "@/lib/ai/language";
 import { redactPII } from "@/lib/ai/pii";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 
@@ -52,7 +53,7 @@ IMPORTANT: Never plagiarize. Always produce substantially different text that ad
 Your task: Rephrase the original tweet in different words while preserving the core message.
 
 ${tone ? `Use a ${tone} tone.` : ""}
-${language === "ar" ? "Respond in Arabic." : "Respond in English."}
+${buildLanguageBlock(language || "en", "social")}
 ${userContext ? `User context: ${userContext}` : ""}
 
 Return ONLY the rephrased tweet text. No explanation or additional text.
@@ -70,7 +71,7 @@ IMPORTANT: Never plagiarize. Always produce substantially different text that ad
 Your task: Adapt the original tweet to a different tone.
 
 ${tone ? `Target tone: ${tone}.` : "Choose a different tone than the original."}
-${language === "ar" ? "Respond in Arabic." : "Respond in English."}
+${buildLanguageBlock(language || "en", "social")}
 ${userContext ? `User context: ${userContext}` : ""}
 
 Return ONLY the adapted tweet text. No explanation or additional text.
@@ -88,7 +89,7 @@ IMPORTANT: Never plagiarize. Build upon the original idea with substantial new c
 Your task: Turn the single tweet into a multi-tweet thread (3-5 tweets) that elaborates on the idea.
 
 ${tone ? `Use a ${tone} tone throughout.` : ""}
-${language === "ar" ? "Respond in Arabic." : "Respond in English."}
+${buildLanguageBlock(language || "en", "social")}
 ${userContext ? `User context: ${userContext}` : ""}
 
 Thread structure:
@@ -109,7 +110,7 @@ IMPORTANT: Never plagiarize. The output should include the user's unique opinion
 Your task: Rewrite the tweet with the user's personal take/opinion injected.
 
 ${tone ? `Use a ${tone} tone.` : ""}
-${language === "ar" ? "Respond in Arabic." : "Respond in English."}
+${buildLanguageBlock(language || "en", "social")}
 ${userContext ? `User's perspective to inject: ${userContext}` : ""}
 
 Return ONLY the adapted tweet text. No explanation or additional text.
@@ -126,7 +127,7 @@ IMPORTANT: This is NOT a literal translation. Adapt expressions, idioms, and cul
 
 Your task: Translate and culturally adapt the tweet.
 
-${language === "ar" ? "Translate from English to Arabic, adapting idioms appropriately." : "Translate from Arabic to English, adapting idioms appropriately."}
+${buildLanguageBlock(language || "en", "translation")}
 ${userContext ? `User context: ${userContext}` : ""}
 
 Return ONLY the translated and adapted tweet text. No explanation or additional text.
@@ -144,7 +145,7 @@ IMPORTANT: Never plagiarize. The output should present a different perspective t
 Your task: Generate a respectful counter-argument or alternative viewpoint.
 
 ${tone ? `Use a ${tone} tone.` : ""}
-${language === "ar" ? "Respond in Arabic." : "Respond in English."}
+${buildLanguageBlock(language || "en", "social")}
 ${userContext ? `User's perspective: ${userContext}` : ""}
 
 Return ONLY the counter-argument tweet text. No explanation or additional text.

@@ -1,5 +1,102 @@
 # Latest Updates
 
+## 2026-05-03: Phase 5 Wave A — AI Quality Items (7 items)
+
+**Summary:** Seven AI-side quality improvements shipped: server-side char-count enforcement, centralized language blocks, hashtag banlist, few-shot examples, trends evidenceUrl, translate mode param, and reply author stripping.
+
+### P1 — Server-side char-count enforcement
+
+- New `src/lib/ai/text-fit.ts`: `fitTweet()` sentence-aware truncation, `splitThread()` sentence-aware split
+- Wired into thread, template-generate, and inspire (expand_thread) routes
+- Prompts updated: "Aim for ~250 chars; system enforces hard limits" instead of asking the model to count
+- Removed `charCount` from agentic writing prompt; made `charCount` optional in `AgenticTweetSchema`
+
+**Files:** `src/lib/ai/text-fit.ts` (new), `src/app/api/ai/thread/route.ts`, `src/app/api/ai/template-generate/route.ts`, `src/app/api/ai/inspire/route.ts`, `src/lib/ai/length-prompts.ts`, `src/lib/ai/agentic-prompts.ts`, `src/lib/ai/agentic-types.ts`
+
+### P7/P8 — Centralized language block + Arabic single-source
+
+- New `src/lib/ai/language.ts`: `buildLanguageBlock(language, context)` with "social" and "translation" contexts
+- Arabic-native blocks sourced from `arabic-prompt.ts` (single source of Arabic style guidance)
+- English-native blocks with fallback for unknown languages
+- Wired into agentic-prompts (all 4 builders), template-prompts (buildPrompt), inspire-prompts, and thread route
+
+**Files:** `src/lib/ai/language.ts` (new), `src/lib/ai/arabic-prompt.ts`, `src/lib/ai/agentic-prompts.ts`, `src/lib/ai/template-prompts.ts`, `src/lib/ai/inspire-prompts.ts`, `src/app/api/ai/thread/route.ts`
+
+### P15 — Hashtag banlist + MENA bias
+
+- New `src/lib/ai/hashtags.ts`: `BANNED_HASHTAGS` Set (English + Arabic spam tags), `filterHashtags()`, `menaBiasFilter()`
+- Wired into hashtags route as post-generation filter; Arabic-script tags boosted to front for `ar` language
+
+**Files:** `src/lib/ai/hashtags.ts` (new), `src/app/api/ai/hashtags/route.ts`
+
+### P13-lite — Few-shot examples on top-2 templates
+
+- Added `examples: { ar: string[]; en: string[] }` to `TemplatePromptConfig`
+- 3 curated examples each for Contrarian Take and Personal Story (Hook) templates (ar + en)
+- Examples ride in the system prompt (cacheable via Phase 3 Anthropic caching)
+
+**Files:** `src/lib/ai/template-prompts.ts`, `src/app/api/ai/template-generate/route.ts`
+
+### P14-lite — Trends evidenceUrl
+
+- Added optional `evidenceUrl?: string` to `trendItemSchema` in `common.ts`
+- Updated trends prompt to request source URL when available
+
+**Files:** `src/lib/schemas/common.ts`, `src/app/api/ai/trends/route.ts`
+
+### P16 — Translate mode param
+
+- Added `mode: z.enum(["literal", "localized"]).default("localized")` to translate request schema
+- Literal mode: word-for-word translation preserving original phrasing
+- Localized mode (default): natural, culturally adapted translation (existing behavior)
+
+**Files:** `src/app/api/ai/translate/route.ts`
+
+### P18 — Strip handle from reply prompt
+
+- Added `includeAuthor: z.boolean().default(false)` to reply request schema
+- When false (default): strips @handle from tweet context before AI prompt
+- Prevents the model from addressing the original author unnecessarily
+
+**Files:** `src/app/api/ai/reply/route.ts`
+
+### Quality Gate
+
+- `pnpm lint` — PASS (0 errors, 0 warnings)
+- `pnpm typecheck` — PASS
+- `pnpm check:i18n` — PASS (2425 keys matched)
+- `pnpm test` — PASS (28 files, 240 tests)
+
+---
+
+## 2026-05-03: Phase 5 Wave A — Agentic Auto-Resume + Calendar Schedule-All
+
+**Summary:** Two lite backend items shipped: U1-lite (agentic pause auto-resume) and U14-lite (calendar "Schedule all drafts" button). No new endpoints.
+
+### U1-lite — Agentic pause auto-resume (lazy, no cron)
+
+- `needs_input` status with `broadSuggestions` persisted to `researchBrief` when pipeline detects too-broad topic
+- GET handler auto-resumes stale-paused runs (>5 min) by narrowing topic to first `broadSuggestions[0]` and resetting status to `generating`
+- Pipeline error now carries full `ResearchBrief` object for persistence
+
+**Files:** `src/app/api/ai/agentic/route.ts`, `src/lib/services/agentic-pipeline.ts`
+
+### U14-lite — Calendar "Schedule all drafts" button
+
+- Calendar now fetches and displays draft posts alongside scheduled posts (dashed border, muted styling)
+- "Schedule all N Drafts" button in calendar toolbar converts all visible drafts to scheduled via PATCH `/api/posts/[postId]`
+- Client-side sequential loop with AbortController cleanup, 8s per-request timeout, progress indicator, and graceful error handling
+
+**Files:** `src/app/dashboard/calendar/page.tsx`, `src/components/calendar/calendar-view-client.tsx`, `src/components/calendar/calendar-view.tsx`, `src/components/calendar/calendar-day.tsx`, `src/components/calendar/calendar-post-item.tsx`, `src/i18n/messages/en.json`, `src/i18n/messages/ar.json` (+6 new keys in `calendar` namespace)
+
+### Quality Gate
+
+- `pnpm lint` — PASS (0 errors, 2 pre-existing warnings)
+- `pnpm typecheck` — 3 pre-existing errors in unrelated files (ai/thread, ai/language, ai/template-prompts)
+- `pnpm check:i18n` — PASS (2425 keys, all matched)
+
+---
+
 ## 2026-05-03: Phase 3 Wave B — COMPLETE
 
 **Summary:** Phase 3 is now fully closed. The 3 remaining Wave B items (T5, T9, T11) shipped. Phase 3 achieved its goal: caching, fallback, structured outputs, retries, and idempotency are all live on every AI route.

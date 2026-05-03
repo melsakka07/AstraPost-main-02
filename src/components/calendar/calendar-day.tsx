@@ -12,6 +12,7 @@ interface CalendarDayProps {
   id: string;
   date: Date;
   posts: CalendarPost[];
+  drafts?: CalendarPost[];
   isCurrentMonth: boolean;
   view: "month" | "week" | "day";
   onDateClick?: (date: Date) => void;
@@ -22,6 +23,7 @@ export function CalendarDay({
   id,
   date,
   posts,
+  drafts = [],
   isCurrentMonth,
   view,
   onDateClick,
@@ -76,6 +78,16 @@ export function CalendarDay({
             view={view}
             {...(accountColorMap && post.xAccountId && accountColorMap[post.xAccountId]
               ? { accentColor: accountColorMap[post.xAccountId] }
+              : {})}
+          />
+        ))}
+        {drafts.map((draft) => (
+          <CalendarPostItem
+            key={draft.id}
+            post={{ ...draft, status: "draft" }}
+            view={view}
+            {...(accountColorMap && draft.xAccountId && accountColorMap[draft.xAccountId]
+              ? { accentColor: accountColorMap[draft.xAccountId] }
               : {})}
           />
         ))}

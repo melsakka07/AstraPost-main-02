@@ -681,8 +681,14 @@
     "toasts": {
       "rescheduled": "تمت إعادة جدولة المنشور",
       "reschedule_failed": "فشلت إعادة جدولة المنشور",
-      "rescheduled_short": "تمت إعادة الجدولة"
-    }
+      "rescheduled_short": "تمت إعادة الجدولة",
+      "scheduled_count": "{count, plural, zero {لم يتم جدولة أي منشور} one {تمت جدولة منشور واحد} two {تمت جدولة منشورين} few {تمت جدولة {count} منشورات} other {تمت جدولة {count} منشوراً}}",
+      "scheduled_partial": "تمت جدولة {success} وفشلت {failed} — راجع تقويمك",
+      "schedule_failed": "فشلت جدولة المنشورات. يرجى المحاولة مرة أخرى."
+    },
+    "scheduling_progress": "{current} من {total}",
+    "schedule_n_posts": "جدولة {count} {count, plural, zero {مسودة} one {مسودة} two {مسودتين} few {مسودات} other {مسودة}}",
+    "cancel": "إلغاء"
   },
   "drafts": {
     "title": "المسودات",

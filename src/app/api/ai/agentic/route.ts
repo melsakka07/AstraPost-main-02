@@ -50,6 +50,39 @@ export async function GET() {
 
     if (!latest) return Response.json({ session: null });
 
+    // U1-lite: Auto-resume stale paused (needs_input) sessions
+    // When a session has been paused for >5 minutes (user walked away),
+    // auto-select the first broad suggestion as the narrowed topic.
+    const AUTO_RESUME_MS = 5 * 60 * 1000;
+    if (
+      latest.status === "needs_input" &&
+      latest.updatedAt &&
+      Date.now() - latest.updatedAt.getTime() > AUTO_RESUME_MS
+    ) {
+      const research = latest.researchBrief as {
+        too_broad?: boolean;
+        broadSuggestions?: string[];
+      } | null;
+      const firstSuggestion = research?.broadSuggestions?.[0];
+      if (firstSuggestion) {
+        // Auto-resume: set narrowed topic and restart pipeline
+        await db
+          .update(agenticPosts)
+          .set({
+            topic: firstSuggestion,
+            status: "generating",
+            researchBrief: null,
+          })
+          .where(eq(agenticPosts.id, latest.id));
+
+        const resumed = await db.query.agenticPosts.findFirst({
+          where: eq(agenticPosts.id, latest.id),
+        });
+
+        return Response.json({ session: resumed, autoResumed: true });
+      }
+    }
+
     return Response.json({ session: latest });
   } catch (err) {
     logger.error("agentic_get_session_error", {
@@ -220,9 +253,15 @@ export async function POST(req: Request) {
         } catch (err) {
           // Handle too-broad topic gracefully
           if (err instanceof Error && err.message === "TOPIC_TOO_BROAD") {
+            const broadResearch =
+              (err as Error & { research?: { too_broad?: boolean; broadSuggestions?: string[] } })
+                .research ?? null;
             await db
               .update(agenticPosts)
-              .set({ status: "needs_input" })
+              .set({
+                status: "needs_input",
+                ...(broadResearch && { researchBrief: broadResearch }),
+              })
               .where(eq(agenticPosts.id, agenticPostId))
               .catch(() => void 0);
             // The needs_input SSE event was already sent by the pipeline

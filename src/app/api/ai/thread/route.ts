@@ -1,8 +1,10 @@
 import { streamText } from "ai";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
+import { getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
+import { buildLanguageBlock } from "@/lib/ai/language";
 import { getLengthPrompt, getLengthMaxChars, THREAD_MODE_PROMPT } from "@/lib/ai/length-prompts";
+import { fitTweet } from "@/lib/ai/text-fit";
 import { JAILBREAK_GUARD, wrapUntrusted } from "@/lib/ai/untrusted";
 import { buildVoiceInstructions } from "@/lib/ai/voice-profile";
 import { aiPreamble } from "@/lib/api/ai-preamble";
@@ -76,7 +78,7 @@ export async function POST(req: Request) {
 
     // Get language: prefer client-sent language, fall back to user's DB preference
     const userLanguage = clientLanguage || dbUser.language || "en";
-    const langInstruction = getArabicInstructions(userLanguage);
+    const langBlock = buildLanguageBlock(userLanguage, "social");
     const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
 
     const dedupKey = RequestDedup.generateKey(session.user.id, "ai_thread", {
@@ -161,7 +163,7 @@ export async function POST(req: Request) {
     // ── Build system + messages based on mode ───────────────────────────────────
     const systemIntro = `You are an expert social media content writer for X (Twitter).
 ${toneGuidance}
-${langInstruction}
+${langBlock}
 ${wrappedVoice}
 
 ${JAILBREAK_GUARD}`;
@@ -256,8 +258,11 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
               });
             }
 
+            // Apply server-side char-count enforcement before moderation
+            const fitted = fitTweet(accumulated, maxChars);
+
             // Phase 1 moderation: buffer the full text and check at end of stream
-            const modResult = await checkModeration(accumulated);
+            const modResult = await checkModeration(fitted);
             if (modResult) {
               logger.warn("moderation_flagged_stream", {
                 userId,
@@ -289,7 +294,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
                   usage?.inputTokens ?? 0,
                   usage?.outputTokens ?? 0
                 ),
-                promptVersion: "thread:v1",
+                promptVersion: "thread:v2",
                 latencyMs: latency,
                 fallbackUsed,
                 inputPrompt: promptSnapshot,
@@ -336,8 +341,9 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
             // Emit each completed tweet as soon as we see the delimiter
             let delimIdx: number;
             while ((delimIdx = buffer.indexOf(threadDelimiter)) !== -1) {
-              const tweetText = buffer.slice(0, delimIdx).trim();
+              const rawTweetText = buffer.slice(0, delimIdx).trim();
               buffer = buffer.slice(delimIdx + threadDelimiter.length);
+              const tweetText = fitTweet(rawTweetText);
 
               if (tweetText.length > 0) {
                 tweetTexts.push(tweetText);
@@ -351,7 +357,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           }
 
           // Flush the last tweet (no trailing delimiter)
-          const remaining = buffer.trim();
+          const remaining = fitTweet(buffer.trim());
           if (remaining.length > 0) {
             tweetTexts.push(remaining);
             const content = remaining.length > 1000 ? remaining.slice(0, 997) + "..." : remaining;
@@ -399,7 +405,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
                 usage?.inputTokens ?? 0,
                 usage?.outputTokens ?? 0
               ),
-              promptVersion: "thread:v1",
+              promptVersion: "thread:v2",
               latencyMs: latency,
               fallbackUsed,
               inputPrompt: promptSnapshot,

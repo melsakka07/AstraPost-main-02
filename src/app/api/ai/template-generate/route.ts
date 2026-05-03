@@ -1,6 +1,7 @@
 import { streamObject } from "ai";
 import { z } from "zod";
 import { getTemplatePrompt, VERSION, type OutputFormat } from "@/lib/ai/template-prompts";
+import { fitTweet } from "@/lib/ai/text-fit";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
@@ -52,7 +53,13 @@ export async function POST(req: Request) {
     const tone = parsed.data.tone ?? config.defaultTone;
     const format: OutputFormat = parsed.data.outputFormat ?? config.defaultFormat;
 
-    const { system, messages } = config.buildPrompt(topic, tone, userLanguage, format);
+    const { system, messages } = config.buildPrompt(
+      topic,
+      tone,
+      userLanguage,
+      format,
+      config.examples
+    );
 
     const modelId = process.env.OPENROUTER_MODEL!;
     const t0 = performance.now();
@@ -76,7 +83,8 @@ export async function POST(req: Request) {
 
             // Emit any newly completed tweets
             for (let i = lastEmittedIndex + 1; i < tweets.length; i++) {
-              const tweetText = tweets[i]?.text;
+              const rawText = tweets[i]?.text;
+              const tweetText = rawText ? fitTweet(rawText) : undefined;
               if (tweetText && tweetText.length > 0) {
                 tweetTexts.push(tweetText);
                 const content =
