@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
@@ -233,7 +234,9 @@ export default async function DashboardPage() {
         </Button>
       }
     >
-      <SetupChecklist {...data.checklist} />
+      <Suspense fallback={null}>
+        <SetupChecklist {...data.checklist} />
+      </Suspense>
 
       {data.failedCount > 0 && (
         <Alert className="border-destructive/50 bg-destructive/5">

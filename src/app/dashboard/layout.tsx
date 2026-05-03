@@ -116,7 +116,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div data-dashboard-layout className="bg-background pb-safe flex min-h-dvh">
-      <DashboardTour />
+      <Suspense fallback={null}>
+        <DashboardTour />
+      </Suspense>
       <ReferralCookieProcessor />
       <Suspense fallback={<SidebarSkeleton />}>
         <Sidebar

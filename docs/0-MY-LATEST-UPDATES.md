@@ -1,5 +1,18 @@
 # Latest Updates
 
+## 2026-05-03: React Hydration Error #418 Fix
+
+**Bug:** Production dashboard browser console showed "Minified React error #418" (hydration mismatch). Root cause: `DashboardTour` and `SetupChecklist` both called `useSearchParams()` without `<Suspense>` boundaries, causing Next.js to de-opt the page to client-side rendering — server and client produced different HTML.
+
+**Fix:**
+
+- `src/app/dashboard/layout.tsx:119` — wrapped `<DashboardTour />` in `<Suspense fallback={null}>`
+- `src/app/dashboard/page.tsx:237` — wrapped `<SetupChecklist />` in `<Suspense fallback={null}>`, added `import { Suspense } from "react"`
+
+**Files modified (2):** `src/app/dashboard/layout.tsx`, `src/app/dashboard/page.tsx`
+
+**Quality Gate:** `pnpm run check` PASS (lint + typecheck + i18n)
+
 ## 2026-05-03: Phase 6 — Growth Engine COMPLETE
 
 **Summary:** All 5 exit criteria shipped. Referral infrastructure (pre-existing from Phase 4 with revised credit model), "Made with AstraPost" footer + Pro opt-out toggle, admin trial-extension endpoint with bilingual Resend email, and Enterprise card on /pricing.
