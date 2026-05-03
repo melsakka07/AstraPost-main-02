@@ -1,5 +1,3 @@
-import "server-only";
-
 import { ARABIC_SOCIAL_STYLE, ARABIC_TRANSLATION_STYLE } from "@/lib/ai/arabic-prompt";
 import { LANGUAGES } from "@/lib/constants";
 import { logger } from "@/lib/logger";
