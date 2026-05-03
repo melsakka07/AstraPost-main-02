@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { withRetry } from "@/lib/ai/with-retry";
 import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
+import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getServerEnv } from "@/lib/env";
@@ -91,6 +92,12 @@ export type AiPreambleResult = {
    *     outputContent: result.object,
    *   });
    */
+  /**
+   * Cache a successful response for idempotent replay.
+   * Routes call this after generation completes so that retries with the same
+   * x-idempotency-key or correlation ID short-circuit inside aiPreamble.
+   */
+  cacheIdempotent: (status: number, body: string, headers: Record<string, string>) => Promise<void>;
   recordTelemetry: (extra: {
     tokensIn: number;
     tokensOut: number;
@@ -172,6 +179,13 @@ export async function aiPreamble(
     where: eq(user.id, session.user.id),
     columns: { plan: true, voiceProfile: true, language: true },
   });
+
+  // T9: Idempotency check — short-circuits duplicate AI generations.
+  // Uses x-idempotency-key header if present, otherwise correlationId.
+  const requestHeaders = await headers();
+  const idempotencyKey = requestHeaders.get("x-idempotency-key") ?? correlationId;
+  const idemCheck = await checkIdempotency(session.user.id, idempotencyKey);
+  if (idemCheck.cached) return idemCheck.response;
 
   const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
   if (!rlResult.success) return createRateLimitResponse(rlResult);
@@ -297,6 +311,8 @@ export async function aiPreamble(
     fallbackModel: null,
     releaseQuota,
     consumed,
+    cacheIdempotent: (status: number, body: string, headers: Record<string, string>) =>
+      cacheIdempotentResponse(session.user.id, idempotencyKey, status, body, headers),
     checkModeration,
     recordTelemetry,
     withRetry,

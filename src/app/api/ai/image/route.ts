@@ -10,6 +10,8 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateText, type LanguageModel } from "ai";
 import { z } from "zod";
 import { sanitizeForPrompt } from "@/lib/ai/voice-profile";
+import { withRetry } from "@/lib/ai/with-retry";
+import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
 import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
@@ -71,21 +73,27 @@ async function generateImagePromptFromTweet(tweetContent: string): Promise<strin
     if (!process.env.OPENROUTER_MODEL) {
       throw new Error("OPENROUTER_MODEL environment variable is not configured");
     }
+    const aiModel = process.env.OPENROUTER_MODEL;
 
     // Note: Image prompts should always be in English for better visual generation
     // regardless of the user's language preference. The generated images will be
     // visual representations that work across languages.
-    const { text } = await generateText({
-      model: openrouterProvider(process.env.OPENROUTER_MODEL, {
-        provider: { data_collection: "deny" as const },
-      }) as unknown as LanguageModel,
-      system: `You are an expert at creating vivid, specific image prompts for social media content.
+    const { text } = await withRetry(() =>
+      withTimeout(
+        generateText({
+          model: openrouterProvider(aiModel, {
+            provider: { data_collection: "deny" as const },
+          }) as unknown as LanguageModel,
+          system: `You are an expert at creating vivid, specific image prompts for social media content.
 Generate a visual prompt that captures the essence of the post.
 Keep the prompt under 200 words. Focus on visual elements, composition, mood, and style.
 Do not include text overlays in the image unless specifically requested.
 Return ONLY the image prompt, no explanation or additional text.`,
-      prompt: `Generate an image prompt for the following social media post (respond with only the image prompt, nothing else):\n\n---\n${sanitized}\n---`,
-    });
+          prompt: `Generate an image prompt for the following social media post (respond with only the image prompt, nothing else):\n\n---\n${sanitized}\n---`,
+        }),
+        45_000
+      )
+    );
 
     return text.trim();
   } catch (error) {

@@ -1,5 +1,37 @@
 # Latest Updates
 
+## 2026-05-03: Phase 3 Wave B — COMPLETE
+
+**Summary:** Phase 3 is now fully closed. The 3 remaining Wave B items (T5, T9, T11) shipped. Phase 3 achieved its goal: caching, fallback, structured outputs, retries, and idempotency are all live on every AI route.
+
+### Wave B items shipped
+
+| Item    | Description                                                                                                                                                                                                                                                            | Files                           |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **T9**  | Idempotency check in `aiPreamble` — reads `x-idempotency-key` header (falls back to correlationId), short-circuits on Redis cache hit; exposes `cacheIdempotent` on result for routes to cache after generation. Covers all ~15 gated AI routes.                       | `src/lib/api/ai-preamble.ts`    |
+| **T5**  | withRetry + withTimeout in image route auto-prompt — `generateImagePromptFromTweet` wraps its `generateText` call with both helpers. Custom routes now fully composed: competitor (all three), voice-profile (all three), image (idempotency + withRetry/withTimeout). | `src/app/api/ai/image/route.ts` |
+| **T11** | Replicate poll cap already shipped during Phase 4 — `firstPolledAt` with 90s timeout + refund in `image/status/route.ts:86-189`.                                                                                                                                       | (pre-existing)                  |
+
+### Phase 3 exit criteria — all [x]
+
+| #   | Criterion                                              | Status                            |
+| --- | ------------------------------------------------------ | --------------------------------- |
+| B1  | OpenRouter cacheControl for Anthropic models           | [x] Phase 3 Wave A                |
+| P4  | System/user message split on top-5 routes              | [x] Phase 3 Wave A                |
+| T6  | OpenRouter native fallback chain                       | [x] Phase 3 Wave A                |
+| T5  | withRetry+withTimeout+idempotency in 4 custom routes   | [x] Phase 3 Wave B                |
+| T9  | Idempotency on all POST /api/ai/\* routes              | [x] Phase 3 Wave B                |
+| T11 | Replicate poll cap 90s via Redis                       | [x] Phase 3 Wave B                |
+| T13 | mode:"json" — RETIRED                                  | [~]                               |
+| T15 | streamObject migration for inspire + template-generate | [x] Phase 3 Wave A                |
+| T10 | Agentic image parallel                                 | [x] Phase 3 Wave A (pre-existing) |
+
+### Quality Gate
+
+`pnpm run check` — PASS (lint 0/0, typecheck clean, i18n 2419 keys)
+
+---
+
 ## 2026-05-02: Phase 4 — Monetization Capture COMPLETE
 
 **Summary:** All 13 exit criteria shipped. Converted Phase 0-2 trust + cost wins into revenue capture: trial tier (50 gens / 25 images, free-tier features), Pro quota bumps (150/250), AI tools gate, admin grant system, refine endpoint, feedback UI, upsell surfaces, image model cost weighting, and Stripe pause handler.
