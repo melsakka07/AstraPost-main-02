@@ -1,5 +1,34 @@
 # Latest Updates
 
+## 2026-05-03: Documentation Sync — Phase 0–6 Drift Fixes
+
+**Summary:** End-to-end documentation audit after the 7-phase AI stack roadmap shipped. Documentation was largely up-to-date thanks to per-phase doc updates, but 4 specific drift points were corrected to match the implemented code.
+
+### Drift fixes
+
+| File                                                  | Issue                                                                                                                                                                                          | Fix                                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `README.md` (Plans table)                             | Trial limits row was a duplicated/broken markdown block. Stated trial = "Pro Monthly limits (150/50)" but code is `trial` tier 50/25.                                                          | Rewrote table with a dedicated **Trial** column; updated `TRIAL_EFFECTIVE_PLAN` reference from `"pro_monthly"` → `"trial"`; added a "Quota & Billing Mechanics" subsection covering atomic counter, grants, weighting, cost alarm, and 402 stats anchor.                                                                                  |
+| `README.md` (DB schema list)                          | Missing 11 tables added in Phases 0–6 + earlier billing hardening.                                                                                                                             | Added: `user_ai_counters`, `ai_quota_grants`, `moderation_flag`, `agentic_posts`, `processed_webhook_events`, `webhook_dead_letter_queue`, `webhook_delivery_log`, `plan_change_log`, `failed_jobs`, `promo_codes`/`promo_code_redemptions`, `feature_flags`, `admin_audit_log`. Annotated `ai_generations` with the new Phase 2 columns. |
+| `README.md` + `docs/claude/architecture.md` (API map) | `/api/ai/refine`, `/api/ai/feedback`, `/api/ai/enhance-topic`, `/api/admin/...`, `/api/cron/...` not enumerated.                                                                               | Added to project structure tree.                                                                                                                                                                                                                                                                                                          |
+| `docs/claude/env-vars.md`                             | Missing `OPENROUTER_MODEL_AGENTIC_REVIEWER`, `AI_DAILY_BUDGET_USD`, `OPENAI_EMBEDDING_MODEL`, `OPENAI_MODERATION_MODEL`, `GEMINI_API_KEY`, `REPLICATE_MODEL_ADVANCED`, `TWITTER_BEARER_TOKEN`. | Reorganized into AI Models / Auxiliary Providers / Image / Cost Guardrails / Billing & Infrastructure sections; added all missing vars with phase references.                                                                                                                                                                             |
+| `docs/claude/scripts.md`                              | Missing `pnpm check:i18n` and `pnpm diagnose:x-accounts`.                                                                                                                                      | Added under Code Quality and a new Diagnostics section.                                                                                                                                                                                                                                                                                   |
+| `CLAUDE.md`                                           | "Trial users get Pro Monthly limits" was misleading. Also no AI-quota helper note.                                                                                                             | Updated trial line + added AI quota helper note pointing to `tryConsumeAiQuota`.                                                                                                                                                                                                                                                          |
+
+### Audit verdict
+
+Code-base inspection confirmed all 56 plan items across Phases 0–6 are present (100%). Three operational items remain that are not code:
+
+- Update Vercel project envs for `REPLICATE_MODEL_*` (T2)
+- Enable Stripe Customer Portal "pause" toggle (M10)
+- Register `/api/cron/ai-cost-alarm` in Vercel Cron Jobs (B4)
+
+### Quality Gate
+
+No code changes — documentation only. `docs/claude/ai-features.md` and `docs/claude/recent-changes.md` were already synced during the per-phase doc passes.
+
+---
+
 ## 2026-05-03: Post-Implementation Audit — Bug Fixes + Test Coverage + .env.example
 
 **Summary:** Audit of the completed 7-phase AI stack plan found 3 bugs and 3 untested security/revenue-critical modules. All fixed. Quality gate: 31 test files, 280 tests, 0 lint/type errors.

@@ -100,27 +100,31 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ## Plans & Billing
 
-> New users get a **14-day free trial** with Pro Monthly limits automatically — no credit card required. Trial is enforced by `TRIAL_EFFECTIVE_PLAN = "pro_monthly"` in `src/lib/plan-limits.ts`.
+> New users get a **14-day free trial** with dedicated trial-tier quotas — no credit card required. Trial is enforced by `TRIAL_EFFECTIVE_PLAN = "trial"` in `src/lib/plan-limits.ts` (Phase 4 — `B5` trial cap).
 
 ### Plan Limits (source of truth: `src/lib/plan-limits.ts`)
 
-| Limit                        | Free            | Pro Monthly           | Pro Annual                       | Agency          |
-| ---------------------------- | --------------- | --------------------- | -------------------------------- | --------------- |
-| Posts per month              | 20              | Unlimited             | Unlimited                        | Unlimited       |
-| X accounts                   | 1               | 3                     | 4                                | 10              |
-| AI text generations / month  | 20              | 150                   | 250                              | Unlimited       |
-| AI image generations / month | 10              | 50                    | 50                               | Unlimited       |
-| AI image models              | Fast + Fallback | Fast + Pro + Fallback | Fast + Pro + Fallback + Advanced | All models      |
-| Analytics retention          | 7 days          | 90 days               | 90 days                          | 365 days        |
-| Analytics export             | —               | CSV + PDF             | CSV + PDF                        | White-label PDF |
-| Inspiration bookmarks        | 5               | Unlimited             | Unlimited                        | Unlimited       |
-| Team members                 | —               | —                     | —                                | Up to 5         |
+| Limit                        | Free            | Trial (14 days)             | Pro Monthly           | Pro Annual                       | Agency          |
+| ---------------------------- | --------------- | --------------------------- | --------------------- | -------------------------------- | --------------- |
+| Posts per month              | 20              | Unlimited                   | Unlimited             | Unlimited                        | Unlimited       |
+| X accounts                   | 1               | 3                           | 3                     | 4                                | 10              |
+| AI text generations / month  | 20              | 50                          | 150                   | 250                              | Unlimited       |
+| AI image generations / month | 10              | 25                          | 50                    | 50                               | Unlimited       |
+| AI image models              | Fast + Fallback | Fast + Fallback (base only) | Fast + Pro + Fallback | Fast + Pro + Fallback + Advanced | All models      |
+| Analytics retention          | 7 days          | 90 days                     | 90 days               | 90 days                          | 365 days        |
+| Analytics export             | —               | CSV + PDF                   | CSV + PDF             | CSV + PDF                        | White-label PDF |
+| Inspiration bookmarks        | 5               | Unlimited                   | Unlimited             | Unlimited                        | Unlimited       |
+| Team members                 | —               | —                           | —                     | —                                | Up to 5         |
 
-> Trial users get Pro Monthly limits (150 AI text, 50 images) for 14 days. See `TRIAL_EFFECTIVE_PLAN` in `src/lib/plan-limits.ts`.
-> | Analytics retention | 7 days | 90 days | 90 days | 365 days |
-> | Analytics export | — | CSV + PDF | CSV + PDF | White-label PDF |
-> | Inspiration bookmarks | 5 | Unlimited | Unlimited | Unlimited |
-> | Team members | — | — | — | Up to 5 |
+> Trial users get a dedicated tier with elevated quotas (vs Free) and access to most Pro features, but capped quotas (50 text / 25 images) to incentivize upgrade. Image model is locked to the base tier — `nano-banana-pro` requires upgrade. See `TRIAL_EFFECTIVE_PLAN` and the `trial` block in `src/lib/plan-limits.ts`.
+
+### Quota & Billing Mechanics
+
+- **Atomic quota counter** — `tryConsumeAiQuota(userId, weight)` (in `src/lib/services/ai-quota-atomic.ts`) uses a single `UPDATE … WHERE used + weight <= limit` to prevent race-condition overage under concurrent requests. Backed by the `user_ai_counters` table.
+- **Quota weighting** — Agentic Posting consumes **5 units per call** via `aiPreamble({ quotaWeight: 5 })`; AI Refine consumes **0.5 units**. Image models cost more credits per generation (`IMAGE_MODEL_COST` in `plan-limits.ts`: `nano-banana-pro = 3`, `gpt-image-2 = 5`).
+- **Admin grant fallback** — When base quota is exhausted, `consumeFromGrants()` decrements from the `ai_quota_grants` table (oldest first). Admins can top-up via `POST /api/admin/users/[id]/grant-quota`.
+- **Daily cost alarm** — `/api/cron/ai-cost-alarm` (every hour) tracks aggregate spend against `AI_DAILY_BUDGET_USD` and emails ops on overage.
+- **402 responses** — `createPlanLimitResponseWithStats()` returns structured JSON with `upgrade_url`, `suggested_plan`, `reset_at`, `remaining`, **plus** a 30-day usage anchor (`last30dStats`) so the UI can render benefit-led copy ("You've created 47 threads — Pro keeps that going").
 
 ### Feature Gates (source of truth: `src/lib/middleware/require-plan.ts`)
 
@@ -241,7 +245,11 @@ astrapost/
     │   │   ├── ai/             # AI endpoints: thread, translate, affiliate, tools,
     │   │   │   │               #   hashtags, score, image, inspire, bio, calendar,
     │   │   │   │               #   summarize, variants, reply, history, quota,
-    │   │   │   │               #   trends, agentic (SSE + approve + regenerate)
+    │   │   │   │               #   trends, refine, feedback, enhance-topic,
+    │   │   │   │               #   template-generate, agentic (SSE + approve + regenerate)
+    │   │   ├── admin/           # Admin APIs (grant-quota, extend-trial, ai-usage, etc.)
+    │   │   ├── cron/            # Scheduled jobs: billing-cleanup, ai-cost-alarm,
+    │   │   │                    #   ai-counter-rollover
     │   │   ├── analytics/      # Follower analytics, best-time, competitor, viral,
     │   │   │   │               #   self-stats, export (PDF), refresh, runs
     │   │   ├── auth/           # Better Auth catch-all route
@@ -598,36 +606,49 @@ pnpm run env:check            # Validate all environment variables and warn on m
 
 AstraPost uses **Drizzle ORM** with PostgreSQL. Key tables:
 
-| Table                       | Description                                                                                                                   |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `user`                      | App users (Better Auth compatible) — includes timezone, language, plan, Stripe customer ID, referral code, 2FA, voice profile |
-| `session`                   | Active user sessions                                                                                                          |
-| `account`                   | OAuth provider accounts (X, LinkedIn, Instagram)                                                                              |
-| `verification`              | Email/token verification records                                                                                              |
-| `x_accounts`                | Connected X accounts with encrypted tokens, follower count, default flag, token expiry                                        |
-| `linkedin_accounts`         | Connected LinkedIn accounts with encrypted tokens                                                                             |
-| `instagram_accounts`        | Connected Instagram accounts with long-lived tokens                                                                           |
-| `posts`                     | Scheduled/published/draft posts — platform, type, status, approval, recurrence, idempotency                                   |
-| `tweets`                    | Individual tweet cards within a post (ordered by `position`)                                                                  |
-| `media`                     | Uploaded media files linked to tweets (requires `user_id`)                                                                    |
-| `tweet_analytics`           | Latest analytics snapshot per tweet (impressions, likes, retweets, etc.)                                                      |
-| `tweet_analytics_snapshots` | Historical analytics records over time                                                                                        |
-| `social_analytics`          | Cross-platform analytics (LinkedIn, Instagram)                                                                                |
-| `follower_snapshots`        | Daily follower count snapshots per X account                                                                                  |
-| `analytics_refresh_runs`    | Audit log of analytics refresh jobs (multi-platform)                                                                          |
-| `team_members`              | Agency team member records with roles                                                                                         |
-| `team_invitations`          | Pending team invitations                                                                                                      |
-| `ai_generations`            | History of AI-generated content (thread, tweet improve, affiliate, bio, calendar, variants, etc.)                             |
-| `inspiration_bookmarks`     | Saved tweet inspirations                                                                                                      |
-| `subscriptions`             | Stripe subscription records linked to users                                                                                   |
-| `job_runs`                  | BullMQ job execution history with correlation IDs                                                                             |
-| `affiliate_links`           | Amazon affiliate product data and generated promotional tweets                                                                |
-| `affiliate_clicks`          | Click tracking for affiliate links                                                                                            |
-| `notifications`             | In-app notification feed per user                                                                                             |
-| `templates`                 | Saved tweet/thread templates                                                                                                  |
-| `milestones`                | Gamification achievements per user                                                                                            |
-| `feedback`                  | Product roadmap feature requests                                                                                              |
-| `feedback_votes`            | User votes on roadmap items                                                                                                   |
+| Table                       | Description                                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `user`                      | App users (Better Auth compatible) — includes timezone, language, plan, Stripe customer ID, referral code, 2FA, voice profile          |
+| `session`                   | Active user sessions                                                                                                                   |
+| `account`                   | OAuth provider accounts (X, LinkedIn, Instagram)                                                                                       |
+| `verification`              | Email/token verification records                                                                                                       |
+| `x_accounts`                | Connected X accounts with encrypted tokens, follower count, default flag, token expiry                                                 |
+| `linkedin_accounts`         | Connected LinkedIn accounts with encrypted tokens                                                                                      |
+| `instagram_accounts`        | Connected Instagram accounts with long-lived tokens                                                                                    |
+| `posts`                     | Scheduled/published/draft posts — platform, type, status, approval, recurrence, idempotency                                            |
+| `tweets`                    | Individual tweet cards within a post (ordered by `position`)                                                                           |
+| `media`                     | Uploaded media files linked to tweets (requires `user_id`)                                                                             |
+| `tweet_analytics`           | Latest analytics snapshot per tweet (impressions, likes, retweets, etc.)                                                               |
+| `tweet_analytics_snapshots` | Historical analytics records over time                                                                                                 |
+| `social_analytics`          | Cross-platform analytics (LinkedIn, Instagram)                                                                                         |
+| `follower_snapshots`        | Daily follower count snapshots per X account                                                                                           |
+| `analytics_refresh_runs`    | Audit log of analytics refresh jobs (multi-platform)                                                                                   |
+| `team_members`              | Agency team member records with roles                                                                                                  |
+| `team_invitations`          | Pending team invitations                                                                                                               |
+| `ai_generations`            | History of AI-generated content (model, subFeature, tokensIn/Out, costEstimateCents, promptVersion, latencyMs, fallbackUsed, feedback) |
+| `user_ai_counters`          | Per-user atomic quota counter (`tryConsumeAiQuota`) — period start + used + limit, prevents race overage                               |
+| `ai_quota_grants`           | Admin-granted quota top-ups (oldest-first consumption when base quota exhausts)                                                        |
+| `moderation_flag`           | Pre-publish content moderation flags (categories, snippet, generationId)                                                               |
+| `agentic_posts`             | 5-step Agentic Posting sessions (Research→Strategy→Write→Images→Review) with auto-resume after 5-min idle                              |
+| `inspiration_bookmarks`     | Saved tweet inspirations                                                                                                               |
+| `subscriptions`             | Stripe subscription records linked to users                                                                                            |
+| `processed_webhook_events`  | Stripe webhook idempotency log + retry tracking                                                                                        |
+| `webhook_dead_letter_queue` | Stripe webhooks that exhausted retries — admin alert surface                                                                           |
+| `webhook_delivery_log`      | Audit log for outbound webhook deliveries                                                                                              |
+| `plan_change_log`           | Audit trail for plan changes (1-year retention via `PLAN_CHANGE_LOG_RETENTION_YEARS`)                                                  |
+| `job_runs`                  | BullMQ job execution history with correlation IDs                                                                                      |
+| `failed_jobs`               | Jobs that exhausted all retry attempts                                                                                                 |
+| `affiliate_links`           | Amazon affiliate product data and generated promotional tweets                                                                         |
+| `affiliate_clicks`          | Click tracking for affiliate links                                                                                                     |
+| `notifications`             | In-app notification feed per user                                                                                                      |
+| `templates`                 | Saved tweet/thread templates                                                                                                           |
+| `milestones`                | Gamification achievements per user                                                                                                     |
+| `feedback`                  | Product roadmap feature requests                                                                                                       |
+| `feedback_votes`            | User votes on roadmap items                                                                                                            |
+| `promo_codes`               | Promotional discount codes                                                                                                             |
+| `promo_code_redemptions`    | Promo code usage history                                                                                                               |
+| `feature_flags`             | Runtime feature flag configuration with Redis cache                                                                                    |
+| `admin_audit_log`           | Audit log for sensitive admin operations (impersonation, grants, trial extensions)                                                     |
 
 To inspect or modify the schema interactively:
 
@@ -1020,7 +1041,7 @@ All 7 phases of the AI security, cost integrity, reliability, monetization, diff
 
 **Trial system security fix**
 
-- Replaced blanket `if (isTrialActive) return { allowed: true }` bypass with `effectivePlan` resolution — trial users now get Pro Monthly limits (100 AI text, 50 images, 3 accounts) instead of unlimited Agency-tier access
+- Replaced blanket `if (isTrialActive) return { allowed: true }` bypass with `effectivePlan` resolution — trial users now get plan-gated limits instead of unlimited Agency-tier access. (Phase 4 — `B5` — later refined to a dedicated `trial` tier with 50 text / 25 images and base-tier image models only.)
 - Added `TRIAL_EFFECTIVE_PLAN` constant and `effectivePlan` field to `PlanContext` interface
 - Agency-only features (LinkedIn, teams) correctly blocked during trial
 - 9 new unit tests covering trial Pro access, quota caps, Agency blocking, expiry, and paid-plan passthrough

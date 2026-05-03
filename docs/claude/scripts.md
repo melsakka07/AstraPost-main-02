@@ -19,13 +19,14 @@
 
 ## Code Quality
 
-| Command                 | Purpose                            |
-| ----------------------- | ---------------------------------- |
-| `pnpm lint`             | Run ESLint on all files            |
-| `pnpm typecheck`        | TypeScript type checking           |
-| `pnpm run check`        | Run lint + typecheck together      |
-| `pnpm run format`       | Format code with Prettier          |
-| `pnpm run format:check` | Check formatting without modifying |
+| Command                 | Purpose                                         |
+| ----------------------- | ----------------------------------------------- |
+| `pnpm lint`             | Run ESLint on all files                         |
+| `pnpm typecheck`        | TypeScript type checking                        |
+| `pnpm run check`        | Run lint + typecheck together                   |
+| `pnpm run check:i18n`   | Verify ar/en i18n keys are in sync (2,453 keys) |
+| `pnpm run format`       | Format code with Prettier                       |
+| `pnpm run format:check` | Check formatting without modifying              |
 
 ## Testing
 
@@ -60,6 +61,13 @@
 | -------------------------------- | ---------------------------------- |
 | `pnpm run tokens:rotate`         | Rotate OAuth token encryption keys |
 | `pnpm run tokens:encrypt-access` | Encrypt plaintext X access tokens  |
+
+## Diagnostics
+
+| Command                                 | Purpose                                                                 |
+| --------------------------------------- | ----------------------------------------------------------------------- |
+| `pnpm run diagnose:x-accounts`          | Probe each connected X account; report dead/expired tokens              |
+| `pnpm run diagnose:x-accounts -- --fix` | Same as above + auto-deactivate accounts whose tokens are unrecoverable |
 
 ## Template Sync
 
