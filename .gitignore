@@ -39,6 +39,7 @@ repomix-output.xml
 # local tooling
 .pnpm-store/
 .trae/
+.trae.backup
 .claude/
 .cursor/
 .vscode/
