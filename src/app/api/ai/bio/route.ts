@@ -112,32 +112,13 @@ For each variant provide:
 
     const modelId = process.env.OPENROUTER_MODEL!;
 
-    let object, usage;
-    let fallbackUsed = false;
+    const fallbackUsed = false;
     const t0 = performance.now();
-    try {
-      const gen = await generateObject({
-        model,
-        schema: bioSchema,
-        prompt,
-      });
-      object = gen.object;
-      usage = gen.usage;
-    } catch (err: any) {
-      if (err?.statusCode === 429 && preamble.fallbackModel) {
-        logger.warn("ai_primary_model_rate_limited", { fallback: true, userId: session.user.id });
-        fallbackUsed = true;
-        const gen = await generateObject({
-          model: preamble.fallbackModel,
-          schema: bioSchema,
-          prompt,
-        });
-        object = gen.object;
-        usage = gen.usage;
-      } else {
-        throw err;
-      }
-    }
+    const { object, usage } = await generateObject({
+      model,
+      schema: bioSchema,
+      prompt,
+    });
     const latencyMs = Math.round(performance.now() - t0);
 
     // Moderation check on generated bio variants

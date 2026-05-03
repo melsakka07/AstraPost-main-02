@@ -53,7 +53,7 @@ export async function POST(req: Request) {
         "Could not fetch the tweet. Make sure the URL is valid and the account is public."
       );
     }
-    tweetText = context.originalTweet.text;
+    tweetText = context.originalTweet.text.replace(/@\w+/g, "").replace(/\s+/g, " ").trim();
     tweetAuthor = `@${context.originalTweet.author.username}`;
 
     // Get language: prefer client-sent language, fall back to user's DB preference

@@ -57,15 +57,15 @@ src/
 │   └── ui/                       # shadcn/ui primitives
 └── lib/
     ├── admin/                    # Admin utilities & middleware
-    ├── ai/                       # AI prompts, template configs, voice-profile extraction
+    ├── ai/                       # AI prompts, template configs, voice-profile, PII redaction, prompt-injection defense, language blocks, text-fit, hashtag banlist, retry/timeout helpers
     ├── api/                      # API error handling, AI preamble
     ├── middleware/               # Plan gates, role checks
     ├── queue/                    # BullMQ client + processors
     ├── referral/                 # Referral utilities
     ├── schemas/                  # Shared Zod validation schemas
     ├── security/                 # Token encryption
-    ├── services/                 # Business logic (Agentic, AI Image, Analytics, Email, Plan Metadata, Stripe, X-API)
-    ├── utils/                    # General utilities (cn, date formatting)
+    ├── services/                 # Business logic (Agentic, AI Image, Analytics, AI Quota Atomic, Moderation, Email, Plan Metadata, Stripe, X-API)
+    ├── utils/                    # General utilities (cn, date formatting, time windows)
     └── tokens.ts                 # Color token constants (6 scales × 12 steps × 2 modes, charts, brand)
 ```
 
@@ -95,10 +95,24 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 ### Core Services
 
 - `src/lib/services/ai-quota.ts` — AI usage recording and retrieval
+- `src/lib/services/ai-quota-atomic.ts` — Atomic quota consumption with race-condition prevention + admin grant fallback
 - `src/lib/services/ai-image.ts` — Image generation orchestration
-- `src/lib/services/plan-metadata.ts` — Plan limits retrieval
+- `src/lib/services/moderation.ts` — Pre-publish content moderation
+- `src/lib/services/agentic-pipeline.ts` — 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
 - `src/lib/services/x-api.ts` — Twitter/X API client
 - `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics)
+
+### AI Security & Quality Modules
+
+- `src/lib/ai/untrusted.ts` — `wrapUntrusted()` + `JAILBREAK_GUARD` for prompt-injection defense
+- `src/lib/ai/pii.ts` — PII redaction (email, phone, credit card, IBAN)
+- `src/lib/ai/input-limits.ts` — Centralized character limits for user-supplied inputs
+- `src/lib/ai/language.ts` — `buildLanguageBlock()` for centralized language instructions
+- `src/lib/ai/text-fit.ts` — `fitTweet()` / `splitThread()` server-side char-count enforcement
+- `src/lib/ai/hashtags.ts` — Hashtag banlist + MENA-bias filter
+- `src/lib/ai/with-retry.ts` — Exponential backoff retry wrapper
+- `src/lib/ai/with-timeout.ts` — `AbortSignal.timeout` wrapper
+- `src/lib/api/idempotency.ts` — Redis-backed idempotency middleware for AI routes
 
 ### Auth & Authorization
 

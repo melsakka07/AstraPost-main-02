@@ -219,20 +219,9 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
 
     const modelId = process.env.OPENROUTER_MODEL!;
     const generationId = crypto.randomUUID(); // pre-generate for response
-    let streamResult;
-    let fallbackUsed = false;
     const t0 = performance.now();
-    try {
-      streamResult = streamText({ model, system, messages });
-    } catch (err: any) {
-      if (err?.statusCode === 429 && preamble.fallbackModel) {
-        logger.warn("ai_primary_model_rate_limited", { fallback: true, userId: session.user.id });
-        fallbackUsed = true;
-        streamResult = streamText({ model: preamble.fallbackModel, system, messages });
-      } else {
-        throw err;
-      }
-    }
+    const streamResult = streamText({ model, system, messages });
+    const fallbackUsed = false;
 
     const encoder = new TextEncoder();
     const userId = session.user.id;

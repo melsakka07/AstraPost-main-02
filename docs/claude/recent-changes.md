@@ -1,5 +1,33 @@
 # Recent Fixes & Changes
 
+## 2026-05-03 — Post-Implementation Audit & Bug Fixes
+
+- **Regenerate quota leak (P1)**: `agentic/[id]/regenerate/route.ts` was bypassing `aiPreamble` and burning 1 unit instead of 5. Fixed by routing through `aiPreamble({ quotaWeight: 5 })`.
+- **Dead 429 fallback code (P2)**: Removed unreachable try/catch blocks in `thread/route.ts` and `bio/route.ts` that tested `preamble.fallbackModel` (always `null` after Phase 3's OpenRouter native fallback).
+- **Reply handle stripping (P4)**: `reply/route.ts` now strips `@mentions` from the tweet being replied to (P18 spec).
+- **Test coverage gap**: 40 new tests across 3 previously-untested security/revenue-critical modules: `pii.test.ts` (11), `untrusted.test.ts` (19), `ai-quota-atomic.test.ts` (10).
+- **`.env.example`**: All 50+ environment variables documented with comments and grouped by category.
+
+## 2026-05-01–03 — AI Stack Phases 0–6 Complete
+
+All 7 phases of the AI security, cost integrity, reliability, monetization, differentiation, and growth roadmap shipped (~8 weeks of work in ~3 days). See `.claude/plans/in-my-codebase-please-cosmic-crane-suggestions-claude.md` for full plan.
+
+**Phase 0 — Stop the Bleeding:** Atomic quota counter (`userAiCounters` + `tryConsumeAiQuota`), affiliate generator gate, image tier env fix, input-token caps, daily cost alarm, reviewer model swap + threshold ≥7, chat system prompt, benefit-led 402 messages.
+
+**Phase 1 — Trust & Safety Floor:** `wrapUntrusted()` + `JAILBREAK_GUARD` on all routes, PII redaction (`redactPII`), pre-publish content moderation, `data_collection: deny`, voice profile rendering, legacy delimiter migration, affiliate `#ad` enforcement.
+
+**Phase 2 — Cost Integrity & Observability:** `aiGenerations` schema extended (model, subFeature, cost, promptVersion, feedback, latency, fallbackUsed), `recordAiUsage` refactored to options-object, `/admin/ai-cost` dashboard, correlation ID propagation, prompt versioning.
+
+**Phase 3 — Reliability & Quality Engine:** OpenRouter-native Anthropic prompt caching, system/user message split on top-5 routes, native fallback chain (removed bespoke 429 handlers), `withRetry` + `withTimeout` + idempotency middleware, Replicate 90s poll cap, `streamObject` migration for template-generate + inspire.
+
+**Phase 4 — Monetization Capture:** Agentic 5× quota weight, Pro Monthly 100→150 / Pro Annual 150→250, admin quota grant endpoint (`aiQuotaGrants`), AI tools gated for Free, refine endpoint + feedback UI, reply 3 typed / bio diversity, score tier labels, trial image cap (25 images, locked models), image model cost weighting, 402 usage anchor stats.
+
+**Phase 5 — Premium Differentiators:** Voice variants (default/professional/casual), agentic Steps 3 & 5 streaming, trends inline Generate CTA, calendar bulk-schedule, server-side char-count enforcement (`fitTweet`/`splitThread`), centralized language blocks, hashtag banlist + MENA bias, few-shot examples, trends evidenceUrl, translate mode param, reply handle stripping.
+
+**Phase 6 — Growth Engine:** Referral codes + credit tracking, "Made with AstraPost" footer + Pro opt-out, admin trial extension endpoint + bilingual Resend email, Enterprise marketing card on `/pricing`.
+
+**Quality gate:** 31 test files, 280 tests, 0 lint errors, 0 type errors, 2,453 i18n keys matched (en/ar).
+
 ## 2026-04-25
 
 - **AI Billing Fairness Audit**: Fixed three quota-tracking bugs: (1) Image usage was recorded only in status endpoint, not POST handler, to prevent double-counting on client retries. (2) Agentic images were bypassing quota gates — added `userId` parameter to `generateAgenticImage()` and calls `recordAiUsage()` in agentic-pipeline integration. (3) Agentic approve endpoint was incorrectly recording usage for a non-AI operation (DB+queue only) — removed `recordAiUsage()` call. Pattern: Use `recordAiUsage(userId, "image", ...)` for all image endpoints (standalone and agentic); avoid recording for metadata/approval operations.

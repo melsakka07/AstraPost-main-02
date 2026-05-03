@@ -104,27 +104,35 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ### Plan Limits (source of truth: `src/lib/plan-limits.ts`)
 
-| Limit                        | Free          | Pro Monthly         | Pro Annual          | Agency              |
-| ---------------------------- | ------------- | ------------------- | ------------------- | ------------------- |
-| Posts per month              | 20            | Unlimited           | Unlimited           | Unlimited           |
-| X accounts                   | 1             | 3                   | 4                   | 10                  |
-| AI text generations / month  | 20            | 100                 | 150                 | Unlimited           |
-| AI image generations / month | 10            | 50                  | 50                  | Unlimited           |
-| AI image models              | Fast + Backup | Fast + Pro + Backup | Fast + Pro + Backup | Fast + Pro + Backup |
-| Analytics retention          | 7 days        | 90 days             | 90 days             | 365 days            |
-| Analytics export             | —             | CSV + PDF           | CSV + PDF           | White-label PDF     |
-| Inspiration bookmarks        | 5             | Unlimited           | Unlimited           | Unlimited           |
-| Team members                 | —             | —                   | —                   | Up to 5             |
+| Limit                        | Free            | Pro Monthly           | Pro Annual                       | Agency          |
+| ---------------------------- | --------------- | --------------------- | -------------------------------- | --------------- |
+| Posts per month              | 20              | Unlimited             | Unlimited                        | Unlimited       |
+| X accounts                   | 1               | 3                     | 4                                | 10              |
+| AI text generations / month  | 20              | 150                   | 250                              | Unlimited       |
+| AI image generations / month | 10              | 50                    | 50                               | Unlimited       |
+| AI image models              | Fast + Fallback | Fast + Pro + Fallback | Fast + Pro + Fallback + Advanced | All models      |
+| Analytics retention          | 7 days          | 90 days               | 90 days                          | 365 days        |
+| Analytics export             | —               | CSV + PDF             | CSV + PDF                        | White-label PDF |
+| Inspiration bookmarks        | 5               | Unlimited             | Unlimited                        | Unlimited       |
+| Team members                 | —               | —                     | —                                | Up to 5         |
+
+> Trial users get Pro Monthly limits (150 AI text, 50 images) for 14 days. See `TRIAL_EFFECTIVE_PLAN` in `src/lib/plan-limits.ts`.
+> | Analytics retention | 7 days | 90 days | 90 days | 365 days |
+> | Analytics export | — | CSV + PDF | CSV + PDF | White-label PDF |
+> | Inspiration bookmarks | 5 | Unlimited | Unlimited | Unlimited |
+> | Team members | — | — | — | Up to 5 |
 
 ### Feature Gates (source of truth: `src/lib/middleware/require-plan.ts`)
 
 | Feature                  | Free       | Pro | Agency         |
 | ------------------------ | ---------- | --- | -------------- |
 | AI text generation       | ✅ (20/mo) | ✅  | ✅             |
+| AI writing tools (tools) | —          | ✅  | ✅             |
 | Thread scheduling        | —          | ✅  | ✅             |
 | Video & GIF uploads      | —          | ✅  | ✅             |
 | AI Viral Score           | —          | ✅  | ✅             |
 | AI Voice Profile         | —          | ✅  | ✅             |
+| Voice variants           | —          | ✅  | ✅             |
 | Best Time to Post        | —          | ✅  | ✅             |
 | AI Content Calendar      | —          | ✅  | ✅             |
 | URL → Thread Converter   | —          | ✅  | ✅             |
@@ -133,6 +141,8 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | Reply Suggester          | —          | ✅  | ✅             |
 | Bio Optimizer            | —          | ✅  | ✅             |
 | Agentic Posting          | —          | ✅  | ✅             |
+| AI Refine (iterative)    | —          | ✅  | ✅             |
+| AI Feedback (👍/👎)      | —          | ✅  | ✅             |
 | Affiliate Generator      | —          | ✅  | ✅             |
 | AI image model: Pro tier | —          | ✅  | ✅             |
 | LinkedIn integration     | —          | —   | ✅             |
@@ -203,7 +213,7 @@ astrapost/
 │   ├── features/               # Feature implementation documentation
 │   └── technical/              # AI, X API, react-markdown, BetterAuth docs
 │
-├── drizzle/                    # Generated SQL migration files (0000–0057)
+├── drizzle/                    # Generated SQL migration files (0000–0069+)
 │
 ├── scripts/                    # Operational scripts
 │   ├── worker.ts               # BullMQ worker entry point
@@ -316,7 +326,7 @@ astrapost/
     │                           #   drawer, scroll area, sheet, tabs, tooltip, form
     │
     └── lib/
-        ├── ai/                 # AI utilities (voice-profile.ts, agentic-types.ts, agentic-prompts.ts)
+        ├── ai/                 # AI utilities: prompts, voice-profile, PII redaction, prompt-injection defense, language blocks, text-fit, hashtag banlist, retry/timeout helpers
         ├── api/                # Shared API helpers
         │   ├── ai-preamble.ts  # Shared auth+rate-limit+plan+model pipeline for all AI routes
         │   └── errors.ts       # ApiError factory (401/400/403/404/409/500)
@@ -330,7 +340,9 @@ astrapost/
         ├── services/           # External service integrations
         │   ├── agentic-pipeline.ts # 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
         │   ├── ai-image.ts     # AI image generation via Replicate (+ generateAgenticImage)
-        │   ├── ai-quota.ts     # AI quota tracking and enforcement
+        │   ├── ai-quota.ts     # AI quota tracking and recording
+        │   ├── ai-quota-atomic.ts # Atomic quota consumption with race-condition prevention
+        │   ├── moderation.ts   # Pre-publish content moderation
         │   ├── analytics.ts    # Analytics computation service
         │   ├── analytics-engine.ts # Analytics computation helpers
         │   ├── best-time.ts    # Best posting time analysis
@@ -477,13 +489,19 @@ Open **http://localhost:3000** in your browser.
 
 **AI Services**
 
-| Variable                   | Required For           | Description                                                                                                      |
-| -------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `OPENROUTER_API_KEY`       | All AI text generation | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                                      |
-| `OPENROUTER_MODEL_AGENTIC` | Agentic Posting        | Dedicated model for 5-step agentic pipeline. Falls back to `OPENROUTER_MODEL`                                    |
-| `OPENROUTER_MODEL_TRENDS`  | Trending Topics        | Web-search-capable model (e.g. `perplexity/llama-3.1-sonar-large-128k-online`). Falls back to `OPENROUTER_MODEL` |
-| `OPENROUTER_MODEL_FREE`    | Quota-free endpoints   | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                                      |
-| `REPLICATE_API_TOKEN`      | AI image generation    | Get from [replicate.com/account](https://replicate.com/account)                                                  |
+| Variable                            | Required For              | Description                                                                                      |
+| ----------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
+| `OPENROUTER_API_KEY`                | All AI text generation    | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                      |
+| `OPENROUTER_MODEL_AGENTIC`          | Agentic Posting           | Dedicated model for 5-step agentic pipeline. Falls back to `OPENROUTER_MODEL`                    |
+| `OPENROUTER_MODEL_AGENTIC_REVIEWER` | Agentic review step       | Reviewer model from a different family than the writer. Falls back to `OPENROUTER_MODEL_AGENTIC` |
+| `OPENROUTER_MODEL_TRENDS`           | Trending Topics           | Web-search-capable model (e.g. `perplexity/sonar`). Falls back to `OPENROUTER_MODEL_FREE`        |
+| `OPENROUTER_MODEL_FREE`             | Quota-free endpoints      | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                      |
+| `OPENAI_API_KEY`                    | Vector search, moderation | Embedding model for pgvector + content moderation API                                            |
+| `OPENAI_EMBEDDING_MODEL`            | Vector search             | Embedding model (default: `text-embedding-3-large`)                                              |
+| `OPENAI_MODERATION_MODEL`           | Content moderation        | Moderation API model (default: `omni-moderation-latest`)                                         |
+| `GEMINI_API_KEY`                    | Gemini AI features        | Google Gemini API key                                                                            |
+| `REPLICATE_API_TOKEN`               | AI image generation       | Get from [replicate.com/account](https://replicate.com/account)                                  |
+| `REPLICATE_MODEL_ADVANCED`          | Agency image tier         | Advanced model (default: `openai/gpt-image-2`)                                                   |
 
 **Billing (Stripe)**
 
@@ -500,6 +518,7 @@ Open **http://localhost:3000** in your browser.
 
 | Variable                          | Description                                                       |
 | --------------------------------- | ----------------------------------------------------------------- |
+| `AI_DAILY_BUDGET_USD`             | Daily AI cost cap in USD — triggers email alert when exceeded     |
 | `RESEND_API_KEY`                  | Resend email API key. If unset, emails are logged to console only |
 | `RESEND_FROM_EMAIL`               | From address for outgoing emails (e.g. `noreply@yourdomain.com`)  |
 | `BLOB_READ_WRITE_TOKEN`           | Vercel Blob token. Leave empty to use local filesystem in dev     |
@@ -858,15 +877,19 @@ OPENROUTER_MODEL="anthropic/claude-sonnet-4.6"  # NEVER hardcode this value
 pnpm test
 ```
 
-Tests are co-located with implementation files:
+Tests are co-located with implementation files (31 test files, 280+ tests):
 
-- `src/lib/services/analytics.test.ts`
-- `src/lib/services/x-api.test.ts`
 - `src/lib/services/ai-quota.test.ts`
+- `src/lib/services/agentic-pipeline.test.ts`
+- `src/lib/services/ai-quota-atomic.test.ts`
 - `src/lib/services/__tests__/ai-image.test.ts`
 - `src/lib/middleware/require-plan.test.ts`
 - `src/lib/plan-limits.test.ts`
+- `src/lib/ai/__tests__/pii.test.ts`
+- `src/lib/ai/__tests__/untrusted.test.ts`
 - `src/app/api/billing/webhook/route.test.ts`
+- `src/app/api/ai/agentic/approve/route.test.ts`
+- ...and 21 more
 
 ### Smoke Test Suite
 
@@ -908,6 +931,26 @@ The build step uses minimal stub environment variables so no real secrets are ne
 ## Recent Changes
 
 This section summarises major development cycles. For full commit-level detail, see `docs/0-MY-LATEST-UPDATES.md`.
+
+### May 2026 — AI Stack Hardening (7 Phases Complete) ✅
+
+All 7 phases of the AI security, cost integrity, reliability, monetization, differentiation, and growth roadmap shipped (see `.claude/plans/in-my-codebase-please-cosmic-crane-suggestions-claude.md`).
+
+**Trust & Safety:** Prompt-injection defenses via `wrapUntrusted()` + `JAILBREAK_GUARD` on all routes; PII redaction (email, phone, credit card, IBAN); pre-publish content moderation; `data_collection: deny` on all OpenRouter requests.
+
+**Cost Integrity:** Atomic quota counter (`tryConsumeAiQuota`) prevents race-condition overage; `recordAiUsage()` refactored with model, tokensIn/out, latency, subFeature, promptVersion; COGS dashboard at `/admin/ai-cost`; correlation IDs propagated to OpenRouter.
+
+**Reliability:** OpenRouter-native Anthropic prompt caching; native fallback chain (`extraBody.models`); `withRetry` + `withTimeout` helpers; idempotency middleware on all `POST /api/ai/*` routes; Replicate poll cap at 90 s; `streamObject` migration for template-generate + inspire.
+
+**Monetization:** Agentic posting burns 5 quota units; Pro Monthly 100→150, Pro Annual 150→250; admin quota grant endpoint; AI tools gated for Free tier; refine endpoint + feedback UI; 402 responses include usage anchor stats; trial image cap at 25.
+
+**Differentiators:** 3 voice variants (default/professional/casual); agentic Steps 3 & 5 streaming; server-side char-count enforcement (`fitTweet`/`splitThread`); centralized language blocks; hashtag banlist + MENA bias; few-shot examples on top-2 templates; translate mode param; reply handle stripping.
+
+**Growth:** Referral codes with credit tracking; "Made with AstraPost" footer; admin trial extension endpoint + bilingual email; Enterprise marketing card on `/pricing`.
+
+### May 2026 — Post-Implementation Audit & Quality Gap
+
+3 bugs fixed: regenerate quota leak (1→5 units), dead 429 fallback code removed, reply handle stripping. 40 new tests across 3 previously-untested modules (PII redaction, prompt injection defense, atomic quota counter). `.env.example` created with all 50+ variables documented. Quality gate: 31 test files, 280 tests, 0 lint/type errors.
 
 ### April 2026 — Mobile Responsiveness & Stability Fixes
 

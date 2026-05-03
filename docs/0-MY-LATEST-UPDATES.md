@@ -1,5 +1,36 @@
 # Latest Updates
 
+## 2026-05-03: Post-Implementation Audit — Bug Fixes + Test Coverage + .env.example
+
+**Summary:** Audit of the completed 7-phase AI stack plan found 3 bugs and 3 untested security/revenue-critical modules. All fixed. Quality gate: 31 test files, 280 tests, 0 lint/type errors.
+
+### Bugs Fixed
+
+| #   | Severity                | Route                              | Bug                                                                                                                      | Fix                                                                                             |
+| --- | ----------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| P1  | Critical (revenue leak) | `agentic/[id]/regenerate/route.ts` | Was burning 1 quota unit instead of 5 — bypassed `aiPreamble` and called manual quota checks                             | Routed through `aiPreamble({ featureGate: checkAgenticPostingAccessDetailed, quotaWeight: 5 })` |
+| P2  | Medium (dead code)      | `thread/route.ts`, `bio/route.ts`  | Unreachable try/catch blocks testing `preamble.fallbackModel` (always `null` after Phase 3's OpenRouter native fallback) | Removed dead catch blocks; destructured directly                                                |
+| P4  | Low (spec)              | `reply/route.ts`                   | Reply prompt included `@mentions` from the original tweet (P18 spec required stripping)                                  | Added `.replace(/@\w+/g, "").replace(/\s+/g, " ").trim()`                                       |
+
+### Test Coverage (40 new tests, 3 previously-untested modules)
+
+- `src/lib/ai/__tests__/pii.test.ts` — 11 tests: clean text, email (single/multiple), phone (US/intl), credit card, IBAN, mixed PII, empty string, numbers/symbols, idempotency
+- `src/lib/ai/__tests__/untrusted.test.ts` — 19 tests: wrapping, truncation, control char stripping, injection patterns (ignore previous, system prompt, role tags, roleplay, JSON role, delimiter tokens, legacy splitters), nonce-based delimiters, nonce replay prevention, JAILBREAK_GUARD content, adversarial input integration
+- `src/lib/services/__tests__/ai-quota-atomic.test.ts` — 10 tests: fast path allow/reject, first-call counter creation, stale period reset, grant fallback, grant exhaust, weighted consumption (weight=5), unlimited plans (Infinity), releaseAiQuota success/warning
+
+### Developer Onboarding
+
+- `.env.example` — all 50+ environment variables documented with comments and grouped by category (Database, Auth, X OAuth, OpenRouter, OpenAI, Replicate, Gemini, Redis, Security, Stripe, Email, App URL, Vercel Blob, Polar)
+
+### Quality Gate
+
+- `pnpm lint` — PASS (0 errors, 0 warnings)
+- `pnpm typecheck` — PASS
+- `pnpm check:i18n` — PASS (2,453 keys matched)
+- `pnpm test` — PASS (31 files, 280 tests)
+
+---
+
 ## 2026-05-03: React Hydration Error #418 Fix
 
 **Bug:** Production dashboard browser console showed "Minified React error #418" (hydration mismatch). Root cause: `DashboardTour` and `SetupChecklist` both called `useSearchParams()` without `<Suspense>` boundaries, causing Next.js to de-opt the page to client-side rendering — server and client produced different HTML.

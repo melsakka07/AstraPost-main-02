@@ -1,21 +1,15 @@
-import { headers } from "next/headers";
-import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { VERSION } from "@/lib/ai/agentic-prompts";
 import type { AgenticTweet, ResearchBrief, ContentPlan } from "@/lib/ai/agentic-types";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
+import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
-import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import {
-  checkAiLimitDetailed,
-  checkAiQuotaDetailed,
-  createPlanLimitResponse,
-} from "@/lib/middleware/require-plan";
+import { checkAgenticPostingAccessDetailed } from "@/lib/middleware/require-plan";
 import type { ImageModel } from "@/lib/plan-limits";
 import { agenticPosts } from "@/lib/schema";
 import { startImageGeneration, checkImagePrediction } from "@/lib/services/ai-image";
@@ -53,14 +47,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
 
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return ApiError.unauthorized();
-
-    // Quota checks — regeneration burns the same quota as a fresh generation
-    const aiAccess = await checkAiLimitDetailed(session.user.id);
-    if (!aiAccess.allowed) return createPlanLimitResponse(aiAccess);
-    const aiQuota = await checkAiQuotaDetailed(session.user.id);
-    if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
+    const preamble = await aiPreamble({
+      featureGate: checkAgenticPostingAccessDetailed,
+      quotaWeight: 5,
+    });
+    if (preamble instanceof Response) return preamble;
+    const { session } = preamble;
 
     const json = (await req.json()) as unknown;
     const parsed = regenerateSchema.safeParse(json);
@@ -92,8 +84,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const userLanguage = agenticPost.user?.language || "en";
     const langInstruction = getArabicInstructions(userLanguage);
 
-    const model = openrouter(process.env.OPENROUTER_MODEL!);
-
     // Regenerate tweet text
     const prompt = `You are an expert social media copywriter.
 ${langInstruction}
@@ -118,7 +108,7 @@ Return ONLY a valid JSON object (no markdown):
 
     const modelName = process.env.OPENROUTER_MODEL!;
     const t0 = performance.now();
-    const result = await generateText({ model, prompt });
+    const result = await generateText({ model: preamble.model, prompt });
     const latencyMs = Math.round(performance.now() - t0);
 
     // Record text generation usage
