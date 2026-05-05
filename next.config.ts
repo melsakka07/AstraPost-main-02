@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
   compress: true,
 
   // External packages that should not be bundled by Turbopack
-  serverExternalPackages: ["bullmq"],
+  serverExternalPackages: ["bullmq", "pdf-parse"],
 
   // Security headers
   async headers() {

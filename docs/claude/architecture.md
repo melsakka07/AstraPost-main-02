@@ -11,7 +11,7 @@ src/
 │   ├── brand/                    # Internal brand kit reference page (noindex)
 │   ├── api/
 │   │   ├── admin/                # Admin APIs (Subscribers, AI Usage, Teams, Impersonation, Billing Analytics, Notifications)
-│   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score)
+│   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score, PDF-to-Thread)
 │   │   ├── analytics/            # Analytics (Followers, Engagement, Best Time, Competitor, Export)
 │   │   ├── announcement/         # Public announcements
 │   │   ├── auth/[...all]/        # Better Auth catch-all
@@ -34,7 +34,7 @@ src/
 │   └── profile/                  # User profile public view
 ├── components/
 │   ├── admin/                    # Admin components (Dashboard, Tables, Sidebars, Modals)
-│   ├── ai/                       # AI components (Hashtag Generator, Agentic Posting)
+│   ├── ai/                       # AI components (Hashtag Generator, Agentic Posting, PDF to Thread)
 │   ├── analytics/                # Analytics components (Charts, Heatmaps, Drawers)
 │   ├── auth/                     # Auth components (Sign-in, Profile)
 │   ├── billing/                  # Billing components (Pricing cards, Payment forms)
@@ -57,7 +57,7 @@ src/
 │   └── ui/                       # shadcn/ui primitives
 └── lib/
     ├── admin/                    # Admin utilities & middleware
-    ├── ai/                       # AI prompts, template configs, voice-profile, PII redaction, prompt-injection defense, language blocks, text-fit, hashtag banlist, retry/timeout helpers
+    ├── ai/                       # AI prompts (summarize, template, inspire, agentic, arabic), voice-profile, PII redaction, prompt-injection defense, language blocks, text-fit, hashtag banlist, retry/timeout helpers
     ├── api/                      # API error handling, AI preamble
     ├── middleware/               # Plan gates, role checks
     ├── queue/                    # BullMQ client + processors
@@ -91,6 +91,10 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/app/api/ai/calendar/route.ts` — AI Content Calendar generator
 - `src/app/api/chat/route.ts` — Conversational AI assistant
 - `src/app/api/ai/quota/route.ts` — Usage tracking read endpoint
+- `src/app/api/ai/pdf-to-thread/upload/route.ts` — PDF upload + text extraction
+- `src/app/api/ai/pdf-to-thread/generate/route.ts` — Sync thread generation from PDF
+- `src/app/api/ai/pdf-to-thread/enqueue/route.ts` — Async PDF thread enqueue to BullMQ
+- `src/app/api/ai/pdf-to-thread/[jobId]/route.ts` — Job status poll + cancel
 
 ### Core Services
 
@@ -100,7 +104,7 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/lib/services/moderation.ts` — Pre-publish content moderation
 - `src/lib/services/agentic-pipeline.ts` — 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
 - `src/lib/services/x-api.ts` — Twitter/X API client
-- `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics)
+- `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics, PDF-to-Thread)
 
 ### AI Security & Quality Modules
 

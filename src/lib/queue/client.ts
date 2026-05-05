@@ -47,6 +47,37 @@ export const tokenHealthQueue = new Queue<TokenHealthJobPayload>("token-health-q
   connection: connection as any,
 });
 
+/** Payload carried by every job on the PDF thread queue. */
+export interface PdfThreadJobPayload {
+  jobId: string; // pdfThreadJobs.id
+  userId: string;
+  correlationId: string;
+}
+
+export const pdfThreadQueue = new Queue<PdfThreadJobPayload>("pdfThreadQueue", {
+  connection: connection as any,
+});
+
+/**
+ * Shared BullMQ job options for PDF-to-Thread async processing jobs.
+ *
+ * `attempts: 2` with exponential backoff from 5 s gives a max retry window
+ * of ~15 s — appropriate for transient AI API failures without stacking up
+ * long-lived jobs.
+ *
+ * `removeOnComplete: { count, age }` retains the 500 most-recent completed
+ * jobs for up to 24 hours for audit trail purposes.
+ *
+ * `removeOnFail: { age }` retains failed jobs for 7 days so operators can
+ * review failures before automatic pruning.
+ */
+export const PDF_THREAD_JOB_OPTIONS = {
+  attempts: 2,
+  backoff: { type: "exponential" as const, delay: 5_000 },
+  removeOnComplete: { count: 500, age: 24 * 3600 },
+  removeOnFail: { age: 7 * 24 * 3600 },
+} as const;
+
 /**
  * Shared BullMQ job options for all publish-post jobs.
  *

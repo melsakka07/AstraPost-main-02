@@ -6,6 +6,7 @@ import {
   analyticsQueue,
   xTierRefreshQueue,
   tokenHealthQueue,
+  pdfThreadQueue,
   SCHEDULE_JOB_OPTIONS,
 } from "@/lib/queue/client";
 import {
@@ -13,6 +14,7 @@ import {
   analyticsProcessor,
   refreshXTiersProcessor,
   tokenHealthProcessor,
+  pdfThreadProcessor,
 } from "@/lib/queue/processors";
 import "@/lib/env";
 import { logger } from "@/lib/logger";
@@ -23,7 +25,7 @@ logger.info("worker_started", {
 });
 
 console.log(
-  `\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue', 'analytics-queue', 'x-tier-refresh-queue', and 'token-health-queue'...\nPress Ctrl+C to exit.\n`
+  `\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue', 'analytics-queue', 'x-tier-refresh-queue', 'token-health-queue', and 'pdfThreadQueue'...\nPress Ctrl+C to exit.\n`
 );
 
 const scheduleWorker = new Worker("schedule-queue", scheduleProcessor, {
@@ -237,6 +239,42 @@ tokenHealthQueue
   )
   .catch(console.error);
 
+// ── PDF Thread Worker ────────────────────────────────────────────────────────
+// Processes async PDF→Thread summarization jobs for PDFs with >30,000 chars.
+// Concurrency is 1 to avoid overwhelming the AI API with multiple large
+// chunked summarization workloads simultaneously.
+const pdfThreadWorker = new Worker("pdfThreadQueue", pdfThreadProcessor, {
+  connection: connection as any,
+  concurrency: 1,
+  lockDuration: 600_000, // 10 min — chunked summarization may take several minutes
+});
+
+pdfThreadWorker.on("completed", (job) => {
+  logger.info("job_completed", {
+    queue: "pdfThreadQueue",
+    jobId: job.id,
+  });
+});
+
+pdfThreadWorker.on("error", (err) => {
+  logger.error("worker_error", {
+    queue: "pdfThreadQueue",
+    error: err.message,
+  });
+});
+
+pdfThreadWorker.on("failed", (job, err) => {
+  logger.error("job_failed", {
+    queue: "pdfThreadQueue",
+    jobId: job?.id ?? "unknown",
+    jobDataId: job?.data?.jobId ?? "unknown",
+    userId: job?.data?.userId ?? "unknown",
+    correlationId: job?.data?.correlationId ?? null,
+    error: err.message,
+    attemptsMade: job?.attemptsMade ?? null,
+  });
+});
+
 const shutdown = async (signal: string) => {
   logger.warn(`${signal}_received`, {
     pid: process.pid,
@@ -246,10 +284,12 @@ const shutdown = async (signal: string) => {
   await analyticsQueue.close();
   await xTierRefreshQueue.close();
   await tokenHealthQueue.close();
+  await pdfThreadQueue.close();
   await scheduleWorker.close();
   await analyticsWorker.close();
   await xTierRefreshWorker.close();
   await tokenHealthWorker.close();
+  await pdfThreadWorker.close();
   process.exit(0);
 };
 

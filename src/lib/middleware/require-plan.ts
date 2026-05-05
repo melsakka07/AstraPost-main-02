@@ -36,7 +36,8 @@ export type GatedFeature =
   | "inspiration"
   | "agentic_posting"
   | "affiliate_generator"
-  | "tools";
+  | "tools"
+  | "pdf_to_thread";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -428,6 +429,12 @@ export const checkUrlToThreadAccessDetailed = makeFeatureGate(
   "url_to_thread",
   "canUseUrlToThread",
   "Turn any article into a compelling thread — available on Pro"
+);
+
+export const checkPdfToThreadAccessDetailed = makeFeatureGate(
+  "pdf_to_thread",
+  "canUsePdfToThread",
+  "Convert PDFs into compelling threads — available on Pro"
 );
 
 export const checkVariantGeneratorAccessDetailed = makeFeatureGate(

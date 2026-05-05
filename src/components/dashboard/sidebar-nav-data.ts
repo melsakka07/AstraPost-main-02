@@ -101,6 +101,12 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/dashboard/ai/calendar",
         isPro: true,
       },
+      {
+        icon: FileText,
+        label: "PDF to Thread",
+        href: "/dashboard/ai/pdf-to-thread",
+        isPro: true,
+      },
     ],
   },
   {

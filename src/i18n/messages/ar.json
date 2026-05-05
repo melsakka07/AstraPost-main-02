@@ -30,6 +30,7 @@
     "bio_generator": "مولد السيرة الذاتية",
     "reply_generator": "مولد الردود",
     "ai_calendar": "تقويم الذكاء الاصطناعي",
+    "pdf_to_thread": "PDF إلى سلسلة تغريدات",
     "jobs": "الوظائف",
     "sign_out": "تسجيل الخروج",
     "sign_in": "تسجيل الدخول",
@@ -78,7 +79,10 @@
     "mobile_navigation": "التنقل عبر الهاتف المحمول"
   },
   "sidebar": {
-    "dashboard_navigation": "تنقل لوحة التحكم"
+    "dashboard_navigation": "تنقل لوحة التحكم",
+    "ai": {
+      "pdf_to_thread": "PDF إلى ثريد"
+    }
   },
   "setup_checklist": {
     "expand_checklist": "توسيع القائمة",
@@ -114,7 +118,7 @@
   "ai": {
     "generate_thread": "توليد خيط",
     "generate_image": "توليد صورة",
-    "generating": "جاري التوليد...",
+    "generating": "جاري الإنشاء...",
     "quota_exceeded": "تم تجاوز حصة الذكاء الاصطناعي. رقِّ خطتك لتوليد المزيد من المحتوى.",
     "pii_redaction_notice": "تمت إزالة المعلومات الشخصية من المصدر لحماية خصوصيتك",
     "dismiss": "إغلاق",
@@ -513,7 +517,7 @@
         "translate": "ترجمة تغريداتك للوصول إلى جمهور أوسع.",
         "hashtags": "الحصول على وسوم مقترحة بالذكاء الاصطناعي — انقر لإضافتها لتغريدتك."
       },
-      "generate": "توليد",
+      "generate": "إنشاء",
       "tooltip": {
         "thread": "توليد سلسلة كاملة أو منشور واحد من موضوع",
         "inspire": "الحصول على أفكار مواضيع رائجة وعناوين افتتاحية لمجالك",
@@ -1091,6 +1095,84 @@
       "ai_calendar": {
         "title": "تقويم الذكاء الاصطناعي",
         "description": "دع الذكاء الاصطناعي يختار أفضل الأوقات ويبني جدول نشرك."
+      },
+      "pdf_to_thread": {
+        "title": "PDF إلى ثريد",
+        "description": "ارفع تقريراً بصيغة PDF واحصل على ثريد جاهز للنشر."
+      }
+    },
+    "pdf_to_thread": {
+      "title": "PDF إلى ثريد",
+      "description": "ارفع مستند PDF وحوّله إلى ثريد على تويتر",
+      "dropzone": {
+        "drag_active": "أسقط ملف PDF هنا",
+        "click_to_upload": "انقر للرفع أو اسحب وأفلت",
+        "supported_formats": "ملفات PDF فقط، حتى 50 ميغابايت",
+        "file_too_large": "الملف كبير جداً. الحد الأقصى 50 ميغابايت",
+        "invalid_type": "ملفات PDF فقط مدعومة",
+        "not_valid_pdf": "الملف لا يبدو PDF صالحاً",
+        "uploading": "جارٍ الرفع...",
+        "upload_success": "تم رفع PDF بنجاح"
+      },
+      "preview": {
+        "pages": "{count, plural, zero {لا صفحات} one {صفحة واحدة} two {صفحتان} few {# صفحات} many {# صفحة} other {# صفحة}}",
+        "characters": "تم استخراج {count} حرف",
+        "sync_eligible": "توليد سريع متاح",
+        "async_eligible": "توليد في الخلفية"
+      },
+      "attestation": {
+        "label": "أملك أو أمتلك الحقوق اللازمة لهذا المستند",
+        "required_error": "يجب أن تؤكد امتلاكك لحقوق هذا المستند"
+      },
+      "options": {
+        "heading": "خيارات التوليد",
+        "language": "اللغة",
+        "language_ar": "العربية",
+        "language_en": "الإنجليزية",
+        "tweet_count": "عدد التغريدات",
+        "tone": "النبرة",
+        "tone_professional": "مهنية",
+        "tone_educational": "تعليمية",
+        "tone_casual": "غير رسمية",
+        "tone_formal": "رسمية",
+        "tone_enthusiastic": "حماسية"
+      },
+      "actions": {
+        "generate_sync": "توليد الثريد",
+        "enqueue_async": "توليد في الخلفية",
+        "cancel": "إلغاء",
+        "back": "رجوع",
+        "upload_new": "رفع PDF جديد",
+        "retry": "إعادة المحاولة"
+      },
+      "progress": {
+        "queued": "في قائمة الانتظار...",
+        "processing": "جارٍ توليد ثريدك...",
+        "status": "الحالة",
+        "status_queued": "في الانتظار",
+        "status_processing": "قيد المعالجة"
+      },
+      "result": {
+        "title": "ثريدك",
+        "tweets_count": "{count, plural, zero {لا تغريدات} one {تغريدة واحدة} two {تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
+        "send_to_composer": "إرسال إلى المحرر",
+        "copy_button": "نسخ",
+        "copied": "تم النسخ!",
+        "source_language": "لغة المصدر",
+        "redactions_notice": "تم حجب المعلومات الشخصية من هذا المستند",
+        "generated_success": "تم توليد الثريد بنجاح"
+      },
+      "errors": {
+        "upload_failed": "فشل رفع PDF. يرجى المحاولة مرة أخرى.",
+        "generate_failed": "فشل توليد الثريد. يرجى المحاولة مرة أخرى.",
+        "rate_limited": "طلبات كثيرة. يرجى الانتظار قليلاً.",
+        "upgrade_required": "هذه الميزة تتطلب اشتراك Pro",
+        "pdf_no_text": "لا يحتوي PDF على نصوص قابلة للاستخراج. تأكد من وجود طبقة نصية.",
+        "pdf_parse_failed": "تعذر تحليل PDF. قد يكون الملف تالفاً.",
+        "attestation_required": "يجب أن تؤكد امتلاكك لحقوق هذا المستند.",
+        "generic": "حدث خطأ. يرجى المحاولة مرة أخرى.",
+        "polling_connection": "مشكلة في الاتصال — جارٍ إعادة المحاولة...",
+        "polling_timeout": "التوليد يستغرق وقتاً أطول من المتوقع. يمكنك الإلغاء والمحاولة مرة أخرى."
       }
     },
     "try_it": "جربه ←"
@@ -1117,7 +1199,7 @@
     "length_long": "طويل",
     "generate_thread": "توليد خيط",
     "generate_post": "توليد منشور",
-    "generating": "جاري التوليد...",
+    "generating": "جاري الإنشاء...",
     "generated_post": "منشور مُولَّد",
     "copy": "نسخ",
     "copied": "تم النسخ!",
@@ -1175,7 +1257,7 @@
       "clear": "مسح",
       "enhance": "تحسين",
       "enhancing": "جاري التحسين…",
-      "generate": "توليد",
+      "generate": "إنشاء",
       "advanced_options": "خيارات متقدمة",
       "tone": "النبرة",
       "auto_tone": "تلقائي (يقرر الذكاء الاصطناعي)",
@@ -1246,7 +1328,7 @@
       "regenerate_title": "إعادة توليد الخيط بالكامل؟",
       "regenerate_description": "ستفقد جميع تحريراتك. سيقوم الذكاء الاصطناعي بإعادة كتابة الخيط من البداية.",
       "keep_editing": "متابعة التحرير",
-      "regenerate_button": "إعادة التوليد",
+      "regenerate_button": "إعادة إنشاء",
       "discard_title": "تجاهل هذا الخيط؟",
       "discard_description": "سيتم حذف هذا الخيط وستعود إلى شاشة الإدخال. لا يمكن التراجع عن هذا الإجراء.",
       "cancel_button": "إلغاء",
@@ -1314,7 +1396,7 @@
     "build_authority": "بناء السلطة",
     "language": "اللغة",
     "generate_variants": "توليد 3 خيارات للسيرة الذاتية",
-    "generating": "جاري التوليد...",
+    "generating": "جاري الإنشاء...",
     "crafting": "جاري صياغة السير الذاتية المحسنة...",
     "variants_appear": "ستظهر 3 خيارات للسيرة الذاتية هنا",
     "variants_description": "كل واحد يستهدف هدف مختلفاً — متابعين، عملاء، أو سلطة",
@@ -1348,7 +1430,7 @@
     "be_funny": "كن مضحكاً",
     "ask_question": "طرح سؤال",
     "generate_replies": "توليد الردود",
-    "generating": "جاري التوليد...",
+    "generating": "جاري الإنشاء...",
     "fetching_tweet": "جاري جلب التغريدة وصياغة الردود...",
     "preview_tip": "تلميح: انقر 👁 لمعاينة التغريدة قبل التوليد",
     "reply_options": "{count, plural, zero {لا خيارات للرد} one {خيار واحد للرد} two {خياران للرد} few {# خيارات للرد} many {# خياراً للرد} other {# خيار للرد}}",
@@ -1382,7 +1464,7 @@
     "week": "أسبوع",
     "weeks": "أسابيع",
     "generate_calendar": "توليد التقويم",
-    "generating": "جاري التوليد...",
+    "generating": "جاري الإنشاء...",
     "building_calendar": "جاري بناء تقويم محتواك...",
     "posts_planned": "{count, plural, zero {لا منشورات مخططة} one {منشور واحد مخطط} two {منشوران مخططان} few {# منشورات مخططة} many {# منشوراً مخططاً} other {# منشور مخطط}}",
     "schedule_all": "جدولة الكل",
@@ -1516,7 +1598,51 @@
     "attached": "تم إرفاق الصورة بالتغريدة!",
     "close": "إغلاق",
     "locked_model": "ترقية إلى الاحترافية للحصول على {model}",
-    "free_models": "متاح في خطتك"
+    "free_models": "متاح في خطتك",
+    "title": "إنشاء صورة بالذكاء الاصطناعي",
+    "description": "أنشئ صورة بتقنية الذكاء الاصطناعي لتغريدتك باستخدام نماذج متعددة لتوليد الصور.",
+    "monthly_quota": "الحصة الشهرية:",
+    "unlimited": "غير محدود",
+    "remaining_quota": "{count} متبقية",
+    "image_prompt": "وصف الصورة",
+    "prompt_placeholder_from_tweet": "سيقوم الذكاء الاصطناعي بإنشاء وصف من: \"{content}\"",
+    "prompt_placeholder_empty": "صف الصورة التي تريد إنشاءها...",
+    "auto_generate_hint": "اتركه فارغاً للإنشاء التلقائي من محتوى التغريدة",
+    "model": "النموذج",
+    "locked_model_hint": "قم بالترقية إلى Pro للوصول إلى جميع النماذج",
+    "aspect_ratio": "نسبة الأبعاد",
+    "aspect_ratio_labels": {
+      "1:1": "1:1 (مربع)",
+      "16:9": "16:9 (أفقي)",
+      "4:3": "4:3 (قياسي)",
+      "9:16": "9:16 (عمودي)"
+    },
+    "style_optional": "النمط (اختياري)",
+    "style_none": "بدون",
+    "generated_image": "الصورة المُنشأة",
+    "history": "السجل ({count})",
+    "select_image": "اختر الصورة رقم {index}",
+    "generating_aria": "جاري إنشاء الصورة",
+    "generating_status": "جاري إنشاء صورتك...",
+    "taking_longer": "يستغرق وقتاً أطول من المعتاد...",
+    "still_working": "ما زلنا نعمل — يحدث هذا أحياناً مع الأوصاف المعقدة.",
+    "usually_takes": "تستغرق عادةً من 10 إلى 20 ثانية.",
+    "error_service_unavailable": "الخدمة غير متاحة مؤقتاً",
+    "error_content_blocked": "تم حظر الوصف بواسطة مرشحات الأمان",
+    "error_generation_failed": "فشل إنشاء الصورة",
+    "no_credits_used": "لم يتم استخدام أي رصيد — يمكنك المحاولة مرة أخرى مجاناً.",
+    "try_adjusted_prompt": "حاول مع وصف معدّل",
+    "try_again": "حاول مرة أخرى",
+    "cancel": "إلغاء",
+    "generating": "جاري الإنشاء...",
+    "generate": "إنشاء",
+    "regenerate": "إعادة إنشاء",
+    "downloading": "جاري التنزيل...",
+    "download": "تنزيل",
+    "max_images_reached": "تم الوصول للحد الأقصى (4/4)",
+    "attach_to_tweet_count": "إرفاق بالتغريدة ({count}/4)",
+    "attach_to_tweet": "إرفاق بالتغريدة",
+    "network_error": "خطأ في الشبكة — تعذر التحقق من حالة الصورة. يرجى المحاولة مرة أخرى."
   },
   "inspiration": {
     "title": "الإلهام",
@@ -1609,8 +1735,8 @@
       "your_perspective": "وجهة نظرك (اختياري)",
       "perspective_placeholder": "أضف زاويتك الفريدة، خبرتك، أو رأيك...",
       "perspective_count": "{count} / 1000",
-      "generate": "توليد",
-      "generating": "جاري التوليد...",
+      "generate": "إنشاء",
+      "generating": "جاري الإنشاء...",
       "generated_content": "المحتوى المُولَّد ({action})",
       "tweet_label": "تغريدة",
       "tweet_number": "تغريدة {number}",
@@ -1959,7 +2085,7 @@
     "target_language": "اللغة المستهدفة",
     "language_description": "سيتم أولوية الوسوم بناءً على الاتجاهات الإقليمية",
     "generate_hashtags": "توليد الوسوم",
-    "generating": "جاري التوليد...",
+    "generating": "جاري الإنشاء...",
     "copied": "تم النسخ!",
     "copy_all": "نسخ الكل",
     "compose": "إنشاء",

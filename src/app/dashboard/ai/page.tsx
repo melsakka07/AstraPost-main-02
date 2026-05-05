@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   Hash,
+  FileText,
   Link2,
   PenTool,
   Shuffle,
@@ -44,6 +45,13 @@ export default async function AIHubPage() {
       title: t("tools.url_to_thread.title"),
       description: t("tools.url_to_thread.description"),
       href: "/dashboard/ai/writer?tab=url",
+    },
+    {
+      icon: FileText,
+      title: t("tools.pdf_to_thread.title"),
+      description: t("tools.pdf_to_thread.description"),
+      href: "/dashboard/ai/pdf-to-thread",
+      isPro: true,
     },
     {
       icon: Shuffle,

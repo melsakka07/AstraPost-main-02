@@ -30,6 +30,7 @@
     "bio_generator": "Bio Generator",
     "reply_generator": "Reply Generator",
     "ai_calendar": "AI Calendar",
+    "pdf_to_thread": "PDF to Thread",
     "jobs": "Jobs",
     "sign_out": "Sign out",
     "sign_in": "Sign In",
@@ -78,7 +79,10 @@
     "mobile_navigation": "Mobile navigation"
   },
   "sidebar": {
-    "dashboard_navigation": "Dashboard navigation"
+    "dashboard_navigation": "Dashboard navigation",
+    "ai": {
+      "pdf_to_thread": "PDF → Thread"
+    }
   },
   "setup_checklist": {
     "expand_checklist": "Expand checklist",
@@ -1091,6 +1095,84 @@
       "ai_calendar": {
         "title": "AI Calendar",
         "description": "Let AI pick the best times and build your posting schedule."
+      },
+      "pdf_to_thread": {
+        "title": "PDF → Thread",
+        "description": "Upload a PDF report and get a ready-to-publish X thread."
+      }
+    },
+    "pdf_to_thread": {
+      "title": "PDF to Thread",
+      "description": "Upload a PDF document and turn it into a Twitter thread",
+      "dropzone": {
+        "drag_active": "Drop your PDF here",
+        "click_to_upload": "Click to upload or drag and drop",
+        "supported_formats": "PDF files only, up to 50 MB",
+        "file_too_large": "File is too large. Maximum size is 50 MB",
+        "invalid_type": "Only PDF files are supported",
+        "not_valid_pdf": "The file does not appear to be a valid PDF",
+        "uploading": "Uploading...",
+        "upload_success": "PDF uploaded successfully"
+      },
+      "preview": {
+        "pages": "{count, plural, =1 {# page} other {# pages}}",
+        "characters": "{count} characters extracted",
+        "sync_eligible": "Quick generation available",
+        "async_eligible": "Background generation"
+      },
+      "attestation": {
+        "label": "I own or have the necessary rights to this document",
+        "required_error": "You must confirm that you have rights to this document"
+      },
+      "options": {
+        "heading": "Generation Options",
+        "language": "Language",
+        "language_ar": "Arabic",
+        "language_en": "English",
+        "tweet_count": "Tweet Count",
+        "tone": "Tone",
+        "tone_professional": "Professional",
+        "tone_educational": "Educational",
+        "tone_casual": "Casual",
+        "tone_formal": "Formal",
+        "tone_enthusiastic": "Enthusiastic"
+      },
+      "actions": {
+        "generate_sync": "Generate Thread",
+        "enqueue_async": "Generate in Background",
+        "cancel": "Cancel",
+        "back": "Back",
+        "upload_new": "Upload New PDF",
+        "retry": "Retry"
+      },
+      "progress": {
+        "queued": "Waiting in queue...",
+        "processing": "Generating your thread...",
+        "status": "Status",
+        "status_queued": "Queued",
+        "status_processing": "Processing"
+      },
+      "result": {
+        "title": "Your Thread",
+        "tweets_count": "{count, plural, =1 {# tweet} other {# tweets}}",
+        "send_to_composer": "Send to Composer",
+        "copy_button": "Copy",
+        "copied": "Copied!",
+        "source_language": "Source Language",
+        "redactions_notice": "Personal information was redacted from this document",
+        "generated_success": "Thread generated successfully"
+      },
+      "errors": {
+        "upload_failed": "Failed to upload PDF. Please try again.",
+        "generate_failed": "Failed to generate thread. Please try again.",
+        "rate_limited": "Too many requests. Please wait a moment.",
+        "upgrade_required": "This feature requires a Pro subscription",
+        "pdf_no_text": "This PDF has no extractable text. Ensure it contains a text layer.",
+        "pdf_parse_failed": "Could not parse the PDF. The file may be corrupted.",
+        "attestation_required": "You must confirm you have rights to this document.",
+        "generic": "Something went wrong. Please try again.",
+        "polling_connection": "Connection issue — retrying...",
+        "polling_timeout": "Generation is taking longer than expected. You can cancel and try again."
       }
     },
     "try_it": "Try it →"
@@ -1516,7 +1598,51 @@
     "attached": "Image attached to tweet!",
     "close": "Close",
     "locked_model": "Upgrade to Pro for {model}",
-    "free_models": "Available on your plan"
+    "free_models": "Available on your plan",
+    "title": "Generate AI Image",
+    "description": "Create an AI-generated image for your tweet using the power of multiple image models.",
+    "monthly_quota": "Monthly quota:",
+    "unlimited": "Unlimited",
+    "remaining_quota": "{count} remaining",
+    "image_prompt": "Image Prompt",
+    "prompt_placeholder_from_tweet": "AI will generate a prompt from: \"{content}\"",
+    "prompt_placeholder_empty": "Describe the image you want to generate...",
+    "auto_generate_hint": "Leave empty to auto-generate from tweet content",
+    "model": "Model",
+    "locked_model_hint": "Upgrade to Pro to unlock all models",
+    "aspect_ratio": "Aspect Ratio",
+    "aspect_ratio_labels": {
+      "1:1": "1:1 (Square)",
+      "16:9": "16:9 (Landscape)",
+      "4:3": "4:3 (Standard)",
+      "9:16": "9:16 (Portrait)"
+    },
+    "style_optional": "Style (Optional)",
+    "style_none": "None",
+    "generated_image": "Generated Image",
+    "history": "History ({count})",
+    "select_image": "Select generated image {index}",
+    "generating_aria": "Generating image",
+    "generating_status": "Generating your image...",
+    "taking_longer": "Taking longer than usual...",
+    "still_working": "Still working — this sometimes happens with complex prompts.",
+    "usually_takes": "Usually takes 10–20 seconds.",
+    "error_service_unavailable": "Service temporarily unavailable",
+    "error_content_blocked": "Prompt blocked by safety filters",
+    "error_generation_failed": "Image generation failed",
+    "no_credits_used": "No credits were used — you can try again freely.",
+    "try_adjusted_prompt": "Try with adjusted prompt",
+    "try_again": "Try Again",
+    "cancel": "Cancel",
+    "generating": "Generating...",
+    "generate": "Generate",
+    "regenerate": "Regenerate",
+    "downloading": "Downloading...",
+    "download": "Download",
+    "max_images_reached": "Max images reached (4/4)",
+    "attach_to_tweet_count": "Attach to Tweet ({count}/4)",
+    "attach_to_tweet": "Attach to Tweet",
+    "network_error": "Network error — could not check image status. Please try again."
   },
   "inspiration": {
     "title": "Inspiration",

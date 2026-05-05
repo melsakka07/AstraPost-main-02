@@ -1,8 +1,15 @@
+import "server-only";
+
 import { readFile } from "fs/promises";
 import path from "path";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { generateObject } from "ai";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { type InferSelectModel, eq, and, or, sql, isNotNull, isNull, lt } from "drizzle-orm";
+import { INPUT_LIMITS } from "@/lib/ai/input-limits";
+import { redactPII } from "@/lib/ai/pii";
+import { buildSummarizePrompt } from "@/lib/ai/summarize-prompts";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
@@ -13,6 +20,7 @@ import {
   type AnalyticsJobPayload,
   type RefreshXTiersJobPayload,
   type TokenHealthJobPayload,
+  type PdfThreadJobPayload,
 } from "@/lib/queue/client";
 import {
   posts,
@@ -23,10 +31,15 @@ import {
   notifications,
   xAccounts,
   failedJobs,
+  pdfThreadJobs,
 } from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
+import { pdfThreadOutputSchema } from "@/lib/schemas/pdf-to-thread";
+import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
+import { releaseAiQuota } from "@/lib/services/ai-quota-atomic";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
 import { sendPostFailureEmail } from "@/lib/services/email";
+import { moderateOutput } from "@/lib/services/moderation";
 import { XApiService } from "@/lib/services/x-api";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 
@@ -885,5 +898,186 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
       error: err instanceof Error ? err.message : "Unknown",
     });
     throw err;
+  }
+};
+
+// ── PDF Thread Processor ───────────────────────────────────────────────────────
+
+/**
+ * Splits a long text into chunks that respect paragraph boundaries where possible.
+ * Tries to break at double-newline (paragraph), then single newline, then sentence-end.
+ */
+function chunkText(text: string, maxChars: number): string[] {
+  const chunks: string[] = [];
+  let remaining = text;
+  while (remaining.length > 0) {
+    if (remaining.length <= maxChars) {
+      chunks.push(remaining);
+      break;
+    }
+    const slice = remaining.slice(0, maxChars);
+    const lastPara = slice.lastIndexOf("\n\n");
+    const breakPoint = lastPara > maxChars * 0.5 ? lastPara : slice.lastIndexOf("\n");
+    const splitAt = breakPoint > 0 ? breakPoint : slice.lastIndexOf(".");
+    const end = splitAt > 0 ? splitAt + 1 : maxChars;
+    chunks.push(remaining.slice(0, end).trim());
+    remaining = remaining.slice(end).trim();
+  }
+  return chunks.filter((c) => c.length > 0);
+}
+
+export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
+  const { jobId, userId, correlationId } = job.data;
+  logger.info("pdf_thread_job_start", { jobId, userId, correlationId });
+
+  const [row] = await db.select().from(pdfThreadJobs).where(eq(pdfThreadJobs.id, jobId));
+  if (!row || row.status !== "queued") {
+    logger.warn("pdf_thread_job_skipped", { jobId, status: row?.status });
+    return;
+  }
+
+  await db
+    .update(pdfThreadJobs)
+    .set({ status: "processing", updatedAt: new Date() })
+    .where(eq(pdfThreadJobs.id, jobId));
+
+  const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
+  const model = openrouter(process.env.OPENROUTER_MODEL!);
+  const startTs = Date.now();
+
+  try {
+    const rawText = row.extractedText;
+    if (!rawText || rawText.length < 200) {
+      throw new Error("No extractable text found for job");
+    }
+
+    // PII redaction before any LLM call
+    const { cleaned: text, redactions } = redactPII(rawText);
+    if (redactions.length > 0) {
+      logger.info("pii_redacted_async", { jobId, userId, redactions });
+    }
+
+    // Phase 1: Chunk the text
+    const chunks = chunkText(text, INPUT_LIMITS.pdfReportChunk);
+
+    // Phase 2: Summarize each chunk — accumulate token usage
+    const partialSummaries: string[] = [];
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    for (const chunk of chunks) {
+      const partialPrompt = buildSummarizePrompt({
+        variant: "report",
+        language: row.language as "ar" | "en",
+        tone: row.tone,
+        tweetCount: Math.min(5, row.tweetCount),
+        title: `Section of: ${row.fileName}`,
+        body: chunk,
+        bodyMaxChars: INPUT_LIMITS.pdfReportChunk,
+      });
+
+      const { object: partial, usage: chunkUsage } = await generateObject({
+        model,
+        schema: pdfThreadOutputSchema,
+        prompt: partialPrompt,
+      });
+      partialSummaries.push(partial.tweets.join("\n"));
+      totalInputTokens += chunkUsage?.inputTokens ?? 0;
+      totalOutputTokens += chunkUsage?.outputTokens ?? 0;
+    }
+
+    // Phase 3: Combine partial summaries into final thread
+    const combined = partialSummaries.join("\n\n---\n\n");
+    const finalPrompt = buildSummarizePrompt({
+      variant: "report",
+      language: row.language as "ar" | "en",
+      tone: row.tone,
+      tweetCount: row.tweetCount,
+      title: row.fileName,
+      body: combined,
+      bodyMaxChars: INPUT_LIMITS.pdfReportBody,
+    });
+
+    const { object: result, usage } = await generateObject({
+      model,
+      schema: pdfThreadOutputSchema,
+      prompt: finalPrompt,
+    });
+    totalInputTokens += usage?.inputTokens ?? 0;
+    totalOutputTokens += usage?.outputTokens ?? 0;
+
+    // Phase 4: Moderation check — fail hard on flagged content (consistent with sync path)
+    const tweetsText = result.tweets.join("\n");
+    const { flagged } = await moderateOutput(tweetsText, userId, undefined);
+    if (flagged) {
+      await db
+        .update(pdfThreadJobs)
+        .set({
+          status: "failed",
+          error: "Content moderation flagged the generated thread.",
+          updatedAt: new Date(),
+        })
+        .where(eq(pdfThreadJobs.id, jobId));
+
+      logger.warn("pdf_thread_moderation_flagged", { jobId, userId });
+      return;
+    }
+
+    // Phase 5: Persist result
+    await db
+      .update(pdfThreadJobs)
+      .set({
+        status: "ready",
+        threadResult: {
+          tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+          title: result.title,
+          sourceLanguage: result.sourceLanguage as "ar" | "en",
+        },
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(pdfThreadJobs.id, jobId));
+
+    // Phase 6: Record AI usage (includes chunk + combine tokens)
+    await recordAiUsage({
+      userId,
+      type: "pdf_to_thread",
+      model: process.env.OPENROUTER_MODEL!,
+      subFeature: "async_chunked",
+      tokensIn: totalInputTokens,
+      tokensOut: totalOutputTokens,
+      costEstimateCents: estimateCost(
+        process.env.OPENROUTER_MODEL!,
+        totalInputTokens,
+        totalOutputTokens
+      ),
+      promptVersion: "pdf_to_thread:v1",
+      latencyMs: Date.now() - startTs,
+      language: row.language,
+    });
+
+    logger.info("pdf_thread_job_completed", { jobId, userId, tweetCount: result.tweets.length });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error("pdf_thread_job_failed", { jobId, error: msg });
+    await db
+      .update(pdfThreadJobs)
+      .set({
+        status: "failed",
+        error: msg,
+        updatedAt: new Date(),
+      })
+      .where(eq(pdfThreadJobs.id, jobId));
+    // Quota was consumed at enqueue time — release it on permanent failure.
+    // BullMQ will re-throw for retries; quota release is idempotent (counter
+    // won't go below 0) so it's safe to call on every attempt.
+    try {
+      await releaseAiQuota(userId, 5);
+    } catch (quotaErr) {
+      logger.error("pdf_thread_release_quota_failed", {
+        jobId,
+        error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
+      });
+    }
+    throw err; // BullMQ retry via attempts config
   }
 };

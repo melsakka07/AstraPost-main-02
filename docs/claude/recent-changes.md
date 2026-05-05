@@ -1,5 +1,40 @@
 # Recent Fixes & Changes
 
+## 2026-05-05 — PDF → Thread Feature
+
+### Schema Changes
+
+- New table: `pdfThreadJobs` (21 columns, 2 indexes) — tracks PDF processing lifecycle from upload through async generation
+- New enum value: `"pdf_to_thread"` in `aiGenerationTypeEnum`
+
+### Plan Limits
+
+- New flag: `canUsePdfToThread` (Pro Monthly + Pro Annual + Agency)
+- New gate: `checkPdfToThreadAccessDetailed`
+
+### Queue
+
+- New queue: `pdfThreadQueue`
+- New processor: `pdfThreadProcessor` (2-pass chunked summarization: split → summarize chunks → combine into thread)
+- Registered in `scripts/worker.ts` with concurrency 1, lockDuration 10 min
+
+### AI
+
+- New prompt variant: `"report"` in `src/lib/ai/summarize-prompts.ts` (`buildSummarizePrompt`)
+- New input limits: `pdfReportBody` (30,000 chars), `pdfReportChunk` (12,000 chars)
+- New prompt version: `pdf_to_thread:v1`
+
+### Routes
+
+- 4 new API routes under `/api/ai/pdf-to-thread/`: `upload`, `generate`, `enqueue`, `[jobId]`
+- New page: `/dashboard/ai/pdf-to-thread` with 7 client components (state machine, dropzone, preview, attestation, options, progress, result)
+
+### Dependencies
+
+- New: `pdf-parse` v2 + `@types/pdf-parse`
+
+---
+
 ## 2026-05-03 — Post-Implementation Audit & Bug Fixes
 
 - **Regenerate quota leak (P1)**: `agentic/[id]/regenerate/route.ts` was bypassing `aiPreamble` and burning 1 unit instead of 5. Fixed by routing through `aiPreamble({ quotaWeight: 5 })`.

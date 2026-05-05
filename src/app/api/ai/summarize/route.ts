@@ -1,9 +1,8 @@
 import { generateObject } from "ai";
 import { z } from "zod";
-import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
 import { INPUT_LIMITS, truncate } from "@/lib/ai/input-limits";
 import { redactPII } from "@/lib/ai/pii";
-import { wrapUntrusted } from "@/lib/ai/untrusted";
+import { buildSummarizePrompt, SUMMARIZE_PROMPT_VERSION } from "@/lib/ai/summarize-prompts";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { LANGUAGE_ENUM, TONE_ENUM } from "@/lib/constants";
@@ -87,23 +86,15 @@ export async function POST(req: Request) {
       logger.info("pii_redacted", { correlationId, type: "summarize", redactions: allRedactions });
     }
 
-    const langInstruction = getArabicInstructions(userLanguage);
-    const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
-
-    const prompt = `You are an expert social media writer for X (Twitter).
-Read the following article and write a ${tweetCount}-tweet thread that summarizes or comments on it.
-${langInstruction} ${toneGuidance}
-Auto-detect the source language and note it in sourceLanguage.
-
-ARTICLE TITLE: ${cleanTitle}
-${wrapUntrusted("ARTICLE TEXT", cleanBody, 30_000)}
-
-Constraints:
-- Each tweet MUST be strictly under 800 characters.
-- Do NOT include tweet numbering in the text.
-- Make the thread engaging, informative, and shareable.
-- Start with a hook tweet that grabs attention.
-- End with a takeaway or call-to-action tweet.`;
+    const prompt = buildSummarizePrompt({
+      variant: "article",
+      language: userLanguage as "ar" | "en",
+      tone,
+      tweetCount,
+      title: cleanTitle,
+      body: cleanBody,
+      bodyMaxChars: INPUT_LIMITS.summarizeBody,
+    });
 
     const modelId = process.env.OPENROUTER_MODEL!;
 
@@ -124,7 +115,7 @@ Constraints:
       tokensIn: usage?.inputTokens ?? 0,
       tokensOut: usage?.outputTokens ?? 0,
       costEstimateCents: estimateCost(modelId, usage?.inputTokens ?? 0, usage?.outputTokens ?? 0),
-      promptVersion: "summarize:v1",
+      promptVersion: SUMMARIZE_PROMPT_VERSION,
       latencyMs,
       fallbackUsed: false,
       inputPrompt: prompt,

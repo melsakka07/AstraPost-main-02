@@ -2017,7 +2017,7 @@ export function Composer() {
       </div>
 
       {/* Sidebar Column */}
-      <div className="flex flex-col justify-center space-y-3 sm:space-y-4">
+      <div className="flex flex-col space-y-3 sm:space-y-4">
         {/* B1: Preview section moved to top of sidebar */}
         <Card>
           <ComposerPreview

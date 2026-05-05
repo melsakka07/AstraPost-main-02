@@ -29,6 +29,7 @@ export interface PlanLimits {
   canUseBioOptimizer: boolean;
   canUseAgenticPosting: boolean;
   canUseTools: boolean;
+  canUsePdfToThread: boolean;
 }
 
 export type PlanType = "free" | "trial" | "pro_monthly" | "pro_annual" | "agency";
@@ -61,6 +62,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseBioOptimizer: false,
     canUseAgenticPosting: false,
     canUseTools: false,
+    canUsePdfToThread: false,
   },
   trial: {
     postsPerMonth: 20,
@@ -89,6 +91,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseBioOptimizer: false,
     canUseAgenticPosting: false,
     canUseTools: false,
+    canUsePdfToThread: false,
   },
   pro_monthly: {
     postsPerMonth: Infinity,
@@ -117,6 +120,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseBioOptimizer: true,
     canUseAgenticPosting: true,
     canUseTools: true,
+    canUsePdfToThread: true,
   },
   pro_annual: {
     postsPerMonth: Infinity,
@@ -145,6 +149,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseBioOptimizer: true,
     canUseAgenticPosting: true,
     canUseTools: true,
+    canUsePdfToThread: true,
   },
   agency: {
     postsPerMonth: Infinity,
@@ -173,6 +178,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseBioOptimizer: true,
     canUseAgenticPosting: true,
     canUseTools: true,
+    canUsePdfToThread: true,
   },
 };
 

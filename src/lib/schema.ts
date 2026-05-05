@@ -135,7 +135,9 @@ export const aiGenerationTypeEnum = pgEnum("ai_generation_type", [
   "chat",
   "voice_profile",
   "viral_score",
+  "trends_discovery",
   "agentic_approve",
+  "pdf_to_thread",
 ]);
 
 /** Type of a user-facing notification. */
@@ -1571,6 +1573,54 @@ export const agenticPostsRelations = relations(agenticPosts, ({ one }) => ({
   }),
 }));
 
+// ── PDF Thread Jobs ──────────────────────────────────────────────────────────
+
+export const pdfThreadJobs = pgTable(
+  "pdf_thread_jobs",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    correlationId: text("correlation_id").notNull(),
+    status: text("status", {
+      enum: ["uploading", "extracting", "queued", "processing", "ready", "failed"],
+    })
+      .notNull()
+      .default("uploading"),
+    fileUrl: text("file_url").notNull(),
+    fileName: text("file_name").notNull(),
+    fileSizeBytes: integer("file_size_bytes").notNull(),
+    pageCount: integer("page_count"),
+    charCount: integer("char_count"),
+    extractedText: text("extracted_text"),
+    language: text("language", { enum: ["ar", "en"] }).notNull(),
+    tweetCount: integer("tweet_count").notNull().default(7),
+    tone: text("tone").notNull().default("professional"),
+    attestationAt: timestamp("attestation_at").notNull(),
+    threadResult: jsonb("thread_result").$type<{
+      tweets: Array<{ text: string; charCount: number }>;
+      title: string;
+      sourceLanguage: "ar" | "en";
+    } | null>(),
+    error: text("error"),
+    quotaConsumed: integer("quota_consumed").default(0),
+    quotaReleased: boolean("quota_released").default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    completedAt: timestamp("completed_at"),
+  },
+  (t) => ({
+    userIdx: index("pdf_thread_jobs_user_idx").on(t.userId, t.createdAt.desc()),
+    statusIdx: index("pdf_thread_jobs_status_idx").on(t.status),
+  })
+);
+
 // ── Type Exports ────────────────────────────────────────────────────────────
 export type User = typeof user.$inferSelect;
 export type InsertUser = typeof user.$inferInsert;
@@ -1587,3 +1637,5 @@ export type AiQuotaGrant = typeof aiQuotaGrants.$inferSelect;
 export type InsertAiQuotaGrant = typeof aiQuotaGrants.$inferInsert;
 export type ModerationFlag = typeof moderationFlag.$inferSelect;
 export type InsertModerationFlag = typeof moderationFlag.$inferInsert;
+export type PdfThreadJob = typeof pdfThreadJobs.$inferSelect;
+export type NewPdfThreadJob = typeof pdfThreadJobs.$inferInsert;

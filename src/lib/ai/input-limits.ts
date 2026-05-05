@@ -14,6 +14,8 @@ export const INPUT_LIMITS = {
   summarizeBody: 30_000,
   competitorTweet: 600,
   inspireSource: 1_500,
+  pdfReportBody: 30_000,
+  pdfReportChunk: 12_000,
 } as const;
 
 /**

@@ -1,5 +1,148 @@
 # Latest Updates
 
+## 2026-05-06 — PDF → Thread Audit Remediation
+
+**Remediation:** Comprehensive audit of the PDF-to-thread feature identified and fixed 9 issues across API error contracts, i18n defaults, polling resilience, localization gaps, and security.
+
+### API Error Contract (9 violations → 0)
+
+- Extended `ApiError.badRequest()` and `ApiError.conflict()` with optional `code` parameter in `src/lib/api/errors.ts`
+- Replaced all raw `Response.json()` and `new Response()` calls in upload, generate, and [jobId] routes with proper `ApiError.*()` helpers
+- Error codes (NOT_A_PDF, PDF_PARSE_FAILED, etc.) preserved via the new `code` parameter
+
+### Frontend Fixes
+
+- Language dropdown now initializes from active locale (`useLocale()`) instead of hardcoded "en" in `pdf-to-thread-client.tsx`
+- Progress indicator status line now localized (status_queued/status_processing i18n keys added)
+- Source language badge now renders translated display names ("العربية"/"English") instead of raw "ar"/"en" codes
+- Removed unused `total` prop from TweetCard component
+
+### Polling Resilience
+
+- Added `retryCountRef` — after 5 consecutive failures, shows "Connection issue" warning banner
+- Added `MAX_POLL_DURATION_MS` (5 min) — exceeded shows "Taking longer than expected" error state
+- HTTP errors now increment failure counter (previously silently ignored)
+- New i18n keys: `polling_connection`, `polling_timeout`
+
+### Security
+
+- generate/route.ts: raw AI provider error messages no longer stored in DB; replaced with sanitized "generation_failed"
+- upload/route.ts: `originalFileName` truncated to 255 chars before storage
+- Detailed error logged via `logger.error()` before sanitization
+
+### Quality Gate
+
+- `pnpm run check`: PASS (lint + typecheck + i18n parity)
+- `pnpm test`: 34 files, 321 tests PASS
+- Convention enforcer: 0 violations
+- Security reviewer: 0 remaining issues
+
+---
+
+## 2026-05-05 — PDF → Thread Feature Shipped
+
+**New feature:** Users can upload PDF reports/documents (≤50 MB, ≤200 pages, native text-layer only) and generate X threads via sync or async (BullMQ) path. Pro+ gated (canUsePdfToThread). Quota weight: 5.
+
+**New files (16):**
+
+- API routes: upload, generate, enqueue, [jobId] (4 routes under /api/ai/pdf-to-thread/)
+- Page: /dashboard/ai/pdf-to-thread
+- Components: client state machine + 6 sub-components (dropzone, preview-card, attestation-checkbox, generation-options, progress-indicator, thread-result-preview)
+- Lib: summarize-prompts.ts (extracted from summarize route, adds "report" variant), schemas/pdf-to-thread.ts
+
+**Modified files (14):**
+
+- Schema: pdfThreadJobs table + PdfThreadJob/NewPdfThreadJob types, aiGenerationTypeEnum + "pdf_to_thread"
+- Plan limits: canUsePdfToThread on all 5 tiers + GatedFeature type
+- Queue: pdfThreadQueue + PdfThreadJobPayload + PDF_THREAD_JOB_OPTIONS, pdfThreadProcessor, worker.ts registration
+- AI: input-limits (pdfReportBody, pdfReportChunk), summarize route refactored to use buildSummarizePrompt
+- Dashboard: AI hub card, sidebar nav entry
+- i18n: en.json + ar.json (~55 new keys each)
+- Dependencies: pdf-parse + @types/pdf-parse
+
+---
+
+## 2026-05-05: PDF → Thread Phase 3 — Complete Frontend (Page + 7 Components)
+
+**Summary:** Built the complete PDF to Thread frontend: a dashboard page, a state-machine client component, and 6 sub-components covering the full flow from upload to result display.
+
+### Files created (8)
+
+- `src/app/dashboard/ai/pdf-to-thread/page.tsx` — Server component page using `DashboardPageWrapper` with `FileText` icon and `ai_hub` namespace translations.
+- `src/components/ai/pdf-to-thread/pdf-to-thread-client.tsx` — "use client" state machine managing the full flow: `idle -> uploading -> extracted -> (sync) generating -> ready` or `extracted -> (async) queued -> processing -> ready`. Handles upload via FormData, sync generation, async enqueue, 5s polling with AbortController + 8s timeout (hard rule #10), 402 plan-limit via upgradeModal, and all error codes (ATTESTATION_REQUIRED, PDF_NO_TEXT_LAYER, PDF_PARSE_FAILED, PDF_TOO_MANY_PAGES). "Send to Composer" stores tweets in sessionStorage and navigates to `/dashboard/compose?source=pdf-to-thread`.
+- `src/components/ai/pdf-to-thread/pdf-dropzone.tsx` — Drag-and-drop + click-to-upload with client-side validation: 50 MB size check, extension check, magic byte (%PDF-) verification via FileReader. Supports disabled/loading states.
+- `src/components/ai/pdf-to-thread/pdf-preview-card.tsx` — File info card showing file name, formatted size (B/KB/MB), page count, character count, and sync/async eligibility badge.
+- `src/components/ai/pdf-to-thread/attestation-checkbox.tsx` — Rights confirmation checkbox with inline error display (auto-clears on check). Shown in idle state before upload (backend validates attestation during upload).
+- `src/components/ai/pdf-to-thread/generation-options.tsx` — Language selector (ar/en), tweet count Slider (3-15), tone select (5 options: professional/educational/casual/formal/enthusiastic). All disabled during generation.
+- `src/components/ai/pdf-to-thread/progress-indicator.tsx` — Animated spinner with phase label ("Waiting in queue..." / "Generating your thread...") and visual phase dots for queued/processing states.
+- `src/components/ai/pdf-to-thread/thread-result-preview.tsx` — Numbered tweet cards with copy-to-clipboard (Sonner toast confirmation), character count badge, source language badge, redactions notice, and "Send to Composer" action.
+
+### Files modified (3)
+
+- `src/components/dashboard/sidebar-nav-data.ts` — Added "PDF to Thread" entry (Pro badge) under "AI Tools" section, linked to `/dashboard/ai/pdf-to-thread`.
+- `src/i18n/messages/en.json` — Replaced `ai_hub.pdf_to_thread` block with complete key set (58 keys): dropzone, preview, attestation, options (with 5 tone variants), actions, progress, result, and errors.
+- `src/i18n/messages/ar.json` — Same replacement with Arabic translations (marked DRAFT pending native speaker review).
+
+### Design decisions
+
+- Attestation checkbox shown BEFORE upload (in idle state) because the backend validates it during the upload step.
+- Language is sent during upload and stored in the DB row; tweetCount and tone are adjustable both at upload and at generation time.
+- Sync-eligible PDFs get a single "Generate Thread" button; async PDFs get "Generate in Background" which transitions through queued/processing states.
+- All toast messages, labels, and error text use `useTranslations("ai_hub")` with dot-namespaced keys.
+- Mobile-first design: touch targets >= 44px, responsive flex layouts, RTL-safe via `text-start`/`text-end`.
+
+**Quality Gate:** `pnpm run check` pending (lint + typecheck + i18n key verification).
+
+---
+
+## 2026-05-05: PDF → Thread Phase 2 — Async Chunked Pipeline (BullMQ)
+
+**Summary:** Built the async PDF-to-Thread pipeline for PDFs with > 30,000 characters of text. Large PDFs are split into chunks, each chunk is summarized independently via the AI model, then a final pass combines all partial summaries into a coherent thread. The pipeline uses BullMQ for queuing and a dedicated worker processor.
+
+### Files created (2)
+
+- `src/app/api/ai/pdf-to-thread/enqueue/route.ts` — `POST` handler that transitions an async-eligible job (status `"extracting"`, charCount > 30K) to status `"queued"` and enqueues it to the `pdfThreadQueue`. Auth via `aiPreamble({ featureGate: checkPdfToThreadAccessDetailed, quotaWeight: 5 })`. Validates `{ jobId }` body, checks ownership, and enqueues AFTER `db.transaction()` commits (hard rule #13).
+- `src/app/api/ai/pdf-to-thread/[jobId]/route.ts` — `GET` returns full job status and result (`status`, `charCount`, `pageCount`, `threadResult`, `error`, timestamps). `DELETE` cancels a queued/processing job (sets status `"failed"` with error `"user_cancelled"`, best-effort removes from BullMQ). Both handlers use `getTeamContext()` auth + ownership checks.
+
+### Files modified (3)
+
+- `src/lib/queue/client.ts` — Added `PdfThreadJobPayload` interface, `pdfThreadQueue` instance, and `PDF_THREAD_JOB_OPTIONS` (2 attempts, exponential backoff from 5s, 500 completed jobs retained for 24h, failed jobs retained for 7 days).
+- `src/lib/queue/processors.ts` — Added `import "server-only"` (rule #14), `pdfThreadProcessor` function implementing the 6-phase async pipeline: (1) chunk text at paragraph/sentence boundaries via `chunkText()`, (2) summarize each chunk with `generateObject` via OpenRouter, (3) combine summaries into a final thread, (4) moderation check (best-effort, logged but not blocking), (5) persist `threadResult` to DB, (6) record AI usage telemetry. Uses `createOpenRouter` + `generateObject` from `ai` SDK, `buildSummarizePrompt` with `variant: "report"`, `INPUT_LIMITS.pdfReportChunk` (12K chars) for chunks and `INPUT_LIMITS.pdfReportBody` (30K chars) for the final pass. Added all required imports in correct ESLint order.
+- `scripts/worker.ts` — Registered `pdfThreadWorker` (concurrency: 1, lockDuration: 10 min) with completed/error/failed event handlers matching existing worker patterns. Updated startup console message and graceful shutdown to include `pdfThreadQueue` and `pdfThreadWorker`.
+
+**Quality Gate:** `pnpm run check` PASS (0 lint errors, 0 type errors, 2,453 i18n keys matched) | `pnpm test` PASS (31 files, 280 tests)
+
+### Architecture decisions
+
+- **Chunking strategy:** `chunkText()` breaks at paragraph boundaries (`\n\n`) when > 50% through the chunk, falls back to line breaks, then sentence breaks. This preserves semantic coherence across chunk boundaries.
+- **Two-pass generation:** Per-chunk summaries (up to 5 tweets each) use `INPUT_LIMITS.pdfReportChunk` (12K chars). The final combining pass uses the full `INPUT_LIMITS.pdfReportBody` (30K chars) on the concatenated partials.
+- **Moderation is non-blocking:** Flagged content is logged but the result is still saved — users can review and edit before scheduling.
+- **BullMQ job ID = pdfThreadJobs.id:** Enables the DELETE handler to find and remove queued jobs from Redis via `queue.getJob(jobId)`.
+- **Quota consumed at enqueue time** via `aiPreamble({ quotaWeight: 5 })` — prevents quota-bypass by uploading-then-never-enqueuing.
+
+---
+
+## 2026-05-05: PDF → Thread Phase 1 — Upload and Generate API Routes
+
+**Summary:** Built the two API routes for the PDF → Thread feature: multipart upload with pdf-parse text extraction, and synchronous AI generation via the existing `buildSummarizePrompt` pipeline.
+
+### Files created (3)
+
+- `src/lib/schemas/pdf-to-thread.ts` — Generation request validation schema (`jobId`, `tweetCount`, `tone`; language comes from the job row)
+- `src/app/api/ai/pdf-to-thread/upload/route.ts` — `POST` multipart file upload. Auth via `getTeamContext()`, plan gate via `checkPdfToThreadAccessDetailed`, magic-byte validation (%PDF-), 50 MB cap, attestation required, pdf-parse v2 (`PDFParse` class) with 15s timeout, page cap (200), text floor (200 chars), inserts `pdfThreadJobs` row with status `"extracting"`. Returns `{ jobId, charCount, pageCount, syncEligible }`. Cleans up blob on any error path.
+- `src/app/api/ai/pdf-to-thread/generate/route.ts` — `POST` synchronous thread generation. Auth via `aiPreamble({ featureGate: checkPdfToThreadAccessDetailed, quotaWeight: 5 })`. Loads job, ownership check, status guard (`"extracting"` only), 30K char async cut-off (409 `USE_ASYNC_PATH`), PII redaction, `buildSummarizePrompt({ variant: "report" })`, `generateObject` with thread schema, reuses `buildLanguageBlock` from `@/lib/ai/language`, moderation check, updates job to `"ready"`/`"failed"`, releases quota on catch.
+
+**Quality Gate:** `pnpm run check` PASS (0 lint errors, 0 type errors, 2,453 i18n keys matched) | `pnpm test` PASS (31 files, 280 tests)
+
+### Key design decisions
+
+- pdf-parse v2 (class-based `PDFParse` API, not the old v1 default-export function)
+- Structured error codes (`NOT_A_PDF`, `PDF_PARSE_FAILED`, `PDF_TOO_MANY_PAGES`, `PDF_NO_TEXT_LAYER`, `ATTESTATION_REQUIRED`, `USE_ASYNC_PATH`) returned via `Response.json()` for codes not covered by `ApiError`
+- `buildSummarizePrompt` from `@/lib/ai/summarize-prompts` handles prompt construction with variant `"report"` and `JAILBREAK_GUARD`
+- Thread result stored as `jsonb` matching the schema's `{ tweets: { text, charCount }[], title, sourceLanguage }` shape
+
+---
+
 ## 2026-05-04: AI Endpoints, Models, and Prompts Audit Verification
 
 **Summary:** Successfully audited the `in-my-codebase-please-cosmic-crane.md` report against the actual codebase.

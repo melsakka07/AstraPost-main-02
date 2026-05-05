@@ -80,6 +80,22 @@ This document maps all backend AI generation and processing endpoints to their r
 
 - **Purpose**: Summarizes long-form content or articles into concise posts.
 
+### PDF → Thread (`/api/ai/pdf-to-thread/*`)
+
+- **Feature**: Upload native PDF reports/documents (≤50 MB, ≤200 pages) and generate X threads from extracted text. Gated behind `canUsePdfToThread` (Pro Monthly, Pro Annual, Agency).
+- **Plan required**: Pro Monthly+ (Pro Monthly, Pro Annual, Agency). Not available on Free or Trial.
+- **Quota weight**: **5** (consumed at enqueue or sync generate time).
+- **Endpoints**:
+  - `POST /api/ai/pdf-to-thread/upload` — Multipart file upload with magic-byte (%PDF-) validation. Extracts native text-layer via pdf-parse v2. PII redaction applied. Stores to `pdfThreadJobs` table.
+  - `POST /api/ai/pdf-to-thread/generate` — Sync thread generation (≤30,000 chars). Uses `buildSummarizePrompt({ variant: "report" })` with `pdf_to_thread:v1` prompt. Returns `{ tweets, title, sourceLanguage }`.
+  - `POST /api/ai/pdf-to-thread/enqueue` — Async enqueue (>30,000 chars). Transitions DB row to `"queued"` and enqueues to `pdfThreadQueue`. Quota consumed at enqueue time.
+  - `GET /api/ai/pdf-to-thread/[jobId]` — Poll job status and result.
+  - `DELETE /api/ai/pdf-to-thread/[jobId]` — Cancel a queued/processing job.
+- **Sync threshold**: 30,000 characters. PDFs ≤30K chars are generated synchronously; larger PDFs use the async BullMQ path.
+- **Async path**: BullMQ `pdfThreadQueue` + `pdfThreadProcessor` with 2-pass chunked summarization: (1) split text at paragraph/sentence boundaries into ≤12K char chunks, (2) summarize each chunk via OpenRouter, (3) final pass combines partial summaries into a coherent thread.
+- **Database**: `pdfThreadJobs` table (status lifecycle: `uploading` → `extracting` → `extracted` → sync `generating` → `ready`, or async `queued` → `processing` → `ready` → `failed`).
+- **Safety**: Magic-byte validation at upload, PII redaction via `redactPII()`, prompt injection defense via `buildSummarizePrompt({ variant: "report" })` + `JAILBREAK_GUARD`, moderation check on output. Rights attestation checkbox required before upload.
+
 ## 5. Evaluation & Inspiration
 
 ### `POST /api/ai/score`

@@ -23,19 +23,20 @@ export const ApiError = {
   /**
    * 400 — invalid input.
    * Pass a string for a simple message or a ZodIssue[] for structured errors.
+   * Optionally include a `code` for client-side branching (only with string messages).
    */
-  badRequest: (messageOrIssues: string | ZodIssue[]) =>
+  badRequest: (messageOrIssues: string | ZodIssue[], code?: string) =>
     typeof messageOrIssues === "string"
-      ? Response.json({ error: messageOrIssues }, { status: 400 })
+      ? Response.json({ error: messageOrIssues, ...(code && { code }) }, { status: 400 })
       : Response.json({ error: "Validation failed", issues: messageOrIssues }, { status: 400 }),
 
   /** 404 — resource does not exist or is not visible to the caller. */
   notFound: (resource = "Resource") =>
     Response.json({ error: `${resource} not found` }, { status: 404 }),
 
-  /** 409 — resource already exists. */
-  conflict: (message = "Resource already exists") =>
-    Response.json({ error: message }, { status: 409 }),
+  /** 409 — resource already exists. Optionally include a `code` for client-side branching. */
+  conflict: (message = "Resource already exists", code?: string) =>
+    Response.json({ error: message, ...(code && { code }) }, { status: 409 }),
 
   /** 500 — unexpected server failure. */
   internal: (message = "Internal server error") =>
