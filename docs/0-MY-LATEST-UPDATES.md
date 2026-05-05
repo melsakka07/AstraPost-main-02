@@ -1,5 +1,21 @@
 # Latest Updates
 
+## 2026-05-04: AI Endpoints, Models, and Prompts Audit Verification
+
+**Summary:** Successfully audited the `in-my-codebase-please-cosmic-crane.md` report against the actual codebase.
+
+- **Model Inventory:** Verified `src/lib/env.ts` OpenRouter and Replicate model variables.
+- **Added Missing Env Vars:** Added `OPENAI_MODERATION_MODEL`, `OPENAI_EMBEDDING_MODEL`, `GEMINI_API_KEY`, and `AI_DAILY_BUDGET_USD` to the Model Inventory section.
+- **Trial Behavior:** Verified `TRIAL_EFFECTIVE_PLAN = "trial"` logic and mapping in `src/lib/plan-limits.ts`.
+- **Added Missing Endpoints:** Added Trial Management (`POST /api/admin/users/[userId]/extend-trial`) and AI Cron Jobs (`GET /api/cron/ai-cost-alarm` & `POST /api/cron/ai-counter-rollover`) to the Admin Operations section.
+- **AI Preamble Pipeline:** Verified `aiPreamble` in `src/lib/api/ai-preamble.ts`, ensuring fallback handling matches the report.
+- **Endpoint Prompts:** Verified verbatim prompts and structure logic in `src/app/api/ai/thread/route.ts` against the report.
+- **Plan Gates:** Confirmed accurate implementation of feature limits in `src/lib/middleware/require-plan.ts`.
+
+**Conclusion:** The audit report accurately and completely reflects the current state of the codebase with the added missing items.
+
+---
+
 ## 2026-05-03: Documentation Sync — Phase 0–6 Drift Fixes
 
 **Summary:** End-to-end documentation audit after the 7-phase AI stack roadmap shipped. Documentation was largely up-to-date thanks to per-phase doc updates, but 4 specific drift points were corrected to match the implemented code.

@@ -104,24 +104,24 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ### Plan Limits (source of truth: `src/lib/plan-limits.ts`)
 
-| Limit                        | Free            | Trial (14 days)             | Pro Monthly           | Pro Annual                       | Agency          |
-| ---------------------------- | --------------- | --------------------------- | --------------------- | -------------------------------- | --------------- |
-| Posts per month              | 20              | Unlimited                   | Unlimited             | Unlimited                        | Unlimited       |
-| X accounts                   | 1               | 3                           | 3                     | 4                                | 10              |
-| AI text generations / month  | 20              | 50                          | 150                   | 250                              | Unlimited       |
-| AI image generations / month | 10              | 25                          | 50                    | 50                               | Unlimited       |
-| AI image models              | Fast + Fallback | Fast + Fallback (base only) | Fast + Pro + Fallback | Fast + Pro + Fallback + Advanced | All models      |
-| Analytics retention          | 7 days          | 90 days                     | 90 days               | 90 days                          | 365 days        |
-| Analytics export             | —               | CSV + PDF                   | CSV + PDF             | CSV + PDF                        | White-label PDF |
-| Inspiration bookmarks        | 5               | Unlimited                   | Unlimited             | Unlimited                        | Unlimited       |
-| Team members                 | —               | —                           | —                     | —                                | Up to 5         |
+| Limit                        | Free            | Trial (14 days)     | Pro Monthly           | Pro Annual                       | Agency          |
+| ---------------------------- | --------------- | ------------------- | --------------------- | -------------------------------- | --------------- |
+| Posts per month              | 20              | **20**              | Unlimited             | Unlimited                        | Unlimited       |
+| X accounts                   | 1               | **1**               | 3                     | 4                                | 10              |
+| AI text generations / month  | 20              | 50                  | 150                   | 250                              | Unlimited       |
+| AI image generations / month | 10              | 25                  | 50                    | 50                               | Unlimited       |
+| AI image models              | Fast + Fallback | **Fast + Fallback** | Fast + Pro + Fallback | Fast + Pro + Fallback + Advanced | All models      |
+| Analytics retention          | 7 days          | **7 days**          | 90 days               | 90 days                          | 365 days        |
+| Analytics export             | —               | **—**               | CSV + PDF             | CSV + PDF                        | White-label PDF |
+| Inspiration bookmarks        | 5               | **5**               | Unlimited             | Unlimited                        | Unlimited       |
+| Team members                 | —               | —                   | —                     | —                                | Up to 5         |
 
-> Trial users get a dedicated tier with elevated quotas (vs Free) and access to most Pro features, but capped quotas (50 text / 25 images) to incentivize upgrade. Image model is locked to the base tier — `nano-banana-pro` requires upgrade. See `TRIAL_EFFECTIVE_PLAN` and the `trial` block in `src/lib/plan-limits.ts`.
+> Trial is its own dedicated `PlanType` (`TRIAL_EFFECTIVE_PLAN = "trial"` at `src/lib/plan-limits.ts:192`) — **NOT** a Pro Monthly alias. Trial users get **elevated AI quotas only** (50 text / 25 images vs Free's 20/10) — every other limit (posts, X accounts, analytics retention/export, bookmarks) matches Free. Trial unlocks **two** Pro feature flags: `canUseAi` and `canUseInspiration`. All other Pro features (tools, scheduling, video upload, agentic, voice profile, calendar, variants, competitor, reply, bio, URL-to-thread, affiliate, viral score, best-time, voice variants) remain **disabled** on trial — they require an actual paid plan. Source: the `trial` block in `src/lib/plan-limits.ts:65-92`.
 
 ### Quota & Billing Mechanics
 
 - **Atomic quota counter** — `tryConsumeAiQuota(userId, weight)` (in `src/lib/services/ai-quota-atomic.ts`) uses a single `UPDATE … WHERE used + weight <= limit` to prevent race-condition overage under concurrent requests. Backed by the `user_ai_counters` table.
-- **Quota weighting** — Agentic Posting consumes **5 units per call** via `aiPreamble({ quotaWeight: 5 })`; AI Refine consumes **0.5 units**. Image models cost more credits per generation (`IMAGE_MODEL_COST` in `plan-limits.ts`: `nano-banana-pro = 3`, `gpt-image-2 = 5`).
+- **Quota weighting** — Agentic Posting consumes **5 units per call** via `aiPreamble({ quotaWeight: 5 })`; AI Refine consumes **1 unit** (`src/app/api/ai/refine/route.ts:41`). Viral Score and Trends are quota-free (`skipQuotaCheck: true`). Image models cost more credits per generation (`IMAGE_MODEL_COST` in `plan-limits.ts`: `nano-banana-pro = 3`, `gpt-image-2 = 5`).
 - **Admin grant fallback** — When base quota is exhausted, `consumeFromGrants()` decrements from the `ai_quota_grants` table (oldest first). Admins can top-up via `POST /api/admin/users/[id]/grant-quota`.
 - **Daily cost alarm** — `/api/cron/ai-cost-alarm` (every hour) tracks aggregate spend against `AI_DAILY_BUDGET_USD` and emails ops on overage.
 - **402 responses** — `createPlanLimitResponseWithStats()` returns structured JSON with `upgrade_url`, `suggested_plan`, `reset_at`, `remaining`, **plus** a 30-day usage anchor (`last30dStats`) so the UI can render benefit-led copy ("You've created 47 threads — Pro keeps that going").
@@ -159,7 +159,7 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 - **Provider**: Stripe Checkout + Customer Portal + Webhooks
 - **Plans**: `free` → `pro_monthly` / `pro_annual` → `agency` (monthly or annual)
-- **Trial**: 14-day Pro Monthly limits inferred from `user.createdAt` — no explicit opt-in needed
+- **Trial**: 14-day dedicated `"trial"` plan tier (NOT a Pro Monthly alias) — inferred from `user.createdAt` and `trialEndsAt`, no explicit opt-in needed. Trial unlocks elevated AI quotas (50 text / 25 images) and `canUseInspiration`; all other Pro feature flags remain `false`. Source: `getPlanContext()` in `src/lib/middleware/require-plan.ts`
 - **Grace period**: enforced by `GET /api/cron/billing-cleanup` (daily 2 AM UTC via `CRON_SECRET`)
 - **Webhook idempotency**: all subscription events use `onConflictDoUpdate` — safe to replay
 - **Plan changes**: always wrapped in `db.transaction()` with a `plan_change_log` audit record
@@ -175,11 +175,12 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **Language**            | [TypeScript 5](https://www.typescriptlang.org/) (strict mode, `exactOptionalPropertyTypes`)                                                                                     |
 | **Database**            | [PostgreSQL 18](https://www.postgresql.org/) (`pgvector` image)                                                                                                                 |
 | **ORM**                 | [Drizzle ORM](https://orm.drizzle.team/)                                                                                                                                        |
-| **Auth**                | [Better Auth](https://www.better-auth.com/) — Email/Password + X OAuth 2.0 + 2FA                                                                                                |
+| **Auth**                | [Better Auth](https://www.better-auth.com/) — Email/Password + X OAuth 2.0 + 2FA. Instagram & LinkedIn OAuth are separate posting-integration flows (not Better Auth providers) |
 | **Queue**               | [BullMQ](https://bullmq.io/) + [Redis](https://redis.io/) (Alpine)                                                                                                              |
 | **Queue UI**            | [Bull Board](https://github.com/felixmosh/bull-board) — web-based queue monitoring                                                                                              |
 | **AI (Primary)**        | [OpenRouter](https://openrouter.ai/) via [`@openrouter/ai-sdk-provider`](https://www.npmjs.com/package/@openrouter/ai-sdk-provider) + [Vercel AI SDK 5](https://sdk.vercel.ai/) |
-| **AI Image Generation** | [Replicate](https://replicate.com/) — Nano Banana models                                                                                                                        |
+| **AI Image Generation** | [Replicate](https://replicate.com/) — Nano Banana 2 / Pro / Fallback + GPT Image 2 (4 models)                                                                                   |
+| **AI Moderation**       | [OpenAI Moderation API](https://platform.openai.com/docs/guides/moderation) (`omni-moderation-latest`) with 25-pattern regex fallback                                           |
 | **UI**                  | [Tailwind CSS 4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Radix UI)                                                                                     |
 | **Charts**              | [Recharts](https://recharts.org/)                                                                                                                                               |
 | **Forms**               | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)                                                                                                       |
@@ -478,9 +479,10 @@ Open **http://localhost:3000** in your browser.
 | `BETTER_AUTH_URL`          | Base URL of the app (e.g. `http://localhost:3000`)                                                                                 |
 | `TOKEN_ENCRYPTION_KEYS`    | Comma-separated 32-byte base64 keys. First key is primary. See [Generating keys](#generating-token_encryption_keys)                |
 | `OPENROUTER_MODEL`         | Model identifier for all AI text generation (e.g. `openai/gpt-4o`). Browse at [openrouter.ai/models](https://openrouter.ai/models) |
-| `REPLICATE_MODEL_FAST`     | Replicate model ID for the fast/primary image generation tier                                                                      |
-| `REPLICATE_MODEL_PRO`      | Replicate model ID for the high-quality Pro image generation tier                                                                  |
-| `REPLICATE_MODEL_FALLBACK` | Replicate model ID used when fast/pro models fail                                                                                  |
+| `REPLICATE_MODEL_FAST`     | Replicate model ID for the fast/primary image generation tier (`nano-banana-2`)                                                    |
+| `REPLICATE_MODEL_PRO`      | Replicate model ID for the high-quality Pro image generation tier (`nano-banana-pro`)                                              |
+| `REPLICATE_MODEL_FALLBACK` | Replicate model ID used when fast/pro models fail (`nano-banana`)                                                                  |
+| `REPLICATE_MODEL_ADVANCED` | Replicate model ID for the advanced/Agency image tier (`gpt-image-2`). Required at startup — see `src/lib/env.ts:41`               |
 | `NEXT_PUBLIC_APP_URL`      | Public-facing URL of the app                                                                                                       |
 
 **OAuth & Social Platforms**
@@ -497,19 +499,16 @@ Open **http://localhost:3000** in your browser.
 
 **AI Services**
 
-| Variable                            | Required For              | Description                                                                                      |
-| ----------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
-| `OPENROUTER_API_KEY`                | All AI text generation    | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                      |
-| `OPENROUTER_MODEL_AGENTIC`          | Agentic Posting           | Dedicated model for 5-step agentic pipeline. Falls back to `OPENROUTER_MODEL`                    |
-| `OPENROUTER_MODEL_AGENTIC_REVIEWER` | Agentic review step       | Reviewer model from a different family than the writer. Falls back to `OPENROUTER_MODEL_AGENTIC` |
-| `OPENROUTER_MODEL_TRENDS`           | Trending Topics           | Web-search-capable model (e.g. `perplexity/sonar`). Falls back to `OPENROUTER_MODEL_FREE`        |
-| `OPENROUTER_MODEL_FREE`             | Quota-free endpoints      | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                      |
-| `OPENAI_API_KEY`                    | Vector search, moderation | Embedding model for pgvector + content moderation API                                            |
-| `OPENAI_EMBEDDING_MODEL`            | Vector search             | Embedding model (default: `text-embedding-3-large`)                                              |
-| `OPENAI_MODERATION_MODEL`           | Content moderation        | Moderation API model (default: `omni-moderation-latest`)                                         |
-| `GEMINI_API_KEY`                    | Gemini AI features        | Google Gemini API key                                                                            |
-| `REPLICATE_API_TOKEN`               | AI image generation       | Get from [replicate.com/account](https://replicate.com/account)                                  |
-| `REPLICATE_MODEL_ADVANCED`          | Agency image tier         | Advanced model (default: `openai/gpt-image-2`)                                                   |
+| Variable                            | Required For           | Description                                                                                          |
+| ----------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| `OPENROUTER_API_KEY`                | All AI text generation | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                          |
+| `OPENROUTER_MODEL_AGENTIC`          | Agentic Posting        | Dedicated model for 5-step agentic pipeline. Falls back to `OPENROUTER_MODEL`                        |
+| `OPENROUTER_MODEL_AGENTIC_REVIEWER` | Agentic review step    | Reviewer model from a different family than the writer. Falls back to `OPENROUTER_MODEL_AGENTIC`     |
+| `OPENROUTER_MODEL_TRENDS`           | Trending Topics        | Web-search-capable model (e.g. `perplexity/sonar`). Falls back to `OPENROUTER_MODEL_FREE`            |
+| `OPENROUTER_MODEL_FREE`             | Quota-free endpoints   | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                          |
+| `OPENAI_API_KEY`                    | Content moderation     | When set, enables OpenAI Moderation API as primary check; falls back to 25-pattern regex when absent |
+| `OPENAI_MODERATION_MODEL`           | Content moderation     | Moderation API model (default: `omni-moderation-latest`, see `src/lib/env.ts:66`)                    |
+| `REPLICATE_API_TOKEN`               | AI image generation    | Get from [replicate.com/account](https://replicate.com/account)                                      |
 
 **Billing (Stripe)**
 
