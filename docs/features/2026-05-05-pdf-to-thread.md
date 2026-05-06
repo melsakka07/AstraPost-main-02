@@ -182,7 +182,7 @@ Confirm `.pdf` is in `ALLOWED_EXTENSIONS` (it is, per existing whitelist line 51
 
 ### 3.7 Env vars
 
-**No new env vars required.** Reuses `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `BLOB_READ_WRITE_TOKEN`, `REDIS_URL`.
+Reuses `OPENROUTER_API_KEY`, `BLOB_READ_WRITE_TOKEN`, `REDIS_URL`. Uses `OPENROUTER_MODEL_PDF_TO_THREAD` (optional, falls back to `OPENROUTER_MODEL`) for model selection.
 
 ### 3.8 Quota type registration — `src/lib/services/ai-quota.ts`
 

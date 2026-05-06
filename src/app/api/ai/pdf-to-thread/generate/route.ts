@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -28,7 +29,11 @@ export async function POST(req: Request) {
     promptVersion: "pdf_to_thread:v1",
   });
   if (preamble instanceof Response) return preamble;
-  const { session, model, releaseQuota, checkModeration } = preamble;
+  const { session, releaseQuota, checkModeration } = preamble;
+
+  const modelId = process.env.OPENROUTER_MODEL_PDF_TO_THREAD ?? process.env.OPENROUTER_MODEL!;
+  const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
+  const model = openrouter(modelId);
 
   let jobId: string | null = null;
 
@@ -109,7 +114,6 @@ export async function POST(req: Request) {
     });
 
     // ── Generate thread with AI ───────────────────────────────────────
-    const modelId = process.env.OPENROUTER_MODEL!;
 
     let object: z.infer<typeof pdfThreadOutputSchema>;
     let inputTokens = 0;

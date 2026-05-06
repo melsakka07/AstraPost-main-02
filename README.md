@@ -508,6 +508,7 @@ Open **http://localhost:3000** in your browser.
 | `OPENROUTER_MODEL_AGENTIC_REVIEWER` | Agentic review step    | Reviewer model from a different family than the writer. Falls back to `OPENROUTER_MODEL_AGENTIC`     |
 | `OPENROUTER_MODEL_TRENDS`           | Trending Topics        | Web-search-capable model (e.g. `perplexity/sonar`). Falls back to `OPENROUTER_MODEL_FREE`            |
 | `OPENROUTER_MODEL_FREE`             | Quota-free endpoints   | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                          |
+| `OPENROUTER_MODEL_PDF_TO_THREAD`    | PDF-to-Thread          | Dedicated model for PDF-to-thread generation (sync + async). Falls back to `OPENROUTER_MODEL`        |
 | `OPENAI_API_KEY`                    | Content moderation     | When set, enables OpenAI Moderation API as primary check; falls back to 25-pattern regex when absent |
 | `OPENAI_MODERATION_MODEL`           | Content moderation     | Moderation API model (default: `omni-moderation-latest`, see `src/lib/env.ts:66`)                    |
 | `REPLICATE_API_TOKEN`               | AI image generation    | Get from [replicate.com/account](https://replicate.com/account)                                      |

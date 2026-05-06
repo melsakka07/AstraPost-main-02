@@ -32,6 +32,8 @@ const serverEnvSchema = z.object({
   OPENROUTER_MODEL_TRENDS: z.string().optional(),
   // Optional: cheap/free model for quota-free endpoints (e.g. trends discovery).
   OPENROUTER_MODEL_FREE: z.string().optional(),
+  // Optional: dedicated model for PDF-to-thread generation. Falls back to OPENROUTER_MODEL if not set.
+  OPENROUTER_MODEL_PDF_TO_THREAD: z.string().optional(),
 
   // AI - Replicate (image generation)
   REPLICATE_API_TOKEN: z.string().optional(),

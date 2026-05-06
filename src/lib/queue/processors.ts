@@ -942,7 +942,8 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
     .where(eq(pdfThreadJobs.id, jobId));
 
   const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
-  const model = openrouter(process.env.OPENROUTER_MODEL!);
+  const modelId = process.env.OPENROUTER_MODEL_PDF_TO_THREAD ?? process.env.OPENROUTER_MODEL!;
+  const model = openrouter(modelId);
   const startTs = Date.now();
 
   try {
@@ -1041,15 +1042,11 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
     await recordAiUsage({
       userId,
       type: "pdf_to_thread",
-      model: process.env.OPENROUTER_MODEL!,
+      model: modelId,
       subFeature: "async_chunked",
       tokensIn: totalInputTokens,
       tokensOut: totalOutputTokens,
-      costEstimateCents: estimateCost(
-        process.env.OPENROUTER_MODEL!,
-        totalInputTokens,
-        totalOutputTokens
-      ),
+      costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
       promptVersion: "pdf_to_thread:v1",
       latencyMs: Date.now() - startTs,
       language: row.language,

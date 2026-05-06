@@ -1,6 +1,22 @@
 # Latest Updates
 
-## 2026-05-06 — PDF → Thread Audit Remediation
+## 2026-05-06 — PDF-to-Thread Dedicated AI Model
+
+**Feature:** Added `OPENROUTER_MODEL_PDF_TO_THREAD` env var — a dedicated, optional model for the PDF-to-thread feature. When set, pdf-to-thread routes all AI calls (sync `/generate` + async BullMQ worker) through this model instead of the shared `OPENROUTER_MODEL`. When unset, behavior is unchanged (falls back to `OPENROUTER_MODEL`).
+
+### Files Changed
+
+- `src/lib/env.ts:36` — Added `OPENROUTER_MODEL_PDF_TO_THREAD` as optional Zod-validated string
+- `src/app/api/ai/pdf-to-thread/generate/route.ts:34-36` — Model resolved via `OPENROUTER_MODEL_PDF_TO_THREAD ?? OPENROUTER_MODEL!`
+- `src/lib/queue/processors.ts:945-946` — Same fallback in async worker
+- `.env.example` — Added commented example
+- `README.md`, `docs/claude/env-vars.md`, `docs/claude/AI_Endpoints_Models_and_Prompts_Full_Audit_Report.md`, `docs/features/2026-05-05-pdf-to-thread.md` — Docs updated
+
+### Quality Gate
+
+- `pnpm run check`: PASS (lint + typecheck + i18n parity)
+
+---
 
 **Remediation:** Comprehensive audit of the PDF-to-thread feature identified and fixed 9 issues across API error contracts, i18n defaults, polling resilience, localization gaps, and security.
 

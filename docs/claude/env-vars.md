@@ -25,6 +25,7 @@
 - `OPENROUTER_MODEL_AGENTIC` — Dedicated model for the Agentic Posting writer step
 - `OPENROUTER_MODEL_AGENTIC_REVIEWER` — Reviewer model (different family from writer; Phase 0 `P10`/`P11` quality gate ≥7)
 - `OPENROUTER_MODEL_TRENDS` — Web-search-capable model for trends discovery (e.g. `perplexity/sonar`)
+- `OPENROUTER_MODEL_PDF_TO_THREAD` — Dedicated model for PDF-to-thread generation. Falls back to `OPENROUTER_MODEL` if not set.
 
 ### AI Auxiliary Providers
 
