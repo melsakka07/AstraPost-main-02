@@ -12,7 +12,7 @@ Quick reference for AstraPost development. For complete 9-step API route checkli
 
 **Key imports:** `aiPreamble`, `recordAiUsage`, `generateObject` or `streamText`, `getCorrelationId`
 
-**Canonical example:** `src/app/api/ai/bio-optimizer/route.ts` (streaming) or `src/app/api/posts/variants/route.ts` (object generation)
+**Canonical example:** `src/app/api/ai/bio/route.ts` (generateObject + plan gate) or `src/app/api/ai/variants/route.ts` (object generation)
 
 ### Key Pattern
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
 - **aiPreamble()** is mandatory — handles all pre-generation checks in correct order
 - **recordAiUsage()** fire-and-forget after generation (needed for billing)
-- **Fallback model handling** prevents 429s: check `preamble.fallbackModel` if primary fails with 429
+- **Fallback model handling** is managed natively by OpenRouter (via `extraBody.models` + `route: "fallback"`) — `preamble.fallbackModel` is always `null` and should not be relied upon
 - **Never hardcode model names** — use env vars via `aiPreamble`
 - **Use ApiError.\*()** for errors, never raw `Response` or `NextResponse.json()`
 - **Always set x-correlation-id header** for tracing
@@ -118,11 +118,16 @@ await scheduleQueue.add("job-name", { postId, ... }, SCHEDULE_JOB_OPTIONS);
 
 ```typescript
 export async function POST(req: Request) {
-  const { currentTeamId, session } = await getTeamContext();
+  const ctx = await getTeamContext();
+  if (!ctx) return new Response("Unauthorized", { status: 401 });
 
-  // After auth, before business logic
-  const limited = await checkRateLimit(currentTeamId, "contact-form", 5); // 5 per minute
-  if (limited) return createRateLimitResponse();
+  // After auth, before business logic — signature: checkRateLimit(userId, plan, key)
+  const rateLimit = await checkRateLimit(
+    ctx.session.user.id,
+    ctx.session.user.plan ?? "free",
+    "contact"
+  );
+  if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   // Business logic here
 }
@@ -130,10 +135,13 @@ export async function POST(req: Request) {
 
 ### Key Points
 
+- **Signature:** `checkRateLimit(userId, plan, key)` — returns `{ success: boolean, remaining: number, ... }`, NOT a plain boolean
+- **Use `!result.success`** to check for rate-limit hit, never truthy/falsy coercion
+- **Pass the result object to `createRateLimitResponse(result)`** — takes the full result, not zero args
 - **Call checkRateLimit AFTER auth, BEFORE expensive operations**
-- **Use semantic keys** like "contact-form", "export-csv" (not generic names)
+- **Use semantic keys** like "contact", "export-csv" (not generic names)
 - **Default window: 1 minute** — can be customized
-- **403 Forbidden on limit hit** — never expose actual rate-limit headers to user (security)
+- **429 Too Many Requests on limit hit** — never expose actual rate-limit headers to user (security)
 
 ---
 
@@ -145,7 +153,7 @@ export async function POST(req: Request) {
 
 **Key imports:** `check*DetailedAccessDetailed` or `check*LimitDetailed`, `createPlanLimitResponse`
 
-**Canonical example:** `src/app/api/ai/bio-optimizer/route.ts`
+**Canonical example:** `src/app/api/ai/bio/route.ts`
 
 ### Key Pattern
 
@@ -222,9 +230,9 @@ async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
 
 **Canonical examples:**
 
-- Route with mocked dependencies: `src/app/api/auth/__tests__/route.test.ts`
-- AI endpoint tests: `src/app/api/ai/bio-optimizer/__tests__/route.test.ts`
-- Queue tests: `src/lib/queue/__tests__/processors.integration.test.ts`
+- AI endpoint test pattern: `src/app/api/ai/thread/__tests__/route.test.ts`
+- AI route with mocked dependencies: `src/app/api/ai/image/__tests__/route.test.ts`
+- Queue processor test: `src/lib/queue/__tests__/analytics-processor.test.ts`
 
 ### Key Pattern
 
@@ -309,7 +317,7 @@ export const posts = pgTable(
 
 **Key imports:** `recordAiUsage` from `@/lib/services/ai-quota`
 
-**Canonical example:** `src/app/api/ai/bio-optimizer/route.ts` (around line 85)
+**Canonical example:** `src/app/api/ai/bio/route.ts` (around line 85)
 
 ### Key Pattern
 

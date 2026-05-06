@@ -1,5 +1,19 @@
 # Recent Fixes & Changes
 
+## 2026-05-06 — Documentation Audit & Sync
+
+- **Doc/code drift fixed across 9 markdown files** — see `.claude/plans/2026-05-06-docs-audit-and-update.md` for full audit findings.
+- **`.env.example` fully rewritten** to mirror `src/lib/env.ts` schema + all documented optional vars; aligned with `docker-compose.yml` defaults (`dev_user`/`dev_password`/port `5499`/`postgres_dev`).
+- **README schema table updated**: added `pdfThreadJobs`; corrected migration count (0070+) and test count (34 files / 321 tests).
+- **`docs/claude/scripts.md`** i18n key count refreshed (2,453 → 2,555); `db:reset` description corrected.
+- **`docs/claude/env-vars.md`** added LinkedIn/Instagram/Sentry vars; flagged 8 vars currently unvalidated by `env.ts` (TODO).
+- **`CLAUDE.md`** hard rule #2 tightened to clarify OpenAI moderation is not banned ("NOT OpenAI for text generation").
+- **`ai-features.md`** added `POST /api/chat`, `GET /api/ai/image/quota`, `DELETE /api/ai/pdf-to-thread/[jobId]`, agentic regenerate detail.
+- **`architecture.md`** added `dashboard/ai/pdf-to-thread` page and chat/image-quota routes.
+- **`common-tasks.md`** replaced non-existent test paths with real ones (`thread`, `image`, `analytics-processor`).
+
+---
+
 ## 2026-05-05 — PDF → Thread Feature
 
 ### Schema Changes
@@ -61,7 +75,7 @@ All 7 phases of the AI security, cost integrity, reliability, monetization, diff
 
 **Phase 6 — Growth Engine:** Referral codes + credit tracking, "Made with AstraPost" footer + Pro opt-out, admin trial extension endpoint + bilingual Resend email, Enterprise marketing card on `/pricing`.
 
-**Quality gate:** 31 test files, 280 tests, 0 lint errors, 0 type errors, 2,453 i18n keys matched (en/ar).
+**Quality gate:** 34 test files, 321 tests, 0 lint errors, 0 type errors, 2,555 i18n keys matched (en/ar).
 
 ## 2026-04-25
 

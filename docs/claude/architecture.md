@@ -38,7 +38,7 @@ src/
 │   ├── analytics/                # Analytics components (Charts, Heatmaps, Drawers)
 │   ├── auth/                     # Auth components (Sign-in, Profile)
 │   ├── billing/                  # Billing components (Pricing cards, Payment forms)
-│   ├── brand/                    # Brand primitives (Logo lockup, LogoMark sparkle)
+│   ├── brand/                    # Brand primitives (Logo lockup, LogoMark sparkle, made-with-astrapost-footer, index)
 │   ├── calendar/                 # Calendar components (Grid, Event cards)
 │   ├── community/                # Community components (Contact form)
 │   ├── composer/                 # Composer (Editor, Preview, AI Tools Panel, Best Time, Alerts)
@@ -71,7 +71,7 @@ src/
 
 ### Design Tokens
 
-Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral, brand, info, success, warning, danger) at 12 calibrated steps per mode. 21 semantic tokens feed shadcn/ui. Raw scale utilities: `bg-brand-9`, `text-success-11`, `border-danger-6`, etc. `src/lib/tokens.ts` exposes hex constants via `as const` tuples for runtime contexts (Recharts, OG images, transactional emails). Regenerate with `tmp_tokens/astrapost-tokens/generate.py`.
+Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral, brand, info, success, warning, danger) at 12 calibrated steps per mode. 21 semantic tokens feed shadcn/ui. Raw scale utilities: `bg-brand-9`, `text-success-11`, `border-danger-6`, etc. `src/lib/tokens.ts` exposes hex constants via `as const` tuples for runtime contexts (Recharts, OG images, transactional emails). Regenerate via the Node.js script in `src/lib/tokens.ts`.
 
 **Scales:** neutral (slate), brand (indigo #3E63DD), info (blue #0090FF), success (green #46A758), warning (amber #FFC53D), danger (red #E5484D).
 
@@ -82,10 +82,13 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 ### AI Endpoints
 
 - `src/app/api/ai/thread/route.ts` — Thread writer (OpenRouter)
+- `src/app/api/ai/bio/route.ts` — Bio Optimizer (generates 3 X bio variants)
 - `src/app/api/ai/image/route.ts` — Image generation (Replicate via Nano Banana)
+- `src/app/api/ai/image/quota/route.ts` — Image quota read endpoint (used by sidebar usage meter)
 - `src/app/api/ai/score/route.ts` — Viral Score evaluator
 - `src/app/api/ai/agentic/route.ts` — Agentic SSE streaming
 - `src/app/api/ai/agentic/[id]/approve/route.ts` — Approve agentic post to queue
+- `src/app/api/ai/agentic/[id]/regenerate/route.ts` — Regenerate single tweet in agentic pipeline
 - `src/app/api/ai/tools/route.ts` — General AI writing tools (Hooks, CTAs, Rewrite)
 - `src/app/api/ai/translate/route.ts` — Translation service
 - `src/app/api/ai/calendar/route.ts` — AI Content Calendar generator

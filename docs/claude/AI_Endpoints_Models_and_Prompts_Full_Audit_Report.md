@@ -448,7 +448,7 @@ Plans normalize to **3 tiers** (`free` / `pro` / `agency`) — Trial inherits `f
 12. **Three routes still bypass `aiPreamble`** with manual non-atomic quota checks (race-overage risk): `/api/chat`, `/api/user/voice-profile`, `/api/analytics/competitor`. Cleanup target.
 13. **OpenAI is a third AI provider** (moderation only) — `OPENAI_API_KEY` + `OPENAI_MODERATION_MODEL`. Not billed against user AI quota; not tracked by `MODEL_PRICING`.
 14. **Cost estimation is now a first-class telemetry column** — `aiGenerations.costEstimateCents` populated via `estimateCost()` and `MODEL_PRICING`; powers `/api/cron/ai-cost-alarm` against `AI_DAILY_BUDGET_USD` (default $50).
-15. **Workers do not call AI** — `src/lib/queue/processors.ts` contains zero `streamText` / `generateText` / `generateObject` / `openrouter(` references. All generation is request-time. Workers consume already-generated content (publish, retry, send-email).
+15. **The PDF-to-Thread worker calls AI** — `src/lib/queue/processors.ts`'s `pdfThreadProcessor` calls `generateObject` (via OpenRouter) for chunked summarization of large PDFs (>30K chars). All other generation is request-time. Other workers consume already-generated content (publish, retry, send-email).
 16. **Agentic auto-resume is a hidden quota consumer** — see Section 2.C note: an idle session re-enters the pipeline on next GET, charging another `5` weight without explicit user action.
 
 ---

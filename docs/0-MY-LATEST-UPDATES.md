@@ -1,5 +1,46 @@
 # Latest Updates
 
+## 2026-05-06 — Documentation Audit & Sync
+
+Surgical doc/code drift fixes across 9 markdown files plus a full `.env.example` rewrite. Driven by an audit captured at `.claude/plans/2026-05-06-docs-audit-and-update.md`.
+
+**Highlights:**
+
+- `.env.example`: now mirrors `src/lib/env.ts` schema + all documented optional vars; aligned with `docker-compose.yml` (`dev_user`/`dev_password`/port `5499`/`postgres_dev`). Was missing 13+ vars.
+- `README.md`: fixed POSTGRES_URL example (3 places); migration count → 0070+; test count → 34 files / 321 tests; added `pdfThreadJobs` to schema table.
+- `docs/claude/env-vars.md`: added LinkedIn/Instagram OAuth vars; flagged 8 vars currently read directly from `process.env` without `env.ts` validation (TODO follow-up).
+- `docs/claude/scripts.md`: i18n key count 2,453 → 2,555; `db:reset` description corrected.
+- `docs/claude/recent-changes.md`: test count refreshed; new audit entry added at top.
+- `docs/claude/architecture.md`: added `dashboard/ai/pdf-to-thread` and `/api/ai/image/quota` references.
+- `docs/claude/ai-features.md`: added `POST /api/chat`, `POST /api/ai/agentic/[id]/regenerate`, `GET /api/ai/image/quota`; promoted `DELETE /api/ai/pdf-to-thread/[jobId]`.
+- `docs/claude/common-tasks.md`: replaced non-existent test paths with real ones (`thread`, `image`, `analytics-processor`).
+- `CLAUDE.md`: hard rule #2 tightened — "Use OpenRouter, NOT OpenAI **for text generation**" (clarifies OpenAI moderation usage is allowed).
+
+**Code-level follow-up (not done in this pass):** extend `src/lib/env.ts` Zod schema to validate `OPENAI_API_KEY`, `PLAN_CHANGE_LOG_RETENTION_YEARS`, `DIAGNOSTICS_TOKEN`, `SENTRY_*`, `LINKEDIN_*`, `INSTAGRAM_*`.
+
+---
+
+## 2026-05-06 — Documentation Consistency Fixes
+
+**Audit:** Verified documentation, `.env.example`, and source code for stale references. Fixed all drift found.
+
+### Files Changed
+
+- `docs/claude/ai-features.md` — Fixed trends (POST→GET, removed Pro/Agency gate, added skipQuotaCheck note), inspiration (POST→GET), refine (quotaWeight 0.5→1); added missing Bio Optimizer and Image Download Proxy endpoints
+- `docs/claude/AI_Endpoints_Models_and_Prompts_Full_Audit_Report.md` — Fixed line 451 false claim "Workers do not call AI" (pdfThreadProcessor does via generateObject)
+- `docs/claude/common-tasks.md` — Fixed stale `fallbackModel` guidance (always `null` — OpenRouter handles natively), corrected canonical paths (`bio-optimizer` → `bio`, `posts/variants` → `ai/variants`), and corrected `checkRateLimit` signature/return-type in example code
+- `docs/claude/env-vars.md` — Removed 5 stale env vars with zero src references (`INSTAGRAM_CLIENT_ID`, `INSTAGRAM_CLIENT_SECRET`, `OPENAI_EMBEDDING_MODEL`, `GEMINI_API_KEY`, `GOOGLE_AI_API_KEY`), updated `OPENAI_API_KEY` description (moderation only, not embeddings), added `RESEND_OPS_EMAIL`
+- `docs/claude/architecture.md` — Removed stale `tmp_tokens/` reference (directory does not exist), added missing `/api/ai/bio` row to AI Endpoints table
+- `docs/claude/scripts.md` — Fixed `ENCRYPTION_KEY`→`TOKEN_ENCRYPTION_KEYS`, updated check description to include i18n validation
+- `README.md` — Updated `pnpm run check` description (3 occurrences) to include i18n validation
+- `.env.example` — Removed `GEMINI_API_KEY`, `GOOGLE_AI_API_KEY`, `OPENAI_EMBEDDING_MODEL`, `POLAR_WEBHOOK_SECRET`, `POLAR_ACCESS_TOKEN`, `POLAR_SERVER`; added `RESEND_OPS_EMAIL`; corrected OpenAI section header
+
+### Quality Gate
+
+- All changes are documentation/example only — no source code affected
+
+---
+
 ## 2026-05-06 — PDF-to-Thread Dedicated AI Model
 
 **Feature:** Added `OPENROUTER_MODEL_PDF_TO_THREAD` env var — a dedicated, optional model for the PDF-to-thread feature. When set, pdf-to-thread routes all AI calls (sync `/generate` + async BullMQ worker) through this model instead of the shared `OPENROUTER_MODEL`. When unset, behavior is unchanged (falls back to `OPENROUTER_MODEL`).

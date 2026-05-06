@@ -220,7 +220,7 @@ astrapost/
 │   ├── features/               # Feature implementation documentation
 │   └── technical/              # AI, X API, react-markdown, BetterAuth docs
 │
-├── drizzle/                    # Generated SQL migration files (0000–0069+)
+├── drizzle/                    # Generated SQL migration files (0000–0070+)
 │
 ├── scripts/                    # Operational scripts
 │   ├── worker.ts               # BullMQ worker entry point
@@ -437,7 +437,7 @@ This spins up:
 - **Redis** (Alpine) on port `6379`
 
 > **Note:** The default `docker-compose.yml` maps Postgres to host port `5499`, not `5432`. Your `POSTGRES_URL` should use port `5499` for local connections:
-> `POSTGRES_URL=postgresql://dev_user:password@localhost:5499/postgres_dev`
+> `POSTGRES_URL=postgresql://dev_user:dev_password@localhost:5499/postgres_dev`
 
 ---
 
@@ -475,7 +475,7 @@ Open **http://localhost:3000** in your browser.
 
 | Variable                   | Description                                                                                                                        |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `POSTGRES_URL`             | PostgreSQL connection string. Default Docker: `postgresql://dev_user:password@localhost:5499/postgres_dev`                         |
+| `POSTGRES_URL`             | PostgreSQL connection string. Default Docker: `postgresql://dev_user:dev_password@localhost:5499/postgres_dev`                     |
 | `REDIS_URL`                | Redis connection string. Default: `redis://localhost:6379`                                                                         |
 | `BETTER_AUTH_SECRET`       | Random secret ≥ 32 characters for Better Auth session signing                                                                      |
 | `BETTER_AUTH_URL`          | Base URL of the app (e.g. `http://localhost:3000`)                                                                                 |
@@ -489,15 +489,15 @@ Open **http://localhost:3000** in your browser.
 
 **OAuth & Social Platforms**
 
-| Variable                  | Required For                      | Description                                                                                                |
-| ------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `TWITTER_CLIENT_ID`       | X login & posting                 | X (Twitter) OAuth 2.0 Client ID                                                                            |
-| `TWITTER_CLIENT_SECRET`   | X login & posting                 | X (Twitter) OAuth 2.0 Client Secret                                                                        |
-| `TWITTER_BEARER_TOKEN`    | Tweet import, Competitor analyzer | App-only bearer token. Get from [developer.twitter.com](https://developer.twitter.com/en/portal/dashboard) |
-| `LINKEDIN_CLIENT_ID`      | LinkedIn OAuth                    | LinkedIn App Client ID                                                                                     |
-| `LINKEDIN_CLIENT_SECRET`  | LinkedIn OAuth                    | LinkedIn App Client Secret                                                                                 |
-| `INSTAGRAM_CLIENT_ID`     | Instagram OAuth                   | Instagram App Client ID                                                                                    |
-| `INSTAGRAM_CLIENT_SECRET` | Instagram OAuth                   | Instagram App Client Secret                                                                                |
+| Variable                 | Required For                      | Description                                                                                                |
+| ------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `TWITTER_CLIENT_ID`      | X login & posting                 | X (Twitter) OAuth 2.0 Client ID                                                                            |
+| `TWITTER_CLIENT_SECRET`  | X login & posting                 | X (Twitter) OAuth 2.0 Client Secret                                                                        |
+| `TWITTER_BEARER_TOKEN`   | Tweet import, Competitor analyzer | App-only bearer token. Get from [developer.twitter.com](https://developer.twitter.com/en/portal/dashboard) |
+| `LINKEDIN_CLIENT_ID`     | LinkedIn OAuth                    | LinkedIn App Client ID                                                                                     |
+| `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth                    | LinkedIn App Client Secret                                                                                 |
+| `FACEBOOK_APP_ID`        | Instagram Business posting        | Facebook App ID — Instagram posting goes through the Facebook Graph API                                    |
+| `FACEBOOK_APP_SECRET`    | Instagram Business posting        | Facebook App Secret — paired with `FACEBOOK_APP_ID`                                                        |
 
 **AI Services**
 
@@ -571,7 +571,7 @@ pnpm run worker               # Start the BullMQ background worker
 # Code Quality (always run before committing)
 pnpm lint                     # Run ESLint
 pnpm typecheck                # Run TypeScript type checker
-pnpm run check                # Run lint + typecheck together
+pnpm run check                # Run lint + typecheck + i18n validation
 
 # Testing
 pnpm test                     # Run Vitest unit tests
@@ -643,6 +643,7 @@ AstraPost uses **Drizzle ORM** with PostgreSQL. Key tables:
 | `affiliate_links`           | Amazon affiliate product data and generated promotional tweets                                                                         |
 | `affiliate_clicks`          | Click tracking for affiliate links                                                                                                     |
 | `notifications`             | In-app notification feed per user                                                                                                      |
+| `pdfThreadJobs`             | Async PDF-to-thread job lifecycle (uploading → extracting → ready/failed) — 21 columns, 2 indexes (Pro Monthly+ feature)               |
 | `templates`                 | Saved tweet/thread templates                                                                                                           |
 | `milestones`                | Gamification achievements per user                                                                                                     |
 | `feedback`                  | Product roadmap feature requests                                                                                                       |
@@ -900,7 +901,7 @@ OPENROUTER_MODEL="anthropic/claude-sonnet-4.6"  # NEVER hardcode this value
 pnpm test
 ```
 
-Tests are co-located with implementation files (31 test files, 280+ tests):
+Tests are co-located with implementation files (34 test files, 321 tests):
 
 - `src/lib/services/ai-quota.test.ts`
 - `src/lib/services/agentic-pipeline.test.ts`
@@ -912,7 +913,7 @@ Tests are co-located with implementation files (31 test files, 280+ tests):
 - `src/lib/ai/__tests__/untrusted.test.ts`
 - `src/app/api/billing/webhook/route.test.ts`
 - `src/app/api/ai/agentic/approve/route.test.ts`
-- ...and 21 more
+- ...and 24 more
 
 ### Smoke Test Suite
 
@@ -934,7 +935,7 @@ pnpm run smoke:full
 ### Code Quality
 
 ```bash
-pnpm run check         # ESLint + TypeScript (run this before every commit)
+pnpm run check         # ESLint + TypeScript + i18n (run this before every commit)
 ```
 
 ---
@@ -1201,7 +1202,7 @@ pnpm run db:migrate
 The Docker Compose file maps Postgres to **host port `5499`**, not `5432`. Update your `POSTGRES_URL`:
 
 ```
-POSTGRES_URL=postgresql://dev_user:password@localhost:5499/postgres_dev
+POSTGRES_URL=postgresql://dev_user:dev_password@localhost:5499/postgres_dev
 ```
 
 ### Next.js dev server fails: "You cannot use different slug names for the same dynamic path"
@@ -1289,7 +1290,7 @@ Contributions are welcome! Please follow these steps:
 2. **Create** a feature branch: `git checkout -b feat/your-feature-name`
 3. **Make** your changes and ensure all checks pass:
    ```bash
-   pnpm run check   # lint + typecheck
+   pnpm run check   # lint + typecheck + i18n
    pnpm test        # unit tests
    ```
 4. **Commit** using [Conventional Commits](https://www.conventionalcommits.org/):

@@ -27,6 +27,11 @@ This document maps all backend AI generation and processing endpoints to their r
 
 - **Purpose**: Reply Generator.
 
+### `POST /api/chat`
+
+- **Purpose**: General conversational AI assistant (used by the in-app chat surface).
+- **Quota Tracking**: `recordAiUsage(..., "chat", ...)` in `onFinish` callback after `streamText` completes.
+
 ## 2. Agentic Posting (Pro/Agency)
 
 ### `POST /api/ai/agentic`
@@ -45,6 +50,11 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Purpose**: Approves the generated agentic post content to be drafted, posted immediately, or scheduled.
 - **Quota Tracking**: This endpoint does NOT record usage — it is a database + queue operation with no AI work. All quota consumption is already recorded during the generation pipeline (research, write, images steps).
 
+### `POST /api/ai/agentic/[id]/regenerate`
+
+- **Purpose**: Regenerates a single tweet within an existing agentic pipeline session, scoped to the original topic + voice.
+- **Quota Tracking**: Routes through `aiPreamble({ quotaWeight: 5 })` (matches generation cost).
+
 ## 3. Media & Assets
 
 ### `POST /api/ai/image`
@@ -57,6 +67,10 @@ This document maps all backend AI generation and processing endpoints to their r
 
 - **Purpose**: Polling endpoint to check Replicate generation status, cache the final result, and record image quota usage on success.
 - **Quota Tracking**: Calls `recordAiUsage("image", ...)` after successful image save; invalidates sidebar cache to reflect updated quota.
+
+### `GET /api/ai/image/download`
+
+- **Purpose**: SSRF-safe image download proxy for retrieving generated images from trusted origins (replicate.delivery, replicate.com, vercel-storage.com). Validates URL hostname against a safelist before proxying.
 
 ## 4. Advanced Creators
 
@@ -75,6 +89,11 @@ This document maps all backend AI generation and processing endpoints to their r
 ### `POST /api/ai/affiliate`
 
 - **Purpose**: Generates promotional tweets for Amazon affiliate links.
+
+### `POST /api/ai/bio`
+
+- **Purpose**: Generates 3 X (Twitter) bio variants based on a user's goal (gain followers, attract clients, build authority, general) and niche.
+- **Details**: Plan-gated via `checkBioOptimizerAccessDetailed` (Pro/Agency). Uses `OPENROUTER_MODEL` with `generateObject`. `quotaWeight: 1` (default).
 
 ### `POST /api/ai/summarize`
 
@@ -108,12 +127,12 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Purpose**: Content Inspiration (OpenRouter).
 - **Actions**: Rephrase, change tone, expand, add takeaway, translate, counter-point.
 
-### `POST /api/ai/trends`
+### `GET /api/ai/trends`
 
 - **Purpose**: Fetches AI-generated trending topics by category (Technology, Business, etc.) without requiring the X API.
-- **Details**: Uses `OPENROUTER_MODEL_TRENDS` (web-search-capable model) → falls back to `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`. Plan-gated (Pro/Agency).
+- **Details**: Uses `OPENROUTER_MODEL_TRENDS` (web-search-capable model) → falls back to `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`. Uses `skipQuotaCheck: true` — available to all plans including Free. Cached for 30 minutes.
 
-### `POST /api/ai/inspiration`
+### `GET /api/ai/inspiration`
 
 - **Purpose**: Fetches trending inspiration topics by niche. Cached for 6 hours.
 
@@ -126,7 +145,7 @@ This document maps all backend AI generation and processing endpoints to their r
 ### `POST /api/ai/refine`
 
 - **Purpose**: Iterative refinement — regenerates AI output based on user feedback (tone, length, hook, hashtags).
-- **Details**: Loads original `aiGenerations` row, validates ownership, runs a scoped prompt. `quotaWeight: 0.5` (cheaper than fresh generation).
+- **Details**: Loads original `aiGenerations` row, validates ownership, runs a scoped prompt. `quotaWeight: 1`.
 
 ### `POST /api/ai/feedback`
 
@@ -138,6 +157,10 @@ This document maps all backend AI generation and processing endpoints to their r
 ### `GET /api/ai/quota`
 
 - **Purpose**: Retrieves the user's monthly AI usage counts (atomic counter-based).
+
+### `GET /api/ai/image/quota`
+
+- **Purpose**: Retrieves the user's monthly AI image generation counts and the list of image models available on their plan.
 
 ### `GET /api/ai/image/quota`
 

@@ -12,9 +12,19 @@ const serverEnvSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
   BETTER_AUTH_URL: z.string().url().optional(),
 
-  // OAuth
+  // OAuth — X / Twitter
   TWITTER_CLIENT_ID: z.string().optional(),
   TWITTER_CLIENT_SECRET: z.string().optional(),
+  // App-only bearer for tweet import + Competitor Analyzer
+  TWITTER_BEARER_TOKEN: z.string().optional(),
+
+  // OAuth — LinkedIn (Agency posting integration; not a Better Auth provider)
+  LINKEDIN_CLIENT_ID: z.string().optional(),
+  LINKEDIN_CLIENT_SECRET: z.string().optional(),
+
+  // OAuth — Instagram via Facebook Graph API (posting integration; not a Better Auth provider)
+  FACEBOOK_APP_ID: z.string().optional(),
+  FACEBOOK_APP_SECRET: z.string().optional(),
 
   // Security
   TOKEN_ENCRYPTION_KEYS: z.string().min(32, "TOKEN_ENCRYPTION_KEYS is required"),
@@ -64,11 +74,24 @@ const serverEnvSchema = z.object({
   AI_DAILY_BUDGET_USD: z.coerce.number().positive().default(50),
   RESEND_OPS_EMAIL: z.string().email().optional(),
 
-  // Content Moderation (Phase 1)
+  // Content Moderation (Phase 1) — OpenAI Moderation API is the documented exception
+  // to the "no OpenAI for text generation" rule.
+  OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODERATION_MODEL: z.string().default("omni-moderation-latest"),
 
   // Cron jobs (Vercel Cron Jobs use Bearer token auth)
   CRON_SECRET: z.string().optional(),
+
+  // Diagnostics — token required for full /api/diagnostics response
+  DIAGNOSTICS_TOKEN: z.string().optional(),
+
+  // Compliance — retention period for plan_change_log audit table.
+  // Stored as string because callers parse with parseInt(... || "7", 10).
+  PLAN_CHANGE_LOG_RETENTION_YEARS: z.string().optional(),
+
+  // Observability — Sentry
+  SENTRY_DSN: z.string().optional(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
 
   // App
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

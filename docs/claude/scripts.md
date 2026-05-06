@@ -23,8 +23,8 @@
 | ----------------------- | ----------------------------------------------- |
 | `pnpm lint`             | Run ESLint on all files                         |
 | `pnpm typecheck`        | TypeScript type checking                        |
-| `pnpm run check`        | Run lint + typecheck together                   |
-| `pnpm run check:i18n`   | Verify ar/en i18n keys are in sync (2,453 keys) |
+| `pnpm run check`        | Run lint + typecheck + i18n validation          |
+| `pnpm run check:i18n`   | Verify ar/en i18n keys are in sync (2,555 keys) |
 | `pnpm run format`       | Format code with Prettier                       |
 | `pnpm run format:check` | Check formatting without modifying              |
 
@@ -40,14 +40,14 @@
 
 ## Database
 
-| Command                | Purpose                                  |
-| ---------------------- | ---------------------------------------- |
-| `pnpm run db:generate` | Generate Drizzle migrations from schema  |
-| `pnpm run db:migrate`  | Run pending migrations                   |
-| `pnpm run db:push`     | Push schema changes to database          |
-| `pnpm run db:dev`      | Push to dev database (alias for db:push) |
-| `pnpm run db:studio`   | Open Drizzle Studio GUI for browsing     |
-| `pnpm run db:reset`    | Drop all tables + re-apply migrations    |
+| Command                | Purpose                                              |
+| ---------------------- | ---------------------------------------------------- |
+| `pnpm run db:generate` | Generate Drizzle migrations from schema              |
+| `pnpm run db:migrate`  | Run pending migrations                               |
+| `pnpm run db:push`     | Push schema changes to database                      |
+| `pnpm run db:dev`      | Push to dev database (alias for db:push)             |
+| `pnpm run db:studio`   | Open Drizzle Studio GUI for browsing                 |
+| `pnpm run db:reset`    | Drop all tables + push schema (no migration history) |
 
 ## Background Worker
 
@@ -81,7 +81,7 @@
 
 - All scripts with `--require dotenv/config` automatically load `.env` variables
 - Database scripts require `POSTGRES_URL` to be set
-- Token scripts require `ENCRYPTION_KEY` to be set
+- Token scripts require `TOKEN_ENCRYPTION_KEYS` to be set
 - Worker script runs indefinitely until stopped (Ctrl+C)
 - `pnpm run check` should pass before committing changes
 - For new developers: run `pnpm run setup` after first clone

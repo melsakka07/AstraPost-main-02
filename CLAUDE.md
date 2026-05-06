@@ -16,7 +16,7 @@ Next.js 16 (App Router), React 19, TypeScript 5.9, PostgreSQL 18 (pgvector), Dri
 ## Hard Rules (Never Break)
 
 1. **Run `pnpm run check` before considering any task complete**
-2. **Use OpenRouter, NOT OpenAI** — `import { openrouter } from "@openrouter/ai-sdk-provider"`
+2. **Use OpenRouter, NOT OpenAI for text generation** — `import { openrouter } from "@openrouter/ai-sdk-provider"`. (OpenAI Moderation API at `src/lib/services/moderation.ts` is the documented exception.)
 3. **Never hardcode AI model names** — env vars only: `OPENROUTER_MODEL!`, `REPLICATE_MODEL_FAST!`, `REPLICATE_MODEL_PRO!`, `REPLICATE_MODEL_FALLBACK!`
 4. **Use `ApiError` from `@/lib/api/errors`** for all error responses — never inline `new Response(JSON.stringify(...))` or `NextResponse.json()`. Use `createPlanLimitResponse()` for 402 plan-limit responses.
 5. **Multi-table writes MUST use `db.transaction()`** — prevents orphaned records
