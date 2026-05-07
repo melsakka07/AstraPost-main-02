@@ -55,10 +55,46 @@ jobs:
       - name: Run TypeScript type check
         run: pnpm typecheck
 
+  schema-drift:
+    name: Schema Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate migrations from schema
+        run: pnpm db:generate
+        env:
+          POSTGRES_URL: "postgresql://user:pass@localhost:5432/db"
+
+      - name: Verify no uncommitted migration changes
+        run: |
+          if ! git diff --exit-code drizzle/; then
+            echo ""
+            echo "::error::schema.ts and drizzle/ are out of sync."
+            echo "::error::Run 'pnpm db:generate' locally and commit the resulting drizzle/*.sql + drizzle/meta/* files."
+            echo "::error::See .claude/rules/database.md 'Schema-Migration Drift' for context."
+            exit 1
+          fi
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, typecheck]
+    needs: [lint, typecheck, schema-drift]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
