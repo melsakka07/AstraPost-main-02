@@ -1,4 +1,6 @@
-ALTER TYPE "public"."ai_generation_type" ADD VALUE IF NOT EXISTS 'trends_discovery' BEFORE 'agentic_approve';--> statement-breakpoint
+ALTER TYPE "public"."ai_generation_type" ADD VALUE IF NOT EXISTS 'viral_score';--> statement-breakpoint
+ALTER TYPE "public"."ai_generation_type" ADD VALUE IF NOT EXISTS 'agentic_approve';--> statement-breakpoint
+ALTER TYPE "public"."ai_generation_type" ADD VALUE IF NOT EXISTS 'trends_discovery';--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "youtube_thread_jobs" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
