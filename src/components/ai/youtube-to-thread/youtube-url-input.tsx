@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -31,6 +32,9 @@ export interface YoutubeUrlSubmitData {
 interface YoutubeUrlInputProps {
   onSubmit: (data: YoutubeUrlSubmitData) => void;
   isLoading: boolean;
+  includeFirstTweetImage: boolean;
+  onIncludeFirstTweetImageChange: (val: boolean) => void;
+  imageQuotaExhausted: boolean;
 }
 
 interface VideoPreview {
@@ -43,7 +47,13 @@ const TONE_OPTIONS = ["professional", "educational", "casual", "formal", "enthus
 
 // ── Component ──────────────────────────────────────────────────────────
 
-export function YoutubeUrlInput({ onSubmit, isLoading }: YoutubeUrlInputProps) {
+export function YoutubeUrlInput({
+  onSubmit,
+  isLoading,
+  includeFirstTweetImage,
+  onIncludeFirstTweetImageChange,
+  imageQuotaExhausted,
+}: YoutubeUrlInputProps) {
   const t = useTranslations("ai_hub");
   const yt = useTranslations("youtube_to_thread");
   const locale = useLocale();
@@ -368,6 +378,22 @@ export function YoutubeUrlInput({ onSubmit, isLoading }: YoutubeUrlInputProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* First-tweet image toggle */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{yt("options.include_first_tweet_image")}</p>
+              <p className="text-muted-foreground text-xs">
+                {yt("options.include_first_tweet_image_description")}
+              </p>
+            </div>
+            <Switch
+              id="youtube-include-first-tweet-image"
+              checked={includeFirstTweetImage}
+              onCheckedChange={onIncludeFirstTweetImageChange}
+              disabled={isLoading || imageQuotaExhausted}
+            />
           </div>
         </CardContent>
       </Card>

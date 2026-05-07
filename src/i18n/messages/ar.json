@@ -1148,7 +1148,11 @@
         "tone_educational": "تعليمية",
         "tone_casual": "غير رسمية",
         "tone_formal": "رسمية",
-        "tone_enthusiastic": "حماسية"
+        "tone_enthusiastic": "حماسية",
+        "include_first_tweet_image": "إنشاء صورة للتغريدة الأولى",
+        "include_first_tweet_image_description": "يستهلك رصيد صورة واحد من حصتك الشهرية.",
+        "include_first_tweet_image_generating": "جاري إنشاء الصورة…",
+        "include_first_tweet_image_failed": "تعذّر إنشاء الصورة. سيتم الإرسال بدون صورة."
       },
       "actions": {
         "generate_sync": "توليد الثريد",
@@ -3094,7 +3098,11 @@
       "tone_educational": "تعليمية",
       "tone_casual": "غير رسمية",
       "tone_formal": "رسمية",
-      "tone_enthusiastic": "حماسية"
+      "tone_enthusiastic": "حماسية",
+      "include_first_tweet_image": "إنشاء صورة للتغريدة الأولى",
+      "include_first_tweet_image_description": "يستهلك رصيد صورة واحد من حصتك الشهرية.",
+      "include_first_tweet_image_generating": "جاري إنشاء الصورة…",
+      "include_first_tweet_image_failed": "تعذّر إنشاء الصورة. سيتم الإرسال بدون صورة."
     },
     "actions": {
       "submit": "إنشاء الثريد",

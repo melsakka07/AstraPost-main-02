@@ -118,6 +118,13 @@ export function YoutubeToThreadClient() {
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [transcript, setTranscript] = useState<string | undefined>(undefined);
   const [errorCode, setErrorCode] = useState<string | undefined>(undefined);
+
+  // First-tweet image generation
+  const [includeFirstTweetImage, setIncludeFirstTweetImage] = useState(false);
+  const [firstTweetImageUrl, setFirstTweetImageUrl] = useState<string | null>(null);
+  const [imageStatus, setImageStatus] = useState<"idle" | "generating" | "ready" | "error">("idle");
+  const [imageQuotaExhausted, setImageQuotaExhausted] = useState(false);
+  const imageAbortRef = useRef<AbortController | null>(null);
   const [finalElapsedSeconds, setFinalElapsedSeconds] = useState<number | null>(null);
   const [resultMeta, setResultMeta] = useState<{
     durationSeconds?: number;
@@ -161,10 +168,30 @@ export function YoutubeToThreadClient() {
     }
   }, []);
 
-  // Cleanup timer on unmount
+  // Cleanup timer + image abort on unmount
   useEffect(() => {
-    return () => stopElapsedTimer();
+    return () => {
+      stopElapsedTimer();
+      imageAbortRef.current?.abort();
+    };
   }, [stopElapsedTimer]);
+
+  // ── Image quota fetch ───────────────────────────────────────────────
+
+  useEffect(() => {
+    const ac = new AbortController();
+    const timeoutId = setTimeout(() => ac.abort(), 8_000);
+    fetch("/api/ai/image/quota", { signal: ac.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setImageQuotaExhausted((data.remainingImages ?? -1) === 0);
+      })
+      .catch(() => {});
+    return () => {
+      clearTimeout(timeoutId);
+      ac.abort();
+    };
+  }, []);
 
   // ── Recent jobs fetch ───────────────────────────────────────────────
 
@@ -201,6 +228,8 @@ export function YoutubeToThreadClient() {
     setFinalElapsedSeconds(null);
     setResultMeta(null);
     setCurrentVideoId(null);
+    setFirstTweetImageUrl(null);
+    setImageStatus("idle");
   }, [stopElapsedTimer]);
 
   // ── Submit handler ─────────────────────────────────────────────────
@@ -300,17 +329,77 @@ export function YoutubeToThreadClient() {
 
   // ── Send to composer ───────────────────────────────────────────────
 
-  const handleSendToComposer = useCallback(() => {
+  const handleSendToComposer = useCallback(async () => {
     if (!threadResult) return;
+
+    let imageUrl = firstTweetImageUrl;
+
+    if (includeFirstTweetImage && !imageUrl && imageStatus !== "generating") {
+      setImageStatus("generating");
+
+      imageAbortRef.current?.abort();
+      const ac = new AbortController();
+      imageAbortRef.current = ac;
+      const timeoutId = setTimeout(() => ac.abort(), 70_000);
+
+      try {
+        const prompt = `${threadResult.title}\n\n${threadResult.tweets[0]?.text ?? ""}`.slice(
+          0,
+          600
+        );
+        const res = await fetch("/api/ai/thread-first-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, source: "youtube-to-thread" }),
+          signal: ac.signal,
+        });
+
+        if (res.status === 402) {
+          const data = await res.json();
+          upgradeModal.openWithContext(data);
+          setImageStatus("error");
+          return;
+        }
+
+        if (!res.ok) {
+          toast.error(yt("options.include_first_tweet_image_failed"));
+          setImageStatus("error");
+          return;
+        }
+
+        const data = await res.json();
+        imageUrl = data.url as string;
+        setFirstTweetImageUrl(imageUrl);
+        setImageStatus("ready");
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        toast.error(yt("options.include_first_tweet_image_failed"));
+        setImageStatus("error");
+        return;
+      } finally {
+        clearTimeout(timeoutId);
+        imageAbortRef.current = null;
+      }
+    }
+
     sessionStorage.setItem(
       "composer_payload",
       JSON.stringify({
         tweets: threadResult.tweets.map((t) => t.text),
         source: "youtube-to-thread",
+        ...(imageUrl && { firstTweetImage: { url: imageUrl } }),
       })
     );
     router.push("/dashboard/compose?source=youtube-to-thread");
-  }, [threadResult, router]);
+  }, [
+    threadResult,
+    router,
+    includeFirstTweetImage,
+    firstTweetImageUrl,
+    imageStatus,
+    upgradeModal,
+    yt,
+  ]);
 
   // ── Regenerate handler ──────────────────────────────────────────────
 
@@ -515,7 +604,13 @@ export function YoutubeToThreadClient() {
       {/* IDLE state: URL input form + recent jobs */}
       {status === "idle" && (
         <div className="space-y-6">
-          <YoutubeUrlInput onSubmit={handleSubmit} isLoading={isLoading} />
+          <YoutubeUrlInput
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            includeFirstTweetImage={includeFirstTweetImage}
+            onIncludeFirstTweetImageChange={setIncludeFirstTweetImage}
+            imageQuotaExhausted={imageQuotaExhausted}
+          />
           {recentJobs.length > 0 && (
             <Card>
               <CardContent className="px-4 py-4">
@@ -723,6 +818,7 @@ export function YoutubeToThreadClient() {
               },
             })}
             onSendToComposer={handleSendToComposer}
+            isSendingToComposer={imageStatus === "generating"}
           />
         </div>
       )}

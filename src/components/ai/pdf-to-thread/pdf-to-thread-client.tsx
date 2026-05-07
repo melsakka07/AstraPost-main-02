@@ -105,6 +105,13 @@ export function PdfToThreadClient() {
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [errorCode, setErrorCode] = useState<string | undefined>(undefined);
 
+  // First-tweet image generation
+  const [includeFirstTweetImage, setIncludeFirstTweetImage] = useState(false);
+  const [firstTweetImageUrl, setFirstTweetImageUrl] = useState<string | null>(null);
+  const [imageStatus, setImageStatus] = useState<"idle" | "generating" | "ready" | "error">("idle");
+  const [imageQuotaExhausted, setImageQuotaExhausted] = useState(false);
+  const imageAbortRef = useRef<AbortController | null>(null);
+
   const searchParams = useSearchParams();
 
   // Ref to hold the latest jobId for the poller closure
@@ -149,7 +156,10 @@ export function PdfToThreadClient() {
   }, []);
 
   useEffect(() => {
-    return () => stopElapsedTimer();
+    return () => {
+      stopElapsedTimer();
+      imageAbortRef.current?.abort();
+    };
   }, [stopElapsedTimer]);
 
   // ── Recent jobs fetch ───────────────────────────────────────────────
@@ -169,6 +179,23 @@ export function PdfToThreadClient() {
       ac.abort();
     };
   }, [status]);
+
+  // ── Image quota fetch ───────────────────────────────────────────────
+
+  useEffect(() => {
+    const ac = new AbortController();
+    const timeoutId = setTimeout(() => ac.abort(), 8_000);
+    fetch("/api/ai/image/quota", { signal: ac.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setImageQuotaExhausted((data.remainingImages ?? -1) === 0);
+      })
+      .catch(() => {});
+    return () => {
+      clearTimeout(timeoutId);
+      ac.abort();
+    };
+  }, []);
 
   // ── State recovery from URL (?jobId=) ──────────────────────────────
 
@@ -230,6 +257,8 @@ export function PdfToThreadClient() {
     setConnectionIssue(false);
     setElapsedSeconds(0);
     setErrorCode(undefined);
+    setFirstTweetImageUrl(null);
+    setImageStatus("idle");
     stopElapsedTimer();
   }, [stopElapsedTimer]);
 
@@ -482,17 +511,78 @@ export function PdfToThreadClient() {
 
   // ── Send to composer ───────────────────────────────────────────────
 
-  const handleSendToComposer = useCallback(() => {
+  const handleSendToComposer = useCallback(async () => {
     if (!threadResult) return;
+
+    let imageUrl = firstTweetImageUrl;
+
+    // If toggle is on and image not yet generated, generate it first
+    if (includeFirstTweetImage && !imageUrl && imageStatus !== "generating") {
+      setImageStatus("generating");
+
+      imageAbortRef.current?.abort();
+      const ac = new AbortController();
+      imageAbortRef.current = ac;
+      const timeoutId = setTimeout(() => ac.abort(), 70_000);
+
+      try {
+        const prompt = `${threadResult.title}\n\n${threadResult.tweets[0]?.text ?? ""}`.slice(
+          0,
+          600
+        );
+        const res = await fetch("/api/ai/thread-first-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, source: "pdf-to-thread" }),
+          signal: ac.signal,
+        });
+
+        if (res.status === 402) {
+          const data = await res.json();
+          upgradeModal.openWithContext(data);
+          setImageStatus("error");
+          return;
+        }
+
+        if (!res.ok) {
+          toast.error(t("pdf_to_thread.options.include_first_tweet_image_failed"));
+          setImageStatus("error");
+          return;
+        }
+
+        const data = await res.json();
+        imageUrl = data.url as string;
+        setFirstTweetImageUrl(imageUrl);
+        setImageStatus("ready");
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        toast.error(t("pdf_to_thread.options.include_first_tweet_image_failed"));
+        setImageStatus("error");
+        return;
+      } finally {
+        clearTimeout(timeoutId);
+        imageAbortRef.current = null;
+      }
+    }
+
     sessionStorage.setItem(
       "composer_payload",
       JSON.stringify({
         tweets: threadResult.tweets.map((t) => t.text),
         source: "pdf-to-thread",
+        ...(imageUrl && { firstTweetImage: { url: imageUrl } }),
       })
     );
     router.push("/dashboard/compose?source=pdf-to-thread");
-  }, [threadResult, router]);
+  }, [
+    threadResult,
+    router,
+    includeFirstTweetImage,
+    firstTweetImageUrl,
+    imageStatus,
+    upgradeModal,
+    t,
+  ]);
 
   // ── Polling (hard rule #10: AbortController + 8s timeout) ──────────
 
@@ -706,6 +796,9 @@ export function PdfToThreadClient() {
             onTweetCountChange={setTweetCount}
             tone={tone}
             onToneChange={setTone}
+            includeFirstTweetImage={includeFirstTweetImage}
+            onIncludeFirstTweetImageChange={setIncludeFirstTweetImage}
+            imageQuotaExhausted={imageQuotaExhausted}
             disabled={status === "generating"}
           />
 
@@ -824,6 +917,7 @@ export function PdfToThreadClient() {
             })}
             {...(threadResult.redactions !== undefined && { redactions: threadResult.redactions })}
             onSendToComposer={handleSendToComposer}
+            isSendingToComposer={imageStatus === "generating"}
           />
         </div>
       )}

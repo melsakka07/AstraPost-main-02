@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 // ── Constants ──────────────────────────────────────────────────────────
@@ -26,6 +27,9 @@ interface GenerationOptionsProps {
   onTweetCountChange: (count: number) => void;
   tone: string;
   onToneChange: (tone: string) => void;
+  includeFirstTweetImage: boolean;
+  onIncludeFirstTweetImageChange: (val: boolean) => void;
+  imageQuotaExhausted: boolean;
   disabled: boolean;
 }
 
@@ -38,6 +42,9 @@ export function GenerationOptions({
   onTweetCountChange,
   tone,
   onToneChange,
+  includeFirstTweetImage,
+  onIncludeFirstTweetImageChange,
+  imageQuotaExhausted,
   disabled,
 }: GenerationOptionsProps) {
   const t = useTranslations("ai_hub");
@@ -124,6 +131,24 @@ export function GenerationOptions({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* First-tweet image toggle */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">
+              {t("pdf_to_thread.options.include_first_tweet_image")}
+            </p>
+            <p className="text-muted-foreground text-xs">
+              {t("pdf_to_thread.options.include_first_tweet_image_description")}
+            </p>
+          </div>
+          <Switch
+            id="include-first-tweet-image"
+            checked={includeFirstTweetImage}
+            onCheckedChange={onIncludeFirstTweetImageChange}
+            disabled={disabled || imageQuotaExhausted}
+          />
         </div>
       </CardContent>
     </Card>

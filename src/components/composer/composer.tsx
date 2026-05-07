@@ -80,6 +80,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { type OutputFormat, type TemplatePromptConfig } from "@/lib/ai/template-prompts";
 import { useSession } from "@/lib/auth-client";
 import { clientLogger } from "@/lib/client-logger";
+import type { ComposerPayload } from "@/lib/composer-bridge";
 import { LANGUAGES } from "@/lib/constants";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { canPostLongContent } from "@/lib/services/x-subscription";
@@ -391,16 +392,24 @@ export function Composer() {
     const payloadStr = sessionStorage.getItem("composer_payload");
     if (payloadStr) {
       try {
-        const payload = JSON.parse(payloadStr) as {
-          tweets?: string[];
-          source?: string;
-        };
+        const payload = JSON.parse(payloadStr) as ComposerPayload;
         if (Array.isArray(payload.tweets) && payload.tweets.length > 0) {
+          const firstTweetImage = payload.firstTweetImage;
           setTweets(
-            payload.tweets.map((c) => ({
+            payload.tweets.map((c, i) => ({
               id: Math.random().toString(36).substr(2, 9),
               content: c,
-              media: [],
+              media:
+                i === 0 && firstTweetImage?.url
+                  ? [
+                      {
+                        url: firstTweetImage.url,
+                        mimeType: "image/png",
+                        fileType: "image" as const,
+                        size: 0,
+                      },
+                    ]
+                  : [],
             }))
           );
           // Source attribution for AI tools

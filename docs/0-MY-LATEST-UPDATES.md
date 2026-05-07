@@ -1,5 +1,36 @@
 # Latest Updates
 
+## 2026-05-08 — PDF & YouTube to Thread: Optional First-Tweet Image Generation
+
+Added an optional "Generate image for the first tweet" toggle to both PDF-to-Thread and YouTube-to-Thread tools. When enabled, an editorial 16:9 image is generated via Replicate nano-banana-2 for tweet #1 before the thread is sent to the Composer. One image credit is consumed from the user's monthly image quota.
+
+### How it works
+
+1. Toggle (off by default) appears in the options panel — disabled grey when image quota is exhausted
+2. After the thread text is ready, clicking "Send to Composer" with the toggle on POSTs to the new `POST /api/ai/thread-first-image` endpoint
+3. The endpoint gates behind: auth → viewer rejection → rate limit → feature gate (Pro-only, both PDF and YT require Pro) → image quota → Replicate generation via `generateAgenticImage()`
+4. On success, the Composer opens with the image pre-attached to tweet #1 (via the extended `ComposerPayload.firstTweetImage` field)
+5. On 402 (quota exhausted), the upgrade modal opens in-place; user can disable the toggle and send without image
+
+### Files Changed
+
+- `src/lib/composer-bridge.ts` — Added `firstTweetImage` to `ComposerPayload`
+- `src/components/composer/composer.tsx` — Reads `firstTweetImage` from bridge payload, attaches to tweet #0 media; imported canonical `ComposerPayload` type
+- `src/app/api/ai/thread-first-image/route.ts` — **New** endpoint (9-step API route checklist, feature-gated + rate-limited + image-quota-gated)
+- `src/components/ai/pdf-to-thread/generation-options.tsx` — Switch row with quota-aware disabled state
+- `src/components/ai/pdf-to-thread/thread-result-preview.tsx` — `isSendingToComposer` loading state on button
+- `src/components/ai/pdf-to-thread/pdf-to-thread-client.tsx` — Async handleSendToComposer with AbortController, image quota fetch, 402 upgrade modal reuse
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` — Switch row in inline options card
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — Mirror of PDF integration
+- `src/i18n/messages/en.json` + `ar.json` — 8 new keys (4 PDF + 4 YouTube). Key count: 2692/2692.
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2692/2692 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+---
+
 ## 2026-05-07 — Agentic Posting UX: Tier A Quick Wins
 
 Implemented 7 quick-win UX improvements on the Agentic Posting page (`/dashboard/ai/agentic`):

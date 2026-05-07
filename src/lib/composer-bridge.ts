@@ -14,6 +14,7 @@ export interface ComposerPayload {
   source?: string;
   tone?: string;
   type?: "tweet" | "thread";
+  firstTweetImage?: { url: string; width?: number; height?: number };
 }
 
 export function sendToComposer(tweets: string[], metadata?: Omit<ComposerPayload, "tweets">): void {

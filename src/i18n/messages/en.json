@@ -1148,7 +1148,11 @@
         "tone_educational": "Educational",
         "tone_casual": "Casual",
         "tone_formal": "Formal",
-        "tone_enthusiastic": "Enthusiastic"
+        "tone_enthusiastic": "Enthusiastic",
+        "include_first_tweet_image": "Generate image for the first tweet",
+        "include_first_tweet_image_description": "Uses 1 image credit from your monthly quota.",
+        "include_first_tweet_image_generating": "Generating image…",
+        "include_first_tweet_image_failed": "Image generation failed. Sending without image."
       },
       "actions": {
         "generate_sync": "Generate Thread",
@@ -3100,7 +3104,11 @@
       "tone_educational": "Educational",
       "tone_casual": "Casual",
       "tone_formal": "Formal",
-      "tone_enthusiastic": "Enthusiastic"
+      "tone_enthusiastic": "Enthusiastic",
+      "include_first_tweet_image": "Generate image for the first tweet",
+      "include_first_tweet_image_description": "Uses 1 image credit from your monthly quota.",
+      "include_first_tweet_image_generating": "Generating image…",
+      "include_first_tweet_image_failed": "Image generation failed. Sending without image."
     },
     "actions": {
       "submit": "Generate Thread",

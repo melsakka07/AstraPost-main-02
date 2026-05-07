@@ -113,6 +113,7 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Sync threshold**: 30,000 characters. PDFs ≤30K chars are generated synchronously; larger PDFs use the async BullMQ path.
 - **Async path**: BullMQ `pdfThreadQueue` + `pdfThreadProcessor` with 2-pass chunked summarization: (1) split text at paragraph/sentence boundaries into ≤12K char chunks, (2) summarize each chunk via OpenRouter, (3) final pass combines partial summaries into a coherent thread.
 - **Database**: `pdfThreadJobs` table (status lifecycle: `uploading` → `extracting` → `extracted` → sync `generating` → `ready`, or async `queued` → `processing` → `ready` → `failed`).
+- **First-tweet image (optional)**: A Switch in the options panel enables generating an editorial 16:9 image for tweet #1 via `POST /api/ai/thread-first-image`. Consumes 1 image credit from the monthly image quota. Triggered on "Send to Composer" — the Composer receives the image URL via `ComposerPayload.firstTweetImage` and attaches it to tweet #0. When quota is exhausted, the switch is disabled and the upgrade modal opens on attempt.
 - **Safety**: Magic-byte validation at upload, PII redaction via `redactPII()`, prompt injection defense via `buildSummarizePrompt({ variant: "report" })` + `JAILBREAK_GUARD`, moderation check on output. Rights attestation checkbox required before upload.
 
 ### YouTube → Thread (`/api/ai/youtube-to-thread/*`)
@@ -133,6 +134,7 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Duration caps by plan** (enforced after `getVideoInfo()` before download, gate: `checkYoutubeVideoDurationDetailed()`):
   - Pro Monthly / Pro Annual: 20 min max per video (1200s) → ~$0.12 Deepgram cost
   - Agency: 90 min max per video (5400s) → ~$0.53 Deepgram cost
+- **First-tweet image (optional)**: Mirror of the PDF tool — a Switch in the input options enables generating an editorial 16:9 image for tweet #1 via `POST /api/ai/thread-first-image`. Same quota, gating, and Composer flow as PDF → Thread.
 - **Safety**: yt-dlp URL validation rejects playlists/channels/shorts, moderation check on output. JAILBREAK_GUARD on generation prompt.
 - **Error codes** (`error_code` column): `VIDEO_PRIVATE`, `VIDEO_AGE_GATED`, `VIDEO_LIVE`, `VIDEO_TOO_LONG`, `VIDEO_NO_AUDIO`, `TRANSCRIPTION_FAILED`, `MODERATION_FLAGGED`, `PROVIDER_ERROR`, `CANCELLED`, `UNKNOWN`. Client maps these to localized messages via `youtube_to_thread.errors.*` i18n keys.
 - **Transcript preview**: GET `[jobId]` response includes the `transcript` field when status is `ready`. The result UI renders a collapsible "Show transcript" section.

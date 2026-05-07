@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
-import { Copy, Send, Check, ExternalLink } from "lucide-react";
+import { Copy, Send, Check, ExternalLink, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ interface ThreadResultPreviewProps {
     generatedInSeconds?: number;
   };
   onSendToComposer?: () => void;
+  isSendingToComposer?: boolean;
 }
 
 // ── Component ──────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ export function ThreadResultPreview({
   videoUrlLabel,
   meta,
   onSendToComposer,
+  isSendingToComposer,
 }: ThreadResultPreviewProps) {
   const t = useTranslations("ai_hub");
 
@@ -155,9 +157,20 @@ export function ThreadResultPreview({
       <div className="flex flex-wrap items-center justify-end gap-2">
         <CopyThreadButton tweets={tweets} />
         {onSendToComposer && (
-          <Button onClick={onSendToComposer} size="sm" className="gap-2">
-            <Send className="h-4 w-4" />
-            {t("pdf_to_thread.result.send_to_composer")}
+          <Button
+            onClick={onSendToComposer}
+            size="sm"
+            className="gap-2"
+            disabled={isSendingToComposer}
+          >
+            {isSendingToComposer ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+            {isSendingToComposer
+              ? t("pdf_to_thread.options.include_first_tweet_image_generating")
+              : t("pdf_to_thread.result.send_to_composer")}
           </Button>
         )}
       </div>
