@@ -1,5 +1,33 @@
 # Latest Updates
 
+## 2026-05-07 — AI Hub UX Overhaul: Breadcrumbs, Tab-Aware Header, Locked-Card Modal
+
+Closed three UX gaps on `/dashboard/ai`: (1) Writer/PDF/YouTube sub-pages had no way back to the hub; (2) clicking "Hashtag Generator" landed on a generic "AI Writer" page that lost card identity; (3) Free/Trial users hit a 402 only after navigating into a Pro-gated tool, with no upfront hint and no in-place upgrade CTA. The hub now resolves the user's effective plan server-side and renders each card as either a `<Link>` (unlocked) or a `<button>` that opens the existing global upgrade modal — no navigation, no 402 round-trip. Quota-exhausted state replaced its blanket `pointer-events-none opacity-50` with per-card lock badges + "Upgrade to continue" CTAs.
+
+### Files Changed
+
+- `src/app/dashboard/ai/page.tsx` — Rewrite. Now fetches `getUserPlanType()` + `getPlanLimits()` server-side, derives `lockedMap` per tool, delegates rendering to the new `<AiToolsGrid>`. Removed local `aiTools[]` array and blanket dim.
+- `src/components/ai/ai-tools-grid.tsx` — **New** client component. Owns the canonical `TOOL_META` map (icon, href, isPro, feature key per `AiToolId`). Renders locked cards as `<button>` calling `useUpgradeModal().openWithContext({ feature, plan, code, trialActive })`.
+- `src/app/dashboard/ai/writer/page.tsx` — `<DashboardPageWrapper>` + `<Breadcrumb>` moved inside `AIWriterContent` so they read live `activeTab` state. Added module-level `TAB_META` map (`thread`/`url`/`variants`/`hashtags` → icon + i18n keys). Removed unused `Bot` import; added `LucideIcon` type import. `AIWriterPage` simplified to `return <AIWriterContent />`.
+- `src/app/dashboard/ai/pdf-to-thread/page.tsx` — Added `<Breadcrumb>` matching Bio/Reply/Calendar pattern.
+- `src/app/dashboard/ai/youtube-to-thread/page.tsx` — Same breadcrumb addition.
+- `src/i18n/messages/en.json` + `ar.json` — Added `ai_writer.tab_meta.{thread,url,variants,hashtags}.{title,description}` (8 leaves) and `ai_hub.{locked_overlay_title,locked_overlay_cta,quota_overlay_cta}` (3 leaves). Total +11 keys per locale. Key count: 2672/2672.
+- `.claude/plans/what-is-your-tingly-origami.md` — Plan file with phased rationale, marked DONE per phase.
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2672/2672 i18n keys)
+
+### Manual Verification Needed
+
+- Visit `/dashboard/ai` as a Free user → confirm 7 Pro-gated cards show amber Lock badge instead of "Pro" badge; clicking opens the upgrade modal in-place.
+- Click any unlocked sub-tool card → confirm destination page renders a Home-icon breadcrumb at the top.
+- On `/dashboard/ai/writer`, switch tabs → confirm header icon, title, description, and breadcrumb update live to match the active tab (e.g., Hash icon + "Hashtag Generator" title for `?tab=hashtags`).
+- Switch to `/ar/dashboard/ai` → confirm RTL: breadcrumb chevron flips, lock overlays render in Arabic, tab-aware writer header reads correctly.
+- Simulate quota exhaustion → confirm all cards become Lock-state buttons with "Upgrade to continue" CTA and clicking opens the upgrade modal with `code: "quota_exceeded"`.
+
+---
+
 ## 2026-05-07 — YouTube → Thread: Per-Plan Duration Cap + UI Warning
 
 Cost protection: Pro capped at 20 min/video (~$0.12), Agency at 90 min (~$0.53). Warning shown in preview card for videos > 15 min.

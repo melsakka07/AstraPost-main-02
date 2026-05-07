@@ -1073,6 +1073,9 @@
     "quota_reached": "لقد وصلت إلى حد توليد الذكاء الاصطناعي",
     "upgrade_pro": "الترقية إلى الاحترافي",
     "quota_warning": "أنك تستنفد عمليات توليد الذكاء الاصطناعي بسرعة. رقِّ للتابع دون انقطاع.",
+    "locked_overlay_title": "ميزة احترافية",
+    "locked_overlay_cta": "ترقية لفتح الميزة",
+    "quota_overlay_cta": "ترقية للمتابعة",
     "tools": {
       "thread_writer": {
         "title": "كاتب الخيوط",
@@ -1151,6 +1154,8 @@
         "generate_sync": "توليد الثريد",
         "enqueue_async": "توليد في الخلفية",
         "cancel": "إلغاء",
+        "cancel_confirm_title": "إلغاء التوليد؟",
+        "cancel_confirm_description": "سيتم إيقاف المهمة الحالية. ستحتاج إلى إعادة الرفع للمحاولة مرة أخرى.",
         "back": "رجوع",
         "upload_new": "رفع PDF جديد",
         "retry": "إعادة المحاولة"
@@ -1160,7 +1165,8 @@
         "processing": "جارٍ توليد ثريدك...",
         "status": "الحالة",
         "status_queued": "في الانتظار",
-        "status_processing": "قيد المعالجة"
+        "status_processing": "قيد المعالجة",
+        "elapsed": "الوقت المنقضي: {seconds} ثانية"
       },
       "result": {
         "title": "ثريدك",
@@ -1171,7 +1177,13 @@
         "copied": "تم النسخ!",
         "source_language": "لغة المصدر",
         "redactions_notice": "تم حجب المعلومات الشخصية من هذا المستند",
-        "generated_success": "تم توليد الثريد بنجاح"
+        "generated_success": "تم توليد الثريد بنجاح",
+        "regenerate": "إعادة الإنشاء"
+      },
+      "recent": {
+        "title": "السابقة",
+        "untitled": "بدون عنوان",
+        "empty": "لا توجد مهام سابقة"
       },
       "errors": {
         "upload_failed": "فشل رفع PDF. يرجى المحاولة مرة أخرى.",
@@ -1231,6 +1243,24 @@
       "url": "من رابط",
       "variants": "المتغيرات",
       "hashtags": "الوسوم"
+    },
+    "tab_meta": {
+      "thread": {
+        "title": "كاتب الخيوط",
+        "description": "حوّل أي موضوع إلى خيط تغريدات مقنع متعدد التغريدات."
+      },
+      "url": {
+        "title": "رابط → خيط",
+        "description": "الصق رابطاً واحصل على ملخص خيط فوري."
+      },
+      "variants": {
+        "title": "متغيرات أ/ب",
+        "description": "ولّد زوايا متعددة لنفس فكرة التغريدة."
+      },
+      "hashtags": {
+        "title": "مولّد الوسوم",
+        "description": "اعثر على أفضل الوسوم لمحتواك وتخصصك."
+      }
     },
     "topic_label": "الموضوع",
     "topic_placeholder": "ماذا تريد الكتابة عنه؟",

@@ -9,11 +9,12 @@ import { cn } from "@/lib/utils";
 
 interface ProgressIndicatorProps {
   status: "queued" | "processing";
+  elapsedSeconds?: number;
 }
 
 // ── Component ──────────────────────────────────────────────────────────
 
-export function ProgressIndicator({ status }: ProgressIndicatorProps) {
+export function ProgressIndicator({ status, elapsedSeconds }: ProgressIndicatorProps) {
   const t = useTranslations("ai_hub");
 
   const label =
@@ -40,11 +41,16 @@ export function ProgressIndicator({ status }: ProgressIndicatorProps) {
           />
         </div>
 
-        <div className="space-y-1 text-center">
+        <div className="space-y-1 text-center" aria-live="polite" aria-atomic="true">
           <p className="text-foreground text-sm font-semibold">{label}</p>
           <p className="text-muted-foreground text-xs">
             {t("pdf_to_thread.progress.status")}: <span className="font-medium">{statusLabel}</span>
           </p>
+          {elapsedSeconds !== undefined && elapsedSeconds > 0 && (
+            <p className="text-muted-foreground text-xs">
+              {t("pdf_to_thread.progress.elapsed", { seconds: elapsedSeconds })}
+            </p>
+          )}
         </div>
 
         {/* Visual phase dots */}

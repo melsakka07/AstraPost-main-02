@@ -1,5 +1,34 @@
 # Recent Fixes & Changes
 
+## 2026-05-07 — AI Hub UX: Breadcrumbs, Tab-Aware Writer, In-Place Upgrade Modal
+
+### Architecture shift
+
+- `/dashboard/ai/page.tsx` now resolves the user's effective plan server-side via `getUserPlanType()` + `getPlanLimits()`, computes a `lockedMap: Record<AiToolId, boolean>`, and delegates rendering to a new client component.
+- New file: `src/components/ai/ai-tools-grid.tsx` — owns the canonical `TOOL_META` map (icon, href, isPro, feature key per tool ID). Renders locked cards as `<button>` calling `useUpgradeModal().openWithContext(...)` instead of a `<Link>`. Single source of truth for the AI tool catalog.
+
+### Sub-page parity
+
+- `dashboard/ai/writer`, `dashboard/ai/pdf-to-thread`, `dashboard/ai/youtube-to-thread` now follow the same Bio/Reply/Calendar pattern: `<Breadcrumb items={[{ label: t("title") }]} className="mb-2" />` rendered as the first child of `<DashboardPageWrapper>`. Hardcoded Home icon links to `/dashboard/ai`.
+
+### Tab-aware writer
+
+- `dashboard/ai/writer/page.tsx` — `<DashboardPageWrapper>` + `<Breadcrumb>` moved inside `AIWriterContent` so they read live `activeTab` state. New module-level `TAB_META` map maps each tab (`thread` / `url` / `variants` / `hashtags`) to its icon + i18n key pair. Header icon, title, description, and breadcrumb update live as the user switches tabs. Clicking "Hashtag Generator" on the hub now lands on a page identified as "Hashtag Generator" with the `Hash` icon, not generic "AI Writer".
+
+### Pro-badge correctness
+
+- URL→Thread and A/B Variants cards on the hub now show the Pro badge (previously omitted despite being Pro-gated). Lock badge replaces the Pro badge for Free/Trial users.
+
+### Quota-exhausted UX
+
+- Replaced blanket `pointer-events-none opacity-50` dimming with per-card lock badges + "Upgrade to continue" CTA. Cards remain readable; clicks open the upgrade modal with `code: "quota_exceeded"` context.
+
+### i18n
+
+- Added `ai_writer.tab_meta.{thread,url,variants,hashtags}.{title,description}` (8 leaves) and `ai_hub.{locked_overlay_title,locked_overlay_cta,quota_overlay_cta}` (3 leaves). +11 keys × 2 locales. Final count: 2672/2672.
+
+---
+
 ## 2026-05-07 — YouTube-to-Thread: Full Implementation
 
 Complete YouTube URL → Twitter thread feature shipped across schema, API routes, BullMQ worker, plan gates, and UI.

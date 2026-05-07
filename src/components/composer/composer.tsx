@@ -172,10 +172,11 @@ export function Composer() {
   // Used to restore the draft's linked account once accounts have loaded
   const [draftXAccountId, setDraftXAccountId] = useState<string | null>(null);
 
-  // W4: Source attribution from Inspiration page
+  // W4: Source attribution from Inspiration page / AI tools
   const [sourceAttribution, setSourceAttribution] = useState<{
-    handle: string;
-    url: string;
+    handle?: string;
+    url?: string;
+    label?: string;
   } | null>(null);
   // W5: Calendar metadata hint (tone + topic) from Content Calendar page
   const [calendarMeta, setCalendarMeta] = useState<{ tone: string; topic: string } | null>(null);
@@ -390,7 +391,10 @@ export function Composer() {
     const payloadStr = sessionStorage.getItem("composer_payload");
     if (payloadStr) {
       try {
-        const payload = JSON.parse(payloadStr) as { tweets?: string[] };
+        const payload = JSON.parse(payloadStr) as {
+          tweets?: string[];
+          source?: string;
+        };
         if (Array.isArray(payload.tweets) && payload.tweets.length > 0) {
           setTweets(
             payload.tweets.map((c) => ({
@@ -399,6 +403,12 @@ export function Composer() {
               media: [],
             }))
           );
+          // Source attribution for AI tools
+          if (payload.source === "pdf-to-thread") {
+            setSourceAttribution({ label: "PDF → Thread" });
+          } else if (payload.source === "youtube-to-thread") {
+            setSourceAttribution({ label: "YouTube → Thread" });
+          }
           bridgeLoadedRef.current = true;
           sessionStorage.removeItem("composer_payload");
           return;

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { FileText, ArrowLeft, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FileText, ArrowLeft, RefreshCw, History, ChevronRight } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
 import { AttestationCheckbox } from "@/components/ai/pdf-to-thread/attestation-checkbox";
@@ -11,6 +11,17 @@ import { PdfDropzone } from "@/components/ai/pdf-to-thread/pdf-dropzone";
 import { PdfPreviewCard } from "@/components/ai/pdf-to-thread/pdf-preview-card";
 import { ProgressIndicator } from "@/components/ai/pdf-to-thread/progress-indicator";
 import { ThreadResultPreview } from "@/components/ai/pdf-to-thread/thread-result-preview";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
@@ -40,12 +51,30 @@ interface ThreadResult {
   redactions?: number;
 }
 
+interface RecentJob {
+  id: string;
+  fileName: string;
+  pageCount: number | null;
+  title: string;
+  completedAt: string;
+}
+
 // ── Constants ──────────────────────────────────────────────────────────
 
 const POLL_INTERVAL_MS = 5_000;
 const POLL_TIMEOUT_MS = 8_000;
 const MAX_CONSECUTIVE_FAILURES = 5;
 const MAX_POLL_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+const ERROR_CODE_I18N_KEYS: Record<string, string> = {
+  PDF_NO_TEXT_LAYER: "pdf_to_thread.errors.pdf_no_text",
+  PDF_PARSE_FAILED: "pdf_to_thread.errors.pdf_parse_failed",
+  PDF_TOO_LARGE: "pdf_to_thread.dropzone.file_too_large",
+  PDF_TOO_MANY_PAGES: "pdf_to_thread.errors.pdf_no_text",
+  ATTESTATION_REQUIRED: "pdf_to_thread.errors.attestation_required",
+  NOT_A_PDF: "pdf_to_thread.dropzone.not_valid_pdf",
+  USE_ASYNC_PATH: "pdf_to_thread.errors.generate_failed",
+};
 
 // ── Component ──────────────────────────────────────────────────────────
 
@@ -72,6 +101,11 @@ export function PdfToThreadClient() {
   const [attestationChecked, setAttestationChecked] = useState(false);
   const [attestationError, setAttestationError] = useState("");
   const [connectionIssue, setConnectionIssue] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
+  const [errorCode, setErrorCode] = useState<string | undefined>(undefined);
+
+  const searchParams = useSearchParams();
 
   // Ref to hold the latest jobId for the poller closure
   const jobIdRef = useRef<string | null>(null);
@@ -80,6 +114,104 @@ export function PdfToThreadClient() {
   // Poll resilience refs
   const retryCountRef = useRef(0);
   const pollStartTimeRef = useRef(0);
+
+  // Elapsed timer ref
+  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedSecondsRef = useRef(0);
+
+  // Regenerate: store last used params
+  const lastParamsRef = useRef<{
+    language: "ar" | "en";
+    tweetCount: number;
+    tone: string;
+  } | null>(null);
+
+  // ── Elapsed timer ──────────────────────────────────────────────────
+
+  const startElapsedTimer = useCallback(() => {
+    setElapsedSeconds(0);
+    elapsedSecondsRef.current = 0;
+    if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
+    elapsedIntervalRef.current = setInterval(() => {
+      setElapsedSeconds((prev) => {
+        const next = prev + 1;
+        elapsedSecondsRef.current = next;
+        return next;
+      });
+    }, 1000);
+  }, []);
+
+  const stopElapsedTimer = useCallback(() => {
+    if (elapsedIntervalRef.current) {
+      clearInterval(elapsedIntervalRef.current);
+      elapsedIntervalRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => stopElapsedTimer();
+  }, [stopElapsedTimer]);
+
+  // ── Recent jobs fetch ───────────────────────────────────────────────
+
+  useEffect(() => {
+    if (status !== "idle") return;
+    const ac = new AbortController();
+    const timeoutId = setTimeout(() => ac.abort(), 8_000);
+    fetch("/api/ai/pdf-to-thread/history", { signal: ac.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (payload?.items) setRecentJobs(payload.items as RecentJob[]);
+      })
+      .catch(() => {});
+    return () => {
+      clearTimeout(timeoutId);
+      ac.abort();
+    };
+  }, [status]);
+
+  // ── State recovery from URL (?jobId=) ──────────────────────────────
+
+  useEffect(() => {
+    const urlJobId = searchParams.get("jobId");
+    if (!urlJobId || status !== "idle") return;
+
+    const ac = new AbortController();
+    const timeoutId = setTimeout(() => ac.abort(), 8_000);
+
+    fetch(`/api/ai/pdf-to-thread/${urlJobId}`, { signal: ac.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const jobStatus = data.status as string;
+        if (jobStatus === "ready" && data.threadResult) {
+          setJobId(urlJobId);
+          setFileName((data.fileName as string) ?? "");
+          setCharCount((data.charCount as number) ?? 0);
+          setPageCount((data.pageCount as number) ?? 0);
+          setThreadResult({
+            tweets: (data.threadResult as { tweets: TweetData[] }).tweets ?? [],
+            title: (data.threadResult as { title?: string })?.title ?? "",
+            ...(data.threadResult &&
+            typeof data.threadResult === "object" &&
+            "sourceLanguage" in data.threadResult
+              ? { sourceLanguage: (data.threadResult as { sourceLanguage: string }).sourceLanguage }
+              : {}),
+          });
+          setStatus("ready");
+        } else if (jobStatus === "failed") {
+          setJobId(urlJobId);
+          setStatus("failed");
+          setErrorMessage((data.error as string) ?? t("pdf_to_thread.errors.generate_failed"));
+          setErrorCode((data.errorCode as string) ?? undefined);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      clearTimeout(timeoutId);
+      ac.abort();
+    };
+  }, [searchParams, status, t]);
 
   // ── Reset ──────────────────────────────────────────────────────────
 
@@ -95,7 +227,11 @@ export function PdfToThreadClient() {
     setErrorMessage("");
     setAttestationChecked(false);
     setAttestationError("");
-  }, []);
+    setConnectionIssue(false);
+    setElapsedSeconds(0);
+    setErrorCode(undefined);
+    stopElapsedTimer();
+  }, [stopElapsedTimer]);
 
   // ── Upload handler ─────────────────────────────────────────────────
 
@@ -169,6 +305,7 @@ export function PdfToThreadClient() {
         setFileName(data.fileName as string);
         setFileSizeBytes(file.size);
         setStatus("extracted");
+        lastParamsRef.current = { language, tweetCount, tone };
         toast.success(t("pdf_to_thread.dropzone.upload_success") as string);
       } catch (err) {
         if (err instanceof TypeError) {
@@ -278,12 +415,14 @@ export function PdfToThreadClient() {
 
       // Successfully queued
       setStatus("queued");
+      pollStartTimeRef.current = Date.now();
+      startElapsedTimer();
     } catch {
       setStatus("extracted");
       setErrorMessage(t("pdf_to_thread.errors.generate_failed"));
       toast.error(t("pdf_to_thread.errors.generate_failed"));
     }
-  }, [attestationChecked, jobId, upgradeModal, t]);
+  }, [attestationChecked, jobId, upgradeModal, t, startElapsedTimer]);
 
   // ── Cancel handler ─────────────────────────────────────────────────
 
@@ -297,6 +436,50 @@ export function PdfToThreadClient() {
     handleReset();
   }, [jobId, handleReset]);
 
+  // ── Regenerate handler ──────────────────────────────────────────────
+
+  const handleRegenerate = useCallback(() => {
+    const params = lastParamsRef.current;
+    if (!params) {
+      handleReset();
+      return;
+    }
+    setLanguage(params.language);
+    setTweetCount(params.tweetCount);
+    setTone(params.tone);
+    // Re-trigger the original flow: we need the file re-uploaded
+    handleReset();
+  }, [handleReset]);
+
+  // ── Recent job click handler ───────────────────────────────────────
+
+  const handleRecentJobClick = useCallback(
+    async (clickedJobId: string) => {
+      try {
+        const res = await fetch(`/api/ai/pdf-to-thread/${clickedJobId}`);
+        if (!res.ok) {
+          toast.error(t("pdf_to_thread.errors.generate_failed"));
+          return;
+        }
+        const data = await res.json();
+        const result = data.threadResult as ThreadResult | null;
+        if (result) {
+          setThreadResult({
+            tweets: result.tweets ?? [],
+            title: result.title ?? "",
+            ...(result.sourceLanguage !== undefined && { sourceLanguage: result.sourceLanguage }),
+          });
+          setJobId(clickedJobId);
+          setFileName((data.fileName as string) ?? "");
+          setStatus("ready");
+        }
+      } catch {
+        toast.error(t("pdf_to_thread.errors.generate_failed"));
+      }
+    },
+    [t]
+  );
+
   // ── Send to composer ───────────────────────────────────────────────
 
   const handleSendToComposer = useCallback(() => {
@@ -305,6 +488,7 @@ export function PdfToThreadClient() {
       "composer_payload",
       JSON.stringify({
         tweets: threadResult.tweets.map((t) => t.text),
+        source: "pdf-to-thread",
       })
     );
     router.push("/dashboard/compose?source=pdf-to-thread");
@@ -364,6 +548,7 @@ export function PdfToThreadClient() {
         const pollStatus = data.status as string;
 
         if (pollStatus === "ready") {
+          stopElapsedTimer();
           setStatus("ready");
           const result = data.threadResult as {
             tweets: TweetData[];
@@ -378,8 +563,10 @@ export function PdfToThreadClient() {
             });
           }
         } else if (pollStatus === "failed") {
+          stopElapsedTimer();
           setStatus("failed");
           setErrorMessage((data.error as string) ?? t("pdf_to_thread.errors.generate_failed"));
+          setErrorCode((data.errorCode as string) ?? undefined);
         } else if (pollStatus === "processing") {
           setStatus("processing");
         }
@@ -397,21 +584,30 @@ export function PdfToThreadClient() {
       }
     };
 
-    const interval = setInterval(tick, POLL_INTERVAL_MS);
-    void tick();
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const scheduleNext = () => {
+      const jitter = (Math.random() - 0.5) * 1_000; // ±500ms
+      timeoutId = setTimeout(() => {
+        void tick().finally(() => {
+          if (active) scheduleNext();
+        });
+      }, POLL_INTERVAL_MS + jitter);
+    };
+
+    scheduleNext();
 
     return () => {
       active = false;
-      clearInterval(interval);
+      clearTimeout(timeoutId);
       abortRef.current?.abort();
     };
-  }, [status, t]);
+  }, [status, t, stopElapsedTimer]);
 
   // ── Render ─────────────────────────────────────────────────────────
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      {/* IDLE state: dropzone + attestation */}
+      {/* IDLE state: dropzone + attestation + recent jobs */}
       {status === "idle" && (
         <div className="space-y-5">
           <PdfDropzone onFileSelected={handleUpload} disabled={false} />
@@ -423,6 +619,43 @@ export function PdfToThreadClient() {
             }}
             error={attestationError}
           />
+          {recentJobs.length > 0 && (
+            <Card>
+              <CardContent className="px-4 py-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <History className="text-muted-foreground h-4 w-4" />
+                  <p className="text-muted-foreground text-sm font-medium">
+                    {t("pdf_to_thread.recent.title")}
+                  </p>
+                </div>
+                <div className="divide-y">
+                  {recentJobs.map((job) => (
+                    <button
+                      key={job.id}
+                      type="button"
+                      className="hover:bg-muted/50 flex w-full items-center gap-3 px-1 py-2.5 text-left transition-colors"
+                      onClick={() => handleRecentJobClick(job.id)}
+                    >
+                      <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded">
+                        <FileText className="text-muted-foreground h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-foreground truncate text-sm">
+                          {job.title || job.fileName || t("pdf_to_thread.recent.untitled")}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {job.pageCount != null &&
+                            `${t("pdf_to_thread.preview.pages", { count: job.pageCount })} · `}
+                          {new Date(job.completedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <ChevronRight className="text-muted-foreground h-4 w-4 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -452,7 +685,7 @@ export function PdfToThreadClient() {
             className="text-muted-foreground hover:text-foreground gap-1.5"
             onClick={handleReset}
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
             {t("pdf_to_thread.actions.upload_new")}
           </Button>
 
@@ -526,7 +759,7 @@ export function PdfToThreadClient() {
       {/* ── QUEUED / PROCESSING: Progress indicator ──────────────── */}
       {(status === "queued" || status === "processing") && (
         <div className="space-y-5">
-          <ProgressIndicator status={status} />
+          <ProgressIndicator status={status} elapsedSeconds={elapsedSeconds} />
           {connectionIssue && (
             <p
               className="text-warning-9 bg-warning-3/30 border-warning-6 rounded-lg border px-3 py-2 text-sm"
@@ -536,9 +769,29 @@ export function PdfToThreadClient() {
             </p>
           )}
           <div className="flex justify-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              {t("pdf_to_thread.actions.cancel")}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  {t("pdf_to_thread.actions.cancel")}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent size="sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {t("pdf_to_thread.actions.cancel_confirm_title")}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t("pdf_to_thread.actions.cancel_confirm_description")}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("pdf_to_thread.actions.back")}</AlertDialogCancel>
+                  <AlertDialogAction variant="destructive" onClick={handleCancel}>
+                    {t("pdf_to_thread.actions.cancel")}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       )}
@@ -546,16 +799,22 @@ export function PdfToThreadClient() {
       {/* ── READY: Thread result ─────────────────────────────────── */}
       {status === "ready" && threadResult && (
         <div className="space-y-5">
-          {/* Navigation */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground gap-1.5"
-            onClick={handleReset}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {t("pdf_to_thread.actions.upload_new")}
-          </Button>
+          {/* Navigation + Regenerate */}
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground gap-1.5"
+              onClick={handleReset}
+            >
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+              {t("pdf_to_thread.actions.upload_new")}
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleRegenerate}>
+              <RefreshCw className="h-4 w-4" />
+              {t("pdf_to_thread.result.regenerate")}
+            </Button>
+          </div>
 
           <ThreadResultPreview
             tweets={threadResult.tweets}
@@ -577,7 +836,9 @@ export function PdfToThreadClient() {
               <FileText className="text-destructive h-10 w-10" />
               <div className="space-y-1">
                 <p className="text-foreground text-sm font-semibold">
-                  {t("pdf_to_thread.errors.generate_failed")}
+                  {errorCode && ERROR_CODE_I18N_KEYS[errorCode]
+                    ? t(ERROR_CODE_I18N_KEYS[errorCode]!)
+                    : t("pdf_to_thread.errors.generate_failed")}
                 </p>
                 {errorMessage && <p className="text-muted-foreground text-xs">{errorMessage}</p>}
               </div>

@@ -1,113 +1,52 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import {
-  Hash,
-  FileText,
-  Link2,
-  PenTool,
-  Shuffle,
-  Sparkles,
-  UserPen,
-  MessageCircle,
-  CalendarDays,
-  AlertCircle,
-  TrendingUp,
-  Youtube,
-} from "lucide-react";
+import { AlertCircle, Sparkles, TrendingUp } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { AiToolsGrid, type AiToolId } from "@/components/ai/ai-tools-grid";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
+import { getPlanLimits, type PlanLimits } from "@/lib/plan-limits";
 import { getMonthlyAiUsage } from "@/lib/services/ai-quota";
 import { getTeamContext } from "@/lib/team-context";
 
-interface AiTool {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  href: string;
-  isPro?: boolean;
+function buildLockedMap(limits: PlanLimits): Record<AiToolId, boolean> {
+  return {
+    thread_writer: !limits.canUseAi,
+    url_to_thread: !limits.canUseUrlToThread,
+    pdf_to_thread: !limits.canUsePdfToThread,
+    youtube_to_thread: !limits.canUseYoutubeToThread,
+    ab_variants: !limits.canUseVariantGenerator,
+    hashtag_generator: !limits.canUseAi,
+    bio_generator: !limits.canUseBioOptimizer,
+    reply_generator: !limits.canUseReplyGenerator,
+    ai_calendar: !limits.canUseContentCalendar,
+  };
 }
 
 export default async function AIHubPage() {
   const t = await getTranslations("ai_hub");
 
-  const aiTools: AiTool[] = [
-    {
-      icon: PenTool,
-      title: t("tools.thread_writer.title"),
-      description: t("tools.thread_writer.description"),
-      href: "/dashboard/ai/writer",
-    },
-    {
-      icon: Link2,
-      title: t("tools.url_to_thread.title"),
-      description: t("tools.url_to_thread.description"),
-      href: "/dashboard/ai/writer?tab=url",
-    },
-    {
-      icon: FileText,
-      title: t("tools.pdf_to_thread.title"),
-      description: t("tools.pdf_to_thread.description"),
-      href: "/dashboard/ai/pdf-to-thread",
-      isPro: true,
-    },
-    {
-      icon: Youtube,
-      title: t("tools.youtube_to_thread.title"),
-      description: t("tools.youtube_to_thread.description"),
-      href: "/dashboard/ai/youtube-to-thread",
-      isPro: true,
-    },
-    {
-      icon: Shuffle,
-      title: t("tools.ab_variants.title"),
-      description: t("tools.ab_variants.description"),
-      href: "/dashboard/ai/writer?tab=variants",
-    },
-    {
-      icon: Hash,
-      title: t("tools.hashtag_generator.title"),
-      description: t("tools.hashtag_generator.description"),
-      href: "/dashboard/ai/writer?tab=hashtags",
-    },
-    {
-      icon: UserPen,
-      title: t("tools.bio_generator.title"),
-      description: t("tools.bio_generator.description"),
-      href: "/dashboard/ai/bio",
-      isPro: true,
-    },
-    {
-      icon: MessageCircle,
-      title: t("tools.reply_generator.title"),
-      description: t("tools.reply_generator.description"),
-      href: "/dashboard/ai/reply",
-      isPro: true,
-    },
-    {
-      icon: CalendarDays,
-      title: t("tools.ai_calendar.title"),
-      description: t("tools.ai_calendar.description"),
-      href: "/dashboard/ai/calendar",
-      isPro: true,
-    },
-  ];
-  // UA-A16: Fetch AI quota data
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
 
-  let usage = { used: 0, limit: null as number | null, resetDate: new Date().toISOString() };
-  try {
-    usage = await getMonthlyAiUsage(ctx.currentTeamId);
-  } catch {
-    // If quota fetch fails, page still renders with 0 usage
-  }
+  const [userPlan, usage] = await Promise.all([
+    getUserPlanType(ctx.currentTeamId),
+    getMonthlyAiUsage(ctx.currentTeamId).catch(() => ({
+      used: 0,
+      limit: null as number | null,
+      resetDate: new Date().toISOString(),
+    })),
+  ]);
 
+  const limits = getPlanLimits(userPlan);
+  const lockedMap = buildLockedMap(limits);
   const isQuotaExhausted = usage.limit !== null && usage.used >= usage.limit;
   const quotaPercentage = usage.limit ? Math.round((usage.used / usage.limit) * 100) : 0;
+  const trialActive = userPlan === "trial";
 
   return (
     <DashboardPageWrapper icon={Sparkles} title={t("title")} description={t("description")}>
@@ -173,44 +112,12 @@ export default async function AIHubPage() {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {aiTools.map((tool) => (
-          <Link
-            key={tool.href}
-            href={tool.href}
-            className={`group block ${isQuotaExhausted ? "pointer-events-none opacity-50" : ""}`}
-          >
-            <Card className="hover:border-primary/40 hover:bg-muted/40 h-full transition-colors">
-              <CardContent className="flex flex-col gap-3 p-5">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors">
-                    <tool.icon className="text-primary h-5 w-5" />
-                  </div>
-                  {tool.isPro && (
-                    <Badge
-                      variant="outline"
-                      className="border-primary/30 text-primary h-4 px-1.5 py-0 text-[10px]"
-                    >
-                      Pro
-                    </Badge>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <p className="group-hover:text-primary text-sm leading-tight font-semibold transition-colors">
-                    {tool.title}
-                  </p>
-                  <p className="text-muted-foreground text-xs leading-relaxed">
-                    {tool.description}
-                  </p>
-                </div>
-                <p className="text-primary mt-auto text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
-                  {t("try_it")}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <AiToolsGrid
+        lockedMap={lockedMap}
+        isQuotaExhausted={isQuotaExhausted}
+        userPlan={userPlan}
+        trialActive={trialActive}
+      />
     </DashboardPageWrapper>
   );
 }

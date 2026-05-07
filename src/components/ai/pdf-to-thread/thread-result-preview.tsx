@@ -229,7 +229,16 @@ function TweetCard({ tweet, index }: { tweet: TweetData; index: number }) {
         </p>
 
         <div className="flex items-center justify-between gap-2">
-          <span className="text-muted-foreground text-xs tabular-nums">
+          <span
+            className={cn(
+              "text-xs tabular-nums",
+              tweet.charCount > 280
+                ? "text-destructive font-semibold"
+                : tweet.charCount >= 240
+                  ? "text-warning-9 font-medium"
+                  : "text-muted-foreground"
+            )}
+          >
             {ai("thread_preview.char_count", { n: tweet.charCount })}
           </span>
           <Button

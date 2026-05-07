@@ -34,7 +34,7 @@ interface ComposerAlertsProps {
   pendingDraftRestore: TweetDraft[] | null;
   onAcceptDraftRestore: () => void;
   onDiscardDraftRestore: () => void;
-  sourceAttribution: { handle: string; url: string } | null;
+  sourceAttribution: { handle?: string; url?: string; label?: string } | null;
   onDismissSourceAttribution: () => void;
   calendarMeta: { tone: string; topic: string } | null;
   onDismissCalendarMeta: () => void;
@@ -81,15 +81,21 @@ export function ComposerAlerts({
         <div className="border-border/50 bg-muted/30 flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">
           <span className="text-muted-foreground flex items-center gap-1.5">
             <Sparkles className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
-            Inspired by{" "}
-            <a
-              href={sourceAttribution.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground font-medium hover:underline"
-            >
-              @{sourceAttribution.handle}
-            </a>
+            {sourceAttribution.label ? (
+              <span className="text-foreground font-medium">{sourceAttribution.label}</span>
+            ) : (
+              <>
+                Inspired by{" "}
+                <a
+                  href={sourceAttribution.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground font-medium hover:underline"
+                >
+                  @{sourceAttribution.handle}
+                </a>
+              </>
+            )}
           </span>
           <Button
             variant="ghost"

@@ -1073,6 +1073,9 @@
     "quota_reached": "You've reached your AI generation limit",
     "upgrade_pro": "Upgrade to Pro",
     "quota_warning": "You're running low on AI generations. Upgrade to continue without interruption.",
+    "locked_overlay_title": "Pro feature",
+    "locked_overlay_cta": "Upgrade to unlock",
+    "quota_overlay_cta": "Upgrade to continue",
     "tools": {
       "thread_writer": {
         "title": "Thread Writer",
@@ -1151,6 +1154,8 @@
         "generate_sync": "Generate Thread",
         "enqueue_async": "Generate in Background",
         "cancel": "Cancel",
+        "cancel_confirm_title": "Cancel generation?",
+        "cancel_confirm_description": "This will stop the current job. You'll need to re-upload to try again.",
         "back": "Back",
         "upload_new": "Upload New PDF",
         "retry": "Retry"
@@ -1160,7 +1165,8 @@
         "processing": "Generating your thread...",
         "status": "Status",
         "status_queued": "Queued",
-        "status_processing": "Processing"
+        "status_processing": "Processing",
+        "elapsed": "Elapsed: {seconds}s"
       },
       "result": {
         "title": "Your Thread",
@@ -1171,7 +1177,13 @@
         "copied": "Copied!",
         "source_language": "Source Language",
         "redactions_notice": "Personal information was redacted from this document",
-        "generated_success": "Thread generated successfully"
+        "generated_success": "Thread generated successfully",
+        "regenerate": "Regenerate"
+      },
+      "recent": {
+        "title": "Recent",
+        "untitled": "Untitled",
+        "empty": "No recent jobs"
       },
       "errors": {
         "upload_failed": "Failed to upload PDF. Please try again.",
@@ -1231,6 +1243,24 @@
       "url": "From URL",
       "variants": "Variants",
       "hashtags": "Hashtags"
+    },
+    "tab_meta": {
+      "thread": {
+        "title": "Thread Writer",
+        "description": "Turn any topic into a compelling multi-tweet thread."
+      },
+      "url": {
+        "title": "URL → Thread",
+        "description": "Paste a URL and get an instant thread summary."
+      },
+      "variants": {
+        "title": "A/B Variants",
+        "description": "Generate multiple angles for the same tweet idea."
+      },
+      "hashtags": {
+        "title": "Hashtag Generator",
+        "description": "Find the best hashtags for your content and niche."
+      }
     },
     "topic_label": "Topic",
     "topic_placeholder": "What do you want to write about?",
