@@ -1342,7 +1342,9 @@
       "include_images_description": "Generate visuals for key tweets",
       "audience_hint": "Audience hint (optional)",
       "audience_placeholder": "e.g., developers, marketers, students",
-      "posting_as": "Posting as"
+      "posting_as": "Posting as",
+      "voice_profile_active": "Writing in your voice",
+      "voice_profile_disable": "Turn off"
     },
     "processing_screen": {
       "generating_for_topic": "Generating for topic",
@@ -1361,6 +1363,8 @@
       },
       "working": "Working…",
       "remaining": "~{seconds, plural, one {# second remaining} other {# seconds remaining}}",
+      "run_in_background": "Run in background",
+      "background_description": "We'll notify you when your thread is ready",
       "broad_topic_title": "Your topic is broad. Pick a specific angle:",
       "angles_found": "{count, plural, one {# angle found} other {# angles found}}",
       "format": "{format} · {count, plural, one {# tweet} other {# tweets}}",
@@ -1386,6 +1390,7 @@
       "schedule": "Schedule",
       "schedule_for": "Schedule for {date}",
       "confirm_schedule": "Confirm Schedule",
+      "schedule_time_hint": "Posting at {time} ({tz})",
       "save_draft": "Save Draft",
       "discard": "Discard",
       "of_tweets": "{index}/{total}",
@@ -1398,7 +1403,11 @@
       "content_ready": "Your AI-generated content is ready.",
       "create_another": "Create Another",
       "view_in_queue": "View in Queue",
-      "go_to_calendar": "Go to Calendar"
+      "go_to_calendar": "Go to Calendar",
+      "quality_issues_title": "Issues",
+      "issue_tweet_over_limit": "Tweet {n} exceeds 280 characters",
+      "issue_image_no_alt": "Image in tweet {n} has no description",
+      "no_quality_issues": "No issues found"
     },
     "dialogs": {
       "regenerate_title": "Regenerate entire thread?",
@@ -1414,9 +1423,12 @@
       "pipeline_failed": "Pipeline failed. Please try again.",
       "enhancement_failed": "Enhancement failed. Please try again.",
       "session_resumed": "Resumed your previous session.",
+      "session_in_progress": "A pipeline is already running for \"{topic}\"",
       "rewrite_failed": "Rewrite failed",
       "tweet_removed": "Tweet removed",
-      "undo": "Undo"
+      "undo": "Undo",
+      "background_started": "Running in background. We'll notify you when ready.",
+      "pipeline_ready": "Your thread for \"{topic}\" is ready!"
     },
     "trends": {
       "trending_on_x": "Trending on X",

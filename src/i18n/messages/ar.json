@@ -1342,7 +1342,9 @@
       "include_images_description": "توليد وسائط بصرية للتغريدات الرئيسية",
       "audience_hint": "تلميح الجمهور (اختياري)",
       "audience_placeholder": "مثال: المطورون، المسوقون، الطلاب",
-      "posting_as": "النشر باسم"
+      "posting_as": "النشر باسم",
+      "voice_profile_active": "الكتابة بصوتك",
+      "voice_profile_disable": "إيقاف"
     },
     "processing_screen": {
       "generating_for_topic": "توليد للموضوع",
@@ -1361,6 +1363,8 @@
       },
       "working": "جاري العمل…",
       "remaining": "~{seconds, plural, zero {لا ثوانٍ متبقية} one {ثانية واحدة متبقية} two {ثانيتان متبقيتان} few {# ثوانٍ متبقية} many {# ثانية متبقية} other {# ثانية متبقية}}",
+      "run_in_background": "تشغيل في الخلفية",
+      "background_description": "سنعلمك عندما يكون خيطك جاهزاً",
       "broad_topic_title": "موضوعك واسع. اختر زاوية محددة:",
       "angles_found": "تم العثور على {count, plural, zero {لا زوايا} one {زاوية واحدة} two {زاويتان} few {# زوايا} many {# زاوية} other {# زاوية}}",
       "format": "{format} · {count, plural, zero {لا تغريدات} one {تغريدة واحدة} two {تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
@@ -1386,6 +1390,7 @@
       "schedule": "جدولة",
       "schedule_for": "جدولة لـ {date}",
       "confirm_schedule": "تأكيد الجدولة",
+      "schedule_time_hint": "النشر في {time} ({tz})",
       "save_draft": "حفظ مسودة",
       "discard": "تجاهل",
       "of_tweets": "{index}/{total}",
@@ -1398,7 +1403,11 @@
       "content_ready": "محتواك المُولَّد بالذكاء الاصطناعي جاهز.",
       "create_another": "إنشاء آخر",
       "view_in_queue": "عرض في القائمة",
-      "go_to_calendar": "الذهاب إلى التقويم"
+      "go_to_calendar": "الذهاب إلى التقويم",
+      "quality_issues_title": "مشكلات",
+      "issue_tweet_over_limit": "التغريدة {n} تتجاوز 280 حرفاً",
+      "issue_image_no_alt": "الصورة في التغريدة {n} ليس لها وصف",
+      "no_quality_issues": "لا توجد مشكلات"
     },
     "dialogs": {
       "regenerate_title": "إعادة توليد الخيط بالكامل؟",
@@ -1414,9 +1423,12 @@
       "pipeline_failed": "فشل المسار. يرجى المحاولة مرة أخرى.",
       "enhancement_failed": "فشل التحسين. يرجى المحاولة مرة أخرى.",
       "session_resumed": "تم استئناف الجلسة السابقة.",
+      "session_in_progress": "هناك مسار قيد التشغيل بالفعل لـ \"{topic}\"",
       "rewrite_failed": "فشلت إعادة الكتابة",
       "tweet_removed": "تمت إزالة التغريدة",
-      "undo": "تراجع"
+      "undo": "تراجع",
+      "background_started": "يعمل في الخلفية. سننبهك عندما يكون جاهزاً.",
+      "pipeline_ready": "خيطك لـ \"{topic}\" جاهز!"
     },
     "trends": {
       "trending_on_x": "رائج على X",

@@ -1,3 +1,4 @@
+import "server-only";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { generateText } from "ai";
 import { z } from "zod";
@@ -5,6 +6,7 @@ import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
 import { aiPreamble } from "@/lib/api/ai-preamble";
 import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
+import { logger } from "@/lib/logger";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
 const enhanceRequestSchema = z.object({
@@ -29,8 +31,8 @@ Return ONLY the enhanced topic text. No explanation, no quotes, no preamble.`;
 }
 
 export async function POST(req: Request) {
+  const correlationId = getCorrelationId(req);
   try {
-    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ skipQuotaCheck: true });
     if (preamble instanceof Response) return preamble;
     const { session, dbUser } = preamble;
@@ -84,9 +86,18 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
-    if ((err as Error).name === "AbortError") {
+    const error = err as Error;
+
+    logger.error("enhance_topic_failed", {
+      correlationId,
+      errorName: error.name,
+      errorMessage: error.message,
+      errorStack: error.stack,
+    });
+
+    if (error.name === "AbortError") {
       return ApiError.internal("Enhancement timed out. Please try again.");
     }
-    return ApiError.internal();
+    return ApiError.internal("Failed to enhance topic. Please try again.");
   }
 }

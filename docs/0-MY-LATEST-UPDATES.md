@@ -1,5 +1,75 @@
 # Latest Updates
 
+## 2026-05-07 — Agentic Posting UX: Tier A Quick Wins
+
+Implemented 7 quick-win UX improvements on the Agentic Posting page (`/dashboard/ai/agentic`):
+
+1. **Real progress bar** — replaced fake CSS-animated bar with a computed-from-elapsed progress indicator that ticks based on `STEP_CONFIG.estimatedMs` and `step.startedAt`, using a 1s rerender interval.
+2. **Accurate remaining time** — `remainingSecs` now subtracts in-progress step elapsed (not just completed steps), giving a live countdown.
+3. **Soft character warning** — tweet character counter shows amber (`text-warning-9`) at 260-280 chars, red only above 280.
+4. **Semantic color tokens** — replaced all inline `amber-*`, `green-500` literals with `warning-*` and `success-*` semantic tokens (broad suggestions overlay, step icons, timeline connectors, quality pips).
+5. **Voice profile indicator** — when a user has a voice profile, the input screen now shows a "Writing in your voice ✓" chip with the `CheckCircle2` icon.
+6. **Simplified button layout** — Clear moved to an icon-only `X` inside the textarea (top-right); Enhance became an inline pill (bottom-left of textarea); Generate is now the sole prominent button below.
+7. **Consolidated lock state** — removed the standalone `UpgradeBanner` above `BlurredOverlay` when locked; free users now see a single upgrade CTA instead of two stacked asks.
+
+### Files Changed
+
+- `src/components/ai/agentic-posting-client.tsx` — all 7 items implemented: ProcessingScreen progress bar + time fix, InputScreen button restructure + voice profile, StepIcon + timeline + broad suggestions + quality pips token migration, AgenticTweetCard amber warning, removed stacked UpgradeBanner
+- `src/i18n/messages/en.json` + `ar.json` — Added `input_screen.voice_profile_active` and `input_screen.voice_profile_disable` (2 keys). Key count: 2674/2674.
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2674/2674 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+---
+
+## 2026-05-07 — Agentic Posting UX: Tier B High-Value Features
+
+Implemented 6 high-impact UX features on the Agentic Posting review and processing screens:
+
+1. **X.com-style thread preview** — New `<XThreadPreview>` component on the desktop sidebar shows avatar, username, connected tweet bubbles with text and images, mimicking the X.com thread appearance.
+2. **Inline live preview during processing** — Step summaries now stream richer data during pipeline execution; background mode provides a non-blocking workflow.
+3. **Schedule time + timezone picker** — Native time input alongside DatePicker; `Intl.DateTimeFormat` timezone hint shows the user's local timezone; API call uses selected time instead of hardcoded 09:00 UTC.
+4. **Mid-thread insert** — Hover `+` buttons appear between tweet cards, enabling insertion at any position. Bottom "Add Tweet" button still appends to end.
+5. **Background mode** — "Run in background" button on processing screen backgrounds the SSE listener and returns to input. On pipeline completion, a toast with action button offers to open the review screen. `isBackgroundedRef` flag prevents screen transition during backgrounded execution.
+6. **Quality issues list** — Replaced decorative 10-pip quality score with a contextual issues card listing tweets over 280 chars and images without alt text. Card only renders when issues exist.
+
+### Files Changed
+
+- `src/components/ai/agentic-posting-client.tsx` — All 6 items: XThreadPreview component (+60 lines), schedule time input + timezone hint, mid-thread hover insert buttons, background mode (ref + button + toast + handleProgressEvent logic), quality issues computation + warning card, enriched step summaries
+- `src/i18n/messages/en.json` + `ar.json` — +10 keys per locale (processing, review, toasts). Key count: 2684/2684.
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2684/2684 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+---
+
+## 2026-05-08 — Agentic Posting UX: Tier C Polish & Code Health
+
+Completed the final polish tier — split the 1,900-line monolith into per-screen components, extracted shared primitives, and fixed remaining UX papercuts.
+
+1. **File split** — 7 new component files under `src/components/ai/agentic/`: `input-screen.tsx`, `processing-screen.tsx`, `review-screen.tsx`, `tweet-card.tsx`, `success-screen.tsx`, `x-thread-preview.tsx`, `step-icon.tsx`. Plus `index.ts` barrel. The orchestrator `agentic-posting-client.tsx` shrunk from ~1,900 to ~630 lines — now only state management, callbacks, and screen routing.
+2. **`<XAccountAvatar />`** — Shared component combining `Avatar + AvatarImage + AvatarFallback + XSubscriptionBadge`. Eliminated 3 duplicate avatar fallback chains across InputScreen, AgenticTweetCard, and XThreadPreview.
+3. **Reduced `aria-live` chatter** — Screen reader announcements now read one aggregate status line (`"Research: complete · Strategy: in_progress · Writing: pending"`) instead of 5 separate per-step announcements.
+4. **Richer `SuccessScreen`** — Shows first tweet text (3-line clamp) and image thumbnail in a preview card. Falls back to emoji-only when no tweets available.
+5. **Discard behind meatball menu** — Replaced inline `Discard` button with `⋯` DropdownMenu to prevent mis-clicks next to "Save draft".
+
+### Files Changed
+
+- `src/components/ai/agentic/*.tsx` — 8 new component files + barrel index
+- `src/components/ai/agentic-posting-client.tsx` — Rewritten as orchestrator (630 lines)
+- No i18n changes needed (all strings reused)
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2684/2684 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+---
+
 ## 2026-05-07 — AI Hub UX Overhaul: Breadcrumbs, Tab-Aware Header, Locked-Card Modal
 
 Closed three UX gaps on `/dashboard/ai`: (1) Writer/PDF/YouTube sub-pages had no way back to the hub; (2) clicking "Hashtag Generator" landed on a generic "AI Writer" page that lost card identity; (3) Free/Trial users hit a 402 only after navigating into a Pro-gated tool, with no upfront hint and no in-place upgrade CTA. The hub now resolves the user's effective plan server-side and renders each card as either a `<Link>` (unlocked) or a `<button>` that opens the existing global upgrade modal — no navigation, no 402 round-trip. Quota-exhausted state replaced its blanket `pointer-events-none opacity-50` with per-card lock badges + "Upgrade to continue" CTAs.
