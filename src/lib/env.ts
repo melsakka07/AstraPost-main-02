@@ -44,6 +44,11 @@ const serverEnvSchema = z.object({
   OPENROUTER_MODEL_FREE: z.string().optional(),
   // Optional: dedicated model for PDF-to-thread generation. Falls back to OPENROUTER_MODEL if not set.
   OPENROUTER_MODEL_PDF_TO_THREAD: z.string().optional(),
+  // Optional: dedicated model for YouTube-to-Thread generation. Falls back to OPENROUTER_MODEL if not set.
+  OPENROUTER_MODEL_YOUTUBE_TO_THREAD: z.string().optional(),
+
+  // AI - YouTube transcription (optional — feature disabled if neither is set)
+  YOUTUBE_DEEPGRAM_API_KEY: z.string().optional(),
 
   // AI - Replicate (image generation)
   REPLICATE_API_TOKEN: z.string().optional(),

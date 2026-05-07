@@ -3,7 +3,7 @@ import { ApiError } from "@/lib/api/errors";
 import { cache } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { processedWebhookEvents, user, planChangeLog } from "@/lib/schema";
+import { processedWebhookEvents, user, planChangeLog, youtubeThreadJobs } from "@/lib/schema";
 import { notifyBillingEvent } from "@/lib/services/notifications";
 import { stripe } from "@/lib/stripe";
 
@@ -59,6 +59,22 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     logger.error("[cron] plan_change_log cleanup failed", { error });
+  }
+
+  // Clean up YouTube thread jobs older than 90 days
+  let youtubeThreadJobsDeleted = 0;
+  try {
+    const deletedYtJobs = await db
+      .delete(youtubeThreadJobs)
+      .where(lt(youtubeThreadJobs.createdAt, ninetyDaysAgo))
+      .returning({ id: youtubeThreadJobs.id });
+
+    youtubeThreadJobsDeleted = deletedYtJobs.length;
+    logger.info("youtube_thread_jobs_cleanup_completed", {
+      deletedCount: youtubeThreadJobsDeleted,
+    });
+  } catch (error) {
+    logger.error("[cron] youtube_thread_jobs cleanup failed", { error });
   }
 
   // Enforce grace period expiration
@@ -146,6 +162,7 @@ export async function POST(req: Request) {
   return Response.json({
     webhookEventsDeleted,
     planChangesDeleted,
+    youtubeThreadJobsDeleted,
     gracePeriodsExpired,
   });
 }

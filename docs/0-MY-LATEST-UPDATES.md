@@ -1,5 +1,182 @@
 # Latest Updates
 
+## 2026-05-07 — YouTube → Thread Limitations (L1, L2, L7)
+
+Implemented production hardening: yt-dlp healthcheck, monthly count cap, job history TTL cleanup.
+
+### Files Changed
+
+- `scripts/worker.ts` — Added yt-dlp `--version` healthcheck at worker boot (execSync with 10s timeout). Logs `yt_dlp_healthcheck_passed` on success or `yt_dlp_healthcheck_failed` with install hint on failure. (L1)
+- `src/lib/plan-limits.ts` — Added `youtubeToThreadMonthly` field to `PlanLimits` interface and all 5 tiers: free=0, trial=0, pro_monthly=30, pro_annual=50, agency=Infinity. (L2)
+- `src/lib/middleware/require-plan.ts` — Added `checkYoutubeToThreadMonthlyDetailed()` counting `aiGenerations WHERE type='youtube_to_thread'` for current month. Returns 402 `PlanGateResult` on exhaustion. (L2)
+- `src/app/api/ai/youtube-to-thread/route.ts` — Added monthly count check after `previewOnly` early return. Releases quota and returns 402 on exhaustion. (L2)
+- `src/app/api/cron/billing-cleanup/route.ts` — Added 90-day TTL cleanup: `DELETE FROM youtube_thread_jobs WHERE created_at < now() - interval '90 days'`. Count included in cron response. (L7)
+- `docs/claude/env-vars.md` — Documented yt-dlp dependency and `YT_DLP_PATH` env var override. (L1)
+
+### Quality Gate
+
+- `pnpm run check`: PASS (0 errors, 2 pre-existing warnings, 2648/2648 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+### Notes
+
+- **L5 (rate limiting)**: Already handled by `aiPreamble()` which calls `checkRateLimit(session.user.id, plan, "ai")` for every request. No additional code needed.
+- **L3 (retry quota)**: Acknowledged — documented in `docs/claude/ai-features.md`.
+- **L4 (no transcript progress)**: Acknowledged — paired with Tier 1 #6 estimated time hint.
+- **L6 (thumbnail)**: Fixed by Tier 1 #1.
+- **L8 (third language)**: Out of scope.
+
+---
+
+## 2026-05-07 — YouTube → Thread Tier 3 (#13–#16)
+
+Implemented all Tier 3 polish items: tone selector, polling jitter, RTL-aware icons, and provider auto-detection.
+
+### Files Changed
+
+- `src/lib/schema.ts` — Added `tone` column to `youtubeThreadJobs` (enum: professional/educational/casual/formal/enthusiastic, default "casual").
+- `drizzle/0075_needy_mach_iv.sql` — Migration for `tone` column.
+- `src/lib/schemas/youtube-to-thread.ts` — Added `tone` field to request schema.
+- `src/app/api/ai/youtube-to-thread/route.ts` — Passes `tone` through to DB row. Added `releaseQuota()` call in catch block (fixes pre-existing quota leak on enqueue failure). (Tier 3 #13, bugfix)
+- `src/app/api/ai/youtube-to-thread/capabilities/route.ts` — **New**: GET endpoint returns which transcription providers are configured (`{ providers: { deepgram: boolean, whisper: boolean } }`). Auth-gated via `getTeamContext()`. (Tier 3 #16)
+- `src/lib/queue/processors.ts` — Added `TONE_LABELS` map; system prompt now uses tone-specific phrasing instead of hardcoded "natural, conversational". (Tier 3 #13)
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` — Added tone select dropdown (5 options) reusing `pdf_to_thread.options.tone*` i18n keys. Added provider capability auto-detection on mount with auto-select and conditional rendering. (Tier 3 #13, #16)
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — Replaced fixed `setInterval` polling with recursive `setTimeout` + ±500ms jitter. Added `rtl:rotate-180` to both back arrow icons. (Tier 3 #14, #15)
+- `src/i18n/messages/en.json` + `ar.json` — Added `tone`/`tone_professional`/`tone_educational`/`tone_casual`/`tone_formal`/`tone_enthusiastic` under `youtube_to_thread.options`.
+
+### Quality Gate
+
+- `pnpm run check`: PASS (0 errors, 2 pre-existing `<img>` warnings, 2648/2648 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests, 0 failures)
+
+### Manual Verification Needed
+
+- Browser: submit `https://www.youtube.com/watch?v=qW1_A9zOHmI` at `/dashboard/ai/youtube-to-thread`:
+  - Tone selector appears with 5 options, defaults to "Casual"
+  - Provider dropdown filters based on configured API keys
+  - Progress phase shows jittered polling (~4.5s–5.5s between polls)
+  - Back arrows mirror in Arabic layout (`/ar/dashboard/ai/youtube-to-thread`)
+  - Selecting different tones changes the generated thread style
+
+---
+
+## 2026-05-07 — YouTube → Thread Tier 2 Quick Wins (#8–#12)
+
+Implemented Tier 2 quick wins: granular error codes, transcript preview, regenerate, recent jobs list, and idempotency.
+
+### Files Changed
+
+- `src/lib/schema.ts` — Added `error_code` column to `youtubeThreadJobs`.
+- `drizzle/0074_warm_imperial_guard.sql` — Migration for `error_code` column.
+- `src/lib/queue/processors.ts` — Added `classifyYoutubeError()` with regex-based error classification (10 codes), writes `errorCode` on failure/moderation/cancel.
+- `src/app/api/ai/youtube-to-thread/route.ts` — Added 60s idempotency check: same `(userId, videoId)` with non-terminal status → 409 `{ error, existingJobId }`.
+- `src/app/api/ai/youtube-to-thread/[jobId]/route.ts` — GET now returns `transcript` when ready and `errorCode` on all states. DELETE writes `errorCode: "CANCELLED"`.
+- `src/app/api/ai/youtube-to-thread/history/route.ts` — **New**: returns last 5 ready jobs (`/history?limit=5`).
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — Error code → localized message mapping, regenerate button in ready state, recent jobs list in idle state (thumbnail/title/date), 409 handling (resumes polling existing job), transcript pass-through.
+- `src/components/ai/pdf-to-thread/thread-result-preview.tsx` — Added optional `transcript`/`transcriptLabel` props with collapsible `<details>` section.
+- `src/i18n/messages/en.json` + `src/i18n/messages/ar.json` — Added 9 error code messages, `result.show_transcript`, `result.regenerate`, `recent.title/untitled/empty`, `errors.duplicate_in_flight`.
+
+### Manual Verification Required
+
+- Browser verification at `/dashboard/ai/youtube-to-thread` with `https://www.youtube.com/watch?v=qW1_A9zOHmI` for: error code display on failure, transcript preview disclosure, regenerate button, recent jobs list (after first successful generation). Also verify 409 on rapid double-submit and confirm Arabic strings render correctly at `/ar/dashboard/ai/youtube-to-thread`.
+
+---
+
+## 2026-05-07 — Tier 1 Re-Verification Fix (YouTube Preview Mode)
+
+Adjusted YouTube preview validation behavior to fully match Tier 1 item #1 expectations during audit/re-verify.
+
+### Files Changed
+
+- `src/app/api/ai/youtube-to-thread/route.ts` — Moved `previewOnly` early return to run before provider API-key checks so URL preview (title/duration/thumbnail) works as soon as video validation succeeds.
+
+### Why
+
+- Prevents preview mode from failing due to transcription provider key configuration, which is unrelated to URL/video metadata validation.
+
+### Suggested Next Step
+
+- Manual browser check: paste a valid YouTube URL on `/dashboard/ai/youtube-to-thread` while toggling providers and confirm preview card always appears after validation in both `en` and `ar`.
+
+---
+
+## 2026-05-07 — YouTube → Thread Tier 1 Quick Wins (#1–#7)
+
+Implemented Tier 1 quick wins from `.claude/plans/great-work-please-review-lexical-minsky.md` without changing core flow.
+
+### Files Changed
+
+- `src/lib/services/youtube.ts` — Extended `VideoInfo` with `thumbnailUrl` derived from YouTube ID.
+- `src/lib/schemas/youtube-to-thread.ts` — Added optional `previewOnly` request flag.
+- `src/app/api/ai/youtube-to-thread/route.ts` — Added preview mode (`previewOnly: true`) and now returns `thumbnailUrl` in standard enqueue response.
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` — Added URL preview card (thumbnail/title/duration), “Try a sample” action, and monthly AI quota indicator near submit.
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — Added ARIA live region for phase+timer, estimated time hint, and cancel confirmation dialog.
+- `src/components/ai/pdf-to-thread/thread-result-preview.tsx` — Added shared i18n-backed per-tweet copy label and `{n}/280` counter text.
+- `src/i18n/messages/en.json` + `src/i18n/messages/ar.json` — Added all Tier 1 keys for preview, quota, estimated time, cancel confirmation, and shared thread-preview labels.
+- `docs/claude/ai-features.md` — Updated YouTube endpoint behavior/response docs.
+
+### Manual Verification Required
+
+- Browser verification at `/dashboard/ai/youtube-to-thread` with `https://www.youtube.com/watch?v=qW1_A9zOHmI` for preview card, quota text, ARIA-live progression, per-tweet copy/counter, estimated time text, and cancel confirmation.
+
+---
+
+## 2026-05-07 — YouTube → Thread Feature Shipped
+
+**Feature:** Added YouTube Video → X/Twitter Thread at `/dashboard/ai/youtube-to-thread`. Pro/Agency-gated (quota weight 5). Users paste a YouTube URL, select Deepgram or Whisper for transcription, and receive an 8-tweet thread via OpenRouter — all processed through BullMQ.
+
+### Files Changed
+
+- `src/lib/schema.ts` — Added `youtubeThreadJobs` table (19 columns, 2 indexes) with status lifecycle: queued → downloading → transcribing → generating → ready/failed
+- `src/lib/env.ts` — Added `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` and `YOUTUBE_DEEPGRAM_API_KEY` (both optional)
+- `src/lib/plan-limits.ts` — Added `canUseYoutubeToThread` flag (true for Pro Monthly+, false for Free/Trial)
+- `src/lib/middleware/require-plan.ts` — Added `checkYoutubeToThreadAccessDetailed` gate
+- `src/lib/services/youtube.ts` (NEW) — yt-dlp wrapper: URL validation, video info, audio extraction, MIME detection
+- `src/lib/services/transcription.ts` (NEW) — Deepgram + Whisper transcription with provider routing
+- `src/lib/schemas/youtube-to-thread.ts` (NEW) — Zod schemas for request validation + thread output
+- `src/lib/queue/client.ts` — Added `youtubeThreadQueue` and `YOUTUBE_THREAD_JOB_OPTIONS`
+- `src/lib/queue/processors.ts` — Added `youtubeThreadProcessor` (6-phase: download → transcribe → generate → moderate → persist → record)
+- `scripts/worker.ts` — Registered `youtubeThreadWorker` with graceful shutdown
+- `src/app/api/ai/youtube-to-thread/route.ts` (NEW) — POST endpoint (aiPreamble → validate URL → create job → enqueue)
+- `src/app/api/ai/youtube-to-thread/[jobId]/route.ts` (NEW) — GET status + DELETE cancel
+- `src/app/dashboard/ai/youtube-to-thread/page.tsx` (NEW) — Server component page wrapper
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` (NEW) — Client state machine with AbortController polling
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` (NEW) — URL input + provider/language/tweet-count form
+- `src/app/dashboard/ai/page.tsx` — Added YouTube hub card
+- `src/components/dashboard/sidebar-nav-data.ts` — Added sidebar entry
+- `src/i18n/messages/en.json` + `ar.json` — Added `youtube_to_thread` namespace (30+ keys each)
+- `.env.example` — Documented new env vars
+
+### Quality Gate
+
+- `pnpm run check`: PASS (lint + typecheck + i18n parity — 2620 keys each)
+
+---
+
+## 2026-05-07 — YouTube-to-Thread Core Services
+
+Created two new core library services for the upcoming YouTube-to-Thread feature. These are non-AI service modules that the BullMQ worker will use for video metadata extraction, audio downloading, and transcription.
+
+### Files Created
+
+- `src/lib/services/youtube.ts` — yt-dlp wrapper: URL validation (youtube.com/watch + youtu.be), video metadata extraction, audio stream download, MIME type detection
+- `src/lib/services/transcription.ts` — Provider-agnostic transcription: Deepgram (base model, ~$0.0059/min) and Whisper (whisper-1, $0.006/min), with cost estimation
+
+### Patterns Followed
+
+- `import "server-only"` as first line in both files (rule 14)
+- Throw plain `Error` (not `ApiError`) — services rule: "no HTTP/framework concerns"
+- Uses `logger` for all observability (`logger.info`, `logger.error`, `logger.warn`)
+- `execFile` (not `exec`) for yt-dlp invocations — safer against command injection
+- `AbortSignal.timeout(120000)` on both transcription provider fetches
+- `new Uint8Array(buffer)` for Buffer-to-fetch-BodyInit compatibility with TypeScript 5.9 `ArrayBufferLike`
+
+### Quality Gate
+
+- `pnpm run check`: PASS (lint + typecheck + i18n parity)
+
+---
+
 ## 2026-05-06 — Documentation Audit & Sync
 
 Surgical doc/code drift fixes across 9 markdown files plus a full `.env.example` rewrite. Driven by an audit captured at `.claude/plans/2026-05-06-docs-audit-and-update.md`.

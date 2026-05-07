@@ -12,6 +12,7 @@ import {
   CalendarDays,
   AlertCircle,
   TrendingUp,
+  Youtube,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -51,6 +52,13 @@ export default async function AIHubPage() {
       title: t("tools.pdf_to_thread.title"),
       description: t("tools.pdf_to_thread.description"),
       href: "/dashboard/ai/pdf-to-thread",
+      isPro: true,
+    },
+    {
+      icon: Youtube,
+      title: t("tools.youtube_to_thread.title"),
+      description: t("tools.youtube_to_thread.description"),
+      href: "/dashboard/ai/youtube-to-thread",
       isPro: true,
     },
     {

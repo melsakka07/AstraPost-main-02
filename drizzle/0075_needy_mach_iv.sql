@@ -1,0 +1,1 @@
+ALTER TABLE "youtube_thread_jobs" ADD COLUMN "tone" text DEFAULT 'casual' NOT NULL;

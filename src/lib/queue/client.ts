@@ -78,6 +78,25 @@ export const PDF_THREAD_JOB_OPTIONS = {
   removeOnFail: { age: 7 * 24 * 3600 },
 } as const;
 
+/** Payload carried by every job on the YouTube thread queue. */
+export interface YoutubeThreadJobPayload {
+  jobId: string; // youtubeThreadJobs.id
+  userId: string;
+  correlationId: string;
+}
+
+export const youtubeThreadQueue = new Queue<YoutubeThreadJobPayload>("youtubeThreadQueue", {
+  connection: connection as any,
+});
+
+export const YOUTUBE_THREAD_JOB_OPTIONS = {
+  attempts: 2,
+  backoff: { type: "exponential" as const, delay: 5_000 },
+  removeOnComplete: { count: 500, age: 24 * 3600 },
+  removeOnFail: { age: 7 * 24 * 3600 },
+  timeout: 300_000, // 5 min for yt-dlp download + transcription + AI generation
+} as const;
+
 /**
  * Shared BullMQ job options for all publish-post jobs.
  *

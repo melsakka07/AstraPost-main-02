@@ -1,0 +1,1 @@
+ALTER TABLE "youtube_thread_jobs" DROP COLUMN IF EXISTS "audio_blob_path";

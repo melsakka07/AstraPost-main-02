@@ -31,6 +31,7 @@
     "reply_generator": "Reply Generator",
     "ai_calendar": "AI Calendar",
     "pdf_to_thread": "PDF to Thread",
+    "youtube_to_thread": "YouTube to Thread",
     "jobs": "Jobs",
     "sign_out": "Sign out",
     "sign_in": "Sign In",
@@ -81,7 +82,8 @@
   "sidebar": {
     "dashboard_navigation": "Dashboard navigation",
     "ai": {
-      "pdf_to_thread": "PDF → Thread"
+      "pdf_to_thread": "PDF → Thread",
+      "youtube_to_thread": "YouTube to Thread"
     }
   },
   "setup_checklist": {
@@ -149,6 +151,10 @@
       "tier_ok": "OK",
       "tier_strong": "Strong",
       "tier_viral": "Viral"
+    },
+    "thread_preview": {
+      "copy_tweet": "Copy tweet",
+      "char_count": "{n}/280"
     }
   },
   "billing": {
@@ -1099,6 +1105,10 @@
       "pdf_to_thread": {
         "title": "PDF → Thread",
         "description": "Upload a PDF report and get a ready-to-publish X thread."
+      },
+      "youtube_to_thread": {
+        "title": "YouTube → Thread",
+        "description": "Turn a YouTube video into a ready-to-publish X thread"
       }
     },
     "pdf_to_thread": {
@@ -1157,6 +1167,7 @@
         "tweets_count": "{count, plural, =1 {# tweet} other {# tweets}}",
         "send_to_composer": "Send to Composer",
         "copy_button": "Copy",
+        "copy_thread": "Copy Thread",
         "copied": "Copied!",
         "source_language": "Source Language",
         "redactions_notice": "Personal information was redacted from this document",
@@ -1170,6 +1181,41 @@
         "pdf_no_text": "This PDF has no extractable text. Ensure it contains a text layer.",
         "pdf_parse_failed": "Could not parse the PDF. The file may be corrupted.",
         "attestation_required": "You must confirm you have rights to this document.",
+        "generic": "Something went wrong. Please try again.",
+        "polling_connection": "Connection issue — retrying...",
+        "polling_timeout": "Generation is taking longer than expected. You can cancel and try again."
+      }
+    },
+    "youtube_to_thread": {
+      "title": "YouTube to Thread",
+      "description": "Paste a YouTube video URL and turn it into a Twitter thread",
+      "url_label": "YouTube URL",
+      "url_placeholder": "https://www.youtube.com/watch?v=...",
+      "provider": {
+        "label": "Transcription Provider",
+        "deepgram": "Deepgram (faster)",
+        "whisper": "OpenAI Whisper (accurate)"
+      },
+      "tweet_count": "Tweet Count",
+      "submit": "Generate Thread",
+      "progress": {
+        "elapsed": "Elapsed",
+        "downloading": "Downloading audio...",
+        "transcribing": "Transcribing audio...",
+        "generating": "Generating thread...",
+        "status_downloading": "Downloading",
+        "status_transcribing": "Transcribing",
+        "status_generating": "Generating"
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "retry": "Retry",
+        "new_url": "Try Another Video"
+      },
+      "errors": {
+        "no_url": "Please enter a YouTube URL",
+        "upgrade_required": "This feature requires a Pro subscription",
+        "generate_failed": "Failed to generate thread. Please try again.",
         "generic": "Something went wrong. Please try again.",
         "polling_connection": "Connection issue — retrying...",
         "polling_timeout": "Generation is taking longer than expected. You can cancel and try again."
@@ -2983,6 +3029,83 @@
       "reason": "Reason",
       "submit": "Grant",
       "success": "Granted {amount} generations to user"
+    }
+  },
+  "youtube_to_thread": {
+    "title": "YouTube to Thread",
+    "description": "Paste a YouTube video URL and turn it into a Twitter thread",
+    "url_input": {
+      "label": "YouTube URL",
+      "placeholder": "https://www.youtube.com/watch?v=...",
+      "invalid": "Please enter a valid YouTube video URL",
+      "preview_duration": "{minutes}m {seconds}s",
+      "quota_remaining": "{used}/{limit} this month",
+      "try_sample": "Try a sample"
+    },
+    "options": {
+      "heading": "Options",
+      "provider": "Transcription Provider",
+      "provider_deepgram": "Deepgram (faster)",
+      "provider_whisper": "OpenAI Whisper (accurate)",
+      "language": "Language",
+      "tweet_count": "Tweet Count",
+      "tweets": "{count, plural, one {# tweet} other {# tweets}}",
+      "tone": "Tone",
+      "tone_professional": "Professional",
+      "tone_educational": "Educational",
+      "tone_casual": "Casual",
+      "tone_formal": "Formal",
+      "tone_enthusiastic": "Enthusiastic"
+    },
+    "actions": {
+      "submit": "Generate Thread",
+      "submitting": "Generating...",
+      "cancel": "Cancel",
+      "retry": "Try Again",
+      "back": "Back",
+      "cancel_confirm_title": "Cancel generation?",
+      "cancel_confirm_description": "This will stop the current job and release the consumed quota."
+    },
+    "progress": {
+      "queued": "Waiting in queue...",
+      "downloading": "Downloading audio...",
+      "transcribing": "Transcribing audio...",
+      "generating": "Generating thread...",
+      "elapsed": "Elapsed: {seconds}s",
+      "estimated_time": "Typically ~{seconds}s"
+    },
+    "result": {
+      "title": "Generated Thread",
+      "tweets_count": "{count, plural, one {# tweet} other {# tweets}}",
+      "send_to_composer": "Send to Composer",
+      "copy_thread": "Copy Thread",
+      "copied": "Thread copied to clipboard!",
+      "generated_success": "Thread generated successfully",
+      "show_transcript": "Show transcript",
+      "regenerate": "Regenerate"
+    },
+    "errors": {
+      "video_too_long": "Video is too long. Maximum duration is 90 minutes.",
+      "video_private": "This video is private and cannot be accessed.",
+      "video_age_gated": "This video is age-restricted and cannot be accessed.",
+      "video_live": "Live streams are not supported.",
+      "video_no_audio": "No audio track found in this video.",
+      "transcription_failed": "Failed to transcribe audio. Please try again.",
+      "moderation_flagged": "The generated thread was flagged by content moderation.",
+      "provider_error": "AI provider error. Please try again later.",
+      "cancelled": "Job was cancelled.",
+      "duplicate_in_flight": "A job for this video is already in progress.",
+      "generation_failed": "Failed to generate thread. Please try again.",
+      "upgrade_required": "YouTube to Thread is available on Pro and Agency plans.",
+      "no_provider_key": "Transcription service is not configured. Please contact support.",
+      "invalid_url": "Please enter a valid YouTube video URL",
+      "polling_connection": "Connection issue — retrying...",
+      "polling_timeout": "Taking longer than expected. The thread is still being generated."
+    },
+    "recent": {
+      "title": "Recent",
+      "untitled": "Untitled",
+      "empty": "No recent jobs"
     }
   }
 }

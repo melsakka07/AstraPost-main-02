@@ -6,54 +6,68 @@
 
 - `POSTGRES_URL` — PostgreSQL connection string
 - `BETTER_AUTH_SECRET` — 32-char random string
-- `BETTER_AUTH_URL` — App URL (e.g., http://localhost:3000)
-- `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET` — X OAuth
-- `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` — LinkedIn OAuth (Agency posting integration)
-- `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` — Instagram Business posting via Facebook Graph API
 - `TOKEN_ENCRYPTION_KEYS` — Comma-separated 32-byte base64 keys
-- `OPENROUTER_API_KEY` — OpenRouter API key
-- `OPENROUTER_MODEL` — Default model identifier (e.g., `anthropic/claude-sonnet-4.6`)
-- `REPLICATE_MODEL_FAST` / `REPLICATE_MODEL_PRO` / `REPLICATE_MODEL_FALLBACK` — Image model identifiers (must be distinct — Phase 0 `T2`)
-- `REDIS_URL` — Redis for BullMQ + idempotency cache + Replicate poll metadata
-- `NEXT_PUBLIC_APP_URL` — Public app URL
+- `OPENROUTER_MODEL` — Model identifier for AI text generation (no default — must be set explicitly, e.g. `openai/gpt-4o`)
+- `REPLICATE_MODEL_FAST` / `REPLICATE_MODEL_PRO` / `REPLICATE_MODEL_FALLBACK` / `REPLICATE_MODEL_ADVANCED` — Image model identifiers (all four are required by `serverEnvSchema`; must be distinct)
 
-## Optional
+## Optional (but strongly recommended)
 
-### AI Models (OpenRouter cascading fallbacks)
+- `BETTER_AUTH_URL` — App URL (e.g., http://localhost:3000). Optional in schema; Better Auth auto-detects in production.
+- `OPENROUTER_API_KEY` — OpenRouter API key (required in production, optional in dev)
+- `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET` — X OAuth 2.0 (Twitter login will be disabled if missing)
+- `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` — LinkedIn posting integration (NOT a Better Auth provider — Agency plan only)
+- `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` — Instagram Business posting via Facebook Graph API (NOT a Better Auth provider — posting integration only)
+- `REDIS_URL` — Redis for BullMQ + idempotency cache + Replicate poll metadata (default: `redis://localhost:6379`)
+- `NEXT_PUBLIC_APP_URL` — Public app URL (default: `http://localhost:3000`)
+
+## Optional AI Models & Providers
+
+### OpenRouter (text generation — cascading fallbacks)
 
 - `OPENROUTER_MODEL_FREE` — Cheap/free model for quota-free endpoints (e.g. `deepseek/deepseek-v4-flash`)
-- `OPENROUTER_MODEL_AGENTIC` — Dedicated model for the Agentic Posting writer step
-- `OPENROUTER_MODEL_AGENTIC_REVIEWER` — Reviewer model (different family from writer; Phase 0 `P10`/`P11` quality gate ≥7)
-- `OPENROUTER_MODEL_TRENDS` — Web-search-capable model for trends discovery (e.g. `perplexity/sonar`)
+- `OPENROUTER_MODEL_AGENTIC` — Dedicated model for the Agentic Posting writer step. Falls back to `OPENROUTER_MODEL` if not set.
+- `OPENROUTER_MODEL_AGENTIC_REVIEWER` — Reviewer model (different family from writer). Falls back to `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL` if not set.
+- `OPENROUTER_MODEL_TRENDS` — Web-search-capable model for trends discovery (e.g. `perplexity/sonar`). Falls back through `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`.
 - `OPENROUTER_MODEL_PDF_TO_THREAD` — Dedicated model for PDF-to-thread generation. Falls back to `OPENROUTER_MODEL` if not set.
+- `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` — Dedicated model for YouTube-to-Thread generation. Falls back to `OPENROUTER_MODEL` if not set.
+- `YOUTUBE_DEEPGRAM_API_KEY` — Deepgram API key for YouTube transcription ($200 free credit at console.deepgram.com). Feature warns if neither provider is configured.
 
-### AI Auxiliary Providers
+### Replicate (image generation)
 
-- `OPENAI_API_KEY` — Used for content moderation API (backs `src/lib/services/moderation.ts`, Phase 1 `S1`)
+- `REPLICATE_API_TOKEN` — Replicate API key (optional locally, required in production for AI Images)
+
+### OpenAI (content moderation only — documented exception to the "no OpenAI for text generation" rule)
+
+- `OPENAI_API_KEY` — When set, enables OpenAI Moderation API as primary content check (backed by `src/lib/services/moderation.ts`). When absent, falls back to 25-pattern regex matching. This is the **only** OpenAI usage in the codebase. Also reused by YouTube-to-Thread for Whisper transcription (alongside moderation).
 - `OPENAI_MODERATION_MODEL` — Moderation model (default: `omni-moderation-latest`)
-
-### Image Generation
-
-- `REPLICATE_API_TOKEN` — Replicate API (optional locally, required in production for AI Images)
-- `REPLICATE_MODEL_ADVANCED` — Agency-tier image model (default: `openai/gpt-image-2`)
 
 ### Cost Guardrails
 
-- `AI_DAILY_BUDGET_USD` — Daily AI cost cap; triggers Resend email alert when exceeded (Phase 0 `B4`, cron at `/api/cron/ai-cost-alarm`)
+- `AI_DAILY_BUDGET_USD` — Daily AI cost cap in USD (default: `50`). Triggers Resend email alert when exceeded (cron at `/api/cron/ai-cost-alarm`).
 
 ### Billing & Infrastructure
 
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_MONTHLY`, `STRIPE_PRICE_ID_ANNUAL`, `STRIPE_PRICE_ID_AGENCY_MONTHLY`, `STRIPE_PRICE_ID_AGENCY_ANNUAL` — Billing
-- `BLOB_READ_WRITE_TOKEN` — Vercel Blob (production storage)
+- `STRIPE_SECRET_KEY` — Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` — Stripe webhook signing secret
+- `STRIPE_PRICE_ID_MONTHLY` — Price ID for Pro Monthly plan
+- `STRIPE_PRICE_ID_ANNUAL` — Price ID for Pro Annual plan
+- `STRIPE_PRICE_ID_AGENCY_MONTHLY` — Price ID for Agency Monthly plan
+- `STRIPE_PRICE_ID_AGENCY_ANNUAL` — Price ID for Agency Annual plan
+- `BLOB_READ_WRITE_TOKEN` — Vercel Blob (production storage; falls back to local filesystem in dev)
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL` — Email (welcome, schedule confirmation, failure, trial extension)
 - `RESEND_OPS_EMAIL` — Ops alert email recipient (falls back to `RESEND_FROM_EMAIL`); used by AI cost alarm cron
 - `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` — Error tracking via Sentry
 - `CRON_SECRET` — Bearer token for `/api/cron/*` endpoints (billing-cleanup, ai-cost-alarm, ai-counter-rollover)
 - `TWITTER_BEARER_TOKEN` — App-only bearer token for tweet import + Competitor Analyzer
-- `TWITTER_DRY_RUN` — If set, bypasses actual publishing to X (smoke-test mode)
+- `TWITTER_DRY_RUN` — If set, worker skips actual X API posting (for local testing / smoke tests)
 - `DIAGNOSTICS_TOKEN` — Token required for full diagnostics endpoint response (without token, only status is returned)
-- `PLAN_CHANGE_LOG_RETENTION_YEARS` — Retention period for plan change audit logs in years (default: 7)
-- `NODE_ENV` — `development`, `production`, `test`
+- `PLAN_CHANGE_LOG_RETENTION_YEARS` — Retention period for plan change audit logs in years. Stored as **string** (not number) — callers parse with `parseInt(… \|\| "7", 10)`. Default: `7`.
+- `NODE_ENV` — `development`, `production`, `test` (default: `development`)
+- `YT_DLP_PATH` — Override path to the yt-dlp binary for YouTube audio extraction. If not set, the worker resolves via common platform paths (`/usr/local/bin/yt-dlp`, Homebrew, Python user installs, chocolatey, scoop) then falls back to `"yt-dlp"` (PATH lookup). The worker healthchecks `yt-dlp --version` at boot and logs a fatal diagnostic if the binary is inaccessible.
+
+### Host Dependencies (not env vars, but required for full functionality)
+
+- **yt-dlp** — Required for YouTube-to-Thread audio extraction. Install via `pip install yt-dlp`, `brew install yt-dlp`, `choco install yt-dlp`, or `scoop install yt-dlp`. On Vercel, run the worker from a separate host (Fly/Railway) — Vercel Functions don't ship yt-dlp. Verify with `yt-dlp --version`.
 
 ## Validation Coverage
 

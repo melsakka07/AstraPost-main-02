@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { execSync } from "node:child_process";
 import { Worker } from "bullmq";
 import {
   connection,
@@ -7,6 +8,7 @@ import {
   xTierRefreshQueue,
   tokenHealthQueue,
   pdfThreadQueue,
+  youtubeThreadQueue,
   SCHEDULE_JOB_OPTIONS,
 } from "@/lib/queue/client";
 import {
@@ -15,18 +17,28 @@ import {
   refreshXTiersProcessor,
   tokenHealthProcessor,
   pdfThreadProcessor,
+  youtubeThreadProcessor,
 } from "@/lib/queue/processors";
 import "@/lib/env";
 import { logger } from "@/lib/logger";
+import { resolveYtDlpPath } from "@/lib/services/youtube";
 
 logger.info("worker_started", {
   pid: process.pid,
   nodeEnv: process.env.NODE_ENV,
 });
 
-console.log(
-  `\n✅ [Worker] Started successfully (PID: ${process.pid}).\n⏳ Waiting for jobs in 'schedule-queue', 'analytics-queue', 'x-tier-refresh-queue', 'token-health-queue', and 'pdfThreadQueue'...\nPress Ctrl+C to exit.\n`
-);
+logger.info("worker_ready", {
+  pid: process.pid,
+  queues: [
+    "schedule-queue",
+    "analytics-queue",
+    "x-tier-refresh-queue",
+    "token-health-queue",
+    "pdfThreadQueue",
+    "youtubeThreadQueue",
+  ],
+});
 
 const scheduleWorker = new Worker("schedule-queue", scheduleProcessor, {
   connection: connection as any,
@@ -150,7 +162,7 @@ analyticsQueue
       jobId: "analytics-job",
     }
   )
-  .catch(console.error);
+  .catch((err) => logger.error("worker_schedule_failed", { error: err?.message ?? String(err) }));
 
 // ── X Tier Refresh Worker ───────────────────────────────────────────────────
 // Runs daily at 4 AM UTC to refresh X subscription tiers for all connected
@@ -194,7 +206,7 @@ xTierRefreshQueue
       removeOnFail: { count: 20 },
     }
   )
-  .catch(console.error);
+  .catch((err) => logger.error("worker_schedule_failed", { error: err?.message ?? String(err) }));
 
 // ── Token Health Check Worker ───────────────────────────────────────────────────
 // Runs daily at 2 AM UTC to check for X account tokens expiring within 48 hours.
@@ -237,7 +249,7 @@ tokenHealthQueue
       removeOnFail: { count: 20 },
     }
   )
-  .catch(console.error);
+  .catch((err) => logger.error("worker_schedule_failed", { error: err?.message ?? String(err) }));
 
 // ── PDF Thread Worker ────────────────────────────────────────────────────────
 // Processes async PDF→Thread summarization jobs for PDFs with >30,000 chars.
@@ -275,21 +287,81 @@ pdfThreadWorker.on("failed", (job, err) => {
   });
 });
 
+// ── YouTube Thread Worker ────────────────────────────────────────────────────
+// Processes async YouTube→Thread jobs: download audio via yt-dlp,
+// transcribe via Deepgram/Whisper, then generate a thread via OpenRouter.
+
+// Healthcheck: verify yt-dlp is installed and functional before accepting jobs.
+// Logs a single fatal error if the binary is missing or broken — the worker
+// will still start but YouTube-to-Thread jobs will fail fast with a clear
+// diagnostic instead of a cryptic ENOENT.
+{
+  const ytDlpPath = resolveYtDlpPath();
+  try {
+    const version = execSync(`"${ytDlpPath}" --version`, {
+      encoding: "utf-8",
+      timeout: 10_000,
+    }).trim();
+    logger.info("yt_dlp_healthcheck_passed", { path: ytDlpPath, version });
+  } catch (err) {
+    logger.error("yt_dlp_healthcheck_failed", {
+      path: ytDlpPath,
+      error: err instanceof Error ? err.message : String(err),
+      action: "install_yt_dlp",
+      hint: "Install yt-dlp: https://github.com/yt-dlp/yt-dlp#installation",
+    });
+  }
+}
+
+const youtubeThreadWorker = new Worker("youtubeThreadQueue", youtubeThreadProcessor, {
+  connection: connection as any,
+  concurrency: 1,
+  lockDuration: 360_000, // 6 min for download + transcription + generation
+});
+
+youtubeThreadWorker.on("completed", (job) => {
+  logger.info("job_completed", {
+    queue: "youtubeThreadQueue",
+    jobId: job.id,
+  });
+});
+
+youtubeThreadWorker.on("error", (err) => {
+  logger.error("worker_error", {
+    queue: "youtubeThreadQueue",
+    error: err.message,
+  });
+});
+
+youtubeThreadWorker.on("failed", (job, err) => {
+  logger.error("job_failed", {
+    queue: "youtubeThreadQueue",
+    jobId: job?.id ?? "unknown",
+    jobDataId: job?.data?.jobId ?? "unknown",
+    userId: job?.data?.userId ?? "unknown",
+    correlationId: job?.data?.correlationId ?? null,
+    error: err.message,
+    attemptsMade: job?.attemptsMade ?? null,
+  });
+});
+
 const shutdown = async (signal: string) => {
   logger.warn(`${signal}_received`, {
     pid: process.pid,
   });
-  console.log(`\n🛑 [Worker] Shutting down gracefully (${signal})...`);
+  logger.info("worker_shutdown_start", { signal, pid: process.pid });
   await scheduleQueue.close();
   await analyticsQueue.close();
   await xTierRefreshQueue.close();
   await tokenHealthQueue.close();
   await pdfThreadQueue.close();
+  await youtubeThreadQueue.close();
   await scheduleWorker.close();
   await analyticsWorker.close();
   await xTierRefreshWorker.close();
   await tokenHealthWorker.close();
   await pdfThreadWorker.close();
+  await youtubeThreadWorker.close();
   process.exit(0);
 };
 

@@ -18,6 +18,7 @@ import {
   UserPen,
   MessageCircle,
   DollarSign,
+  Youtube,
 } from "lucide-react";
 
 export interface NavItem {
@@ -105,6 +106,12 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         icon: FileText,
         label: "PDF to Thread",
         href: "/dashboard/ai/pdf-to-thread",
+        isPro: true,
+      },
+      {
+        icon: Youtube,
+        label: "YouTube to Thread",
+        href: "/dashboard/ai/youtube-to-thread",
         isPro: true,
       },
     ],

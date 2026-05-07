@@ -115,6 +115,34 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Database**: `pdfThreadJobs` table (status lifecycle: `uploading` → `extracting` → `extracted` → sync `generating` → `ready`, or async `queued` → `processing` → `ready` → `failed`).
 - **Safety**: Magic-byte validation at upload, PII redaction via `redactPII()`, prompt injection defense via `buildSummarizePrompt({ variant: "report" })` + `JAILBREAK_GUARD`, moderation check on output. Rights attestation checkbox required before upload.
 
+### YouTube → Thread (`/api/ai/youtube-to-thread/*`)
+
+- **Feature**: Paste a YouTube video URL, select a transcription provider (Deepgram or Whisper), and generate an X thread from the video transcript. Gated behind `canUseYoutubeToThread` (Pro Monthly, Pro Annual, Agency).
+- **Plan required**: Pro Monthly+ (Pro Monthly, Pro Annual, Agency). Not available on Free or Trial.
+- **Quota weight**: **5** (consumed at enqueue time).
+- **Endpoints**:
+  - `POST /api/ai/youtube-to-thread` — Validates YouTube URL and returns metadata preview when `previewOnly: true` (no quota consumption). Standard mode creates DB row and enqueues BullMQ job. Idempotency check prevents duplicate jobs for the same (user, videoId) within 60s (returns 409 with `existingJobId`). Returns `{ jobId, status: "queued", videoTitle, durationSeconds, thumbnailUrl }`.
+  - `GET /api/ai/youtube-to-thread/[jobId]` — Poll job status and result. Returns `transcript` when status is `ready` and `errorCode` for classified failures.
+  - `DELETE /api/ai/youtube-to-thread/[jobId]` — Cancel a queued/processing job. Sets `errorCode: "CANCELLED"`.
+  - `GET /api/ai/youtube-to-thread/history` — Returns last 5 ready jobs for the current user (`{ items: [{ id, youtubeVideoId, thumbnailUrl, title, completedAt }] }`).
+- **Always async** (no sync path) — YouTube download + transcription takes 15-90+ seconds.
+- **Async path**: BullMQ `youtubeThreadQueue` + `youtubeThreadProcessor` with 5-phase pipeline: (1) yt-dlp downloads audio, (2) Deepgram/Whisper transcribes, (3) OpenRouter generates thread via `generateObject`, (4) moderation check, (5) persist result + record AI usage.
+- **Database**: `youtubeThreadJobs` table (status lifecycle: `queued` → `downloading` → `transcribing` → `generating` → `ready` → `failed`).
+- **Transcription providers**: Deepgram (`YOUTUBE_DEEPGRAM_API_KEY`) or OpenAI Whisper (reuses `OPENAI_API_KEY`).
+- **Safety**: yt-dlp URL validation rejects playlists/channels/shorts, duration cap at 90 minutes, moderation check on output. JAILBREAK_GUARD on generation prompt.
+- **Error codes** (`error_code` column): `VIDEO_PRIVATE`, `VIDEO_AGE_GATED`, `VIDEO_LIVE`, `VIDEO_TOO_LONG`, `VIDEO_NO_AUDIO`, `TRANSCRIPTION_FAILED`, `MODERATION_FLAGGED`, `PROVIDER_ERROR`, `CANCELLED`, `UNKNOWN`. Client maps these to localized messages via `youtube_to_thread.errors.*` i18n keys.
+- **Transcript preview**: GET `[jobId]` response includes the `transcript` field when status is `ready`. The result UI renders a collapsible "Show transcript" section.
+- **Regenerate**: Ready state offers a "Regenerate" button that re-submits the same URL/options.
+- **Recent jobs**: Idle state shows the last 5 ready jobs fetched from the `/history` endpoint.
+- **Tone selector**: 5 tone options (professional, educational, casual, formal, enthusiastic) available in the options form, reusing `pdf_to_thread.options.tone*` i18n keys.
+- **Provider capability detection**: On mount, fetches `/api/ai/youtube-to-thread/capabilities` to determine available transcription providers. Unavailable providers are hidden; if only one is available, it's auto-selected.
+- **Polling jitter**: Recursive `setTimeout` with ±500ms random jitter replaces fixed `setInterval` to prevent thundering herd on the status endpoint.
+- **RTL support**: Back navigation arrow icons include `rtl:rotate-180` for Arabic layout.
+- **Monthly count cap** (`youtubeToThreadMonthly`): Free/Trial=0, Pro Monthly=30, Pro Annual=50, Agency=Infinity. Gated by `checkYoutubeToThreadMonthlyDetailed()` counting `aiGenerations WHERE type='youtube_to_thread'` for the current month. Returns 402 on exhaustion.
+- **Job history TTL**: `youtube_thread_jobs` rows older than 90 days are auto-deleted by the billing-cleanup cron.
+- **yt-dlp healthcheck**: Worker boot verifies `yt-dlp --version` and logs a fatal diagnostic if the binary is missing, preventing cryptic ENOENT errors on YouTube-to-Thread jobs.
+- **Rate limiting**: Handled by `aiPreamble()` which applies the global "ai" rate limit bucket to all AI endpoints including YouTube-to-Thread.
+
 ## 5. Evaluation & Inspiration
 
 ### `POST /api/ai/score`

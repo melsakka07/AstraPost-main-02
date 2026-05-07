@@ -1,15 +1,19 @@
 import "server-only";
 
-import { readFile } from "fs/promises";
+import { readFile, unlink } from "fs/promises";
+import { tmpdir } from "os";
 import path from "path";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { type InferSelectModel, eq, and, or, sql, isNotNull, isNull, lt } from "drizzle-orm";
+import { z } from "zod";
 import { INPUT_LIMITS } from "@/lib/ai/input-limits";
+import { buildLanguageBlock } from "@/lib/ai/language";
 import { redactPII } from "@/lib/ai/pii";
 import { buildSummarizePrompt } from "@/lib/ai/summarize-prompts";
+import { JAILBREAK_GUARD } from "@/lib/ai/untrusted";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
@@ -21,6 +25,7 @@ import {
   type RefreshXTiersJobPayload,
   type TokenHealthJobPayload,
   type PdfThreadJobPayload,
+  type YoutubeThreadJobPayload,
 } from "@/lib/queue/client";
 import {
   posts,
@@ -32,6 +37,7 @@ import {
   xAccounts,
   failedJobs,
   pdfThreadJobs,
+  youtubeThreadJobs,
 } from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { pdfThreadOutputSchema } from "@/lib/schemas/pdf-to-thread";
@@ -40,8 +46,10 @@ import { releaseAiQuota } from "@/lib/services/ai-quota-atomic";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
 import { sendPostFailureEmail } from "@/lib/services/email";
 import { moderateOutput } from "@/lib/services/moderation";
+import { transcribe } from "@/lib/services/transcription";
 import { XApiService } from "@/lib/services/x-api";
 import { canPostLongContent } from "@/lib/services/x-subscription";
+import { extractAudio, getAudioMimeType } from "@/lib/services/youtube";
 
 /** Shape of a post as loaded by the schedule processor (post + tweets + media). */
 type FullPost = InferSelectModel<typeof posts> & {
@@ -1076,5 +1084,322 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
       });
     }
     throw err; // BullMQ retry via attempts config
+  }
+};
+
+// ── YouTube error classification ────────────────────────────────────────────
+
+const YOUTUBE_ERROR_CLASSIFIERS: Array<{ pattern: RegExp; code: string }> = [
+  { pattern: /private/i, code: "VIDEO_PRIVATE" },
+  { pattern: /age[ -]?(restrict|gate)/i, code: "VIDEO_AGE_GATED" },
+  { pattern: /(live stream|is live|live video)/i, code: "VIDEO_LIVE" },
+  { pattern: /too long/i, code: "VIDEO_TOO_LONG" },
+  { pattern: /too short/i, code: "VIDEO_TOO_LONG" },
+  { pattern: /no audio/i, code: "VIDEO_NO_AUDIO" },
+  { pattern: /(transcri|speech.?(to.?text|recogn))/i, code: "TRANSCRIPTION_FAILED" },
+  { pattern: /moderation/i, code: "MODERATION_FLAGGED" },
+  { pattern: /(flagged|inappropriate|policy)/i, code: "MODERATION_FLAGGED" },
+  { pattern: /(openrouter|provider|model|llm|gateway)/i, code: "PROVIDER_ERROR" },
+  { pattern: /user_cancelled/i, code: "CANCELLED" },
+];
+
+function classifyYoutubeError(msg: string): string {
+  for (const { pattern, code } of YOUTUBE_ERROR_CLASSIFIERS) {
+    if (pattern.test(msg)) return code;
+  }
+  return "UNKNOWN";
+}
+
+const TONE_LABELS: Record<string, string> = {
+  professional: "concise and professional",
+  educational: "informative and educational",
+  casual: "natural and conversational",
+  formal: "formal and authoritative",
+  enthusiastic: "energetic and enthusiastic",
+};
+
+// ── YouTube Thread Processor ─────────────────────────────────────────────────
+
+export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) => {
+  const { jobId, userId, correlationId } = job.data;
+  logger.info("youtube_thread_job_start", { jobId, userId, correlationId });
+
+  const [row] = await db.select().from(youtubeThreadJobs).where(eq(youtubeThreadJobs.id, jobId));
+  if (!row || row.status !== "queued") {
+    logger.warn("youtube_thread_job_skipped", { jobId, status: row?.status });
+    return;
+  }
+
+  const openrouter = createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY! });
+  const modelId = process.env.OPENROUTER_MODEL_YOUTUBE_TO_THREAD ?? process.env.OPENROUTER_MODEL!;
+  const model = openrouter(modelId);
+  const startTs = Date.now();
+
+  // Temp file path for downloaded audio
+  const tempDir = tmpdir();
+  const audioExt = row.provider === "deepgram" ? "m4a" : "mp3";
+  const audioPath = path.join(tempDir, `yt-${jobId}.${audioExt}`);
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  try {
+    // Phase 1: Download audio
+    await db
+      .update(youtubeThreadJobs)
+      .set({ status: "downloading", updatedAt: new Date() })
+      .where(eq(youtubeThreadJobs.id, jobId));
+
+    logger.info("youtube_thread_downloading", { jobId, url: row.youtubeUrl });
+    await extractAudio(row.youtubeUrl, audioPath);
+    const mimeType = getAudioMimeType(audioPath);
+
+    // Phase 2: Transcribe
+    await db
+      .update(youtubeThreadJobs)
+      .set({ status: "transcribing", updatedAt: new Date() })
+      .where(eq(youtubeThreadJobs.id, jobId));
+
+    logger.info("youtube_thread_transcribing", { jobId, provider: row.provider });
+    const audioBuffer = await readFile(audioPath);
+    const transcription = await transcribe(audioBuffer, row.provider, mimeType);
+
+    // Cancellation guard: if the user (or anything else) marked the job terminal
+    // while we were transcribing, stop now and don't overwrite that state.
+    const [postTranscribe] = await db
+      .select({ status: youtubeThreadJobs.status })
+      .from(youtubeThreadJobs)
+      .where(eq(youtubeThreadJobs.id, jobId));
+    if (postTranscribe?.status === "failed" || postTranscribe?.status === "ready") {
+      logger.info("youtube_thread_aborted_post_transcribe", {
+        jobId,
+        status: postTranscribe.status,
+      });
+      return;
+    }
+
+    // Preserve the validated duration from yt-dlp if transcription provider
+    // didn't report one (avoids zero-out when segments metadata is missing).
+    // Round to integer because the column is `integer`, but Deepgram/Whisper
+    // return fractional seconds.
+    const updatedDuration =
+      transcription.durationSeconds > 0
+        ? Math.round(transcription.durationSeconds)
+        : row.durationSeconds;
+
+    await db
+      .update(youtubeThreadJobs)
+      .set({
+        transcript: transcription.transcript,
+        ...(updatedDuration !== null && updatedDuration !== undefined
+          ? { durationSeconds: updatedDuration }
+          : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(youtubeThreadJobs.id, jobId));
+
+    // Record transcription cost as a separate ai_generations row
+    await recordAiUsage({
+      userId,
+      type: "transcription",
+      model: row.provider === "deepgram" ? "deepgram/base" : "whisper-1",
+      subFeature: row.provider,
+      tokensIn: 0,
+      tokensOut: 0,
+      costEstimateCents: transcription.costEstimateCents,
+      promptVersion: "youtube_to_thread:v1",
+      latencyMs: Date.now() - startTs,
+      language: row.language,
+    });
+
+    // Phase 3: Generate thread via OpenRouter
+    await db
+      .update(youtubeThreadJobs)
+      .set({ status: "generating", updatedAt: new Date() })
+      .where(eq(youtubeThreadJobs.id, jobId));
+
+    const langBlock = buildLanguageBlock(row.language, "social");
+
+    // NOTE: do not constrain array length in the schema (`minItems`/`maxItems`).
+    // Some OpenRouter providers (Amazon Bedrock) reject `minItems > 1`. The
+    // prompt asks for the exact count and we enforce it after generation.
+    const dynamicYoutubeThreadOutputSchema = z.object({
+      tweets: z.array(z.string()),
+      title: z.string(),
+    });
+
+    const { object: rawResult, usage } = await generateObject({
+      model,
+      schema: dynamicYoutubeThreadOutputSchema,
+      system:
+        `You are a social media expert who converts video transcripts into engaging X (Twitter) threads.\n\n` +
+        `REQUIREMENTS:\n` +
+        `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
+        `- Each tweet MUST be 280 characters or less\n` +
+        `- Make the thread engaging and easy to read\n` +
+        `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
+        `- Break down complex ideas into digestible tweets\n` +
+        `- The first tweet should hook the reader\n` +
+        `- The last tweet should include a call-to-action or takeaway\n\n` +
+        `${langBlock}\n\n` +
+        `${JAILBREAK_GUARD}`,
+      prompt: `Video transcript:\n\n${transcription.transcript}`,
+    });
+
+    totalInputTokens = usage?.inputTokens ?? 0;
+    totalOutputTokens = usage?.outputTokens ?? 0;
+
+    // Enforce the exact tweet count + 280-char cap that the schema no longer
+    // expresses (see note above on the Bedrock minItems limitation).
+    const trimmedTweets = rawResult.tweets
+      .map((t: string) => (t.length > 280 ? t.slice(0, 280) : t))
+      .filter((t: string) => t.trim().length > 0)
+      .slice(0, row.tweetCount);
+
+    if (trimmedTweets.length === 0) {
+      throw new Error("Model returned no tweets");
+    }
+
+    const result = { tweets: trimmedTweets, title: rawResult.title };
+
+    // Phase 4: Moderation check
+    const tweetsText = result.tweets.join("\n");
+    const { flagged } = await moderateOutput(tweetsText, userId, undefined);
+    if (flagged) {
+      await db
+        .update(youtubeThreadJobs)
+        .set({
+          status: "failed",
+          error: "Content moderation flagged the generated thread.",
+          errorCode: "MODERATION_FLAGGED",
+          updatedAt: new Date(),
+        })
+        .where(eq(youtubeThreadJobs.id, jobId));
+
+      logger.warn("youtube_thread_moderation_flagged", { jobId, userId });
+      return;
+    }
+
+    // Phase 5: Persist result — atomic upgrade only if not already cancelled.
+    // Using WHERE status IN (queued, downloading, transcribing, generating) means
+    // a concurrent DELETE that flipped status to "failed" wins and we skip the upgrade.
+    const persisted = await db
+      .update(youtubeThreadJobs)
+      .set({
+        status: "ready",
+        threadResult: {
+          tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+          title: result.title,
+          videoUrl: row.youtubeUrl,
+        },
+        completedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(youtubeThreadJobs.id, jobId),
+          or(
+            eq(youtubeThreadJobs.status, "queued"),
+            eq(youtubeThreadJobs.status, "downloading"),
+            eq(youtubeThreadJobs.status, "transcribing"),
+            eq(youtubeThreadJobs.status, "generating")
+          )
+        )
+      )
+      .returning({ id: youtubeThreadJobs.id });
+
+    if (persisted.length === 0) {
+      logger.info("youtube_thread_aborted_pre_persist", { jobId });
+      return;
+    }
+
+    // Phase 6: Record AI usage
+    await recordAiUsage({
+      userId,
+      type: "youtube_to_thread",
+      model: modelId,
+      subFeature: "youtube_to_thread",
+      tokensIn: totalInputTokens,
+      tokensOut: totalOutputTokens,
+      costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
+      promptVersion: "youtube_to_thread:v1",
+      latencyMs: Date.now() - startTs,
+      language: row.language,
+    });
+
+    logger.info("youtube_thread_job_completed", {
+      jobId,
+      userId,
+      tweetCount: result.tweets.length,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const errAny = err as { cause?: unknown; responseBody?: unknown; data?: unknown };
+    logger.error("youtube_thread_job_failed", {
+      jobId,
+      error: msg,
+      modelId,
+      name: err instanceof Error ? err.name : undefined,
+      cause:
+        errAny.cause instanceof Error
+          ? `${errAny.cause.name}: ${errAny.cause.message}`
+          : errAny.cause !== undefined
+            ? String(errAny.cause).slice(0, 1000)
+            : undefined,
+      responseBody:
+        typeof errAny.responseBody === "string" ? errAny.responseBody.slice(0, 1000) : undefined,
+      data: errAny.data ? JSON.stringify(errAny.data).slice(0, 1000) : undefined,
+    });
+
+    // Only release quota on the FINAL attempt — earlier attempts may still succeed
+    // on retry. Use atomic flip on quota_released to guarantee single-release even
+    // if processor is invoked twice for the same logical attempt.
+    const maxAttempts = job.opts?.attempts ?? 1;
+    const isLastAttempt = (job.attemptsMade ?? 0) + 1 >= maxAttempts;
+
+    if (isLastAttempt) {
+      const ec = classifyYoutubeError(msg);
+      const flipped = await db
+        .update(youtubeThreadJobs)
+        .set({
+          status: "failed",
+          error: msg,
+          errorCode: ec,
+          quotaReleased: true,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(youtubeThreadJobs.id, jobId), eq(youtubeThreadJobs.quotaReleased, false)))
+        .returning({ quotaConsumed: youtubeThreadJobs.quotaConsumed });
+
+      if (flipped.length > 0) {
+        try {
+          await releaseAiQuota(userId, flipped[0]!.quotaConsumed ?? 5);
+        } catch (quotaErr) {
+          logger.error("youtube_thread_release_quota_failed", {
+            jobId,
+            error: quotaErr instanceof Error ? quotaErr.message : String(quotaErr),
+          });
+        }
+      } else {
+        // Already released by cancel/timeout path — just record terminal failure status.
+        await db
+          .update(youtubeThreadJobs)
+          .set({ status: "failed", error: msg, errorCode: ec, updatedAt: new Date() })
+          .where(eq(youtubeThreadJobs.id, jobId));
+      }
+    } else {
+      // Retry pending — keep status reflecting the failure but DO NOT release quota.
+      await db
+        .update(youtubeThreadJobs)
+        .set({ error: msg, updatedAt: new Date() })
+        .where(eq(youtubeThreadJobs.id, jobId));
+    }
+    throw err;
+  } finally {
+    // Clean up temp audio file
+    try {
+      await unlink(audioPath);
+    } catch {
+      // File may not exist if download failed — safe to ignore
+    }
   }
 };

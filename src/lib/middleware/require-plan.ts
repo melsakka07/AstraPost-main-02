@@ -37,7 +37,8 @@ export type GatedFeature =
   | "agentic_posting"
   | "affiliate_generator"
   | "tools"
-  | "pdf_to_thread";
+  | "pdf_to_thread"
+  | "youtube_to_thread";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -436,6 +437,46 @@ export const checkPdfToThreadAccessDetailed = makeFeatureGate(
   "canUsePdfToThread",
   "Convert PDFs into compelling threads — available on Pro"
 );
+
+export const checkYoutubeToThreadAccessDetailed = makeFeatureGate(
+  "youtube_to_thread",
+  "canUseYoutubeToThread",
+  "Turn YouTube videos into X threads — available on Pro"
+);
+
+export async function checkYoutubeToThreadMonthlyDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  const limits = getPlanLimits(context.effectivePlan);
+  if (limits.youtubeToThreadMonthly === Infinity) return { allowed: true };
+
+  const { start, end } = getMonthWindow();
+  const ytCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(aiGenerations)
+    .where(
+      and(
+        eq(aiGenerations.userId, userId),
+        eq(aiGenerations.type, "youtube_to_thread"),
+        gte(aiGenerations.createdAt, start)
+      )
+    );
+  const used = Number(ytCount[0]?.count ?? 0);
+
+  if (used < limits.youtubeToThreadMonthly) return { allowed: true };
+
+  return buildFailure({
+    error: "quota_exceeded",
+    feature: "youtube_to_thread",
+    message:
+      "You've reached your monthly YouTube-to-Thread limit. Upgrade to Pro Annual or Agency for more.",
+    plan: context.plan,
+    limit: Number.isFinite(limits.youtubeToThreadMonthly) ? limits.youtubeToThreadMonthly : null,
+    used,
+    suggestedPlan: "pro_annual",
+    trialActive: context.isTrialActive,
+    resetAt: end,
+  });
+}
 
 export const checkVariantGeneratorAccessDetailed = makeFeatureGate(
   "variant_generator",

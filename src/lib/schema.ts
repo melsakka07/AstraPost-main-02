@@ -138,6 +138,8 @@ export const aiGenerationTypeEnum = pgEnum("ai_generation_type", [
   "trends_discovery",
   "agentic_approve",
   "pdf_to_thread",
+  "youtube_to_thread",
+  "transcription",
 ]);
 
 /** Type of a user-facing notification. */
@@ -1621,6 +1623,57 @@ export const pdfThreadJobs = pgTable(
   })
 );
 
+// ── YouTube Thread Jobs ──────────────────────────────────────────────────────
+
+export const youtubeThreadJobs = pgTable(
+  "youtube_thread_jobs",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    correlationId: text("correlation_id").notNull(),
+    status: text("status", {
+      enum: ["queued", "downloading", "transcribing", "generating", "ready", "failed"],
+    })
+      .notNull()
+      .default("queued"),
+    youtubeUrl: text("youtube_url").notNull(),
+    youtubeVideoId: text("youtube_video_id").notNull(),
+    provider: text("provider", { enum: ["deepgram", "whisper"] }).notNull(),
+    language: text("language", { enum: ["ar", "en"] }).notNull(),
+    tone: text("tone", {
+      enum: ["professional", "educational", "casual", "formal", "enthusiastic"],
+    })
+      .notNull()
+      .default("casual"),
+    tweetCount: integer("tweet_count").notNull().default(8),
+    durationSeconds: integer("duration_seconds"),
+    transcript: text("transcript"),
+    threadResult: jsonb("thread_result").$type<{
+      tweets: Array<{ text: string; charCount: number }>;
+      title: string;
+      videoUrl: string;
+    } | null>(),
+    error: text("error"),
+    errorCode: text("error_code"),
+    quotaConsumed: integer("quota_consumed").default(0),
+    quotaReleased: boolean("quota_released").default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+    completedAt: timestamp("completed_at"),
+  },
+  (t) => ({
+    userIdx: index("yt_thread_jobs_user_idx").on(t.userId, t.createdAt.desc()),
+    statusIdx: index("yt_thread_jobs_status_idx").on(t.status),
+  })
+);
+
 // ── Type Exports ────────────────────────────────────────────────────────────
 export type User = typeof user.$inferSelect;
 export type InsertUser = typeof user.$inferInsert;
@@ -1639,3 +1692,5 @@ export type ModerationFlag = typeof moderationFlag.$inferSelect;
 export type InsertModerationFlag = typeof moderationFlag.$inferInsert;
 export type PdfThreadJob = typeof pdfThreadJobs.$inferSelect;
 export type NewPdfThreadJob = typeof pdfThreadJobs.$inferInsert;
+export type YoutubeThreadJob = typeof youtubeThreadJobs.$inferSelect;
+export type NewYoutubeThreadJob = typeof youtubeThreadJobs.$inferInsert;

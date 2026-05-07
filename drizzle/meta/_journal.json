@@ -498,6 +498,41 @@
       "when": 1777979202758,
       "tag": "0070_chunky_wendell_vaughn",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1778137071406,
+      "tag": "0071_empty_red_ghost",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1778137179171,
+      "tag": "0072_marvelous_thundra",
+      "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1778138938185,
+      "tag": "0073_nice_the_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1778156450977,
+      "tag": "0074_warm_imperial_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1778159260431,
+      "tag": "0075_needy_mach_iv",
+      "breakpoints": true
     }
   ]
 }

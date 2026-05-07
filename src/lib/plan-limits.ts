@@ -30,6 +30,8 @@ export interface PlanLimits {
   canUseAgenticPosting: boolean;
   canUseTools: boolean;
   canUsePdfToThread: boolean;
+  canUseYoutubeToThread: boolean;
+  youtubeToThreadMonthly: number;
 }
 
 export type PlanType = "free" | "trial" | "pro_monthly" | "pro_annual" | "agency";
@@ -63,6 +65,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseAgenticPosting: false,
     canUseTools: false,
     canUsePdfToThread: false,
+    canUseYoutubeToThread: false,
+    youtubeToThreadMonthly: 0,
   },
   trial: {
     postsPerMonth: 20,
@@ -92,6 +96,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseAgenticPosting: false,
     canUseTools: false,
     canUsePdfToThread: false,
+    canUseYoutubeToThread: false,
+    youtubeToThreadMonthly: 0,
   },
   pro_monthly: {
     postsPerMonth: Infinity,
@@ -121,6 +127,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseAgenticPosting: true,
     canUseTools: true,
     canUsePdfToThread: true,
+    canUseYoutubeToThread: true,
+    youtubeToThreadMonthly: 30,
   },
   pro_annual: {
     postsPerMonth: Infinity,
@@ -150,6 +158,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseAgenticPosting: true,
     canUseTools: true,
     canUsePdfToThread: true,
+    canUseYoutubeToThread: true,
+    youtubeToThreadMonthly: 50,
   },
   agency: {
     postsPerMonth: Infinity,
@@ -179,6 +189,8 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUseAgenticPosting: true,
     canUseTools: true,
     canUsePdfToThread: true,
+    canUseYoutubeToThread: true,
+    youtubeToThreadMonthly: Infinity,
   },
 };
 
