@@ -1,5 +1,59 @@
 # Recent Fixes & Changes
 
+## 2026-05-07 — YouTube-to-Thread: Full Implementation
+
+Complete YouTube URL → Twitter thread feature shipped across schema, API routes, BullMQ worker, plan gates, and UI.
+
+### Schema
+
+- New table `youtubeThreadJobs` (21 columns, 2 indexes) — tracks YouTube processing from enqueue through completion. Columns: id, userId, status (queued/downloading/transcribing/generating/ready/failed), youtubeUrl, youtubeVideoId, youtubeTitle, durationSeconds, provider (deepgram/whisper), language, tweetCount, threadResult (JSON), transcript, error, errorCode (10 classified codes: VIDEO_PRIVATE, VIDEO_AGE_GATED, VIDEO_LIVE, VIDEO_TOO_LONG, VIDEO_NO_AUDIO, TRANSCRIPTION_FAILED, MODERATION_FLAGGED, PROVIDER_ERROR, CANCELLED, UNKNOWN), tone (professional/educational/casual/formal/enthusiastic, default casual), quotaConsumed, quotaReleased, thumbnailUrl, createdAt, updatedAt, completedAt.
+- New enum value: `"youtube_to_thread"` in `aiGenerationTypeEnum`; new `"transcription"` type for quota tracking.
+
+### API Routes
+
+- `POST /api/ai/youtube-to-thread` — validate URL (yt-dlp metadata), gate (plan + monthly quota + duration cap), enqueue BullMQ job. Returns jobId + videoInfo preview (title, duration, thumbnail) for previewOnly mode.
+- `GET /api/ai/youtube-to-thread/[jobId]` — poll status; returns threadResult, transcript (when ready), youtubeUrl, provider, language, durationSeconds, errorCode.
+- `DELETE /api/ai/youtube-to-thread/[jobId]` — cancel job, atomically flip quotaReleased, release quota.
+- `GET /api/ai/youtube-to-thread/history` — last 5 ready jobs (thumbnail, title, completedAt).
+- `GET /api/ai/youtube-to-thread/capabilities` — returns `{ providers: { deepgram: boolean, whisper: boolean } }`.
+
+### Worker (`youtubeThreadProcessor` in `src/lib/queue/processors.ts`)
+
+5-phase pipeline: download audio via yt-dlp → transcribe (Deepgram or Whisper, auto-cleanup of temp file in `finally`) → generate thread (OpenRouter + tone prompt) → moderation check → persist + `recordAiUsage()` for both transcription and generation costs. Error classification via 10-code regex classifier. Temp audio file always cleaned up in finally block.
+
+### Plan Gates
+
+- `canUseYoutubeToThread` — boolean gate (Free/Trial blocked).
+- `checkYoutubeToThreadMonthlyDetailed` — counts `aiGenerations WHERE type='youtube_to_thread'` for current month. Limits: Free=0, Trial=0, Pro Monthly=30, Pro Annual=50, Agency=∞.
+- `checkYoutubeVideoDurationDetailed` — per-plan duration cap. Pro=1200s (20 min), Agency=5400s (90 min). Fires after `getVideoInfo()`, before any download.
+- New field: `maxYoutubeVideoDurationSeconds` in `PlanLimits` interface.
+
+### UI
+
+- Page: `/dashboard/ai/youtube-to-thread` with state machine (idle → queued → downloading → transcribing → generating → ready/failed).
+- URL input with live preview (thumbnail + title + duration) before submit.
+- Tone selector (5 options), provider dropdown (hides unconfigured options).
+- AbortController polling with ±500ms jitter, 8s timeout, 5-minute max.
+- Cancel with confirm dialog (quota released atomically).
+- Ready state: thumbnail + "Watch on YouTube" link, tweet cards with char counter + copy, transcript collapsible, meta footer (duration · provider · language · elapsed time).
+- Regenerate button, Recent jobs list (last 5).
+- ARIA live region for screen readers during progress phases.
+- RTL-aware (ArrowLeft with rtl:rotate-180).
+
+### i18n
+
+- New namespace `youtube_to_thread.*` (50+ keys in en.json/ar.json).
+- `ai_history.type.youtube_to_thread` and `ai_history.type.transcription` — history page labels.
+
+### Idempotency & Operations
+
+- Same (userId, videoId) within 60s returns 409 with existingJobId.
+- yt-dlp healthcheck at worker boot (logs yt_dlp_healthcheck_passed / yt_dlp_healthcheck_failed).
+- 90-day TTL cleanup in billing-cleanup cron.
+- AI history: `youtube_to_thread` and `transcription` types show translated labels and secondary badge in `/dashboard/ai/history`.
+
+---
+
 ## 2026-05-06 — Documentation Audit & Sync
 
 - **Doc/code drift fixed across 9 markdown files** — see `.claude/plans/2026-05-06-docs-audit-and-update.md` for full audit findings.

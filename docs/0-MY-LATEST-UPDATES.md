@@ -1,5 +1,51 @@
 # Latest Updates
 
+## 2026-05-07 — YouTube → Thread: Per-Plan Duration Cap + UI Warning
+
+Cost protection: Pro capped at 20 min/video (~$0.12), Agency at 90 min (~$0.53). Warning shown in preview card for videos > 15 min.
+
+### Files Changed
+
+- `src/lib/plan-limits.ts` — Added `maxYoutubeVideoDurationSeconds` to `PlanLimits` interface; free=0, trial=0, pro=1200s, agency=5400s.
+- `src/lib/middleware/require-plan.ts` — Added `"youtube_duration"` to `GatedFeature` union; added `checkYoutubeVideoDurationDetailed(userId, durationSeconds)` returning 402 when over plan cap.
+- `src/app/api/ai/youtube-to-thread/route.ts` — Duration gate fires after `getVideoInfo()` returns, before job enqueue — zero wasted download cost.
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` — Warning badge in preview card when `durationSeconds > 900` (15 min).
+- `src/i18n/messages/en.json` + `ar.json` — Added `youtube_to_thread.errors.video_too_long_plan` and `youtube_to_thread.url_input.long_video_warning`. Key count: 2654/2654.
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2654/2654 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+---
+
+## 2026-05-07 — YouTube → Thread Phase 4 (F4.1–F4.5)
+
+UI/data plumbing PR — no schema changes.
+
+### Files Changed
+
+- `src/app/dashboard/ai/history/page.tsx` — F4.1: Added `youtube_to_thread` and `transcription` to `CONTENT_TYPES` set; history page now shows correct badge variant and translated label for both types.
+- `src/components/ai/pdf-to-thread/thread-result-preview.tsx` — F4.2: Added `thumbnailUrl`, `videoUrl`, `videoUrlLabel` props + media strip (thumbnail + "Watch on YouTube" anchor) above tweet cards. F4.3: Added `meta` prop + muted footer line showing duration · provider · language · elapsed time. Switched `<img>` to `next/image`.
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — F4.2/F4.3/F4.4: Captures `currentVideoId`, `resultMeta` (provider/language/durationSeconds), and `finalElapsedSeconds` (frozen on ready via `elapsedSecondsRef`); passes all to `ThreadResultPreview`. F4.5: `<img>` in recent list → `<Image>`. Import order fixed.
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` — F4.5: Preview thumbnail `<img>` → `<Image>`.
+- `src/app/api/ai/youtube-to-thread/[jobId]/route.ts` — F4.2: Added `youtubeUrl` to GET response (stored column on `youtubeThreadJobs`).
+- `src/i18n/messages/en.json` + `ar.json` — Added `ai_history.type.youtube_to_thread`, `ai_history.type.transcription`, `youtube_to_thread.result.watch_on_youtube`, `youtube_to_thread.result.generated_in`. Key count: 2652/2652.
+- `next.config.ts` — F4.5: Added `i.ytimg.com` to `images.remotePatterns`.
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2652/2652 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+### Manual Verification Needed
+
+- Submit a YouTube URL → wait for ready → confirm thumbnail + "Watch on YouTube" link appear above tweet cards, meta footer shows "Xm Ys · Deepgram · Arabic", elapsed timer shows "Generated in Ns".
+- Visit `/dashboard/ai/history` → confirm YouTube-to-Thread entries show "YouTube to Thread" badge (secondary variant).
+- Switch to `/ar/dashboard/ai/youtube-to-thread` → confirm all new strings render in Arabic and images display correctly (no RTL flip).
+
+---
+
 ## 2026-05-07 — YouTube → Thread Limitations (L1, L2, L7)
 
 Implemented production hardening: yt-dlp healthcheck, monthly count cap, job history TTL cleanup.

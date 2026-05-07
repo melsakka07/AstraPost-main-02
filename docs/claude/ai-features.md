@@ -125,19 +125,27 @@ This document maps all backend AI generation and processing endpoints to their r
   - `GET /api/ai/youtube-to-thread/[jobId]` — Poll job status and result. Returns `transcript` when status is `ready` and `errorCode` for classified failures.
   - `DELETE /api/ai/youtube-to-thread/[jobId]` — Cancel a queued/processing job. Sets `errorCode: "CANCELLED"`.
   - `GET /api/ai/youtube-to-thread/history` — Returns last 5 ready jobs for the current user (`{ items: [{ id, youtubeVideoId, thumbnailUrl, title, completedAt }] }`).
+  - `GET /api/ai/youtube-to-thread/capabilities` — Returns available transcription providers for the current user.
 - **Always async** (no sync path) — YouTube download + transcription takes 15-90+ seconds.
 - **Async path**: BullMQ `youtubeThreadQueue` + `youtubeThreadProcessor` with 5-phase pipeline: (1) yt-dlp downloads audio, (2) Deepgram/Whisper transcribes, (3) OpenRouter generates thread via `generateObject`, (4) moderation check, (5) persist result + record AI usage.
 - **Database**: `youtubeThreadJobs` table (status lifecycle: `queued` → `downloading` → `transcribing` → `generating` → `ready` → `failed`).
-- **Transcription providers**: Deepgram (`YOUTUBE_DEEPGRAM_API_KEY`) or OpenAI Whisper (reuses `OPENAI_API_KEY`).
-- **Safety**: yt-dlp URL validation rejects playlists/channels/shorts, duration cap at 90 minutes, moderation check on output. JAILBREAK_GUARD on generation prompt.
+- **Transcription providers**: Deepgram (`YOUTUBE_DEEPGRAM_API_KEY`) or OpenAI Whisper (reuses `OPENAI_API_KEY`). Cost calculation: ~$0.12 per 20 min (Deepgram), variable per Whisper usage.
+- **Duration caps by plan** (enforced after `getVideoInfo()` before download, gate: `checkYoutubeVideoDurationDetailed()`):
+  - Pro Monthly / Pro Annual: 20 min max per video (1200s) → ~$0.12 Deepgram cost
+  - Agency: 90 min max per video (5400s) → ~$0.53 Deepgram cost
+- **Safety**: yt-dlp URL validation rejects playlists/channels/shorts, moderation check on output. JAILBREAK_GUARD on generation prompt.
 - **Error codes** (`error_code` column): `VIDEO_PRIVATE`, `VIDEO_AGE_GATED`, `VIDEO_LIVE`, `VIDEO_TOO_LONG`, `VIDEO_NO_AUDIO`, `TRANSCRIPTION_FAILED`, `MODERATION_FLAGGED`, `PROVIDER_ERROR`, `CANCELLED`, `UNKNOWN`. Client maps these to localized messages via `youtube_to_thread.errors.*` i18n keys.
 - **Transcript preview**: GET `[jobId]` response includes the `transcript` field when status is `ready`. The result UI renders a collapsible "Show transcript" section.
 - **Regenerate**: Ready state offers a "Regenerate" button that re-submits the same URL/options.
-- **Recent jobs**: Idle state shows the last 5 ready jobs fetched from the `/history` endpoint.
-- **Tone selector**: 5 tone options (professional, educational, casual, formal, enthusiastic) available in the options form, reusing `pdf_to_thread.options.tone*` i18n keys.
+- **Recent jobs**: Idle state shows the last 5 ready jobs fetched from the `/history` endpoint. Thumbnail and title shown in job cards.
+- **Tone selector**: 5 tone options (professional, educational, casual, formal, enthusiastic) available in the options form. Uses dedicated `youtube_to_thread.options.tone_professional`, `tone_educational`, `tone_casual`, `tone_formal`, `tone_enthusiastic` i18n keys (not shared with PDF-to-Thread).
 - **Provider capability detection**: On mount, fetches `/api/ai/youtube-to-thread/capabilities` to determine available transcription providers. Unavailable providers are hidden; if only one is available, it's auto-selected.
 - **Polling jitter**: Recursive `setTimeout` with ±500ms random jitter replaces fixed `setInterval` to prevent thundering herd on the status endpoint.
 - **RTL support**: Back navigation arrow icons include `rtl:rotate-180` for Arabic layout.
+- **Long video warning**: Preview card shows a warning (`text-warning-9`) when `durationSeconds > 900` (15 min). i18n key: `youtube_to_thread.url_input.long_video_warning`.
+- **Result UI metadata footer**: Below tweet cards, a muted line displays `{duration} · {provider} · {language}` plus "Generated in Ns" (frozen elapsed timer from job start).
+- **Thumbnail preview**: Result view shows a thumbnail image derived from `youtubeVideoId` (`https://i.ytimg.com/vi/{videoId}/hqdefault.jpg`) with a "Watch on YouTube" external link. Thumbnail also appears in the preview card before submission and in the Recent jobs list.
+- **AI history labels**: Jobs recorded with `type: "youtube_to_thread"` (the thread) and `type: "transcription"` (audio cost) appear in `/dashboard/ai/history` with proper translated labels via `CONTENT_TYPES` (secondary badge variant).
 - **Monthly count cap** (`youtubeToThreadMonthly`): Free/Trial=0, Pro Monthly=30, Pro Annual=50, Agency=Infinity. Gated by `checkYoutubeToThreadMonthlyDetailed()` counting `aiGenerations WHERE type='youtube_to_thread'` for the current month. Returns 402 on exhaustion.
 - **Job history TTL**: `youtube_thread_jobs` rows older than 90 days are auto-deleted by the billing-cleanup cron.
 - **yt-dlp healthcheck**: Worker boot verifies `yt-dlp --version` and logs a fatal diagnostic if the binary is missing, preventing cryptic ENOENT errors on YouTube-to-Thread jobs.

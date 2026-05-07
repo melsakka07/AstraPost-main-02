@@ -1625,7 +1625,9 @@
       "voice_profile": "ملف صوتي",
       "viral_score": "درجة الانتشار",
       "agentic_approve": "موافقة تلقائية",
-      "trends_discovery": "اتجاهات"
+      "trends_discovery": "اتجاهات",
+      "youtube_to_thread": "يوتيوب إلى ثريد",
+      "transcription": "تفريغ صوتي"
     },
     "previous": "السابق",
     "next": "التالي",
@@ -3034,7 +3036,8 @@
       "invalid": "الرجاء إدخال رابط يوتيوب صالح",
       "preview_duration": "{minutes}د {seconds}ث",
       "quota_remaining": "{used}/{limit} هذا الشهر",
-      "try_sample": "جرّب فيديو تجريبي"
+      "try_sample": "جرّب فيديو تجريبي",
+      "long_video_warning": "فيديو طويل — قد يستغرق التوليد أكثر من دقيقتين"
     },
     "options": {
       "heading": "الخيارات",
@@ -3076,7 +3079,9 @@
       "copied": "تم نسخ الثريد!",
       "generated_success": "تم إنشاء الثريد بنجاح",
       "show_transcript": "عرض النص المفرغ",
-      "regenerate": "إعادة الإنشاء"
+      "regenerate": "إعادة الإنشاء",
+      "watch_on_youtube": "شاهد على يوتيوب",
+      "generated_in": "تم الإنشاء في {seconds} ثانية"
     },
     "errors": {
       "video_too_long": "الفيديو طويل جداً. الحد الأقصى 90 دقيقة.",
@@ -3094,7 +3099,8 @@
       "no_provider_key": "خدمة التفريغ الصوتي غير مهيأة. الرجاء التواصل مع الدعم.",
       "invalid_url": "الرجاء إدخال رابط يوتيوب صالح",
       "polling_connection": "مشكلة في الاتصال — جاري إعادة المحاولة...",
-      "polling_timeout": "العملية تستغرق وقتاً أطول من المتوقع. الثريد لا يزال قيد الإنشاء."
+      "polling_timeout": "العملية تستغرق وقتاً أطول من المتوقع. الثريد لا يزال قيد الإنشاء.",
+      "video_too_long_plan": "خطتك تدعم مقاطع مدتها حتى {minutes} دقيقة. قم بالترقية لمعالجة مقاطع أطول."
     },
     "recent": {
       "title": "السابقة",

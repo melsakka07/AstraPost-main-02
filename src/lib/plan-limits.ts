@@ -32,6 +32,7 @@ export interface PlanLimits {
   canUsePdfToThread: boolean;
   canUseYoutubeToThread: boolean;
   youtubeToThreadMonthly: number;
+  maxYoutubeVideoDurationSeconds: number;
 }
 
 export type PlanType = "free" | "trial" | "pro_monthly" | "pro_annual" | "agency";
@@ -67,6 +68,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUsePdfToThread: false,
     canUseYoutubeToThread: false,
     youtubeToThreadMonthly: 0,
+    maxYoutubeVideoDurationSeconds: 0,
   },
   trial: {
     postsPerMonth: 20,
@@ -98,6 +100,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUsePdfToThread: false,
     canUseYoutubeToThread: false,
     youtubeToThreadMonthly: 0,
+    maxYoutubeVideoDurationSeconds: 0,
   },
   pro_monthly: {
     postsPerMonth: Infinity,
@@ -129,6 +132,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUsePdfToThread: true,
     canUseYoutubeToThread: true,
     youtubeToThreadMonthly: 30,
+    maxYoutubeVideoDurationSeconds: 1200,
   },
   pro_annual: {
     postsPerMonth: Infinity,
@@ -160,6 +164,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUsePdfToThread: true,
     canUseYoutubeToThread: true,
     youtubeToThreadMonthly: 50,
+    maxYoutubeVideoDurationSeconds: 1200,
   },
   agency: {
     postsPerMonth: Infinity,
@@ -191,6 +196,7 @@ export const PLAN_LIMITS: Record<PlanType, PlanLimits> = {
     canUsePdfToThread: true,
     canUseYoutubeToThread: true,
     youtubeToThreadMonthly: Infinity,
+    maxYoutubeVideoDurationSeconds: 5400,
   },
 };
 

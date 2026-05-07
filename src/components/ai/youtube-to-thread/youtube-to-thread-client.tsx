@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Youtube, ArrowLeft, RefreshCw, Loader2, History, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -90,6 +91,12 @@ const ERROR_CODE_I18N_KEYS: Record<string, string> = {
   CANCELLED: "errors.cancelled",
 };
 
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 export function YoutubeToThreadClient() {
@@ -111,6 +118,13 @@ export function YoutubeToThreadClient() {
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [transcript, setTranscript] = useState<string | undefined>(undefined);
   const [errorCode, setErrorCode] = useState<string | undefined>(undefined);
+  const [finalElapsedSeconds, setFinalElapsedSeconds] = useState<number | null>(null);
+  const [resultMeta, setResultMeta] = useState<{
+    durationSeconds?: number;
+    provider?: string;
+    language?: string;
+  } | null>(null);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
 
   // Ref to hold the latest jobId for the poller closure
   const jobIdRef = useRef<string | null>(null);
@@ -123,14 +137,20 @@ export function YoutubeToThreadClient() {
   const retryCountRef = useRef(0);
   const pollStartTimeRef = useRef(0);
   const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedSecondsRef = useRef(0);
 
   // ── Elapsed timer ──────────────────────────────────────────────────
 
   const startElapsedTimer = useCallback(() => {
     setElapsedSeconds(0);
+    elapsedSecondsRef.current = 0;
     if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
     elapsedIntervalRef.current = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
+      setElapsedSeconds((prev) => {
+        const next = prev + 1;
+        elapsedSecondsRef.current = next;
+        return next;
+      });
     }, 1000);
   }, []);
 
@@ -178,6 +198,9 @@ export function YoutubeToThreadClient() {
     setEstimatedSeconds(null);
     setTranscript(undefined);
     setErrorCode(undefined);
+    setFinalElapsedSeconds(null);
+    setResultMeta(null);
+    setCurrentVideoId(null);
   }, [stopElapsedTimer]);
 
   // ── Submit handler ─────────────────────────────────────────────────
@@ -242,6 +265,7 @@ export function YoutubeToThreadClient() {
 
         // Success — enqueued
         setJobId(responseData.jobId as string);
+        setCurrentVideoId((responseData.youtubeVideoId as string) ?? null);
         const durationSeconds = Number(responseData.durationSeconds ?? 0);
         setEstimatedSeconds(
           durationSeconds > 0 ? Math.max(20, Math.round(durationSeconds / 5)) : 20
@@ -396,6 +420,17 @@ export function YoutubeToThreadClient() {
 
         if (pollStatus === "ready") {
           stopElapsedTimer();
+          setFinalElapsedSeconds(elapsedSecondsRef.current);
+          setResultMeta({
+            ...(data.durationSeconds !== undefined && {
+              durationSeconds: data.durationSeconds as number,
+            }),
+            ...(data.provider !== undefined && { provider: data.provider as string }),
+            ...(data.language !== undefined && { language: data.language as string }),
+          });
+          if (data.youtubeVideoId) {
+            setCurrentVideoId(data.youtubeVideoId as string);
+          }
           setStatus("ready");
           const result = data.threadResult as {
             tweets: TweetData[];
@@ -496,11 +531,12 @@ export function YoutubeToThreadClient() {
                       className="hover:bg-muted/50 flex w-full items-center gap-3 px-1 py-2.5 text-left transition-colors"
                       onClick={() => handleRecentJobClick(job.id)}
                     >
-                      <img
+                      <Image
                         src={job.thumbnailUrl}
                         alt=""
-                        className="bg-muted h-10 w-16 shrink-0 rounded object-cover"
-                        loading="lazy"
+                        width={64}
+                        height={40}
+                        className="bg-muted shrink-0 rounded object-cover"
                       />
                       <div className="min-w-0 flex-1">
                         <p className="text-foreground truncate text-sm">
@@ -671,6 +707,21 @@ export function YoutubeToThreadClient() {
             })}
             {...(transcript !== undefined && { transcript })}
             {...(transcript !== undefined && { transcriptLabel: yt("result.show_transcript") })}
+            {...(currentVideoId !== null && {
+              thumbnailUrl: `https://i.ytimg.com/vi/${currentVideoId}/hqdefault.jpg`,
+              videoUrl: `https://www.youtube.com/watch?v=${currentVideoId}`,
+              videoUrlLabel: yt("result.watch_on_youtube"),
+            })}
+            {...(resultMeta !== null && {
+              meta: {
+                ...(resultMeta.durationSeconds !== undefined && {
+                  durationLabel: formatDuration(resultMeta.durationSeconds),
+                }),
+                ...(resultMeta.provider !== undefined && { provider: resultMeta.provider }),
+                ...(resultMeta.language !== undefined && { language: resultMeta.language }),
+                ...(finalElapsedSeconds !== null && { generatedInSeconds: finalElapsedSeconds }),
+              },
+            })}
             onSendToComposer={handleSendToComposer}
           />
         </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Copy, Send, Check } from "lucide-react";
+import Image from "next/image";
+import { Copy, Send, Check, ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,15 @@ interface ThreadResultPreviewProps {
   redactions?: number;
   transcript?: string;
   transcriptLabel?: string;
+  thumbnailUrl?: string;
+  videoUrl?: string;
+  videoUrlLabel?: string;
+  meta?: {
+    durationLabel?: string;
+    provider?: string;
+    language?: string;
+    generatedInSeconds?: number;
+  };
   onSendToComposer?: () => void;
 }
 
@@ -35,6 +45,10 @@ export function ThreadResultPreview({
   redactions,
   transcript,
   transcriptLabel,
+  thumbnailUrl,
+  videoUrl,
+  videoUrlLabel,
+  meta,
   onSendToComposer,
 }: ThreadResultPreviewProps) {
   const t = useTranslations("ai_hub");
@@ -74,6 +88,31 @@ export function ThreadResultPreview({
         </p>
       )}
 
+      {(thumbnailUrl || videoUrl) && (
+        <div className="bg-muted/30 flex items-center gap-3 rounded-lg border p-2.5">
+          {thumbnailUrl && (
+            <Image
+              src={thumbnailUrl}
+              alt=""
+              width={80}
+              height={48}
+              className="shrink-0 rounded object-cover"
+            />
+          )}
+          {videoUrl && videoUrlLabel && (
+            <a
+              href={videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-xs font-medium transition-colors"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {videoUrlLabel}
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Tweet cards */}
       <Card>
         <CardContent className="divide-y p-0">
@@ -94,6 +133,23 @@ export function ThreadResultPreview({
           </p>
         </details>
       )}
+
+      {meta &&
+        (meta.durationLabel ||
+          meta.provider ||
+          meta.language ||
+          meta.generatedInSeconds !== undefined) && (
+          <p className="text-muted-foreground text-xs">
+            {[
+              meta.durationLabel,
+              meta.provider,
+              meta.language,
+              meta.generatedInSeconds !== undefined ? `${meta.generatedInSeconds}s` : undefined,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+        )}
 
       {/* Actions */}
       <div className="flex flex-wrap items-center justify-end gap-2">

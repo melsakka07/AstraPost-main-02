@@ -1625,7 +1625,9 @@
       "voice_profile": "Voice Profile",
       "viral_score": "Viral Score",
       "agentic_approve": "Agentic Approve",
-      "trends_discovery": "Trends"
+      "trends_discovery": "Trends",
+      "youtube_to_thread": "YouTube to Thread",
+      "transcription": "Transcription"
     },
     "previous": "Previous",
     "next": "Next",
@@ -3040,7 +3042,8 @@
       "invalid": "Please enter a valid YouTube video URL",
       "preview_duration": "{minutes}m {seconds}s",
       "quota_remaining": "{used}/{limit} this month",
-      "try_sample": "Try a sample"
+      "try_sample": "Try a sample",
+      "long_video_warning": "Long video — generation may take 2+ minutes"
     },
     "options": {
       "heading": "Options",
@@ -3082,7 +3085,9 @@
       "copied": "Thread copied to clipboard!",
       "generated_success": "Thread generated successfully",
       "show_transcript": "Show transcript",
-      "regenerate": "Regenerate"
+      "regenerate": "Regenerate",
+      "watch_on_youtube": "Watch on YouTube",
+      "generated_in": "Generated in {seconds}s"
     },
     "errors": {
       "video_too_long": "Video is too long. Maximum duration is 90 minutes.",
@@ -3100,7 +3105,8 @@
       "no_provider_key": "Transcription service is not configured. Please contact support.",
       "invalid_url": "Please enter a valid YouTube video URL",
       "polling_connection": "Connection issue — retrying...",
-      "polling_timeout": "Taking longer than expected. The thread is still being generated."
+      "polling_timeout": "Taking longer than expected. The thread is still being generated.",
+      "video_too_long_plan": "Your plan supports videos up to {minutes} minutes. Upgrade to process longer videos."
     },
     "recent": {
       "title": "Recent",

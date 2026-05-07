@@ -29,8 +29,8 @@
 - `OPENROUTER_MODEL_AGENTIC_REVIEWER` — Reviewer model (different family from writer). Falls back to `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL` if not set.
 - `OPENROUTER_MODEL_TRENDS` — Web-search-capable model for trends discovery (e.g. `perplexity/sonar`). Falls back through `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`.
 - `OPENROUTER_MODEL_PDF_TO_THREAD` — Dedicated model for PDF-to-thread generation. Falls back to `OPENROUTER_MODEL` if not set.
-- `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` — Dedicated model for YouTube-to-Thread generation. Falls back to `OPENROUTER_MODEL` if not set.
-- `YOUTUBE_DEEPGRAM_API_KEY` — Deepgram API key for YouTube transcription ($200 free credit at console.deepgram.com). Feature warns if neither provider is configured.
+- `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` — Dedicated model for YouTube-to-Thread generation. Optional; falls back to `OPENROUTER_MODEL` if not set. Allows cost/quality tuning for long-context transcription → thread pipelines.
+- `YOUTUBE_DEEPGRAM_API_KEY` — Deepgram API key for YouTube transcription ($200 free credit at console.deepgram.com). Optional; if not set, Deepgram option is hidden from the UI. Pricing: ~$0.0059/minute — a 20-minute video costs ~$0.12; a 90-minute video costs ~$0.53. Feature warns if neither Deepgram nor Whisper (OpenAI) is configured.
 
 ### Replicate (image generation)
 
@@ -67,7 +67,9 @@
 
 ### Host Dependencies (not env vars, but required for full functionality)
 
-- **yt-dlp** — Required for YouTube-to-Thread audio extraction. Install via `pip install yt-dlp`, `brew install yt-dlp`, `choco install yt-dlp`, or `scoop install yt-dlp`. On Vercel, run the worker from a separate host (Fly/Railway) — Vercel Functions don't ship yt-dlp. Verify with `yt-dlp --version`.
+- **yt-dlp** — Required for YouTube-to-Thread audio extraction. Install via `pip install yt-dlp`, `brew install yt-dlp`, `choco install yt-dlp`, or `scoop install yt-dlp`. Verify with `yt-dlp --version`.
+
+  **CRITICAL: Vercel Functions cannot execute yt-dlp.** yt-dlp requires a native binary that Vercel's serverless runtime does not support. The BullMQ worker process MUST run on a separate host (e.g. Fly.io, Railway, a VPS, or your own server) that has yt-dlp installed. Never deploy the worker to Vercel Functions.
 
 ## Validation Coverage
 

@@ -47,55 +47,56 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ## Features
 
-| Category                      | Capability                                                                                                                                                                               |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Scheduling**                | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts                                                                                          |
-| **Thread Support**            | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview                                                                                                    |
-| **Multi-Platform**            | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan                                                                                                                   |
-| **Background Worker**         | BullMQ + Redis: reliable publishing, 5 attempts with exponential backoff (starting at 60 s)                                                                                              |
-| **Real-time Queue**           | Server-Sent Events (SSE) for live queue status updates                                                                                                                                   |
-| **Queue Management**          | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips                                                                                               |
-| **Draft Management**          | Auto-save every 30 seconds, searchable + sortable draft library, media badge, schedule shortcut                                                                                          |
-| **AI Thread Writer**          | Streaming thread generation (tweets appear one by one), 7 tones, 10 languages — via OpenRouter                                                                                           |
-| **AI Content Calendar**       | Generate weekly/monthly content plans with topics, times, tones, and briefs (Pro/Agency)                                                                                                 |
-| **URL → Thread Converter**    | Paste any article URL; AI scrapes and converts it to a Twitter thread (Pro/Agency)                                                                                                       |
-| **PDF → Thread Converter**    | Upload a PDF report/document (≤50 MB, ≤200 pages); AI extracts text and generates a Twitter thread — sync for small files, async via BullMQ for large files (Pro/Agency, quota weight 5) |
-| **A/B Variant Generator**     | Generate 3 tweet angle variants (emotional/factual/question) for A/B testing (Pro/Agency)                                                                                                |
-| **Reply Suggester**           | Paste a tweet URL; get 5 contextually-relevant reply options with tone control (Pro/Agency)                                                                                              |
-| **Bio Optimizer**             | Generate 3 X bio variants under 160 chars optimized for a chosen goal (Pro/Agency)                                                                                                       |
-| **AI Image Generation**       | Generate images via Replicate (Nano Banana models) directly from the composer                                                                                                            |
-| **AI Hashtag Generator**      | Language-aware, region-aware hashtag suggestions with inline chip UX (MENA priority)                                                                                                     |
-| **AI Inspiration**            | Content ideas and rephrase suggestions powered by OpenRouter                                                                                                                             |
-| **Tweet Inspiration**         | Import public tweets from X, adapt with AI or manually, bookmark for later                                                                                                               |
-| **AI Generation History**     | Browse and reuse past AI-generated content                                                                                                                                               |
-| **Viral Score**               | Real-time viral potential scoring for tweets as you compose                                                                                                                              |
-| **Viral Content Analyzer**    | Bar/hour charts: top hashtags, keywords, best hours/days, content types, tweet length                                                                                                    |
-| **Competitor Analyzer**       | Fetch any public account's recent tweets, generate a strategic AI analysis (Pro/Agency)                                                                                                  |
-| **Best Time to Post**         | Heatmap analysis showing optimal posting windows by day and hour (Pro/Agency)                                                                                                            |
-| **Agentic Posting**           | Drop a topic — AI autonomously researches, writes, generates images, and prepares a ready-to-publish post in 5 steps (Pro/Agency)                                                        |
-| **Trending Topics Discovery** | AI-powered X trending topics by category (Technology, Business, etc.) — no X API required. Available on all plans (quota-free)                                                           |
-| **Voice Profile**             | Store your writing style to personalize AI-generated content (Pro/Agency)                                                                                                                |
-| **Templates**                 | Save and reuse tweet/thread templates with full media support                                                                                                                            |
-| **Analytics**                 | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7-day retention (Free), 90-day (Pro), 365-day (Agency); CSV/PDF export (Pro), white-label PDF (Agency)    |
-| **Link Preview**              | Automatic link preview cards fetched when URLs are added to tweets                                                                                                                       |
-| **URL Shortener**             | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links                                                                                                       |
-| **Multi-Account**             | Connect and manage multiple X accounts per user (1 Free, 3 Pro Monthly, 4 Pro Annual, 10 Agency)                                                                                         |
-| **X Account Management**      | Per-account inline health checks, expired-token detection, confirm-before-disconnect                                                                                                     |
-| **Team Collaboration**        | Agency plan: up to 5 team members, role-based access (owner/admin/editor/viewer), post approval workflows                                                                                |
-| **Admin Panel**               | Admin dashboard with user management, job monitoring, and system metrics                                                                                                                 |
-| **Referral System**           | Built-in referral program with credit tracking                                                                                                                                           |
-| **Achievements**              | Gamification milestones to reward consistent creators                                                                                                                                    |
-| **Onboarding**                | Multi-step wizard + interactive dashboard tour (driver.js)                                                                                                                               |
-| **Mobile Navigation**         | Fixed bottom nav bar, swipe-to-close sidebar (vaul), collapsible nav sections                                                                                                            |
-| **Billing**                   | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, 14-day Pro trial for new users, webhook handling, invoice history                                                           |
-| **Auth**                      | Email/Password + X OAuth 2.0 + 2FA via Better Auth                                                                                                                                       |
-| **Security**                  | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes                                                                                               |
-| **Observability**             | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration                                                                                                  |
-| **Media Uploads**             | Images (4×, 5 MB each), video (512 MB), GIF (15 MB); upload progress indicators                                                                                                          |
-| **Notifications**             | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts)                                                                                                  |
-| **PWA**                       | Installable progressive web app with offline support                                                                                                                                     |
-| **Blog / MDX**                | Built-in MDX blog with syntax highlighting                                                                                                                                               |
-| **Roadmap**                   | Public feedback and voting system                                                                                                                                                        |
+| Category                       | Capability                                                                                                                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Scheduling**                 | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts                                                                                          |
+| **Thread Support**             | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview                                                                                                    |
+| **Multi-Platform**             | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan                                                                                                                   |
+| **Background Worker**          | BullMQ + Redis: reliable publishing, 5 attempts with exponential backoff (starting at 60 s)                                                                                              |
+| **Real-time Queue**            | Server-Sent Events (SSE) for live queue status updates                                                                                                                                   |
+| **Queue Management**           | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips                                                                                               |
+| **Draft Management**           | Auto-save every 30 seconds, searchable + sortable draft library, media badge, schedule shortcut                                                                                          |
+| **AI Thread Writer**           | Streaming thread generation (tweets appear one by one), 7 tones, 10 languages — via OpenRouter                                                                                           |
+| **AI Content Calendar**        | Generate weekly/monthly content plans with topics, times, tones, and briefs (Pro/Agency)                                                                                                 |
+| **URL → Thread Converter**     | Paste any article URL; AI scrapes and converts it to a Twitter thread (Pro/Agency)                                                                                                       |
+| **PDF → Thread Converter**     | Upload a PDF report/document (≤50 MB, ≤200 pages); AI extracts text and generates a Twitter thread — sync for small files, async via BullMQ for large files (Pro/Agency, quota weight 5) |
+| **YouTube → Thread Converter** | Paste a YouTube URL; AI transcribes audio and generates a Twitter thread — async job queue. Pro: 20 min video max / 30 jobs per month, Agency: 90 min max / unlimited (Pro/Agency)       |
+| **A/B Variant Generator**      | Generate 3 tweet angle variants (emotional/factual/question) for A/B testing (Pro/Agency)                                                                                                |
+| **Reply Suggester**            | Paste a tweet URL; get 5 contextually-relevant reply options with tone control (Pro/Agency)                                                                                              |
+| **Bio Optimizer**              | Generate 3 X bio variants under 160 chars optimized for a chosen goal (Pro/Agency)                                                                                                       |
+| **AI Image Generation**        | Generate images via Replicate (Nano Banana models) directly from the composer                                                                                                            |
+| **AI Hashtag Generator**       | Language-aware, region-aware hashtag suggestions with inline chip UX (MENA priority)                                                                                                     |
+| **AI Inspiration**             | Content ideas and rephrase suggestions powered by OpenRouter                                                                                                                             |
+| **Tweet Inspiration**          | Import public tweets from X, adapt with AI or manually, bookmark for later                                                                                                               |
+| **AI Generation History**      | Browse and reuse past AI-generated content                                                                                                                                               |
+| **Viral Score**                | Real-time viral potential scoring for tweets as you compose                                                                                                                              |
+| **Viral Content Analyzer**     | Bar/hour charts: top hashtags, keywords, best hours/days, content types, tweet length                                                                                                    |
+| **Competitor Analyzer**        | Fetch any public account's recent tweets, generate a strategic AI analysis (Pro/Agency)                                                                                                  |
+| **Best Time to Post**          | Heatmap analysis showing optimal posting windows by day and hour (Pro/Agency)                                                                                                            |
+| **Agentic Posting**            | Drop a topic — AI autonomously researches, writes, generates images, and prepares a ready-to-publish post in 5 steps (Pro/Agency)                                                        |
+| **Trending Topics Discovery**  | AI-powered X trending topics by category (Technology, Business, etc.) — no X API required. Available on all plans (quota-free)                                                           |
+| **Voice Profile**              | Store your writing style to personalize AI-generated content (Pro/Agency)                                                                                                                |
+| **Templates**                  | Save and reuse tweet/thread templates with full media support                                                                                                                            |
+| **Analytics**                  | Per-tweet impressions, likes, retweets, replies, link clicks, engagement rate; 7-day retention (Free), 90-day (Pro), 365-day (Agency); CSV/PDF export (Pro), white-label PDF (Agency)    |
+| **Link Preview**               | Automatic link preview cards fetched when URLs are added to tweets                                                                                                                       |
+| **URL Shortener**              | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links                                                                                                       |
+| **Multi-Account**              | Connect and manage multiple X accounts per user (1 Free, 3 Pro Monthly, 4 Pro Annual, 10 Agency)                                                                                         |
+| **X Account Management**       | Per-account inline health checks, expired-token detection, confirm-before-disconnect                                                                                                     |
+| **Team Collaboration**         | Agency plan: up to 5 team members, role-based access (owner/admin/editor/viewer), post approval workflows                                                                                |
+| **Admin Panel**                | Admin dashboard with user management, job monitoring, and system metrics                                                                                                                 |
+| **Referral System**            | Built-in referral program with credit tracking                                                                                                                                           |
+| **Achievements**               | Gamification milestones to reward consistent creators                                                                                                                                    |
+| **Onboarding**                 | Multi-step wizard + interactive dashboard tour (driver.js)                                                                                                                               |
+| **Mobile Navigation**          | Fixed bottom nav bar, swipe-to-close sidebar (vaul), collapsible nav sections                                                                                                            |
+| **Billing**                    | Stripe Checkout for Pro Monthly / Pro Annual / Agency plans, 14-day Pro trial for new users, webhook handling, invoice history                                                           |
+| **Auth**                       | Email/Password + X OAuth 2.0 + 2FA via Better Auth                                                                                                                                       |
+| **Security**                   | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes                                                                                               |
+| **Observability**              | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration                                                                                                  |
+| **Media Uploads**              | Images (4×, 5 MB each), video (512 MB), GIF (15 MB); upload progress indicators                                                                                                          |
+| **Notifications**              | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts)                                                                                                  |
+| **PWA**                        | Installable progressive web app with offline support                                                                                                                                     |
+| **Blog / MDX**                 | Built-in MDX blog with syntax highlighting                                                                                                                                               |
+| **Roadmap**                    | Public feedback and voting system                                                                                                                                                        |
 
 ---
 
@@ -112,6 +113,8 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | AI text generations / month  | 20              | 50                  | 150                   | 250                              | Unlimited       |
 | AI image generations / month | 10              | 25                  | 50                    | 50                               | Unlimited       |
 | AI image models              | Fast + Fallback | **Fast + Fallback** | Fast + Pro + Fallback | Fast + Pro + Fallback + Advanced | All models      |
+| YouTube-to-Thread / month    | 0               | **0**               | 30                    | 50                               | Unlimited       |
+| YouTube video duration cap   | —               | **—**               | 20 min                | 20 min                           | 90 min          |
 | Analytics retention          | 7 days          | **7 days**          | 90 days               | 90 days                          | 365 days        |
 | Analytics export             | —               | **—**               | CSV + PDF             | CSV + PDF                        | White-label PDF |
 | Inspiration bookmarks        | 5               | **5**               | Unlimited             | Unlimited                        | Unlimited       |
@@ -129,33 +132,34 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 
 ### Feature Gates (source of truth: `src/lib/middleware/require-plan.ts`)
 
-| Feature                  | Free       | Pro | Agency         |
-| ------------------------ | ---------- | --- | -------------- |
-| AI text generation       | ✅ (20/mo) | ✅  | ✅             |
-| AI writing tools (tools) | —          | ✅  | ✅             |
-| Thread scheduling        | —          | ✅  | ✅             |
-| Video & GIF uploads      | —          | ✅  | ✅             |
-| AI Viral Score           | —          | ✅  | ✅             |
-| AI Voice Profile         | —          | ✅  | ✅             |
-| Voice variants           | —          | ✅  | ✅             |
-| Best Time to Post        | —          | ✅  | ✅             |
-| AI Content Calendar      | —          | ✅  | ✅             |
-| URL → Thread Converter   | —          | ✅  | ✅             |
-| PDF → Thread Converter   | —          | ✅  | ✅             |
-| A/B Variant Generator    | —          | ✅  | ✅             |
-| Competitor Analyzer      | —          | ✅  | ✅             |
-| Reply Suggester          | —          | ✅  | ✅             |
-| Bio Optimizer            | —          | ✅  | ✅             |
-| Agentic Posting          | —          | ✅  | ✅             |
-| AI Refine (iterative)    | —          | ✅  | ✅             |
-| AI Feedback (👍/👎)      | —          | ✅  | ✅             |
-| Affiliate Generator      | —          | ✅  | ✅             |
-| AI image model: Pro tier | —          | ✅  | ✅             |
-| LinkedIn integration     | —          | —   | ✅             |
-| Team collaboration       | —          | —   | ✅ (5 members) |
-| White-label PDF export   | —          | —   | ✅             |
-| Trending Topics          | ✅         | ✅  | ✅             |
-| Tweet inspiration        | ✅         | ✅  | ✅             |
+| Feature                    | Free       | Pro | Agency         |
+| -------------------------- | ---------- | --- | -------------- |
+| AI text generation         | ✅ (20/mo) | ✅  | ✅             |
+| AI writing tools (tools)   | —          | ✅  | ✅             |
+| Thread scheduling          | —          | ✅  | ✅             |
+| Video & GIF uploads        | —          | ✅  | ✅             |
+| AI Viral Score             | —          | ✅  | ✅             |
+| AI Voice Profile           | —          | ✅  | ✅             |
+| Voice variants             | —          | ✅  | ✅             |
+| Best Time to Post          | —          | ✅  | ✅             |
+| AI Content Calendar        | —          | ✅  | ✅             |
+| URL → Thread Converter     | —          | ✅  | ✅             |
+| PDF → Thread Converter     | —          | ✅  | ✅             |
+| YouTube → Thread Converter | —          | ✅  | ✅             |
+| A/B Variant Generator      | —          | ✅  | ✅             |
+| Competitor Analyzer        | —          | ✅  | ✅             |
+| Reply Suggester            | —          | ✅  | ✅             |
+| Bio Optimizer              | —          | ✅  | ✅             |
+| Agentic Posting            | —          | ✅  | ✅             |
+| AI Refine (iterative)      | —          | ✅  | ✅             |
+| AI Feedback (👍/👎)        | —          | ✅  | ✅             |
+| Affiliate Generator        | —          | ✅  | ✅             |
+| AI image model: Pro tier   | —          | ✅  | ✅             |
+| LinkedIn integration       | —          | —   | ✅             |
+| Team collaboration         | —          | —   | ✅ (5 members) |
+| White-label PDF export     | —          | —   | ✅             |
+| Trending Topics            | ✅         | ✅  | ✅             |
+| Tweet inspiration          | ✅         | ✅  | ✅             |
 
 ### Billing Implementation
 
@@ -501,17 +505,20 @@ Open **http://localhost:3000** in your browser.
 
 **AI Services**
 
-| Variable                            | Required For           | Description                                                                                          |
-| ----------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| `OPENROUTER_API_KEY`                | All AI text generation | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                          |
-| `OPENROUTER_MODEL_AGENTIC`          | Agentic Posting        | Dedicated model for 5-step agentic pipeline. Falls back to `OPENROUTER_MODEL`                        |
-| `OPENROUTER_MODEL_AGENTIC_REVIEWER` | Agentic review step    | Reviewer model from a different family than the writer. Falls back to `OPENROUTER_MODEL_AGENTIC`     |
-| `OPENROUTER_MODEL_TRENDS`           | Trending Topics        | Web-search-capable model (e.g. `perplexity/sonar`). Falls back to `OPENROUTER_MODEL_FREE`            |
-| `OPENROUTER_MODEL_FREE`             | Quota-free endpoints   | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                          |
-| `OPENROUTER_MODEL_PDF_TO_THREAD`    | PDF-to-Thread          | Dedicated model for PDF-to-thread generation (sync + async). Falls back to `OPENROUTER_MODEL`        |
-| `OPENAI_API_KEY`                    | Content moderation     | When set, enables OpenAI Moderation API as primary check; falls back to 25-pattern regex when absent |
-| `OPENAI_MODERATION_MODEL`           | Content moderation     | Moderation API model (default: `omni-moderation-latest`, see `src/lib/env.ts:66`)                    |
-| `REPLICATE_API_TOKEN`               | AI image generation    | Get from [replicate.com/account](https://replicate.com/account)                                      |
+| Variable                             | Required For           | Description                                                                                                                      |
+| ------------------------------------ | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `OPENROUTER_API_KEY`                 | All AI text generation | Get from [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys)                                                      |
+| `OPENROUTER_MODEL_AGENTIC`           | Agentic Posting        | Dedicated model for 5-step agentic pipeline. Falls back to `OPENROUTER_MODEL`                                                    |
+| `OPENROUTER_MODEL_AGENTIC_REVIEWER`  | Agentic review step    | Reviewer model from a different family than the writer. Falls back to `OPENROUTER_MODEL_AGENTIC`                                 |
+| `OPENROUTER_MODEL_TRENDS`            | Trending Topics        | Web-search-capable model (e.g. `perplexity/sonar`). Falls back to `OPENROUTER_MODEL_FREE`                                        |
+| `OPENROUTER_MODEL_FREE`              | Quota-free endpoints   | Cheap/free model for non-billed endpoints. Falls back to `OPENROUTER_MODEL`                                                      |
+| `OPENROUTER_MODEL_PDF_TO_THREAD`     | PDF-to-Thread          | Dedicated model for PDF-to-thread generation (sync + async). Falls back to `OPENROUTER_MODEL`                                    |
+| `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` | YouTube-to-Thread      | Optional dedicated model for YouTube thread generation. Falls back to `OPENROUTER_MODEL`                                         |
+| `YOUTUBE_DEEPGRAM_API_KEY`           | YouTube transcription  | Optional Deepgram API key for audio transcription ($200 free credit, then pay-per-minute). Falls back to OpenAI Whisper if unset |
+| `YT_DLP_PATH`                        | YouTube download       | Optional path override for yt-dlp binary. **yt-dlp must run on the worker host — Vercel Functions cannot execute yt-dlp.**       |
+| `OPENAI_API_KEY`                     | Content moderation     | When set, enables OpenAI Moderation API as primary check; falls back to 25-pattern regex when absent                             |
+| `OPENAI_MODERATION_MODEL`            | Content moderation     | Moderation API model (default: `omni-moderation-latest`, see `src/lib/env.ts:66`)                                                |
+| `REPLICATE_API_TOKEN`                | AI image generation    | Get from [replicate.com/account](https://replicate.com/account)                                                                  |
 
 **Billing (Stripe)**
 
@@ -608,50 +615,51 @@ pnpm run env:check            # Validate all environment variables and warn on m
 
 AstraPost uses **Drizzle ORM** with PostgreSQL. Key tables:
 
-| Table                       | Description                                                                                                                            |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `user`                      | App users (Better Auth compatible) — includes timezone, language, plan, Stripe customer ID, referral code, 2FA, voice profile          |
-| `session`                   | Active user sessions                                                                                                                   |
-| `account`                   | OAuth provider accounts (X, LinkedIn, Instagram)                                                                                       |
-| `verification`              | Email/token verification records                                                                                                       |
-| `x_accounts`                | Connected X accounts with encrypted tokens, follower count, default flag, token expiry                                                 |
-| `linkedin_accounts`         | Connected LinkedIn accounts with encrypted tokens                                                                                      |
-| `instagram_accounts`        | Connected Instagram accounts with long-lived tokens                                                                                    |
-| `posts`                     | Scheduled/published/draft posts — platform, type, status, approval, recurrence, idempotency                                            |
-| `tweets`                    | Individual tweet cards within a post (ordered by `position`)                                                                           |
-| `media`                     | Uploaded media files linked to tweets (requires `user_id`)                                                                             |
-| `tweet_analytics`           | Latest analytics snapshot per tweet (impressions, likes, retweets, etc.)                                                               |
-| `tweet_analytics_snapshots` | Historical analytics records over time                                                                                                 |
-| `social_analytics`          | Cross-platform analytics (LinkedIn, Instagram)                                                                                         |
-| `follower_snapshots`        | Daily follower count snapshots per X account                                                                                           |
-| `analytics_refresh_runs`    | Audit log of analytics refresh jobs (multi-platform)                                                                                   |
-| `team_members`              | Agency team member records with roles                                                                                                  |
-| `team_invitations`          | Pending team invitations                                                                                                               |
-| `ai_generations`            | History of AI-generated content (model, subFeature, tokensIn/Out, costEstimateCents, promptVersion, latencyMs, fallbackUsed, feedback) |
-| `user_ai_counters`          | Per-user atomic quota counter (`tryConsumeAiQuota`) — period start + used + limit, prevents race overage                               |
-| `ai_quota_grants`           | Admin-granted quota top-ups (oldest-first consumption when base quota exhausts)                                                        |
-| `moderation_flag`           | Pre-publish content moderation flags (categories, snippet, generationId)                                                               |
-| `agentic_posts`             | 5-step Agentic Posting sessions (Research→Strategy→Write→Images→Review) with auto-resume after 5-min idle                              |
-| `inspiration_bookmarks`     | Saved tweet inspirations                                                                                                               |
-| `subscriptions`             | Stripe subscription records linked to users                                                                                            |
-| `processed_webhook_events`  | Stripe webhook idempotency log + retry tracking                                                                                        |
-| `webhook_dead_letter_queue` | Stripe webhooks that exhausted retries — admin alert surface                                                                           |
-| `webhook_delivery_log`      | Audit log for outbound webhook deliveries                                                                                              |
-| `plan_change_log`           | Audit trail for plan changes (1-year retention via `PLAN_CHANGE_LOG_RETENTION_YEARS`)                                                  |
-| `job_runs`                  | BullMQ job execution history with correlation IDs                                                                                      |
-| `failed_jobs`               | Jobs that exhausted all retry attempts                                                                                                 |
-| `affiliate_links`           | Amazon affiliate product data and generated promotional tweets                                                                         |
-| `affiliate_clicks`          | Click tracking for affiliate links                                                                                                     |
-| `notifications`             | In-app notification feed per user                                                                                                      |
-| `pdfThreadJobs`             | Async PDF-to-thread job lifecycle (uploading → extracting → ready/failed) — 21 columns, 2 indexes (Pro Monthly+ feature)               |
-| `templates`                 | Saved tweet/thread templates                                                                                                           |
-| `milestones`                | Gamification achievements per user                                                                                                     |
-| `feedback`                  | Product roadmap feature requests                                                                                                       |
-| `feedback_votes`            | User votes on roadmap items                                                                                                            |
-| `promo_codes`               | Promotional discount codes                                                                                                             |
-| `promo_code_redemptions`    | Promo code usage history                                                                                                               |
-| `feature_flags`             | Runtime feature flag configuration with Redis cache                                                                                    |
-| `admin_audit_log`           | Audit log for sensitive admin operations (impersonation, grants, trial extensions)                                                     |
+| Table                       | Description                                                                                                                                                                                                                                                                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `user`                      | App users (Better Auth compatible) — includes timezone, language, plan, Stripe customer ID, referral code, 2FA, voice profile                                                                                                                                                                                                                                      |
+| `session`                   | Active user sessions                                                                                                                                                                                                                                                                                                                                               |
+| `account`                   | OAuth provider accounts (X, LinkedIn, Instagram)                                                                                                                                                                                                                                                                                                                   |
+| `verification`              | Email/token verification records                                                                                                                                                                                                                                                                                                                                   |
+| `x_accounts`                | Connected X accounts with encrypted tokens, follower count, default flag, token expiry                                                                                                                                                                                                                                                                             |
+| `linkedin_accounts`         | Connected LinkedIn accounts with encrypted tokens                                                                                                                                                                                                                                                                                                                  |
+| `instagram_accounts`        | Connected Instagram accounts with long-lived tokens                                                                                                                                                                                                                                                                                                                |
+| `posts`                     | Scheduled/published/draft posts — platform, type, status, approval, recurrence, idempotency                                                                                                                                                                                                                                                                        |
+| `tweets`                    | Individual tweet cards within a post (ordered by `position`)                                                                                                                                                                                                                                                                                                       |
+| `media`                     | Uploaded media files linked to tweets (requires `user_id`)                                                                                                                                                                                                                                                                                                         |
+| `tweet_analytics`           | Latest analytics snapshot per tweet (impressions, likes, retweets, etc.)                                                                                                                                                                                                                                                                                           |
+| `tweet_analytics_snapshots` | Historical analytics records over time                                                                                                                                                                                                                                                                                                                             |
+| `social_analytics`          | Cross-platform analytics (LinkedIn, Instagram)                                                                                                                                                                                                                                                                                                                     |
+| `follower_snapshots`        | Daily follower count snapshots per X account                                                                                                                                                                                                                                                                                                                       |
+| `analytics_refresh_runs`    | Audit log of analytics refresh jobs (multi-platform)                                                                                                                                                                                                                                                                                                               |
+| `team_members`              | Agency team member records with roles                                                                                                                                                                                                                                                                                                                              |
+| `team_invitations`          | Pending team invitations                                                                                                                                                                                                                                                                                                                                           |
+| `ai_generations`            | History of AI-generated content (model, subFeature, tokensIn/Out, costEstimateCents, promptVersion, latencyMs, fallbackUsed, feedback)                                                                                                                                                                                                                             |
+| `user_ai_counters`          | Per-user atomic quota counter (`tryConsumeAiQuota`) — period start + used + limit, prevents race overage                                                                                                                                                                                                                                                           |
+| `ai_quota_grants`           | Admin-granted quota top-ups (oldest-first consumption when base quota exhausts)                                                                                                                                                                                                                                                                                    |
+| `moderation_flag`           | Pre-publish content moderation flags (categories, snippet, generationId)                                                                                                                                                                                                                                                                                           |
+| `agentic_posts`             | 5-step Agentic Posting sessions (Research→Strategy→Write→Images→Review) with auto-resume after 5-min idle                                                                                                                                                                                                                                                          |
+| `inspiration_bookmarks`     | Saved tweet inspirations                                                                                                                                                                                                                                                                                                                                           |
+| `subscriptions`             | Stripe subscription records linked to users                                                                                                                                                                                                                                                                                                                        |
+| `processed_webhook_events`  | Stripe webhook idempotency log + retry tracking                                                                                                                                                                                                                                                                                                                    |
+| `webhook_dead_letter_queue` | Stripe webhooks that exhausted retries — admin alert surface                                                                                                                                                                                                                                                                                                       |
+| `webhook_delivery_log`      | Audit log for outbound webhook deliveries                                                                                                                                                                                                                                                                                                                          |
+| `plan_change_log`           | Audit trail for plan changes (1-year retention via `PLAN_CHANGE_LOG_RETENTION_YEARS`)                                                                                                                                                                                                                                                                              |
+| `job_runs`                  | BullMQ job execution history with correlation IDs                                                                                                                                                                                                                                                                                                                  |
+| `failed_jobs`               | Jobs that exhausted all retry attempts                                                                                                                                                                                                                                                                                                                             |
+| `affiliate_links`           | Amazon affiliate product data and generated promotional tweets                                                                                                                                                                                                                                                                                                     |
+| `affiliate_clicks`          | Click tracking for affiliate links                                                                                                                                                                                                                                                                                                                                 |
+| `notifications`             | In-app notification feed per user                                                                                                                                                                                                                                                                                                                                  |
+| `pdfThreadJobs`             | Async PDF-to-thread job lifecycle (uploading → extracting → ready/failed) — 21 columns, 2 indexes (Pro Monthly+ feature)                                                                                                                                                                                                                                           |
+| `youtubeThreadJobs`         | YouTube-to-Thread async jobs. Columns: id, userId, status (queued/downloading/transcribing/generating/ready/failed), youtubeUrl, youtubeVideoId, youtubeTitle, durationSeconds, provider (deepgram/whisper), language, tweetCount, tone, threadResult (JSON), transcript (text), error, errorCode, quotaConsumed, quotaReleased, completedAt, createdAt, updatedAt |
+| `templates`                 | Saved tweet/thread templates                                                                                                                                                                                                                                                                                                                                       |
+| `milestones`                | Gamification achievements per user                                                                                                                                                                                                                                                                                                                                 |
+| `feedback`                  | Product roadmap feature requests                                                                                                                                                                                                                                                                                                                                   |
+| `feedback_votes`            | User votes on roadmap items                                                                                                                                                                                                                                                                                                                                        |
+| `promo_codes`               | Promotional discount codes                                                                                                                                                                                                                                                                                                                                         |
+| `promo_code_redemptions`    | Promo code usage history                                                                                                                                                                                                                                                                                                                                           |
+| `feature_flags`             | Runtime feature flag configuration with Redis cache                                                                                                                                                                                                                                                                                                                |
+| `admin_audit_log`           | Audit log for sensitive admin operations (impersonation, grants, trial extensions)                                                                                                                                                                                                                                                                                 |
 
 To inspect or modify the schema interactively:
 

@@ -1,0 +1,4 @@
+# Railway Nixpacks build config for the BullMQ worker.
+# yt-dlp requires ffmpeg to merge audio streams on some video formats.
+[phases.setup]
+nixPkgs = ["yt-dlp", "ffmpeg"]

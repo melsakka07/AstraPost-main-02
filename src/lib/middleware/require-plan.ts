@@ -38,7 +38,8 @@ export type GatedFeature =
   | "affiliate_generator"
   | "tools"
   | "pdf_to_thread"
-  | "youtube_to_thread";
+  | "youtube_to_thread"
+  | "youtube_duration";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -475,6 +476,32 @@ export async function checkYoutubeToThreadMonthlyDetailed(userId: string): Promi
     suggestedPlan: "pro_annual",
     trialActive: context.isTrialActive,
     resetAt: end,
+  });
+}
+
+export async function checkYoutubeVideoDurationDetailed(
+  userId: string,
+  durationSeconds: number
+): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  const limits = getPlanLimits(context.effectivePlan);
+
+  // free/trial have maxYoutubeVideoDurationSeconds === 0; they are blocked upstream by the
+  // feature access gate (canUseYoutubeToThread). No need to surface a duration error here.
+  if (limits.maxYoutubeVideoDurationSeconds === 0) return { allowed: true };
+
+  if (durationSeconds <= limits.maxYoutubeVideoDurationSeconds) return { allowed: true };
+
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "youtube_duration",
+    message: `Videos longer than ${Math.floor(limits.maxYoutubeVideoDurationSeconds / 60)} minutes require an Agency plan.`,
+    plan: context.plan,
+    limit: limits.maxYoutubeVideoDurationSeconds,
+    used: durationSeconds,
+    suggestedPlan: "agency",
+    trialActive: context.isTrialActive,
+    resetAt: null,
   });
 }
 

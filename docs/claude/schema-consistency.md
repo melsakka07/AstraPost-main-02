@@ -90,6 +90,18 @@ Before 2026-05-02, `vercel.json` pointed Vercel at `build:ci` which was just `ne
    - Update section label translations too
    - Example: `label: "Growth"` needs `"growth": "Growth"` in en.json
 
+4. **YouTube-to-Thread schema verification** (shipped 2026-05-07)
+   - `youtubeThreadJobs` table created across 3 migrations:
+     - Initial table (0073) — 21 columns: id, userId, status, youtubeUrl, youtubeVideoId, youtubeTitle, durationSeconds, provider, language, tweetCount, threadResult, transcript, error, quotaConsumed, quotaReleased, createdAt, updatedAt, completedAt, thumbnailUrl
+     - `error_code` column added (0074) — VARCHAR(10) for classified error codes
+     - `tone` column added (0075) — enum (professional/educational/casual/formal/enthusiastic, default casual)
+   - `aiGenerationTypeEnum` extended: new values `"youtube_to_thread"` and `"transcription"`
+   - `PlanLimits` interface updated: new `maxYoutubeVideoDurationSeconds` field (Pro=1200, Agency=5400)
+   - i18n namespaces to verify:
+     - `youtube_to_thread.*` — complete namespace (url_input, options, actions, progress, result, errors, recent) in both `src/i18n/messages/en.json` and `src/i18n/messages/ar.json`
+     - `ai_history.type.youtube_to_thread` and `ai_history.type.transcription` — history page labels (both languages)
+     - NOTE: `youtube_to_thread.options.tone*` keys live in `youtube_to_thread` namespace, NOT reusing `pdf_to_thread` keys
+
 ### Pre-Commit Hook
 
 Add to `settings.json` hooks (future iteration):

@@ -10,6 +10,7 @@ import { logger } from "@/lib/logger";
 import {
   checkYoutubeToThreadAccessDetailed,
   checkYoutubeToThreadMonthlyDetailed,
+  checkYoutubeVideoDurationDetailed,
   createPlanLimitResponse,
 } from "@/lib/middleware/require-plan";
 import { youtubeThreadQueue, YOUTUBE_THREAD_JOB_OPTIONS } from "@/lib/queue/client";
@@ -93,6 +94,16 @@ export async function POST(req: Request) {
     if (!monthlyCheck.allowed) {
       await releaseQuota();
       return createPlanLimitResponse(monthlyCheck);
+    }
+
+    // Step 8a-ii: Per-plan video duration cap (Pro = 20 min, Agency = 90 min)
+    const durationGate = await checkYoutubeVideoDurationDetailed(
+      session.user.id,
+      videoInfo.durationSeconds
+    );
+    if (!durationGate.allowed) {
+      await releaseQuota();
+      return createPlanLimitResponse(durationGate);
     }
 
     // Step 8b: Idempotency check — prevent double-submit for same video within 60s

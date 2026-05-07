@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { Youtube, Loader2 } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -244,15 +245,19 @@ export function YoutubeUrlInput({ onSubmit, isLoading }: YoutubeUrlInputProps) {
             )}
             {preview && (
               <div className="bg-muted/40 flex gap-3 rounded-md border p-2.5">
-                <img
+                <Image
                   src={preview.thumbnailUrl}
                   alt={preview.videoTitle}
-                  className="h-16 w-28 rounded object-cover"
-                  loading="lazy"
+                  width={112}
+                  height={64}
+                  className="rounded object-cover"
                 />
                 <div className="min-w-0 space-y-1">
                   <p className="line-clamp-2 text-sm font-medium">{preview.videoTitle}</p>
                   <p className="text-muted-foreground text-xs">{formattedDuration}</p>
+                  {preview.durationSeconds > 900 && (
+                    <p className="text-warning-9 text-xs">{yt("url_input.long_video_warning")}</p>
+                  )}
                 </div>
               </div>
             )}

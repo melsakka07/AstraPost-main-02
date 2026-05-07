@@ -8,6 +8,13 @@ ENV PNPM_HOME="/pnpm" \
     NODE_ENV=production
 RUN corepack enable
 
+# Install yt-dlp (single-file binary) and ffmpeg (required by yt-dlp to merge audio streams)
+RUN apt-get update && apt-get install -y ffmpeg curl ca-certificates --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
+       -o /usr/local/bin/yt-dlp \
+    && chmod a+rx /usr/local/bin/yt-dlp
+
 WORKDIR /app
 
 # --- Dependencies layer (cached unless lockfile changes) ---

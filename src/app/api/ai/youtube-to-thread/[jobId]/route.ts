@@ -47,6 +47,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
     const res = Response.json({
       jobId: job.id,
       status: job.status,
+      youtubeUrl: job.youtubeUrl,
       youtubeVideoId: job.youtubeVideoId,
       provider: job.provider,
       language: job.language,

@@ -22,6 +22,8 @@ const CONTENT_TYPES = new Set([
   "reply_generator",
   "translate",
   "hashtags",
+  "youtube_to_thread",
+  "transcription",
 ]);
 
 const ANALYSIS_TYPES = new Set(["viral_score", "competitor_analyzer", "content_calendar", "tools"]);

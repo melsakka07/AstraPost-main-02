@@ -11,7 +11,7 @@ src/
 │   ├── brand/                    # Internal brand kit reference page (noindex)
 │   ├── api/
 │   │   ├── admin/                # Admin APIs (Subscribers, AI Usage, Teams, Impersonation, Billing Analytics, Notifications)
-│   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score, PDF-to-Thread)
+│   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score, PDF-to-Thread, YouTube-to-Thread)
 │   │   ├── analytics/            # Analytics (Followers, Engagement, Best Time, Competitor, Export)
 │   │   ├── announcement/         # Public announcements
 │   │   ├── auth/[...all]/        # Better Auth catch-all
@@ -28,7 +28,7 @@ src/
 │   │   ├── user/                 # User profile, preferences, voice-profile, referrals
 │   │   └── x/                    # X account management, subscription tier sync & tweet lookup
 │   ├── chat/                     # AI chat interface
-│   ├── dashboard/                # Core app: achievements, affiliate, ai, analytics, calendar, compose, drafts, inspiration, jobs, onboarding, queue, referrals, settings
+│   ├── dashboard/                # Core app: achievements, affiliate, ai, analytics, calendar, compose, drafts, inspiration, jobs, onboarding, queue, referrals, settings, youtube-to-thread
 │   ├── go/[shortCode]/           # Affiliate link redirect
 │   ├── join-team/                # Team invitation landing page
 │   └── profile/                  # User profile public view
@@ -98,6 +98,10 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/app/api/ai/pdf-to-thread/generate/route.ts` — Sync thread generation from PDF
 - `src/app/api/ai/pdf-to-thread/enqueue/route.ts` — Async PDF thread enqueue to BullMQ
 - `src/app/api/ai/pdf-to-thread/[jobId]/route.ts` — Job status poll + cancel
+- `src/app/api/ai/youtube-to-thread/route.ts` — YouTube URL validation + metadata preview + job enqueue
+- `src/app/api/ai/youtube-to-thread/[jobId]/route.ts` — Job status poll + result + cancel
+- `src/app/api/ai/youtube-to-thread/history/route.ts` — Last 5 ready jobs for user
+- `src/app/api/ai/youtube-to-thread/capabilities/route.ts` — Available transcription providers
 
 ### Core Services
 
@@ -107,7 +111,13 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/lib/services/moderation.ts` — Pre-publish content moderation
 - `src/lib/services/agentic-pipeline.ts` — 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
 - `src/lib/services/x-api.ts` — Twitter/X API client
-- `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics, PDF-to-Thread)
+- `src/lib/services/youtube.ts` — YouTube URL parsing + metadata via yt-dlp, `getVideoInfo()`, `extractAudio()`
+- `src/lib/services/transcription.ts` — Deepgram + Whisper adapter, cost calculation, provider routing
+- `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics, PDF-to-Thread, YouTube-to-Thread)
+
+### BullMQ Processors
+
+- `youtubeThreadProcessor` in `src/lib/queue/processors.ts` — 5-phase pipeline: download audio (yt-dlp) → transcribe (Deepgram/Whisper) → generate thread (OpenRouter) → moderation check → persist result
 
 ### AI Security & Quality Modules
 
