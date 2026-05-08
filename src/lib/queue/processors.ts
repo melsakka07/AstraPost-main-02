@@ -1299,8 +1299,125 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
   const audioPath = path.join(tempDir, `yt-${jobId}.${audioExt}`);
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
-
   try {
+    // ── Branch: title-only generation (oEmbed fallback, no duration) ──────
+
+    if (row.durationVerified === false) {
+      logger.info("youtube_thread_title_only", { jobId, title: row.videoTitle });
+
+      await db
+        .update(youtubeThreadJobs)
+        .set({ status: "generating", updatedAt: new Date() })
+        .where(eq(youtubeThreadJobs.id, jobId));
+
+      const langBlock = buildLanguageBlock(row.language, "social");
+      const title = row.videoTitle ?? "Untitled YouTube Video";
+
+      const dynamicYoutubeThreadOutputSchema = z.object({
+        tweets: z.array(z.string()),
+        title: z.string(),
+      });
+
+      const { object: rawResult, usage } = await generateObject({
+        model,
+        schema: dynamicYoutubeThreadOutputSchema,
+        system:
+          `You are a social media expert who creates engaging X (Twitter) threads from YouTube video titles.\n\n` +
+          `REQUIREMENTS:\n` +
+          `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
+          `- Each tweet MUST be 280 characters or less\n` +
+          `- Make the thread engaging and easy to read\n` +
+          `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
+          `- The first tweet should hook the reader with the video title\n` +
+          `- Expand on what the video likely covers based on the title\n` +
+          `- The last tweet should include a call-to-action or takeaway\n` +
+          `- Do NOT mention that you haven't watched the video\n\n` +
+          `${langBlock}\n\n` +
+          `${JAILBREAK_GUARD}`,
+        prompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title. Infer what the video likely covers from the title and expand on those topics.`,
+      });
+
+      totalInputTokens = usage?.inputTokens ?? 0;
+      totalOutputTokens = usage?.outputTokens ?? 0;
+
+      const trimmedTweets = rawResult.tweets
+        .map((t: string) => (t.length > 280 ? t.slice(0, 280) : t))
+        .filter((t: string) => t.trim().length > 0)
+        .slice(0, row.tweetCount);
+
+      if (trimmedTweets.length === 0) {
+        throw new Error("Model returned no tweets");
+      }
+
+      const result = { tweets: trimmedTweets, title: rawResult.title };
+
+      // Moderation check
+      const tweetsText = result.tweets.join("\n");
+      const { flagged } = await moderateOutput(tweetsText, userId, undefined);
+      if (flagged) {
+        await db
+          .update(youtubeThreadJobs)
+          .set({
+            status: "failed",
+            error: "Content moderation flagged the generated thread.",
+            errorCode: "MODERATION_FLAGGED",
+            updatedAt: new Date(),
+          })
+          .where(eq(youtubeThreadJobs.id, jobId));
+        logger.warn("youtube_thread_moderation_flagged", { jobId, userId });
+        return;
+      }
+
+      // Persist result
+      const persisted = await db
+        .update(youtubeThreadJobs)
+        .set({
+          status: "ready",
+          threadResult: {
+            tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+            title: result.title,
+            videoUrl: row.youtubeUrl,
+          },
+          completedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(youtubeThreadJobs.id, jobId),
+            or(eq(youtubeThreadJobs.status, "queued"), eq(youtubeThreadJobs.status, "generating"))
+          )
+        )
+        .returning({ id: youtubeThreadJobs.id });
+
+      if (persisted.length === 0) {
+        logger.info("youtube_thread_aborted_pre_persist", { jobId });
+        return;
+      }
+
+      await recordAiUsage({
+        userId,
+        type: "youtube_to_thread",
+        model: modelId,
+        subFeature: "youtube_to_thread",
+        tokensIn: totalInputTokens,
+        tokensOut: totalOutputTokens,
+        costEstimateCents: estimateCost(modelId, totalInputTokens, totalOutputTokens),
+        promptVersion: "youtube_to_thread:v2",
+        latencyMs: Date.now() - startTs,
+        language: row.language,
+      });
+
+      logger.info("youtube_thread_job_completed", {
+        jobId,
+        userId,
+        tweetCount: result.tweets.length,
+        mode: "title_only",
+      });
+      return;
+    }
+
+    // ── Full pipeline: audio download + transcription + thread generation ──
+
     // Phase 1: Download audio
     await db
       .update(youtubeThreadJobs)
@@ -1321,8 +1438,7 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
     const audioBuffer = await readFile(audioPath);
     const transcription = await transcribe(audioBuffer, row.provider, mimeType);
 
-    // Cancellation guard: if the user (or anything else) marked the job terminal
-    // while we were transcribing, stop now and don't overwrite that state.
+    // Cancellation guard
     const [postTranscribe] = await db
       .select({ status: youtubeThreadJobs.status })
       .from(youtubeThreadJobs)
@@ -1335,10 +1451,6 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       return;
     }
 
-    // Preserve the validated duration from yt-dlp if transcription provider
-    // didn't report one (avoids zero-out when segments metadata is missing).
-    // Round to integer because the column is `integer`, but Deepgram/Whisper
-    // return fractional seconds.
     const updatedDuration =
       transcription.durationSeconds > 0
         ? Math.round(transcription.durationSeconds)
@@ -1355,7 +1467,6 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       })
       .where(eq(youtubeThreadJobs.id, jobId));
 
-    // Record transcription cost as a separate ai_generations row
     await recordAiUsage({
       userId,
       type: "transcription",
@@ -1377,9 +1488,6 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
 
     const langBlock = buildLanguageBlock(row.language, "social");
 
-    // NOTE: do not constrain array length in the schema (`minItems`/`maxItems`).
-    // Some OpenRouter providers (Amazon Bedrock) reject `minItems > 1`. The
-    // prompt asks for the exact count and we enforce it after generation.
     const dynamicYoutubeThreadOutputSchema = z.object({
       tweets: z.array(z.string()),
       title: z.string(),

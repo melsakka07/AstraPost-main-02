@@ -180,6 +180,7 @@ export async function POST(req: Request) {
         status: "queued",
         youtubeUrl,
         youtubeVideoId: videoId,
+        videoTitle: videoInfo.title,
         provider,
         language,
         tone,
