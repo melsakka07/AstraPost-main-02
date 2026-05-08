@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { cachedQuery } from "@/lib/cache";
 import { db } from "@/lib/db";
+import { logger } from "@/lib/logger";
 import {
   getPlanLimits,
   normalizePlan,
@@ -58,7 +59,7 @@ export interface PlanGateFailure {
   plan: PlanType;
   limit: number | null;
   used: number;
-  suggestedPlan: PlanType;
+  suggestedPlan?: PlanType;
   trialActive: boolean;
   resetAt: Date | null;
 }
@@ -84,6 +85,14 @@ async function getPlanContext(userId: string): Promise<PlanContext> {
       // Grace period enforcement: if planExpiresAt has passed, treat as free
       const now = new Date();
       const effectivePlanBase = dbUser?.planExpiresAt && dbUser.planExpiresAt < now ? "free" : plan;
+
+      if (effectivePlanBase === "free" && plan !== "free") {
+        logger.warn("plan_context_expired_grace_period", {
+          userId,
+          storedPlan: plan,
+          planExpiresAt: dbUser?.planExpiresAt?.toISOString() ?? null,
+        });
+      }
 
       if (plan === "free" && !trialEndsAt && dbUser?.createdAt) {
         const inferredTrialEndsAt = new Date(dbUser.createdAt);
@@ -492,14 +501,19 @@ export async function checkYoutubeVideoDurationDetailed(
 
   if (durationSeconds <= limits.maxYoutubeVideoDurationSeconds) return { allowed: true };
 
+  const maxMinutes = Math.floor(limits.maxYoutubeVideoDurationSeconds / 60);
+  const isAlreadyMax = context.effectivePlan === "agency";
+
   return buildFailure({
     error: "upgrade_required",
     feature: "youtube_duration",
-    message: `Videos longer than ${Math.floor(limits.maxYoutubeVideoDurationSeconds / 60)} minutes require an Agency plan.`,
+    message: isAlreadyMax
+      ? `Videos cannot exceed ${maxMinutes} minutes. Please shorten your video and try again.`
+      : `Videos longer than ${maxMinutes} minutes require an Agency plan.`,
     plan: context.plan,
     limit: limits.maxYoutubeVideoDurationSeconds,
     used: durationSeconds,
-    suggestedPlan: "agency",
+    ...(!isAlreadyMax && { suggestedPlan: "agency" as const }),
     trialActive: context.isTrialActive,
     resetAt: null,
   });

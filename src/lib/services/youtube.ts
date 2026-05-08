@@ -26,10 +26,10 @@ interface YouTubePlayerResponse {
   };
 }
 
-/** YouTube public API key extracted from the web client. */
-const INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
-
-const INNERTUBE_URL = `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`;
+function getInnertubeUrl(): string {
+  const key = process.env.YOUTUBE_INNERTUBE_API_KEY;
+  return `https://www.youtube.com/youtubei/v1/player?key=${key}&prettyPrint=false`;
+}
 
 interface YouTubeClient {
   name: string;
@@ -124,7 +124,7 @@ async function fetchYouTubePlayer(videoId: string, client: YouTubeClient): Promi
 
   let data: YouTubePlayerResponse;
   try {
-    const res = await fetch(INNERTUBE_URL, {
+    const res = await fetch(getInnertubeUrl(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

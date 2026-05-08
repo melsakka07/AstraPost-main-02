@@ -47,6 +47,10 @@ const serverEnvSchema = z.object({
   // Optional: dedicated model for YouTube-to-Thread generation. Falls back to OPENROUTER_MODEL if not set.
   OPENROUTER_MODEL_YOUTUBE_TO_THREAD: z.string().optional(),
 
+  // YouTube innertube API key — public key extracted from the web client,
+  // used for video metadata fetching. Defaults to the well-known key.
+  YOUTUBE_INNERTUBE_API_KEY: z.string().default("AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"),
+
   // AI - YouTube transcription (optional — feature disabled if neither is set)
   YOUTUBE_DEEPGRAM_API_KEY: z.string().optional(),
 

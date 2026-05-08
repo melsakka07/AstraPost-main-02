@@ -1,5 +1,75 @@
 # Latest Updates
 
+## 2026-05-08 — Agency Plan Gate Fix & Mid-Cycle Upgrade Quota Audit
+
+### Agency YouTube-to-Thread block investigation
+
+An agency subscriber reported being blocked from YouTube-to-Thread with an "upgrade required" message. Investigation confirmed the gate code itself is correct — agency has `canUseYoutubeToThread: true`, `youtubeToThreadMonthly: Infinity`, and `maxYoutubeVideoDurationSeconds: 5400`. The likely root cause is `planExpiresAt` being in the past on the user's DB row, which forces `getPlanContext()` to treat the effective plan as `"free"` regardless of the stored `plan` column.
+
+1. **Fixed dead-end error for agency users** — `checkYoutubeVideoDurationDetailed` showed "require an Agency plan" even for agency users exceeding 90 minutes. Now shows "Videos cannot exceed 90 minutes. Please shorten your video and try again." and omits `suggestedPlan` from the response since there is no higher tier.
+2. **Made `suggestedPlan` optional in `PlanGateFailure`** — Supports the case where the user is already at the highest tier and no meaningful upgrade exists.
+3. **Added diagnostic log** — `getPlanContext` now emits a warning log when `planExpiresAt` forces effective plan to `"free"` despite the stored `plan` being a paid tier, making future debugging straightforward.
+
+### Mid-cycle plan upgrade quota verification
+
+Verified that AI text and image quotas apply immediately when a user upgrades mid-cycle (free → pro, pro → agency). No code changes were needed:
+
+- **AI text quota** (`src/lib/services/ai-quota-atomic.ts`): `refreshLimitAndConsume()` detects when the stored counter limit doesn't match the current plan's limit and updates it immediately. Agency (Infinity) bypasses the counter entirely.
+- **AI image quota** (`src/lib/services/ai-quota.ts`): Count-based — reads the plan fresh each call, so the limit updates immediately with the plan.
+- **Webhook** (`src/app/api/billing/webhook/route.ts`): `handleSubscriptionUpdated` atomically updates `user.plan`, clears `planExpiresAt`, writes `planChangeLog`, and invalidates the 5-minute plan cache.
+
+### Diagnostic SQL
+
+To check if the blocked subscriber has an expired `planExpiresAt`:
+
+```sql
+SELECT id, email, plan, "planExpiresAt", "trialEndsAt", "createdAt"
+FROM "user"
+WHERE plan = 'agency' AND "planExpiresAt" IS NOT NULL;
+```
+
+### Files Changed
+
+- `src/lib/middleware/require-plan.ts` — Fixed video duration dead-end message, made `suggestedPlan` optional, added grace-period expiry warning log
+
+### Quality Gate
+
+- `pnpm lint`: PASS
+- `pnpm typecheck`: PASS
+- `pnpm check:i18n`: PASS (2780 keys matched)
+- `pnpm test`: PASS (34 files, 321 tests)
+
+---
+
+## 2026-05-08 — YouTube Client Rotation Fix & X Token Refresh 400 Classification
+
+### YouTube video info fetching (`src/lib/services/youtube.ts`)
+
+YouTube's InnerTube API was rejecting all client types, causing every YouTube-to-Thread request to fail with 400 or "no longer supported" errors. The rotating client list was outdated and missing the required API key.
+
+1. **Added InnerTube API key** — The `?key=` query parameter is required by YouTube's player endpoint; requests without it are rejected. Uses the public key extracted from the YouTube web client.
+2. **Replaced client rotation** — iOS (v20.05.02) added as primary client (least restrictive for server-side), Android updated to v20.05.02/SDK 35, TV Embedded updated to v2.0.21 with correct embed URL origin.
+3. **Per-client User-Agent** — Each client now sends its own device-matched User-Agent header instead of a single hardcoded Android UA.
+
+### X token refresh 400 → permanent classification (`src/lib/services/x-error.ts`)
+
+HTTP 400 from X's OAuth token refresh endpoint means `invalid_grant` — the refresh token is expired, revoked, or already consumed (PKCE refresh tokens are single-use). Previously `classifyRefreshError()` returned `null` for 400, causing it to fall through to transient backoff (1m → 5m → 15m → 1h → 2h) without ever auto-deactivating the account.
+
+- **Added `code === 400` to permanent classification** — Same path as 401: account auto-deactivated, post set to `paused_needs_reconnect`, user emailed to reconnect.
+- **Impact**: In production, a dead X refresh token now triggers immediate account deactivation and user notification instead of silently retrying for hours.
+
+### Files Changed
+
+- `src/lib/services/youtube.ts` — 3 rotating clients (iOS, Android, TV Embedded) with API key and per-client User-Agent
+- `src/lib/services/x-error.ts` — HTTP 400 classified as permanent token failure
+
+### Quality Gate
+
+- `pnpm lint`: PASS
+- `pnpm typecheck`: Pre-existing error in `require-plan.ts:507` (unrelated in-progress change)
+
+---
+
 ## 2026-05-08 — Sidebar navigation cleanup — hub-and-spoke IA
 
 - Reduced sidebar from 22 → 14 items by enforcing hub-and-spoke navigation pattern.

@@ -27,8 +27,10 @@ export function classifyRefreshError(error: unknown): TokenRefreshError | null {
   const code = (error as Record<string, unknown>)?.code as number | undefined;
   const message = error instanceof Error ? error.message : String(error);
 
-  // Permanent: 401 means the token is revoked or expired irrecoverably
-  if (code === 401 || message.includes("X_SESSION_EXPIRED")) return "permanent";
+  // Permanent: token is revoked, expired, or irrecoverable.
+  // 401 = invalid_client / expired; 400 from the token endpoint = invalid_grant
+  // (refresh token already used, revoked, or expired).
+  if (code === 401 || code === 400 || message.includes("X_SESSION_EXPIRED")) return "permanent";
 
   // Rate limited by X
   if (code === 429 || message.includes("X_RATE_LIMITED")) return "rate_limited";
