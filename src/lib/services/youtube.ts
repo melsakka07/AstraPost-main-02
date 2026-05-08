@@ -168,6 +168,20 @@ const YOUTUBE_CLIENTS: YouTubeClient[] = [
     userAgent: "com.google.android.apps.youtube.vr.oculus/1.66.0 (Linux; U; Android 14; Quest 3)",
   },
   {
+    // MWEB — mobile web, less aggressively rate-limited than desktop WEB
+    name: "MWEB",
+    context: {
+      client: {
+        clientName: "MWEB",
+        clientVersion: "2.20250224.01.00",
+        hl: "en",
+      },
+    },
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.7 Mobile/15E148 Safari/604.1",
+    needsVisitorData: true,
+  },
+  {
     name: "IOS",
     context: {
       client: {
@@ -267,13 +281,13 @@ export async function getVideoInfoHttp(
     // WEB client needs visitorData from page scraping; skip if unavailable
     if (client.needsVisitorData && !pageConfig?.visitorData) continue;
 
+    // Pass scraped API key and visitorData to ALL clients, not just WEB.
+    // visitorData links the request to a watch-page session, reducing bot flags.
+    const apiKey = pageConfig?.apiKey;
+    const vData = pageConfig?.visitorData;
+
     try {
-      const result = await fetchYouTubePlayer(
-        videoId,
-        client,
-        pageConfig?.apiKey,
-        pageConfig?.visitorData
-      );
+      const result = await fetchYouTubePlayer(videoId, client, apiKey, vData);
       logger.info("youtube_get_video_info_http_success", {
         videoId,
         clientUsed: client.name,
@@ -644,10 +658,8 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
 /**
  * Extract the best audio stream to outputPath.
  *
- * Calls:
- *   yt-dlp -f "bestaudio[ext=m4a]/bestaudio" -o <outputPath> --no-playlist <url>
- *
- * with a 120s timeout. Throws on non-zero exit.
+ * Calls yt-dlp with anti-detection headers matching the innertube API clients.
+ * 120s timeout. Throws on non-zero exit.
  */
 export async function extractAudio(url: string, outputPath: string): Promise<void> {
   const ytDlpPath = resolveYtDlpPath();
@@ -657,7 +669,33 @@ export async function extractAudio(url: string, outputPath: string): Promise<voi
   try {
     await execFileAsync(
       ytDlpPath,
-      ["-f", "bestaudio[ext=m4a]/bestaudio", "-o", outputPath, "--no-playlist", url],
+      [
+        "-f",
+        "bestaudio[ext=m4a]/bestaudio",
+        "-o",
+        outputPath,
+        "--no-playlist",
+        "--extractor-retries",
+        "3",
+        "--retries",
+        "3",
+        "--fragment-retries",
+        "3",
+        "--socket-timeout",
+        "30",
+        "--force-ipv4",
+        "--user-agent",
+        "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
+        "--add-header",
+        "Accept:*/*",
+        "--add-header",
+        "Origin:https://www.youtube.com",
+        "--add-header",
+        "Referer:https://www.youtube.com/",
+        "--add-header",
+        "Accept-Language:en-US,en;q=0.9",
+        url,
+      ],
       { timeout: 120000, maxBuffer: 1024 * 1024 }
     );
   } catch (err) {
