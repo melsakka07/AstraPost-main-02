@@ -1,7 +1,7 @@
 import "server-only";
 
 import { execFile } from "child_process";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync } from "fs";
 import path from "path";
 import { promisify } from "util";
 import { logger } from "@/lib/logger";
@@ -652,19 +652,109 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
 }
 
 // ---------------------------------------------------------------------------
-// Audio extraction
+// Audio extraction — yt-dlp --get-url (fast URL extraction) + HTTP download
 // ---------------------------------------------------------------------------
 
 /**
  * Extract the best audio stream to outputPath.
  *
- * Calls yt-dlp with anti-detection headers matching the innertube API clients.
- * 120s timeout. Throws on non-zero exit.
+ * Two-phase: (1) yt-dlp --get-url extracts the CDN stream URL (~5s), then
+ * Node.js HTTP fetch downloads it; (2) fall back to yt-dlp full download.
+ * The --get-url phase is much faster because yt-dlp only does extraction.
+ * The HTTP download is faster because it avoids yt-dlp's Python overhead.
  */
 export async function extractAudio(url: string, outputPath: string): Promise<void> {
+  logger.info("youtube_extract_audio_start", { url, outputPath });
+
+  // Phase 1: get the CDN stream URL via yt-dlp, then download via HTTP
+  const streamUrl = await getYtDlpStreamUrl(url);
+  if (streamUrl) {
+    logger.info("youtube_audio_got_stream_url", { url });
+    try {
+      await downloadAudioStream(streamUrl, outputPath);
+      logger.info("youtube_extract_audio_success", { url, outputPath, method: "get-url+http" });
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn("youtube_audio_http_download_failed", { url, error: message });
+    }
+  }
+
+  // Phase 2: full yt-dlp download
+  logger.info("youtube_extract_audio_ytdlp_fallback", { url });
+  await extractAudioViaYtDlp(url, outputPath);
+  logger.info("youtube_extract_audio_success", { url, outputPath, method: "yt-dlp" });
+}
+
+/** Use yt-dlp --get-url to resolve the CDN stream URL quickly (~5s). */
+async function getYtDlpStreamUrl(url: string): Promise<string | null> {
   const ytDlpPath = resolveYtDlpPath();
 
-  logger.info("youtube_extract_audio_start", { url, outputPath });
+  try {
+    const { stdout } = await execFileAsync(
+      ytDlpPath,
+      [
+        "-f",
+        "bestaudio[ext=m4a]/bestaudio",
+        "--get-url",
+        "--no-playlist",
+        "--socket-timeout",
+        "15",
+        "--force-ipv4",
+        "--user-agent",
+        "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
+        "--add-header",
+        "Accept:*/*",
+        "--add-header",
+        "Origin:https://www.youtube.com",
+        "--add-header",
+        "Referer:https://www.youtube.com/",
+        "--add-header",
+        "Accept-Language:en-US,en;q=0.9",
+        url,
+      ],
+      { timeout: 30_000, maxBuffer: 1024 * 1024 }
+    );
+
+    const result = stdout.trim();
+    if (result && result.startsWith("http")) return result;
+    return null;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.warn("youtube_get_stream_url_failed", { url, error: message });
+    return null;
+  }
+}
+
+/** Download an audio stream URL via HTTP fetch (no yt-dlp overhead). */
+async function downloadAudioStream(streamUrl: string, outputPath: string): Promise<void> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90_000);
+
+  try {
+    const res = await fetch(streamUrl, {
+      headers: {
+        "User-Agent":
+          "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
+        Accept: "*/*",
+        Origin: "https://www.youtube.com",
+        Referer: "https://www.youtube.com/",
+      },
+      signal: controller.signal,
+    });
+
+    if (!res.ok) throw new Error(`Audio stream HTTP ${res.status}`);
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    writeFileSync(outputPath, buffer);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/** Full yt-dlp download fallback with anti-detection headers. */
+async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<void> {
+  const ytDlpPath = resolveYtDlpPath();
 
   try {
     await execFileAsync(
@@ -700,15 +790,9 @@ export async function extractAudio(url: string, outputPath: string): Promise<voi
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("youtube_extract_audio_failed", {
-      url,
-      outputPath,
-      error: message,
-    });
+    logger.error("youtube_extract_audio_ytdlp_failed", { url, outputPath, error: message });
     throw new Error(`yt-dlp audio extraction failed: ${message}`);
   }
-
-  logger.info("youtube_extract_audio_success", { url, outputPath });
 }
 
 // ---------------------------------------------------------------------------
