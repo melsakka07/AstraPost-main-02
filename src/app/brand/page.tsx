@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Download } from "lucide-react";
+import { getLocale } from "next-intl/server";
 import { Logo, LogoMark } from "@/components/brand";
 import {
   neutral,
@@ -114,11 +115,13 @@ const DOWNLOADS = [
 // Page
 // ---------------------------------------------------------------------------
 
-export default function BrandKitPage() {
+export default async function BrandKitPage() {
+  const locale = await getLocale();
+
   return (
     <div className="bg-background text-foreground min-h-screen">
       <main className="mx-auto max-w-5xl px-6 py-16 md:py-24">
-        <Hero />
+        <Hero locale={locale} />
         <TableOfContents />
         <LogoSection />
         <ColorSection />
@@ -135,8 +138,8 @@ export default function BrandKitPage() {
 // Sections
 // ---------------------------------------------------------------------------
 
-function Hero() {
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
+function Hero({ locale }: { locale: string }) {
+  const lastUpdated = new Date().toLocaleDateString(locale, {
     year: "numeric",
     month: "long",
     day: "numeric",

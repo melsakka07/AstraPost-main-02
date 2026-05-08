@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import {
   Area,
   AreaChart,
@@ -18,6 +19,8 @@ interface FollowerChartProps {
 }
 
 export function FollowerChart({ data, className }: FollowerChartProps) {
+  const locale = useLocale();
+
   return (
     <Card className={cn("col-span-4", className)}>
       <CardHeader>
@@ -51,7 +54,7 @@ export function FollowerChart({ data, className }: FollowerChartProps) {
                 axisLine={false}
                 tickFormatter={(value) => {
                   const date = new Date(value);
-                  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
                 }}
               />
               <YAxis

@@ -42,7 +42,7 @@ export function CommandPalette() {
       label: item.label,
       href: item.href,
       icon: item.icon,
-      category: "Navigation",
+      category: t("category_navigation"),
     }))
   );
 
@@ -50,9 +50,9 @@ export function CommandPalette() {
   const themeItems: CommandItem[] = [
     {
       id: "theme:light",
-      label: "Light Theme",
+      label: t("theme_light"),
       icon: Sun,
-      category: "Theme",
+      category: t("category_theme"),
       action: () => {
         setTheme("light");
         setOpen(false);
@@ -60,9 +60,9 @@ export function CommandPalette() {
     },
     {
       id: "theme:dark",
-      label: "Dark Theme",
+      label: t("theme_dark"),
       icon: Moon,
-      category: "Theme",
+      category: t("category_theme"),
       action: () => {
         setTheme("dark");
         setOpen(false);
@@ -203,8 +203,14 @@ export function CommandPalette() {
 
           <div className="border-t px-3 py-2 text-end">
             <p className="text-muted-foreground text-xs">
-              Press <kbd className="bg-muted rounded px-2 py-1 text-xs font-medium">⌘K</kbd> or{" "}
-              <kbd className="bg-muted rounded px-2 py-1 text-xs font-medium">Ctrl+K</kbd> anytime
+              {t.rich("footer_hint", {
+                mac: (chunks) => (
+                  <kbd className="bg-muted rounded px-2 py-1 text-xs font-medium">{chunks}</kbd>
+                ),
+                win: (chunks) => (
+                  <kbd className="bg-muted rounded px-2 py-1 text-xs font-medium">{chunks}</kbd>
+                ),
+              })}
             </p>
           </div>
         </DialogContent>

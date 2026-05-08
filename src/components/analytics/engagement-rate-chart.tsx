@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import {
   CartesianGrid,
   Line,
@@ -18,6 +19,8 @@ interface EngagementRateChartProps {
 }
 
 export function EngagementRateChart({ data, className }: EngagementRateChartProps) {
+  const locale = useLocale();
+
   return (
     <Card className={cn("col-span-4", className)}>
       <CardHeader>
@@ -45,7 +48,7 @@ export function EngagementRateChart({ data, className }: EngagementRateChartProp
                 axisLine={false}
                 tickFormatter={(value) => {
                   const date = new Date(value);
-                  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
                 }}
               />
               <YAxis

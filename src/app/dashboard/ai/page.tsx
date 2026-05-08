@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertCircle, Sparkles, TrendingUp } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { AiToolsGrid, type AiToolId } from "@/components/ai/ai-tools-grid";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,8 @@ export default async function AIHubPage() {
 
   const ctx = await getTeamContext();
   if (!ctx) redirect("/login");
+
+  const locale = await getLocale();
 
   const [userPlan, usage] = await Promise.all([
     getUserPlanType(ctx.currentTeamId),
@@ -83,7 +85,7 @@ export default async function AIHubPage() {
               </div>
               <p className="text-muted-foreground text-xs">
                 {t.rich("resets_on", {
-                  date: new Date(usage.resetDate).toLocaleDateString("en-US", {
+                  date: new Date(usage.resetDate).toLocaleDateString(locale, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",

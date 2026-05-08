@@ -72,13 +72,6 @@ interface AiImageDialogProps {
   attachedCount: number;
 }
 
-const MODEL_LABELS: Record<ImageModel, string> = {
-  "nano-banana-2": "Nano Banana 2 (Fast)",
-  "nano-banana-pro": "Nano Banana Pro (Best)",
-  "nano-banana": "Nano Banana",
-  "gpt-image-2": "GPT Image 2 (Advanced)",
-};
-
 const ASPECT_RATIO_CLASSES: Record<AspectRatio, string> = {
   "1:1": "aspect-square",
   "16:9": "aspect-video",
@@ -86,13 +79,13 @@ const ASPECT_RATIO_CLASSES: Record<AspectRatio, string> = {
   "9:16": "aspect-[9/16]",
 };
 
-const STYLE_OPTIONS: Array<{ value: ImageStyle; label: string; emoji: string }> = [
-  { value: "photorealistic", label: "Photorealistic", emoji: "📷" },
-  { value: "illustration", label: "Illustration", emoji: "🎨" },
-  { value: "minimalist", label: "Minimalist", emoji: "✨" },
-  { value: "abstract", label: "Abstract", emoji: "🔮" },
-  { value: "infographic", label: "Infographic", emoji: "📊" },
-  { value: "meme", label: "Meme", emoji: "😄" },
+const STYLE_OPTIONS: Array<{ value: ImageStyle; emoji: string }> = [
+  { value: "photorealistic", emoji: "📷" },
+  { value: "illustration", emoji: "🎨" },
+  { value: "minimalist", emoji: "✨" },
+  { value: "abstract", emoji: "🔮" },
+  { value: "infographic", emoji: "📊" },
+  { value: "meme", emoji: "😄" },
 ];
 
 export function AiImageDialog({
@@ -464,7 +457,7 @@ export function AiImageDialog({
                     return (
                       <SelectItem key={m} value={m} disabled={isLocked}>
                         <span className="flex items-center gap-2">
-                          {MODEL_LABELS[m]}
+                          {t(`model_${m}`)}
                           {isLocked && <Lock className="text-muted-foreground h-3 w-3 shrink-0" />}
                         </span>
                       </SelectItem>
@@ -520,7 +513,7 @@ export function AiImageDialog({
                   onClick={() => setStyle(option.value)}
                   disabled={isGenerating}
                 >
-                  {option.emoji} {option.label}
+                  {option.emoji} {t(`style_${option.value}`)}
                 </Button>
               ))}
             </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Calendar, User, Shield, ArrowLeft, Lock, Smartphone } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { useSession } from "@/lib/auth-client";
 export default function ProfilePage() {
   const t = useTranslations("profile");
   const { data: session, isPending } = useSession();
+  const locale = useLocale();
   const router = useRouter();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
@@ -45,7 +46,7 @@ export default function ProfilePage() {
 
   const user = session.user;
   const createdDate = user.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-US", {
+    ? new Date(user.createdAt).toLocaleDateString(locale, {
         year: "numeric",
         month: "long",
         day: "numeric",

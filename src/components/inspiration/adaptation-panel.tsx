@@ -66,6 +66,8 @@ export function AdaptationPanel({
 }: AdaptationPanelProps) {
   const { data: session } = useSession();
   const t = useTranslations("inspiration");
+  const th = useTranslations("ai_hub");
+  const td = useTranslations("dashboard_shell");
   const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
   const [aiAction, setAiAction] = useState("rephrase");
   const [aiTone, setAiTone] = useState("professional");
@@ -200,7 +202,7 @@ export function AdaptationPanel({
                 <SelectContent>
                   {TONES.map((tone) => (
                     <SelectItem key={tone.value} value={tone.value}>
-                      {tone.label}
+                      {th(`tone.${tone.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -217,7 +219,7 @@ export function AdaptationPanel({
                 <SelectContent>
                   {LANGUAGES.map((lang) => (
                     <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
+                      {lang.value === "ar" ? td("language_arabic") : td("language_english")}
                     </SelectItem>
                   ))}
                 </SelectContent>

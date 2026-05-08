@@ -65,6 +65,7 @@ export interface ImageGenParams {
   aspectRatio: AspectRatio;
   style?: ImageStyle;
   model?: ImageModel;
+  customModelId?: string; // Allows overriding the resolved Replicate model ID
 }
 
 export interface ImageGenResult {
@@ -478,13 +479,14 @@ export async function startImageGeneration(
   const model = params.model ?? "nano-banana-2";
   const prompt = buildStyledPrompt(params.prompt, params.style);
   const modelName =
-    model === "gpt-image-2"
+    params.customModelId ??
+    (model === "gpt-image-2"
       ? process.env.REPLICATE_MODEL_ADVANCED!
       : model === "nano-banana-pro"
         ? process.env.REPLICATE_MODEL_PRO!
         : model === "nano-banana"
           ? process.env.REPLICATE_MODEL_FALLBACK!
-          : process.env.REPLICATE_MODEL_FAST!;
+          : process.env.REPLICATE_MODEL_FAST!);
   const resolution = model === "nano-banana-pro" ? "2K" : "1K";
 
   // Use the model name endpoint — /v1/models/{model_owner}/{model_name}/predictions
@@ -611,7 +613,10 @@ export async function generateAgenticImage(params: {
   try {
     const { predictionId } = await startImageGeneration({
       prompt: enhancedPrompt,
-      model: "nano-banana-2",
+      model: "nano-banana-2", // Used for fallback resolution/shape configuration
+      ...(process.env.REPLICATE_MODEL_AGENTIC !== undefined && {
+        customModelId: process.env.REPLICATE_MODEL_AGENTIC,
+      }),
       aspectRatio,
       style,
     });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,8 @@ interface ImpressionsChartProps {
 }
 
 export function ImpressionsChart({ data, className }: ImpressionsChartProps) {
+  const locale = useLocale();
+
   return (
     <Card className={cn("col-span-4", className)}>
       <CardHeader>
@@ -37,7 +40,7 @@ export function ImpressionsChart({ data, className }: ImpressionsChartProps) {
                 axisLine={false}
                 tickFormatter={(value) => {
                   const date = new Date(value);
-                  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
                 }}
               />
               <YAxis

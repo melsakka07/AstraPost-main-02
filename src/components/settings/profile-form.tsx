@@ -100,7 +100,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
 
   const formatPreview = (timezone: string, language: string) => {
     const now = new Date();
-    const formatter = new Intl.DateTimeFormat(language === "ar" ? "ar-SA" : "en-US", {
+    const formatter = new Intl.DateTimeFormat(language, {
       dateStyle: "medium",
       timeStyle: "short",
       timeZone: timezone,

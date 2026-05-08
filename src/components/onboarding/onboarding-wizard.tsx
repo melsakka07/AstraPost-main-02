@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   BarChart3,
@@ -83,123 +83,127 @@ function getSteps(t: (key: string) => string): {
   ];
 }
 
-// Time options grouped by period
-const TIME_OPTIONS = [
-  {
-    label: "Morning",
-    options: [
-      { value: "06:00", label: "6:00 AM" },
-      { value: "07:00", label: "7:00 AM" },
-      { value: "08:00", label: "8:00 AM" },
-      { value: "09:00", label: "9:00 AM" },
-      { value: "10:00", label: "10:00 AM" },
-      { value: "11:00", label: "11:00 AM" },
-    ],
-  },
-  {
-    label: "Afternoon",
-    options: [
-      { value: "12:00", label: "12:00 PM" },
-      { value: "13:00", label: "1:00 PM" },
-      { value: "14:00", label: "2:00 PM" },
-      { value: "15:00", label: "3:00 PM" },
-      { value: "16:00", label: "4:00 PM" },
-      { value: "17:00", label: "5:00 PM" },
-    ],
-  },
-  {
-    label: "Evening",
-    options: [
-      { value: "18:00", label: "6:00 PM" },
-      { value: "19:00", label: "7:00 PM" },
-      { value: "20:00", label: "8:00 PM" },
-      { value: "21:00", label: "9:00 PM" },
-    ],
-  },
-  {
-    label: "Night",
-    options: [
-      { value: "22:00", label: "10:00 PM" },
-      { value: "23:00", label: "11:00 PM" },
-      { value: "00:00", label: "12:00 AM" },
-    ],
-  },
-];
-
-const TIMEZONE_GROUPS = [
-  {
-    label: "Middle East & North Africa",
-    zones: [
-      { value: "Asia/Riyadh", label: "Saudi Arabia — Riyadh (GMT+3)" },
-      { value: "Asia/Dubai", label: "UAE — Dubai (GMT+4)" },
-      { value: "Asia/Qatar", label: "Qatar — Doha (GMT+3)" },
-      { value: "Asia/Kuwait", label: "Kuwait (GMT+3)" },
-      { value: "Asia/Bahrain", label: "Bahrain (GMT+3)" },
-      { value: "Asia/Muscat", label: "Oman — Muscat (GMT+4)" },
-      { value: "Africa/Cairo", label: "Egypt — Cairo (GMT+2/3)" },
-      { value: "Asia/Baghdad", label: "Iraq — Baghdad (GMT+3)" },
-      { value: "Asia/Beirut", label: "Lebanon — Beirut (GMT+2/3)" },
-      { value: "Asia/Amman", label: "Jordan — Amman (GMT+2/3)" },
-      { value: "Asia/Jerusalem", label: "Palestine/Israel (GMT+2/3)" },
-      { value: "Africa/Casablanca", label: "Morocco — Casablanca (GMT+1)" },
-      { value: "Africa/Algiers", label: "Algeria (GMT+1)" },
-      { value: "Africa/Tunis", label: "Tunisia (GMT+1)" },
-      { value: "Africa/Tripoli", label: "Libya (GMT+2)" },
-      { value: "Asia/Aden", label: "Yemen — Aden (GMT+3)" },
-    ],
-  },
-  {
-    label: "Europe",
-    zones: [
-      { value: "Europe/London", label: "UK — London (GMT/BST)" },
-      { value: "Europe/Paris", label: "France — Paris (GMT+1/2)" },
-      { value: "Europe/Berlin", label: "Germany — Berlin (GMT+1/2)" },
-      { value: "Europe/Rome", label: "Italy — Rome (GMT+1/2)" },
-      { value: "Europe/Madrid", label: "Spain — Madrid (GMT+1/2)" },
-      { value: "Europe/Istanbul", label: "Turkey — Istanbul (GMT+3)" },
-      { value: "Europe/Moscow", label: "Russia — Moscow (GMT+3)" },
-    ],
-  },
-  {
-    label: "Americas",
-    zones: [
-      { value: "America/New_York", label: "US — New York (EST/EDT)" },
-      { value: "America/Chicago", label: "US — Chicago (CST/CDT)" },
-      { value: "America/Denver", label: "US — Denver (MST/MDT)" },
-      { value: "America/Los_Angeles", label: "US — Los Angeles (PST/PDT)" },
-      { value: "America/Toronto", label: "Canada — Toronto (EST/EDT)" },
-      { value: "America/Vancouver", label: "Canada — Vancouver (PST/PDT)" },
-      { value: "America/Sao_Paulo", label: "Brazil — São Paulo (GMT-3)" },
-    ],
-  },
-  {
-    label: "Asia Pacific",
-    zones: [
-      { value: "Asia/Kolkata", label: "India (IST, GMT+5:30)" },
-      { value: "Asia/Karachi", label: "Pakistan — Karachi (GMT+5)" },
-      { value: "Asia/Dhaka", label: "Bangladesh (GMT+6)" },
-      { value: "Asia/Singapore", label: "Singapore (GMT+8)" },
-      { value: "Asia/Tokyo", label: "Japan — Tokyo (GMT+9)" },
-      { value: "Asia/Shanghai", label: "China — Shanghai (GMT+8)" },
-      { value: "Australia/Sydney", label: "Australia — Sydney (AEDT)" },
-    ],
-  },
-  {
-    label: "Africa",
-    zones: [
-      { value: "Africa/Lagos", label: "Nigeria — Lagos (GMT+1)" },
-      { value: "Africa/Nairobi", label: "Kenya — Nairobi (GMT+3)" },
-      { value: "Africa/Johannesburg", label: "South Africa (GMT+2)" },
-      { value: "Africa/Accra", label: "Ghana — Accra (GMT)" },
-    ],
-  },
-];
+// TIME_OPTIONS and TIMEZONE_GROUPS are now defined inside the component
+// as useMemo hooks to access translations (t & t_dt).
 
 export function OnboardingWizard() {
   const t = useTranslations("auth");
   const searchParams = useSearchParams();
 
   const steps = getSteps(t);
+  const t_dt = useTranslations("date_time_picker");
+
+  // Time options grouped by period — translated via date_time_picker namespace
+  const TIME_OPTIONS = useMemo(() => {
+    const formatHour = (h24: string) => {
+      const hour = parseInt(h24.split(":")[0]!, 10);
+      const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+      const period = hour < 12 ? t_dt("am") : t_dt("pm");
+      return `${h12}:00 ${period}`;
+    };
+    return [
+      {
+        label: t_dt("time_group_morning"),
+        options: ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00"].map((v) => ({
+          value: v,
+          label: formatHour(v),
+        })),
+      },
+      {
+        label: t_dt("time_group_afternoon"),
+        options: ["12:00", "13:00", "14:00", "15:00", "16:00", "17:00"].map((v) => ({
+          value: v,
+          label: formatHour(v),
+        })),
+      },
+      {
+        label: t_dt("time_group_evening"),
+        options: ["18:00", "19:00", "20:00", "21:00"].map((v) => ({
+          value: v,
+          label: formatHour(v),
+        })),
+      },
+      {
+        label: t_dt("time_group_night"),
+        options: ["22:00", "23:00", "00:00"].map((v) => ({
+          value: v,
+          label: formatHour(v),
+        })),
+      },
+    ];
+  }, [t_dt]);
+
+  const TIMEZONE_GROUPS = useMemo(
+    () => [
+      {
+        label: t("onboarding.timezone_group_mena"),
+        zones: [
+          { value: "Asia/Riyadh", label: "Saudi Arabia — Riyadh (GMT+3)" },
+          { value: "Asia/Dubai", label: "UAE — Dubai (GMT+4)" },
+          { value: "Asia/Qatar", label: "Qatar — Doha (GMT+3)" },
+          { value: "Asia/Kuwait", label: "Kuwait (GMT+3)" },
+          { value: "Asia/Bahrain", label: "Bahrain (GMT+3)" },
+          { value: "Asia/Muscat", label: "Oman — Muscat (GMT+4)" },
+          { value: "Africa/Cairo", label: "Egypt — Cairo (GMT+2/3)" },
+          { value: "Asia/Baghdad", label: "Iraq — Baghdad (GMT+3)" },
+          { value: "Asia/Beirut", label: "Lebanon — Beirut (GMT+2/3)" },
+          { value: "Asia/Amman", label: "Jordan — Amman (GMT+2/3)" },
+          { value: "Asia/Jerusalem", label: "Palestine/Israel (GMT+2/3)" },
+          { value: "Africa/Casablanca", label: "Morocco — Casablanca (GMT+1)" },
+          { value: "Africa/Algiers", label: "Algeria (GMT+1)" },
+          { value: "Africa/Tunis", label: "Tunisia (GMT+1)" },
+          { value: "Africa/Tripoli", label: "Libya (GMT+2)" },
+          { value: "Asia/Aden", label: "Yemen — Aden (GMT+3)" },
+        ],
+      },
+      {
+        label: t("onboarding.timezone_group_europe"),
+        zones: [
+          { value: "Europe/London", label: "UK — London (GMT/BST)" },
+          { value: "Europe/Paris", label: "France — Paris (GMT+1/2)" },
+          { value: "Europe/Berlin", label: "Germany — Berlin (GMT+1/2)" },
+          { value: "Europe/Rome", label: "Italy — Rome (GMT+1/2)" },
+          { value: "Europe/Madrid", label: "Spain — Madrid (GMT+1/2)" },
+          { value: "Europe/Istanbul", label: "Turkey — Istanbul (GMT+3)" },
+          { value: "Europe/Moscow", label: "Russia — Moscow (GMT+3)" },
+        ],
+      },
+      {
+        label: t("onboarding.timezone_group_americas"),
+        zones: [
+          { value: "America/New_York", label: "US — New York (EST/EDT)" },
+          { value: "America/Chicago", label: "US — Chicago (CST/CDT)" },
+          { value: "America/Denver", label: "US — Denver (MST/MDT)" },
+          { value: "America/Los_Angeles", label: "US — Los Angeles (PST/PDT)" },
+          { value: "America/Toronto", label: "Canada — Toronto (EST/EDT)" },
+          { value: "America/Vancouver", label: "Canada — Vancouver (PST/PDT)" },
+          { value: "America/Sao_Paulo", label: "Brazil — São Paulo (GMT-3)" },
+        ],
+      },
+      {
+        label: t("onboarding.timezone_group_asia_pacific"),
+        zones: [
+          { value: "Asia/Kolkata", label: "India (IST, GMT+5:30)" },
+          { value: "Asia/Karachi", label: "Pakistan — Karachi (GMT+5)" },
+          { value: "Asia/Dhaka", label: "Bangladesh (GMT+6)" },
+          { value: "Asia/Singapore", label: "Singapore (GMT+8)" },
+          { value: "Asia/Tokyo", label: "Japan — Tokyo (GMT+9)" },
+          { value: "Asia/Shanghai", label: "China — Shanghai (GMT+8)" },
+          { value: "Australia/Sydney", label: "Australia — Sydney (AEDT)" },
+        ],
+      },
+      {
+        label: t("onboarding.timezone_group_africa"),
+        zones: [
+          { value: "Africa/Lagos", label: "Nigeria — Lagos (GMT+1)" },
+          { value: "Africa/Nairobi", label: "Kenya — Nairobi (GMT+3)" },
+          { value: "Africa/Johannesburg", label: "South Africa (GMT+2)" },
+          { value: "Africa/Accra", label: "Ghana — Accra (GMT)" },
+        ],
+      },
+    ],
+    [t]
+  );
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -385,7 +389,12 @@ export function OnboardingWizard() {
           return;
         }
         if (isOverHardLimit) {
-          toast.error(`Tweet is too long (${tweetWeightedLength}/1000 characters)`);
+          toast.error(
+            t("onboarding.tweet_too_long", {
+              current: tweetWeightedLength,
+              max: 1000,
+            })
+          );
           setLoading(false);
           return;
         }
@@ -447,7 +456,7 @@ export function OnboardingWizard() {
       {/* Mobile compact stepper */}
       <div className="text-muted-foreground mb-6 flex items-center gap-2 text-sm md:hidden">
         <span className="text-foreground font-medium">
-          Step {currentStep} of {steps.length}
+          {t("onboarding.step_x_of_y", { current: currentStep, total: steps.length })}
         </span>
         <span aria-hidden="true">·</span>
         <span>{steps[currentStep - 1]!.title}</span>
@@ -540,14 +549,13 @@ export function OnboardingWizard() {
                   </div>
 
                   <p className="text-muted-foreground text-sm">
-                    You can add more accounts later from Settings. Pro & Agency plans let you manage
-                    multiple X accounts under one subscription.
+                    {t("onboarding.add_more_accounts_hint")}
                   </p>
 
                   <Button variant="outline" asChild>
                     <a href="/dashboard/settings">
                       <Twitter className="mr-2 h-4 w-4" />
-                      Add another account
+                      {t("onboarding.add_another_account")}
                     </a>
                   </Button>
                 </>
@@ -556,12 +564,12 @@ export function OnboardingWizard() {
                   <div className="mb-2 inline-block rounded-full bg-amber-500/10 p-6">
                     <Twitter className="h-12 w-12 text-amber-600" />
                   </div>
-                  <h3 className="text-xl font-bold">No X Account Connected</h3>
+                  <h3 className="text-xl font-bold">{t("onboarding.no_x_account_connected")}</h3>
                   <p className="text-muted-foreground">
-                    Please connect your X account to continue with AstraPost.
+                    {t("onboarding.please_connect_x_account")}
                   </p>
                   <Button asChild>
-                    <a href="/dashboard/settings">Go to Settings</a>
+                    <a href="/dashboard/settings">{t("onboarding.go_to_settings")}</a>
                   </Button>
                 </>
               )}
@@ -574,7 +582,7 @@ export function OnboardingWizard() {
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <Languages className="text-primary h-4 w-4" />
-                  Preferred Language
+                  {t("onboarding.preferred_language")}
                 </label>
                 <Select value={prefLanguage} onValueChange={setPrefLanguage}>
                   <SelectTrigger className="w-full" aria-label={t("onboarding.select_language")}>
@@ -588,15 +596,13 @@ export function OnboardingWizard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-muted-foreground text-xs">
-                  Used for AI-generated content and writing tools.
-                </p>
+                <p className="text-muted-foreground text-xs">{t("onboarding.language_hint")}</p>
               </div>
 
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <Globe className="text-primary h-4 w-4" />
-                  Time Zone
+                  {t("onboarding.time_zone_label")}
                 </label>
                 <Select value={prefTimezone} onValueChange={setPrefTimezone}>
                   <SelectTrigger className="w-full" aria-label={t("onboarding.select_timezone")}>
@@ -615,9 +621,7 @@ export function OnboardingWizard() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-muted-foreground text-xs">
-                  Ensures your scheduled posts go out at the right local time.
-                </p>
+                <p className="text-muted-foreground text-xs">{t("onboarding.timezone_hint")}</p>
               </div>
             </div>
           )}
@@ -625,7 +629,9 @@ export function OnboardingWizard() {
           {/* Step 3 — Compose — O2, O3, O6 */}
           {currentStep === 3 && (
             <div className="w-full max-w-md space-y-3">
-              <label className="text-sm font-medium">Draft your first tweet</label>
+              <label className="text-sm font-medium">
+                {t("onboarding.draft_your_first_tweet")}
+              </label>
               {/* O3 — shadcn Textarea */}
               <Textarea
                 value={tweetContent}
@@ -647,7 +653,7 @@ export function OnboardingWizard() {
               >
                 {tweetWeightedLength} / 280
                 {isOverStandardLimit && !isOverHardLimit && (
-                  <span className="ml-1 opacity-70">(over X standard limit)</span>
+                  <span className="ml-1 opacity-70">{t("onboarding.over_standard_limit")}</span>
                 )}
               </p>
             </div>
@@ -656,7 +662,7 @@ export function OnboardingWizard() {
           {/* Step 4 — Schedule — O1 */}
           {currentStep === 4 && (
             <div className="w-full max-w-xs space-y-4 text-center">
-              <p className="text-sm font-medium">When should this go out?</p>
+              <p className="text-sm font-medium">{t("onboarding.when_to_publish")}</p>
 
               {/* Send Now option */}
               <button
@@ -666,18 +672,20 @@ export function OnboardingWizard() {
                 className="border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/60 text-primary flex w-full items-center justify-center gap-2 rounded-lg border-2 p-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Rocket className="h-4 w-4" />
-                Send Now
+                {t("onboarding.send_now")}
               </button>
 
               <div className="text-muted-foreground relative flex items-center gap-2 text-xs">
                 <div className="flex-1 border-t" />
-                <span>or schedule for later</span>
+                <span>{t("onboarding.or_schedule_later")}</span>
                 <div className="flex-1 border-t" />
               </div>
 
               {/* O1 — DatePicker + time Select */}
               <div className="space-y-2 text-left">
-                <label className="text-muted-foreground text-xs">Date</label>
+                <label className="text-muted-foreground text-xs">
+                  {t("onboarding.date_label")}
+                </label>
                 <DatePicker
                   value={scheduledDate}
                   onChange={setScheduledDate}
@@ -685,7 +693,9 @@ export function OnboardingWizard() {
                 />
               </div>
               <div className="space-y-2 text-left">
-                <label className="text-muted-foreground text-xs">Time</label>
+                <label className="text-muted-foreground text-xs">
+                  {t("onboarding.time_label")}
+                </label>
                 <Select value={scheduledTime} onValueChange={setScheduledTime}>
                   <SelectTrigger className="w-full" aria-label={t("onboarding.select_time")}>
                     <SelectValue />
@@ -704,9 +714,7 @@ export function OnboardingWizard() {
                   </SelectContent>
                 </Select>
               </div>
-              <p className="text-muted-foreground text-sm">
-                We&apos;ll automatically publish it at this time.
-              </p>
+              <p className="text-muted-foreground text-sm">{t("onboarding.auto_publish_hint")}</p>
             </div>
           )}
 
@@ -716,11 +724,8 @@ export function OnboardingWizard() {
               <div className="bg-primary/5 mb-2 inline-block rounded-full p-6">
                 <Rocket className="text-primary h-12 w-12" />
               </div>
-              <h3 className="text-xl font-bold">You&apos;re all set!</h3>
-              <p className="text-muted-foreground">
-                Your first post is scheduled. Head over to the dashboard to track its performance or
-                create more content with our AI tools.
-              </p>
+              <h3 className="text-xl font-bold">{t("onboarding.youre_all_set")}</h3>
+              <p className="text-muted-foreground">{t("onboarding.all_set_body")}</p>
               {/* O4 + O7 — 4 real linked feature cards.
                   Must use navigateAfterOnboarding (hard reload) — not <Link>.
                   Client-side nav is faster than the DB write, causing the
@@ -781,7 +786,7 @@ export function OnboardingWizard() {
             disabled={currentStep === 1 || loading}
             className="min-h-[44px]"
           >
-            Back
+            {t("onboarding.back")}
           </Button>
 
           <div className="flex items-center gap-2">
@@ -804,7 +809,7 @@ export function OnboardingWizard() {
                 disabled={loading}
                 className="text-muted-foreground min-h-[44px]"
               >
-                Skip — save as draft
+                {t("onboarding.skip_save_as_draft")}
               </Button>
             )}
             <Button onClick={handleNext} disabled={loading} size="lg" className="min-h-[44px]">

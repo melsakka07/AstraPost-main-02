@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { format, parseISO } from "date-fns";
+import { ar } from "date-fns/locale";
 import { CalendarIcon, Clock, X } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,34 +18,6 @@ interface TimeSlot {
   hour: number;
 }
 
-const TIME_SLOTS: TimeSlot[] = Array.from({ length: 48 }, (_, i) => {
-  const h = Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "30";
-  const value = `${String(h).padStart(2, "0")}:${m}`;
-  const period = h < 12 ? "AM" : "PM";
-  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return { value, label: `${displayH}:${m} ${period}`, hour: h };
-});
-
-const TIME_GROUPS = [
-  {
-    label: "Morning",
-    slots: TIME_SLOTS.filter((s) => s.hour >= 5 && s.hour < 12),
-  },
-  {
-    label: "Afternoon",
-    slots: TIME_SLOTS.filter((s) => s.hour >= 12 && s.hour < 17),
-  },
-  {
-    label: "Evening",
-    slots: TIME_SLOTS.filter((s) => s.hour >= 17 && s.hour < 21),
-  },
-  {
-    label: "Night",
-    slots: TIME_SLOTS.filter((s) => s.hour >= 21 || s.hour < 5),
-  },
-];
-
 // ── Component ───────────────────────────────────────────────────────────
 
 interface DateTimePickerProps {
@@ -56,7 +30,43 @@ interface DateTimePickerProps {
 }
 
 export function DateTimePicker({ value, onChange, disabled, id, className }: DateTimePickerProps) {
+  const t = useTranslations("date_time_picker");
+  const locale = useLocale();
+  const dateLocale = locale === "ar" ? ar : undefined;
+
   const [open, setOpen] = React.useState(false);
+
+  const TIME_SLOTS: TimeSlot[] = React.useMemo(
+    () =>
+      Array.from({ length: 48 }, (_, i) => {
+        const h = Math.floor(i / 2);
+        const m = i % 2 === 0 ? "00" : "30";
+        const value = `${String(h).padStart(2, "0")}:${m}`;
+        const period = h < 12 ? t("am") : t("pm");
+        const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+        return { value, label: `${displayH}:${m} ${period}`, hour: h };
+      }),
+    [t]
+  );
+
+  const TIME_GROUPS = React.useMemo(
+    () => [
+      {
+        label: t("time_group_morning"),
+        slots: TIME_SLOTS.filter((s) => s.hour >= 5 && s.hour < 12),
+      },
+      {
+        label: t("time_group_afternoon"),
+        slots: TIME_SLOTS.filter((s) => s.hour >= 12 && s.hour < 17),
+      },
+      {
+        label: t("time_group_evening"),
+        slots: TIME_SLOTS.filter((s) => s.hour >= 17 && s.hour < 21),
+      },
+      { label: t("time_group_night"), slots: TIME_SLOTS.filter((s) => s.hour >= 21 || s.hour < 5) },
+    ],
+    [t, TIME_SLOTS]
+  );
 
   // Internal temp state — only committed to parent on Apply
   const [tempDate, setTempDate] = React.useState<string>(value ? value.slice(0, 10) : "");
@@ -89,11 +99,12 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
     if (!value) return null;
     try {
       const d = parseISO(value);
-      return format(d, "MMM d 'at' h:mm a");
+      const fmt = locale === "ar" ? "d MMM h:mm a" : "MMM d 'at' h:mm a";
+      return format(d, fmt, { ...(dateLocale && { locale: dateLocale }) });
     } catch {
       return null;
     }
-  }, [value]);
+  }, [value, locale, dateLocale]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -113,7 +124,7 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-            {displayText ?? <span>Schedule for</span>}
+            {displayText ?? <span>{t("schedule_for")}</span>}
           </Button>
         </PopoverTrigger>
         {value && (
@@ -124,7 +135,7 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
               e.stopPropagation();
               onChange("");
             }}
-            aria-label="Clear schedule"
+            aria-label={t("clear_schedule")}
             disabled={disabled}
           >
             <X className="h-3.5 w-3.5" />
@@ -160,7 +171,11 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
           <div className="max-h-[320px] w-full overflow-y-auto p-3 sm:w-48">
             <div className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
               <Clock className="h-3.5 w-3.5" />
-              {tempDate ? format(parseISO(tempDate), "EEE, MMM d") : "Select a date first"}
+              {tempDate
+                ? format(parseISO(tempDate), "EEE, MMM d", {
+                    ...(dateLocale && { locale: dateLocale }),
+                  })
+                : t("select_date_first")}
             </div>
 
             <div className={cn("space-y-3", !tempDate && "pointer-events-none opacity-50")}>
@@ -197,12 +212,16 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
         {(tempDate || value) && (
           <div className="bg-muted/30 flex items-center justify-between border-t px-3 py-2">
             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleClear}>
-              Clear
+              {t("clear_button")}
             </Button>
             <Button size="sm" className="h-7 text-xs" disabled={!canApply} onClick={handleApply}>
               {tempDate && tempTime
-                ? `Apply · ${format(parseISO(`${tempDate}T${tempTime}`), "MMM d, h:mm a")}`
-                : "Apply"}
+                ? t("apply_button_with_date", {
+                    date: format(parseISO(`${tempDate}T${tempTime}`), "MMM d, h:mm a", {
+                      ...(dateLocale && { locale: dateLocale }),
+                    }),
+                  })
+                : t("apply_button")}
             </Button>
           </div>
         )}

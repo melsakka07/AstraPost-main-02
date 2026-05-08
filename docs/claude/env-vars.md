@@ -35,6 +35,7 @@
 ### Replicate (image generation)
 
 - `REPLICATE_API_TOKEN` — Replicate API key (optional locally, required in production for AI Images)
+- `REPLICATE_MODEL_AGENTIC` — Optional: dedicated model for Agentic image generation. Falls back to `REPLICATE_MODEL_FAST` if not set.
 
 ### OpenAI (content moderation only — documented exception to the "no OpenAI for text generation" rule)
 

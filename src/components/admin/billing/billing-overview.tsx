@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { CreditCard, DollarSign, TrendingDown, TrendingUp, Users, FileDown } from "lucide-react";
+import { useLocale } from "next-intl";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/empty-state";
 import { useAdminPolling } from "@/components/admin/use-admin-polling";
@@ -88,6 +89,7 @@ interface BillingOverviewProps {
 }
 
 export function BillingOverview({ initialData }: BillingOverviewProps = {}) {
+  const locale = useLocale();
   const [exporting, setExporting] = useState(false);
 
   const { data, loading, error } = useAdminPolling<BillingData>({
@@ -145,7 +147,7 @@ export function BillingOverview({ initialData }: BillingOverviewProps = {}) {
   const { mrr, subscriptions: subs, users, planBreakdown, trialToPaidRate } = overview;
 
   const mrrDisplay = mrr.configured
-    ? `$${(mrr.cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    ? `$${(mrr.cents / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : "—";
 
   const churnDelta = subs.cancelledThisMonth - subs.cancelledLastMonth;

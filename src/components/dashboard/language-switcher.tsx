@@ -99,7 +99,7 @@ export function LanguageSwitcher() {
             onClick={() => handleLanguageChange(lang.code)}
             className={currentLang === lang.code ? "bg-accent font-semibold" : ""}
           >
-            {lang.label}
+            {lang.code === "ar" ? t("language_arabic") : t("language_english")}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
