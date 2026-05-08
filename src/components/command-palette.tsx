@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Command, Search, ChevronRight, Sun, Moon } from "lucide-react";
+import { Command, Search, ChevronRight, Sun, Moon, TrendingUp, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
+import { TOOL_META, TOOL_ORDER, type AiToolId } from "@/components/ai/ai-tools-grid";
 import { SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,8 @@ interface CommandItem {
 
 export function CommandPalette() {
   const t = useTranslations("command_palette");
+  const tNav = useTranslations("nav");
+  const tAiHub = useTranslations("ai_hub");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const router = useRouter();
@@ -45,6 +48,52 @@ export function CommandPalette() {
       category: t("category_navigation"),
     }))
   );
+
+  // Build a set of hrefs already exposed via the sidebar so we can skip duplicates
+  // when adding palette-only entries below.
+  const sidebarHrefs = new Set(navItems.map((n) => n.id));
+
+  // AI tools — sourced from the canonical TOOL_META registry on the AI hub
+  // so palette stays in sync with the hub. Hub-and-spoke IA: these no longer
+  // appear as sidebar peers, but power users still reach them via Cmd+K.
+  // Labels come from `ai_hub.tools.<id>.title` so Arabic and English are both
+  // covered (sidebar `nav.*` only covered 5 of 9 tools, leaving 4 hardcoded).
+  const aiToolItems: CommandItem[] = (TOOL_ORDER as AiToolId[])
+    // Hub itself is in the sidebar — no need to surface the writer tab as a palette peer.
+    .filter((toolId) => toolId !== "thread_writer")
+    .filter((toolId) => !sidebarHrefs.has(TOOL_META[toolId].href))
+    .map((toolId) => {
+      const meta = TOOL_META[toolId];
+      // Cast through `never` to satisfy next-intl's literal-key signature
+      // when the key is computed at runtime. Same pattern as sidebar.tsx.
+      const label = tAiHub(`tools.${toolId}.title` as never);
+      return {
+        id: `ai:${toolId}`,
+        label,
+        href: meta.href,
+        icon: meta.icon,
+        category: t("category_navigation"),
+      } satisfies CommandItem;
+    });
+
+  // Analytics sub-pages now live as tabs on the Analytics hub. Expose them as
+  // palette deep-links via ?tab=… so users can jump straight to a tab.
+  const analyticsSubItems: CommandItem[] = [
+    {
+      id: "analytics:viral",
+      label: tNav("viral_analyzer"),
+      href: "/dashboard/analytics?tab=viral",
+      icon: TrendingUp,
+      category: t("category_navigation"),
+    },
+    {
+      id: "analytics:competitor",
+      label: tNav("competitor"),
+      href: "/dashboard/analytics?tab=competitor",
+      icon: Users,
+      category: t("category_navigation"),
+    },
+  ];
 
   // Theme toggle command
   const themeItems: CommandItem[] = [
@@ -70,7 +119,7 @@ export function CommandPalette() {
     },
   ];
 
-  const allItems = [...navItems, ...themeItems];
+  const allItems = [...navItems, ...aiToolItems, ...analyticsSubItems, ...themeItems];
 
   // Filter items based on search
   const filteredItems = allItems.filter((item) =>

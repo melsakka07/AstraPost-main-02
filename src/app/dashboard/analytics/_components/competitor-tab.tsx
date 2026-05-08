@@ -1,0 +1,785 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Users,
+  Sparkles,
+  Loader2,
+  TrendingUp,
+  Hash,
+  MessageSquare,
+  Lightbulb,
+  LayoutGrid,
+  ChevronDown,
+  ArrowLeftRight,
+} from "lucide-react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { ViralBarChart } from "@/components/analytics/viral-bar-chart";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { useUserLocale } from "@/hooks/use-user-locale";
+
+/** Assign rank-decay scores: 1st item → 100, 2nd → 85, 3rd → 72 … */
+function rankToChartData(items: string[], prefix = ""): { name: string; value: number }[] {
+  return items.map((item, i) => ({
+    name: `${prefix}${item.replace(new RegExp(`^${prefix}`), "")}`,
+    value: Math.round(100 * Math.pow(0.85, i)),
+  }));
+}
+
+interface AnalysisResult {
+  username: string;
+  displayName: string;
+  followerCount: number;
+  tweetCount: number;
+  analysis: {
+    topTopics: string[];
+    postingFrequency: string;
+    preferredContentTypes: string[];
+    toneProfile: string;
+    topHashtags: string[];
+    bestPostingTimes: string;
+    keyStrengths: string[];
+    differentiationOpportunities: string[];
+    summary: string;
+  };
+}
+
+interface PlanLimitPayload {
+  error?: string;
+  code?: string;
+  message?: string;
+  feature?: string;
+  plan?: string;
+  limit?: number | null;
+  used?: number;
+  remaining?: number | null;
+  upgrade_url?: string;
+  suggested_plan?: string;
+  trial_active?: boolean;
+  reset_at?: string | null;
+}
+
+interface SelfStats {
+  hasData: boolean;
+  tweetsAnalyzed?: number;
+  postingFrequency?: string;
+  topHashtags?: string[];
+  preferredContentTypes?: string[];
+}
+
+/**
+ * CompetitorTab — extracted body of the former `/dashboard/analytics/competitor`
+ * page. Now rendered as a tab inside the Analytics hub. The standalone route
+ * still exists as a thin redirect for any external links.
+ */
+export function CompetitorTab() {
+  const t = useTranslations("analytics_competitor");
+  const { openWithContext } = useUpgradeModal();
+  const userLocale = useUserLocale();
+
+  const [username, setUsername] = useState("");
+  const [language, setLanguage] = useState("en");
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [selfStats, setSelfStats] = useState<SelfStats | null>(null);
+
+  const [compareOpen, setCompareOpen] = useState(true);
+  const [chartsOpen, setChartsOpen] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [insightsOpen, setInsightsOpen] = useState(true);
+  const [toneOpen, setToneOpen] = useState(true);
+
+  const handleAnalyze = async () => {
+    const cleaned = username.replace(/^@/, "").trim();
+    if (!cleaned) {
+      toast.error(t("toasts.enter_username"));
+      return;
+    }
+
+    setIsLoading(true);
+    setResult(null);
+    setSelfStats(null);
+
+    try {
+      const [competitorRes, selfRes] = await Promise.all([
+        fetch("/api/analytics/competitor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: cleaned, language }),
+        }),
+        fetch("/api/analytics/self-stats"),
+      ]);
+
+      if (!competitorRes.ok) {
+        if (competitorRes.status === 402) {
+          let payload: PlanLimitPayload | null = null;
+          try {
+            payload = (await competitorRes.json()) as PlanLimitPayload;
+          } catch {}
+          openWithContext({
+            ...(payload?.error !== undefined && { error: payload.error }),
+            ...(payload?.code !== undefined && { code: payload.code }),
+            ...(payload?.message !== undefined && { message: payload.message }),
+            ...(payload?.feature !== undefined && { feature: payload.feature }),
+            ...(payload?.plan !== undefined && { plan: payload.plan }),
+            ...(payload?.limit !== undefined && { limit: payload.limit }),
+            ...(payload?.used !== undefined && { used: payload.used }),
+            ...(payload?.remaining !== undefined && { remaining: payload.remaining }),
+            ...(payload?.upgrade_url !== undefined && { upgradeUrl: payload.upgrade_url }),
+            ...(payload?.suggested_plan !== undefined && { suggestedPlan: payload.suggested_plan }),
+            ...(payload?.trial_active !== undefined && { trialActive: payload.trial_active }),
+            ...(payload?.reset_at !== undefined && { resetAt: payload.reset_at }),
+          });
+          return;
+        }
+        const err = (await competitorRes.json().catch(() => ({}))) as { error?: string };
+        toast.error(err.error ?? t("toasts.analysis_failed"));
+        return;
+      }
+
+      const data = (await competitorRes.json()) as AnalysisResult;
+      setResult(data);
+
+      if (selfRes.ok) {
+        setSelfStats((await selfRes.json()) as SelfStats);
+      } else {
+        setSelfStats({ hasData: false });
+      }
+    } catch {
+      toast.error(t("toasts.analysis_failed_retry"));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Input */}
+      <Card>
+        <CardContent className="p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1.5">
+              <Label htmlFor="username">{t("username_label")}</Label>
+              <div className="relative">
+                <span className="text-muted-foreground absolute start-3 top-1/2 -translate-y-1/2 text-sm">
+                  @
+                </span>
+                <Input
+                  id="username"
+                  placeholder={t("username_placeholder")}
+                  value={username.replace(/^@/, "")}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="ps-7"
+                  onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5 sm:w-36">
+              <Label>{t("language_label")}</Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ar">{t("language_arabic")}</SelectItem>
+                  <SelectItem value="en">{t("language_english")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={handleAnalyze}
+              disabled={isLoading || !username.trim()}
+              className="sm:self-end"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                  {t("analyzing")}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="me-2 h-4 w-4" />
+                  {t("analyze_button")}
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      {!result && !isLoading && (
+        <div className="border-border bg-muted/20 flex flex-col items-center justify-center rounded-xl border border-dashed p-16 text-center">
+          <div className="bg-primary/10 mb-4 flex h-14 w-14 items-center justify-center rounded-full">
+            <Users className="text-primary h-7 w-7" />
+          </div>
+          <p className="font-semibold">{t("empty_title")}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{t("empty_description")}</p>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="space-y-5" aria-busy="true" aria-label={t("loading_label")}>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="space-y-2 p-4">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-7 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="space-y-3 p-4">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-[180px] w-full rounded-md" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <CardContent className="space-y-2 p-4">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+              <Skeleton className="h-3 w-3/5" />
+              <div className="flex gap-2 pt-1">
+                <Skeleton className="h-6 w-32 rounded-md" />
+                <Skeleton className="h-6 w-28 rounded-md" />
+              </div>
+            </CardContent>
+          </Card>
+          <div className="grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="space-y-3 p-4">
+                  <Skeleton className="h-4 w-28" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {Array.from({ length: 4 }).map((__, j) => (
+                      <Skeleton key={j} className="h-5 w-16 rounded-full" />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Card>
+            <CardContent className="space-y-2 p-4">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+              <div className="flex gap-1.5 pt-1">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {result && (
+        <div className="space-y-5">
+          <div className="bg-background/95 sticky top-0 z-10 flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 backdrop-blur">
+            <p className="truncate text-sm font-medium">
+              @{result.username}
+              <span className="text-muted-foreground ms-2 text-xs font-normal">
+                {result.followerCount?.toLocaleString(userLocale) ?? "—"} {t("results.followers")} ·{" "}
+                {result.tweetCount} {t("results.tweets_analyzed")}
+              </span>
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setResult(null);
+                setSelfStats(null);
+              }}
+              className="shrink-0"
+            >
+              <Sparkles className="me-1.5 h-3.5 w-3.5" />
+              {t("results.analyze_another")}
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div>
+              <h2 className="text-xl font-bold">@{result.username}</h2>
+              <p className="text-muted-foreground text-sm">
+                {result.displayName} · {result.followerCount.toLocaleString(userLocale)}{" "}
+                {t("results.followers")} · {result.tweetCount} {t("results.tweets_analyzed")}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.followers")}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {result.followerCount.toLocaleString(userLocale)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.tweets_analyzed")}</p>
+                <p className="text-2xl font-bold tabular-nums">{result.tweetCount}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.content_types")}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {result.analysis.preferredContentTypes.length}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-muted-foreground mb-1 text-xs">{t("metrics.top_hashtags")}</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {result.analysis.topHashtags.length}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <button
+              type="button"
+              onClick={() => setCompareOpen((v) => !v)}
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
+              aria-expanded={compareOpen}
+              aria-controls="competitor-compare-panel"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <ArrowLeftRight className="text-primary h-4 w-4" />
+                {t("compare.title")}
+              </span>
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${compareOpen ? "" : "-rotate-90"}`}
+              />
+            </button>
+            {compareOpen && (
+              <CardContent id="competitor-compare-panel" className="px-5 pt-0 pb-5">
+                {selfStats === null ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                      <Skeleton className="h-12 w-full rounded-lg" />
+                    </div>
+                    <Skeleton className="h-16 w-full rounded-lg" />
+                    <Skeleton className="h-16 w-full rounded-lg" />
+                  </div>
+                ) : !selfStats.hasData ? (
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <div className="bg-muted mb-3 flex h-10 w-10 items-center justify-center rounded-full">
+                      <ArrowLeftRight className="text-muted-foreground h-5 w-5" />
+                    </div>
+                    <p className="text-sm font-medium">{t("compare.no_data_title")}</p>
+                    <p className="text-muted-foreground mt-1 max-w-xs text-xs">
+                      {t("compare.no_data_description", { username: result.username })}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-muted/40 rounded-lg border px-3 py-2 text-center">
+                        <p className="text-xs font-semibold">{t("compare.your_account")}</p>
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          {t("compare.tweets_last_90_days", {
+                            count: selfStats.tweetsAnalyzed ?? 0,
+                          })}
+                        </p>
+                      </div>
+                      <div className="bg-muted/40 rounded-lg border px-3 py-2 text-center">
+                        <p className="text-xs font-semibold">@{result.username}</p>
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          {t("compare.their_tweets_analyzed", { count: result.tweetCount })}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                        <TrendingUp className="text-primary h-3.5 w-3.5" />
+                        {t("compare.posting_frequency")}
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border px-3 py-2.5 text-center">
+                          <p className="text-sm font-semibold">{selfStats.postingFrequency}</p>
+                        </div>
+                        <div className="rounded-lg border px-3 py-2.5 text-center">
+                          <p className="text-sm font-semibold">
+                            {result.analysis.postingFrequency}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const myTags = (selfStats.topHashtags ?? []).slice(0, 6);
+                      const theirTags = result.analysis.topHashtags.slice(0, 6);
+                      const mySet = new Set(myTags.map((t) => t.toLowerCase().replace(/^#/, "")));
+                      const theirSet = new Set(
+                        theirTags.map((t) => t.toLowerCase().replace(/^#/, ""))
+                      );
+                      const hasOverlap = myTags.some((t) =>
+                        theirSet.has(t.toLowerCase().replace(/^#/, ""))
+                      );
+                      return (
+                        <div>
+                          <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                            <Hash className="text-primary h-3.5 w-3.5" />
+                            {t("compare.top_hashtags")}
+                            {hasOverlap && (
+                              <span className="text-muted-foreground ms-auto flex items-center gap-1 text-xs">
+                                <span className="bg-primary/70 inline-block h-2 w-2 rounded-full" />
+                                {t("compare.shared_tags_highlighted")}
+                              </span>
+                            )}
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {myTags.length === 0 ? (
+                                <span className="text-muted-foreground text-xs">
+                                  {t("compare.no_hashtags_yet")}
+                                </span>
+                              ) : (
+                                myTags.map((tag, i) => {
+                                  const norm = tag.toLowerCase().replace(/^#/, "");
+                                  return (
+                                    <Badge
+                                      key={i}
+                                      variant={theirSet.has(norm) ? "default" : "outline"}
+                                      className="text-xs"
+                                    >
+                                      #{norm}
+                                    </Badge>
+                                  );
+                                })
+                              )}
+                            </div>
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {theirTags.length === 0 ? (
+                                <span className="text-muted-foreground text-xs">
+                                  {t("empty.no_hashtags")}
+                                </span>
+                              ) : (
+                                theirTags.map((tag, i) => {
+                                  const norm = tag.toLowerCase().replace(/^#/, "");
+                                  return (
+                                    <Badge
+                                      key={i}
+                                      variant={mySet.has(norm) ? "default" : "outline"}
+                                      className="text-xs"
+                                    >
+                                      #{norm}
+                                    </Badge>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {(() => {
+                      const myTypes = (selfStats.preferredContentTypes ?? []).slice(0, 5);
+                      const theirTypes = result.analysis.preferredContentTypes.slice(0, 5);
+                      const mySet = new Set(myTypes.map((t) => t.toLowerCase()));
+                      const theirSet = new Set(theirTypes.map((t) => t.toLowerCase()));
+                      return (
+                        <div>
+                          <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                            <LayoutGrid className="text-primary h-3.5 w-3.5" />
+                            {t("compare.content_types")}
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {myTypes.length === 0 ? (
+                                <span className="text-muted-foreground text-xs">
+                                  {t("compare.no_data_yet")}
+                                </span>
+                              ) : (
+                                myTypes.map((type, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant={
+                                      theirSet.has(type.toLowerCase()) ? "default" : "secondary"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {type}
+                                  </Badge>
+                                ))
+                              )}
+                            </div>
+                            <div className="flex min-h-[44px] flex-wrap gap-1.5 rounded-lg border p-2.5">
+                              {theirTypes.length === 0 ? (
+                                <span className="text-muted-foreground text-xs">
+                                  {t("empty.no_data")}
+                                </span>
+                              ) : (
+                                theirTypes.map((type, i) => (
+                                  <Badge
+                                    key={i}
+                                    variant={
+                                      mySet.has(type.toLowerCase()) ? "default" : "secondary"
+                                    }
+                                    className="text-xs"
+                                  >
+                                    {type}
+                                  </Badge>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    <div>
+                      <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                        <MessageSquare className="text-primary h-3.5 w-3.5" />
+                        {t("compare.best_posting_times")}
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-lg border px-3 py-2.5">
+                          <p className="text-muted-foreground mb-1 text-xs">
+                            {t("compare.your_account_label")}
+                          </p>
+                          <p className="text-muted-foreground text-sm italic">
+                            {t("compare.see_best_time_predictor")}
+                          </p>
+                        </div>
+                        <div className="rounded-lg border px-3 py-2.5">
+                          <p className="text-muted-foreground mb-1 text-xs">@{result.username}</p>
+                          <p className="text-sm">{result.analysis.bestPostingTimes}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Charts — collapsible */}
+          <Card>
+            <button
+              type="button"
+              onClick={() => setChartsOpen((v) => !v)}
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
+              aria-expanded={chartsOpen}
+              aria-controls="competitor-charts-panel"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <LayoutGrid className="text-primary h-4 w-4" />
+                {t("charts.title")}
+              </span>
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${chartsOpen ? "" : "-rotate-90"}`}
+              />
+            </button>
+            {chartsOpen && (
+              <CardContent id="competitor-charts-panel" className="px-5 pt-0 pb-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <Hash className="text-primary h-3.5 w-3.5" />
+                      {t("charts.hashtag_prominence")}
+                    </p>
+                    <ViralBarChart
+                      data={rankToChartData(result.analysis.topHashtags, "#")}
+                      orientation="horizontal"
+                      highlightTop={3}
+                      height={200}
+                      emptyText={t("empty.no_hashtags")}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <LayoutGrid className="text-primary h-3.5 w-3.5" />
+                      {t("charts.content_mix")}
+                    </p>
+                    <ViralBarChart
+                      data={rankToChartData(result.analysis.preferredContentTypes)}
+                      orientation="horizontal"
+                      highlightTop={2}
+                      height={200}
+                      emptyText={t("empty.no_content_types")}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Strategic Summary — collapsible */}
+          <Card>
+            <button
+              type="button"
+              onClick={() => setSummaryOpen((v) => !v)}
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
+              aria-expanded={summaryOpen}
+              aria-controls="competitor-summary-panel"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <MessageSquare className="text-primary h-4 w-4" />
+                {t("summary.title")}
+              </span>
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${summaryOpen ? "" : "-rotate-90"}`}
+              />
+            </button>
+            {summaryOpen && (
+              <CardContent id="competitor-summary-panel" className="px-5 pt-0 pb-4">
+                <p className="text-sm leading-relaxed">{result.analysis.summary}</p>
+                <div className="text-muted-foreground mt-3 flex flex-wrap gap-2 text-xs">
+                  <span className="flex items-center gap-1 rounded-md border px-2 py-1">
+                    📅 {result.analysis.postingFrequency}
+                  </span>
+                  <span className="flex items-center gap-1 rounded-md border px-2 py-1">
+                    🕐 {result.analysis.bestPostingTimes}
+                  </span>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Insights grid — collapsible */}
+          <Card>
+            <button
+              type="button"
+              onClick={() => setInsightsOpen((v) => !v)}
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
+              aria-expanded={insightsOpen}
+              aria-controls="competitor-insights-panel"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <TrendingUp className="text-primary h-4 w-4" />
+                {t("insights.title")}
+              </span>
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${insightsOpen ? "" : "-rotate-90"}`}
+              />
+            </button>
+            {insightsOpen && (
+              <CardContent id="competitor-insights-panel" className="px-5 pt-0 pb-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <TrendingUp className="text-primary h-3.5 w-3.5" />
+                      {t("insights.top_topics")}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.analysis.topTopics.map((t, i) => (
+                        <Badge key={i} variant="secondary">
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <Hash className="text-primary h-3.5 w-3.5" />
+                      {t("insights.top_hashtags")}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.analysis.topHashtags.map((h, i) => (
+                        <Badge key={i} variant="outline">
+                          #{h.replace(/^#/, "")}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-muted-foreground mb-2 text-xs font-medium">
+                      {t("insights.key_strengths")}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {result.analysis.keyStrengths.map((s, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className="mt-0.5 text-green-500">✓</span>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="text-muted-foreground mb-2 flex items-center gap-1.5 text-xs font-medium">
+                      <Lightbulb className="text-primary h-3.5 w-3.5" />
+                      {t("insights.your_opportunities")}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {result.analysis.differentiationOpportunities.map((o, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <span className="text-primary mt-0.5">→</span>
+                          {o}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Tone Profile — collapsible */}
+          <Card>
+            <button
+              type="button"
+              onClick={() => setToneOpen((v) => !v)}
+              className="hover:bg-muted/30 flex w-full items-center justify-between rounded-t-lg px-5 py-3.5 text-start transition-colors"
+              aria-expanded={toneOpen}
+              aria-controls="competitor-tone-panel"
+            >
+              <span className="text-sm font-semibold">{t("tone.title")}</span>
+              <ChevronDown
+                className={`text-muted-foreground h-4 w-4 transition-transform duration-200 ${toneOpen ? "" : "-rotate-90"}`}
+              />
+            </button>
+            {toneOpen && (
+              <CardContent id="competitor-tone-panel" className="px-5 pt-0 pb-4">
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {result.analysis.toneProfile}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {result.analysis.preferredContentTypes.map((t, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {t}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

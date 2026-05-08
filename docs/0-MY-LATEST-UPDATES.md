@@ -1,6 +1,16 @@
 # Latest Updates
 
-# Latest Updates
+## 2026-05-08 — Sidebar navigation cleanup — hub-and-spoke IA
+
+- Reduced sidebar from 22 → 14 items by enforcing hub-and-spoke navigation pattern.
+- AI section: trimmed to AI Tools, Inspiration, and Agentic Posting; 5 sub-tools (Bio, Reply, AI Calendar, PDF→Thread, YouTube→Thread) now live only on the `/dashboard/ai` hub and Command Palette.
+- Analytics: Viral Analyzer and Competitor are now tabs on `/dashboard/analytics` instead of sidebar siblings; old routes redirect to the tab URLs.
+- History moved from AI section to System (admin-only diagnostics).
+- Command Palette (Cmd+K) extended to surface all AI sub-tools that left the sidebar.
+- Codified the rule in `.claude/rules/frontend.md` so hub-and-spoke pattern is enforced going forward.
+- Files: `sidebar-nav-data.ts`, `command-palette.tsx`, `analytics/page.tsx` + `viral/competitor` redirect pages, `en.json`/`ar.json` (added `nav.ai_tools` key).
+
+---
 
 ## 2026-05-08 — Configurable Agentic Image Model via Environment Variable
 

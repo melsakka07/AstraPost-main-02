@@ -4,21 +4,16 @@ import {
   ListOrdered,
   FileText,
   BarChart2,
-  TrendingUp,
   CalendarDays,
   ListChecks,
   Settings,
   Wand2,
   Sparkles,
-  Users,
   History,
   Trophy,
   Share2,
   Lightbulb,
-  UserPen,
-  MessageCircle,
   DollarSign,
-  Youtube,
 } from "lucide-react";
 
 export interface NavItem {
@@ -70,7 +65,13 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     label: "AI Tools",
     collapsible: true,
     items: [
-      { icon: Sparkles, label: "Writer", href: "/dashboard/ai", isNew: true, dataTour: "ai-tools" },
+      {
+        icon: Sparkles,
+        label: "AI Tools",
+        href: "/dashboard/ai",
+        isNew: true,
+        dataTour: "ai-tools",
+      },
       {
         icon: Lightbulb,
         label: "Inspiration",
@@ -83,37 +84,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/dashboard/ai/agentic",
         isPro: true,
       },
-      { icon: History, label: "History", href: "/dashboard/ai/history", isAdmin: true },
-      {
-        icon: UserPen,
-        label: "Bio Generator",
-        href: "/dashboard/ai/bio",
-        isPro: true,
-      },
-      {
-        icon: MessageCircle,
-        label: "Reply Generator",
-        href: "/dashboard/ai/reply",
-        isPro: true,
-      },
-      {
-        icon: CalendarDays,
-        label: "AI Calendar",
-        href: "/dashboard/ai/calendar",
-        isPro: true,
-      },
-      {
-        icon: FileText,
-        label: "PDF to Thread",
-        href: "/dashboard/ai/pdf-to-thread",
-        isPro: true,
-      },
-      {
-        icon: Youtube,
-        label: "YouTube to Thread",
-        href: "/dashboard/ai/youtube-to-thread",
-        isPro: true,
-      },
     ],
   },
   {
@@ -121,8 +91,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     collapsible: true,
     items: [
       { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
-      { icon: TrendingUp, label: "Viral Analyzer", href: "/dashboard/analytics/viral" },
-      { icon: Users, label: "Competitor", href: "/dashboard/analytics/competitor", isPro: true },
     ],
   },
   {
@@ -140,6 +108,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
       // because they sit under the dashboard layout (which uses getTeamContext(), not requireAdmin()).
       // Forgetting this leaves the page accessible to non-admin users who know the URL.
       { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true },
+      { icon: History, label: "History", href: "/dashboard/ai/history", isAdmin: true },
       { icon: Settings, label: "Settings", href: "/dashboard/settings" },
     ],
   },

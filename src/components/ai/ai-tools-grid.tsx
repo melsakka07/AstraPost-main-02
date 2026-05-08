@@ -37,7 +37,7 @@ interface ToolMeta {
   feature: string;
 }
 
-const TOOL_META: Record<AiToolId, ToolMeta> = {
+export const TOOL_META: Record<AiToolId, ToolMeta> = {
   thread_writer: { icon: PenTool, href: "/dashboard/ai/writer", isPro: false, feature: "ai" },
   url_to_thread: {
     icon: Link2,
@@ -84,7 +84,7 @@ const TOOL_META: Record<AiToolId, ToolMeta> = {
   },
 };
 
-const TOOL_ORDER: AiToolId[] = [
+export const TOOL_ORDER: AiToolId[] = [
   "thread_writer",
   "url_to_thread",
   "ab_variants",

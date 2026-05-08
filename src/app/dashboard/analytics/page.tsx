@@ -48,6 +48,18 @@ import {
   xAccounts,
 } from "@/lib/schema";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
+import { AnalyticsTabs, type AnalyticsTabValue } from "./_components/analytics-tabs";
+
+/**
+ * Resolve the active tab from the URL. Hub-and-spoke IA: viral and competitor
+ * sub-routes redirect here with `?tab=viral|competitor`, so we must accept
+ * those without falling through to "overview".
+ */
+function resolveTab(raw: string | string[] | undefined): AnalyticsTabValue {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === "viral" || value === "competitor") return value;
+  return "overview";
+}
 
 export default async function AnalyticsPage({
   searchParams,
@@ -56,6 +68,7 @@ export default async function AnalyticsPage({
     accountId?: string | string[];
     density?: string | string[];
     range?: string | string[];
+    tab?: string | string[];
   }>;
 }) {
   const t = await getTranslations("analytics");
@@ -65,6 +78,8 @@ export default async function AnalyticsPage({
     session?.user && "language" in session.user ? (session.user as any).language : "en";
 
   const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const activeTab = resolveTab(resolvedSearchParams?.tab);
 
   // Params
   const densityParam = resolvedSearchParams?.density;
@@ -77,9 +92,6 @@ export default async function AnalyticsPage({
   const range = rangeValue || "30d";
 
   // ── Round 1: two independent queries in parallel ──────────────────────────
-  // dbUser is needed to compute effectiveRange/startDate.
-  // accounts is needed to resolve selectedAccountId.
-  // Both are independent so they run concurrently.
   const [dbUser, accounts] = await Promise.all([
     db.query.user.findFirst({
       where: eq(user.id, session.user.id),
@@ -108,6 +120,7 @@ export default async function AnalyticsPage({
     if (selectedAccountId) params.set("accountId", selectedAccountId);
     if (nextDensity === "compact") params.set("density", "compact");
     if (range) params.set("range", range);
+    if (activeTab !== "overview") params.set("tab", activeTab);
     const query = params.toString();
     return query ? `/dashboard/analytics?${query}` : "/dashboard/analytics";
   };
@@ -118,10 +131,8 @@ export default async function AnalyticsPage({
   const prevStartDate = new Date(startDate.getTime() - rangeDays * 24 * 60 * 60 * 1000);
 
   // ── Round 2: five independent queries in parallel ──────────────────────────
-  // All depend only on values already resolved above; none depend on each other.
   const [followerPoints, refreshRuns, snapshots, prevSnapshots, topTweets, bestTimeData] =
     await Promise.all([
-      // 1. Follower snapshots
       selectedAccountId
         ? db.query.followerSnapshots.findMany({
             where: and(
@@ -134,7 +145,6 @@ export default async function AnalyticsPage({
           })
         : Promise.resolve([]),
 
-      // 2. Analytics refresh runs
       selectedAccountId
         ? db.query.analyticsRefreshRuns.findMany({
             where: and(
@@ -146,7 +156,6 @@ export default async function AnalyticsPage({
           })
         : Promise.resolve([]),
 
-      // 3. Tweet metrics snapshots
       db
         .select({
           fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
@@ -164,7 +173,6 @@ export default async function AnalyticsPage({
           and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))
         ),
 
-      // 4. Previous period tweet metrics snapshots (for trend indicators)
       db
         .select({
           fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
@@ -189,7 +197,6 @@ export default async function AnalyticsPage({
         )
         .then((rows) => rows.filter((r) => new Date(r.fetchedAt) < startDate)),
 
-      // 5. Top tweets by impressions (isNotNull replaces the @ts-ignore sql string)
       db
         .select({
           content: tweets.content,
@@ -207,7 +214,6 @@ export default async function AnalyticsPage({
         .orderBy(desc(tweetAnalytics.impressions))
         .limit(5),
 
-      // 5. Best times to post heatmap
       AnalyticsEngine.getBestTimesToPost(session.user.id),
     ]);
 
@@ -291,37 +297,11 @@ export default async function AnalyticsPage({
       value: parseFloat((sumRate / count).toFixed(2)),
     }));
 
-  return (
-    <DashboardPageWrapper
-      icon={BarChart3}
-      title={t("title")}
-      description={t("description")}
-      actions={
-        <>
-          <DateRangeSelector />
-          <ExportButton range={effectiveRange} />
-          <Link
-            href={analyticsHref(isCompact ? "comfortable" : "compact")}
-            aria-label={isCompact ? t("switch_to_comfortable") : t("switch_to_compact")}
-          >
-            <Button variant="outline" size="icon" className="h-9 w-9">
-              {isCompact ? (
-                <AlignJustify className="h-4 w-4" />
-              ) : (
-                <LayoutGrid className="h-4 w-4" />
-              )}
-            </Button>
-          </Link>
-        </>
-      }
-    >
-      {isFree && (
-        <UpgradeBanner
-          title={t("upgrade_banner_title")}
-          description={t("upgrade_banner_description")}
-        />
-      )}
-
+  // ── Overview tab content ───────────────────────────────────────────────────
+  // Kept as RSC-rendered JSX so we don't lose parallel DB fetches above. The
+  // tab wrapper is a thin client island; this tree streams as static markup.
+  const overviewContent = (
+    <>
       <AnalyticsSectionNav />
 
       {/* ── Overview Section ── */}
@@ -611,9 +591,6 @@ export default async function AnalyticsPage({
             />
           ) : (
             <TopTweetsList
-              // Narrow xTweetId from string|null to string — isNotNull() in the
-              // WHERE clause guarantees no nulls, but Drizzle's type inference
-              // can't reflect WHERE clause narrowing on selected columns.
               tweets={topTweets.filter(
                 (tw): tw is typeof tw & { xTweetId: string } => tw.xTweetId !== null
               )}
@@ -623,6 +600,41 @@ export default async function AnalyticsPage({
           )}
         </BlurredOverlay>
       </div>
+    </>
+  );
+
+  return (
+    <DashboardPageWrapper
+      icon={BarChart3}
+      title={t("title")}
+      description={t("description")}
+      actions={
+        <>
+          <DateRangeSelector />
+          <ExportButton range={effectiveRange} />
+          <Link
+            href={analyticsHref(isCompact ? "comfortable" : "compact")}
+            aria-label={isCompact ? t("switch_to_comfortable") : t("switch_to_compact")}
+          >
+            <Button variant="outline" size="icon" className="h-9 w-9">
+              {isCompact ? (
+                <AlignJustify className="h-4 w-4" />
+              ) : (
+                <LayoutGrid className="h-4 w-4" />
+              )}
+            </Button>
+          </Link>
+        </>
+      }
+    >
+      {isFree && (
+        <UpgradeBanner
+          title={t("upgrade_banner_title")}
+          description={t("upgrade_banner_description")}
+        />
+      )}
+
+      <AnalyticsTabs initialTab={activeTab} overview={overviewContent} />
     </DashboardPageWrapper>
   );
 }
