@@ -44,10 +44,15 @@ import { pdfThreadOutputSchema } from "@/lib/schemas/pdf-to-thread";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 import { releaseAiQuota } from "@/lib/services/ai-quota-atomic";
 import { refreshFollowersAndMetricsForRuns, updateTweetMetrics } from "@/lib/services/analytics";
-import { sendPostFailureEmail } from "@/lib/services/email";
+import {
+  sendPostFailureEmail,
+  sendTokenExpiringEmail,
+  sendAccountDeactivatedEmail,
+} from "@/lib/services/email";
 import { moderateOutput } from "@/lib/services/moderation";
 import { transcribe } from "@/lib/services/transcription";
 import { XApiService } from "@/lib/services/x-api";
+import { classifyRefreshError, getBackoffForFailures } from "@/lib/services/x-error";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { extractAudio, getAudioMimeType } from "@/lib/services/youtube";
 
@@ -466,22 +471,71 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
       (error as any)?.data?.errors?.[0]?.detail ||
       "";
 
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    // Circuit breaker is open — X API is degraded. Delay and retry.
+    if (errorMsg.includes("X_CIRCUIT_OPEN")) {
+      logger.warn("schedule_job_circuit_open", {
+        queue: job.queueName,
+        jobId: job.id,
+        postId,
+      });
+      if (job.token) {
+        await job.moveToDelayed(Date.now() + 5 * 60 * 1000, job.token);
+        throw new DelayedError();
+      }
+      return;
+    }
+
+    // Token refresh was rate-limited — don't deactivate, back off with delay.
+    if (errorMsg.includes("X_RATE_LIMITED") || errorMsg.includes("X_REFRESH_TRANSIENT")) {
+      if (post?.xAccountId) {
+        const account = await db.query.xAccounts.findFirst({
+          where: eq(xAccounts.id, post.xAccountId),
+          columns: { consecutiveRefreshFailures: true },
+        });
+        const consecutiveFailures = (account?.consecutiveRefreshFailures ?? 0) + 1;
+        const failureType = errorMsg.includes("X_RATE_LIMITED") ? "rate_limited" : "transient";
+        const backoff = getBackoffForFailures(failureType, consecutiveFailures);
+
+        await db
+          .update(xAccounts)
+          .set({
+            consecutiveRefreshFailures: consecutiveFailures,
+            lastRefreshFailureAt: new Date(),
+            refreshFailureReason: failureType,
+          })
+          .where(eq(xAccounts.id, post.xAccountId));
+
+        logger.warn("schedule_job_token_refresh_transient", {
+          queue: job.queueName,
+          jobId: job.id,
+          postId,
+          xAccountId: post.xAccountId,
+          failureType,
+          consecutiveFailures,
+          backoffMs: backoff,
+        });
+
+        if (job.token) {
+          await job.moveToDelayed(Date.now() + (backoff as number), job.token);
+          throw new DelayedError();
+        }
+      }
+      return;
+    }
+
     // True auth errors: expired/revoked token. Mark account inactive so the
     // scheduler skips it until the user reconnects with fresh credentials.
     const isAuthError =
-      (error instanceof Error && error.message.includes("X Session expired")) || code === 401;
+      errorMsg.includes("X Session expired") ||
+      errorMsg.includes("X_SESSION_EXPIRED") ||
+      code === 401;
 
     // 403 "not permitted" is a permanent app-level failure, NOT an auth error.
-    // Root causes: missing tweet.write scope, Twitter Developer Free-tier plan
-    // restriction on replies, or misconfigured app permissions. Reconnecting
-    // won't help — the user needs to check their Twitter Developer Portal.
-    // We mark the post as failed (not paused_needs_reconnect) so the Retry
-    // button is available immediately and the account stays active.
     const isPermissionError = code === 403 && xApiDetail.toLowerCase().includes("not permitted");
 
-    // 403 "duplicate content" means the tweet was already posted to X (e.g. the
-    // process crashed after the API call but before the DB write). Retrying will
-    // always get the same error, so we treat it as non-retryable immediately.
+    // 403 "duplicate content" means the tweet was already posted to X.
     const isDuplicateContent =
       code === 403 && xApiDetail.toLowerCase().includes("duplicate content");
 
@@ -503,14 +557,47 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
         xAccountId: post.xAccountId,
       });
 
-      await db.update(xAccounts).set({ isActive: false }).where(eq(xAccounts.id, post.xAccountId));
+      await db
+        .update(xAccounts)
+        .set({
+          isActive: false,
+          consecutiveRefreshFailures: sql`consecutive_refresh_failures + 1`,
+          lastRefreshFailureAt: new Date(),
+          refreshFailureReason: "permanent",
+        })
+        .where(eq(xAccounts.id, post.xAccountId));
+
       await db
         .update(posts)
         .set({ status: sql`'paused_needs_reconnect'::text::post_status` })
         .where(eq(posts.id, postId));
 
+      // Send deactivation email (non-blocking — failure does not affect job flow)
+      try {
+        const [userRecord] = await db
+          .select({ email: user.email, language: user.language })
+          .from(user)
+          .where(eq(user.id, post.userId))
+          .limit(1);
+
+        if (userRecord?.email && post.xAccount) {
+          await sendAccountDeactivatedEmail(
+            userRecord.email,
+            post.xAccount.xUsername,
+            userRecord.language || "en"
+          );
+        }
+      } catch (emailErr) {
+        logger.warn("deactivation_email_failed", {
+          jobId: job.id,
+          postId,
+          userId: post.userId,
+          error: emailErr instanceof Error ? emailErr.message : "Unknown",
+        });
+      }
+
       if (job.token) {
-        // Delay for 72 hours
+        // Delay for 72 hours to give user time to reconnect
         await job.moveToDelayed(Date.now() + 72 * 60 * 60 * 1000, job.token);
         throw new DelayedError();
       }
@@ -767,15 +854,33 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
       } catch (err) {
         const code = (err as any)?.code;
         const message = err instanceof Error ? err.message : String(err);
-        const isAuthError = code === 401 || code === 403 || message.includes("Session expired");
 
-        if (isAuthError) {
+        // Circuit open — skip this batch cycle, retry next scheduled run
+        if (message.includes("X_CIRCUIT_OPEN")) {
+          logger.warn("x_tier_refresh_circuit_open", { accountId: account.id });
+          skipped++;
+          break; // stop iterating, circuit blocks all X API calls
+        }
+
+        const failureType = classifyRefreshError(err);
+
+        if (failureType === "permanent" || code === 403) {
+          // 401 / permanent = token revoked, 403 via tier endpoint = token scope issue
           logger.warn("x_tier_refresh_account_auth_error", {
             accountId: account.id,
             xUsername: account.xUsername,
+            failureType,
           });
 
-          await db.update(xAccounts).set({ isActive: false }).where(eq(xAccounts.id, account.id));
+          await db
+            .update(xAccounts)
+            .set({
+              isActive: false,
+              consecutiveRefreshFailures: sql`consecutive_refresh_failures + 1`,
+              lastRefreshFailureAt: new Date(),
+              refreshFailureReason: "permanent",
+            })
+            .where(eq(xAccounts.id, account.id));
 
           logger.warn("x_tier_refresh_account_deactivated", {
             accountId: account.id,
@@ -783,9 +888,21 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
           });
           skipped++;
         } else {
+          // Transient, rate-limited, or unknown — don't deactivate
+          if (failureType === "transient" || failureType === "rate_limited") {
+            await db
+              .update(xAccounts)
+              .set({
+                consecutiveRefreshFailures: sql`consecutive_refresh_failures + 1`,
+                lastRefreshFailureAt: new Date(),
+                refreshFailureReason: failureType,
+              })
+              .where(eq(xAccounts.id, account.id));
+          }
           logger.error("x_tier_refresh_account_error", {
             accountId: account.id,
             xUsername: account.xUsername,
+            failureType,
             error: message,
           });
           errors++;
@@ -849,6 +966,8 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
 
     let notificationsCreated = 0;
     let notificationErrors = 0;
+    let emailsSent = 0;
+    let emailErrors = 0;
 
     for (const account of expiringSoon) {
       const expiresAt = account.tokenExpiresAt;
@@ -856,6 +975,7 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
 
       const hoursUntilExpiry = Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60));
 
+      // Always create in-app notification for expiring tokens
       try {
         await db.insert(notifications).values({
           id: crypto.randomUUID(),
@@ -888,6 +1008,42 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
           error: notifErr instanceof Error ? notifErr.message : "Unknown",
         });
       }
+
+      // Send proactive email when token expires within 24 hours
+      if (hoursUntilExpiry <= 24) {
+        try {
+          const [userRecord] = await db
+            .select({ email: user.email, language: user.language })
+            .from(user)
+            .where(eq(user.id, account.userId))
+            .limit(1);
+
+          if (userRecord?.email) {
+            await sendTokenExpiringEmail(
+              userRecord.email,
+              account.xUsername,
+              hoursUntilExpiry,
+              userRecord.language || "en"
+            );
+            emailsSent++;
+            logger.info("token_health_email_sent", {
+              correlationId: jobCorrelationId,
+              userId: account.userId,
+              xUsername: account.xUsername,
+              hoursUntilExpiry,
+              email: userRecord.email,
+            });
+          }
+        } catch (emailErr) {
+          emailErrors++;
+          logger.warn("token_health_email_failed", {
+            correlationId: jobCorrelationId,
+            userId: account.userId,
+            xUsername: account.xUsername,
+            error: emailErr instanceof Error ? emailErr.message : "Unknown",
+          });
+        }
+      }
     }
 
     logger.info("token_health_job_completed", {
@@ -898,6 +1054,8 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
         totalChecked: expiringSoon.length,
         notificationsCreated,
         notificationErrors,
+        emailsSent,
+        emailErrors,
       },
     });
   } catch (err) {

@@ -45,6 +45,9 @@ type XAccountItem = {
   tokenExpiresAt?: Date | string | null;
   xSubscriptionTier?: string | null;
   xSubscriptionTierUpdatedAt?: Date | string | null;
+  consecutiveRefreshFailures?: number | null;
+  lastRefreshFailureAt?: Date | string | null;
+  refreshFailureReason?: string | null;
 };
 
 interface PlanLimitPayload {
@@ -489,22 +492,49 @@ export function ConnectedXAccounts({
                           {/* Username + status badge + tier timestamp */}
                           <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                             <span className="text-muted-foreground text-sm">@{a.xUsername}</span>
-                            {expired ? (
-                              <Badge
-                                variant="destructive"
-                                className="h-4 gap-1 px-1.5 py-0 text-[10px]"
-                              >
-                                <AlertTriangle className="h-2.5 w-2.5" />
-                                {t("integrations.expired")}
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant={a.isActive ? "default" : "secondary"}
-                                className="h-4 px-1.5 py-0 text-[10px]"
-                              >
-                                {a.isActive ? t("integrations.active") : t("integrations.inactive")}
-                              </Badge>
-                            )}
+                            {(() => {
+                              const isPermanentlyDeactivated =
+                                !a.isActive && a.refreshFailureReason === "permanent";
+                              const hasTransientFailures =
+                                a.isActive && (a.consecutiveRefreshFailures ?? 0) > 0;
+
+                              if (expired || isPermanentlyDeactivated) {
+                                return (
+                                  <Badge
+                                    variant="destructive"
+                                    className="h-4 gap-1 px-1.5 py-0 text-[10px]"
+                                  >
+                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                    {isPermanentlyDeactivated
+                                      ? t("integrations.reconnect_required")
+                                      : t("integrations.expired")}
+                                  </Badge>
+                                );
+                              }
+
+                              if (hasTransientFailures) {
+                                return (
+                                  <Badge
+                                    variant="outline"
+                                    className="h-4 gap-1 border-amber-500/50 bg-amber-500/10 px-1.5 py-0 text-[10px] text-amber-600 dark:text-amber-400"
+                                  >
+                                    <RefreshCw className="h-2.5 w-2.5" />
+                                    {t("integrations.connection_issues")}
+                                  </Badge>
+                                );
+                              }
+
+                              return (
+                                <Badge
+                                  variant={a.isActive ? "default" : "secondary"}
+                                  className="h-4 px-1.5 py-0 text-[10px]"
+                                >
+                                  {a.isActive
+                                    ? t("integrations.active")
+                                    : t("integrations.inactive")}
+                                </Badge>
+                              );
+                            })()}
                             {tierUpdatedAt && (
                               <span className="text-muted-foreground/60 text-xs">
                                 · {relativeTime(tierUpdatedAt)}
@@ -687,12 +717,18 @@ export function ConnectedXAccounts({
                       </div>
                     </div>
 
-                    {/* Expired token warning */}
-                    {expired && (
+                    {/* Expired token or permanent deactivation warning */}
+                    {(expired || (!a.isActive && a.refreshFailureReason === "permanent")) && (
                       <div className="border-destructive/30 bg-destructive/5 flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
                         <div className="text-destructive flex items-center gap-2">
                           <AlertTriangle className="h-4 w-4 shrink-0" />
-                          <span>{t("integrations.token_expired_warning")}</span>
+                          <span>
+                            {!a.isActive && a.refreshFailureReason === "permanent"
+                              ? t("integrations.account_deactivated_warning", {
+                                  username: a.xUsername,
+                                })
+                              : t("integrations.token_expired_warning")}
+                          </span>
                         </div>
                         <Button
                           size="sm"
@@ -702,6 +738,25 @@ export function ConnectedXAccounts({
                         >
                           {t("integrations.reconnect")}
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Transient failure info banner */}
+                    {a.isActive && (a.consecutiveRefreshFailures ?? 0) > 0 && (
+                      <div className="flex items-center justify-between gap-3 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                          <RefreshCw className="h-4 w-4 shrink-0" />
+                          <span>
+                            {t("integrations.transient_failure_info", {
+                              count: a.consecutiveRefreshFailures ?? 0,
+                            })}
+                          </span>
+                        </div>
+                        <span className="text-muted-foreground shrink-0 text-xs">
+                          {a.lastRefreshFailureAt
+                            ? relativeTime(new Date(a.lastRefreshFailureAt))
+                            : ""}
+                        </span>
                       </div>
                     )}
 

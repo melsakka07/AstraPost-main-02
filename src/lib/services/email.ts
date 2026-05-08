@@ -1,6 +1,8 @@
 import { render } from "@react-email/render";
 import { Resend } from "resend";
+import { AccountDeactivatedEmail } from "@/components/email/account-deactivated-email";
 import { PostFailureEmail } from "@/components/email/post-failure-email";
+import { TokenExpiringEmail } from "@/components/email/token-expiring-email";
 import { logger } from "@/lib/logger";
 import { getEmailTranslations } from "./email-translations";
 
@@ -97,6 +99,41 @@ export async function sendPostFailureEmail(
     react: PostFailureEmail({ postId, reason, retryUrl, locale }),
     text: `${t.post_failure.body}\n\n${t.post_failure.reason_label}: ${reason}\n\n${t.post_failure.view_queue}: ${retryUrl}\n\n${t.post_failure.post_id}: ${postId}`,
     metadata: { postId, reason, type: "post_failure" },
+  });
+}
+
+export async function sendTokenExpiringEmail(
+  to: string,
+  xUsername: string,
+  hoursUntilExpiry: number,
+  locale: string = "en"
+) {
+  const reconnectUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/settings/integrations`;
+  const t = getEmailTranslations(locale);
+
+  await sendEmail({
+    to,
+    subject: t.token_expiring.subject.replace("{username}", xUsername),
+    react: TokenExpiringEmail({ xUsername, hoursUntilExpiry, reconnectUrl, locale }),
+    text: `${t.token_expiring.body.replace("{username}", `@${xUsername}`).replace("{hours}", String(hoursUntilExpiry))}\n\n${t.token_expiring.impact}\n\n${reconnectUrl}`,
+    metadata: { xUsername, hoursUntilExpiry: String(hoursUntilExpiry), type: "token_expiring" },
+  });
+}
+
+export async function sendAccountDeactivatedEmail(
+  to: string,
+  xUsername: string,
+  locale: string = "en"
+) {
+  const reconnectUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/settings/integrations`;
+  const t = getEmailTranslations(locale);
+
+  await sendEmail({
+    to,
+    subject: t.account_deactivated.subject.replace("{username}", xUsername),
+    react: AccountDeactivatedEmail({ xUsername, reconnectUrl, locale }),
+    text: `${t.account_deactivated.body.replace("{username}", `@${xUsername}`)}\n\n${t.account_deactivated.impact}\n\n${reconnectUrl}`,
+    metadata: { xUsername, type: "account_deactivated" },
   });
 }
 

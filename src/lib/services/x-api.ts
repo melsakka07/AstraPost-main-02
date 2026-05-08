@@ -6,6 +6,12 @@ import { logger } from "@/lib/logger";
 import { redis } from "@/lib/rate-limiter";
 import { xAccounts } from "@/lib/schema";
 import { decryptToken, encryptToken } from "@/lib/security/token-encryption";
+import {
+  checkCircuit,
+  recordPermanentFailure,
+  recordSuccess,
+} from "@/lib/services/x-circuit-breaker";
+import { classifyRefreshError } from "@/lib/services/x-error";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const CHUNK_SIZE = 1 * 1024 * 1024; // 1 MB per chunk
@@ -183,14 +189,36 @@ export class XApiService {
       });
 
       logger.info("x_token_refresh_success", { xAccountId: account.id, userId });
+
+      // Reset failure counters on a clean refresh
+      await db
+        .update(xAccounts)
+        .set({
+          consecutiveRefreshFailures: 0,
+          lastRefreshFailureAt: null,
+          refreshFailureReason: null,
+        })
+        .where(eq(xAccounts.id, account.id));
+
+      await recordSuccess();
       return new XApiService(accessToken);
     } catch (error) {
+      const failureType = classifyRefreshError(error);
       logger.warn("x_token_refresh_failed", {
         xAccountId: account.id,
         userId,
+        failureType,
         error: error instanceof Error ? error.message : String(error),
       });
-      throw new Error("X Session expired. Please reconnect your account.");
+
+      if (failureType === "permanent") {
+        await recordPermanentFailure();
+        throw new Error("X_SESSION_EXPIRED");
+      }
+      if (failureType === "rate_limited") {
+        throw new Error("X_RATE_LIMITED");
+      }
+      throw new Error("X_REFRESH_TRANSIENT");
     } finally {
       if (redisAvailable) {
         try {
@@ -215,9 +243,14 @@ export class XApiService {
       (!account.tokenExpiresAt || account.tokenExpiresAt.getTime() - Date.now() < 60_000);
 
     if (shouldRefresh) {
+      const circuit = await checkCircuit();
+      if (!circuit.allowed) {
+        throw new Error("X_CIRCUIT_OPEN");
+      }
       return XApiService.refreshWithLock(account, userId);
     }
 
+    await recordSuccess();
     return new XApiService(decryptToken(account.accessTokenEnc));
   }
 
@@ -233,6 +266,10 @@ export class XApiService {
       (!account.tokenExpiresAt || account.tokenExpiresAt.getTime() - Date.now() < 60_000);
 
     if (shouldRefresh) {
+      const circuit = await checkCircuit();
+      if (!circuit.allowed) {
+        throw new Error("X_CIRCUIT_OPEN");
+      }
       return XApiService.refreshWithLock(account, account.userId);
     }
 
@@ -465,8 +502,13 @@ export class XApiService {
 
     let client: XApiService;
     if (shouldRefresh) {
+      const circuit = await checkCircuit();
+      if (!circuit.allowed) {
+        throw new Error("X_CIRCUIT_OPEN");
+      }
       client = await XApiService.refreshWithLock(account, account.userId);
     } else {
+      await recordSuccess();
       client = new XApiService(decryptToken(account.accessTokenEnc));
     }
 

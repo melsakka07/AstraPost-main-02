@@ -1,5 +1,39 @@
 # Latest Updates
 
+## 2026-05-08 — Token Refresh Failure Handling at Scale
+
+Implemented industry best practices for X token refresh failure handling to support thousands of customers without mass account deactivation during transient X API outages.
+
+### What changed
+
+1. **Error classification** — `src/lib/services/x-error.ts` distinguishes permanent (401), transient (5xx/network), and rate-limited (429) errors. `getBackoffForFailures()` computes appropriate delays per type and failure count.
+2. **Failure tracking on xAccounts** — Added `consecutiveRefreshFailures`, `lastRefreshFailureAt`, `refreshFailureReason` columns. Counters reset on successful refresh, increment on failures. Migration: `drizzle/0076_whole_mac_gargan.sql`.
+3. **Differentiated retry** — `refreshWithLock()` throws typed errors (`X_SESSION_EXPIRED`, `X_RATE_LIMITED`, `X_REFRESH_TRANSIENT`). `scheduleProcessor` and `refreshXTiersProcessor` only deactivate on permanent errors. Transient/rate-limited errors get exponential backoff (1m → 5m → 15m → 1h → 2h cap) instead of hardcoded 72h.
+4. **Circuit breaker** — `src/lib/services/x-circuit-breaker.ts` uses Redis to track consecutive permanent failures. After threshold (default 5), all X API calls are blocked for 5 minutes. Fails open when Redis is down. Configurable via `X_CIRCUIT_THRESHOLD` and `X_CIRCUIT_TIMEOUT_MS` env vars.
+5. **Proactive email notifications** — New React Email templates `token-expiring-email.tsx` and `account-deactivated-email.tsx`. `tokenHealthProcessor` now sends email at 24h threshold (keeps in-app notification at 48h). `scheduleProcessor` sends deactivation email on permanent auth failure.
+6. **Dashboard health indicators** — `connected-x-accounts.tsx` now shows yellow "Connection issues" badge for transient failures, red "Reconnect Required" badge for permanent deactivation, and contextual banners with relative times.
+
+### Files Changed
+
+- `src/lib/schema.ts` — 3 new columns on xAccounts
+- `drizzle/0076_whole_mac_gargan.sql` — Migration
+- `src/lib/services/x-error.ts` — **New** error classification + backoff utility
+- `src/lib/services/x-circuit-breaker.ts` — **New** Redis-based circuit breaker
+- `src/lib/services/x-api.ts` — Typed errors in refreshWithLock, circuit breaker integration, failure counter reset
+- `src/lib/queue/processors.ts` — Differentiated error handling in scheduleProcessor, refreshXTiersProcessor, and tokenHealthProcessor; email integration
+- `src/lib/services/email.ts` — `sendTokenExpiringEmail()` + `sendAccountDeactivatedEmail()`
+- `src/components/email/token-expiring-email.tsx` — **New** React Email template
+- `src/components/email/account-deactivated-email.tsx` — **New** React Email template
+- `src/components/settings/connected-x-accounts.tsx` — Failure state badges + banners
+- `src/i18n/messages/en.json` + `ar.json` — 10 new keys (4 email + 4 settings + 2 emails namespace). Key count: 2722/2722.
+
+### Quality Gate
+
+- `pnpm run check`: CLEAN PASS (0 errors, 0 warnings, 2722/2722 i18n keys)
+- `pnpm test`: PASS (34 test files, 321 tests)
+
+---
+
 ## 2026-05-08 — PDF & YouTube to Thread: Optional First-Tweet Image Generation
 
 Added an optional "Generate image for the first tweet" toggle to both PDF-to-Thread and YouTube-to-Thread tools. When enabled, an editorial 16:9 image is generated via Replicate nano-banana-2 for tweet #1 before the thread is sent to the Composer. One image credit is consumed from the user's monthly image quota.

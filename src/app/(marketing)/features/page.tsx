@@ -1,5 +1,16 @@
 import Link from "next/link";
-import { Calendar, Sparkles, BarChart2, Zap, Users, Globe, ArrowRight } from "lucide-react";
+import {
+  Calendar,
+  Sparkles,
+  BarChart2,
+  Zap,
+  Users,
+  Bot,
+  FileText,
+  TrendingUp,
+  Languages,
+  ArrowRight,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,14 +83,47 @@ export default async function FeaturesPage() {
       details: [t("team_detail_1"), t("team_detail_2"), t("team_detail_3"), t("team_detail_4")],
     },
     {
-      icon: <Globe className="text-primary h-6 w-6" />,
-      title: t("crossposting_title"),
-      description: t("crossposting_desc"),
+      icon: <Bot className="text-primary h-6 w-6" />,
+      title: t("agentic_title"),
+      description: t("agentic_desc"),
       details: [
-        t("crossposting_detail_1"),
-        t("crossposting_detail_2"),
-        t("crossposting_detail_3"),
-        t("crossposting_detail_4"),
+        t("agentic_detail_1"),
+        t("agentic_detail_2"),
+        t("agentic_detail_3"),
+        t("agentic_detail_4"),
+      ],
+    },
+    {
+      icon: <FileText className="text-primary h-6 w-6" />,
+      title: t("repurposing_title"),
+      description: t("repurposing_desc"),
+      details: [
+        t("repurposing_detail_1"),
+        t("repurposing_detail_2"),
+        t("repurposing_detail_3"),
+        t("repurposing_detail_4"),
+      ],
+    },
+    {
+      icon: <TrendingUp className="text-primary h-6 w-6" />,
+      title: t("growth_title"),
+      description: t("growth_desc"),
+      details: [
+        t("growth_detail_1"),
+        t("growth_detail_2"),
+        t("growth_detail_3"),
+        t("growth_detail_4"),
+      ],
+    },
+    {
+      icon: <Languages className="text-primary h-6 w-6" />,
+      title: t("arabic_ai_title"),
+      description: t("arabic_ai_desc"),
+      details: [
+        t("arabic_ai_detail_1"),
+        t("arabic_ai_detail_2"),
+        t("arabic_ai_detail_3"),
+        t("arabic_ai_detail_4"),
       ],
     },
   ];
