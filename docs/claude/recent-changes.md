@@ -1,5 +1,15 @@
 # Recent Fixes & Changes
 
+## 2026-05-08 — Token Refresh Failure Handling at Scale
+
+Differentiated transient vs permanent token refresh failures, added circuit breaker, proactive email notifications, and dashboard health indicators. See `docs/0-MY-LATEST-UPDATES.md` for full details.
+
+**New files:** `src/lib/services/x-error.ts`, `src/lib/services/x-circuit-breaker.ts`, `src/components/email/token-expiring-email.tsx`, `src/components/email/account-deactivated-email.tsx`
+**Schema:** `drizzle/0076_whole_mac_gargan.sql` — added `consecutiveRefreshFailures`, `lastRefreshFailureAt`, `refreshFailureReason` to `x_accounts`
+**Env vars:** `X_CIRCUIT_THRESHOLD` (default 5), `X_CIRCUIT_TIMEOUT_MS` (default 300000)
+
+---
+
 ## 2026-05-07 — AI Hub UX: Breadcrumbs, Tab-Aware Writer, In-Place Upgrade Modal
 
 ### Architecture shift

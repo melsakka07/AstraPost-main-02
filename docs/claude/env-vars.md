@@ -54,12 +54,14 @@
 - `STRIPE_PRICE_ID_AGENCY_MONTHLY` — Price ID for Agency Monthly plan
 - `STRIPE_PRICE_ID_AGENCY_ANNUAL` — Price ID for Agency Annual plan
 - `BLOB_READ_WRITE_TOKEN` — Vercel Blob (production storage; falls back to local filesystem in dev)
-- `RESEND_API_KEY`, `RESEND_FROM_EMAIL` — Email (welcome, schedule confirmation, failure, trial extension)
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL` — Email (welcome, schedule confirmation, failure, trial extension, token-expiring warnings, account deactivated)
 - `RESEND_OPS_EMAIL` — Ops alert email recipient (falls back to `RESEND_FROM_EMAIL`); used by AI cost alarm cron
 - `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` — Error tracking via Sentry
 - `CRON_SECRET` — Bearer token for `/api/cron/*` endpoints (billing-cleanup, ai-cost-alarm, ai-counter-rollover)
 - `TWITTER_BEARER_TOKEN` — App-only bearer token for tweet import + Competitor Analyzer
 - `TWITTER_DRY_RUN` — If set, worker skips actual X API posting (for local testing / smoke tests)
+- `X_CIRCUIT_THRESHOLD` — Consecutive permanent X API failures before the circuit breaker opens (default: `5`)
+- `X_CIRCUIT_TIMEOUT_MS` — Duration the circuit stays open in milliseconds (default: `300000` — 5 minutes)
 - `DIAGNOSTICS_TOKEN` — Token required for full diagnostics endpoint response (without token, only status is returned)
 - `PLAN_CHANGE_LOG_RETENTION_YEARS` — Retention period for plan change audit logs in years. Stored as **string** (not number) — callers parse with `parseInt(… \|\| "7", 10)`. Default: `7`.
 - `NODE_ENV` — `development`, `production`, `test` (default: `development`)

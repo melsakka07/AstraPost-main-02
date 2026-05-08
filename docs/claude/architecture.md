@@ -110,10 +110,12 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/lib/services/ai-image.ts` — Image generation orchestration
 - `src/lib/services/moderation.ts` — Pre-publish content moderation
 - `src/lib/services/agentic-pipeline.ts` — 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
-- `src/lib/services/x-api.ts` — Twitter/X API client
+- `src/lib/services/x-api.ts` — Twitter/X API client with per-account distributed lock token refresh
+- `src/lib/services/x-error.ts` — Token refresh error classification (permanent/transient/rate-limited) + exponential backoff
+- `src/lib/services/x-circuit-breaker.ts` — Redis-based circuit breaker for X API (opens after N consecutive permanent failures)
 - `src/lib/services/youtube.ts` — YouTube URL parsing + metadata via yt-dlp, `getVideoInfo()`, `extractAudio()`
 - `src/lib/services/transcription.ts` — Deepgram + Whisper adapter, cost calculation, provider routing
-- `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics, PDF-to-Thread, YouTube-to-Thread)
+- `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics, Token Health, X Tier Refresh, PDF-to-Thread, YouTube-to-Thread)
 
 ### BullMQ Processors
 

@@ -52,7 +52,7 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **Scheduling**                 | Smart calendar UI, 15-min increments, auto timezone detection, instant publish, recurring posts                                                                                          |
 | **Thread Support**             | Multi-tweet threads (up to 25 cards), drag-and-drop reorder, streaming thread preview                                                                                                    |
 | **Multi-Platform**             | Publish to X (Twitter) on all plans. LinkedIn available on Agency plan                                                                                                                   |
-| **Background Worker**          | BullMQ + Redis: reliable publishing, 5 attempts with exponential backoff (starting at 60 s)                                                                                              |
+| **Background Worker**          | BullMQ + Redis: reliable publishing; differentiated retry for transient vs permanent errors (exponential 1m→2h); circuit breaker pauses all X API calls when degraded                    |
 | **Real-time Queue**            | Server-Sent Events (SSE) for live queue status updates                                                                                                                                   |
 | **Queue Management**           | Thread collapsible view, bulk approve/reject, inline rescheduling, contextual failure tips                                                                                               |
 | **Draft Management**           | Auto-save every 30 seconds, searchable + sortable draft library, media badge, schedule shortcut                                                                                          |
@@ -81,7 +81,7 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **Link Preview**               | Automatic link preview cards fetched when URLs are added to tweets                                                                                                                       |
 | **URL Shortener**              | Built-in short URL redirects via `/go/[shortCode]` for affiliate and tracked links                                                                                                       |
 | **Multi-Account**              | Connect and manage multiple X accounts per user (1 Free, 3 Pro Monthly, 4 Pro Annual, 10 Agency)                                                                                         |
-| **X Account Management**       | Per-account inline health checks, expired-token detection, confirm-before-disconnect                                                                                                     |
+| **X Account Management**       | Per-account health checks, transient/permanent failure badges, expired-token detection, proactive reconnect prompts, confirm-before-disconnect                                           |
 | **Team Collaboration**         | Agency plan: up to 5 team members, role-based access (owner/admin/editor/viewer), post approval workflows                                                                                |
 | **Admin Panel**                | Admin dashboard with user management, job monitoring, and system metrics                                                                                                                 |
 | **Referral System**            | Built-in referral program with credit tracking                                                                                                                                           |
@@ -93,7 +93,7 @@ It targets Arabic-speaking content creators and social media managers in the MEN
 | **Security**                   | X OAuth tokens encrypted at rest (AES-256, rotatable keys), security headers on all routes                                                                                               |
 | **Observability**              | End-to-end correlation IDs: API → queue → worker → `job_runs` table; Sentry integration                                                                                                  |
 | **Media Uploads**              | Images (4×, 5 MB each), video (512 MB), GIF (15 MB); upload progress indicators                                                                                                          |
-| **Notifications**              | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts)                                                                                                  |
+| **Notifications**              | In-app bell feed + email notifications (welcome, schedule confirmation, failure alerts, token-expiring 24h warning, account deactivated)                                                 |
 | **PWA**                        | Installable progressive web app with offline support                                                                                                                                     |
 | **Blog / MDX**                 | Built-in MDX blog with syntax highlighting                                                                                                                                               |
 | **Roadmap**                    | Public feedback and voting system                                                                                                                                                        |
@@ -533,18 +533,20 @@ Open **http://localhost:3000** in your browser.
 
 **Optional Services**
 
-| Variable                          | Description                                                       |
-| --------------------------------- | ----------------------------------------------------------------- |
-| `AI_DAILY_BUDGET_USD`             | Daily AI cost cap in USD — triggers email alert when exceeded     |
-| `RESEND_API_KEY`                  | Resend email API key. If unset, emails are logged to console only |
-| `RESEND_FROM_EMAIL`               | From address for outgoing emails (e.g. `noreply@yourdomain.com`)  |
-| `BLOB_READ_WRITE_TOKEN`           | Vercel Blob token. Leave empty to use local filesystem in dev     |
-| `SENTRY_DSN`                      | Sentry error tracking DSN                                         |
-| `SENTRY_AUTH_TOKEN`               | Sentry auth token for source map upload during build              |
-| `CRON_SECRET`                     | Bearer token required to invoke `/api/cron/*` endpoints           |
-| `DIAGNOSTICS_TOKEN`               | Token required to receive full response from `/api/diagnostics`   |
-| `PLAN_CHANGE_LOG_RETENTION_YEARS` | Retention period for plan audit logs in years (default: `7`)      |
-| `TWITTER_DRY_RUN`                 | If set, worker skips actual X API posting (for local testing)     |
+| Variable                          | Description                                                                     |
+| --------------------------------- | ------------------------------------------------------------------------------- |
+| `AI_DAILY_BUDGET_USD`             | Daily AI cost cap in USD — triggers email alert when exceeded                   |
+| `RESEND_API_KEY`                  | Resend email API key. If unset, emails are logged to console only               |
+| `RESEND_FROM_EMAIL`               | From address for outgoing emails (e.g. `noreply@yourdomain.com`)                |
+| `BLOB_READ_WRITE_TOKEN`           | Vercel Blob token. Leave empty to use local filesystem in dev                   |
+| `SENTRY_DSN`                      | Sentry error tracking DSN                                                       |
+| `SENTRY_AUTH_TOKEN`               | Sentry auth token for source map upload during build                            |
+| `CRON_SECRET`                     | Bearer token required to invoke `/api/cron/*` endpoints                         |
+| `DIAGNOSTICS_TOKEN`               | Token required to receive full response from `/api/diagnostics`                 |
+| `PLAN_CHANGE_LOG_RETENTION_YEARS` | Retention period for plan audit logs in years (default: `7`)                    |
+| `TWITTER_DRY_RUN`                 | If set, worker skips actual X API posting (for local testing)                   |
+| `X_CIRCUIT_THRESHOLD`             | Consecutive permanent X API failures before circuit opens (default: `5`)        |
+| `X_CIRCUIT_TIMEOUT_MS`            | How long the circuit stays open in milliseconds (default: `300000` — 5 minutes) |
 
 ### Generating `TOKEN_ENCRYPTION_KEYS`
 
@@ -621,7 +623,7 @@ AstraPost uses **Drizzle ORM** with PostgreSQL. Key tables:
 | `session`                   | Active user sessions                                                                                                                                                                                                                                                                                                                                               |
 | `account`                   | OAuth provider accounts (X, LinkedIn, Instagram)                                                                                                                                                                                                                                                                                                                   |
 | `verification`              | Email/token verification records                                                                                                                                                                                                                                                                                                                                   |
-| `x_accounts`                | Connected X accounts with encrypted tokens, follower count, default flag, token expiry                                                                                                                                                                                                                                                                             |
+| `x_accounts`                | Connected X accounts with encrypted tokens, failure tracking, follower count, default flag, token expiry                                                                                                                                                                                                                                                           |
 | `linkedin_accounts`         | Connected LinkedIn accounts with encrypted tokens                                                                                                                                                                                                                                                                                                                  |
 | `instagram_accounts`        | Connected Instagram accounts with long-lived tokens                                                                                                                                                                                                                                                                                                                |
 | `posts`                     | Scheduled/published/draft posts — platform, type, status, approval, recurrence, idempotency                                                                                                                                                                                                                                                                        |

@@ -846,6 +846,9 @@ CREATE TABLE x_accounts (
   token_expires_at TIMESTAMP WITH TIME ZONE,
   followers_count  INTEGER DEFAULT 0,
   is_active        BOOLEAN DEFAULT TRUE,
+  consecutive_refresh_failures INTEGER DEFAULT 0 NOT NULL,  -- failure tracking
+  last_refresh_failure_at     TIMESTAMP WITH TIME ZONE,     -- last failure timestamp
+  refresh_failure_reason      TEXT,                         -- "permanent" | "transient" | "rate_limited"
   created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

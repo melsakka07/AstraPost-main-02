@@ -114,13 +114,13 @@ vercel env pull .env.production --environment=production
 
 ### Required for publishing
 
-| Variable                                      | Used for                                              |
-| --------------------------------------------- | ----------------------------------------------------- |
-| `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET` | Refreshing X OAuth tokens before publishing           |
-| `OPENROUTER_API_KEY`                          | If any worker job calls AI (agentic posting, scoring) |
-| `REPLICATE_API_TOKEN`                         | If a job generates images                             |
-| `BLOB_READ_WRITE_TOKEN`                       | Reading/writing media blobs                           |
-| `RESEND_API_KEY` + `RESEND_FROM_EMAIL`        | Failure notifications and operator emails             |
+| Variable                                      | Used for                                                     |
+| --------------------------------------------- | ------------------------------------------------------------ |
+| `TWITTER_CLIENT_ID` / `TWITTER_CLIENT_SECRET` | Refreshing X OAuth tokens, proactive token health checks     |
+| `OPENROUTER_API_KEY`                          | If any worker job calls AI (agentic posting, scoring)        |
+| `REPLICATE_API_TOKEN`                         | If a job generates images                                    |
+| `BLOB_READ_WRITE_TOKEN`                       | Reading/writing media blobs                                  |
+| `RESEND_API_KEY` + `RESEND_FROM_EMAIL`        | Post failure, token expiring, and account deactivated emails |
 
 ### Optional / situational
 
@@ -187,6 +187,11 @@ app can't enqueue.
 refresh tokens are single-use — two workers refreshing the same X account at the
 same time will permanently invalidate one of them.
 
+A **circuit breaker** (`src/lib/services/x-circuit-breaker.ts`) adds further
+protection: after `X_CIRCUIT_THRESHOLD` consecutive permanent failures (default 5),
+all X API calls pause for `X_CIRCUIT_TIMEOUT_MS` (default 5 min). This prevents
+mass token invalidation when X's API is degraded.
+
 If you need more throughput later, the right move is to shard by `userId` /
 `xAccountId`, not just bump replicas. That's a code change, not a Railway setting.
 
@@ -196,8 +201,10 @@ If you need more throughput later, the right move is to shard by `userId` /
 
 - A worker that's mostly idle uses ~150-300 MB RAM and very little CPU.
 - Railway hobby plan ($5/mo credit) covers this comfortably.
-- Watch for runaway retry loops (e.g. a permanently-broken account stuck in
-  exponential backoff) — those can rack up CPU minutes.
+- Watch for runaway retry loops. The error classification system (`x-error.ts`)
+  distinguishes transient from permanent failures — permanently revoked tokens
+  deactivate the account instead of retrying. The circuit breaker adds a second
+  safety layer by blocking all X API calls when the failure rate spikes.
 
 ---
 
