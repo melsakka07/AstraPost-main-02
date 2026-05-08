@@ -400,6 +400,8 @@
     "close_navigation": "Close navigation",
     "switch_language": "Switch language",
     "switch_language_failed": "Failed to switch language",
+    "language_arabic": "Arabic",
+    "language_english": "English",
     "notifications": {
       "label": "Notifications",
       "mark_all_read_success": "All notifications marked as read",

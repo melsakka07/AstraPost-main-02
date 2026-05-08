@@ -400,6 +400,8 @@
     "close_navigation": "إغلاق التنقل",
     "switch_language": "تغيير اللغة",
     "switch_language_failed": "فشل تغيير اللغة",
+    "language_arabic": "العربية",
+    "language_english": "الإنجليزية",
     "notifications": {
       "label": "الإشعارات",
       "mark_all_read_success": "تم تعليم جميع الإشعارات كمقروءة",
