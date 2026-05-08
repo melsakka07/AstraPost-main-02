@@ -6,6 +6,132 @@ import path from "path";
 import { promisify } from "util";
 import { logger } from "@/lib/logger";
 
+// ---------------------------------------------------------------------------
+// HTTP-based video info (no yt-dlp binary required)
+// ---------------------------------------------------------------------------
+
+interface YouTubePlayerResponse {
+  videoDetails?: {
+    title?: string;
+    lengthSeconds?: string;
+    videoId?: string;
+    thumbnail?: { thumbnails?: { url: string; width: number; height: number }[] };
+    isLiveContent?: boolean;
+    isPrivate?: boolean;
+  };
+  playabilityStatus?: {
+    status?: string;
+    reason?: string;
+    messages?: string[];
+  };
+}
+
+/**
+ * Get video metadata via YouTube's internal player API.
+ *
+ * Uses HTTP only — no yt-dlp binary required. Suitable for Vercel serverless.
+ * Returns title, duration (seconds), and thumbnail URL.
+ *
+ * Throws if video is private, age-gated, unavailable, too long, or too short.
+ */
+export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
+  logger.info("youtube_get_video_info_http_start", { videoId });
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  let data: YouTubePlayerResponse;
+  try {
+    const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        videoId,
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion: "2.20250101.00.00",
+            hl: "en",
+          },
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(`YouTube player API returned HTTP ${res.status}`);
+    }
+
+    data = (await res.json()) as YouTubePlayerResponse;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error("youtube_get_video_info_http_failed", { videoId, error: message });
+    throw new Error(`Failed to fetch video info: ${message}`);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  const { playabilityStatus, videoDetails } = data;
+
+  if (!playabilityStatus || playabilityStatus.status !== "OK") {
+    const reason = playabilityStatus?.reason ?? "Video is not available";
+    logger.warn("youtube_video_not_playable", {
+      videoId,
+      status: playabilityStatus?.status,
+      reason,
+    });
+    throw new Error(reason);
+  }
+
+  if (!videoDetails) {
+    throw new Error("YouTube response missing video details");
+  }
+
+  if (videoDetails.isPrivate) {
+    throw new Error("This video is private");
+  }
+
+  if (videoDetails.isLiveContent) {
+    throw new Error("Live videos are not supported");
+  }
+
+  const title = videoDetails.title;
+  if (!title) {
+    throw new Error("YouTube response missing video title");
+  }
+
+  const durationRaw = videoDetails.lengthSeconds;
+  if (!durationRaw) {
+    throw new Error("YouTube response missing video duration");
+  }
+
+  const durationSeconds = Math.floor(Number(durationRaw));
+  if (isNaN(durationSeconds) || durationSeconds <= 0) {
+    throw new Error(`Invalid video duration: ${durationRaw}`);
+  }
+
+  if (durationSeconds > MAX_DURATION_SECONDS) {
+    throw new Error(
+      `Video is too long (${Math.round(durationSeconds / 60)} minutes). Maximum is 90 minutes.`
+    );
+  }
+
+  if (durationSeconds < MIN_DURATION_SECONDS) {
+    throw new Error(`Video is too short (${durationSeconds} seconds). Minimum is 30 seconds.`);
+  }
+
+  const thumbnailUrl =
+    videoDetails.thumbnail?.thumbnails?.[0]?.url ?? buildYoutubeThumbnailUrl(videoId);
+
+  logger.info("youtube_get_video_info_http_success", {
+    videoId,
+    titleLength: title.length,
+    durationSeconds,
+  });
+
+  return { videoId, title, durationSeconds, thumbnailUrl };
+}
+
 const execFileAsync = promisify(execFile);
 
 // ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ import {
 import { youtubeThreadQueue, YOUTUBE_THREAD_JOB_OPTIONS } from "@/lib/queue/client";
 import { youtubeThreadJobs } from "@/lib/schema";
 import { youtubeToThreadRequestSchema } from "@/lib/schemas/youtube-to-thread";
-import { validateYoutubeUrl, getVideoInfo } from "@/lib/services/youtube";
+import { validateYoutubeUrl, getVideoInfoHttp } from "@/lib/services/youtube";
 
 // ── POST: Create and enqueue a YouTube-to-thread job ───────────────────────
 
@@ -63,19 +63,22 @@ export async function POST(req: Request) {
 
     const videoId = validation.videoId!;
 
-    // Step 8: Get video info (rejects if duration > 5400s or < 30s, or video inaccessible)
-    let videoInfo: Awaited<ReturnType<typeof getVideoInfo>>;
+    // Step 8: Get video info via HTTP (no yt-dlp needed on Vercel)
+    let videoInfo: Awaited<ReturnType<typeof getVideoInfoHttp>>;
     try {
-      videoInfo = await getVideoInfo(youtubeUrl);
+      videoInfo = await getVideoInfoHttp(videoId);
     } catch (err) {
       await releaseQuota();
       const message = err instanceof Error ? err.message : String(err);
       logger.warn("youtube_to_thread_video_info_failed", {
         correlationId,
         youtubeUrl,
+        videoId,
         error: message,
       });
-      return ApiError.badRequest("Failed to access the video. Please check the URL and try again.");
+      return ApiError.badRequest(
+        message || "Failed to access the video. Please check the URL and try again."
+      );
     }
 
     if (previewOnly) {
