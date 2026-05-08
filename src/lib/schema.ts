@@ -1654,6 +1654,7 @@ export const youtubeThreadJobs = pgTable(
       .default("casual"),
     tweetCount: integer("tweet_count").notNull().default(8),
     durationSeconds: integer("duration_seconds"),
+    durationVerified: boolean("duration_verified").notNull().default(false),
     transcript: text("transcript"),
     threadResult: jsonb("thread_result").$type<{
       tweets: Array<{ text: string; charCount: number }>;

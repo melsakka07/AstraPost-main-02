@@ -26,55 +26,209 @@ interface YouTubePlayerResponse {
   };
 }
 
-function getInnertubeUrl(): string {
-  const key = process.env.YOUTUBE_INNERTUBE_API_KEY;
-  return `https://www.youtube.com/youtubei/v1/player?key=${key}&prettyPrint=false`;
+// ---------------------------------------------------------------------------
+// Watch page scraping — extracts fresh API key and visitorData
+// ---------------------------------------------------------------------------
+
+/**
+ * Scrape the YouTube watch page for fresh ytcfg configuration.
+ *
+ * Fetches the HTML of a video page and extracts the `ytcfg.set({…})` JSON blob
+ * to get a fresh API key and visitorData. These values are rotated by YouTube and
+ * using stale ones causes bot detection.
+ *
+ * Non-fatal — returns null on any failure so the caller falls back to env vars.
+ */
+async function extractYouTubePageConfig(
+  videoId: string
+): Promise<{ apiKey: string; visitorData: string } | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5_000);
+
+  try {
+    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: controller.signal,
+    });
+
+    if (!res.ok) return null;
+
+    const html = await res.text();
+    const ytcfg = extractYtcfgJson(html);
+    if (!ytcfg) return null;
+
+    const apiKey = typeof ytcfg.INNERTUBE_API_KEY === "string" ? ytcfg.INNERTUBE_API_KEY : "";
+    const visitorData = typeof ytcfg.VISITOR_DATA === "string" ? ytcfg.VISITOR_DATA : "";
+
+    if (!apiKey) return null;
+
+    return { apiKey, visitorData };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/** Extract the ytcfg JSON blob from a watch page HTML string. */
+function extractYtcfgJson(html: string): Record<string, unknown> | null {
+  const startMatch = html.match(/ytcfg\.set\s*\(\s*\{/);
+  if (!startMatch || startMatch.index === undefined) return null;
+
+  const startIndex = startMatch.index + startMatch[0].length - 1; // position of '{'
+  let depth = 1;
+  let pos = startIndex + 1;
+
+  while (pos < html.length && depth > 0) {
+    const char = html[pos];
+    if (char === "{") depth++;
+    else if (char === "}") depth--;
+    pos++;
+  }
+
+  if (depth !== 0) return null;
+
+  const json = html.substring(startIndex, pos);
+  try {
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// oEmbed fallback — last resort when innertube blocks all clients
+// ---------------------------------------------------------------------------
+
+/**
+ * Get video metadata via YouTube's oEmbed endpoint.
+ *
+ * This is a public, no-auth GET endpoint that returns title and thumbnail.
+ * It does NOT return duration, so `durationSeconds` is 0 and `durationVerified`
+ * is set to false. Callers should skip duration-based gates in this case.
+ *
+ * Throws on network error or non-2xx response.
+ */
+async function getVideoInfoOembed(videoId: string): Promise<VideoInfo> {
+  const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`oEmbed API returned HTTP ${res.status}`);
+  }
+
+  const data = (await res.json()) as { title?: string; thumbnail_url?: string };
+
+  return {
+    videoId,
+    title: data.title ?? "Untitled YouTube Video",
+    durationSeconds: 0,
+    thumbnailUrl: data.thumbnail_url ?? buildYoutubeThumbnailUrl(videoId),
+    durationVerified: false,
+  };
 }
 
 interface YouTubeClient {
   name: string;
-  context: unknown;
+  context: Record<string, unknown>;
   userAgent: string;
+  /** Required for WEB client; causes the client to be skipped if visitorData is absent. */
+  needsVisitorData?: boolean;
 }
 
-/** Client contexts to try in order. iOS is least restrictive for server-side. */
+/**
+ * Client contexts to try in order. Ordered by likelihood of success.
+ * Versions sourced from YouTube.js v15.1.0 constants.
+ */
 const YOUTUBE_CLIENTS: YouTubeClient[] = [
+  {
+    // ANDROID_VR (Oculus Quest 3) — least restricted, no PO token needed
+    name: "ANDROID_VR",
+    context: {
+      client: {
+        clientName: "ANDROID_VR",
+        clientVersion: "1.66.0",
+        deviceMake: "Oculus",
+        deviceModel: "Quest 3",
+        osName: "Android",
+        osVersion: "14",
+        hl: "en",
+      },
+    },
+    userAgent: "com.google.android.apps.youtube.vr.oculus/1.66.0 (Linux; U; Android 14; Quest 3)",
+  },
   {
     name: "IOS",
     context: {
       client: {
         clientName: "IOS",
-        clientVersion: "20.05.02",
+        clientVersion: "20.11.6",
         deviceMake: "Apple",
-        deviceModel: "iPhone16,2",
+        deviceModel: "iPhone10,4",
         osName: "iOS",
-        osVersion: "18.5.0",
+        osVersion: "16.7.7.20H330",
         hl: "en",
       },
     },
-    userAgent: "com.google.ios.youtube/20.05.02 (iPhone16,2; U; CPU iOS 18_5_0 like Mac OS X)",
+    userAgent: "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
   },
   {
     name: "ANDROID",
     context: {
       client: {
         clientName: "ANDROID",
-        clientVersion: "20.05.02",
-        androidSdkVersion: 35,
+        clientVersion: "19.35.36",
+        androidSdkVersion: 33,
         hl: "en",
       },
     },
-    userAgent: "com.google.android.youtube/20.05.02 (Linux; U; Android 15)",
+    userAgent:
+      "com.google.android.youtube/19.35.36 (Linux; U; Android 13; en_US; SM-S908E Build/TP1A.220624.014) gzip",
+  },
+  {
+    // WEB — requires fresh visitorData from watch page scraping
+    name: "WEB",
+    context: {
+      client: {
+        clientName: "WEB",
+        clientVersion: "2.20250222.10.00",
+        hl: "en",
+      },
+    },
+    userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    needsVisitorData: true,
   },
   {
     name: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
     context: {
       client: {
         clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
-        clientVersion: "2.0.21",
+        clientVersion: "2.0",
         hl: "en",
       },
       thirdParty: { embedUrl: "https://www.youtube.com" },
+    },
+    userAgent: "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
+  },
+  {
+    name: "TVHTML5_SIMPLY",
+    context: {
+      client: {
+        clientName: "TVHTML5_SIMPLY",
+        clientVersion: "1.0",
+        hl: "en",
+      },
     },
     userAgent: "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
   },
@@ -84,19 +238,42 @@ const YOUTUBE_CLIENTS: YouTubeClient[] = [
  * Get video metadata via YouTube's internal player API.
  *
  * Uses HTTP only — no yt-dlp binary required. Suitable for Vercel serverless.
- * Tries multiple client contexts (Android, TV embedded) to avoid bot detection.
- * Returns title, duration (seconds), and thumbnail URL.
+ * Tries multiple client contexts to avoid bot detection, scrapes the watch page
+ * for fresh visitorData, and falls back to YouTube's oEmbed API as a last resort
+ * when enabled.
  *
+ * Returns title, duration (seconds), and thumbnail URL.
  * Throws if video is private, age-gated, unavailable, too long, or too short.
  */
-export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
+export async function getVideoInfoHttp(
+  videoId: string,
+  opts: { allowOembedFallback?: boolean } = {}
+): Promise<VideoInfo> {
   logger.info("youtube_get_video_info_http_start", { videoId });
+
+  // Scrape watch page for fresh visitorData (non-fatal if it fails)
+  const pageConfig = await extractYouTubePageConfig(videoId);
+  if (pageConfig) {
+    logger.info("youtube_page_config_extracted", {
+      videoId,
+      hasApiKey: !!pageConfig.apiKey,
+      hasVisitorData: !!pageConfig.visitorData,
+    });
+  }
 
   let lastError: string | null = null;
 
   for (const client of YOUTUBE_CLIENTS) {
+    // WEB client needs visitorData from page scraping; skip if unavailable
+    if (client.needsVisitorData && !pageConfig?.visitorData) continue;
+
     try {
-      const result = await fetchYouTubePlayer(videoId, client);
+      const result = await fetchYouTubePlayer(
+        videoId,
+        client,
+        pageConfig?.apiKey,
+        pageConfig?.visitorData
+      );
       logger.info("youtube_get_video_info_http_success", {
         videoId,
         clientUsed: client.name,
@@ -115,25 +292,52 @@ export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
     }
   }
 
+  // Last resort: oEmbed (title + thumbnail only, no duration)
+  if (opts.allowOembedFallback) {
+    logger.info("youtube_falling_back_to_oembed", { videoId });
+    try {
+      return await getVideoInfoOembed(videoId);
+    } catch (oembedErr) {
+      const message = oembedErr instanceof Error ? oembedErr.message : String(oembedErr);
+      logger.error("youtube_oembed_failed", { videoId, error: message });
+    }
+  }
+
   throw new Error(lastError ?? "Failed to fetch video info from YouTube");
 }
 
-async function fetchYouTubePlayer(videoId: string, client: YouTubeClient): Promise<VideoInfo> {
+async function fetchYouTubePlayer(
+  videoId: string,
+  client: YouTubeClient,
+  overrideApiKey?: string,
+  visitorData?: string
+): Promise<VideoInfo> {
+  const apiKey = overrideApiKey ?? process.env.YOUTUBE_INNERTUBE_API_KEY;
+  const url = `https://www.youtube.com/youtubei/v1/player?key=${apiKey}&prettyPrint=false`;
+
+  // Merge visitorData into context if provided (WEB client uses this)
+  const context = visitorData ? { ...client.context, visitorData } : client.context;
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
   let data: YouTubePlayerResponse;
   try {
-    const res = await fetch(getInnertubeUrl(), {
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "User-Agent": client.userAgent,
         "Accept-Language": "en-US,en;q=0.9",
+        Accept: "*/*",
+        Origin: "https://www.youtube.com",
+        Referer: "https://www.youtube.com/",
       },
       body: JSON.stringify({
         videoId,
-        context: client.context,
+        context,
+        contentCheckOk: true,
+        racyCheckOk: true,
       }),
       signal: controller.signal,
     });
@@ -214,6 +418,8 @@ export interface VideoInfo {
   title: string;
   durationSeconds: number;
   thumbnailUrl: string;
+  /** Whether the duration was verified via the innertube API (false for oEmbed fallback). */
+  durationVerified?: boolean;
 }
 
 // ---------------------------------------------------------------------------

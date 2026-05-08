@@ -1,0 +1,1 @@
+ALTER TABLE "youtube_thread_jobs" ADD COLUMN "duration_verified" boolean DEFAULT false NOT NULL;

@@ -540,6 +540,13 @@
       "when": 1778221361087,
       "tag": "0076_whole_mac_gargan",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1778253957438,
+      "tag": "0077_ordinary_kat_farrell",
+      "breakpoints": true
     }
   ]
 }

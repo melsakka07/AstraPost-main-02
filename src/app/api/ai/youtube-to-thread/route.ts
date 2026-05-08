@@ -64,9 +64,11 @@ export async function POST(req: Request) {
     const videoId = validation.videoId!;
 
     // Step 8: Get video info via HTTP (no yt-dlp needed on Vercel)
+    // allowOembedFallback: true — if innertube blocks all clients, fall back to oEmbed
+    // which returns title + thumbnail but no duration (durationSeconds = 0, durationVerified = false)
     let videoInfo: Awaited<ReturnType<typeof getVideoInfoHttp>>;
     try {
-      videoInfo = await getVideoInfoHttp(videoId);
+      videoInfo = await getVideoInfoHttp(videoId, { allowOembedFallback: true });
     } catch (err) {
       await releaseQuota();
       const message = err instanceof Error ? err.message : String(err);
@@ -81,12 +83,15 @@ export async function POST(req: Request) {
       );
     }
 
+    const durationVerified = videoInfo.durationVerified !== false;
+
     if (previewOnly) {
       const previewRes = Response.json({
         status: "validated",
         videoTitle: videoInfo.title,
         durationSeconds: videoInfo.durationSeconds,
         thumbnailUrl: videoInfo.thumbnailUrl,
+        durationVerified,
       });
       previewRes.headers.set("x-correlation-id", correlationId);
       return previewRes;
@@ -100,6 +105,15 @@ export async function POST(req: Request) {
     }
 
     // Step 8a-ii: Per-plan video duration cap (Pro = 20 min, Agency = 90 min)
+    // When duration is unverified (oEmbed fallback), the gate passes naturally
+    // (0 <= any plan limit) but we log a warning for auditability.
+    if (!durationVerified) {
+      logger.warn("youtube_to_thread_duration_unverified", {
+        correlationId,
+        videoId,
+        youtubeUrl,
+      });
+    }
     const durationGate = await checkYoutubeVideoDurationDetailed(
       session.user.id,
       videoInfo.durationSeconds
@@ -171,6 +185,7 @@ export async function POST(req: Request) {
         tone,
         tweetCount,
         durationSeconds: videoInfo.durationSeconds,
+        durationVerified,
         quotaConsumed: 5,
         createdAt: new Date(),
         updatedAt: new Date(),
