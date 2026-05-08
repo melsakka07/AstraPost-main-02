@@ -26,29 +26,57 @@ interface YouTubePlayerResponse {
   };
 }
 
-/** Client contexts to try, in order. Android is least restrictive for server-side. */
-const YOUTUBE_CLIENTS = [
+/** YouTube public API key extracted from the web client. */
+const INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
+
+const INNERTUBE_URL = `https://www.youtube.com/youtubei/v1/player?key=${INNERTUBE_API_KEY}&prettyPrint=false`;
+
+interface YouTubeClient {
+  name: string;
+  context: unknown;
+  userAgent: string;
+}
+
+/** Client contexts to try in order. iOS is least restrictive for server-side. */
+const YOUTUBE_CLIENTS: YouTubeClient[] = [
+  {
+    name: "IOS",
+    context: {
+      client: {
+        clientName: "IOS",
+        clientVersion: "20.05.02",
+        deviceMake: "Apple",
+        deviceModel: "iPhone16,2",
+        osName: "iOS",
+        osVersion: "18.5.0",
+        hl: "en",
+      },
+    },
+    userAgent: "com.google.ios.youtube/20.05.02 (iPhone16,2; U; CPU iOS 18_5_0 like Mac OS X)",
+  },
   {
     name: "ANDROID",
     context: {
       client: {
         clientName: "ANDROID",
-        clientVersion: "19.29.37",
-        androidSdkVersion: 30,
+        clientVersion: "20.05.02",
+        androidSdkVersion: 35,
         hl: "en",
       },
     },
+    userAgent: "com.google.android.youtube/20.05.02 (Linux; U; Android 15)",
   },
   {
     name: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
     context: {
       client: {
         clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
-        clientVersion: "2.0",
+        clientVersion: "2.0.21",
         hl: "en",
       },
-      thirdParty: { embedUrl: "https://www.google.com" },
+      thirdParty: { embedUrl: "https://www.youtube.com" },
     },
+    userAgent: "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version",
   },
 ];
 
@@ -90,20 +118,18 @@ export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
   throw new Error(lastError ?? "Failed to fetch video info from YouTube");
 }
 
-async function fetchYouTubePlayer(
-  videoId: string,
-  client: { name: string; context: unknown }
-): Promise<VideoInfo> {
+async function fetchYouTubePlayer(videoId: string, client: YouTubeClient): Promise<VideoInfo> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
   let data: YouTubePlayerResponse;
   try {
-    const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
+    const res = await fetch(INNERTUBE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "User-Agent": "com.google.android.youtube/19.29.37 (Linux; U; Android 14)",
+        "User-Agent": client.userAgent,
+        "Accept-Language": "en-US,en;q=0.9",
       },
       body: JSON.stringify({
         videoId,
