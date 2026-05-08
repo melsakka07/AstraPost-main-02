@@ -1,4 +1,6 @@
 # Railway Nixpacks build config for the BullMQ worker.
 # yt-dlp requires ffmpeg to merge audio streams on some video formats.
+# nodejs_22 + pnpm-9_x are required because declaring [phases.setup] overrides
+# the auto-detected Node toolchain — without them pnpm is not on PATH.
 [phases.setup]
-nixPkgs = ["yt-dlp", "ffmpeg"]
+nixPkgs = ["nodejs_22", "pnpm-9_x", "yt-dlp", "ffmpeg"]
