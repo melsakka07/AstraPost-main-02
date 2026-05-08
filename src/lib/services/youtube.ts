@@ -26,10 +26,37 @@ interface YouTubePlayerResponse {
   };
 }
 
+/** Client contexts to try, in order. Android is least restrictive for server-side. */
+const YOUTUBE_CLIENTS = [
+  {
+    name: "ANDROID",
+    context: {
+      client: {
+        clientName: "ANDROID",
+        clientVersion: "19.29.37",
+        androidSdkVersion: 30,
+        hl: "en",
+      },
+    },
+  },
+  {
+    name: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
+    context: {
+      client: {
+        clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
+        clientVersion: "2.0",
+        hl: "en",
+      },
+      thirdParty: { embedUrl: "https://www.google.com" },
+    },
+  },
+];
+
 /**
  * Get video metadata via YouTube's internal player API.
  *
  * Uses HTTP only — no yt-dlp binary required. Suitable for Vercel serverless.
+ * Tries multiple client contexts (Android, TV embedded) to avoid bot detection.
  * Returns title, duration (seconds), and thumbnail URL.
  *
  * Throws if video is private, age-gated, unavailable, too long, or too short.
@@ -37,6 +64,36 @@ interface YouTubePlayerResponse {
 export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
   logger.info("youtube_get_video_info_http_start", { videoId });
 
+  let lastError: string | null = null;
+
+  for (const client of YOUTUBE_CLIENTS) {
+    try {
+      const result = await fetchYouTubePlayer(videoId, client);
+      logger.info("youtube_get_video_info_http_success", {
+        videoId,
+        clientUsed: client.name,
+        titleLength: result.title.length,
+        durationSeconds: result.durationSeconds,
+      });
+      return result;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      lastError = message;
+      logger.warn("youtube_player_client_failed", {
+        videoId,
+        client: client.name,
+        error: message,
+      });
+    }
+  }
+
+  throw new Error(lastError ?? "Failed to fetch video info from YouTube");
+}
+
+async function fetchYouTubePlayer(
+  videoId: string,
+  client: { name: string; context: unknown }
+): Promise<VideoInfo> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
 
@@ -44,16 +101,13 @@ export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
   try {
     const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "com.google.android.youtube/19.29.37 (Linux; U; Android 14)",
+      },
       body: JSON.stringify({
         videoId,
-        context: {
-          client: {
-            clientName: "WEB",
-            clientVersion: "2.20250101.00.00",
-            hl: "en",
-          },
-        },
+        context: client.context,
       }),
       signal: controller.signal,
     });
@@ -63,10 +117,6 @@ export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
     }
 
     data = (await res.json()) as YouTubePlayerResponse;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.error("youtube_get_video_info_http_failed", { videoId, error: message });
-    throw new Error(`Failed to fetch video info: ${message}`);
   } finally {
     clearTimeout(timeout);
   }
@@ -75,11 +125,6 @@ export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
 
   if (!playabilityStatus || playabilityStatus.status !== "OK") {
     const reason = playabilityStatus?.reason ?? "Video is not available";
-    logger.warn("youtube_video_not_playable", {
-      videoId,
-      status: playabilityStatus?.status,
-      reason,
-    });
     throw new Error(reason);
   }
 
@@ -122,12 +167,6 @@ export async function getVideoInfoHttp(videoId: string): Promise<VideoInfo> {
 
   const thumbnailUrl =
     videoDetails.thumbnail?.thumbnails?.[0]?.url ?? buildYoutubeThumbnailUrl(videoId);
-
-  logger.info("youtube_get_video_info_http_success", {
-    videoId,
-    titleLength: title.length,
-    durationSeconds,
-  });
 
   return { videoId, title, durationSeconds, thumbnailUrl };
 }

@@ -23,16 +23,29 @@ interface ConsumeResult {
  * the row is auto-created with the current plan's limit. If the existing row's
  * period is stale (periodStart < start of current month), it is reset atomically.
  *
+ * Handles mid-month plan upgrades: if the current plan's limit differs from the
+ * stored counter limit, the row is updated before consumption. Unlimited plans
+ * (Agency with Infinity) bypass the counter entirely.
+ *
  * @returns allowed: false when the user has exhausted their monthly AI quota.
  */
 export async function tryConsumeAiQuota(userId: string, weight = 1): Promise<ConsumeResult> {
   const { start, end } = getMonthWindow();
 
-  // ── Fast path: atomic consume on existing, in-window counter ──────────
-  const consumed = await atomicConsume(userId, weight, start, end);
+  const plan = await getUserPlanType(userId);
+  const limits = getPlanLimits(plan);
+  const planLimit = limits.aiGenerationsPerMonth;
+
+  // Unlimited plans (Agency) bypass the counter entirely
+  if (planLimit === Infinity) {
+    return { allowed: true, used: 0, limit: -1, resetAt: end };
+  }
+
+  // Fast path: atomic consume using the current plan's limit
+  const consumed = await atomicConsume(userId, weight, planLimit, start, end);
   if (consumed) return consumed;
 
-  // ── Slow path: no row, stale period, or quota exhausted ───────────────
+  // Slow path: no row, stale period, or quota exhausted
   const existing = await db.query.userAiCounters.findFirst({
     where: eq(userAiCounters.userId, userId),
   });
@@ -47,7 +60,13 @@ export async function tryConsumeAiQuota(userId: string, weight = 1): Promise<Con
     return resetAndConsume(userId, weight, start, end);
   }
 
-  // Case 3: Quota exhausted in current period — try admin-issued grants first
+  // Case 3: Counter limit is stale (mid-month plan change) — update and retry
+  if (existing.limit !== planLimit) {
+    const refreshed = await refreshLimitAndConsume(userId, weight, planLimit, start, end);
+    if (refreshed) return refreshed;
+  }
+
+  // Case 4: Quota exhausted in current period — try admin-issued grants first
   const grantResult = await consumeFromGrants(userId, weight, end);
   if (grantResult) return grantResult;
 
@@ -105,6 +124,7 @@ export async function releaseAiQuota(userId: string, weight = 1): Promise<void> 
 async function atomicConsume(
   userId: string,
   weight: number,
+  currentLimit: number,
   periodStart: Date,
   resetAt: Date
 ): Promise<ConsumeResult | null> {
@@ -117,7 +137,7 @@ async function atomicConsume(
     .where(
       and(
         eq(userAiCounters.userId, userId),
-        sql`${userAiCounters.used} + ${weight} <= ${userAiCounters.limit}`,
+        sql`${userAiCounters.used} + ${weight} <= ${currentLimit}`,
         gte(userAiCounters.periodStart, periodStart)
       )
     )
@@ -173,7 +193,7 @@ async function createAndConsume(
   }
 
   // Now attempt the atomic consume on the newly created row
-  const consumed = await atomicConsume(userId, weight, periodStart, resetAt);
+  const consumed = await atomicConsume(userId, weight, planLimit, periodStart, resetAt);
   if (consumed) return consumed;
 
   // If the atomic consume failed, it means another concurrent caller already
@@ -218,7 +238,7 @@ async function resetAndConsume(
 
   if (!updated) {
     // Another caller already reset this row. Retry atomic consume on the fresh row.
-    const consumed = await atomicConsume(userId, weight, periodStart, resetAt);
+    const consumed = await atomicConsume(userId, weight, planLimit, periodStart, resetAt);
     if (consumed) return consumed;
 
     const row = await db.query.userAiCounters.findFirst({
@@ -238,4 +258,29 @@ async function resetAndConsume(
     limit: planLimit,
     resetAt,
   };
+}
+
+/**
+ * Updates the stored limit to match the current plan and retries atomic consume.
+ * Handles mid-month plan upgrades where the counter row still has the old plan's limit.
+ */
+async function refreshLimitAndConsume(
+  userId: string,
+  weight: number,
+  currentLimit: number,
+  periodStart: Date,
+  resetAt: Date
+): Promise<ConsumeResult | null> {
+  await db
+    .update(userAiCounters)
+    .set({ limit: currentLimit, updatedAt: new Date() })
+    .where(eq(userAiCounters.userId, userId));
+
+  const retry = await atomicConsume(userId, weight, currentLimit, periodStart, resetAt);
+  if (retry) {
+    // Also update the returned limit to reflect the current plan
+    return { ...retry, limit: currentLimit };
+  }
+
+  return null;
 }
