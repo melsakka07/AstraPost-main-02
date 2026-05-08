@@ -90,3 +90,6 @@ tmp_brand_kit/
 
 .vercel
 .env*.local
+
+# YouTube cookies (contains auth tokens — never commit)
+youtube_cookies.txt

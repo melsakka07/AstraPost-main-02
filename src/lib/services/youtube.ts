@@ -656,12 +656,48 @@ export async function getVideoInfo(url: string): Promise<VideoInfo> {
 // ---------------------------------------------------------------------------
 
 /**
+ * Resolve the YouTube cookies file path.
+ *
+ * Priority:
+ * 1. YOUTUBE_COOKIES_BASE64 env var (decoded to a temp file) — for Railway
+ * 2. youtube_cookies.txt in known local/container paths
+ */
+function resolveCookiesPath(): string {
+  // Decode from env var for Railway (no file in git repo)
+  const encoded = process.env.YOUTUBE_COOKIES_BASE64;
+  if (encoded) {
+    try {
+      const decoded = Buffer.from(encoded, "base64").toString("utf-8");
+      const tempPath = "/tmp/youtube_cookies.txt";
+      writeFileSync(tempPath, decoded);
+      return tempPath;
+    } catch {
+      logger.warn("youtube_cookies_base64_decode_failed");
+    }
+  }
+
+  // Check known file paths
+  const paths = ["/app/youtube_cookies.txt", "./youtube_cookies.txt", "../youtube_cookies.txt"];
+  for (const p of paths) {
+    if (existsSync(p)) return p;
+  }
+
+  return "";
+}
+
+/** Build --cookies args for yt-dlp if a cookie file is available. */
+function getYtDlpCookieArgs(): string[] {
+  const path = resolveCookiesPath();
+  if (!path) return [];
+  return ["--cookies", path];
+}
+
+/**
  * Extract the best audio stream to outputPath.
  *
  * Two-phase: (1) yt-dlp --get-url extracts the CDN stream URL (~5s), then
  * Node.js HTTP fetch downloads it; (2) fall back to yt-dlp full download.
- * The --get-url phase is much faster because yt-dlp only does extraction.
- * The HTTP download is faster because it avoids yt-dlp's Python overhead.
+ * Uses YouTube cookies (youtube_cookies.txt) when available.
  */
 export async function extractAudio(url: string, outputPath: string): Promise<void> {
   logger.info("youtube_extract_audio_start", { url, outputPath });
@@ -689,6 +725,7 @@ export async function extractAudio(url: string, outputPath: string): Promise<voi
 /** Use yt-dlp --get-url to resolve the CDN stream URL quickly (~5s). */
 async function getYtDlpStreamUrl(url: string): Promise<string | null> {
   const ytDlpPath = resolveYtDlpPath();
+  const cookieArgs = getYtDlpCookieArgs();
 
   try {
     const { stdout } = await execFileAsync(
@@ -701,6 +738,7 @@ async function getYtDlpStreamUrl(url: string): Promise<string | null> {
         "--socket-timeout",
         "15",
         "--force-ipv4",
+        ...cookieArgs,
         "--user-agent",
         "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
         "--add-header",
@@ -752,9 +790,10 @@ async function downloadAudioStream(streamUrl: string, outputPath: string): Promi
   }
 }
 
-/** Full yt-dlp download fallback with anti-detection headers. */
+/** Full yt-dlp download fallback with anti-detection headers and cookies. */
 async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<void> {
   const ytDlpPath = resolveYtDlpPath();
+  const cookieArgs = getYtDlpCookieArgs();
 
   try {
     await execFileAsync(
@@ -774,6 +813,7 @@ async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<vo
         "--socket-timeout",
         "30",
         "--force-ipv4",
+        ...cookieArgs,
         "--user-agent",
         "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
         "--add-header",
