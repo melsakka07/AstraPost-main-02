@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import base64; print(base64.b64encode(open('/tmp/youtube_cookies.txt','rb').read()).decode())
+                                          ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/youtube_cookies.txt'
