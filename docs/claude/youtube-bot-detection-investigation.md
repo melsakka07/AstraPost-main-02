@@ -167,3 +167,44 @@ To restore full transcript-based thread generation, one of these must be impleme
 3. **Alternative audio source** — Use a third-party API (e.g., RapidAPI YouTube endpoints) that proxies requests through residential IPs. Adds cost per request.
 
 4. **yt-dlp + PO token** — YouTube now supports Proof of Origin tokens. Generate a PO token from a real device and pass it to yt-dlp via `--extractor-args youtube:po_token=...`. This may work without cookies or IP restrictions.
+
+## Lessons Learned — Tube2Threads Comparison (2026-05-09)
+
+A reference implementation at `C:\Users\saqqa\CodeX\Tube2Threads` was analyzed to verify our findings. Tube2Threads implements the same YouTube-to-thread feature but as a simpler Next.js app with Inngest for job processing.
+
+### Critical Confirmation: IP-Based Blocking
+
+Tube2Threads uses **zero anti-bot-detection measures** — bare yt-dlp calls with no cookies, no custom User-Agent, no headers, no client rotation:
+
+```bash
+# Duration check (15s timeout)
+yt-dlp --print duration -- <url>
+
+# Audio extraction (180s timeout, no flags)
+yt-dlp -f "bestaudio[ext=m4a]/bestaudio" -o "<path>" -- <url>
+```
+
+Yet it works perfectly **locally**. Why? **Residential IP.** The same yt-dlp command that fails on Railway with `"Sign in to confirm you're not a bot"` succeeds from a home internet connection. This definitively proves the blocking is IP-based, not technique-based.
+
+### Verification: No Hidden Secret
+
+Tube2Threads was checked for any undocumented workaround — proxy config, special API keys, cookie files, custom yt-dlp plugins. None exist. The code is simpler than AstraPost's in every dimension:
+
+| Aspect                 | Tube2Threads          | AstraPost                                |
+| ---------------------- | --------------------- | ---------------------------------------- |
+| Metadata source        | yt-dlp `--print` only | 7-client innertube + oEmbed              |
+| Anti-bot measures      | None                  | 9 distinct approaches                    |
+| Video title            | Not stored            | Stored, used in title-only mode          |
+| Duration verification  | None                  | `durationVerified` flag + per-plan gates |
+| Thread generation      | Raw `fetch()` + regex | Vercel AI SDK `generateObject()` + Zod   |
+| Would work on Railway? | No (IP-blocked)       | Yes (title-only fallback)                |
+
+### What We Can Learn from Tube2Threads
+
+1. **Separate duration check** — Tube2Threads calls `yt-dlp --print duration` as a fast 15s pre-check before the expensive audio download. We could add this to AstraPost: try yt-dlp for duration first, fall back to oEmbed if blocked. This gives us accurate duration when the IP allows it and graceful degradation when it doesn't.
+
+2. **180s download timeout** — Tube2Threads uses a more generous 180s timeout for audio extraction vs. our 120s. Worth adopting for longer videos.
+
+### Conclusion
+
+AstraPost's implementation is **more resilient** than Tube2Threads. Tube2Threads would break immediately if deployed to Vercel/Railway because it has no fallback for IP-blocked environments. AstraPost's oEmbed + title-only mode works from any IP, even if the thread quality is lower without a transcript. The architectural investment in multi-layered fallbacks was justified.
