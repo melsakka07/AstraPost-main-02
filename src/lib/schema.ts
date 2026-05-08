@@ -1645,6 +1645,7 @@ export const youtubeThreadJobs = pgTable(
       .default("queued"),
     youtubeUrl: text("youtube_url").notNull(),
     youtubeVideoId: text("youtube_video_id").notNull(),
+    videoTitle: text("video_title"),
     provider: text("provider", { enum: ["deepgram", "whisper"] }).notNull(),
     language: text("language", { enum: ["ar", "en"] }).notNull(),
     tone: text("tone", {

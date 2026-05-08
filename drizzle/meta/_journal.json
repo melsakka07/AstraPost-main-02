@@ -547,6 +547,13 @@
       "when": 1778253957438,
       "tag": "0077_ordinary_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1778270442886,
+      "tag": "0078_lowly_sasquatch",
+      "breakpoints": true
     }
   ]
 }

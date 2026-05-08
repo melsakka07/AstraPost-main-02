@@ -1,6 +1,6 @@
 # YouTube Bot Detection — Investigation Report
 
-**Date:** 2026-05-08  
+**Date:** 2026-05-08 (updated 2026-05-09)  
 **Feature:** YouTube-to-Thread (`/api/ai/youtube-to-thread`)
 
 ## Summary
@@ -8,6 +8,23 @@
 YouTube has tightened its bot detection. The feature works end-to-end **locally** but fails **in production** on both Vercel and Railway because YouTube blocks requests from data-center IP ranges.
 
 The POST endpoint is partially functional via oEmbed fallback (returns title + thumbnail but **no duration**). The worker audio download fails completely — yt-dlp is IP-blocked from Railway.
+
+**Current solution (2026-05-09):** Title-only thread generation. When audio cannot be downloaded (all production cases), the worker generates a thread from the video title alone via AI, without requiring a transcript. This works reliably but produces lower-quality threads compared to transcript-based generation.
+
+## Current Architecture
+
+```
+User submits URL
+  → POST: innertube (blocked) → oEmbed (title + thumbnail)
+  → Job enqueued with durationVerified=false, videoTitle set
+  → Worker: detects durationVerified=false
+  → Generates thread from title via AI (no audio, no transcript)
+  → Job completes ✓
+```
+
+## Known Limitation
+
+Title-only threads are less accurate than transcript-based threads. The AI infers what the video likely covers from the title. For transcript-quality threads, the underlying IP-blocking issue must be resolved (see "Future Improvements").
 
 ## Root Cause
 
@@ -138,3 +155,15 @@ Once cookies are available:
 
 - [yt-dlp YouTube cookies FAQ](https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp)
 - [yt-dlp extractors](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies)
+
+## Future Improvements
+
+To restore full transcript-based thread generation, one of these must be implemented:
+
+1. **Residential proxy** — Route yt-dlp traffic through a residential IP (BrightData, Oxylabs, or a home SSH tunnel). This is the most reliable fix — makes the worker appear as a residential user.
+
+2. **Cookie-from-same-IP** — Export cookies from the SAME IP that Railway uses (requires running a browser on the Railway container or same data center). Solves the "cookies invalidated by cross-IP usage" problem.
+
+3. **Alternative audio source** — Use a third-party API (e.g., RapidAPI YouTube endpoints) that proxies requests through residential IPs. Adds cost per request.
+
+4. **yt-dlp + PO token** — YouTube now supports Proof of Origin tokens. Generate a PO token from a real device and pass it to yt-dlp via `--extractor-args youtube:po_token=...`. This may work without cookies or IP restrictions.
