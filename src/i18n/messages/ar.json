@@ -114,7 +114,9 @@
       "draft": "مسودة",
       "scheduled": "مجدول",
       "published": "منشور",
-      "failed": "فشل"
+      "failed": "فشل",
+      "awaiting_approval": "بانتظار الموافقة",
+      "paused_needs_reconnect": "متوقف (يحتاج إعادة اتصال)"
     }
   },
   "ai": {
@@ -685,9 +687,13 @@
       "published": "منشور",
       "failed": "فشل",
       "draft": "مسودة",
-      "cancelled": "ملغى"
+      "cancelled": "ملغى",
+      "awaiting_approval": "بانتظار الموافقة",
+      "paused_needs_reconnect": "متوقف (يحتاج إعادة اتصال)"
     },
     "approval_pending": "بانتظار الموافقة",
+    "needs_review": "يحتاج مراجعة",
+    "waiting_for_reconnection": "في انتظار إعادة الاتصال",
     "approve": "موافقة",
     "reject": "رفض",
     "bulk_approve": "موافقة على الكل",
@@ -1215,7 +1221,15 @@
         "status": "الحالة",
         "status_queued": "في الانتظار",
         "status_processing": "قيد المعالجة",
-        "elapsed": "الوقت المنقضي: {seconds} ثانية"
+        "elapsed": "الوقت المنقضي: {seconds} ثانية",
+        "uploading": "جارٍ رفع ملف PDF...",
+        "extracting": "جارٍ استخراج النص...",
+        "ready": "الموضوع جاهز!",
+        "failed": "فشل التوليد",
+        "status_uploading": "جارٍ الرفع",
+        "status_extracting": "جارٍ الاستخراج",
+        "status_ready": "جاهز",
+        "status_failed": "فشل"
       },
       "result": {
         "title": "ثريدك",
@@ -1266,7 +1280,9 @@
         "generating": "جارٍ توليد الثريد...",
         "status_downloading": "التحميل",
         "status_transcribing": "التفريغ",
-        "status_generating": "التوليد"
+        "status_generating": "التوليد",
+        "ready": "الموضوع جاهز!",
+        "failed": "فشل التوليد"
       },
       "actions": {
         "cancel": "إلغاء",
@@ -1718,7 +1734,8 @@
       "agentic_approve": "موافقة تلقائية",
       "trends_discovery": "اتجاهات",
       "youtube_to_thread": "يوتيوب إلى ثريد",
-      "transcription": "تفريغ صوتي"
+      "transcription": "تفريغ صوتي",
+      "pdf_to_thread": "PDF إلى ثريد"
     },
     "previous": "السابق",
     "next": "التالي",
@@ -3213,7 +3230,9 @@
       "transcribing": "جاري تفريغ الصوت...",
       "generating": "جاري إنشاء الثريد...",
       "elapsed": "الوقت المنقضي: {seconds} ثانية",
-      "estimated_time": "عادةً حوالي {seconds} ثانية"
+      "estimated_time": "عادةً حوالي {seconds} ثانية",
+      "ready": "الموضوع جاهز!",
+      "failed": "فشل التوليد"
     },
     "result": {
       "title": "الثريد المُنشأ",
