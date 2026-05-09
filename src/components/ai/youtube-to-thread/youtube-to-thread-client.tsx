@@ -630,13 +630,15 @@ export function YoutubeToThreadClient() {
                       className="hover:bg-muted/50 flex w-full items-center gap-3 px-1 py-2.5 text-left transition-colors"
                       onClick={() => handleRecentJobClick(job.id)}
                     >
-                      <Image
-                        src={job.thumbnailUrl}
-                        alt=""
-                        width={64}
-                        height={40}
-                        className="bg-muted shrink-0 rounded object-cover"
-                      />
+                      <div className="bg-muted relative h-10 w-16 shrink-0 overflow-hidden rounded">
+                        <Image
+                          src={job.thumbnailUrl}
+                          alt=""
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-foreground truncate text-sm">
                           {job.title || yt("recent.untitled")}

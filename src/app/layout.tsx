@@ -32,7 +32,7 @@ const cairo = Cairo({
   subsets: ["arabic", "latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
-  preload: true,
+  preload: false,
 });
 
 export const viewport: Viewport = {
