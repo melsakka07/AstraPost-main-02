@@ -114,7 +114,9 @@
       "draft": "Draft",
       "scheduled": "Scheduled",
       "published": "Published",
-      "failed": "Failed"
+      "failed": "Failed",
+      "awaiting_approval": "Awaiting Approval",
+      "paused_needs_reconnect": "Paused (Needs Reconnect)"
     }
   },
   "ai": {
@@ -685,9 +687,13 @@
       "published": "Published",
       "failed": "Failed",
       "draft": "Draft",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "awaiting_approval": "Awaiting Approval",
+      "paused_needs_reconnect": "Paused (Needs Reconnect)"
     },
     "approval_pending": "Pending Approval",
+    "needs_review": "Needs Review",
+    "waiting_for_reconnection": "Waiting for reconnection",
     "approve": "Approve",
     "reject": "Reject",
     "bulk_approve": "Approve All",
@@ -1215,7 +1221,15 @@
         "status": "Status",
         "status_queued": "Queued",
         "status_processing": "Processing",
-        "elapsed": "Elapsed: {seconds}s"
+        "elapsed": "Elapsed: {seconds}s",
+        "uploading": "Uploading your PDF...",
+        "extracting": "Extracting text...",
+        "ready": "Thread ready!",
+        "failed": "Generation failed",
+        "status_uploading": "Uploading",
+        "status_extracting": "Extracting",
+        "status_ready": "Ready",
+        "status_failed": "Failed"
       },
       "result": {
         "title": "Your Thread",
@@ -1266,7 +1280,9 @@
         "generating": "Generating thread...",
         "status_downloading": "Downloading",
         "status_transcribing": "Transcribing",
-        "status_generating": "Generating"
+        "status_generating": "Generating",
+        "ready": "Thread ready!",
+        "failed": "Generation failed"
       },
       "actions": {
         "cancel": "Cancel",
@@ -1718,7 +1734,8 @@
       "agentic_approve": "Agentic Approve",
       "trends_discovery": "Trends",
       "youtube_to_thread": "YouTube to Thread",
-      "transcription": "Transcription"
+      "transcription": "Transcription",
+      "pdf_to_thread": "PDF to Thread"
     },
     "previous": "Previous",
     "next": "Next",
@@ -3219,7 +3236,9 @@
       "transcribing": "Transcribing audio...",
       "generating": "Generating thread...",
       "elapsed": "Elapsed: {seconds}s",
-      "estimated_time": "Typically ~{seconds}s"
+      "estimated_time": "Typically ~{seconds}s",
+      "ready": "Thread ready!",
+      "failed": "Generation failed"
     },
     "result": {
       "title": "Generated Thread",

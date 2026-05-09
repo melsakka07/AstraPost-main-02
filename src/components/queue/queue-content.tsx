@@ -192,7 +192,7 @@ export function QueueContent({
           <div className="flex items-center justify-between">
             <h2 className="text-warning flex items-center gap-2 text-xl font-semibold tracking-tight">
               <ShieldCheck className="h-5 w-5" />
-              Awaiting Approval
+              {t("status.awaiting_approval")}
             </h2>
             {/* Q3 — bulk actions for owners/admins */}
             {(isOwner || role === "admin") && approvalPostIds.length > 1 && (
@@ -209,7 +209,7 @@ export function QueueContent({
               >
                 <div className="bg-warning/15 flex flex-row items-center gap-3 rounded-lg p-3 sm:min-w-[100px] sm:flex-col sm:justify-center sm:p-4 sm:text-center">
                   <ShieldCheck className="text-warning h-5 w-5 shrink-0 sm:mb-2 sm:h-6 sm:w-6" />
-                  <div className="text-muted-foreground text-xs">Needs Review</div>
+                  <div className="text-muted-foreground text-xs">{t("needs_review")}</div>
                 </div>
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -408,7 +408,7 @@ export function QueueContent({
                       className={`h-5 w-5 shrink-0 sm:mb-2 sm:h-6 sm:w-6 ${isPaused ? "text-warning" : "text-destructive"}`}
                     />
                     <div className="text-muted-foreground text-xs">
-                      {isPaused ? "Paused" : "Failed"}
+                      {isPaused ? t("status.paused_needs_reconnect") : t("status.failed")}
                     </div>
                   </div>
                   <div className="min-w-0 flex-1 space-y-2">
@@ -422,10 +422,12 @@ export function QueueContent({
                             variant="outline"
                             className="border-warning/50 text-warning bg-warning/10"
                           >
-                            Waiting for reconnection
+                            {t("waiting_for_reconnection")}
                           </Badge>
                         ) : (
-                          <Badge variant="destructive">{post.status}</Badge>
+                          <Badge variant="destructive">
+                            {t(("status." + post.status) as any) || post.status}
+                          </Badge>
                         )}
                         {post.xAccount?.xUsername && (
                           <span className="text-muted-foreground text-xs">

@@ -68,6 +68,8 @@ const PHASE_LABEL_KEYS: Record<string, string> = {
   downloading: "youtube_to_thread.progress.downloading",
   transcribing: "youtube_to_thread.progress.transcribing",
   generating: "youtube_to_thread.progress.generating",
+  ready: "youtube_to_thread.progress.ready",
+  failed: "youtube_to_thread.progress.failed",
 };
 
 const PHASE_STATUS_KEYS: Record<string, string> = {
@@ -75,6 +77,8 @@ const PHASE_STATUS_KEYS: Record<string, string> = {
   downloading: "youtube_to_thread.progress.downloading",
   transcribing: "youtube_to_thread.progress.transcribing",
   generating: "youtube_to_thread.progress.generating",
+  ready: "youtube_to_thread.progress.ready",
+  failed: "youtube_to_thread.progress.failed",
 };
 
 const PHASE_ORDER = ["downloading", "transcribing", "generating"] as const;
