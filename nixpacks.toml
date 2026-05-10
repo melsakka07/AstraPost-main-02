@@ -9,7 +9,7 @@
 # 3. resolveYtDlpPath() in youtube.ts checks /usr/local/bin first, then /usr/bin
 # 4. If both fail, title-only fallback in processors.ts:1624 still produces a thread
 [phases.setup]
-nixPkgs = ["nodejs_22", "pnpm-9_x", "yt-dlp", "ffmpeg", "curl"]
+nixPkgs = ["nodejs_22", "pnpm-9_x", "yt-dlp", "ffmpeg", "curl", "deno"]
 cmds = [
   "curl -fsSL -o /usr/local/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
   "chmod +x /usr/local/bin/yt-dlp",
