@@ -767,7 +767,7 @@ async function getYtDlpStreamUrl(url: string): Promise<string | null> {
 /** Download an audio stream URL via HTTP fetch (no yt-dlp overhead). */
 async function downloadAudioStream(streamUrl: string, outputPath: string): Promise<void> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 90_000);
+  const timeout = setTimeout(() => controller.abort(), 20_000);
 
   try {
     const res = await fetch(streamUrl, {
