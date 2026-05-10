@@ -455,7 +455,8 @@ function AIWriterContent() {
           </TabsTrigger>
           <TabsTrigger value="hashtags">
             <Hash className="me-1.5 h-3.5 w-3.5" />
-            {t("tabs.hashtags")}
+            <span className="hidden sm:inline">{t("tabs.hashtags")}</span>
+            <span className="sm:hidden">{t("tabs.hashtags")}</span>
           </TabsTrigger>
         </TabsList>
 
