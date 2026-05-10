@@ -2,5 +2,15 @@
 # yt-dlp requires ffmpeg to merge audio streams on some video formats.
 # nodejs_22 + pnpm-9_x are required because declaring [phases.setup] overrides
 # the auto-detected Node toolchain — without them pnpm is not on PATH.
+#
+# yt-dlp update strategy:
+# 1. nixpkgs provides a base yt-dlp at /usr/bin/yt-dlp (fallback)
+# 2. cmds downloads the latest release binary to /usr/local/bin/yt-dlp (primary)
+# 3. resolveYtDlpPath() in youtube.ts checks /usr/local/bin first, then /usr/bin
+# 4. If both fail, title-only fallback in processors.ts:1624 still produces a thread
 [phases.setup]
-nixPkgs = ["nodejs_22", "pnpm-9_x", "yt-dlp", "ffmpeg"]
+nixPkgs = ["nodejs_22", "pnpm-9_x", "yt-dlp", "ffmpeg", "curl"]
+cmds = [
+  "curl -fsSL -o /usr/local/bin/yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux",
+  "chmod +x /usr/local/bin/yt-dlp",
+]
