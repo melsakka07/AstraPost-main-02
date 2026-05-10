@@ -5,7 +5,6 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import path from "path";
 import { promisify } from "util";
 import { ProxyAgent, fetch as undiciFetch } from "undici";
-import { getServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 
 // ── Proxy-aware fetch (bypasses YouTube IP-based bot detection) ────────────
@@ -13,7 +12,7 @@ let _proxiedFetch: ((url: string, init?: RequestInit) => Promise<Response>) | un
 
 function getProxiedFetch(): (url: string, init?: RequestInit) => Promise<Response> {
   if (_proxiedFetch) return _proxiedFetch;
-  const proxyUrl = getServerEnv().YOUTUBE_PROXY_URL;
+  const proxyUrl = process.env.YOUTUBE_PROXY_URL;
   if (!proxyUrl) {
     _proxiedFetch = globalThis.fetch.bind(globalThis);
     return _proxiedFetch;
