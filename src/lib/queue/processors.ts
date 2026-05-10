@@ -1616,13 +1616,137 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
       data: errAny.data ? JSON.stringify(errAny.data).slice(0, 1000) : undefined,
     });
 
-    // Only release quota on the FINAL attempt — earlier attempts may still succeed
-    // on retry. Use atomic flip on quota_released to guarantee single-release even
-    // if processor is invoked twice for the same logical attempt.
     const maxAttempts = job.opts?.attempts ?? 1;
     const isLastAttempt = (job.attemptsMade ?? 0) + 1 >= maxAttempts;
 
     if (isLastAttempt) {
+      // ── Title-only fallback on last attempt ──────────────────────────
+      const title = row.videoTitle;
+      if (title) {
+        try {
+          logger.info("youtube_thread_title_only_fallback", { jobId, title });
+          await db
+            .update(youtubeThreadJobs)
+            .set({ status: "generating", updatedAt: new Date() })
+            .where(eq(youtubeThreadJobs.id, jobId));
+
+          const langBlock = buildLanguageBlock(row.language, "social");
+
+          const dynamicYoutubeThreadOutputSchema = z.object({
+            tweets: z.array(z.string()),
+            title: z.string(),
+          });
+
+          const { object: rawResult, usage: fallbackUsage } = await generateObject({
+            model,
+            schema: dynamicYoutubeThreadOutputSchema,
+            system:
+              `You are a social media expert who creates engaging X (Twitter) threads from YouTube video titles.\n\n` +
+              `REQUIREMENTS:\n` +
+              `- Write EXACTLY ${row.tweetCount} tweets (no more, no less)\n` +
+              `- Each tweet MUST be 280 characters or less\n` +
+              `- Make the thread engaging and easy to read\n` +
+              `- Use a ${TONE_LABELS[row.tone ?? "casual"]} tone\n` +
+              `- The first tweet should hook the reader with the video title\n` +
+              `- Expand on what the video likely covers based on the title\n` +
+              `- The last tweet should include a call-to-action or takeaway\n` +
+              `- Do NOT mention that you haven't watched the video\n\n` +
+              `${langBlock}\n\n` +
+              `${JAILBREAK_GUARD}`,
+            prompt: `YouTube video title: "${title}"\n\nCreate a thread based on this title. Infer what the video likely covers from the title and expand on those topics.`,
+          });
+
+          const fallbackInputTokens = fallbackUsage?.inputTokens ?? 0;
+          const fallbackOutputTokens = fallbackUsage?.outputTokens ?? 0;
+
+          const trimmedTweets = rawResult.tweets
+            .map((t: string) => (t.length > 280 ? t.slice(0, 280) : t))
+            .filter((t: string) => t.trim().length > 0)
+            .slice(0, row.tweetCount);
+
+          if (trimmedTweets.length > 0) {
+            const result = { tweets: trimmedTweets, title: rawResult.title };
+
+            const tweetsText = result.tweets.join("\n");
+            const { flagged } = await moderateOutput(tweetsText, userId, undefined);
+            if (flagged) {
+              await db
+                .update(youtubeThreadJobs)
+                .set({
+                  status: "failed",
+                  error: "Content moderation flagged the generated thread.",
+                  errorCode: "MODERATION_FLAGGED",
+                  updatedAt: new Date(),
+                })
+                .where(eq(youtubeThreadJobs.id, jobId));
+              logger.warn("youtube_thread_moderation_flagged", { jobId, userId });
+              return;
+            }
+
+            const persisted = await db
+              .update(youtubeThreadJobs)
+              .set({
+                status: "ready",
+                threadResult: {
+                  tweets: result.tweets.map((t: string) => ({ text: t, charCount: t.length })),
+                  title: result.title,
+                  videoUrl: row.youtubeUrl,
+                },
+                completedAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .where(
+                and(
+                  eq(youtubeThreadJobs.id, jobId),
+                  or(
+                    eq(youtubeThreadJobs.status, "queued"),
+                    eq(youtubeThreadJobs.status, "downloading"),
+                    eq(youtubeThreadJobs.status, "transcribing"),
+                    eq(youtubeThreadJobs.status, "generating")
+                  )
+                )
+              )
+              .returning({ id: youtubeThreadJobs.id });
+
+            if (persisted.length > 0) {
+              await recordAiUsage({
+                userId,
+                type: "youtube_to_thread",
+                model: modelId,
+                subFeature: "youtube_to_thread",
+                tokensIn: fallbackInputTokens,
+                tokensOut: fallbackOutputTokens,
+                costEstimateCents: estimateCost(modelId, fallbackInputTokens, fallbackOutputTokens),
+                promptVersion: "youtube_to_thread:v2",
+                latencyMs: Date.now() - startTs,
+                language: row.language,
+              });
+
+              // Release quota — fallback consumed less but original quota was 5
+              try {
+                await releaseAiQuota(userId, 5);
+              } catch {
+                // best effort
+              }
+
+              logger.info("youtube_thread_job_completed", {
+                jobId,
+                userId,
+                tweetCount: result.tweets.length,
+                mode: "title_only_fallback",
+              });
+              return;
+            }
+          }
+        } catch (fallbackErr) {
+          logger.error("youtube_thread_title_only_fallback_failed", {
+            jobId,
+            error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
+          });
+        }
+      }
+
+      // ── Terminal failure ─────────────────────────────────────────────
       const ec = classifyYoutubeError(msg);
       const flipped = await db
         .update(youtubeThreadJobs)
@@ -1646,17 +1770,16 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
           });
         }
       } else {
-        // Already released by cancel/timeout path — just record terminal failure status.
         await db
           .update(youtubeThreadJobs)
           .set({ status: "failed", error: msg, errorCode: ec, updatedAt: new Date() })
           .where(eq(youtubeThreadJobs.id, jobId));
       }
     } else {
-      // Retry pending — keep status reflecting the failure but DO NOT release quota.
+      // Retry pending — reset to "queued" so the retry guard passes
       await db
         .update(youtubeThreadJobs)
-        .set({ error: msg, updatedAt: new Date() })
+        .set({ status: "queued", error: msg, updatedAt: new Date() })
         .where(eq(youtubeThreadJobs.id, jobId));
     }
     throw err;
