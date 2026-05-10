@@ -50,6 +50,9 @@ const serverEnvSchema = z.object({
   // YouTube innertube API key — public key extracted from the web client,
   // used for video metadata fetching. Defaults to the well-known key.
   YOUTUBE_INNERTUBE_API_KEY: z.string().default("AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"),
+  // Optional: HTTP(S) proxy URL for YouTube innertube API calls (bypasses IP-based bot detection).
+  // Format: http://user:pass@host:port. When not set, calls go direct (datacenter IP → likely blocked).
+  YOUTUBE_PROXY_URL: z.string().optional(),
 
   // AI - YouTube transcription (optional — feature disabled if neither is set)
   YOUTUBE_DEEPGRAM_API_KEY: z.string().optional(),

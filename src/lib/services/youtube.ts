@@ -4,7 +4,31 @@ import { execFile } from "child_process";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import path from "path";
 import { promisify } from "util";
+import { ProxyAgent, fetch as undiciFetch } from "undici";
+import { getServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
+
+// ── Proxy-aware fetch (bypasses YouTube IP-based bot detection) ────────────
+let _proxiedFetch: ((url: string, init?: RequestInit) => Promise<Response>) | undefined;
+
+function getProxiedFetch(): (url: string, init?: RequestInit) => Promise<Response> {
+  if (_proxiedFetch) return _proxiedFetch;
+  const proxyUrl = getServerEnv().YOUTUBE_PROXY_URL;
+  if (!proxyUrl) {
+    _proxiedFetch = globalThis.fetch.bind(globalThis);
+    return _proxiedFetch;
+  }
+  logger.info("youtube_proxy_configured", { proxyUrl: proxyUrl.replace(/\/\/.*@/, "//<creds>@") });
+  const agent = new ProxyAgent({ uri: proxyUrl });
+  _proxiedFetch = (url: string, init?: RequestInit): Promise<Response> => {
+    const opts = { ...(init ?? {}), dispatcher: agent } as Record<string, unknown>;
+    return undiciFetch(
+      url,
+      opts as Parameters<typeof undiciFetch>[1]
+    ) as unknown as Promise<Response>;
+  };
+  return _proxiedFetch;
+}
 
 // ---------------------------------------------------------------------------
 // HTTP-based video info (no yt-dlp binary required)
@@ -46,7 +70,7 @@ async function extractYouTubePageConfig(
   const timeout = setTimeout(() => controller.abort(), 5_000);
 
   try {
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    const res = await getProxiedFetch()(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -116,7 +140,7 @@ function extractYtcfgJson(html: string): Record<string, unknown> | null {
 async function getVideoInfoOembed(videoId: string): Promise<VideoInfo> {
   const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
 
-  const res = await fetch(url, {
+  const res = await getProxiedFetch()(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -337,7 +361,7 @@ async function fetchYouTubePlayer(
 
   let data: YouTubePlayerResponse;
   try {
-    const res = await fetch(url, {
+    const res = await getProxiedFetch()(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -770,7 +794,7 @@ async function downloadAudioStream(streamUrl: string, outputPath: string): Promi
   const timeout = setTimeout(() => controller.abort(), 20_000);
 
   try {
-    const res = await fetch(streamUrl, {
+    const res = await getProxiedFetch()(streamUrl, {
       headers: {
         "User-Agent":
           "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
