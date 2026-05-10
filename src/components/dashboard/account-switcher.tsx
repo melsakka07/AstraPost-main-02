@@ -126,7 +126,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
           role="combobox"
           aria-expanded={open}
           aria-label={t("account_switcher.label")}
-          className="w-auto justify-between gap-1.5 px-2 sm:w-[200px] sm:gap-2 sm:px-3"
+          className="w-auto justify-between gap-1.5 px-2 sm:w-[220px] sm:gap-2 sm:px-3"
         >
           <Avatar className="h-6 w-6 shrink-0">
             <AvatarImage
@@ -139,7 +139,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0">
+      <PopoverContent className="w-[220px] p-0">
         <div className="p-2">
           <div className="mb-2 flex items-center border-b px-3 pb-2">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
