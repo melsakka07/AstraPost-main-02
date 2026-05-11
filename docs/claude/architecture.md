@@ -6,34 +6,46 @@
 src/
 ├── app/                          # Next.js App Router
 │   ├── (auth)/                   # Auth: login, register, forgot/reset password
-│   ├── (marketing)/              # Public: blog, changelog, community, docs, features, pricing, legal
+│   ├── (marketing)/              # Public: blog, changelog, community, docs, features, legal, pricing, resources, roadmap
 │   ├── admin/                    # Admin panel (Dashboard, Users, Billing, System Health, Jobs, Notifications, Audit)
 │   ├── brand/                    # Internal brand kit reference page (noindex)
 │   ├── api/
-│   │   ├── admin/                # Admin APIs (Subscribers, AI Usage, Teams, Impersonation, Billing Analytics, Notifications)
-│   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score, PDF-to-Thread, YouTube-to-Thread)
+│   │   ├── accounts/             # Connected social accounts (Instagram, LinkedIn)
+│   │   ├── admin/                # Admin APIs (Subscribers, AI Usage, Teams, Impersonation, Billing Analytics, Notifications, Announcements, Activity Feed, Feature Flags, Promo Codes, Webhooks)
+│   │   ├── affiliate/            # Affiliate link management
+│   │   ├── ai/                   # AI endpoints (Thread, Inspire, Image, Agentic, Calendar, Tools, Translate, Affiliate, Score, PDF-to-Thread, YouTube-to-Thread, Hashtags, Reply, Summarize, Bio, Variants, Template-Generate, Trends, Refine, Feedback, Enhance-Topic, Thread-First-Image)
 │   │   ├── analytics/            # Analytics (Followers, Engagement, Best Time, Competitor, Export)
 │   │   ├── announcement/         # Public announcements
 │   │   ├── auth/[...all]/        # Better Auth catch-all
 │   │   ├── billing/              # Stripe checkout & webhooks, change-plan preview
+│   │   ├── changelog/            # Changelog entries
 │   │   ├── chat/                 # AI chat
-│   │   ├── community/contact/    # Contact form
-│   │   ├── cron/                 # Scheduled jobs (Billing cleanup)
+│   │   ├── community/            # Contact form
+│   │   ├── cron/                 # Scheduled jobs (Billing cleanup, AI cost alarm, AI counter rollover)
 │   │   ├── diagnostics/          # System diagnostics
 │   │   ├── feedback/             # Roadmap feedback
 │   │   ├── inspiration/          # Tweet import & bookmarks
-│   │   ├── media/upload/         # File upload (Images, Videos)
+│   │   ├── instagram/            # Instagram OAuth (auth + callback)
+│   │   ├── linkedin/             # LinkedIn OAuth (auth + callback)
+│   │   ├── link-preview/         # Link preview generation
+│   │   ├── log/                  # Client-side log ingestion
+│   │   ├── media/                # File upload (Images, Videos)
+│   │   ├── notifications/        # User notifications
 │   │   ├── posts/                # Post CRUD, reschedule, retry, bulk upload
+│   │   ├── queue/                # Queue SSE (real-time job status)
+│   │   ├── referral/             # Referral tracking
 │   │   ├── team/                 # Team management (Invite, Join, Members)
+│   │   ├── templates/            # Agentic app templates
 │   │   ├── user/                 # User profile, preferences, voice-profile, referrals
 │   │   └── x/                    # X account management, subscription tier sync & tweet lookup
 │   ├── chat/                     # AI chat interface
-│   ├── dashboard/                # Core app: achievements, affiliate, ai, analytics, calendar, compose, drafts, inspiration, jobs, onboarding, queue, referrals, settings, youtube-to-thread
+│   ├── dashboard/                # Core app: achievements, admin, affiliate, ai, analytics, calendar, compose, drafts, inspiration, jobs, onboarding, queue, referrals, settings
 │   ├── go/[shortCode]/           # Affiliate link redirect
 │   ├── join-team/                # Team invitation landing page
 │   └── profile/                  # User profile public view
 ├── components/
 │   ├── admin/                    # Admin components (Dashboard, Tables, Sidebars, Modals)
+│   ├── affiliate/                # Affiliate components
 │   ├── ai/                       # AI components (Hashtag Generator, Agentic Posting, PDF to Thread)
 │   ├── analytics/                # Analytics components (Charts, Heatmaps, Drawers)
 │   ├── auth/                     # Auth components (Sign-in, Profile)
@@ -51,20 +63,21 @@ src/
 │   ├── marketing/                # Marketing components (Hero, Features)
 │   ├── onboarding/               # Onboarding components (Wizard, Tour)
 │   ├── queue/                    # Queue components (List, Post cards)
-│   ├── referral/                 # Referral components (Cookie processor, Links table)
+│   ├── referral/                 # Referral cookie processor
+│   ├── referrals/                # Referral components (Links table)
 │   ├── roadmap/                  # Roadmap components (Feedback list, Submit modal)
 │   ├── settings/                 # Settings components (Profile form, Voice profile, Plan usage, Accounts)
 │   └── ui/                       # shadcn/ui primitives
 └── lib/
     ├── admin/                    # Admin utilities & middleware
-    ├── ai/                       # AI prompts (summarize, template, inspire, agentic, arabic), voice-profile, PII redaction, prompt-injection defense, language blocks, text-fit, hashtag banlist, retry/timeout helpers
-    ├── api/                      # API error handling, AI preamble
+    ├── ai/                       # AI prompts (summarize, template, inspire, agentic, arabic, length), voice-profile, PII redaction, prompt-injection defense, language blocks, text-fit, hashtag banlist, retry/timeout helpers, agentic types
+    ├── api/                      # API error handling, AI preamble, idempotency
     ├── middleware/               # Plan gates, role checks
     ├── queue/                    # BullMQ client + processors
     ├── referral/                 # Referral utilities
     ├── schemas/                  # Shared Zod validation schemas
     ├── security/                 # Token encryption
-    ├── services/                 # Business logic (Agentic, AI Image, Analytics, AI Quota Atomic, Moderation, Email, Plan Metadata, Stripe, X-API)
+    ├── services/                 # Business logic (Agentic, AI Image, Analytics, AI Quota, Moderation, Email, Plan Metadata, Stripe, X-API, Instagram, LinkedIn, YouTube, Transcription, Circuit Breaker, Notifications)
     ├── utils/                    # General utilities (cn, date formatting, time windows)
     └── tokens.ts                 # Color token constants (6 scales × 12 steps × 2 modes, charts, brand)
 ```
@@ -84,6 +97,8 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/app/api/ai/thread/route.ts` — Thread writer (OpenRouter)
 - `src/app/api/ai/bio/route.ts` — Bio Optimizer (generates 3 X bio variants)
 - `src/app/api/ai/image/route.ts` — Image generation (Replicate via Nano Banana)
+- `src/app/api/ai/image/status/route.ts` — Replicate generation polling + quota recording
+- `src/app/api/ai/image/download/route.ts` — SSRF-safe image download proxy
 - `src/app/api/ai/image/quota/route.ts` — Image quota read endpoint (used by sidebar usage meter)
 - `src/app/api/ai/score/route.ts` — Viral Score evaluator
 - `src/app/api/ai/agentic/route.ts` — Agentic SSE streaming
@@ -94,10 +109,25 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/app/api/ai/calendar/route.ts` — AI Content Calendar generator
 - `src/app/api/chat/route.ts` — Conversational AI assistant
 - `src/app/api/ai/quota/route.ts` — Usage tracking read endpoint
+- `src/app/api/ai/history/route.ts` — AI generation history
+- `src/app/api/ai/hashtags/route.ts` — AI Hashtag Generator
+- `src/app/api/ai/reply/route.ts` — Reply Generator
+- `src/app/api/ai/summarize/route.ts` — Content summarization
+- `src/app/api/ai/template-generate/route.ts` — Template-based thread generation
+- `src/app/api/ai/variants/route.ts` — A/B variant generator
+- `src/app/api/ai/affiliate/route.ts` — Affiliate link tweet generator
+- `src/app/api/ai/trends/route.ts` — Trending topics discovery
+- `src/app/api/ai/inspiration/route.ts` — Trending inspiration by niche
+- `src/app/api/ai/inspire/route.ts` — Content inspiration (rephrase, expand, counter-point)
+- `src/app/api/ai/refine/route.ts` — Iterative refinement based on user feedback
+- `src/app/api/ai/feedback/route.ts` — Records AI output feedback (thumbs up/down)
+- `src/app/api/ai/enhance-topic/route.ts` — Raw topic to robust prompt enhancer
+- `src/app/api/ai/thread-first-image/route.ts` — Editorial 16:9 image for first tweet of a thread
 - `src/app/api/ai/pdf-to-thread/upload/route.ts` — PDF upload + text extraction
 - `src/app/api/ai/pdf-to-thread/generate/route.ts` — Sync thread generation from PDF
 - `src/app/api/ai/pdf-to-thread/enqueue/route.ts` — Async PDF thread enqueue to BullMQ
 - `src/app/api/ai/pdf-to-thread/[jobId]/route.ts` — Job status poll + cancel
+- `src/app/api/ai/pdf-to-thread/history/route.ts` — PDF job history
 - `src/app/api/ai/youtube-to-thread/route.ts` — YouTube URL validation + metadata preview + job enqueue
 - `src/app/api/ai/youtube-to-thread/[jobId]/route.ts` — Job status poll + result + cancel
 - `src/app/api/ai/youtube-to-thread/history/route.ts` — Last 5 ready jobs for user
@@ -108,13 +138,30 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/lib/services/ai-quota.ts` — AI usage recording and retrieval
 - `src/lib/services/ai-quota-atomic.ts` — Atomic quota consumption with race-condition prevention + admin grant fallback
 - `src/lib/services/ai-image.ts` — Image generation orchestration
-- `src/lib/services/moderation.ts` — Pre-publish content moderation
+- `src/lib/services/moderation.ts` — Pre-publish content moderation (OpenAI API + regex fallback)
 - `src/lib/services/agentic-pipeline.ts` — 5-step autonomous pipeline (Research→Strategy→Write→Images→Review)
 - `src/lib/services/x-api.ts` — Twitter/X API client with per-account distributed lock token refresh
 - `src/lib/services/x-error.ts` — Token refresh error classification (permanent/transient/rate-limited) + exponential backoff
 - `src/lib/services/x-circuit-breaker.ts` — Redis-based circuit breaker for X API (opens after N consecutive permanent failures)
+- `src/lib/services/x-subscription.ts` — X subscription tier sync
 - `src/lib/services/youtube.ts` — YouTube URL parsing + metadata via yt-dlp, `getVideoInfo()`, `extractAudio()`
 - `src/lib/services/transcription.ts` — Deepgram + Whisper adapter, cost calculation, provider routing
+- `src/lib/services/analytics.ts` — Analytics service
+- `src/lib/services/analytics-engine.ts` — Analytics computation engine
+- `src/lib/services/best-time.ts` — Best time to post computation
+- `src/lib/services/tweet-importer.ts` — Tweet import from X
+- `src/lib/services/social-api.ts` — Social API abstractions
+- `src/lib/services/instagram-api.ts` — Instagram Business API client (via Facebook Graph API)
+- `src/lib/services/linkedin-api.ts` — LinkedIn posting API client
+- `src/lib/services/competitor-analysis.ts` — Competitor analytics
+- `src/lib/services/affiliate-stats.ts` — Affiliate statistics
+- `src/lib/services/plan-metadata.ts` — Plan metadata helpers
+- `src/lib/services/email.ts` — Email sending (Resend)
+- `src/lib/services/email-translations.ts` — Email i18n
+- `src/lib/services/notifications.ts` — User notifications
+- `src/lib/services/article-fetcher.ts` — Article content fetching
+- `src/lib/services/request-dedup.ts` — Request deduplication
+- `src/lib/services/admin-ai-metrics.ts` — Admin AI metrics aggregation
 - `src/lib/queue/processors.ts` — BullMQ job execution (Publishing, Analytics, Token Health, X Tier Refresh, PDF-to-Thread, YouTube-to-Thread)
 
 ### BullMQ Processors
@@ -132,6 +179,14 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 - `src/lib/ai/with-retry.ts` — Exponential backoff retry wrapper
 - `src/lib/ai/with-timeout.ts` — `AbortSignal.timeout` wrapper
 - `src/lib/api/idempotency.ts` — Redis-backed idempotency middleware for AI routes
+- `src/lib/ai/arabic-prompt.ts` — Arabic-native style guidance (single source of truth)
+- `src/lib/ai/voice-profile.ts` — Voice profile analysis
+- `src/lib/ai/agentic-types.ts` — Agentic pipeline type definitions
+- `src/lib/ai/agentic-prompts.ts` — Agentic pipeline prompt templates
+- `src/lib/ai/inspire-prompts.ts` — Content inspiration prompt templates
+- `src/lib/ai/length-prompts.ts` — Thread length prompt variants
+- `src/lib/ai/template-prompts.ts` — Template-based generation prompts
+- `src/lib/ai/summarize-prompts.ts` — Summarization prompt templates
 
 ### Auth & Authorization
 

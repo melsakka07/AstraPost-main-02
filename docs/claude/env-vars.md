@@ -29,8 +29,10 @@
 - `OPENROUTER_MODEL_AGENTIC_REVIEWER` — Reviewer model (different family from writer). Falls back to `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL` if not set.
 - `OPENROUTER_MODEL_TRENDS` — Web-search-capable model for trends discovery (e.g. `perplexity/sonar`). Falls back through `OPENROUTER_MODEL_FREE` → `OPENROUTER_MODEL_AGENTIC` → `OPENROUTER_MODEL`.
 - `OPENROUTER_MODEL_PDF_TO_THREAD` — Dedicated model for PDF-to-thread generation. Falls back to `OPENROUTER_MODEL` if not set.
-- `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` — Dedicated model for YouTube-to-Thread generation. Optional; falls back to `OPENROUTER_MODEL` if not set. Allows cost/quality tuning for long-context transcription → thread pipelines.
-- `YOUTUBE_DEEPGRAM_API_KEY` — Deepgram API key for YouTube transcription ($200 free credit at console.deepgram.com). Optional; if not set, Deepgram option is hidden from the UI. Pricing: ~$0.0059/minute — a 20-minute video costs ~$0.12; a 90-minute video costs ~$0.53. Feature warns if neither Deepgram nor Whisper (OpenAI) is configured.
+- `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` — Dedicated model for YouTube-to-Thread generation. Optional; falls back to `OPENROUTER_MODEL` if not set. Allows cost/quality tuning for long-context transcription to thread pipelines.
+- `YOUTUBE_INNERTUBE_API_KEY` — YouTube innertube API key for video metadata fetching. Defaults to the well-known public key. Optional; set only if the default key stops working.
+- `YOUTUBE_DEEPGRAM_API_KEY` — Deepgram API key for YouTube transcription ($200 free credit at console.deepgram.com). Optional; if not set, Deepgram option is hidden from the UI. Pricing: ~$0.0059/minute: a 20-minute video costs ~$0.12; a 90-minute video costs ~$0.53. Feature warns if neither Deepgram nor Whisper (OpenAI) is configured.
+- `YOUTUBE_PROXY_URL` — HTTP(S) proxy URL for YouTube innertube API calls (bypasses IP-based bot detection). Format: `http://user:pass@host:port`. Optional; when not set, calls go direct.
 
 ### Replicate (image generation)
 
@@ -76,6 +78,11 @@
 
 ## Validation Coverage
 
-All documented env vars are now validated by `serverEnvSchema` in `src/lib/env.ts` (extended 2026-05-06 to add the previously-uncovered set: `OPENAI_API_KEY`, `DIAGNOSTICS_TOKEN`, `PLAN_CHANGE_LOG_RETENTION_YEARS`, `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `TWITTER_BEARER_TOKEN`).
+Most documented env vars are validated by `serverEnvSchema` in `src/lib/env.ts` (extended 2026-05-06 to add the previously-uncovered set: `OPENAI_API_KEY`, `DIAGNOSTICS_TOKEN`, `PLAN_CHANGE_LOG_RETENTION_YEARS`, `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `TWITTER_BEARER_TOKEN`).
+
+The following env vars are read directly from `process.env` (not validated by the Zod schema):
+
+- `X_CIRCUIT_THRESHOLD` / `X_CIRCUIT_TIMEOUT_MS` — read in `src/lib/services/x-circuit-breaker.ts`
+- `YT_DLP_PATH` — read in `src/lib/services/youtube.ts`
 
 Note: Instagram OAuth uses **Facebook App credentials** (`FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET`) because Instagram Business posting goes through the Facebook Graph API — there is no separate `INSTAGRAM_CLIENT_ID` / `INSTAGRAM_CLIENT_SECRET` in the codebase.

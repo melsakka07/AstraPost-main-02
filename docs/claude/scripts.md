@@ -11,11 +11,11 @@
 
 ## Build & Compilation
 
-| Command                    | Purpose                                 |
-| -------------------------- | --------------------------------------- |
-| `pnpm build`               | Generate migrations + next build        |
-| `pnpm run build:ci`        | Next.js build only (skip migrations)    |
-| `pnpm run esbuild:rebuild` | Force rebuild esbuild (for native deps) |
+| Command                    | Purpose                                       |
+| -------------------------- | --------------------------------------------- |
+| `pnpm build`               | Run migrations + next build                   |
+| `pnpm run build:ci`        | Next.js build (runs db:migrate in production) |
+| `pnpm run esbuild:rebuild` | Force rebuild esbuild (for native deps)       |
 
 ## Code Quality
 
@@ -24,7 +24,7 @@
 | `pnpm lint`             | Run ESLint on all files                         |
 | `pnpm typecheck`        | TypeScript type checking                        |
 | `pnpm run check`        | Run lint + typecheck + i18n validation          |
-| `pnpm run check:i18n`   | Verify ar/en i18n keys are in sync (2,555 keys) |
+| `pnpm run check:i18n`   | Verify ar/en i18n keys are in sync (2,799 keys) |
 | `pnpm run format`       | Format code with Prettier                       |
 | `pnpm run format:check` | Check formatting without modifying              |
 
@@ -32,7 +32,7 @@
 
 | Command                       | Purpose                                |
 | ----------------------------- | -------------------------------------- |
-| `pnpm test`                   | Run Vitest unit tests (watch mode)     |
+| `pnpm test`                   | Run Vitest unit tests                  |
 | `pnpm run smoke:e2e`          | Smoke test key flows via API calls     |
 | `pnpm run smoke:full`         | Full end-to-end test suite             |
 | `pnpm run test:twitter-perms` | Verify Twitter OAuth scopes            |
