@@ -315,18 +315,18 @@ export const posts = pgTable(
 
 **Files involved:** `src/lib/services/ai-quota.ts`, any AI route handler
 
-**Key imports:** `recordAiUsage` from `@/lib/services/ai-quota`
+**Key imports:** `recordAiUsage`, `estimateCost` from `@/lib/services/ai-quota`
 
 **Canonical example:** `src/app/api/ai/bio/route.ts` (around line 85)
 
-### Key Pattern
+### Key Pattern (legacy positional form)
 
 ```typescript
 // After AI generation succeeds
 const { object, usage } = await generateObject({ ... });
 
-// Record tokens for quota + billing
-await recordAiUsage(
+// Record tokens for quota + billing (fire-and-forget — do not await in production routes)
+recordAiUsage(
   session.user.id,       // User who triggered it
   "feature_name",         // e.g., "bio_optimizer", "thread_generator"
   usage.totalTokens ?? 0, // Tokens consumed
@@ -336,11 +336,35 @@ await recordAiUsage(
 );
 ```
 
+### Key Pattern (Phase 2 options-object form — preferred for new routes)
+
+```typescript
+// After AI generation succeeds
+const { object, usage } = await generateObject({ ... });
+
+// Record with rich telemetry — fire-and-forget, do not await
+recordAiUsage({
+  userId: session.user.id,
+  type: "bio_optimizer",
+  model: process.env.OPENROUTER_MODEL!,
+  subFeature: "bio_variants",
+  tokensIn: usage.promptTokens ?? 0,
+  tokensOut: usage.completionTokens ?? 0,
+  costEstimateCents: estimateCost(process.env.OPENROUTER_MODEL!, usage.promptTokens ?? 0, usage.completionTokens ?? 0),
+  promptVersion: "bio:v2",
+  latencyMs: Date.now() - startTime,
+  inputPrompt: prompt,
+  outputContent: object,
+  language,
+});
+```
+
 ### Key Points
 
-- **Fire-and-forget** — don't await, place after successful generation
+- **Fire-and-forget** (do not `await`) — place after successful generation so it does not delay the response
+- **Use the options-object form** for new routes — populates model, cost, latency, and prompt version telemetry
 - **Feature name** must match quota gate names (e.g., `checkBioOptimizerAccessDetailed`)
-- **Always pass totalTokens** (fallback to 0 if missing)
+- **Always pass token counts** (fallback to 0 if missing)
 - **Usage is tied to user + feature** — enables per-feature quota limits
 - **Billing runs nightly** (cron job sums daily usage per plan)
 

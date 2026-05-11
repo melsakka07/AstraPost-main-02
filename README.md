@@ -255,7 +255,16 @@ astrapost/
     │   │   │   │               #   hashtags, score, image, inspire, bio, calendar,
     │   │   │   │               #   summarize, variants, reply, history, quota,
     │   │   │   │               #   trends, refine, feedback, enhance-topic,
-    │   │   │   │               #   template-generate, agentic (SSE + approve + regenerate)
+    │   │   │   │               #   template-generate, voice, pdf-to-thread,
+    │   │   │   │               #   youtube-to-thread, thread-first-image,
+    │   │   │   │               #   agentic (SSE + approve + regenerate)
+    │   │   ├── accounts/        # X account management helpers
+    │   │   ├── affiliate/       # Amazon affiliate link generation
+    │   │   ├── announcement/    # In-app announcement banners
+    │   │   ├── changelog/       # Changelog entries CRUD
+    │   │   ├── community/       # Community contact form handler
+    │   │   ├── diagnostics/     # System diagnostics + health check
+    │   │   ├── log/             # Client-side error log collector
     │   │   ├── admin/           # Admin APIs (grant-quota, extend-trial, ai-usage, etc.)
     │   │   ├── cron/            # Scheduled jobs: billing-cleanup, ai-cost-alarm,
     │   │   │                    #   ai-counter-rollover
@@ -290,7 +299,9 @@ astrapost/
     │   │   │   ├── bio/        # Bio optimizer page
     │   │   │   ├── calendar/   # Content calendar page
     │   │   │   ├── history/    # AI generation history page
-    │   │   │   └── reply/      # Reply suggester page
+    │   │   │   ├── reply/      # Reply suggester page
+    │   │   │   ├── pdf-to-thread/  # PDF-to-Thread converter page
+    │   │   │   └── youtube-to-thread/  # YouTube-to-Thread converter page
     │   │   ├── analytics/      # Analytics dashboard
     │   │   │   ├── competitor/ # Competitor analyzer page
     │   │   │   └── viral/      # Viral Content Analyzer page
@@ -315,6 +326,7 @@ astrapost/
     │   │                       #   viral bar/hour charts, follower/impression charts
     │   ├── auth/               # Sign-in/up forms, user profile, sign-out
     │   ├── billing/            # Pricing card and pricing table
+    │   ├── brand/             # Logo, LogoMark — currentColor-driven, theme-aware
     │   ├── calendar/           # Calendar view, day cells, post items, reschedule form,
     │   │                       #   bulk import dialog
     │   ├── community/          # Contact form
@@ -421,7 +433,7 @@ pnpm install
 Copy the example file and fill in all required values:
 
 ```bash
-cp env.example .env
+cp .env.example .env
 ```
 
 See the [Environment Variables Reference](#environment-variables-reference) section below for a full description of every variable.
@@ -517,10 +529,12 @@ Open **http://localhost:3000** in your browser.
 | `OPENROUTER_MODEL_PDF_TO_THREAD`     | PDF-to-Thread          | Dedicated model for PDF-to-thread generation (sync + async). Falls back to `OPENROUTER_MODEL`                                    |
 | `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` | YouTube-to-Thread      | Optional dedicated model for YouTube thread generation. Falls back to `OPENROUTER_MODEL`                                         |
 | `YOUTUBE_DEEPGRAM_API_KEY`           | YouTube transcription  | Optional Deepgram API key for audio transcription ($200 free credit, then pay-per-minute). Falls back to OpenAI Whisper if unset |
+| `YOUTUBE_INNERTUBE_API_KEY`          | YouTube metadata       | Public innertube API key for YouTube video metadata fetching. Has a default value in `src/lib/env.ts`                            |
 | `YT_DLP_PATH`                        | YouTube download       | Optional path override for yt-dlp binary. **yt-dlp must run on the worker host — Vercel Functions cannot execute yt-dlp.**       |
 | `OPENAI_API_KEY`                     | Content moderation     | When set, enables OpenAI Moderation API as primary check; falls back to 25-pattern regex when absent                             |
 | `OPENAI_MODERATION_MODEL`            | Content moderation     | Moderation API model (default: `omni-moderation-latest`, see `src/lib/env.ts:66`)                                                |
 | `REPLICATE_API_TOKEN`                | AI image generation    | Get from [replicate.com/account](https://replicate.com/account)                                                                  |
+| `REPLICATE_MODEL_AGENTIC`            | Agentic image gen      | Optional dedicated model for Agentic Posting image generation. Falls back to `REPLICATE_MODEL_FAST`                              |
 
 **Billing (Stripe)**
 
@@ -535,20 +549,21 @@ Open **http://localhost:3000** in your browser.
 
 **Optional Services**
 
-| Variable                          | Description                                                                     |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `AI_DAILY_BUDGET_USD`             | Daily AI cost cap in USD — triggers email alert when exceeded                   |
-| `RESEND_API_KEY`                  | Resend email API key. If unset, emails are logged to console only               |
-| `RESEND_FROM_EMAIL`               | From address for outgoing emails (e.g. `noreply@yourdomain.com`)                |
-| `BLOB_READ_WRITE_TOKEN`           | Vercel Blob token. Leave empty to use local filesystem in dev                   |
-| `SENTRY_DSN`                      | Sentry error tracking DSN                                                       |
-| `SENTRY_AUTH_TOKEN`               | Sentry auth token for source map upload during build                            |
-| `CRON_SECRET`                     | Bearer token required to invoke `/api/cron/*` endpoints                         |
-| `DIAGNOSTICS_TOKEN`               | Token required to receive full response from `/api/diagnostics`                 |
-| `PLAN_CHANGE_LOG_RETENTION_YEARS` | Retention period for plan audit logs in years (default: `7`)                    |
-| `TWITTER_DRY_RUN`                 | If set, worker skips actual X API posting (for local testing)                   |
-| `X_CIRCUIT_THRESHOLD`             | Consecutive permanent X API failures before circuit opens (default: `5`)        |
-| `X_CIRCUIT_TIMEOUT_MS`            | How long the circuit stays open in milliseconds (default: `300000` — 5 minutes) |
+| Variable                          | Description                                                                               |
+| --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `AI_DAILY_BUDGET_USD`             | Daily AI cost cap in USD — triggers email alert when exceeded                             |
+| `RESEND_API_KEY`                  | Resend email API key. If unset, emails are logged to console only                         |
+| `RESEND_FROM_EMAIL`               | From address for outgoing emails (e.g. `noreply@yourdomain.com`)                          |
+| `RESEND_OPS_EMAIL`                | Ops alert recipient email — used by AI cost alarm cron; falls back to `RESEND_FROM_EMAIL` |
+| `BLOB_READ_WRITE_TOKEN`           | Vercel Blob token. Leave empty to use local filesystem in dev                             |
+| `SENTRY_DSN`                      | Sentry error tracking DSN                                                                 |
+| `SENTRY_AUTH_TOKEN`               | Sentry auth token for source map upload during build                                      |
+| `CRON_SECRET`                     | Bearer token required to invoke `/api/cron/*` endpoints                                   |
+| `DIAGNOSTICS_TOKEN`               | Token required to receive full response from `/api/diagnostics`                           |
+| `PLAN_CHANGE_LOG_RETENTION_YEARS` | Retention period for plan audit logs in years (default: `7`)                              |
+| `TWITTER_DRY_RUN`                 | If set, worker skips actual X API posting (for local testing)                             |
+| `X_CIRCUIT_THRESHOLD`             | Consecutive permanent X API failures before circuit opens (default: `5`)                  |
+| `X_CIRCUIT_TIMEOUT_MS`            | How long the circuit stays open in milliseconds (default: `300000` — 5 minutes)           |
 
 ### Generating `TOKEN_ENCRYPTION_KEYS`
 
@@ -587,6 +602,8 @@ pnpm run check                # Run lint + typecheck + i18n validation
 # Testing
 pnpm test                     # Run Vitest unit tests
 pnpm run smoke:full           # Full smoke suite: boot → migrate → worker → test → teardown
+pnpm run smoke:e2e            # E2E smoke tests (lightweight)
+pnpm run test:e2e:ui          # Playwright E2E UI tests
 
 # Database
 pnpm run db:generate          # Generate new migration from schema changes
@@ -597,7 +614,7 @@ pnpm run db:reset             # Drop all tables and re-push schema
 
 # Build & Deploy
 pnpm build                    # Run migrations + Next.js production build
-pnpm run build:ci             # Next.js build only (no migrations, for CI)
+pnpm run build:ci             # Next.js build (runs db:migrate in Vercel production; build-only in CI)
 pnpm start                    # Start production server
 
 # Token Security
@@ -611,6 +628,8 @@ pnpm run format:check         # Check formatting without writing
 # Setup & Diagnostics
 pnpm run setup                # Interactive project setup wizard
 pnpm run env:check            # Validate all environment variables and warn on missing
+pnpm run diagnose:x-accounts  # Diagnose connected X accounts (supports --fix flag)
+pnpm run test:twitter-perms   # Test Twitter/X API permissions for connected accounts
 ```
 
 ---
@@ -799,6 +818,7 @@ AstraPost integrates with [Replicate](https://replicate.com/) to provide AI-powe
 | **Primary**: `nano-banana-2`     | Gemini 2.5 Flash Image — Fast, efficient generation         | 1K (1024px base) | All plans (Free, Pro, Agency) |
 | **Secondary**: `nano-banana-pro` | Gemini 3 Pro Image — Highest quality with advanced features | 2K (2048px base) | Pro and Agency only           |
 | **Backup**: `nano-banana`        | Gemini 2.5 Flash Image — Reliable fallback                  | 1K (1024px base) | All plans (Free, Pro, Agency) |
+| **Advanced**: `gpt-image-2`      | GPT Image 2 via Replicate — High-end text-to-image model    | 1K (1024px base) | Pro and Agency only           |
 
 ### Model Features
 
@@ -814,6 +834,10 @@ AstraPost integrates with [Replicate](https://replicate.com/) to provide AI-powe
 - **nano-banana** (Backup)
   - Automatically used when primary or secondary model fails
   - Ensures reliability without user intervention
+
+- **gpt-image-2** (Advanced)
+  - High-end text-to-image model for premium image generation
+  - Available on Pro and Agency plans only
 
 ### Fallback Behavior
 
@@ -957,10 +981,10 @@ pnpm run check         # ESLint + TypeScript + i18n (run this before every commi
 The GitHub Actions pipeline (`.github/workflows/ci.yml`) runs on every push and pull request to `main`/`master`:
 
 ```
-Lint  →  TypeCheck  →  Build (build:ci)
+Lint  →  TypeCheck  →  Schema Drift  →  Build (build:ci)
 ```
 
-The build step uses minimal stub environment variables so no real secrets are needed in CI.
+The **Schema Drift** check runs `pnpm db:generate` and verifies no uncommitted migration files exist, preventing `schema.ts`/`drizzle/` drift in production. The build step uses minimal stub environment variables so no real secrets are needed in CI.
 
 ---
 

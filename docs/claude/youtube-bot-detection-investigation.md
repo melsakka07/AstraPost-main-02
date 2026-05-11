@@ -1,24 +1,30 @@
 # YouTube Bot Detection — Investigation Report
 
-**Date:** 2026-05-08 (updated 2026-05-09)  
+**Date:** 2026-05-08 (updated 2026-05-11)  
 **Feature:** YouTube-to-Thread (`/api/ai/youtube-to-thread`)
 
 ## Summary
 
 YouTube has tightened its bot detection. The feature works end-to-end **locally** but fails **in production** on both Vercel and Railway because YouTube blocks requests from data-center IP ranges.
 
-The POST endpoint is partially functional via oEmbed fallback (returns title + thumbnail but **no duration**). The worker audio download fails completely — yt-dlp is IP-blocked from Railway.
+The POST endpoint is partially functional via oEmbed fallback (returns title + thumbnail but **no duration**). The worker audio download fails without proxy or cookie support — yt-dlp is IP-blocked from Railway.
 
-**Current solution (2026-05-09):** Title-only thread generation. When audio cannot be downloaded (all production cases), the worker generates a thread from the video title alone via AI, without requiring a transcript. This works reliably but produces lower-quality threads compared to transcript-based generation.
+**Current mitigation (2026-05-11):** Two workarounds are implemented in `src/lib/services/youtube.ts`:
+
+1. **`YOUTUBE_PROXY_URL`** — routes all YouTube HTTP requests through a configurable proxy (enables residential-IP appearance)
+2. **`YOUTUBE_COOKIES_BASE64`** — passes YouTube auth cookies to yt-dlp (proves real user identity)
+
+When neither is configured, the worker falls back to **title-only thread generation**: the AI generates a thread from the video title alone, without a transcript. This works reliably but produces lower-quality threads compared to transcript-based generation.
 
 ## Current Architecture
 
 ```
 User submits URL
-  → POST: innertube (blocked) → oEmbed (title + thumbnail)
+  → POST: innertube (blocked without proxy) → oEmbed (title + thumbnail)
   → Job enqueued with durationVerified=false, videoTitle set
-  → Worker: detects durationVerified=false
-  → Generates thread from title via AI (no audio, no transcript)
+  → Worker: detects durationVerified=false OR tries audio download (with proxy + cookies if configured)
+  → If audio succeeds: transcribe → generate thread from transcript
+  → If audio fails: generate thread from title via AI (title-only fallback)
   → Job completes ✓
 ```
 
@@ -43,6 +49,8 @@ ANDROID_VR (Quest 3), MWEB (mobile web), IOS (iPhone10,4), ANDROID, WEB (desktop
 **Result:** All 7 fail with `"Sign in to confirm you're not a bot"` from Vercel IPs.
 Same clients work from a residential IP. **Verdict: IP-level blocking, not client fingerprint.**
 
+> Each client sends a device-matched User-Agent header. Clients requiring `visitorData` (MWEB, WEB) use watch-page-scraped values. All clients now receive the scraped `visitorData` and `apiKey` when available.
+
 ### 2. Request Body Fields
 
 Added `contentCheckOk: true` and `racyCheckOk: true` to innertube API body.
@@ -57,9 +65,9 @@ Added `Origin: https://www.youtube.com`, `Referer: https://www.youtube.com/`, `A
 
 ### 4. Watch Page Scraping
 
-Scrape `ytcfg.set({...})` from the YouTube watch page HTML to extract fresh `INNERTUBE_API_KEY` and `VISITOR_DATA` for each request.
+Scrape `ytcfg.set({...})` from the YouTube watch page HTML to extract fresh `INNERTUBE_API_KEY` and `VISITOR_DATA` for each request. Now passed to ALL clients in the rotation (not just WEB/MWEB), plus used to override the API key.
 
-**Result:** Scraping works (watch page HTML loads). Fresh API key and visitorData extracted successfully. But innertube API still rejects from data-center IPs. **Verdict: IP block, not stale credentials.**
+**Result:** Scraping works (watch page HTML loads). Fresh API key and visitorData extracted successfully and propagated to all clients. But innertube API still rejects from data-center IPs. **Verdict: IP block, not stale credentials.**
 
 ### 5. oEmbed Fallback
 
@@ -97,19 +105,28 @@ Extract `ytInitialPlayerResponse.streamingData.adaptiveFormats` from watch page 
 
 The only difference is the **IP address**. Your local machine has a residential IP. Vercel and Railway use data-center IPs that YouTube flags as bots.
 
-## The Remaining Solution: YouTube Cookies
+## Implemented Solutions
 
-YouTube recommends authentication cookies to prove you're a real user. This is what the error message says:
+Since the original investigation, two additional workarounds have been implemented in `src/lib/services/youtube.ts`:
 
-> Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies for the authentication.
+### YouTube Cookies (implemented)
 
-### How to Export YouTube Cookies
+The `YOUTUBE_COOKIES_BASE64` environment variable is now supported. When set, the cookies are decoded to `/tmp/youtube_cookies.txt` and passed to all yt-dlp invocations via `--cookies`. This allows authenticated YouTube sessions from data-center IPs.
+
+Cookie export methods and lifespan considerations remain as documented below.
+
+### HTTP Proxy (implemented)
+
+The `YOUTUBE_PROXY_URL` environment variable is now supported. When set, all YouTube API calls (innertube, oEmbed, watch page, audio CDN downloads) are routed through the specified HTTP(S) proxy. This allows traffic to appear from a residential IP even when running on Vercel/Railway.
+
+### How to Export YouTube Cookies (for YOUTUBE_COOKIES_BASE64)
 
 **Method 1: Browser Extension (Recommended)**
 
 1. Install "Get cookies.txt LOCALLY" extension from Chrome Web Store
 2. Go to youtube.com and log in with a Google account
 3. Click the extension icon → "Export" → save as `cookies.txt`
+4. Base64-encode the file and set it as `YOUTUBE_COOKIES_BASE64`
 
 **Method 2: yt-dlp Browser Extraction**
 If running locally with a browser profile:
@@ -130,16 +147,6 @@ YouTube cookies **expire over time** — typically 2-4 weeks. However:
 - A dedicated Google account (not your personal one) can be used just for this purpose
 - yt-dlp needs the `SAPISID`, `HSID`, `SSID`, `APISID` cookies — these refresh when the account is active
 - You'll need to **refresh cookies periodically** (every 2-4 weeks) by re-exporting from the browser
-- For full automation: set up a headless browser that logs in, extracts cookies, and uploads them to Railway on a schedule
-
-### Implementation Plan
-
-Once cookies are available:
-
-1. Store the cookie file in Railway as a secret or file mount
-2. Add `--cookies /path/to/cookies.txt` to yt-dlp commands in `extractAudio`
-3. Keep the oEmbed fallback for metadata as a safety net
-4. Add cookie expiration monitoring (alert when yt-dlp starts failing again)
 
 ## Deployment History
 
@@ -158,9 +165,9 @@ Once cookies are available:
 
 ## Future Improvements
 
-To restore full transcript-based thread generation, one of these must be implemented:
+To restore full transcript-based thread generation in production, the implemented workarounds need further hardening:
 
-1. **Residential proxy** — Route yt-dlp traffic through a residential IP (BrightData, Oxylabs, or a home SSH tunnel). This is the most reliable fix — makes the worker appear as a residential user.
+1. **Residential proxy** (partially implemented) — `YOUTUBE_PROXY_URL` is now supported. The remaining gap is sourcing a reliable residential proxy service (BrightData, Oxylabs, or a home SSH tunnel). Once configured, this makes the worker appear as a residential user.
 
 2. **Cookie-from-same-IP** — Export cookies from the SAME IP that Railway uses (requires running a browser on the Railway container or same data center). Solves the "cookies invalidated by cross-IP usage" problem.
 

@@ -200,10 +200,6 @@ This document maps all backend AI generation and processing endpoints to their r
 
 - **Purpose**: Retrieves the user's monthly AI image generation counts and the list of image models available on their plan.
 
-### `GET /api/ai/image/quota`
-
-- **Purpose**: Retrieves the user's monthly AI image generation counts and available models.
-
 ### `GET /api/ai/history`
 
 - **Purpose**: Retrieves the user's historical AI generation log (`aiGenerations` table).

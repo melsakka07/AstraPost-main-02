@@ -1,5 +1,141 @@
 # Latest Updates
 
+## 2026-05-11 — Documentation Audit: 54 Discrepancies Fixed Across 11 Files
+
+Comprehensive audit of all project documentation against the codebase (source of truth). Four parallel agents cross-referenced every claim, file path, env var, script, and model reference.
+
+- **README.md**: 10 fixes — added missing CI step, env vars, API routes, scripts, model
+- **docs/claude/architecture.md**: 10 fixes — 11 missing API dirs, 17 unlisted services, wrong paths
+- **docs/claude/ai-features.md**: 1 fix — duplicate endpoint removed
+- **docs/claude/env-vars.md**: 3 fixes — missing `YOUTUBE_INNERTUBE_API_KEY`, `YOUTUBE_PROXY_URL`
+- **docs/claude/scripts.md**: 4 fixes — wrong descriptions, i18n count 2,555→2,799
+- **docs/claude/AI_Endpoints_Report**: 18 fixes — missing endpoints, outdated model refs, line numbers
+- **docs/claude/common-tasks.md**: 1 fix — clarified `recordAiUsage` fire-and-forget pattern
+- **docs/claude/schema-consistency.md**: 1 fix — YouTube migrations 3→5
+- **docs/claude/youtube-bot-detection-investigation.md**: 6 fixes — cookie/proxy now implemented
+- **docs/0-MY-LATEST-UPDATES.md**: Added 15+ undocumented commits (May 8–11)
+
+## 2026-05-11 — YouTube Production Hardening: Proxy, Deno Runtime, Cookies & Title-Only Fallback
+
+A series of production hardening fixes for YouTube-to-Thread to overcome IP-based bot detection blocking datacenter IPs (Railway/Vercel).
+
+### Proxy support for API calls (`src/lib/services/youtube.ts`)
+
+- Added optional `YOUTUBE_PROXY_URL` environment variable to route YouTube API requests through a proxy
+- Created `getProxiedFetch()` helper using `undici` ProxyAgent when proxy is configured
+- Replaced all `fetch()` calls in youtube service with proxied version
+- Added `YOUTUBE_PROXY_URL` to `src/lib/env.ts` server env schema
+
+### Title-only fallback for thread generation (`src/lib/queue/processors.ts`)
+
+When video processing fails on the final retry attempt, the worker generates a thread from the video title alone, skipping audio download and transcription entirely. Stores `videoTitle` in the job row for use by the worker. Resets job status to "queued" for pending retries to ensure the retry guard passes.
+
+### Worker infrastructure (Nixpacks + Railway)
+
+- Added `deno` JS runtime to Nixpacks (yt-dlp 2026.03.17+ requires a JS runtime for YouTube bot challenges)
+- Added curl + cmds step to download the latest yt-dlp binary to `/usr/local/bin/yt-dlp` (Nixpkgs ships outdated 2025.09.26 blocked by YouTube's anti-bot detection)
+- `resolveYtDlpPath()` prefers `/usr/local/bin/yt-dlp` over the nixpkgs fallback
+
+### YouTube cookie support
+
+Adds `--cookies` flag to yt-dlp commands using cookies from a logged-in YouTube session. Cookies loaded from `youtube_cookies.txt` (local) or `YOUTUBE_COOKIES_BASE64` env var (Railway). Cookie file is gitignored; base64 version committed to repo.
+
+### Other fixes
+
+- Audio stream download timeout reduced from 90s to 20s to prevent long hangs
+- Fixed `youtube_cookies_base64.txt` to contain actual base64 content instead of error traceback
+- Proxy configuration simplified to read `process.env` directly instead of using `getServerEnv()` wrapper
+
+### Files Changed
+
+- `src/lib/services/youtube.ts` — ProxyAgent integration, cookie support, timeout reduction
+- `src/lib/queue/processors.ts` — Title-only fallback + retry status reset (130+ lines)
+- `src/lib/env.ts` — Added `YOUTUBE_PROXY_URL`
+- `nixpacks.toml` — Added deno, curl; cmds step downloads latest yt-dlp
+- `package.json` + `pnpm-lock.yaml` — Added `undici` dependency
+- `youtube_cookies_base64.txt` — Replaced error trace with base64 content
+
+### Quality Gate
+
+- `pnpm lint`: PASS
+- `pnpm typecheck`: PASS
+- `pnpm check:i18n`: PASS (2799 keys matched)
+- `pnpm test`: PASS (34 files, 321 tests)
+
+---
+
+## 2026-05-10 — UI Polish: Dashboard Widths, Responsive Tabs & Font Preload
+
+Small UI fixes improving layout stability and responsive behavior across the dashboard.
+
+1. **Dashboard component widths** — Account switcher widened from 200px to 220px; dashboard description uses `line-clamp-2` instead of `truncate` with max-width increased to `lg`.
+2. **Tabs list minimum height** — Changed from fixed height to `min-height` to accommodate content overflow without clipping.
+3. **Responsive hashtags tab label** — Conditional rendering shows full label on larger screens and truncated version on mobile.
+4. **Font preload disabled** — Improves initial page load performance by disabling font preloading.
+5. **Thumbnail image layout fix** — YouTube thumbnail wrapped in fixed-dimension container to prevent layout shifts.
+
+### Files Changed
+
+- `src/components/dashboard/account-switcher.tsx`, `src/components/dashboard/dashboard-page-wrapper.tsx` — Width + text truncation
+- `src/components/ui/tabs.tsx` — height → min-height
+- `src/app/dashboard/ai/writer/page.tsx` — Responsive hashtags label
+- `src/app/layout.tsx` — Font preload disabled
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — Thumbnail layout fix
+
+### Quality Gate
+
+- `pnpm lint`: PASS
+- `pnpm typecheck`: PASS
+- `pnpm check:i18n`: PASS (2799 keys matched)
+- `pnpm test`: PASS (34 files, 321 tests)
+
+---
+
+## 2026-05-09 — YouTube Title-Only Generation & i18n UI States
+
+### Title-only thread generation for oEmbed fallback (`525e463`)
+
+When duration cannot be verified (oEmbed fallback due to IP-based bot detection), the worker now generates a thread from the video title alone via AI, skipping audio download and transcription. This makes the feature fully functional in production despite datacenter IP blocking.
+
+- Added `video_title` column to `youtube_thread_jobs` (migration `0078`)
+- Stores video title from oEmbed response
+- Worker branches on `durationVerified` to skip download/transcription
+
+### Translation keys for new UI states (`6c513a3`)
+
+- Added "ready" and "failed" states to YouTube-to-Thread progress indicators
+- Added "awaiting_approval" and "paused_needs_reconnect" post statuses
+- Added missing PDF-to-Thread translation keys for all progress states
+- Queue component updated to use translated status labels
+- Progress indicator extended to handle all PDF processing states
+
+### Documentation
+
+- Tube2Threads comparison: confirms YouTube bot detection is 100% IP-based (bare yt-dlp works locally but fails on Railway/Vercel)
+- Investigation report: documents root cause of YouTube bot detection, 7 client fingerprints tested, oEmbed fallback limitations, and cookie-based auth solution
+
+### Files Changed
+
+- `drizzle/0078_lowly_sasquatch.sql` — New migration
+- `src/lib/schema.ts` — Added `video_title` to `youtubeThreadJobs`
+- `src/app/api/ai/youtube-to-thread/route.ts` — Stores video title from oEmbed
+- `src/lib/queue/processors.ts` — Title-only generation branch
+- `src/components/ai/pdf-to-thread/progress-indicator.tsx` — All states + translated labels
+- `src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx` — Ready/failed states
+- `src/components/queue/queue-content.tsx` — Translated status labels
+- `src/i18n/messages/en.json` + `ar.json` + `pseudo.json` — New keys
+- `docs/claude/youtube-bot-detection-investigation.md` — Full investigation report
+- `youtube_cookies_base64.txt` — Committed base64 cookies for Railway
+
+### Quality Gate
+
+- `pnpm lint`: PASS
+- `pnpm typecheck`: PASS
+- `pnpm check:i18n`: PASS (2799 keys matched)
+- `pnpm test`: PASS (34 files, 321 tests)
+
+---
+
 ## 2026-05-08 — Agency Plan Gate Fix & Mid-Cycle Upgrade Quota Audit
 
 ### Agency YouTube-to-Thread block investigation
@@ -79,6 +215,32 @@ HTTP 400 from X's OAuth token refresh endpoint means `invalid_grant` — the ref
 - Command Palette (Cmd+K) extended to surface all AI sub-tools that left the sidebar.
 - Codified the rule in `.claude/rules/frontend.md` so hub-and-spoke pattern is enforced going forward.
 - Files: `sidebar-nav-data.ts`, `command-palette.tsx`, `analytics/page.tsx` + `viral/competitor` redirect pages, `en.json`/`ar.json` (added `nav.ai_tools` key).
+
+---
+
+## 2026-05-08 — i18n: Arabic Translations, Language Display Names & Railway Nixpacks Fix
+
+### Arabic translations and locale handling (`4bea113`)
+
+- Added Arabic translations across multiple namespaces
+- Improved locale handling for RTL language support
+
+### Language display names (`dce1134`)
+
+- Added display names for Arabic ("العربية") and English ("English") in the language switcher
+- Previously languages relied on code-based labels
+
+### Railway Nixpacks setup phase fix (`cf5e48f`)
+
+- Added `nodejs_22` and `pnpm-9_x` to Nixpacks setup phase on Railway
+- Fixed an issue where pnpm would vanish from PATH when setup phase was extended without explicitly including these packages
+- This is a documented known issue: any `nixpacks.toml` `[phases.setup]` must include `nodejs_22` + `pnpm-9_x` alongside extras
+
+### Files Changed
+
+- `src/i18n/messages/ar.json` — Arabic translations across multiple namespaces
+- `src/components/dashboard/language-switcher.tsx` — Display name support
+- `nixpacks.toml` — Added nodejs_22 + pnpm-9_x to setup phase
 
 ---
 

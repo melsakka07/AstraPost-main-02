@@ -90,11 +90,13 @@ Before 2026-05-02, `vercel.json` pointed Vercel at `build:ci` which was just `ne
    - Update section label translations too
    - Example: `label: "Growth"` needs `"growth": "Growth"` in en.json
 
-4. **YouTube-to-Thread schema verification** (shipped 2026-05-07)
-   - `youtubeThreadJobs` table created across 3 migrations:
+4. **YouTube-to-Thread schema verification** (initial ship 2026-05-07, extended through 2026-05-11)
+   - `youtubeThreadJobs` table created across 5 migrations:
      - Initial table (0073) — 21 columns: id, userId, status, youtubeUrl, youtubeVideoId, youtubeTitle, durationSeconds, provider, language, tweetCount, threadResult, transcript, error, quotaConsumed, quotaReleased, createdAt, updatedAt, completedAt, thumbnailUrl
      - `error_code` column added (0074) — VARCHAR(10) for classified error codes
      - `tone` column added (0075) — enum (professional/educational/casual/formal/enthusiastic, default casual)
+     - `duration_verified` column added (0077) — boolean, default false, tracks whether the video duration came from innertube API or oEmbed fallback
+     - `video_title` column added (0078) — text, stores the video title for title-only thread generation when oEmbed is used and the original title would otherwise be lost on worker restarts
    - `aiGenerationTypeEnum` extended: new values `"youtube_to_thread"` and `"transcription"`
    - `PlanLimits` interface updated: new `maxYoutubeVideoDurationSeconds` field (Pro=1200, Agency=5400)
    - i18n namespaces to verify:
