@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface Reply {
   text: string;
@@ -50,6 +51,7 @@ interface PlanLimitPayload {
 
 export default function ReplyGeneratorPage() {
   const t = useTranslations("ai_reply");
+  const tCommon = useTranslations("common");
   const langT = useTranslations("languages");
   const router = useRouter();
   const { openWithContext } = useUpgradeModal();
@@ -161,8 +163,12 @@ export default function ReplyGeneratorPage() {
     }
   };
 
-  const copyReply = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
+  const copyReply = async (text: string, idx: number) => {
+    const ok = await copyToClipboard(text);
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setCopiedIdx(idx);
     toast.success(t("toasts.copied"));
     setTimeout(() => setCopiedIdx(null), 2000);

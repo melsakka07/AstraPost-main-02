@@ -84,7 +84,8 @@ export default async function TeamSettingsPage() {
     createdAt: i.createdAt,
   }));
 
-  const currentCount = members.length + invitations.length;
+  const currentCount = members.length;
+  const pendingCount = invitations.length;
 
   return (
     <DashboardPageWrapper icon={Shield} title={t("team.title")} description={t("team.description")}>
@@ -112,7 +113,13 @@ export default async function TeamSettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>
-                    {t("team.members_count", { current: currentCount, max: maxMembers })}
+                    {pendingCount > 0
+                      ? t("team.members_count_with_pending", {
+                          current: currentCount,
+                          max: maxMembers,
+                          pending: pendingCount,
+                        })
+                      : t("team.members_count", { current: currentCount, max: maxMembers })}
                   </CardTitle>
                   <CardDescription>{t("team.members_description")}</CardDescription>
                 </div>
