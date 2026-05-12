@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserLocale } from "@/hooks/use-user-locale";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface ViralAnalysis {
   overall: {
@@ -69,6 +70,7 @@ function safeBold(text: string): React.ReactNode {
  */
 export function ViralTab() {
   const t = useTranslations("analytics_viral");
+  const tCommon = useTranslations("common");
   const userLocale = useUserLocale();
   const [days, setDays] = useState("90");
   const [analysis, setAnalysis] = useState<ViralAnalysis | null>(null);
@@ -105,7 +107,7 @@ export function ViralTab() {
 
   const fmt = (val: number) => `${(val * 100).toFixed(1)}%`;
 
-  const handleCopyMarkdown = () => {
+  const handleCopyMarkdown = async () => {
     if (!analysis) return;
     const lines: string[] = [
       `# Viral Content Analysis — Last ${days} Days`,
@@ -164,8 +166,12 @@ export function ViralTab() {
       analysis.length.forEach((l) => lines.push(`| ${l.category} | ${fmt(l.avg)} | ${l.count} |`));
     }
 
-    void navigator.clipboard.writeText(lines.join("\n"));
-    toast.success(t("toasts.report_copied"));
+    const ok = await copyToClipboard(lines.join("\n"));
+    if (ok) {
+      toast.success(t("toasts.report_copied"));
+    } else {
+      toast.error(tCommon("copy_failed"));
+    }
   };
 
   const handleDownloadCSV = () => {

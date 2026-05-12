@@ -21,6 +21,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
+import { copyToClipboard } from "@/lib/clipboard";
 
 interface BioVariant {
   text: string;
@@ -45,6 +46,7 @@ interface PlanLimitPayload {
 
 export default function BioOptimizerPage() {
   const t = useTranslations("ai_bio");
+  const tCommon = useTranslations("common");
   const langT = useTranslations("languages");
   const { openWithContext } = useUpgradeModal();
 
@@ -115,8 +117,12 @@ export default function BioOptimizerPage() {
     }
   };
 
-  const copyBio = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
+  const copyBio = async (text: string, idx: number) => {
+    const ok = await copyToClipboard(text);
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setCopiedIdx(idx);
     toast.success(t("toasts.copied"));
     setTimeout(() => setCopiedIdx(null), 2000);

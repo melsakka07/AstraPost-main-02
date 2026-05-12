@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -185,15 +186,15 @@ function CopyThreadButton({ tweets }: { tweets: TweetData[] }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopyAll = useCallback(async () => {
-    try {
-      const fullThread = tweets.map((tw, i) => `${i + 1}/ ${tw.text}`).join("\n\n");
-      await navigator.clipboard.writeText(fullThread);
-      setCopied(true);
-      toast.success(t("pdf_to_thread.result.copied"));
-      setTimeout(() => setCopied(false), 2_000);
-    } catch {
+    const fullThread = tweets.map((tw, i) => `${i + 1}/ ${tw.text}`).join("\n\n");
+    const ok = await copyToClipboard(fullThread);
+    if (!ok) {
       toast.error(t("pdf_to_thread.errors.generic"));
+      return;
     }
+    setCopied(true);
+    toast.success(t("pdf_to_thread.result.copied"));
+    setTimeout(() => setCopied(false), 2_000);
   }, [tweets, t]);
 
   return (
@@ -212,14 +213,14 @@ function TweetCard({ tweet, index }: { tweet: TweetData; index: number }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(tweet.text);
-      setCopied(true);
-      toast.success(t("pdf_to_thread.result.copied"));
-      setTimeout(() => setCopied(false), 2_000);
-    } catch {
+    const ok = await copyToClipboard(tweet.text);
+    if (!ok) {
       toast.error(t("pdf_to_thread.errors.generic"));
+      return;
     }
+    setCopied(true);
+    toast.success(t("pdf_to_thread.result.copied"));
+    setTimeout(() => setCopied(false), 2_000);
   }, [tweet.text, t]);
 
   return (

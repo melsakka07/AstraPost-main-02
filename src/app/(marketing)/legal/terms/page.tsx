@@ -109,7 +109,7 @@ export default async function TermsPage() {
             <Card key={index} className="bg-primary/5 border-none shadow-none">
               <CardContent className="flex flex-col items-center gap-2 pt-6 text-center">
                 {card.icon}
-                <h3 className="font-semibold">{card.title}</h3>
+                <h2 className="font-semibold">{card.title}</h2>
                 <p className="text-muted-foreground text-sm">{card.description}</p>
               </CardContent>
             </Card>
@@ -150,7 +150,7 @@ export default async function TermsPage() {
                 <Mail className="text-primary h-5 w-5" />
               </div>
               <div>
-                <h4 className="font-semibold">{t("terms_cta_heading")}</h4>
+                <h3 className="font-semibold">{t("terms_cta_heading")}</h3>
                 <p className="text-muted-foreground text-sm">{t("terms_cta_desc")}</p>
               </div>
             </div>

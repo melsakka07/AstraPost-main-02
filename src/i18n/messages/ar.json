@@ -1924,6 +1924,7 @@
       "accounts": "الحسابات",
       "ai_voice": "صوت الذكاء الاصطناعي",
       "notifications": "الإشعارات",
+      "team": "الفريق",
       "privacy": "الخصوصية"
     },
     "profile": {
@@ -2074,6 +2075,7 @@
       "upgrade_required_desc": "إدارة الفريق متاحة فقط في خطة الوكالة.",
       "upgrade_cta": "الترقية الآن",
       "members_count": "الأعضاء ({current}/{max})",
+      "members_count_with_pending": "الأعضاء ({current}/{max}) · {pending} قيد الانتظار",
       "members_description": "الأشخاص الذين لديهم وصول إلى مساحة العمل هذه.",
       "table_user": "المستخدم",
       "table_role": "الدور",
@@ -2705,7 +2707,8 @@
     "release_4_item_3": "تحليلات أساسية: عرض مرات الظهور والإعجابات وإعادات التغريد"
   },
   "common": {
-    "made_with_astrapost": "صُنع بواسطة AstraPost"
+    "made_with_astrapost": "صُنع بواسطة AstraPost",
+    "copy_failed": "فشل النسخ إلى الحافظة"
   },
   "chat": {
     "title": "مساعد AstraPost",
