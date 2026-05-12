@@ -258,10 +258,10 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // Load messages from localStorage on mount
+  // Load messages from sessionStorage on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = sessionStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
@@ -275,10 +275,10 @@ export default function ChatPage() {
     }
   }, [setMessages]);
 
-  // Save messages to localStorage when they change
+  // Save messages to sessionStorage when they change
   useEffect(() => {
     if (typeof window !== "undefined" && messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     }
   }, [messages]);
 
@@ -305,7 +305,7 @@ export default function ChatPage() {
 
   const clearMessages = () => {
     setMessages([]);
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
     toast.success(t("chat_cleared"));
   };
 

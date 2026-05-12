@@ -188,11 +188,7 @@ export default async function AnalyticsPage({
         .where(
           and(
             eq(posts.userId, session.user.id),
-            gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate),
-            and(
-              eq(posts.userId, session.user.id),
-              gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate)
-            )
+            gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate)
           )
         )
         .then((rows) => rows.filter((r) => new Date(r.fetchedAt) < startDate)),

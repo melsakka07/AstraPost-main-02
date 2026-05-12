@@ -1,5 +1,48 @@
 # Latest Updates
 
+## 2026-05-12 — Page Audit Sprint 1: 9 Fixes Across Auth, Data Integrity, Performance & Security
+
+Implemented the Sprint 1 remediation items from `docs/audit/pages-audit.md` (verified 2026-05-12).
+
+### Phase 1: Quick Wins
+
+- **Defense-in-depth auth**: Added `getTeamContext()` guard to `youtube-to-thread/page.tsx` and `pdf-to-thread/page.tsx` for consistency with sibling AI pages
+- **Team settings page**: Wrapped in `DashboardPageWrapper`, added null guard for `ownerUser` (removed `ownerUser!` assertions), removed redundant `auth.api.getSession()` (uses `ctx.session`), parallelized 4 DB queries into `Promise.all`
+- **Analytics duplicate `eq()`**: Removed nested duplicate `and(eq(...), gte(...))` condition in `prevSnapshots` query
+- **Agentic trial lock**: Replaced raw `dbUser?.plan === "free"` check with `getUserPlanType()` from `@/lib/middleware/require-plan` for proper trial → "trial" mapping
+
+### Phase 2: Transactional Integrity
+
+- **`posts/[postId]` PUT**: Post update + tweet mutation now wrapped in single `db.transaction()` — prevents inconsistency window where post is mutated but tweets remain in old state
+- **`posts/[postId]` DELETE**: Queue job removal now happens AFTER `db.delete()` — if DB delete fails, the queue job survives for self-healing
+- **PDF-to-thread generate**: `recordAiUsage()` + `db.update(pdfThreadJobs)` wrapped in single `db.transaction()` via `{ tx }` option (already supported by `RecordAiUsageOptions`)
+
+### Phase 3: Critical Performance/Security
+
+- **Blog sync I/O**: `fs.readFileSync` → `fs.promises.readFile`, `fs.readdirSync` → `fs.promises.readdir`, sequential `for` loop → `Promise.all` parallel file reads. `existsSync` kept (fast metadata check)
+- **Chat localStorage**: Replaced `localStorage` with `sessionStorage` for chat message persistence — cleared on tab close, no cross-session data exposure
+
+### Verification
+
+- `pnpm run check` passes (lint + typecheck + i18n)
+- `pnpm test` passes (34 files, 321 tests)
+- Convention enforcer + security reviewer audited all 9 files
+
+### Phase 4 Deferred: AI Tool Pages Server-Component Restructure
+
+**Decision:** Deferred to dedicated sprint (`feature/ai-pages-server-wrappers`).
+
+**Scope:** Convert `ai/writer` (1,169 lines), `ai/calendar` (693 lines), `ai/reply` (385 lines), `ai/bio` (324 lines) from entirely `"use client"` pages to server-component wrappers following the `compose/page.tsx` canonical pattern.
+
+**Deferral rationale — risk/reward unfavorable for this session:**
+
+- These pages work correctly in production; the audit finding is architectural (no server wrapper), not a bug or security vulnerability
+- Practical impact is minimal: flash of unauthenticated content + one extra round-trip, invisible to most users
+- No existing client subcomponents — every page is a ground-up extraction (2,571 lines total)
+- Writer page (1,169 lines) is the most complex AI page in the app; extracting without regressions requires browser-level testing of AI generation, hashtag gen, PII redaction, composer bridge, and plan-limit error flows
+- Calendar page compounds with audit §2.6 (N sequential POSTs) which should be fixed alongside the restructure
+- Estimated effort: 4-6 hours. Recommended approach: one page at a time, simplest first (`bio` → `reply` → `calendar` → `writer`)
+
 ## 2026-05-11 — Documentation Audit: 54 Discrepancies Fixed Across 11 Files
 
 Comprehensive audit of all project documentation against the codebase (source of truth). Four parallel agents cross-referenced every claim, file path, env var, script, and model reference.

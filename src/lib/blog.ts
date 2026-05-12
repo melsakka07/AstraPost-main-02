@@ -1,4 +1,5 @@
-import fs from "fs";
+import { existsSync } from "fs";
+import { readFile, readdir } from "fs/promises";
 import path from "path";
 import { serialize } from "next-mdx-remote/serialize";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
@@ -91,7 +92,7 @@ export async function getBlogPostSource(slug: string): Promise<{
 } | null> {
   try {
     const filePath = path.join(BLOG_CONTENT_PATH, `${slug}.mdx`);
-    const fileContent = fs.readFileSync(filePath, "utf8");
+    const fileContent = await readFile(filePath, "utf8");
     const frontmatter = extractFrontmatter(fileContent);
 
     if (!frontmatter || !frontmatter.title) return null;
@@ -114,7 +115,7 @@ export async function getBlogPostSource(slug: string): Promise<{
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   try {
     const filePath = path.join(BLOG_CONTENT_PATH, `${slug}.mdx`);
-    const fileContent = fs.readFileSync(filePath, "utf8");
+    const fileContent = await readFile(filePath, "utf8");
 
     const mdxSource = await serialize(fileContent, {
       parseFrontmatter: true,
@@ -149,40 +150,43 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
 }
 
 export async function getAllBlogPosts(): Promise<BlogPostMeta[]> {
-  if (!fs.existsSync(BLOG_CONTENT_PATH)) {
+  if (!existsSync(BLOG_CONTENT_PATH)) {
     return [];
   }
 
-  const files = fs.readdirSync(BLOG_CONTENT_PATH);
-  const posts: BlogPostMeta[] = [];
+  const files = await readdir(BLOG_CONTENT_PATH);
+  const mdxFiles = files.filter((f) => f.endsWith(".mdx"));
 
-  for (const file of files) {
-    if (!file.endsWith(".mdx")) continue;
+  const results = await Promise.all(
+    mdxFiles.map(async (file) => {
+      const slug = file.replace(".mdx", "");
+      const filePath = path.join(BLOG_CONTENT_PATH, file);
 
-    const slug = file.replace(".mdx", "");
-    const filePath = path.join(BLOG_CONTENT_PATH, file);
+      try {
+        const fileContent = await readFile(filePath, "utf8");
+        const frontmatter = extractFrontmatter(fileContent);
 
-    try {
-      const fileContent = fs.readFileSync(filePath, "utf8");
-      const frontmatter = extractFrontmatter(fileContent);
-
-      if (frontmatter && frontmatter.title && frontmatter.excerpt) {
-        posts.push({
+        if (frontmatter && frontmatter.title && frontmatter.excerpt) {
+          return {
+            slug,
+            title: frontmatter.title,
+            excerpt: frontmatter.excerpt,
+            date: frontmatter.date || "",
+            readTime: frontmatter.readTime || "",
+            image: frontmatter.image,
+          } as BlogPostMeta;
+        }
+      } catch (error) {
+        logger.error("blog_post_read_failed", {
           slug,
-          title: frontmatter.title,
-          excerpt: frontmatter.excerpt,
-          date: frontmatter.date || "",
-          readTime: frontmatter.readTime || "",
-          image: frontmatter.image,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
-    } catch (error) {
-      logger.error("blog_post_read_failed", {
-        slug,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+      return null;
+    })
+  );
+
+  const posts = results.filter((p): p is BlogPostMeta => p !== null);
 
   // Sort by date descending
   return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
