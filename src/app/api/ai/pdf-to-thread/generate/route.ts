@@ -131,21 +131,48 @@ export async function POST(req: Request) {
       outputTokens = result.usage?.outputTokens ?? 0;
       const latencyMs = Math.round(performance.now() - t0);
 
-      // ── Record AI usage ──────────────────────────────────────────
-      await recordAiUsage({
-        userId: session.user.id,
-        type: "pdf_to_thread",
-        model: modelId,
-        subFeature: "summarize.sync",
-        tokensIn: inputTokens,
-        tokensOut: outputTokens,
-        costEstimateCents: estimateCost(modelId, inputTokens, outputTokens),
-        promptVersion: "pdf_to_thread:v1",
-        latencyMs,
-        fallbackUsed: false,
-        inputPrompt: prompt,
-        outputContent: object,
-        language,
+      // ── Map tweets to schema format ───────────────────────────────────
+      const threadTweets = object.tweets.map((t) => ({
+        text: t,
+        charCount: t.length,
+      }));
+
+      // ── Record AI usage + update job in a single transaction ──────
+      // Usage tracking failure is less critical than job state inconsistency,
+      // so we commit both writes atomically.
+      // At this point jobId is guaranteed non-null (validated by ownership + status checks above).
+      const finalJobId = jobId!;
+      await db.transaction(async (tx) => {
+        await recordAiUsage({
+          userId: session.user.id,
+          type: "pdf_to_thread",
+          model: modelId,
+          subFeature: "summarize.sync",
+          tokensIn: inputTokens,
+          tokensOut: outputTokens,
+          costEstimateCents: estimateCost(modelId, inputTokens, outputTokens),
+          promptVersion: "pdf_to_thread:v1",
+          latencyMs,
+          fallbackUsed: false,
+          inputPrompt: prompt,
+          outputContent: object,
+          language,
+          tx,
+        });
+
+        await tx
+          .update(pdfThreadJobs)
+          .set({
+            status: "ready",
+            threadResult: {
+              tweets: threadTweets,
+              title: object.title,
+              sourceLanguage: object.sourceLanguage as "ar" | "en",
+            },
+            completedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(pdfThreadJobs.id, finalJobId));
       });
     } catch (generationError) {
       logger.error("pdf_thread_generation_error", {
@@ -168,12 +195,6 @@ export async function POST(req: Request) {
       throw generationError;
     }
 
-    // ── Map tweets to schema format ───────────────────────────────────
-    const threadTweets = object.tweets.map((t) => ({
-      text: t,
-      charCount: t.length,
-    }));
-
     // ── Moderation check ──────────────────────────────────────────────
     const modResult = await checkModeration(object.tweets.join("\n"));
     if (modResult) {
@@ -189,21 +210,6 @@ export async function POST(req: Request) {
 
       return modResult;
     }
-
-    // ── Update job to ready ───────────────────────────────────────────
-    await db
-      .update(pdfThreadJobs)
-      .set({
-        status: "ready",
-        threadResult: {
-          tweets: threadTweets,
-          title: object.title,
-          sourceLanguage: object.sourceLanguage as "ar" | "en",
-        },
-        completedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(pdfThreadJobs.id, jobId));
 
     logger.info("pdf_to_thread_generated", {
       correlationId,

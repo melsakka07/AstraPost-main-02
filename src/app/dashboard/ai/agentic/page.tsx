@@ -7,6 +7,7 @@ import { AgenticPostingClient } from "@/components/ai/agentic-posting-client";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { xAccounts, user } from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { generateSeoMetadata } from "@/lib/seo";
@@ -34,7 +35,7 @@ export default async function AgenticPostingPage() {
   const [dbUser, accounts] = await Promise.all([
     db.query.user.findFirst({
       where: eq(user.id, session.user.id),
-      columns: { plan: true, voiceProfile: true, trialEndsAt: true },
+      columns: { voiceProfile: true },
     }),
     db
       .select({
@@ -47,8 +48,8 @@ export default async function AgenticPostingPage() {
       .where(and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, true))),
   ]);
 
-  const isTrialActive = dbUser?.trialEndsAt && new Date() < dbUser.trialEndsAt;
-  const isLocked = !isTrialActive && dbUser?.plan === "free";
+  const userPlan = await getUserPlanType(session.user.id);
+  const isLocked = userPlan === "free";
 
   const typedAccounts: XAccountOption[] = accounts.map((a) => ({
     id: a.id,
@@ -63,7 +64,7 @@ export default async function AgenticPostingPage() {
         xAccounts={typedAccounts}
         hasVoiceProfile={!!dbUser?.voiceProfile}
         isLocked={isLocked}
-        userPlan={dbUser?.plan ?? null}
+        userPlan={userPlan}
       />
     </DashboardPageWrapper>
   );

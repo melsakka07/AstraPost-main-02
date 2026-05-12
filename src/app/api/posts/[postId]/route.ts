@@ -211,29 +211,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
     (existingPost.status === "failed" || existingPost.status === "paused_needs_reconnect") &&
     newStatus === "scheduled";
 
-  // 2. Update Post
-  await db
-    .update(posts)
-    .set({
-      scheduledAt: newScheduledAt,
-      status: newStatus,
-      updatedAt: new Date(),
-      approvedBy,
-      approvedAt,
-      reviewerNotes,
-      ...(isRecoveringFromFailure && {
-        failReason: null,
-        lastErrorCode: null,
-        lastErrorAt: null,
-      }),
-    })
-    .where(eq(posts.id, postId));
+  // 2. Update post + tweets in a single transaction so a failure mid-way
+  //    never leaves the post mutated while tweets remain in their old state.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(posts)
+      .set({
+        scheduledAt: newScheduledAt,
+        status: newStatus,
+        updatedAt: new Date(),
+        approvedBy,
+        approvedAt,
+        reviewerNotes,
+        ...(isRecoveringFromFailure && {
+          failReason: null,
+          lastErrorCode: null,
+          lastErrorAt: null,
+        }),
+      })
+      .where(eq(posts.id, postId));
 
-  // 3. Update Tweets (only if provided) — wrapped in a transaction so a
-  //    failure mid-loop never leaves the post in a partial (tweetless) state.
-  if (body.tweets) {
-    const tweetUpdates = body.tweets;
-    await db.transaction(async (tx) => {
+    if (body.tweets) {
+      const tweetUpdates = body.tweets;
       await tx.delete(tweets).where(eq(tweets.postId, postId));
 
       for (let i = 0; i < tweetUpdates.length; i++) {
@@ -261,10 +260,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
           }
         }
       }
-    });
-  }
+    }
+  });
 
-  // 4. Handle Queue
+  // 3. Handle Queue (outside transaction — CLAUDE.md rule #13)
   const needsReschedule =
     newStatus === "scheduled" &&
     (existingPost.status !== "scheduled" ||
@@ -336,7 +335,10 @@ export async function DELETE(
   const ownershipError = await checkPostOwnership(existingPost, ctx);
   if (ownershipError) return ownershipError;
 
-  // 2. Remove from Queue if scheduled
+  // 2. Delete from DB first — if this fails, the queue job survives and can self-heal
+  await db.delete(posts).where(eq(posts.id, postId));
+
+  // 3. Remove from Queue after DB delete succeeds
   try {
     if (existingPost.status === "scheduled") {
       const job = await scheduleQueue.getJob(postId);
@@ -345,9 +347,6 @@ export async function DELETE(
   } catch (e) {
     logger.error("Queue removal failed", { error: e });
   }
-
-  // 3. Delete from DB
-  await db.delete(posts).where(eq(posts.id, postId));
 
   const res = Response.json({ success: true });
   res.headers.set("x-correlation-id", correlationId);
