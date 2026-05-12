@@ -29,6 +29,7 @@ import {
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import { useSession } from "@/lib/auth-client";
+import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
 
 interface PlanLimitPayload {
@@ -48,6 +49,7 @@ interface PlanLimitPayload {
 
 export default function AffiliatePage() {
   const t = useTranslations("affiliate");
+  const tCommon = useTranslations("common");
   const { data: session } = useSession();
   const { openWithContext } = useUpgradeModal();
   const [url, setUrl] = useState("");
@@ -117,10 +119,14 @@ export default function AffiliatePage() {
     }
   };
 
-  const copyToClipboard = () => {
+  const handleCopyResult = async () => {
     if (!result) return;
     const text = `${result.tweet}\n\n${result.hashtags.join(" ")}\n\n${result.affiliateUrl}`;
-    navigator.clipboard.writeText(text);
+    const ok = await copyToClipboard(text);
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success(t("toasts.copied"));
@@ -222,7 +228,7 @@ export default function AffiliatePage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={copyToClipboard}
+                  onClick={handleCopyResult}
                   aria-label={t("copy_aria_label")}
                 >
                   {copied ? (

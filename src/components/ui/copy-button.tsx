@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 
 interface CopyButtonProps extends React.ComponentProps<typeof Button> {
@@ -23,9 +24,9 @@ export function CopyButton({ value, className, variant = "outline", ...props }: 
       size="icon"
       variant={variant}
       className={cn("relative z-10 h-6 w-6 text-zinc-50 md:h-8 md:w-8", className)}
-      onClick={() => {
-        navigator.clipboard.writeText(value);
-        setHasCopied(true);
+      onClick={async () => {
+        const ok = await copyToClipboard(value);
+        if (ok) setHasCopied(true);
       }}
       {...props}
     >

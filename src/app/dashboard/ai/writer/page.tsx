@@ -40,6 +40,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import { useSession } from "@/lib/auth-client";
+import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
 import { type AiLengthOptionId } from "@/lib/schemas/common";
 import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
@@ -98,6 +99,7 @@ const TAB_META: Record<ActiveTab, { icon: LucideIcon; titleKey: string; descKey:
 function AIWriterContent() {
   const searchParams = useSearchParams();
   const t = useTranslations("ai_writer");
+  const tCommon = useTranslations("common");
   const langT = useTranslations("languages");
   const initialTab = (searchParams?.get("tab") as ActiveTab | null) ?? "thread";
   const initialTopic = searchParams?.get("topic") ?? "";
@@ -286,15 +288,23 @@ function AIWriterContent() {
     }
   };
 
-  const copyAllTweets = () => {
-    navigator.clipboard.writeText(generatedTweets.join("\n\n---\n\n"));
+  const copyAllTweets = async () => {
+    const ok = await copyToClipboard(generatedTweets.join("\n\n---\n\n"));
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
     toast.success(t("toasts.copied"));
   };
 
-  const copyTweet = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
+  const copyTweet = async (text: string, idx: number) => {
+    const ok = await copyToClipboard(text);
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setCopiedTweetIdx(idx);
     toast.success(t("toasts.copied"));
     setTimeout(() => setCopiedTweetIdx(null), 2000);
@@ -362,9 +372,13 @@ function AIWriterContent() {
     }
   };
 
-  const copyUrlThread = () => {
+  const copyUrlThread = async () => {
     if (!urlResult) return;
-    navigator.clipboard.writeText(urlResult.tweets.join("\n\n---\n\n"));
+    const ok = await copyToClipboard(urlResult.tweets.join("\n\n---\n\n"));
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setUrlCopied(true);
     setTimeout(() => setUrlCopied(false), 2000);
     toast.success(t("toasts.copied"));
@@ -415,8 +429,12 @@ function AIWriterContent() {
     }
   };
 
-  const copyVariant = (text: string, idx: number) => {
-    navigator.clipboard.writeText(text);
+  const copyVariant = async (text: string, idx: number) => {
+    const ok = await copyToClipboard(text);
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setVariantCopied(idx);
     setTimeout(() => setVariantCopied(null), 2000);
     toast.success(t("toasts.copied"));
@@ -624,8 +642,12 @@ function AIWriterContent() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                navigator.clipboard.writeText(generatedTweets[0] ?? "");
+                              onClick={async () => {
+                                const ok = await copyToClipboard(generatedTweets[0] ?? "");
+                                if (!ok) {
+                                  toast.error(tCommon("copy_failed"));
+                                  return;
+                                }
                                 setCopiedAll(true);
                                 setTimeout(() => setCopiedAll(false), 2000);
                                 toast.success(t("copy"));

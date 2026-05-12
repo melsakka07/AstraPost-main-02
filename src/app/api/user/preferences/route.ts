@@ -18,10 +18,26 @@ function isValidIANATimezone(tz: string): boolean {
   }
 }
 
-const preferencesSchema = z.object({
-  timezone: z.string().min(1).refine(isValidIANATimezone, { message: "Invalid IANA timezone" }),
-  language: z.string().min(2).max(10),
+const notificationSettingsSchema = z.object({
+  postFailures: z.boolean().optional(),
+  aiQuotaWarning: z.boolean().optional(),
+  trialExpiry: z.boolean().optional(),
+  teamInvites: z.boolean().optional(),
 });
+
+const preferencesSchema = z
+  .object({
+    timezone: z
+      .string()
+      .min(1)
+      .refine(isValidIANATimezone, { message: "Invalid IANA timezone" })
+      .optional(),
+    language: z.string().min(2).max(10).optional(),
+    notificationSettings: notificationSettingsSchema.optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  });
 
 // One year — locale preference is stable
 const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
@@ -49,19 +65,26 @@ export async function PATCH(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { timezone, language } = parsed.data;
+    const { timezone, language, notificationSettings } = parsed.data;
 
-    await db.update(user).set({ timezone, language }).where(eq(user.id, session.user.id));
+    const updateData: Record<string, unknown> = {};
+    if (timezone !== undefined) updateData.timezone = timezone;
+    if (language !== undefined) updateData.language = language;
+    if (notificationSettings !== undefined) updateData.notificationSettings = notificationSettings;
+
+    await db.update(user).set(updateData).where(eq(user.id, session.user.id));
 
     // Persist locale cookie so layout lang/dir attributes update immediately
-    const cookieStore = await cookies();
-    cookieStore.set("locale", language, {
-      maxAge: LOCALE_COOKIE_MAX_AGE,
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-    });
+    if (language) {
+      const cookieStore = await cookies();
+      cookieStore.set("locale", language, {
+        maxAge: LOCALE_COOKIE_MAX_AGE,
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+      });
+    }
 
     const res = Response.json({ success: true });
     res.headers.set("x-correlation-id", correlationId);

@@ -48,11 +48,17 @@ export function NotificationPreferences({ initialSettings }: NotificationPrefere
         body: JSON.stringify({ notificationSettings: newSettings }),
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        const errorMessage =
+          errorData?.message || errorData?.error || t("notifications.error_save");
+        throw new Error(errorMessage);
+      }
       toast.success(t("notifications.saved"));
     } catch (e) {
       setSettings(settings); // Revert on error
-      toast.error(t("notifications.error_save"));
+      const errorMessage = e instanceof Error ? e.message : t("notifications.error_save");
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }

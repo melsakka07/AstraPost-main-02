@@ -10,6 +10,7 @@ import { UserProfile } from "@/components/auth/user-profile";
 import { Button } from "@/components/ui/button";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useSession } from "@/lib/auth-client";
+import { copyToClipboard } from "@/lib/clipboard";
 import type { Components } from "react-markdown";
 
 const H1: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
@@ -189,12 +190,12 @@ function CopyButton({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
+    const ok = await copyToClipboard(text);
+    if (ok) {
       setCopied(true);
       toast.success(labels.copied);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
+    } else {
       toast.error(labels.failed);
     }
   };

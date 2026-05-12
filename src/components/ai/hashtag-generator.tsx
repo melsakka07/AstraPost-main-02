@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useSession } from "@/lib/auth-client";
 import { clientLogger } from "@/lib/client-logger";
+import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
 import { LANGUAGES } from "@/lib/constants";
 
@@ -45,6 +46,7 @@ export function HashtagGenerator() {
   const { data: session } = useSession();
   const { openWithContext } = useUpgradeModal();
   const t = useTranslations("hashtag_generator");
+  const tCommon = useTranslations("common");
   const [content, setContent] = useState("");
   const [language, setLanguage] = useState("ar");
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
@@ -116,16 +118,24 @@ export function HashtagGenerator() {
     }
   };
 
-  const copyHashtag = (hashtag: string, index: number) => {
-    navigator.clipboard.writeText(hashtag);
+  const copyHashtag = async (hashtag: string, index: number) => {
+    const ok = await copyToClipboard(hashtag);
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
     toast.success(t("copied"));
   };
 
-  const copyAllHashtags = () => {
+  const copyAllHashtags = async () => {
     const allTags = generatedHashtags.join(" ");
-    navigator.clipboard.writeText(allTags);
+    const ok = await copyToClipboard(allTags);
+    if (!ok) {
+      toast.error(tCommon("copy_failed"));
+      return;
+    }
     setAllCopied(true);
     setTimeout(() => setAllCopied(false), 2000);
     toast.success(t("copied"));

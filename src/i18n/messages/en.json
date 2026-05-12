@@ -1924,6 +1924,7 @@
       "accounts": "Accounts",
       "ai_voice": "AI Voice",
       "notifications": "Notifications",
+      "team": "Team",
       "privacy": "Privacy"
     },
     "profile": {
@@ -2074,6 +2075,7 @@
       "upgrade_required_desc": "Team management is only available on the Agency plan.",
       "upgrade_cta": "Upgrade now",
       "members_count": "Members ({current}/{max})",
+      "members_count_with_pending": "Members ({current}/{max}) · {pending} pending",
       "members_description": "People with access to this workspace.",
       "table_user": "User",
       "table_role": "Role",
@@ -2643,7 +2645,8 @@
     "release_4_item_3": "Basic Analytics: View post impressions, likes, and retweets"
   },
   "common": {
-    "made_with_astrapost": "Made with AstraPost"
+    "made_with_astrapost": "Made with AstraPost",
+    "copy_failed": "Failed to copy to clipboard"
   },
   "command_palette": {
     "open": "Open command palette",

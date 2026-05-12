@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, CreditCard, Bell, Zap } from "lucide-react";
+import { User, CreditCard, Bell, Users, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     { label: t("nav.profile"), href: "/dashboard/settings/profile", icon: User },
     { label: t("nav.subscription"), href: "/dashboard/settings/billing", icon: CreditCard },
     { label: t("nav.notifications"), href: "/dashboard/settings/notifications", icon: Bell },
+    { label: t("nav.team"), href: "/dashboard/settings/team", icon: Users },
     { label: t("nav.accounts"), href: "/dashboard/settings/integrations", icon: Zap },
   ];
 

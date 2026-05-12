@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
 
 interface AffiliateLink {
@@ -34,6 +35,7 @@ interface AffiliateLink {
 
 export function RecentAffiliateLinks() {
   const t = useTranslations("affiliate");
+  const tCommon = useTranslations("common");
   const [links, setLinks] = useState<AffiliateLink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,9 +58,13 @@ export function RecentAffiliateLinks() {
     fetchLinks();
   }, [fetchLinks]);
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(t("toasts.copied"));
+  const handleCopy = async (text: string) => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      toast.success(t("toasts.copied"));
+    } else {
+      toast.error(tCommon("copy_failed"));
+    }
   };
 
   const handleSchedule = (link: AffiliateLink) => {

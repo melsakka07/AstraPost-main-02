@@ -1,5 +1,44 @@
 # Latest Updates
 
+## 2026-05-12 — Tier 3 Bug Batch: 5 Known-Defect Fixes (Notifications, Team Nav, Member Count, Legal A11y, Clipboard)
+
+Knocked out the five audit-confirmed Tier 3 defects from `.claude/plans/2026-05-12-tier3-bug-batch.md` before starting the deeper Tier 1 UX audit.
+
+### Phase 1 — Notification preferences (functional fix)
+
+- Discovered the PATCH endpoint silently rejected every save: schema only accepted `{ timezone, language }` (required), so `{ notificationSettings }` produced a 400 every toggle.
+- Extended `src/app/api/user/preferences/route.ts` schema: all three fields now optional with a refinement requiring at least one present; conditional `db.update()` of provided fields only.
+- `src/app/dashboard/settings/notifications/page.tsx` now loads `user.notificationSettings` from DB (defaults preserved as fallback).
+- `notification-preferences.tsx` surfaces real API error messages in the save-failure toast instead of generic copy.
+
+### Phase 2 — Team tab discoverable
+
+- Added `Users` icon + `nav.team` tab entry to `src/app/dashboard/settings/layout.tsx` (between Notifications and Accounts).
+- Added `settings.nav.team` translation key — `Team` / `الفريق`.
+
+### Phase 3 — Member count UX honest with gate
+
+- Researcher pass on `src/app/api/team/invite/route.ts` confirmed gate counts `teamMembers + pendingInvitations` (owner not counted).
+- Split `currentCount` (accepted members only) from `pendingCount` (pending invites). New i18n key `team.members_count_with_pending` renders `Members (X/N) · Y pending` when pending > 0; falls back to original key when 0.
+
+### Phase 4 — Legal heading hierarchy (WCAG 1.3.1)
+
+- `legal/terms/page.tsx` + `legal/privacy/page.tsx`: summary card titles `h3 → h2`, CTA heading `h4 → h3`. Visual size unchanged (controlled by Tailwind classes).
+
+### Phase 5 — Clipboard helper with execCommand fallback
+
+- New `src/lib/clipboard.ts` — async `copyToClipboard(text)` tries `navigator.clipboard.writeText`, falls back to off-screen textarea + `document.execCommand("copy")`, returns success boolean.
+- Migrated all 19 prior `navigator.clipboard.writeText(...)` call sites across 13 files. Copy buttons now show real error toast (`common.copy_failed`) when clipboard is blocked instead of silently faking success.
+- Final grep confirms `navigator.clipboard` exists only inside the helper itself.
+
+### Verification
+
+- `pnpm run check` passes (lint + typecheck + i18n; 2802 keys per locale)
+- `pnpm test` passes (34 files, 321 tests)
+- All five plan phases acceptance criteria met
+
+---
+
 ## 2026-05-12 — Page Audit Sprint 1: 9 Fixes Across Auth, Data Integrity, Performance & Security
 
 Implemented the Sprint 1 remediation items from `docs/audit/pages-audit.md` (verified 2026-05-12).
