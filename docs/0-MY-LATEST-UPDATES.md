@@ -1,5 +1,229 @@
 # Latest Updates
 
+## 2026-05-14 — Phase 1 Billing Audit: Rate-Limiter, Marketing Alignment, Preview Prices, Rollover
+
+Implemented Phase 1 (XS/S quick wins) from `.claude/plans/2026-05-14-billing-pricing-plans-audit-findings.md`. Fixes audit findings #1, #2, #3, #5, #8, #11.
+
+### Rate-limiter arg-order bug (#5)
+
+Four endpoints passed `ctx.session.user.id` (a UUID) in the `plan` slot of `checkRateLimit(userId, plan, type)`, causing every user to be throttled at free-tier limits regardless of actual plan. Fixed by resolving plan via `getUserPlanType(ctx.currentTeamId)` at:
+
+- `src/app/api/ai/youtube-to-thread/[jobId]/route.ts` (DELETE handler)
+- `src/app/api/ai/pdf-to-thread/[jobId]/route.ts` (GET + DELETE handlers)
+- `src/app/api/ai/pdf-to-thread/upload/route.ts` (POST handler)
+
+### Marketing alignment (#1, #2, #3)
+
+Resolved numeric drift between EN/AR marketing claims and code enforcement (user chose: lower marketing to match code):
+
+- Free posts: "50" → "20" (`en.json:2396`, `ar.json:2396`)
+- Pro X accounts: "5" → "3" (`en.json:2409`, `ar.json:2409`)
+- Agency X accounts: "Unlimited" → "Up to 10" (`en.json:2426`, `ar.json:2426`)
+- Removed "Priority support" claim (`en.json:2413`, `ar.json:2413`) — no enforcement code exists
+- Removed "Dedicated account manager" claim (`en.json:2431`, `ar.json:2431`) — no enforcement code exists
+- Updated `pricing-table.tsx` to remove dropped feature keys from render arrays
+
+### Plan-change preview pricing (#8)
+
+`src/app/api/billing/change-plan/preview/route.ts` no longer uses hardcoded `monthlyPrices` object. Now sources prices from `src/lib/pricing.ts` via `getMonthlyPrice`, `getAnnualPrice`, `formatPriceWithInterval`, `formatPrice`. Annual plans render with monthly equivalent: `$290.00/year (~$24.17/mo)`.
+
+### AI counter rollover sentinel (#11)
+
+`src/app/api/cron/ai-counter-rollover/route.ts`: When `aiGenerationsPerMonth === -1` (unlimited), the cron now **deletes** the counter row instead of writing `limit: 0`. No row = semantically correct (not exhausted). Self-healing path: downgrade → `tryConsumeAiQuota` auto-creates row with correct limit.
+
+### Docstring fix (#11)
+
+`src/lib/services/ai-quota-atomic.ts:264`: `refreshLimitAndConsume` JSDoc updated from "Handles mid-month plan upgrades" → "Handles mid-month plan changes (upgrade or downgrade)".
+
+**Verification:** `pnpm run check` passes (0 errors, 0 warnings, 2800 matched i18n keys), `pnpm test` passes (34 files, 322 tests). Convention-enforcer + security-reviewer audits clean (no regressions).
+
+---
+
+## 2026-05-14 — Phase 4 Billing Audit: -1 Sentinel, enabledTools Refactor, Tier Proposals
+
+Implemented Phase 4 (P3 fixes) from `.claude/plans/please-audit-deeply-the-crispy-gray.md`.
+
+### -1 sentinel for Agency AI quota
+
+Agency `aiGenerationsPerMonth` changed from `Infinity` to `-1` sentinel — consistent with `aiImagesPerMonth: -1` and `maxInspirationBookmarks: -1`. Updated 8 files: `plan-limits.ts`, `require-plan.ts` (`checkAiQuotaDetailed`), `ai-quota-atomic.ts` (3 checks), `ai-quota.ts`, `ai-counter-rollover/route.ts`, `change-plan/preview/route.ts`, and `ai-quota-atomic.test.ts`.
+
+### enabledTools refactor — 18 booleans → 1 array
+
+Replaced 18 `canUseXyz: boolean` fields in `PlanLimits` with a single `enabledTools: ToolKey[]` array. New `ToolKey` type in `plan-limits.ts` defines 18 tool keys. `makeFeatureGate` factory now checks `limits.enabledTools.includes(toolKey)` instead of `limits[limitFlag]`.
+
+**Files changed:**
+
+- `src/lib/plan-limits.ts`: New `ToolKey` type, `enabledTools: ToolKey[]` in interface, `PRO_TOOLS` constant for DRY plan definitions, removed 18 boolean fields
+- `src/lib/middleware/require-plan.ts`: Updated `makeFeatureGate` signature, all 18 callers, removed `BooleanPlanLimitKey` type
+- `src/app/dashboard/ai/page.tsx`: `buildLockedMap()` now uses `limits.enabledTools.includes()`
+- `src/app/api/billing/change-plan/preview/route.ts`: Feature label map uses ToolKey-based comparison
+- `src/lib/middleware/require-plan.test.ts`: Drift guard test updated to compare `enabledTools` arrays
+
+### Starter & Team tier proposals (no implementation)
+
+Proposed Starter tier ($9–12/mo: Infinity posts, 50 AI text, 2 X accounts, no Instagram/LinkedIn) and Team tier ($49/mo: 2 seats, 200 AI text, 5 X accounts, full Pro tools). See Phase 4 output for full specs.
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 322 tests).
+
+---
+
+## 2026-05-14 — Phase 3 Billing Audit: Pro Annual Parity, Schedule Horizon, Analytics Retention, billingCycle
+
+Implemented Phase 3 (P2 fixes) from `.claude/plans/please-audit-deeply-the-crispy-gray.md`.
+
+### Pro Annual feature parity (user decision: equalize, discount only)
+
+- `src/lib/plan-limits.ts`: Pro Annual now matches Pro Monthly feature set exactly — `aiGenerationsPerMonth: 150` (was 250), `maxXAccounts: 3` (was 4), `youtubeToThreadMonthly: 30` (was 50), `maxInstagramAccounts: 1` (was 2). Annual users now get the same features as monthly users at ~17% discount ($290/yr vs $29/mo).
+- `src/components/billing/pricing-table.tsx`: Pro Annual card now shows identical 15 features as Pro Monthly (removed 4 annual-exclusive feature rows). Differentiation is purely price: `~$24.17/mo` with 17% savings badge.
+- `src/lib/middleware/require-plan.test.ts`: Updated Pro Annual account limit tests from 4→3 accounts.
+
+### Schedule horizon gate
+
+- `src/lib/plan-limits.ts`: Added `maxScheduleHorizonDays` to `PlanLimits` interface + all plans: free 7, trial 7, pro_monthly 90, pro_annual 90, agency Infinity.
+- `src/lib/middleware/require-plan.ts`: Added `"schedule_horizon"` to `GatedFeature` type and `checkScheduleHorizonDetailed(userId, scheduledAt)` gate function.
+- `src/app/api/posts/route.ts`: Gate enforced when `scheduledAt` is provided and action is not draft — blocks free/trial users from scheduling more than 7 days ahead.
+
+### Analytics retention at query time
+
+- `src/app/api/analytics/viral/route.ts`: Now enforces per-plan analytics retention window. Query `days` parameter capped at plan's `analyticsRetentionDays` (free: 7, pro: 90, agency: 365). Also added missing `checkViralScoreAccessDetailed` gate (was serving Pro feature to free users) and fixed NaN bypass in `parseInt` validation. Uses `PLAN_LIMITS` constant directly instead of `getPlanLimits()` function per hard rule #6.
+- Export route (`src/app/api/analytics/export/route.tsx`) already had retention enforcement via `getPlanMetadata` — no changes needed.
+
+### subscriptions.billingCycle column
+
+- `src/lib/schema.ts`: Added `billingCycleEnum` (`monthly | annual`) + nullable `billingCycle` column on `subscriptions` table.
+- `drizzle/0081_blushing_living_lightning.sql`: Migration SQL generated via `pnpm db:generate`.
+- `src/app/api/billing/webhook/route.ts`: Checkout handler derives `billingCycle` from Stripe price's `recurring.interval` and populates on insert + upsert.
+
+### user.trialExtendedAt (user decision: keep as audit trail)
+
+No changes — kept as write-only audit column. Admin extend-trial route writes it; no application code reads it (intentional).
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 322 tests).
+
+---
+
+## 2026-05-14 — Phase 1 Final: Pricing Table Per-Month Equivalent Fix
+
+Completed the last remaining piece of Phase 1 (P0 pricing fix) from `.claude/plans/please-audit-deeply-the-crispy-gray.md`.
+
+- `src/components/billing/pricing-table.tsx`: Replaced hardcoded `perMonthEquivalent` strings (`"~$24/mo"`, `"~$83/mo"`) with computed values from `getMonthlyPrice()` + `formatPrice()` imported from `@/lib/pricing`. Pro Annual now shows `~$24.17/mo` (29000/12 = 2417 cents), Agency Annual shows `~$82.50/mo` (99000/12 = 8250 cents). Single source of truth — any future price changes in `PRICING` automatically propagate to the UI.
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 322 tests). Convention-enforcer + security-reviewer clean.
+
+The rest of Phase 1 (Instagram/LinkedIn gates, pricing.ts `monthlyPrice` removal) was already implemented in a prior session — verified all enforcement points are in place.
+
+---
+
+## 2026-05-14 — Phase 2 Billing Audit: Worker Re-Gate, Trial Warning Cron, Quota Refund Fix
+
+Implemented Phase 2 (P1 fixes) from `.claude/plans/please-audit-deeply-the-crispy-gray.md`.
+
+### Worker plan re-gate + over_quota status
+
+- `src/lib/schema.ts`: Added `"over_quota"` to `postStatusEnum`. `db:generate` created `drizzle/0079_chunky_frog_thor.sql`.
+- `src/lib/queue/processors.ts`: `scheduleProcessor` now checks user's current plan post limit before publishing. If the user has downgraded (e.g., Pro→Free) and already exceeded the new plan's cap, the post is marked `over_quota` with a notification. Gracefully degrades if plan lookup fails (favors publishing over silent blocking).
+- Notification type `"post_over_quota"` added to `notificationTypeEnum` (`drizzle/0080_groovy_surge.sql`).
+
+### Trial expiry warning cron
+
+- `src/app/api/cron/trial-expiry-warning/route.ts` (NEW): Daily cron scans `user.trialEndsAt` for T-3 (60–84h) and T-1 (12–36h) windows. Sends in-app notification + email via existing `TrialEndingSoonEmail` template. Deduped: skips users already notified in last 48h. CRON_SECRET-gated.
+- `src/lib/services/email.ts`: Added `sendTrialEndingSoonEmail()` wrapping the existing React Email template.
+- Note: In-app countdown banner (`src/components/ui/trial-banner.tsx`) already existed — shows days remaining with upgrade CTA.
+
+### Quota refund-on-discard fix (15 routes)
+
+Audit found 13 AI routes that consumed quota via `aiPreamble()` but NEVER called `releaseQuota()` on failure, plus 2 routes that missed early-return paths. Fixed all 15 routes to exhaustively release quota on every discard path (Zod validation, URL checks, AI call failure, moderation flag):
+
+- HIGH (13): bio, thread, reply, tools, translate, hashtags, inspire, variants, calendar, template-generate, inspiration, agentic (POST), agentic/[id]/regenerate
+- MEDIUM (2): affiliate, summarize (already released in catch, added early-return releases)
+- Pattern applied: `releaseQuota` destructured from preamble; `await releaseQuota()` before every early return and at top of every catch block.
+
+### Marketing↔plan-limits drift inventory (read-only)
+
+Documented feature-count drift between `pricing-table.tsx` and `plan-limits.ts`:
+
+- Free plan: claims 50 posts/month, actual limit is 20. Claims 10 AI credits, actual is 20.
+- Pro Monthly: claims 5 X accounts, actual is 3. Claims 100 AI credits, actual is 150.
+- Agency: claims "Unlimited X accounts", actual cap is 10. LinkedIn + Instagram support completely unadvertised.
+- 6 Pro features enabled but invisible on pricing page (affiliate generator, variant generator, agentic posting, PDF-to-thread, YouTube-to-thread, Instagram).
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 322 tests).
+
+---
+
+## 2026-05-14 — Phase 1 Billing Audit: Instagram/LinkedIn Account Gates + Pricing Single-Source
+
+Implemented Phase 1 (P0 revenue-leak fixes) from `.claude/plans/please-audit-deeply-the-crispy-gray.md`.
+
+- `src/lib/plan-limits.ts`: Added `maxInstagramAccounts` and `maxLinkedinAccounts` to `PlanLimits` interface + all plan entries. Caps: free 0/0, trial 0/0, pro_monthly 1/0, pro_annual 2/0, agency 5/5.
+- `src/lib/middleware/require-plan.ts`: Added `checkInstagramAccountLimitDetailed` and `checkLinkedinAccountLimitDetailed` gate functions (mirror `checkAccountLimitDetailed`). Added `"instagram_accounts"` and `"linkedin_accounts"` to `GatedFeature` type.
+- `src/app/api/instagram/callback/route.ts`: Plan gate enforced BEFORE OAuth token exchange — blocks users whose plan doesn't allow Instagram accounts.
+- `src/app/api/linkedin/callback/route.ts`: Account-count gate added after existing feature gate — Agency users capped at 5 LinkedIn accounts.
+- `src/app/api/posts/route.ts`: Instagram gate enforced — blocks posts targeting Instagram when plan allows zero Instagram accounts (catches downgrade scenarios).
+- `src/lib/pricing.ts`: Removed `monthlyPrice` from annual pricing entries (was encoding contradictory $19/$23/$24 for Pro Annual). `getMonthlyPrice()` now derives from `annualPrice/12` via `Math.round()`. `monthlyPrice` made optional on `PricingConfig`.
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 322 tests).
+
+---
+
+## 2026-05-14 — Plans Audit Implementation: Trial Pro Feature Parity, Atomic Quota, Analytics Retention
+
+Completed implementation of `.claude/plans/please-audit-the-plans-smooth-graham.md`. Trial users now get full Pro feature access (14 days) with capped quotas. Critical quota & rate-limit gaps fixed.
+
+- `src/lib/plan-limits.ts`: Trial plan now mirrors Pro feature flags (threads, voice, agentic, YouTube, etc.) with capped quotas: 50 AI text, 25 images, 20 posts, 1 X account, base image models only.
+- `src/app/api/chat/route.ts`: Migrated from race-prone `checkAiQuotaDetailed` to atomic `tryConsumeAiQuota()` + `releaseAiQuota()` refund on failure. Added correlation ID logging.
+- `src/app/api/user/voice-profile/route.ts`: Replaced wrong `checkAiLimitDetailed` gate with correct `checkVoiceProfileAccessDetailed` gate via `require-plan.ts` helper.
+- `src/lib/rate-limiter.ts`: Added `trial` tier matching `pro` rate limits; trial users auto-mapped to pro tier.
+- `src/lib/middleware/require-plan.ts`: Added fire-and-forget `planChangeLog` entry on trial expiry (idempotent via userId + reason check). New gates: `checkThreadAccessDetailed`, `checkVideoUploadAccessDetailed`.
+- `src/app/api/posts/route.ts`: Thread & video/gif gates enforced on POST; blocks free users from creating threads or uploading video/gif media.
+- `src/app/api/posts/[postId]/route.ts`: Same gates in PATCH handler — blocks free users from editing a single tweet into a thread or adding video/gif to existing posts.
+- `src/app/api/media/upload/route.ts`: Video/gif gate on upload; magic-bytes detection blocks free users before file hits storage.
+- `src/app/api/cron/analytics-cleanup/route.ts` (NEW): Per-plan analytics retention enforcement cron with CRON_SECRET validation. Deletes `aiGenerations` rows older than plan retention window.
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 321 tests).
+
+---
+
+## 2026-05-14 — Thread & Video/GIF Plan Gate Enforcement
+
+Closed the gap where `canScheduleThreads` and `canUploadVideoGif` plan flags had no API-level enforcement. Free users could create threads and upload video/gif through the API despite these being Pro-only features.
+
+- `src/lib/middleware/require-plan.ts`: Added `checkThreadAccessDetailed` and `checkVideoUploadAccessDetailed` gate functions via `makeFeatureGate` factory. Added `"thread_access"` and `"video_upload"` to `GatedFeature` type.
+- `src/app/api/posts/route.ts`: Thread gate fires when `tweetsData.length > 1`; video gate fires when any tweet has media with `fileType: "video" | "gif"`.
+- `src/app/api/posts/[postId]/route.ts`: Same gates in PATCH handler — blocks free users from editing a single tweet into a thread or adding video/gif media to existing posts.
+- `src/app/api/media/upload/route.ts`: Video gate fires when magic-bytes detection classifies the upload as video or gif, blocking free users before the file hits storage.
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 321 tests).
+
+---
+
+## 2026-05-13 — Plans, Billing & Feature-Per-Plan Audit: Trial Fix, Atomic Quota, Rate Limits, Analytics Retention
+
+Implemented the full audit from `.claude/plans/please-audit-the-plans-smooth-graham.md`. Decision: trial users get full Pro feature access for 14 days (industry standard) with capped quotas.
+
+### Phase 1 — Trial plan now Pro feature flags
+
+- `src/lib/plan-limits.ts`: Trial plan now mirrors `pro_monthly` for all feature flags (`canScheduleThreads`, `canUseVoiceProfile`, `canUseAgenticPosting`, `canUseYoutubeToThread`, etc.) while keeping trial-capped quotas (50 AI, 25 images, 20 posts, 1 X account) and base image models only.
+- `src/lib/middleware/require-plan.ts`: Added fire-and-forget `planChangeLog` entry on trial expiry (idempotent via userId + reason check). Removed dead `Infinity` check in `checkAccountLimitDetailed`. Fixed inspiration gate message (was misleadingly saying "available on Pro").
+
+### Phase 2 — Critical fixes
+
+- `src/app/api/chat/route.ts`: Migrated from race-prone `checkAiQuotaDetailed` to atomic `tryConsumeAiQuota()` + `releaseAiQuota()` on failure refund. Added correlation ID logging.
+- `src/app/api/user/voice-profile/route.ts`: Replaced wrong `checkAiLimitDetailed` gate (which checks `canUseAi` — true for free) with correct `checkVoiceProfileAccessDetailed` gate. Added rate limiting + correlation ID. Manual `PlanGateFailure` construction removed.
+
+### Phase 3 — Medium gaps
+
+- `src/lib/rate-limiter.ts`: Added `trial` tier matching `pro` values; trial users mapped to pro rate limits.
+- `src/app/api/cron/analytics-cleanup/route.ts` (NEW): Per-plan analytics retention enforcement cron with `crypto.timingSafeEqual` CRON_SECRET validation. Deletes `aiGenerations` rows older than plan retention window.
+
+### Verification
+
+- `pnpm run check` passes (lint + typecheck + i18n; 2802 keys per locale)
+- `pnpm test` passes (34 files, 321 tests)
+- `require-plan.test.ts`: Updated 2 trial tests to reflect new Pro feature access
+
+---
+
 ## 2026-05-12 — Tier 3 Bug Batch: 5 Known-Defect Fixes (Notifications, Team Nav, Member Count, Legal A11y, Clipboard)
 
 Knocked out the five audit-confirmed Tier 3 defects from `.claude/plans/2026-05-12-tier3-bug-batch.md` before starting the deeper Tier 1 UX audit.

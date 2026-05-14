@@ -1,5 +1,131 @@
 # Recent Fixes & Changes
 
+## 2026-05-14 — Phase 1 Billing Audit: Rate-Limiter, Marketing Alignment, Preview Prices, Rollover
+
+### Rate-limiter arg-order bug (#5)
+
+Four endpoints (YT cancel, PDF status, PDF cancel, PDF upload) passed `ctx.session.user.id` as the `plan` argument to `checkRateLimit`, causing all users to be throttled at free-tier limits. Fixed by resolving plan via `getUserPlanType(ctx.currentTeamId)`.
+
+### Marketing alignment (#1, #2, #3)
+
+EN + AR i18n claims aligned with code enforcement (lowered marketing to match code per user decision): Free posts 50→20, Pro X accounts 5→3, Agency X accounts Unlimited→10. Removed unsupported "Priority support" and "Dedicated account manager" claims from both locales and pricing table.
+
+### Plan-change preview pricing (#8)
+
+`change-plan/preview/route.ts` now uses `pricing.ts` functions instead of hardcoded `monthlyPrices` map.
+
+### AI counter rollover sentinel (#11)
+
+Unlimited-plan counter rows now deleted on rollover instead of set to `limit: 0`. Fixed docstring in `ai-quota-atomic.ts`.
+
+### Verification
+
+`pnpm run check` (0/0/2800 keys), `pnpm test` (322/322), audits clean.
+
+---
+
+## 2026-05-14 — Phase 4 Billing Audit: -1 Sentinel, enabledTools Refactor, Tier Proposals
+
+### -1 sentinel for Agency AI quota (P3)
+
+`plan-limits.ts` Agency `aiGenerationsPerMonth` changed from `Infinity` to `-1`. Updated all 8 consumers across `require-plan.ts`, `ai-quota-atomic.ts`, `ai-quota.ts`, `ai-counter-rollover/route.ts`, and `change-plan/preview/route.ts`. Consistent with existing `-1` sentinel pattern (`aiImagesPerMonth`, `maxInspirationBookmarks`).
+
+### enabledTools refactor (P3)
+
+18 `canUseXyz` booleans replaced with single `enabledTools: ToolKey[]` in `PlanLimits`. New `ToolKey` type (18 keys) + `PRO_TOOLS` constant in `plan-limits.ts`. `makeFeatureGate` factory checks `limits.enabledTools.includes(toolKey)`. Updated callers in `require-plan.ts` (18 gates), `dashboard/ai/page.tsx`, `change-plan/preview/route.ts`, and `require-plan.test.ts`.
+
+### Starter & Team tier proposals (P3, proposal only)
+
+No implementation. Starter ($9-12/mo) and Team ($49/mo) tiers proposed based on audit §3 recommendations.
+
+---
+
+## 2026-05-14 — Phase 3 Billing Audit: Pro Annual Parity, Schedule Horizon, Analytics, billingCycle
+
+### Pro Annual feature parity (P2)
+
+Pro Annual plan (`plan-limits.ts`) now has identical feature limits as Pro Monthly. `aiGenerationsPerMonth`: 150 (was 250), `maxXAccounts`: 3 (was 4), `youtubeToThreadMonthly`: 30 (was 50), `maxInstagramAccounts`: 1 (was 2). Annual = ~17% discount only, no extra features. Pricing table UI (`pricing-table.tsx`) updated to show matching 15-feature list for both Pro plans.
+
+### Schedule horizon gate (P2)
+
+New `maxScheduleHorizonDays` plan limit: free/trial 7 days, pro 90 days, agency Infinity. New `checkScheduleHorizonDetailed` gate in `require-plan.ts` enforced in `posts/route.ts` before scheduling. Blocks free/trial users from scheduling posts more than 7 days into the future.
+
+### Analytics retention at query time (P2)
+
+`analytics/viral/route.ts` now caps query window at plan's `analyticsRetentionDays`. Also fixed: missing `checkViralScoreAccessDetailed` gate (was silently serving Pro feature to free users), NaN bypass in `parseInt` input validation. Export route already had retention enforcement via `getPlanMetadata`.
+
+### subscriptions.billingCycle (P2)
+
+New `billingCycleEnum` (`monthly | annual`) + nullable `billingCycle` column on `subscriptions` table. Webhook checkout handler populates from Stripe price `recurring.interval`. Migration: `drizzle/0081_blushing_living_lightning.sql`.
+
+### user.trialExtendedAt (kept)
+
+Decision: keep as write-only audit trail. No code changes.
+
+---
+
+## 2026-05-14 — Phase 1 Final: Pricing Table Per-Month Equivalent
+
+`src/components/billing/pricing-table.tsx` lines 153, 174: Replaced hardcoded `perMonthEquivalent` (`"~$24/mo"`, `"~$83/mo"`) with computed values from `getMonthlyPrice()` + `formatPrice()`. Eliminates the last hardcoded price display — UI now derives from the single `PRICING` source of truth. Pro Annual: `~$24.17/mo` (was `~$24/mo`), Agency Annual: `~$82.50/mo` (was `~$83/mo`).
+
+---
+
+## 2026-05-14 — Phase 2 Billing Audit: Worker Re-Gate, Trial Cron, Quota Refund
+
+### Worker plan re-gate (P1)
+
+`scheduleProcessor` now re-checks the user's current plan limits before publishing. Scenario fixed: user on Pro schedules 200 posts, downgrades to Free (20 posts/month), worker would previously publish all 200 — now marks excess as `over_quota` with notification. Re-gate gracefully degrades on plan lookup failure (Redis down) — favors publishing since creation-time validation is the primary gate.
+
+Schema: `postStatusEnum` gains `"over_quota"`. `notificationTypeEnum` gains `"post_over_quota"` and `"trial_expiring_soon"`.
+
+### Trial expiry warning cron (P1)
+
+New cron `src/app/api/cron/trial-expiry-warning/route.ts` closes the synthetic trial silence gap. Scans `user.trialEndsAt` for T-3 and T-1 windows daily. Sends in-app notification + email. Deduped via 48h lookback on existing notifications. Stripe-managed trials were already handled by webhook — this covers the free→trial→free synthetic flow.
+
+### Quota refund-on-discard (P1)
+
+Audit found 15 AI routes leaking quota on failure (13 never called `releaseQuota()`, 2 missed early-return paths). All 15 fixed to exhaustively release quota on every discard path: Zod validation failures, URL checks, AI provider errors, moderation flags. Pattern: destructure `releaseQuota` from preamble, call before every early return and in every catch block.
+
+### Marketing↔plan-limits drift (P1, read-only)
+
+Pricing table claims vs actual plan-limits values documented. Key drifts: Free tier overstates posts (50 vs 20), Pro Monthly overstates X accounts (5 vs 3), all AI credit counts are wrong, Agency hides LinkedIn/Instagram support entirely. See full report in Phase 2 output.
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 322 tests).
+
+---
+
+## 2026-05-14 — Phase 1 Billing Audit: Instagram/LinkedIn Account Gates + Pricing Fix
+
+### Instagram account limit gate (P0 revenue leak)
+
+Instagram was completely ungated — free users could connect unlimited Instagram accounts and bypass the X-account cap by publishing through Instagram. Fixed by adding `maxInstagramAccounts` to `PlanLimits` (free/trial: 0, pro_monthly: 1, pro_annual: 2, agency: 5) and `checkInstagramAccountLimitDetailed` gate in `require-plan.ts`.
+
+Enforcement points:
+
+- `src/app/api/instagram/callback/route.ts` — gate check BEFORE OAuth token exchange (redirects with `error=instagram_plan_limit`)
+- `src/app/api/posts/route.ts` — gate check when selected accounts include Instagram (returns 402 via `createPlanLimitResponse`)
+
+### LinkedIn account count limit (P0 revenue leak)
+
+LinkedIn had a feature gate (`checkLinkedinAccessDetailed`, Agency-only) but no per-account-count cap. Agency users could connect unlimited LinkedIn accounts. Fixed by adding `maxLinkedinAccounts` to `PlanLimits` (0 for all plans except agency: 5) and `checkLinkedinAccountLimitDetailed` gate.
+
+Enforcement point:
+
+- `src/app/api/linkedin/callback/route.ts` — account-count check after feature gate (redirects with `error=linkedin_account_limit`)
+
+### Pricing single-source fix (P0 data inconsistency)
+
+`src/lib/pricing.ts` Pro Annual encoded three contradictory numbers: `monthlyPrice: 2300` ($23), `annualPrice: 29000` ($290 → $24.17/mo), and a comment claiming "$19/month when $228/year". Fixed by:
+
+- Making `monthlyPrice` optional on `PricingConfig`
+- Removing `monthlyPrice` from annual entries
+- Deriving monthly equivalent in `getMonthlyPrice()` via `Math.round(annualPrice/12)`
+- Replacing misleading comment with actual math
+
+**Verification:** `pnpm run check` passes, `pnpm test` passes (34 files, 322 tests).
+
+---
+
 ## 2026-05-08 — Token Refresh Failure Handling at Scale
 
 Differentiated transient vs permanent token refresh failures, added circuit breaker, proactive email notifications, and dashboard health indicators. See `docs/0-MY-LATEST-UPDATES.md` for full details.

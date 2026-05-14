@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { pdfThreadQueue } from "@/lib/queue/client";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { pdfThreadJobs } from "@/lib/schema";
@@ -22,7 +23,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
   }
 
   // Step 2: Rate limit
-  const rlResult = await checkRateLimit(ctx.currentTeamId, ctx.session.user.id, "ai");
+  const plan = await getUserPlanType(ctx.currentTeamId);
+  const rlResult = await checkRateLimit(ctx.currentTeamId, plan, "ai");
   if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   const { jobId } = await params;
@@ -42,7 +44,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ jobId: s
       return ApiError.forbidden("You do not own this PDF job.");
     }
 
-    // Step 4: Return status
+    // Step 5: Return status
     const res = Response.json({
       jobId: job.id,
       status: job.status,
@@ -82,13 +84,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ jobId
   }
 
   // Step 3: Rate limit
-  const rlResult = await checkRateLimit(ctx.currentTeamId, ctx.session.user.id, "ai");
+  const plan = await getUserPlanType(ctx.currentTeamId);
+  const rlResult = await checkRateLimit(ctx.currentTeamId, plan, "ai");
   if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   const { jobId } = await params;
 
   try {
-    // Step 3: Load job row
+    // Step 4: Load job row
     const job = await db.query.pdfThreadJobs.findFirst({
       where: eq(pdfThreadJobs.id, jobId),
     });
@@ -97,12 +100,12 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ jobId
       return ApiError.notFound("PDF job");
     }
 
-    // Step 4: Ownership check
+    // Step 5: Ownership check
     if (job.userId !== ctx.session.user.id) {
       return ApiError.forbidden("You do not own this PDF job.");
     }
 
-    // Step 4: Bail on terminal states
+    // Step 6: Bail on terminal states
     if (job.status === "ready" || job.status === "failed") {
       return ApiError.badRequest(
         `Job is already in terminal status "${job.status}". Cannot cancel.`

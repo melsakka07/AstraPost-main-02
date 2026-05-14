@@ -9,6 +9,7 @@ import { logger } from "@/lib/logger";
 import {
   checkPdfToThreadAccessDetailed,
   createPlanLimitResponse,
+  getUserPlanType,
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import type { NewPdfThreadJob } from "@/lib/schema";
@@ -55,7 +56,8 @@ export async function POST(req: Request) {
   const correlationId = getCorrelationId(req);
 
   // Step 4: Rate limit (before plan gate — lighter Redis check first)
-  const rlResult = await checkRateLimit(ctx.currentTeamId, ctx.session.user.id, "media");
+  const plan = await getUserPlanType(ctx.currentTeamId);
+  const rlResult = await checkRateLimit(ctx.currentTeamId, plan, "media");
   if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   // Step 5: Plan gate

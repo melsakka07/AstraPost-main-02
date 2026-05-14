@@ -25,7 +25,7 @@ interface ConsumeResult {
  *
  * Handles mid-month plan upgrades: if the current plan's limit differs from the
  * stored counter limit, the row is updated before consumption. Unlimited plans
- * (Agency with Infinity) bypass the counter entirely.
+ * (Agency with -1 sentinel) bypass the counter entirely.
  *
  * @returns allowed: false when the user has exhausted their monthly AI quota.
  */
@@ -37,7 +37,7 @@ export async function tryConsumeAiQuota(userId: string, weight = 1): Promise<Con
   const planLimit = limits.aiGenerationsPerMonth;
 
   // Unlimited plans (Agency) bypass the counter entirely
-  if (planLimit === Infinity) {
+  if (planLimit === -1) {
     return { allowed: true, used: 0, limit: -1, resetAt: end };
   }
 
@@ -164,7 +164,7 @@ async function createAndConsume(
   const planLimit = limits.aiGenerationsPerMonth;
 
   // Unlimited plans skip the counter entirely
-  if (planLimit === Infinity) {
+  if (planLimit === -1) {
     return { allowed: true, used: 0, limit: -1, resetAt };
   }
 
@@ -216,7 +216,7 @@ async function resetAndConsume(
   const limits = getPlanLimits(plan);
   const planLimit = limits.aiGenerationsPerMonth;
 
-  if (planLimit === Infinity) {
+  if (planLimit === -1) {
     return { allowed: true, used: 0, limit: -1, resetAt };
   }
 
@@ -262,7 +262,7 @@ async function resetAndConsume(
 
 /**
  * Updates the stored limit to match the current plan and retries atomic consume.
- * Handles mid-month plan upgrades where the counter row still has the old plan's limit.
+ * Handles mid-month plan changes (upgrade or downgrade) where the counter row still has the old plan's limit.
  */
 async function refreshLimitAndConsume(
   userId: string,

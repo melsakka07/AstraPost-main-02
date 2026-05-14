@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { youtubeThreadQueue } from "@/lib/queue/client";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { youtubeThreadJobs } from "@/lib/schema";
@@ -89,7 +90,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ jobId
   }
 
   // Step 3: Rate limit
-  const rlResult = await checkRateLimit(ctx.currentTeamId, ctx.session.user.id, "ai");
+  const plan = await getUserPlanType(ctx.currentTeamId);
+  const rlResult = await checkRateLimit(ctx.currentTeamId, plan, "ai");
   if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   const { jobId } = await params;

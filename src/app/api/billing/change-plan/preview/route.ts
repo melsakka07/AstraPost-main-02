@@ -4,7 +4,14 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { normalizePlan, type PlanType } from "@/lib/plan-limits";
+import { normalizePlan, type PlanType, type ToolKey } from "@/lib/plan-limits";
+import {
+  getMonthlyPrice,
+  getAnnualPrice,
+  formatPriceWithInterval,
+  formatPrice,
+  type PricingTier,
+} from "@/lib/pricing";
 import { posts, user, xAccounts } from "@/lib/schema";
 import { getPlanMetadata } from "@/lib/services/plan-metadata";
 
@@ -96,28 +103,31 @@ export async function POST(req: Request) {
   const featuresGained: string[] = [];
   const overLimits: PreviewResponse["overLimits"] = {};
 
-  // Boolean features
+  // Feature tools (checked via enabledTools)
   const featureLabels: Record<string, string> = {
-    canScheduleThreads: "Thread Scheduling",
-    canUploadVideoGif: "Video/GIF Upload",
-    canUseAffiliateGenerator: "Amazon Affiliate Generator",
-    canUseViralScore: "AI Viral Score",
-    canViewBestTimes: "Best Times to Post",
-    canUseVoiceProfile: "AI Voice Profile",
-    canUseLinkedin: "LinkedIn Integration",
-    canUseInspiration: "Tweet Inspiration",
-    canUseContentCalendar: "AI Content Calendar",
-    canUseUrlToThread: "URL → Thread Converter",
-    canUseVariantGenerator: "A/B Variant Generator",
-    canUseCompetitorAnalyzer: "Competitor Analyzer",
-    canUseReplyGenerator: "Reply Suggester",
-    canUseBioOptimizer: "AI Bio Optimizer",
-    canUseAgenticPosting: "Agentic Posting",
+    schedule_threads: "Thread Scheduling",
+    upload_video_gif: "Video/GIF Upload",
+    affiliate_generator: "Amazon Affiliate Generator",
+    viral_score: "AI Viral Score",
+    best_times: "Best Times to Post",
+    voice_profile: "AI Voice Profile",
+    linkedin: "LinkedIn Integration",
+    inspiration: "Tweet Inspiration",
+    content_calendar: "AI Content Calendar",
+    url_to_thread: "URL → Thread Converter",
+    variant_generator: "A/B Variant Generator",
+    competitor_analyzer: "Competitor Analyzer",
+    reply_generator: "Reply Suggester",
+    bio_optimizer: "AI Bio Optimizer",
+    agentic_posting: "Agentic Posting",
+    tools: "AI Writing Tools",
+    pdf_to_thread: "PDF → Thread",
+    youtube_to_thread: "YouTube → Thread",
   };
 
-  for (const [key, label] of Object.entries(featureLabels)) {
-    const currentValue = currentLimits[key as keyof typeof currentLimits];
-    const targetValue = targetLimits[key as keyof typeof targetLimits];
+  for (const [toolKey, label] of Object.entries(featureLabels)) {
+    const currentValue = currentLimits.enabledTools.includes(toolKey as ToolKey);
+    const targetValue = targetLimits.enabledTools.includes(toolKey as ToolKey);
     if (currentValue && !targetValue) {
       featuresLost.push(label);
     } else if (!currentValue && targetValue) {
@@ -126,14 +136,11 @@ export async function POST(req: Request) {
   }
 
   // Numeric limits
-  if (
-    currentLimits.aiGenerationsPerMonth === Infinity &&
-    targetLimits.aiGenerationsPerMonth !== Infinity
-  ) {
+  if (currentLimits.aiGenerationsPerMonth === -1 && targetLimits.aiGenerationsPerMonth !== -1) {
     featuresLost.push(`Unlimited AI Generations (→ ${targetLimits.aiGenerationsPerMonth}/month)`);
   } else if (
-    currentLimits.aiGenerationsPerMonth !== Infinity &&
-    targetLimits.aiGenerationsPerMonth === Infinity
+    currentLimits.aiGenerationsPerMonth !== -1 &&
+    targetLimits.aiGenerationsPerMonth === -1
   ) {
     featuresGained.push("Unlimited AI Generations");
   }
@@ -201,19 +208,25 @@ export async function POST(req: Request) {
 
   // ── Price info ───────────────────────────────────────────────────────────────────
 
-  const monthlyPrices: Record<string, string> = {
-    pro_monthly: "$29/mo",
-    pro_annual: "$290/year (~$24/mo)",
-    agency_monthly: "$99/mo",
-    agency_annual: "$990/year (~$83/mo)",
-  };
+  let newMonthlyPrice: string | null = null;
+  if (targetPlan !== "free") {
+    const tier = targetPlan as PricingTier;
+    if (targetPlan.endsWith("_annual")) {
+      const annual = getAnnualPrice(tier);
+      if (annual !== undefined) {
+        newMonthlyPrice = `${formatPriceWithInterval(annual, "year")} (~${formatPrice(getMonthlyPrice(tier))}/mo)`;
+      }
+    } else {
+      newMonthlyPrice = formatPriceWithInterval(getMonthlyPrice(tier), "month");
+    }
+  }
 
   return Response.json({
     currentPlan: currentPlan,
     targetPlan: targetPlan.startsWith("agency") ? "agency" : targetPlan,
     effectiveDate,
     proratedCredit: null, // Only available after actual change
-    newMonthlyPrice: monthlyPrices[targetPlan] || null,
+    newMonthlyPrice,
     featuresLost,
     featuresGained,
     overLimits,

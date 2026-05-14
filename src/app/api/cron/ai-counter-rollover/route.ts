@@ -1,6 +1,6 @@
 import "server-only";
 
-import { lt, sql } from "drizzle-orm";
+import { eq, lt, sql } from "drizzle-orm";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -45,16 +45,18 @@ export async function POST(_req: Request) {
         });
 
         const limits = getPlanLimits(dbUser?.plan);
-        const limit =
-          limits.aiGenerationsPerMonth === Infinity
-            ? 0 // Unlimited users don't need a counter, reset to 0
-            : limits.aiGenerationsPerMonth;
+
+        if (limits.aiGenerationsPerMonth === -1) {
+          await db.delete(userAiCounters).where(eq(userAiCounters.userId, row.userId));
+          rolled++;
+          continue;
+        }
 
         await db
           .update(userAiCounters)
           .set({
             used: 0,
-            limit,
+            limit: limits.aiGenerationsPerMonth,
             periodStart: start,
             updatedAt: new Date(),
           })

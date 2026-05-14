@@ -47,6 +47,7 @@ vi.mock("@/lib/rate-limiter", () => ({
 vi.mock("@/lib/middleware/require-plan", () => ({
   checkPdfToThreadAccessDetailed: mockPlanGateAllowed,
   createPlanLimitResponse: vi.fn(() => new Response("Plan limit", { status: 402 })),
+  getUserPlanType: vi.fn().mockResolvedValue("pro"),
 }));
 
 // Use a plain function (not arrow) for PDFParse so `new` works correctly

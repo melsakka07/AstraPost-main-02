@@ -8,6 +8,7 @@ import { ChangePlanDialog } from "@/components/billing/change-plan-dialog";
 import { PricingCard, PricingPlan } from "@/components/billing/pricing-card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { formatPrice, getMonthlyPrice } from "@/lib/pricing";
 
 interface PricingTableProps {
   currentPlan?: string;
@@ -68,7 +69,6 @@ export function PricingTable({
         t("plan_pro_feature_4"),
         t("plan_pro_feature_5"),
         t("plan_pro_feature_6"),
-        t("plan_pro_feature_7"),
         t("plan_pro_feature_8"),
         t("plan_pro_feature_9"),
         t("plan_pro_feature_10"),
@@ -94,7 +94,6 @@ export function PricingTable({
         t("plan_agency_feature_4"),
         t("plan_agency_feature_5"),
         t("plan_agency_feature_6"),
-        t("plan_agency_feature_7"),
       ],
       actionLabel: t("plan_agency_action"),
       priceId: "agency_monthly",
@@ -129,12 +128,11 @@ export function PricingTable({
       interval: "year",
       features: [
         t("plan_pro_feature_1"),
-        t("plan_pro_annual_feature_2"),
-        t("plan_pro_annual_feature_3"),
+        t("plan_pro_feature_2"),
+        t("plan_pro_feature_3"),
         t("plan_pro_feature_4"),
         t("plan_pro_feature_5"),
         t("plan_pro_feature_6"),
-        t("plan_pro_feature_7"),
         t("plan_pro_feature_8"),
         t("plan_pro_feature_9"),
         t("plan_pro_feature_10"),
@@ -143,13 +141,11 @@ export function PricingTable({
         t("plan_pro_feature_13"),
         t("plan_pro_feature_14"),
         t("plan_pro_feature_15"),
-        t("plan_pro_annual_feature_16"),
-        t("plan_pro_annual_feature_17"),
       ],
       actionLabel: t("plan_pro_action"),
       priceId: "pro_annual",
       popular: true,
-      perMonthEquivalent: "~$24/mo",
+      perMonthEquivalent: `~${formatPrice(getMonthlyPrice("pro_annual"))}/mo`,
       savingsPercent: 17,
     },
     {
@@ -164,13 +160,12 @@ export function PricingTable({
         t("plan_agency_feature_4"),
         t("plan_agency_feature_5"),
         t("plan_agency_feature_6"),
-        t("plan_agency_feature_7"),
         t("plan_agency_annual_feature_8"),
       ],
       actionLabel: t("plan_agency_action"),
       priceId: "agency_annual",
       popular: false,
-      perMonthEquivalent: "~$83/mo",
+      perMonthEquivalent: `~${formatPrice(getMonthlyPrice("agency_annual"))}/mo`,
       savingsPercent: 17,
     },
   ];
