@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     const result = affiliateRequestSchema.safeParse(json);
 
     if (!result.success) {
+      await releaseQuota();
       return ApiError.badRequest(result.error.issues);
     }
 
@@ -54,14 +55,17 @@ export async function POST(req: Request) {
     try {
       parsedUrl = new URL(url);
     } catch {
+      await releaseQuota();
       return ApiError.badRequest("Invalid URL");
     }
 
     if (parsedUrl.protocol !== "https:") {
+      await releaseQuota();
       return ApiError.badRequest("URL scheme not allowed. Only HTTPS is allowed.");
     }
 
     if (BLOCKED_HOSTS.test(parsedUrl.hostname)) {
+      await releaseQuota();
       return ApiError.forbidden("URL not allowed");
     }
 
@@ -130,7 +134,10 @@ export async function POST(req: Request) {
 
     // Moderation check on generated tweet
     const modResult = await checkModeration(enforcedTweet);
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // 3. Construct Affiliate URL
     let affiliateUrl = url;

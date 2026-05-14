@@ -52,18 +52,27 @@ const ThreadSchema = z.object({
 
 export async function POST(req: Request) {
   const correlationId = getCorrelationId(req);
+  let releaseQuota: () => Promise<void> = async () => {};
 
   try {
     const preamble = await aiPreamble({
       featureGate: async (userId) => checkInspirationAccessDetailed(userId),
     });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
     const userId = session.user.id;
 
     const body = await req.json();
     const validationResult = InspireRequestSchema.safeParse(body);
     if (!validationResult.success) {
+      await releaseQuota();
       return ApiError.badRequest(validationResult.error.issues);
     }
 
@@ -115,7 +124,10 @@ export async function POST(req: Request) {
 
     // Moderation check on generated content
     const modResult = await checkModeration(tweets.join("\n"));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Phase 2: uses new options-object signature
     await recordAiUsage({
@@ -138,6 +150,7 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("inspire_generation_failed", {
       correlationId,
       error: error instanceof Error ? error.message : String(error),

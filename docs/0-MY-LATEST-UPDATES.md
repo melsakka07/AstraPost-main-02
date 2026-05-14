@@ -1,5 +1,41 @@
 # Latest Updates
 
+## 2026-05-14 — Phase 2 Billing Audit: Quota Leak Sweep (Findings #4 + #4b)
+
+Implemented Phase 2 (quota leak fixes) from `.claude/plans/2026-05-14-billing-pricing-plans-audit-findings.md`. Fixes audit findings #4 and #4b across all 16 AI routes that both consume quota and call `checkModeration`.
+
+### Moderation quota refund (#4)
+
+Every moderation-flagged branch across 16 routes now calls `await releaseQuota()` before returning the moderation error. Previously, when `checkModeration()` returned flagged, the quota was consumed in `aiPreamble` but never refunded — users lost quota credit for content they couldn't use.
+
+Routes fixed (both `return modResult` and stream-based patterns):
+
+- Simple: `affiliate`, `bio`, `calendar`, `hashtags`, `inspire`, `refine`, `reply`, `score`, `summarize`, `tools`, `translate`, `variants`
+- Stream: `thread` (single + thread modes), `template-generate`, `agentic`, `pdf-to-thread/generate`
+
+### Stream failure quota leak (#4b)
+
+Anonymous `catch {}` blocks inside `ReadableStream` handlers previously swallowed generation errors silently — no quota release, no logging, no Sentry. Each stream catch block now:
+
+1. `await releaseQuota()` — refunds the decremented quota
+2. `logger.error("ai_stream_failed", { userId, route, correlationId, error })` — structured logging
+3. `Sentry.captureException(error, { tags: { route, userId, correlationId } })` — observability
+4. Does NOT call `recordAiUsage` — committed policy from findings doc
+
+Routes with stream catch blocks fixed: `thread` (2 modes), `template-generate`, `agentic`
+
+### Missing destructuring fixes
+
+`refine/route.ts` and `score/route.ts` were not destructuring `releaseQuota` from `aiPreamble()` — added to both.
+
+### New Sentry imports
+
+Added `import * as Sentry from "@sentry/nextjs"` to `thread`, `template-generate`, and `agentic` routes for `Sentry.captureException` in stream catch blocks.
+
+**Verification:** `pnpm run check` passes (0 errors, 0 warnings, 2800 matched i18n keys), `pnpm test` passes (34 files, 322 tests). Grep confirms all 16 routes have `await releaseQuota` in moderation branches.
+
+---
+
 ## 2026-05-14 — Phase 1 Billing Audit: Rate-Limiter, Marketing Alignment, Preview Prices, Rollover
 
 Implemented Phase 1 (XS/S quick wins) from `.claude/plans/2026-05-14-billing-pricing-plans-audit-findings.md`. Fixes audit findings #1, #2, #3, #5, #8, #11.

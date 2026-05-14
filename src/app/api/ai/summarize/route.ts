@@ -36,6 +36,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
+      await releaseQuota();
       return ApiError.badRequest(result.error.issues);
     }
 
@@ -46,14 +47,17 @@ export async function POST(req: Request) {
     try {
       parsedUrl = new URL(url);
     } catch {
+      await releaseQuota();
       return ApiError.badRequest("Invalid URL");
     }
 
     if (parsedUrl.protocol !== "https:") {
+      await releaseQuota();
       return ApiError.badRequest("URL scheme not allowed. Only HTTPS is allowed.");
     }
 
     if (BLOCKED_HOSTS.test(parsedUrl.hostname)) {
+      await releaseQuota();
       return ApiError.forbidden("URL not allowed");
     }
 
@@ -68,10 +72,12 @@ export async function POST(req: Request) {
       articleText = fetched.text;
       articleTitle = fetched.title;
     } catch {
+      await releaseQuota();
       return ApiError.badRequest("Could not fetch the URL. Make sure it is publicly accessible.");
     }
 
     if (articleText.length < 100) {
+      await releaseQuota();
       return ApiError.badRequest("Not enough content found at this URL.");
     }
 
@@ -130,7 +136,10 @@ export async function POST(req: Request) {
 
     // Moderation check on generated thread text
     const modResult = await checkModeration(sanitized.tweets.join("\n"));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     const res = Response.json({
       ...sanitized,

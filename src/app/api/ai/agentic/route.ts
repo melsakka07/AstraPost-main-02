@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { eq, and, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -126,6 +127,7 @@ export async function DELETE() {
 
 export async function POST(req: Request) {
   const correlationId = getCorrelationId(req);
+  let releaseQuota: () => Promise<void> = async () => {};
 
   try {
     // 1. Auth + AI preamble (rate limit, quota, model)
@@ -134,12 +136,16 @@ export async function POST(req: Request) {
       quotaWeight: 5,
     });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, checkModeration } = preamble;
+    const { session, dbUser, releaseQuota: preambleReleaseQuota, checkModeration } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     // 2. Validate request body
     const json = (await req.json()) as unknown;
     const parsed = requestSchema.safeParse(json);
-    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+    if (!parsed.success) {
+      await releaseQuota();
+      return ApiError.badRequest(parsed.error.issues);
+    }
 
     const { topic, xAccountId, language: clientLanguage, preferences } = parsed.data;
 
@@ -155,7 +161,10 @@ export async function POST(req: Request) {
         xSubscriptionTierUpdatedAt: true,
       },
     });
-    if (!account) return ApiError.notFound("X account");
+    if (!account) {
+      await releaseQuota();
+      return ApiError.notFound("X account");
+    }
 
     // 4. Refresh tier if stale
     let tier = (account.xSubscriptionTier ?? "None") as XSubscriptionTier;
@@ -230,6 +239,7 @@ export async function POST(req: Request) {
             agenticPost.tweets?.map((t: { text?: string }) => t.text ?? "").join("\n") ?? "";
           const modResult = await checkModeration(fullText, agenticPostId);
           if (modResult) {
+            await releaseQuota();
             logger.warn("moderation_flagged_stream", {
               userId: session.user.id,
               correlationId,
@@ -252,6 +262,7 @@ export async function POST(req: Request) {
 
           sendEvent({ step: "done", status: "complete", data: agenticPost });
         } catch (err) {
+          await releaseQuota();
           // Handle too-broad topic gracefully
           if (err instanceof Error && err.message === "TOPIC_TOO_BROAD") {
             const broadResearch =
@@ -270,10 +281,19 @@ export async function POST(req: Request) {
             return;
           }
 
-          logger.error("agentic_pipeline_error", {
-            error: err instanceof Error ? err.message : String(err),
+          logger.error("ai_stream_failed", {
+            userId: session.user.id,
+            route: "agentic",
             correlationId,
+            error: err instanceof Error ? err.message : String(err),
             agenticPostId,
+          });
+          Sentry.captureException(err, {
+            tags: {
+              route: "agentic",
+              userId: session.user.id,
+              correlationId,
+            },
           });
 
           await db
@@ -302,6 +322,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
+    await releaseQuota();
     logger.error("agentic_route_error", {
       error: err instanceof Error ? err.message : String(err),
       correlationId,

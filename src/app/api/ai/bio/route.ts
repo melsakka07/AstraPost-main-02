@@ -63,15 +63,25 @@ export async function GET(_req: Request) {
 }
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkBioOptimizerAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
+      await releaseQuota();
       return ApiError.badRequest(result.error.issues);
     }
 
@@ -123,7 +133,10 @@ For each variant provide:
 
     // Moderation check on generated bio variants
     const modResult = await checkModeration(object.variants.map((v) => v.text).join("\n"));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Phase 2: uses new options-object signature
     await recordAiUsage({
@@ -146,6 +159,7 @@ For each variant provide:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("bio_generation_failed", {
       error: error instanceof Error ? error.message : String(error),
     });

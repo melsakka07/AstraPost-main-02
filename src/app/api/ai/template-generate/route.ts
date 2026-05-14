@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { streamObject } from "ai";
 import { z } from "zod";
 import { getTemplatePrompt, VERSION, type OutputFormat } from "@/lib/ai/template-prompts";
@@ -27,16 +28,26 @@ const ThreadSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
 
     if (!parsed.success) {
+      await releaseQuota();
       return ApiError.badRequest(parsed.error.issues);
     }
 
@@ -47,6 +58,7 @@ export async function POST(req: Request) {
 
     const config = getTemplatePrompt(templateId);
     if (!config) {
+      await releaseQuota();
       return ApiError.badRequest(`Unknown template: ${templateId}`);
     }
 
@@ -116,6 +128,7 @@ export async function POST(req: Request) {
           const fullText = tweetTexts.join("\n");
           const modResult = await checkModeration(fullText);
           if (modResult) {
+            await releaseQuota();
             logger.warn("moderation_flagged_stream", {
               userId,
               correlationId,
@@ -161,7 +174,17 @@ export async function POST(req: Request) {
           }
 
           controller.close();
-        } catch {
+        } catch (streamError) {
+          await releaseQuota();
+          logger.error("ai_stream_failed", {
+            userId,
+            route: "template-generate",
+            correlationId,
+            error: streamError instanceof Error ? streamError.message : String(streamError),
+          });
+          Sentry.captureException(streamError, {
+            tags: { route: "template-generate", userId, correlationId },
+          });
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ error: "Generation failed" })}\n\n`)
           );
@@ -180,6 +203,7 @@ export async function POST(req: Request) {
       },
     });
   } catch (error) {
+    await releaseQuota();
     logger.error("ai_template_generate_error", {
       error: error instanceof Error ? error.message : String(error),
     });

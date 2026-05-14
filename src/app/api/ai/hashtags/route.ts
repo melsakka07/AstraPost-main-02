@@ -20,16 +20,26 @@ const hashtagResponseSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const result = hashtagRequestSchema.safeParse(json);
 
     if (!result.success) {
+      await releaseQuota();
       return ApiError.badRequest(result.error.issues);
     }
 
@@ -68,7 +78,10 @@ export async function POST(req: Request) {
 
     // Moderation check on generated hashtags
     const modResult = await checkModeration(filtered.join(" "));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Phase 2: uses new options-object signature
     await recordAiUsage({
@@ -91,6 +104,7 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("hashtag_generation_failed", {
       error: error instanceof Error ? error.message : String(error),
     });

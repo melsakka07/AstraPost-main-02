@@ -30,15 +30,25 @@ const repliesSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkReplyGeneratorAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
+      await releaseQuota();
       return ApiError.badRequest(result.error.issues);
     }
 
@@ -49,6 +59,7 @@ export async function POST(req: Request) {
     let tweetAuthor = "";
     const context = await importTweet(tweetUrl);
     if ("error" in context) {
+      await releaseQuota();
       return ApiError.badRequest(
         "Could not fetch the tweet. Make sure the URL is valid and the account is public."
       );
@@ -113,7 +124,10 @@ For each reply include:
 
     // Moderation check on generated replies
     const modResult = await checkModeration(object.replies.map((r) => r.text).join("\n"));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     const sanitized = {
       tweetText,
@@ -128,6 +142,7 @@ For each reply include:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("reply_generation_error", {
       error: error instanceof Error ? error.message : String(error),
     });

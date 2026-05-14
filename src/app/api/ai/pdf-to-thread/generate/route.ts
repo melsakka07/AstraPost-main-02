@@ -198,6 +198,7 @@ export async function POST(req: Request) {
     // ── Moderation check ──────────────────────────────────────────────
     const modResult = await checkModeration(object.tweets.join("\n"));
     if (modResult) {
+      await releaseQuota();
       // Update job to failed on moderation flag
       await db
         .update(pdfThreadJobs)

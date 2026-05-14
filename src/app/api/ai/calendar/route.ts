@@ -31,15 +31,25 @@ const calendarSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkContentCalendarAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
+      await releaseQuota();
       return ApiError.badRequest(result.error.issues);
     }
 
@@ -82,7 +92,10 @@ Return exactly ${totalPosts} items.`;
     const modResult = await checkModeration(
       object.items.map((i) => `${i.topic}: ${i.brief}`).join("\n")
     );
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Phase 2: uses new options-object signature
     await recordAiUsage({
@@ -105,6 +118,7 @@ Return exactly ${totalPosts} items.`;
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("calendar_generation_failed", {
       error: error instanceof Error ? error.message : String(error),
     });

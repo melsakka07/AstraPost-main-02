@@ -1,5 +1,25 @@
 # Recent Fixes & Changes
 
+## 2026-05-14 — Phase 2 Billing Audit: Quota Leak Sweep (Findings #4 + #4b)
+
+### Moderation quota refund (#4)
+
+All 16 AI routes that consume quota AND call `checkModeration` now release quota on moderation flag. Pattern: `await releaseQuota()` before `return modResult` (simple routes) or before enqueuing moderation message (stream routes).
+
+### Stream failure quota leak (#4b)
+
+Anonymous `catch {}` blocks inside `ReadableStream` handlers (thread single + thread, template-generate, agentic) now: (a) release quota, (b) log with `logger.error("ai_stream_failed", ...)`, (c) capture with `Sentry.captureException`. `recordAiUsage` is NOT called on the catch path per committed policy.
+
+Routes without `releaseQuota` in preamble destructuring fixed: `refine`, `score`.
+
+New Sentry imports added to: `thread`, `template-generate`, `agentic`.
+
+### Verification
+
+`pnpm run check` (0/0/2800 keys), `pnpm test` (34 files, 322/322). Grep confirms all 16 routes have `await releaseQuota` in moderation branches.
+
+---
+
 ## 2026-05-14 — Phase 1 Billing Audit: Rate-Limiter, Marketing Alignment, Preview Prices, Rollover
 
 ### Rate-limiter arg-order bug (#5)

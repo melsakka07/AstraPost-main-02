@@ -26,15 +26,25 @@ const variantSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkVariantGeneratorAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
     if (!result.success) {
+      await releaseQuota();
       return ApiError.badRequest(result.error.issues);
     }
 
@@ -48,6 +58,7 @@ export async function POST(req: Request) {
     const cachedResult = await RequestDedup.check<any>(dedupKey);
 
     if (cachedResult) {
+      await releaseQuota();
       logger.info("dedup_cache_hit", {
         userId: session.user.id,
         endpoint: "/api/ai/variants",
@@ -106,7 +117,10 @@ For each variant:
 
     // Moderation check on generated variant texts
     const modResult = await checkModeration(object.variants.map((v) => v.text).join("\n"));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     const sanitized = {
       variants: object.variants.map((v) => ({
@@ -122,6 +136,7 @@ For each variant:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("variant_generation_error", {
       error: error instanceof Error ? error.message : String(error),
     });

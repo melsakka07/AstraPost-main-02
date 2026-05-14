@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
-    const { model, session, dbUser, checkModeration } = preamble;
+    const { model, session, dbUser, releaseQuota, checkModeration } = preamble;
 
     const json = await req.json();
     const result = scoreRequestSchema.safeParse(json);
@@ -75,7 +75,10 @@ export async function POST(req: Request) {
 
     // Moderation check on generated feedback
     const modResult = await checkModeration(object.feedback.join("\n"));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Phase 2: uses new options-object signature
     await recordAiUsage({

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { streamText } from "ai";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -52,16 +53,26 @@ const threadRequestSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const parsed = threadRequestSchema.safeParse(json);
 
     if (!parsed.success) {
+      await releaseQuota();
       return ApiError.badRequest(parsed.error.issues);
     }
 
@@ -93,6 +104,7 @@ export async function POST(req: Request) {
     });
     const cachedResult = await RequestDedup.check(dedupKey); // check cache
     if (cachedResult) {
+      await releaseQuota();
       // Note: we can reconstruct a basic ai stream response if we cached the text
       // ai stream format requires specific format, but returning json works if client supports both
       // actually, AI sdk handles strings if returning Response.json is not enough.
@@ -125,6 +137,7 @@ export async function POST(req: Request) {
       });
 
       if (!account) {
+        await releaseQuota();
         return ApiError.notFound("X account");
       }
 
@@ -147,6 +160,7 @@ export async function POST(req: Request) {
       }
 
       if (!canPostLongContent(tier)) {
+        await releaseQuota();
         return ApiError.forbidden(
           "Medium and Long post options require an X Premium subscription. Your connected X account is on the Free tier."
         );
@@ -256,6 +270,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
             // Phase 1 moderation: buffer the full text and check at end of stream
             const modResult = await checkModeration(fitted);
             if (modResult) {
+              await releaseQuota();
               logger.warn("moderation_flagged_stream", {
                 userId,
                 correlationId,
@@ -297,7 +312,17 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
             } catch {
               // Usage recording failure should not affect the user
             }
-          } catch {
+          } catch (streamError) {
+            await releaseQuota();
+            logger.error("ai_stream_failed", {
+              userId,
+              route: "thread",
+              correlationId,
+              error: streamError instanceof Error ? streamError.message : String(streamError),
+            });
+            Sentry.captureException(streamError, {
+              tags: { route: "thread", userId, correlationId },
+            });
             controller.enqueue(encoder.encode("\n\n[Generation failed]"));
             controller.close();
           }
@@ -361,6 +386,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           const fullText = tweetTexts.join("\n");
           const modResult = await checkModeration(fullText);
           if (modResult) {
+            await releaseQuota();
             logger.warn("moderation_flagged_stream", {
               userId,
               correlationId,
@@ -410,7 +436,17 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
           }
 
           controller.close();
-        } catch {
+        } catch (streamError) {
+          await releaseQuota();
+          logger.error("ai_stream_failed", {
+            userId,
+            route: "thread",
+            correlationId,
+            error: streamError instanceof Error ? streamError.message : String(streamError),
+          });
+          Sentry.captureException(streamError, {
+            tags: { route: "thread", userId, correlationId },
+          });
           const errEvent = JSON.stringify({ error: "Generation failed" });
           controller.enqueue(encoder.encode(`data: ${errEvent}\n\n`));
           controller.close();
@@ -428,6 +464,7 @@ Output exactly ${tweetCount} tweets. No headers, explanations, or extra text.`;
       },
     });
   } catch (error) {
+    await releaseQuota();
     logger.error("ai_thread_streaming_error", { error });
     return ApiError.internal("Failed to generate content");
   }

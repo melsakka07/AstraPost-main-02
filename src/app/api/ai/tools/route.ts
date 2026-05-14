@@ -29,15 +29,25 @@ const responseSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkToolsAccessDetailed });
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model, checkModeration } = preamble;
+    const {
+      session,
+      dbUser,
+      model,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) {
+      await releaseQuota();
       return ApiError.badRequest(parsed.error.issues);
     }
 
@@ -112,7 +122,10 @@ ${input || ""}`;
 
     // Moderation check on generated tool output
     const modResult = await checkModeration(object.text);
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Phase 2: uses new options-object signature
     const generationId = await recordAiUsage({
@@ -135,6 +148,7 @@ ${input || ""}`;
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (err) {
+    await releaseQuota();
     logger.error("ai_tools_error", { error: err instanceof Error ? err.message : String(err) });
     return ApiError.internal("AI tool failed");
   }

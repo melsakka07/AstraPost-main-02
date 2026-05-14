@@ -20,15 +20,19 @@ const responseSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, model, checkModeration } = preamble;
+    const { session, model, releaseQuota: preambleReleaseQuota, checkModeration } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
     if (!parsed.success) {
+      await releaseQuota();
       return ApiError.badRequest(parsed.error.issues);
     }
 
@@ -36,6 +40,7 @@ export async function POST(req: Request) {
 
     const emptyTweets = tweets.filter((t) => !t.trim());
     if (emptyTweets.length > 0) {
+      await releaseQuota();
       return ApiError.badRequest("Cannot translate empty tweets. Please add content first.");
     }
 
@@ -70,7 +75,10 @@ ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${wrapUntrusted(`TWEET_${i + 1}`
 
     // Moderation check on translated output
     const modResult = await checkModeration(object.tweets.join("\n"));
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Phase 2: uses new options-object signature
     await recordAiUsage({
@@ -93,6 +101,7 @@ ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${wrapUntrusted(`TWEET_${i + 1}`
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("translation_error", {
       error: error instanceof Error ? error.message : String(error),
     });

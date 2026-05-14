@@ -31,6 +31,8 @@ const FOCUS_INSTRUCTIONS: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     // Step 1: Correlation ID
     const correlationId = getCorrelationId(req);
@@ -40,18 +42,21 @@ export async function POST(req: Request) {
     // Step 2: AI Preamble — refinement costs 1 quota unit (cheaper than fresh gen)
     const preamble = await aiPreamble({ quotaWeight: 1 });
     if (preamble instanceof Response) return preamble;
-    const { session, model, checkModeration } = preamble;
+    const { session, model, releaseQuota: preambleReleaseQuota, checkModeration } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     // Step 3: Parse + validate body
     let body: unknown;
     try {
       body = await req.json();
     } catch {
+      await releaseQuota();
       return ApiError.badRequest("Invalid JSON body");
     }
 
     const parsed = refineRequestSchema.safeParse(body);
     if (!parsed.success) {
+      await releaseQuota();
       return ApiError.badRequest(parsed.error.issues);
     }
 
@@ -71,14 +76,17 @@ export async function POST(req: Request) {
     });
 
     if (!generation) {
+      await releaseQuota();
       return ApiError.notFound("Generation");
     }
 
     if (generation.userId !== session.user.id) {
+      await releaseQuota();
       return ApiError.forbidden("This generation does not belong to your account");
     }
 
     if (!generation.outputContent) {
+      await releaseQuota();
       return ApiError.badRequest(
         "This generation has no output to refine. Please regenerate first."
       );
@@ -130,7 +138,10 @@ CRITICAL RULES:
 
     // Step 7: Moderation check
     const modResult = await checkModeration(object.output);
-    if (modResult) return modResult;
+    if (modResult) {
+      await releaseQuota();
+      return modResult;
+    }
 
     // Step 8: Log telemetry via preamble's recordTelemetry (does NOT consume quota)
     await preamble.recordTelemetry({
@@ -158,6 +169,7 @@ CRITICAL RULES:
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     logger.error("ai.refine_failed", {
       error: error instanceof Error ? error.message : String(error),
     });
