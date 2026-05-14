@@ -4,7 +4,10 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { checkLinkedinAccessDetailed } from "@/lib/middleware/require-plan";
+import {
+  checkLinkedinAccessDetailed,
+  checkLinkedinAccountLimitDetailed,
+} from "@/lib/middleware/require-plan";
 import { linkedinAccounts } from "@/lib/schema";
 import { encryptToken } from "@/lib/security/token-encryption";
 import { LinkedInApiService } from "@/lib/services/linkedin-api";
@@ -23,10 +26,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // ── 2. Plan gate ──────────────────────────────────────────────────────────
-  const planCheck = await checkLinkedinAccessDetailed(session.user.id);
-  if (!planCheck.allowed) {
+  // ── 2. Plan gates ─────────────────────────────────────────────────────────
+  const featureCheck = await checkLinkedinAccessDetailed(session.user.id);
+  if (!featureCheck.allowed) {
     return settingsRedirect(req, "error=linkedin_plan_limit");
+  }
+
+  const accountCountCheck = await checkLinkedinAccountLimitDetailed(session.user.id);
+  if (!accountCountCheck.allowed) {
+    return settingsRedirect(req, "error=linkedin_account_limit");
   }
 
   const searchParams = req.nextUrl.searchParams;

@@ -21,7 +21,7 @@ src/
 │   │   ├── changelog/            # Changelog entries
 │   │   ├── chat/                 # AI chat
 │   │   ├── community/            # Contact form
-│   │   ├── cron/                 # Scheduled jobs (Billing cleanup, AI cost alarm, AI counter rollover)
+│   │   ├── cron/                 # Scheduled jobs (Billing cleanup, AI cost alarm, AI counter rollover, Analytics cleanup, Trial expiry warning)
 │   │   ├── diagnostics/          # System diagnostics
 │   │   ├── feedback/             # Roadmap feedback
 │   │   ├── inspiration/          # Tweet import & bookmarks
@@ -192,6 +192,6 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 
 - `src/lib/auth.ts` — Better Auth configuration
 - `src/lib/team-context.ts` — Multi-account context resolver
-- `src/lib/middleware/require-plan.ts` — Subscription feature gates
+- `src/lib/middleware/require-plan.ts` — Subscription feature gates (X/Instagram/LinkedIn account limits, post limits, AI quota, 19 boolean feature gates)
 - `src/lib/admin.ts` — Admin role verification
 ```

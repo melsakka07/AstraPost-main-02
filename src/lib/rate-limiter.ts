@@ -66,10 +66,11 @@ export async function checkRateLimit(
   plan: string, // Relaxed type — normalised internally
   type: "ai" | "ai_image" | "posts" | "media" | "auth" | "tweet_lookup" | "contact"
 ): Promise<RateLimitResult> {
-  // Normalize plan
+  // Normalize plan. Trial users get Pro rate-limit tier.
   let role: "free" | "pro" | "agency" = "free";
   if (plan && plan.startsWith("pro")) role = "pro";
   if (plan && plan.startsWith("agency")) role = "agency";
+  if (plan === "trial") role = "pro";
 
   const config = RATE_LIMITS[role][type];
   const key = `ratelimit:${type}:${userId}`;

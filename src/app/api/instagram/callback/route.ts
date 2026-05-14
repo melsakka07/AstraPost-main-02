@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { checkInstagramAccountLimitDetailed } from "@/lib/middleware/require-plan";
 import { instagramAccounts } from "@/lib/schema";
 import { encryptToken } from "@/lib/security/token-encryption";
 
@@ -27,7 +28,13 @@ export async function GET(req: NextRequest) {
 
   const searchParams = req.nextUrl.searchParams;
 
-  // ── 2. OAuth CSRF state validation ────────────────────────────────────────
+  // ── 2. Plan gate — enforce Instagram account limit before OAuth exchange ───
+  const planCheck = await checkInstagramAccountLimitDetailed(session.user.id);
+  if (!planCheck.allowed) {
+    return settingsRedirect(req, "error=instagram_plan_limit");
+  }
+
+  // ── 3. OAuth CSRF state validation ────────────────────────────────────────
   // Validate BEFORE touching the authorization code — an invalid state means
   // the request was not initiated by this user's browser (CSRF / account hijack).
   const state = searchParams.get("state");
@@ -39,7 +46,7 @@ export async function GET(req: NextRequest) {
     return settingsRedirect(req, "error=oauth_state_mismatch");
   }
 
-  // ── 3. OAuth error / missing code ─────────────────────────────────────────
+  // ── 4. OAuth error / missing code ─────────────────────────────────────────
   const code = searchParams.get("code");
   const oauthError = searchParams.get("error");
 
@@ -48,7 +55,7 @@ export async function GET(req: NextRequest) {
     return settingsRedirect(req, "error=instagram_auth_failed");
   }
 
-  // ── 4. Token exchange & account persistence ───────────────────────────────
+  // ── 5. Token exchange & account persistence ───────────────────────────────
   try {
     // Exchange for short-lived user access token
     const tokenRes = await fetch(

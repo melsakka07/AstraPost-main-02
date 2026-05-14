@@ -7,7 +7,18 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-import { type InferSelectModel, eq, and, or, sql, isNotNull, isNull, lt } from "drizzle-orm";
+import {
+  type InferSelectModel,
+  eq,
+  ne,
+  and,
+  or,
+  sql,
+  isNotNull,
+  isNull,
+  lt,
+  gte,
+} from "drizzle-orm";
 import { z } from "zod";
 import { INPUT_LIMITS } from "@/lib/ai/input-limits";
 import { buildLanguageBlock } from "@/lib/ai/language";
@@ -17,6 +28,8 @@ import { JAILBREAK_GUARD } from "@/lib/ai/untrusted";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
+import { getPlanLimits } from "@/lib/plan-limits";
 import {
   scheduleQueue,
   SCHEDULE_JOB_OPTIONS,
@@ -55,6 +68,7 @@ import { XApiService } from "@/lib/services/x-api";
 import { classifyRefreshError, getBackoffForFailures } from "@/lib/services/x-error";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { extractAudio, getAudioMimeType } from "@/lib/services/youtube";
+import { getMonthWindow } from "@/lib/utils/time";
 
 /** Shape of a post as loaded by the schedule processor (post + tweets + media). */
 type FullPost = InferSelectModel<typeof posts> & {
@@ -253,6 +267,133 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
 
         throw new UnrecoverableError(errorData.message);
       }
+    }
+
+    // Re-gate: verify the user's current plan still allows this post.
+    // Catches mid-cycle downgrades where posts were scheduled under a higher
+    // plan but the user has since dropped to a tier with a post cap.
+    // Best-effort — if the plan lookup fails, favor publishing (the post was
+    // already validated at creation time).
+    let reGateFatal = false;
+    try {
+      const currentPlan = await getUserPlanType(post.userId);
+      const currentLimits = getPlanLimits(currentPlan);
+      if (currentLimits.postsPerMonth !== Infinity) {
+        const { start } = getMonthWindow();
+        const monthlyPostCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(posts)
+          .where(
+            and(
+              eq(posts.userId, post.userId),
+              ne(posts.status, "draft"),
+              gte(posts.createdAt, start)
+            )
+          );
+        const used = Number(monthlyPostCount[0]?.count ?? 0);
+
+        if (used >= currentLimits.postsPerMonth) {
+          reGateFatal = true;
+          logger.warn("schedule_job_over_quota", {
+            queue: job.queueName,
+            jobId: job.id,
+            postId,
+            correlationId,
+            plan: currentPlan,
+            limit: currentLimits.postsPerMonth,
+            used,
+          });
+
+          await db
+            .update(posts)
+            .set({
+              status: "over_quota",
+              failReason: `Post exceeds your ${currentPlan} plan limit of ${currentLimits.postsPerMonth} posts per month. Upgrade to restore scheduling.`,
+              lastErrorAt: new Date(),
+            })
+            .where(eq(posts.id, postId));
+
+          try {
+            await db.insert(notifications).values({
+              id: crypto.randomUUID(),
+              userId: post.userId,
+              type: "post_over_quota",
+              title: "Post Skipped — Plan Limit Reached",
+              message: `A scheduled post was not published because you've reached your ${currentPlan} plan limit of ${currentLimits.postsPerMonth} posts this month. Upgrade to publish unlimited posts.`,
+              metadata: { postId, plan: currentPlan, limit: currentLimits.postsPerMonth, used },
+              isRead: false,
+            });
+          } catch (notifErr) {
+            logger.warn("over_quota_notification_failed", {
+              error: notifErr instanceof Error ? notifErr.message : String(notifErr),
+              postId,
+            });
+          }
+
+          throw new UnrecoverableError(
+            `Plan limit reached: ${used}/${currentLimits.postsPerMonth} posts used`
+          );
+        }
+      }
+    } catch (reGateErr) {
+      if (reGateFatal) throw reGateErr;
+      logger.warn("schedule_job_regate_failed_degraded", {
+        queue: job.queueName,
+        jobId: job.id,
+        postId,
+        correlationId,
+        error: reGateErr instanceof Error ? reGateErr.message : String(reGateErr),
+      });
+      // Proceed with publish — creation-time validation is the primary gate
+    }
+
+    // Per-account membership re-check: verify the target X account is still
+    // active and belongs to this user. Defense-in-depth against mid-cycle
+    // downgrades where accounts were deactivated but scheduled posts still
+    // reference stale account IDs.
+    if (!post.xAccount?.isActive || post.xAccount?.userId !== post.userId) {
+      const platform = "x";
+      const accountId = post.xAccountId ?? "unknown";
+      logger.warn("schedule_job_account_inactive", {
+        queue: job.queueName,
+        jobId: job.id,
+        postId,
+        correlationId,
+        accountId,
+        platform,
+        accountActive: post.xAccount?.isActive,
+        accountUserId: post.xAccount?.userId,
+        postUserId: post.userId,
+      });
+
+      await db
+        .update(posts)
+        .set({
+          status: "failed",
+          failReason: "Connected account inactive — reconnect in Settings or remove this post.",
+          lastErrorAt: new Date(),
+        })
+        .where(eq(posts.id, postId));
+
+      try {
+        await db.insert(notifications).values({
+          id: crypto.randomUUID(),
+          userId: post.userId,
+          type: "post_account_inactive",
+          title: "Post Skipped — Account Inactive",
+          message:
+            "A scheduled post could not be published because the connected account is no longer active. Reconnect the account in Settings or remove this post.",
+          metadata: { postId, platform, accountId },
+          isRead: false,
+        });
+      } catch (notifErr) {
+        logger.warn("account_inactive_notification_failed", {
+          error: notifErr instanceof Error ? notifErr.message : String(notifErr),
+          postId,
+        });
+      }
+
+      throw new UnrecoverableError("Account inactive at publish time");
     }
 
     const loadMediaBuffer = async (fileUrl: string) => {

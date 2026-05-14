@@ -10,6 +10,7 @@ import {
   checkAnalyticsExportLimitDetailed,
   type PlanGateFailure,
 } from "@/lib/middleware/require-plan";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 
 const { mockFindFirst, mockSelect, mockCachedQuery } = vi.hoisted(() => ({
   mockFindFirst: vi.fn(),
@@ -56,14 +57,14 @@ describe("Trial System", () => {
     mockZeroCount();
   });
 
-  it("trial user does NOT get Pro features (agentic posting is Pro-only)", async () => {
+  it("trial user gets Pro features during trial (agentic posting allowed)", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "free",
       trialEndsAt: futureDate,
       createdAt: new Date(),
     });
     const result = await checkAgenticPostingAccessDetailed("user-1");
-    expect(result.allowed).toBe(false); // Phase 4: trial = free-tier features
+    expect(result.allowed).toBe(true); // Trial users get full Pro feature access
   });
 
   it("trial user is capped at 1 X accounts (same as free)", async () => {
@@ -111,14 +112,14 @@ describe("Trial System", () => {
     expect(result.allowed).toBe(false);
   });
 
-  it("trial user has no analytics export (same as free)", async () => {
+  it("trial user gets analytics export during trial (csv_pdf like Pro)", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "free",
       trialEndsAt: futureDate,
       createdAt: new Date(),
     });
     const result = await checkAnalyticsExportLimitDetailed("user-1");
-    expect(result.allowed).toBe(false); // Phase 4: trial = "none"
+    expect(result.allowed).toBe(true); // Trial users get Pro analytics export
   });
 
   it("expired trial user is blocked from Pro features", async () => {
@@ -155,6 +156,16 @@ describe("Trial System", () => {
     mockFindFirst.mockResolvedValue({ plan: "agency", trialEndsAt: null, createdAt: new Date() });
     const result = await checkLinkedinAccessDetailed("user-1");
     expect(result.allowed).toBe(true);
+  });
+
+  // Drift guard: prevents accidental divergence between trial and pro_monthly
+  // enabledTools. If a new tool is added to pro_monthly without mirroring
+  // it on trial, this test catches it before users see inconsistent behaviour.
+  it("trial mirrors pro_monthly for all feature tools", () => {
+    const trial = PLAN_LIMITS.trial;
+    const pro = PLAN_LIMITS.pro_monthly;
+    expect(trial.enabledTools.sort()).toEqual(pro.enabledTools.sort());
+    expect(trial.canUseAi).toBe(pro.canUseAi);
   });
 });
 
@@ -230,7 +241,22 @@ describe("Multi-Account Limits", () => {
     expect(result.allowed).toBe(false);
   });
 
-  it("Pro Annual user allowed up to 4 accounts", async () => {
+  it("Pro Annual user allowed up to 3 accounts", async () => {
+    mockFindFirst.mockResolvedValue({
+      plan: "pro_annual",
+      trialEndsAt: null,
+      createdAt: new Date(),
+    });
+    mockSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([{ count: 2 }]),
+      }),
+    });
+    const result = await checkAccountLimitDetailed("user-1", 1);
+    expect(result.allowed).toBe(true);
+  });
+
+  it("Pro Annual user blocked at 4th account (limit is 3)", async () => {
     mockFindFirst.mockResolvedValue({
       plan: "pro_annual",
       trialEndsAt: null,
@@ -239,21 +265,6 @@ describe("Multi-Account Limits", () => {
     mockSelect.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 3 }]),
-      }),
-    });
-    const result = await checkAccountLimitDetailed("user-1", 1);
-    expect(result.allowed).toBe(true);
-  });
-
-  it("Pro Annual user blocked at 5th account (limit is 4)", async () => {
-    mockFindFirst.mockResolvedValue({
-      plan: "pro_annual",
-      trialEndsAt: null,
-      createdAt: new Date(),
-    });
-    mockSelect.mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue([{ count: 4 }]),
       }),
     });
     const result = await checkAccountLimitDetailed("user-1", 1);

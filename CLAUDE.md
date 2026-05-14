@@ -46,7 +46,7 @@ Next.js 16 (App Router), React 19, TypeScript 5.9, PostgreSQL 18 (pgvector), Dri
 - **Admin pages (RSC)**: `requireAdmin()` from `@/lib/admin` → redirects to `/login` on failure
 - **AI routes**: `aiPreamble()` from `@/lib/api/ai-preamble` — handles session + plan + rate-limit + quota + model instantiation
 
-**Plan info:** Trial users get a dedicated `trial` tier (50 AI gens / 25 images, base image models only) for 14 days automatically — `TRIAL_EFFECTIVE_PLAN = "trial"` in `src/lib/plan-limits.ts`; plan gates handle it, no special code needed.
+**Plan info:** Trial users get full Pro feature access (all gates open) for 14 days with capped quotas (50 AI text / 25 images, 20 posts, 1 X account, base image models only) — `TRIAL_EFFECTIVE_PLAN = "trial"` in `src/lib/plan-limits.ts`; plan gates handle it, no special code needed.
 
 **AI quota:** Use `tryConsumeAiQuota(userId, weight)` from `@/lib/services/ai-quota-atomic` for atomic decrement (prevents race overage). Falls back to `ai_quota_grants` rows when base quota exhausts. `aiPreamble({ quotaWeight: N })` wires this for gated routes.
 

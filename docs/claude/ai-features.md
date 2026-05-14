@@ -30,13 +30,14 @@ This document maps all backend AI generation and processing endpoints to their r
 ### `POST /api/chat`
 
 - **Purpose**: General conversational AI assistant (used by the in-app chat surface).
-- **Quota Tracking**: `recordAiUsage(..., "chat", ...)` in `onFinish` callback after `streamText` completes.
+- **Quota Tracking**: Atomic decrement via `tryConsumeAiQuota(userId, 1)` before streaming; `releaseAiQuota(userId, 1)` on failure to refund. Records final usage via `recordAiUsage(..., "chat", ...)` in `onFinish` callback after `streamText` completes. Falls back to `ai_quota_grants` rows when base quota exhausts.
 
-## 2. Agentic Posting (Pro/Agency)
+## 2. Agentic Posting (Pro/Agency/Trial)
 
 ### `POST /api/ai/agentic`
 
 - **Purpose**: Initiates the 5-step Agentic Posting pipeline via SSE streaming.
+- **Plan required**: Pro/Agency/Trial. Not available on Free.
 - **Pipeline**: Research → Strategy → Write → Images → Review.
 - **Database**: `agenticPosts` table.
 - **Quota Tracking**: Records usage for research, write, and image steps via `recordAiUsage()`. Image generation within the pipeline is tracked the same as standalone image generation.
@@ -101,8 +102,8 @@ This document maps all backend AI generation and processing endpoints to their r
 
 ### PDF → Thread (`/api/ai/pdf-to-thread/*`)
 
-- **Feature**: Upload native PDF reports/documents (≤50 MB, ≤200 pages) and generate X threads from extracted text. Gated behind `canUsePdfToThread` (Pro Monthly, Pro Annual, Agency).
-- **Plan required**: Pro Monthly+ (Pro Monthly, Pro Annual, Agency). Not available on Free or Trial.
+- **Feature**: Upload native PDF reports/documents (≤50 MB, ≤200 pages) and generate X threads from extracted text. Gated behind `canUsePdfToThread` (Pro Monthly, Pro Annual, Agency, Trial).
+- **Plan required**: Pro Monthly+ or Trial. Not available on Free.
 - **Quota weight**: **5** (consumed at enqueue or sync generate time).
 - **Endpoints**:
   - `POST /api/ai/pdf-to-thread/upload` — Multipart file upload with magic-byte (%PDF-) validation. Extracts native text-layer via pdf-parse v2. PII redaction applied. Stores to `pdfThreadJobs` table.
@@ -118,8 +119,8 @@ This document maps all backend AI generation and processing endpoints to their r
 
 ### YouTube → Thread (`/api/ai/youtube-to-thread/*`)
 
-- **Feature**: Paste a YouTube video URL, select a transcription provider (Deepgram or Whisper), and generate an X thread from the video transcript. Gated behind `canUseYoutubeToThread` (Pro Monthly, Pro Annual, Agency).
-- **Plan required**: Pro Monthly+ (Pro Monthly, Pro Annual, Agency). Not available on Free or Trial.
+- **Feature**: Paste a YouTube video URL, select a transcription provider (Deepgram or Whisper), and generate an X thread from the video transcript. Gated behind `canUseYoutubeToThread` (Pro Monthly, Pro Annual, Agency, Trial).
+- **Plan required**: Pro Monthly+ or Trial. Not available on Free.
 - **Quota weight**: **5** (consumed at enqueue time).
 - **Endpoints**:
   - `POST /api/ai/youtube-to-thread` — Validates YouTube URL and returns metadata preview when `previewOnly: true` (no quota consumption). Standard mode creates DB row and enqueues BullMQ job. Idempotency check prevents duplicate jobs for the same (user, videoId) within 60s (returns 409 with `existingJobId`). Returns `{ jobId, status: "queued", videoTitle, durationSeconds, thumbnailUrl }`.
@@ -132,7 +133,7 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Database**: `youtubeThreadJobs` table (status lifecycle: `queued` → `downloading` → `transcribing` → `generating` → `ready` → `failed`).
 - **Transcription providers**: Deepgram (`YOUTUBE_DEEPGRAM_API_KEY`) or OpenAI Whisper (reuses `OPENAI_API_KEY`). Cost calculation: ~$0.12 per 20 min (Deepgram), variable per Whisper usage.
 - **Duration caps by plan** (enforced after `getVideoInfo()` before download, gate: `checkYoutubeVideoDurationDetailed()`):
-  - Pro Monthly / Pro Annual: 20 min max per video (1200s) → ~$0.12 Deepgram cost
+  - Trial / Pro Monthly / Pro Annual: 20 min max per video (1200s) → ~$0.12 Deepgram cost
   - Agency: 90 min max per video (5400s) → ~$0.53 Deepgram cost
 - **First-tweet image (optional)**: Mirror of the PDF tool — a Switch in the input options enables generating an editorial 16:9 image for tweet #1 via `POST /api/ai/thread-first-image`. Same quota, gating, and Composer flow as PDF → Thread.
 - **Safety**: yt-dlp URL validation rejects playlists/channels/shorts, moderation check on output. JAILBREAK_GUARD on generation prompt.
@@ -148,7 +149,7 @@ This document maps all backend AI generation and processing endpoints to their r
 - **Result UI metadata footer**: Below tweet cards, a muted line displays `{duration} · {provider} · {language}` plus "Generated in Ns" (frozen elapsed timer from job start).
 - **Thumbnail preview**: Result view shows a thumbnail image derived from `youtubeVideoId` (`https://i.ytimg.com/vi/{videoId}/hqdefault.jpg`) with a "Watch on YouTube" external link. Thumbnail also appears in the preview card before submission and in the Recent jobs list.
 - **AI history labels**: Jobs recorded with `type: "youtube_to_thread"` (the thread) and `type: "transcription"` (audio cost) appear in `/dashboard/ai/history` with proper translated labels via `CONTENT_TYPES` (secondary badge variant).
-- **Monthly count cap** (`youtubeToThreadMonthly`): Free/Trial=0, Pro Monthly=30, Pro Annual=50, Agency=Infinity. Gated by `checkYoutubeToThreadMonthlyDetailed()` counting `aiGenerations WHERE type='youtube_to_thread'` for the current month. Returns 402 on exhaustion.
+- **Monthly count cap** (`youtubeToThreadMonthly`): Free=0, Trial=30, Pro Monthly=30, Pro Annual=50, Agency=Infinity. Gated by `checkYoutubeToThreadMonthlyDetailed()` counting `aiGenerations WHERE type='youtube_to_thread'` for the current month. Returns 402 on exhaustion.
 - **Job history TTL**: `youtube_thread_jobs` rows older than 90 days are auto-deleted by the billing-cleanup cron.
 - **yt-dlp healthcheck**: Worker boot verifies `yt-dlp --version` and logs a fatal diagnostic if the binary is missing, preventing cryptic ENOENT errors on YouTube-to-Thread jobs.
 - **Rate limiting**: Handled by `aiPreamble()` which applies the global "ai" rate limit bucket to all AI endpoints including YouTube-to-Thread.
@@ -260,3 +261,39 @@ This document maps all backend AI generation and processing endpoints to their r
 
 - `BANNED_HASHTAGS` — English + Arabic spam tags (FollowBack, L4L, etc.).
 - `filterHashtags()` + `menaBiasFilter()` — post-generation filtering with Arabic-script tag prioritization for `ar` locale.
+
+## 11. Plan Gating & Feature Access
+
+### Feature Gates
+
+All gating functions imported from `@/lib/middleware/require-plan` return `{ allowed: true } | PlanGateFailure`. Wrap failures with `createPlanLimitResponse()` for 402 responses.
+
+#### Thread Access (`checkThreadAccessDetailed`)
+
+- **Gate**: `canScheduleThreads` (Pro, Agency, Trial only — Free users blocked).
+- **Trigger**: `POST /api/posts` when `tweetsData.length > 1` or `PATCH /api/posts/[postId]` when edit creates a thread.
+- **Response**: 402 with feature=`"thread_access"` if denied.
+
+#### Video/GIF Upload Access (`checkVideoUploadAccessDetailed`)
+
+- **Gate**: `canUploadVideoGif` (Pro, Agency, Trial only — Free users blocked).
+- **Trigger**: `POST /api/media/upload` when magic-bytes detect video/gif; `POST /api/posts` when media type is `"video"` or `"gif"`; `PATCH /api/posts/[postId]` when adding video/gif to existing post.
+- **Response**: 402 with feature=`"video_upload"` if denied.
+
+#### Voice Profile Access (`checkVoiceProfileAccessDetailed`)
+
+- **Gate**: `canUseVoiceProfile` (Pro, Agency, Trial only — Free users blocked).
+- **Trigger**: `POST /api/user/voice-profile` to create/update voice profile settings.
+- **Response**: 402 with feature=`"voice_profile"` if denied.
+
+### Trial Plan Feature Parity
+
+Trial users (14 days of Pro feature access) have **all feature flags enabled** except `canUseLinkedin`, matching Pro Monthly behavior. Quotas remain capped: 50 AI text, 25 AI images, 20 posts, 1 X account, base image models only (`nano-banana-2`, `nano-banana`), YouTube quotas at 30/month with 20-min duration cap. Inspiration bookmarks unlimited during trial.
+
+### Quota Consumption Flow
+
+1. **Atomic decrement** (`tryConsumeAiQuota`) before AI work begins.
+2. **Fallback to grants** (`ai_quota_grants` table) when base quota exhausts.
+3. **Refund on failure** (`releaseAiQuota`) if the operation fails before completion.
+4. **Record usage** (`recordAiUsage`) at operation completion for audit & billing tracking.
+5. **Rate-limit tier**: Trial users mapped to `"pro"` rate-limit tier for API endpoint quotas.

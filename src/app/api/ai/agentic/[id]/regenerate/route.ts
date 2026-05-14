@@ -45,6 +45,7 @@ async function pollImage(predictionId: string): Promise<string | null> {
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const correlationId = getCorrelationId(req);
   const { id } = await params;
+  let releaseQuota: () => Promise<void> = async () => {};
 
   try {
     const preamble = await aiPreamble({
@@ -52,11 +53,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       quotaWeight: 5,
     });
     if (preamble instanceof Response) return preamble;
-    const { session } = preamble;
+    const { session, releaseQuota: preambleReleaseQuota } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const json = (await req.json()) as unknown;
     const parsed = regenerateSchema.safeParse(json);
-    if (!parsed.success) return ApiError.badRequest(parsed.error.issues);
+    if (!parsed.success) {
+      await releaseQuota();
+      return ApiError.badRequest(parsed.error.issues);
+    }
 
     const { tweetIndex, regenerateImage } = parsed.data;
 
@@ -68,14 +73,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         },
       },
     });
-    if (!agenticPost) return ApiError.notFound("Agentic post");
+    if (!agenticPost) {
+      await releaseQuota();
+      return ApiError.notFound("Agentic post");
+    }
     if (agenticPost.status !== "ready") {
+      await releaseQuota();
       return ApiError.badRequest(`Cannot regenerate a tweet for status '${agenticPost.status}'`);
     }
 
     const currentTweets = (agenticPost.tweets as AgenticTweet[]) ?? [];
     const tweetToRegen = currentTweets[tweetIndex];
-    if (!tweetToRegen) return ApiError.notFound("Tweet at that index");
+    if (!tweetToRegen) {
+      await releaseQuota();
+      return ApiError.notFound("Tweet at that index");
+    }
 
     const research = agenticPost.researchBrief as ResearchBrief;
     const plan = agenticPost.contentPlan as ContentPlan;
@@ -205,6 +217,7 @@ Return ONLY a valid JSON object (no markdown):
 
     return Response.json({ tweet: updatedTweet, tweetIndex });
   } catch (err) {
+    await releaseQuota();
     logger.error("agentic_regenerate_error", {
       error: err instanceof Error ? err.message : String(err),
       correlationId,

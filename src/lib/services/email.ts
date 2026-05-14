@@ -1,6 +1,7 @@
 import { render } from "@react-email/render";
 import { Resend } from "resend";
 import { AccountDeactivatedEmail } from "@/components/email/account-deactivated-email";
+import { TrialEndingSoonEmail } from "@/components/email/billing/trial-ending-soon-email";
 import { PostFailureEmail } from "@/components/email/post-failure-email";
 import { TokenExpiringEmail } from "@/components/email/token-expiring-email";
 import { logger } from "@/lib/logger";
@@ -144,6 +145,19 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+export async function sendTrialEndingSoonEmail(
+  to: string,
+  userName: string,
+  locale: string = "en"
+) {
+  await sendEmail({
+    to,
+    subject: `${getEmailTranslations(locale).trial_ending_soon.subject}`,
+    react: TrialEndingSoonEmail({ userName, locale }),
+    metadata: { type: "trial_ending_soon" },
+  });
 }
 
 export async function sendTeamInvitationEmail(

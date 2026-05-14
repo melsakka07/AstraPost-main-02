@@ -82,9 +82,46 @@ vi.mock("bullmq", () => ({
   Worker: vi.fn(function () {
     return { on: vi.fn() };
   }),
+  UnrecoverableError: class extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "UnrecoverableError";
+    }
+  },
+  DelayedError: class extends Error {
+    constructor() {
+      super("Delayed");
+      this.name = "DelayedError";
+    }
+  },
 }));
 
 vi.mock("ioredis", () => ({ default: vi.fn() }));
+
+vi.mock("@/lib/middleware/require-plan", () => ({
+  getUserPlanType: vi.fn().mockResolvedValue("pro_monthly"),
+}));
+
+vi.mock("@/lib/plan-limits", () => ({
+  getPlanLimits: vi.fn().mockReturnValue({
+    postsPerMonth: Infinity,
+    aiGenerationsPerMonth: 150,
+    aiImagesPerMonth: 50,
+    maxXAccounts: 3,
+    maxInstagramAccounts: 1,
+    maxLinkedinAccounts: 0,
+    maxScheduleHorizonDays: 90,
+    maxTeamMembers: null,
+    maxInspirationBookmarks: -1,
+    maxYoutubeVideoDurationSeconds: 1200,
+    youtubeToThreadMonthly: 30,
+    availableImageModels: [],
+    canUseAi: true,
+    enabledTools: [],
+    analyticsRetentionDays: 90,
+    analyticsExport: "csv_pdf",
+  }),
+}));
 
 // Mock the queue client so scheduleQueue.add doesn't throw when the recurrence
 // code path is reached (e.g. when recurrencePattern is set on the post).
@@ -128,7 +165,7 @@ function makePost(overrides: Partial<Record<string, unknown>> = {}) {
     linkedinAccountId: null,
     instagramAccountId: null,
     scheduledAt: new Date(),
-    xAccount: null,
+    xAccount: { isActive: true, userId: "user-1" },
     tweets: [{ id: "tw-1", content: "Hello world", position: 1, media: [], xTweetId: null }],
     ...overrides,
   };
@@ -402,7 +439,12 @@ describe("scheduleProcessor — integration", () => {
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
-        xAccount: { xSubscriptionTier: "None", xUsername: "freeuser" },
+        xAccount: {
+          isActive: true,
+          userId: "user-1",
+          xSubscriptionTier: "None",
+          xUsername: "freeuser",
+        },
       })
     );
 
@@ -428,7 +470,12 @@ describe("scheduleProcessor — integration", () => {
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
-        xAccount: { xSubscriptionTier: "Premium", xUsername: "premiumuser" },
+        xAccount: {
+          isActive: true,
+          userId: "user-1",
+          xSubscriptionTier: "Premium",
+          xUsername: "premiumuser",
+        },
       })
     );
 
@@ -449,7 +496,12 @@ describe("scheduleProcessor — integration", () => {
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [{ id: "tw-1", content: mediumContent, position: 1, media: [], xTweetId: null }],
-        xAccount: { xSubscriptionTier: "Premium", xUsername: "premiumuser" },
+        xAccount: {
+          isActive: true,
+          userId: "user-1",
+          xSubscriptionTier: "Premium",
+          xUsername: "premiumuser",
+        },
       })
     );
     mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
@@ -468,7 +520,12 @@ describe("scheduleProcessor — integration", () => {
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [{ id: "tw-1", content: shortContent, position: 1, media: [], xTweetId: null }],
-        xAccount: { xSubscriptionTier: "None", xUsername: "freeuser" },
+        xAccount: {
+          isActive: true,
+          userId: "user-1",
+          xSubscriptionTier: "None",
+          xUsername: "freeuser",
+        },
       })
     );
     mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
@@ -487,7 +544,12 @@ describe("scheduleProcessor — integration", () => {
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
-        xAccount: { xSubscriptionTier: "Basic", xUsername: "basicuser" },
+        xAccount: {
+          isActive: true,
+          userId: "user-1",
+          xSubscriptionTier: "Basic",
+          xUsername: "basicuser",
+        },
       })
     );
     mockPostTweet.mockResolvedValue({ data: { id: "x-tweet-1" } });
@@ -506,7 +568,12 @@ describe("scheduleProcessor — integration", () => {
     mockDb.query.posts.findFirst.mockResolvedValue(
       makePost({
         tweets: [{ id: "tw-1", content: longContent, position: 1, media: [], xTweetId: null }],
-        xAccount: { xSubscriptionTier: null, xUsername: "unknownuser" },
+        xAccount: {
+          isActive: true,
+          userId: "user-1",
+          xSubscriptionTier: null,
+          xUsername: "unknownuser",
+        },
       })
     );
 

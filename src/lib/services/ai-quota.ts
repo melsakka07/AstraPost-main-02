@@ -87,7 +87,7 @@ export async function getMonthlyAiUsage(userId: string): Promise<MonthlyAiUsage>
     );
 
   const used = Number(usage[0]?.count ?? 0);
-  const limit = limits.aiGenerationsPerMonth === Infinity ? null : limits.aiGenerationsPerMonth;
+  const limit = limits.aiGenerationsPerMonth === -1 ? null : limits.aiGenerationsPerMonth;
 
   return {
     used,

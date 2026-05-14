@@ -1,13 +1,15 @@
 import { NextRequest } from "next/server";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { normalizePlan } from "@/lib/plan-limits";
-import { teamInvitations, teamMembers, user } from "@/lib/schema";
+import {
+  checkTeamMemberLimitDetailed,
+  createPlanLimitResponse,
+} from "@/lib/middleware/require-plan";
+import { teamInvitations, user } from "@/lib/schema";
 import { sendTeamInvitationEmail } from "@/lib/services/email";
-import { getPlanMetadata } from "@/lib/services/plan-metadata";
 import { getTeamContext } from "@/lib/team-context";
 
 const inviteSchema = z.object({
@@ -39,39 +41,9 @@ export async function POST(req: NextRequest) {
 
     const { email, role } = parsed.data;
 
-    // Check plan limits
-    const owner = await db.query.user.findFirst({
-      where: eq(user.id, ctx.currentTeamId),
-      columns: { plan: true, name: true },
-    });
-
-    const plan = normalizePlan(owner?.plan);
-    const limits = getPlanMetadata(plan);
-
-    if (limits.maxTeamMembers === null) {
-      return ApiError.forbidden("Team members are only available on the Agency plan.");
-    }
-
-    // Count current members + pending invitations
-    const membersCount = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(teamMembers)
-      .where(eq(teamMembers.teamId, ctx.currentTeamId));
-
-    const invitesCount = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(teamInvitations)
-      .where(
-        and(eq(teamInvitations.teamId, ctx.currentTeamId), eq(teamInvitations.status, "pending"))
-      );
-
-    const totalUsed = Number(membersCount[0]?.count ?? 0) + Number(invitesCount[0]?.count ?? 0);
-
-    if (totalUsed >= limits.maxTeamMembers) {
-      return ApiError.forbidden(
-        `You have reached the maximum of ${limits.maxTeamMembers} team members.`
-      );
-    }
+    // Plan gate — team members require Agency plan + under limit
+    const teamGate = await checkTeamMemberLimitDetailed(ctx.currentTeamId);
+    if (!teamGate.allowed) return createPlanLimitResponse(teamGate);
 
     // Check if invitation exists
     const existingInvite = await db.query.teamInvitations.findFirst({
@@ -101,17 +73,23 @@ export async function POST(req: NextRequest) {
       status: "pending",
     });
 
-    // Query invitee's language preference
-    const invitee = await db.query.user.findFirst({
-      where: eq(user.email, email),
-      columns: { language: true },
-    });
+    // Fetch owner name for email and invitee's language preference
+    const [ownerRow, invitee] = await Promise.all([
+      db.query.user.findFirst({
+        where: eq(user.id, ctx.currentTeamId),
+        columns: { name: true },
+      }),
+      db.query.user.findFirst({
+        where: eq(user.email, email),
+        columns: { language: true },
+      }),
+    ]);
 
     // Send email
     await sendTeamInvitationEmail(
       email,
       token,
-      owner?.name || "AstraPost Team",
+      ownerRow?.name || "AstraPost Team",
       invitee?.language || "en"
     );
 

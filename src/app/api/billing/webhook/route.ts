@@ -20,6 +20,9 @@ import {
   subscriptions,
   user,
   xAccounts,
+  instagramAccounts,
+  linkedinAccounts,
+  teamMembers,
   posts,
   webhookDeadLetterQueue,
   webhookDeliveryLog,
@@ -486,6 +489,114 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
       );
     }
 
+    // ── 3.2.1b Instagram account limit enforcement on downgrade ─────────
+    const newIgLimit = PLAN_LIMITS[newPlan].maxInstagramAccounts;
+    if (Number.isFinite(newIgLimit) || newIgLimit === 0) {
+      const activeIgAccounts = await db.query.instagramAccounts.findMany({
+        where: and(
+          eq(instagramAccounts.userId, existingRecord.userId),
+          eq(instagramAccounts.isActive, true)
+        ),
+        columns: { id: true },
+      });
+      if (activeIgAccounts.length > newIgLimit) {
+        const excess = activeIgAccounts.slice(newIgLimit);
+        await db
+          .update(instagramAccounts)
+          .set({ isActive: false })
+          .where(
+            inArray(
+              instagramAccounts.id,
+              excess.map((a) => a.id)
+            )
+          );
+        await runSideEffect(
+          () =>
+            notifyBillingEvent({
+              userId: existingRecord.userId,
+              type: "billing_accounts_over_limit",
+              title: "Instagram account limit exceeded",
+              message: `Your ${newPlan.replace(/_/g, " ")} plan allows ${newIgLimit} Instagram account${newIgLimit === 1 ? "" : "s"}. ${excess.length} account${excess.length === 1 ? " was" : "s were"} deactivated.`,
+              metadata: {
+                newPlan,
+                newLimit: newIgLimit,
+                deactivatedCount: excess.length,
+                accountIds: excess.map((a) => a.id),
+              },
+            }),
+          "billing_accounts_over_limit_ig"
+        );
+      }
+    }
+
+    // ── 3.2.1c LinkedIn account limit enforcement on downgrade ──────────
+    const newLiLimit = PLAN_LIMITS[newPlan].maxLinkedinAccounts;
+    if (Number.isFinite(newLiLimit) || newLiLimit === 0) {
+      const activeLiAccounts = await db.query.linkedinAccounts.findMany({
+        where: and(
+          eq(linkedinAccounts.userId, existingRecord.userId),
+          eq(linkedinAccounts.isActive, true)
+        ),
+        columns: { id: true },
+      });
+      if (activeLiAccounts.length > newLiLimit) {
+        const excess = activeLiAccounts.slice(newLiLimit);
+        await db
+          .update(linkedinAccounts)
+          .set({ isActive: false })
+          .where(
+            inArray(
+              linkedinAccounts.id,
+              excess.map((a) => a.id)
+            )
+          );
+        await runSideEffect(
+          () =>
+            notifyBillingEvent({
+              userId: existingRecord.userId,
+              type: "billing_accounts_over_limit",
+              title: "LinkedIn account limit exceeded",
+              message: `Your ${newPlan.replace(/_/g, " ")} plan allows ${newLiLimit} LinkedIn account${newLiLimit === 1 ? "" : "s"}. ${excess.length} account${excess.length === 1 ? " was" : "s were"} deactivated.`,
+              metadata: {
+                newPlan,
+                newLimit: newLiLimit,
+                deactivatedCount: excess.length,
+                accountIds: excess.map((a) => a.id),
+              },
+            }),
+          "billing_accounts_over_limit_li"
+        );
+      }
+    }
+
+    // ── 3.2.1d Team member limit notification on downgrade ──────────────
+    // Team members cannot be auto-removed, but we notify the owner.
+    const newTeamLimit = PLAN_LIMITS[newPlan].maxTeamMembers;
+    if (newTeamLimit !== null && Number.isFinite(newTeamLimit)) {
+      const membersCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(teamMembers)
+        .where(eq(teamMembers.teamId, existingRecord.userId));
+      const count = Number(membersCount[0]?.count ?? 0);
+      if (count > newTeamLimit) {
+        await runSideEffect(
+          () =>
+            notifyBillingEvent({
+              userId: existingRecord.userId,
+              type: "billing_accounts_over_limit",
+              title: "Team member limit exceeded",
+              message: `Your ${newPlan.replace(/_/g, " ")} plan allows ${newTeamLimit} team member${newTeamLimit === 1 ? "" : "s"}. You currently have ${count}. Please remove ${count - newTeamLimit} member${count - newTeamLimit === 1 ? "" : "s"} in Team Settings.`,
+              metadata: {
+                newPlan,
+                newLimit: newTeamLimit,
+                currentCount: count,
+              },
+            }),
+          "billing_accounts_over_limit_team"
+        );
+      }
+    }
+
     // ── 3.2.2 Scheduled posts cleanup on downgrade ─────────────────────
     // When downgrading to a plan with lower postsPerMonth, move excess scheduled posts to draft
     const oldPlan = existingRecord.plan;
@@ -729,6 +840,62 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
         }),
       "billing_accounts_over_limit_deleted"
     );
+  }
+
+  // ── IG account limit enforcement on deletion (free = 0) ───────────
+  if (PLAN_LIMITS.free.maxInstagramAccounts === 0) {
+    const activeIg = await db.query.instagramAccounts.findMany({
+      where: and(
+        eq(instagramAccounts.userId, subRecord.userId),
+        eq(instagramAccounts.isActive, true)
+      ),
+      columns: { id: true },
+    });
+    if (activeIg.length > 0) {
+      await db
+        .update(instagramAccounts)
+        .set({ isActive: false })
+        .where(eq(instagramAccounts.userId, subRecord.userId));
+      await runSideEffect(
+        () =>
+          notifyBillingEvent({
+            userId: subRecord.userId,
+            type: "billing_accounts_over_limit",
+            title: "Instagram accounts deactivated",
+            message: `Your subscription was canceled. ${activeIg.length} Instagram account${activeIg.length === 1 ? " was" : "s were"} deactivated because the Free plan does not support Instagram.`,
+            metadata: { deactivatedCount: activeIg.length },
+          }),
+        "billing_accounts_over_limit_ig_deleted"
+      );
+    }
+  }
+
+  // ── LinkedIn account limit enforcement on deletion (free = 0) ──────
+  if (PLAN_LIMITS.free.maxLinkedinAccounts === 0) {
+    const activeLi = await db.query.linkedinAccounts.findMany({
+      where: and(
+        eq(linkedinAccounts.userId, subRecord.userId),
+        eq(linkedinAccounts.isActive, true)
+      ),
+      columns: { id: true },
+    });
+    if (activeLi.length > 0) {
+      await db
+        .update(linkedinAccounts)
+        .set({ isActive: false })
+        .where(eq(linkedinAccounts.userId, subRecord.userId));
+      await runSideEffect(
+        () =>
+          notifyBillingEvent({
+            userId: subRecord.userId,
+            type: "billing_accounts_over_limit",
+            title: "LinkedIn accounts deactivated",
+            message: `Your subscription was canceled. ${activeLi.length} LinkedIn account${activeLi.length === 1 ? " was" : "s were"} deactivated because the Free plan does not support LinkedIn.`,
+            metadata: { deactivatedCount: activeLi.length },
+          }),
+        "billing_accounts_over_limit_li_deleted"
+      );
+    }
   }
 
   // Fetch user for side-effect emails (needed by both branches)

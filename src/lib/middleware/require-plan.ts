@@ -10,10 +10,21 @@ import {
   TRIAL_EFFECTIVE_PLAN,
   IMAGE_MODEL_COST,
   type ImageModel,
-  type PlanLimits,
   type PlanType,
+  type ToolKey,
 } from "@/lib/plan-limits";
-import { aiGenerations, inspirationBookmarks, posts, user, xAccounts } from "@/lib/schema";
+import {
+  aiGenerations,
+  inspirationBookmarks,
+  instagramAccounts,
+  linkedinAccounts,
+  planChangeLog,
+  posts,
+  teamInvitations,
+  teamMembers,
+  user,
+  xAccounts,
+} from "@/lib/schema";
 import { getMonthWindow } from "@/lib/utils/time";
 
 export type GatedFeature =
@@ -40,7 +51,13 @@ export type GatedFeature =
   | "tools"
   | "pdf_to_thread"
   | "youtube_to_thread"
-  | "youtube_duration";
+  | "youtube_duration"
+  | "thread_access"
+  | "video_upload"
+  | "instagram_accounts"
+  | "linkedin_accounts"
+  | "schedule_horizon"
+  | "team_members";
 
 export type PlanErrorCode = "upgrade_required" | "quota_exceeded";
 
@@ -49,6 +66,8 @@ interface PlanContext {
   effectivePlan: PlanType;
   trialEndsAt: Date | null;
   isTrialActive: boolean;
+  /** True when the 14-day trial window has ended and the user is now on free */
+  trialExpired: boolean;
 }
 
 export interface PlanGateFailure {
@@ -70,8 +89,15 @@ interface PlanGateSuccess {
 
 export type PlanGateResult = PlanGateSuccess | PlanGateFailure;
 
+// Tracks users whose trial-expiry audit log has been written in this process.
+// Avoids running a `findFirst` on every gated API call for expired-trial users
+// (the cached `getPlanContext` result returns `trialExpired: true` indefinitely
+// until cache invalidates). Resets per cold start; DB idempotency is the source
+// of truth for the rare duplicate.
+const trialExpiryLoggedThisProcess = new Set<string>();
+
 async function getPlanContext(userId: string): Promise<PlanContext> {
-  return cachedQuery(
+  const result = await cachedQuery(
     `plan:${userId}`,
     async () => {
       const dbUser = await db.query.user.findFirst({
@@ -107,11 +133,40 @@ async function getPlanContext(userId: string): Promise<PlanContext> {
 
       const isTrialActive = effectivePlanBase === "free" && !!trialEndsAt && now < trialEndsAt;
       const effectivePlan = isTrialActive ? TRIAL_EFFECTIVE_PLAN : effectivePlanBase;
+      const trialExpired = effectivePlanBase === "free" && !!trialEndsAt && now >= trialEndsAt;
 
-      return { plan: effectivePlanBase, effectivePlan, trialEndsAt, isTrialActive };
+      return { plan: effectivePlanBase, effectivePlan, trialEndsAt, isTrialActive, trialExpired };
     },
     5 * 60 // 5 minutes
   );
+
+  // Fire-and-forget: write audit log when trial has expired (idempotent via
+  // existence check). The in-process Set dedupes repeated lookups for the same
+  // user — without it, every cached getPlanContext call for an expired-trial
+  // user would re-run the findFirst query.
+  if (result.trialExpired && !trialExpiryLoggedThisProcess.has(userId)) {
+    void (async () => {
+      try {
+        const existing = await db.query.planChangeLog.findFirst({
+          where: and(eq(planChangeLog.userId, userId), eq(planChangeLog.reason, "trial_expired")),
+        });
+        if (!existing) {
+          await db.insert(planChangeLog).values({
+            id: crypto.randomUUID(),
+            userId,
+            oldPlan: null, // trial is a synthetic plan, not a DB-stored plan
+            newPlan: "free",
+            reason: "trial_expired",
+          });
+        }
+        trialExpiryLoggedThisProcess.add(userId);
+      } catch (err) {
+        logger.error("plan_context_trial_expiry_audit_failed", { userId, error: String(err) });
+      }
+    })();
+  }
+
+  return result;
 }
 
 function buildFailure(params: Omit<PlanGateFailure, "allowed">): PlanGateFailure {
@@ -197,25 +252,20 @@ export async function getUserPlanType(userId: string): Promise<PlanType> {
   return (await getPlanContext(userId)).effectivePlan;
 }
 
-// ─── Boolean-flag feature gate factory ────────────────────────────────────────
-// The 10 Pro/Agency boolean feature flags all follow the exact same check
-// pattern.  Rather than duplicating 8 lines per function, the factory generates
-// them from a declarative config.
-
-type BooleanPlanLimitKey = {
-  [K in keyof PlanLimits]: PlanLimits[K] extends boolean ? K : never;
-}[keyof PlanLimits];
+// ─── Feature-tool gate factory ─────────────────────────────────────────────────
+// All Pro/Agency feature flags follow the same pattern. The factory checks
+// enabledTools.includes(toolKey) instead of individual boolean fields.
 
 function makeFeatureGate(
   feature: GatedFeature,
-  limitFlag: BooleanPlanLimitKey,
+  toolKey: ToolKey,
   message: string,
   suggestedPlan: PlanType = "pro_monthly"
 ): (userId: string) => Promise<PlanGateResult> {
   return async function checkDetailed(userId: string): Promise<PlanGateResult> {
     const context = await getPlanContext(userId);
     const limits = getPlanLimits(context.effectivePlan);
-    if (limits[limitFlag]) return { allowed: true };
+    if (limits.enabledTools.includes(toolKey)) return { allowed: true };
     return buildFailure({
       error: "upgrade_required",
       feature,
@@ -238,8 +288,6 @@ export async function checkAccountLimitDetailed(
 ): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
   const limits = getPlanLimits(context.effectivePlan);
-  if (limits.maxXAccounts === Infinity) return { allowed: true };
-
   const accountsCount = await db
     .select({ count: sql<number>`count(*)` })
     .from(xAccounts)
@@ -264,6 +312,132 @@ export async function checkAccountLimitDetailed(
 export async function checkAccountLimit(userId: string) {
   const result = await checkAccountLimitDetailed(userId);
   return result.allowed;
+}
+
+export async function checkInstagramAccountLimitDetailed(
+  userId: string,
+  increment = 1
+): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  const limits = getPlanLimits(context.effectivePlan);
+  const accountsCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(instagramAccounts)
+    .where(eq(instagramAccounts.userId, userId));
+  const used = Number(accountsCount[0]?.count ?? 0);
+
+  if (used + increment <= limits.maxInstagramAccounts) return { allowed: true };
+
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "instagram_accounts",
+    message: "Connect Instagram accounts to cross-post — available on Pro",
+    plan: context.plan,
+    limit: Number.isFinite(limits.maxInstagramAccounts) ? limits.maxInstagramAccounts : null,
+    used,
+    suggestedPlan: "pro_monthly",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkLinkedinAccountLimitDetailed(
+  userId: string,
+  increment = 1
+): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  const limits = getPlanLimits(context.effectivePlan);
+  const accountsCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(linkedinAccounts)
+    .where(eq(linkedinAccounts.userId, userId));
+  const used = Number(accountsCount[0]?.count ?? 0);
+
+  if (used + increment <= limits.maxLinkedinAccounts) return { allowed: true };
+
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "linkedin_accounts",
+    message:
+      "Connect more LinkedIn accounts to manage multiple company pages — available on Agency",
+    plan: context.plan,
+    limit: Number.isFinite(limits.maxLinkedinAccounts) ? limits.maxLinkedinAccounts : null,
+    used,
+    suggestedPlan: "agency",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkTeamMemberLimitDetailed(userId: string): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  const limits = getPlanLimits(context.effectivePlan);
+
+  if (limits.maxTeamMembers === null) {
+    return buildFailure({
+      error: "upgrade_required",
+      feature: "team_members",
+      message: "Team members are only available on the Agency plan.",
+      plan: context.plan,
+      limit: null,
+      used: 0,
+      suggestedPlan: "agency",
+      trialActive: context.isTrialActive,
+      resetAt: null,
+    });
+  }
+
+  const membersCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(teamMembers)
+    .where(eq(teamMembers.teamId, userId));
+
+  const invitesCount = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(teamInvitations)
+    .where(and(eq(teamInvitations.teamId, userId), eq(teamInvitations.status, "pending")));
+
+  const used = Number(membersCount[0]?.count ?? 0) + Number(invitesCount[0]?.count ?? 0);
+
+  if (used < limits.maxTeamMembers) return { allowed: true };
+
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "team_members",
+    message: `You have reached the maximum of ${limits.maxTeamMembers} team members. Upgrade to add more.`,
+    plan: context.plan,
+    limit: limits.maxTeamMembers,
+    used,
+    suggestedPlan: "agency",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
+}
+
+export async function checkScheduleHorizonDetailed(
+  userId: string,
+  scheduledAt: Date
+): Promise<PlanGateResult> {
+  const context = await getPlanContext(userId);
+  const limits = getPlanLimits(context.effectivePlan);
+  if (!Number.isFinite(limits.maxScheduleHorizonDays)) return { allowed: true };
+
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + limits.maxScheduleHorizonDays);
+
+  if (scheduledAt <= maxDate) return { allowed: true };
+
+  return buildFailure({
+    error: "upgrade_required",
+    feature: "schedule_horizon",
+    message: `Schedule up to ${limits.maxScheduleHorizonDays} days ahead — upgrade to Pro for 90-day scheduling.`,
+    plan: context.plan,
+    limit: limits.maxScheduleHorizonDays,
+    used: Math.ceil((scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+    suggestedPlan: "pro_monthly",
+    trialActive: context.isTrialActive,
+    resetAt: null,
+  });
 }
 
 export async function checkPostLimitDetailed(userId: string, count = 1): Promise<PlanGateResult> {
@@ -324,7 +498,7 @@ export async function checkAiLimit(userId: string) {
 export async function checkAiQuotaDetailed(userId: string): Promise<PlanGateResult> {
   const context = await getPlanContext(userId);
   const limits = getPlanLimits(context.effectivePlan);
-  if (limits.aiGenerationsPerMonth === Infinity) return { allowed: true };
+  if (limits.aiGenerationsPerMonth === -1) return { allowed: true };
 
   const { start, end } = getMonthWindow();
   const aiCount = await db
@@ -407,50 +581,50 @@ export async function checkBookmarkLimitDetailed(userId: string): Promise<PlanGa
 
 export const checkViralScoreAccessDetailed = makeFeatureGate(
   "viral_score",
-  "canUseViralScore",
+  "viral_score",
   "Predict your tweet's viral potential before posting — available on Pro"
 );
 
 export const checkBestTimesAccessDetailed = makeFeatureGate(
   "best_times",
-  "canViewBestTimes",
+  "best_times",
   "Schedule when your audience is most engaged — available on Pro"
 );
 
 export const checkVoiceProfileAccessDetailed = makeFeatureGate(
   "voice_profile",
-  "canUseVoiceProfile",
+  "voice_profile",
   "Let AI learn your unique writing style for authentic content — available on Pro"
 );
 
 export const checkLinkedinAccessDetailed = makeFeatureGate(
   "linkedin_access",
-  "canUseLinkedin",
+  "linkedin",
   "Manage LinkedIn alongside X from one dashboard — available on Agency",
   "agency"
 );
 
 export const checkContentCalendarAccessDetailed = makeFeatureGate(
   "content_calendar",
-  "canUseContentCalendar",
+  "content_calendar",
   "Plan a month of content in seconds with AI Calendar — available on Pro"
 );
 
 export const checkUrlToThreadAccessDetailed = makeFeatureGate(
   "url_to_thread",
-  "canUseUrlToThread",
+  "url_to_thread",
   "Turn any article into a compelling thread — available on Pro"
 );
 
 export const checkPdfToThreadAccessDetailed = makeFeatureGate(
   "pdf_to_thread",
-  "canUsePdfToThread",
+  "pdf_to_thread",
   "Convert PDFs into compelling threads — available on Pro"
 );
 
 export const checkYoutubeToThreadAccessDetailed = makeFeatureGate(
   "youtube_to_thread",
-  "canUseYoutubeToThread",
+  "youtube_to_thread",
   "Turn YouTube videos into X threads — available on Pro"
 );
 
@@ -496,7 +670,7 @@ export async function checkYoutubeVideoDurationDetailed(
   const limits = getPlanLimits(context.effectivePlan);
 
   // free/trial have maxYoutubeVideoDurationSeconds === 0; they are blocked upstream by the
-  // feature access gate (canUseYoutubeToThread). No need to surface a duration error here.
+  // feature access gate (youtube_to_thread). No need to surface a duration error here.
   if (limits.maxYoutubeVideoDurationSeconds === 0) return { allowed: true };
 
   if (durationSeconds <= limits.maxYoutubeVideoDurationSeconds) return { allowed: true };
@@ -521,50 +695,62 @@ export async function checkYoutubeVideoDurationDetailed(
 
 export const checkVariantGeneratorAccessDetailed = makeFeatureGate(
   "variant_generator",
-  "canUseVariantGenerator",
+  "variant_generator",
   "Test multiple versions of your tweet to find what resonates — available on Pro"
 );
 
 export const checkCompetitorAnalyzerAccessDetailed = makeFeatureGate(
   "competitor_analyzer",
-  "canUseCompetitorAnalyzer",
+  "competitor_analyzer",
   "See what's working for your competitors and adapt — available on Pro"
 );
 
 export const checkReplyGeneratorAccessDetailed = makeFeatureGate(
   "reply_generator",
-  "canUseReplyGenerator",
+  "reply_generator",
   "Never miss an engagement opportunity with smart reply suggestions — available on Pro"
 );
 
 export const checkBioOptimizerAccessDetailed = makeFeatureGate(
   "bio_optimizer",
-  "canUseBioOptimizer",
+  "bio_optimizer",
   "Craft a bio that converts visitors into followers — available on Pro"
 );
 
 export const checkInspirationAccessDetailed = makeFeatureGate(
   "inspiration",
-  "canUseInspiration",
-  "Discover trending content ideas that match your niche — available on Pro"
+  "inspiration",
+  "Inspiration is not available on your current plan."
 );
 
 export const checkAgenticPostingAccessDetailed = makeFeatureGate(
   "agentic_posting",
-  "canUseAgenticPosting",
+  "agentic_posting",
   "Let AI research, write, and optimize a complete thread automatically — available on Pro"
 );
 
 export const checkAffiliateGeneratorAccessDetailed = makeFeatureGate(
   "affiliate_generator",
-  "canUseAffiliateGenerator",
+  "affiliate_generator",
   "Turn any product link into a high-converting tweet — available on Pro"
 );
 
 export const checkToolsAccessDetailed = makeFeatureGate(
   "tools",
-  "canUseTools",
+  "tools",
   "AI writing tools help you craft better hooks, CTAs, and rewrites — available on Pro"
+);
+
+export const checkThreadAccessDetailed = makeFeatureGate(
+  "thread_access",
+  "schedule_threads",
+  "Schedule multi-tweet threads to tell longer stories — available on Pro"
+);
+
+export const checkVideoUploadAccessDetailed = makeFeatureGate(
+  "video_upload",
+  "upload_video_gif",
+  "Upload video and GIF content for richer engagement — available on Pro"
 );
 
 // ─── Image-specific gates ──────────────────────────────────────────────────────

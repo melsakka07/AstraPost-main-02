@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     });
     if (preamble instanceof Response) return preamble;
     const { session, releaseQuota: preambleReleaseQuota } = preamble;
-    releaseQuota = preambleReleaseQuota;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     // Step 7: Validate YouTube URL
     const validation = validateYoutubeUrl(youtubeUrl);

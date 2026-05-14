@@ -27,6 +27,8 @@ const {
   mockDbQuerySubscriptionsFindFirst,
   mockDbQueryUserFindFirst,
   mockDbQueryXAccountsFindMany,
+  mockDbQueryInstagramFindMany,
+  mockDbQueryLinkedinFindMany,
   mockDbInsertFn,
   mockDbUpdateFn,
   mockDbInsertValuesFn,
@@ -43,6 +45,8 @@ const {
   const mockDbQuerySubscriptionsFindFirst = vi.fn();
   const mockDbQueryUserFindFirst = vi.fn();
   const mockDbQueryXAccountsFindMany = vi.fn();
+  const mockDbQueryInstagramFindMany = vi.fn();
+  const mockDbQueryLinkedinFindMany = vi.fn();
 
   const mockNotifyBillingEvent = vi.fn().mockResolvedValue(undefined);
   const mockSendBillingEmail = vi.fn().mockResolvedValue(undefined);
@@ -75,6 +79,8 @@ const {
     mockDbQuerySubscriptionsFindFirst,
     mockDbQueryUserFindFirst,
     mockDbQueryXAccountsFindMany,
+    mockDbQueryInstagramFindMany,
+    mockDbQueryLinkedinFindMany,
     mockDbInsertFn,
     mockDbUpdateFn,
     mockDbInsertValuesFn,
@@ -116,6 +122,8 @@ vi.mock("@/lib/db", () => ({
       subscriptions: { findFirst: mockDbQuerySubscriptionsFindFirst },
       user: { findFirst: mockDbQueryUserFindFirst },
       xAccounts: { findMany: mockDbQueryXAccountsFindMany },
+      instagramAccounts: { findMany: mockDbQueryInstagramFindMany },
+      linkedinAccounts: { findMany: mockDbQueryLinkedinFindMany },
     },
     insert: mockDbInsertFn,
     update: mockDbUpdateFn,
@@ -202,6 +210,9 @@ describe("POST /api/billing/webhook", () => {
     mockDbQueryUserFindFirst.mockResolvedValue(null);
     // Default: no active X accounts (so over-limit checks don't trigger)
     mockDbQueryXAccountsFindMany.mockResolvedValue([]);
+    // Default: no Instagram/LinkedIn accounts (so downgrade cleanup is no-op)
+    mockDbQueryInstagramFindMany.mockResolvedValue([]);
+    mockDbQueryLinkedinFindMany.mockResolvedValue([]);
   });
 
   // ── Config / auth guards ─────────────────────────────────────────────────

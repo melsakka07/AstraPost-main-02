@@ -232,7 +232,7 @@ describe("tryConsumeAiQuota", () => {
   // ── Unlimited plans ───────────────────────────────────────────────────
   it("returns allowed immediately for unlimited plans", async () => {
     mockGetUserPlanType.mockResolvedValue("agency");
-    mockGetPlanLimits.mockReturnValue({ aiGenerationsPerMonth: Infinity });
+    mockGetPlanLimits.mockReturnValue({ aiGenerationsPerMonth: -1 });
 
     mockAtomicConsumeRejected();
     mockFindFirstCounter.mockResolvedValue(null); // No counter, triggers createAndConsume

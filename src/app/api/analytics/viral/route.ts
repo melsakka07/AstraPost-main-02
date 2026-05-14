@@ -11,6 +11,12 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import {
+  checkViralScoreAccessDetailed,
+  createPlanLimitResponse,
+  getUserPlanType,
+} from "@/lib/middleware/require-plan";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { posts, tweetAnalytics, tweets } from "@/lib/schema";
 
 export async function GET(req: Request) {
@@ -22,14 +28,29 @@ export async function GET(req: Request) {
     }
 
     const userId = session.user.id;
+
+    // Feature gate: viral score is Pro-only
+    const viralGate = await checkViralScoreAccessDetailed(userId);
+    if (!viralGate.allowed) {
+      return createPlanLimitResponse(viralGate);
+    }
+
     const url = new URL(req.url);
     const daysParam = url.searchParams.get("days");
-    const days = daysParam ? parseInt(daysParam) : 90;
+    const requestedDays = daysParam ? parseInt(daysParam) : 90;
 
-    // Validate days parameter
-    if (days < 7 || days > 365) {
+    // Validate days parameter (parseInt returns NaN for non-numeric input)
+    if (isNaN(requestedDays) || requestedDays < 7 || requestedDays > 365) {
       return ApiError.badRequest("Days must be between 7 and 365");
     }
+
+    // Enforce analytics retention per plan: cap query window at the plan's limit
+    const plan = await getUserPlanType(userId);
+    const limits = PLAN_LIMITS[plan];
+    const retentionDays = limits.analyticsRetentionDays;
+    const days = Number.isFinite(retentionDays)
+      ? Math.min(requestedDays, retentionDays)
+      : requestedDays;
 
     // 1. Fetch top-performing tweets
     const startDate = new Date();

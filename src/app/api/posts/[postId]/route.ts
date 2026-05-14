@@ -6,6 +6,11 @@ import { auth } from "@/lib/auth";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import {
+  checkThreadAccessDetailed,
+  checkVideoUploadAccessDetailed,
+  createPlanLimitResponse,
+} from "@/lib/middleware/require-plan";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { posts, tweets, media } from "@/lib/schema";
 import { getTeamContext } from "@/lib/team-context";
@@ -157,6 +162,27 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ po
   if (!existingPost) return ApiError.notFound("Post not found");
   const ownershipError = await checkPostOwnership(existingPost, ctx);
   if (ownershipError) return ownershipError;
+
+  // Plan gate: block free users from converting a single tweet to a thread
+  if (body.tweets && body.tweets.length > 1) {
+    const threadAccess = await checkThreadAccessDetailed(ctx.currentTeamId);
+    if (!threadAccess.allowed) {
+      return createPlanLimitResponse(threadAccess);
+    }
+  }
+
+  // Plan gate: block free users from adding video/gif media to existing posts
+  if (body.tweets) {
+    const hasVideoOrGif = body.tweets.some((t) =>
+      t.media?.some((m) => m.fileType === "video" || m.fileType === "gif")
+    );
+    if (hasVideoOrGif) {
+      const videoAccess = await checkVideoUploadAccessDetailed(ctx.currentTeamId);
+      if (!videoAccess.allowed) {
+        return createPlanLimitResponse(videoAccess);
+      }
+    }
+  }
 
   // Determine new status and scheduledAt
   let newStatus = existingPost.status;

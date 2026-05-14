@@ -31,11 +31,14 @@ Constraints:
 - Hooks must be viral-worthy (curiosity gaps, strong statements).`;
 
 export async function GET(req: Request) {
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
     const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
-    const { session, dbUser, model } = preamble;
+    const { session, dbUser, model, releaseQuota: preambleReleaseQuota } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
 
     const { searchParams } = new URL(req.url);
     const niche = searchParams.get("niche") || "Technology";
@@ -49,6 +52,7 @@ export async function GET(req: Request) {
     try {
       const cached = await redis.get(cacheKey);
       if (cached) {
+        await releaseQuota();
         const res = Response.json(JSON.parse(cached));
         res.headers.set("x-correlation-id", correlationId);
         return res;
@@ -106,6 +110,7 @@ export async function GET(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
+    await releaseQuota();
     const cause = error instanceof Error ? (error as Error & { cause?: unknown }).cause : undefined;
     logger.error("inspiration_generation_failed", {
       error: error instanceof Error ? error.message : String(error),

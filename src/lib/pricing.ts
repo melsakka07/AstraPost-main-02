@@ -12,8 +12,9 @@ export type PricingTier =
   | "agency_annual";
 
 export interface PricingConfig {
-  monthlyPrice: number; // in USD cents (e.g., 2900 = $29.00)
-  annualPrice?: number; // in USD cents (e.g., 22800 = $228.00), only for annual plans
+  /** USD cents (e.g., 2900 = $29.00). Omit for annual plans — derived from annualPrice/12. */
+  monthlyPrice?: number;
+  annualPrice?: number; // in USD cents (e.g., 29000 = $290.00), only for annual plans
   displayName: string;
   description: string;
   savingsPercent?: number; // for annual plans showing yearly discount vs monthly
@@ -31,8 +32,7 @@ export const PRICING: Record<PricingTier, PricingConfig> = {
     description: "Unlimited posts + AI features",
   },
   pro_annual: {
-    monthlyPrice: 2300, // ~$23/month equivalent (actually $19/month when $228/year is divided by 12)
-    annualPrice: 29000, // Actually $290/year (not $228/year as mentioned in task - updating to match UI)
+    annualPrice: 29000, // $290/year → $24.17/month equivalent
     displayName: "Pro (Annual)",
     description: "Save with annual billing",
     savingsPercent: 17,
@@ -43,8 +43,7 @@ export const PRICING: Record<PricingTier, PricingConfig> = {
     description: "Team collaboration + custom features",
   },
   agency_annual: {
-    monthlyPrice: 8250, // ~$83/month equivalent (actually $990/year ÷ 12)
-    annualPrice: 99000, // $990/year
+    annualPrice: 99000, // $990/year → $82.50/month equivalent
     displayName: "Agency (Annual)",
     description: "Team collaboration with annual savings",
     savingsPercent: 17,
@@ -53,10 +52,13 @@ export const PRICING: Record<PricingTier, PricingConfig> = {
 
 /**
  * Get the monthly price contribution for a plan tier.
- * For annual plans, this returns the monthly equivalent (annual price ÷ 12).
+ * For annual plans, derives the monthly equivalent from annualPrice ÷ 12.
  */
 export function getMonthlyPrice(plan: PricingTier): number {
-  return PRICING[plan].monthlyPrice;
+  const config = PRICING[plan];
+  if (config.monthlyPrice !== undefined) return config.monthlyPrice;
+  if (config.annualPrice !== undefined) return Math.round(config.annualPrice / 12);
+  return 0;
 }
 
 /**

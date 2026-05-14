@@ -16,14 +16,14 @@ import { getTeamContext } from "@/lib/team-context";
 function buildLockedMap(limits: PlanLimits): Record<AiToolId, boolean> {
   return {
     thread_writer: !limits.canUseAi,
-    url_to_thread: !limits.canUseUrlToThread,
-    pdf_to_thread: !limits.canUsePdfToThread,
-    youtube_to_thread: !limits.canUseYoutubeToThread,
-    ab_variants: !limits.canUseVariantGenerator,
+    url_to_thread: !limits.enabledTools.includes("url_to_thread"),
+    pdf_to_thread: !limits.enabledTools.includes("pdf_to_thread"),
+    youtube_to_thread: !limits.enabledTools.includes("youtube_to_thread"),
+    ab_variants: !limits.enabledTools.includes("variant_generator"),
     hashtag_generator: !limits.canUseAi,
-    bio_generator: !limits.canUseBioOptimizer,
-    reply_generator: !limits.canUseReplyGenerator,
-    ai_calendar: !limits.canUseContentCalendar,
+    bio_generator: !limits.enabledTools.includes("bio_optimizer"),
+    reply_generator: !limits.enabledTools.includes("reply_generator"),
+    ai_calendar: !limits.enabledTools.includes("content_calendar"),
   };
 }
 

@@ -77,6 +77,18 @@ vi.mock("bullmq", () => ({
   Worker: vi.fn(function () {
     return { on: vi.fn() };
   }),
+  UnrecoverableError: class extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "UnrecoverableError";
+    }
+  },
+  DelayedError: class extends Error {
+    constructor() {
+      super("Delayed");
+      this.name = "DelayedError";
+    }
+  },
 }));
 
 vi.mock("ioredis", () => {
@@ -84,6 +96,51 @@ vi.mock("ioredis", () => {
     default: vi.fn(),
   };
 });
+
+vi.mock("@/lib/middleware/require-plan", () => ({
+  getUserPlanType: vi.fn().mockResolvedValue("pro_monthly"),
+}));
+
+vi.mock("@/lib/plan-limits", () => ({
+  getPlanLimits: vi.fn().mockReturnValue({
+    postsPerMonth: Infinity,
+    aiGenerationsPerMonth: 150,
+    aiImagesPerMonth: 50,
+    maxXAccounts: 3,
+    maxInstagramAccounts: 1,
+    maxLinkedinAccounts: 0,
+    maxScheduleHorizonDays: 90,
+    maxTeamMembers: null,
+    maxInspirationBookmarks: -1,
+    maxYoutubeVideoDurationSeconds: 1200,
+    youtubeToThreadMonthly: 30,
+    availableImageModels: [],
+    canUseAi: true,
+    enabledTools: [],
+    analyticsRetentionDays: 90,
+    analyticsExport: "csv_pdf",
+  }),
+  PLAN_LIMITS: {
+    pro_monthly: {
+      postsPerMonth: Infinity,
+      aiGenerationsPerMonth: 150,
+      aiImagesPerMonth: 50,
+      maxXAccounts: 3,
+      maxInstagramAccounts: 1,
+      maxLinkedinAccounts: 0,
+      maxScheduleHorizonDays: 90,
+      maxTeamMembers: null,
+      maxInspirationBookmarks: -1,
+      maxYoutubeVideoDurationSeconds: 1200,
+      youtubeToThreadMonthly: 30,
+      availableImageModels: [],
+      canUseAi: true,
+      enabledTools: [],
+      analyticsRetentionDays: 90,
+      analyticsExport: "csv_pdf",
+    },
+  },
+}));
 
 describe("Schedule Processor", () => {
   beforeEach(() => {
@@ -107,6 +164,8 @@ describe("Schedule Processor", () => {
       xAccount: {
         accessToken: "token",
         refreshToken: "refresh",
+        isActive: true,
+        userId: "user1",
       },
       tweets: [{ id: "tweetRow1", content: "Hello World", position: 1, media: [], xTweetId: null }],
     };
@@ -138,6 +197,8 @@ describe("Schedule Processor", () => {
       xAccount: {
         accessToken: "token",
         refreshToken: "refresh",
+        isActive: true,
+        userId: "user1",
       },
       tweets: [
         { id: "tweetRow1", content: "Tweet 1", position: 1, media: [], xTweetId: null },
@@ -192,7 +253,7 @@ describe("Schedule Processor", () => {
       userId: "user1",
       xAccountId: "acc1",
       status: "scheduled",
-      xAccount: { accessToken: "token" },
+      xAccount: { accessToken: "token", isActive: true, userId: "user1" },
       tweets: [{ id: "tweetRow1", content: "Fail", media: [], xTweetId: null }],
     };
 

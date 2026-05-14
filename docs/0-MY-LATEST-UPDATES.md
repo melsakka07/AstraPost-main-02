@@ -1,5 +1,40 @@
 # Latest Updates
 
+## 2026-05-15 — Phases 5–7 Billing Audit: Worker Re-Gate, Webhook Cleanup, PlanLimits Refactor (Findings #9, #10, #12, #13, #20, #21)
+
+### Phase 5a — Schema migration for post_account_inactive (#9)
+
+- Added `post_account_inactive` to `notificationTypeEnum` in `schema.ts`
+- Generated migration `0082_powerful_supernaut.sql` (`ALTER TYPE ... ADD VALUE`)
+- Added i18n strings for `post_over_quota` and `post_account_inactive` to both `en.json` and `ar.json`
+
+### Phase 5b — Worker per-account re-check + Webhook IG/LI/team cleanup (#9, #10)
+
+- **Worker** (`processors.ts`): Added per-account membership re-check before publish — verifies `xAccount.isActive === true` AND `xAccount.userId === post.userId`. On failure, sets post status to `"failed"`, inserts `post_account_inactive` notification, throws `UnrecoverableError`
+- **Webhook** (`handleSubscriptionUpdated`): Added IG/LI/team-member downgrade cleanup — deactivates over-limit Instagram/LinkedIn accounts and notifies on team member over-limit
+- **Webhook** (`handleSubscriptionDeleted`): Added same IG/LI cleanup on subscription deletion
+
+### Phase 6 — billingCycle backfill runbook (#12)
+
+- Created `docs/sql-runbooks/2026-05-14-billingcycle-backfill.sql` with parameterized price IDs, `WHERE billing_cycle IS NULL` idempotency, and verification query
+
+### Phase 7 — Plan limits refactor + gate extraction (#13, #20, #21)
+
+- **Plan limits refactor** (`plan-limits.ts`): Replaced 18 `canUseXyz` boolean fields with single `enabledTools: ToolKey[]` array. Added `maxInstagramAccounts`, `maxLinkedinAccounts`, `maxScheduleHorizonDays`. Trial plan now matches Pro feature tools with capped quotas.
+- **Feature gates refactor** (`require-plan.ts`): `makeFeatureGate` factory uses `enabledTools.includes(toolKey)` instead of boolean fields. Added new gates: `checkInstagramAccountLimitDetailed`, `checkLinkedinAccountLimitDetailed`, `checkScheduleHorizonDetailed`, `checkThreadAccessDetailed`, `checkVideoUploadAccessDetailed`.
+- **Team member gate extraction** (#20): Extracted `checkTeamMemberLimitDetailed` in `require-plan.ts`, replaced inline `getPlanMetadata` chain at `team/invite/route.ts` with gate helper + `createPlanLimitResponse()`
+- **Marketing undersells fixed** (#13): Updated i18n to match actual limits — Free 10→20 credits, Pro 100→150 credits (both EN + AR)
+- **GatedFeature type** expanded with `instagram_accounts`, `linkedin_accounts`, `schedule_horizon`, `thread_access`, `video_upload`, `team_members`
+
+### Verification
+
+- `pnpm run check` passes (lint + typecheck + i18n)
+- `pnpm test` passes (34 files, 323 tests)
+- Webhook test updated with IG/LI mock queries
+- Worker tests (bullmq + integration) updated with require-plan/plan-limits mocks
+
+---
+
 ## 2026-05-14 — Phase 4 Billing Audit: Webhook Trial-vs-Cancel (Finding #7)
 
 Modified `handleSubscriptionDeleted` in `src/app/api/billing/webhook/route.ts` to detect trial-expired subscription deletions and route them to the trial-expired email/notification flow instead of the cancellation flow. Detection uses three signals: (1) `subscription.status === "incomplete_expired"`, (2) subscription `trial_end` and `canceled_at` within 24h of trial end, (3) local DB `subRecord.status === "trialing"` (tiebreaker). Added Vitest test asserting `billing_trial_expired` notification + `TrialExpiredEmail` fire (not cancellation variants) when a trialing-status subscription is deleted. `planChangeLog` reason is `"trial_expired_via_deleted"` for the trial-expiry path, `"subscription_deleted"` for genuine paid cancellations.
