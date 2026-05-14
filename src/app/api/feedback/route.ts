@@ -5,8 +5,9 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { feedback, feedbackVotes, user } from "@/lib/schema";
+import { feedback, feedbackVotes } from "@/lib/schema";
 
 const feedbackSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or fewer"),
@@ -76,12 +77,11 @@ export async function POST(req: Request) {
       return ApiError.unauthorized();
     }
 
-    const dbUser = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      columns: { plan: true },
-    });
-
-    const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+    const rateLimit = await checkRateLimit(
+      session.user.id,
+      await getUserPlanType(session.user.id),
+      "posts"
+    );
     if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
     const body = await req.json().catch(() => null);

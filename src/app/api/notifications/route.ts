@@ -6,8 +6,9 @@ import { cachedQuery, cache } from "@/lib/cache";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { notifications, user } from "@/lib/schema";
+import { notifications } from "@/lib/schema";
 
 const API_TIMEOUT_MS = 7000;
 
@@ -42,12 +43,11 @@ export async function GET() {
     return ApiError.unauthorized();
   }
 
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { plan: true },
-  });
-
-  const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+  const rateLimit = await checkRateLimit(
+    session.user.id,
+    await getUserPlanType(session.user.id),
+    "posts"
+  );
   if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   const notificationsResult = await withTimeout(
@@ -85,12 +85,11 @@ export async function PATCH(req: Request) {
     return ApiError.unauthorized();
   }
 
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { plan: true },
-  });
-
-  const rateLimit = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+  const rateLimit = await checkRateLimit(
+    session.user.id,
+    await getUserPlanType(session.user.id),
+    "posts"
+  );
   if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   const body = await req.json().catch(() => ({}));

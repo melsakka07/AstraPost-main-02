@@ -4,8 +4,9 @@ import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { analyticsRefreshRuns, user } from "@/lib/schema";
+import { analyticsRefreshRuns } from "@/lib/schema";
 
 const schema = z.object({
   xAccountId: z.string(),
@@ -15,11 +16,11 @@ export async function GET(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return ApiError.unauthorized();
 
-  const dbUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-    columns: { plan: true },
-  });
-  const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "posts");
+  const rlResult = await checkRateLimit(
+    session.user.id,
+    await getUserPlanType(session.user.id),
+    "posts"
+  );
   if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   const url = new URL(req.url);

@@ -1,5 +1,28 @@
 # Latest Updates
 
+## 2026-05-14 — Phase 3 Billing Audit: Rate-Limiter Plan Plumbing (Finding #6)
+
+Implemented Phase 3 from `.claude/plans/2026-05-14-billing-pricing-plans-audit-findings.md`. Fixes audit finding #6 across 19 call sites in 17 files.
+
+### Synthetic trial rate-limit fix (#6)
+
+Synthetic trial users (stored as `plan = "free"` + `user.trialEndsAt`) were getting free-tier rate limits instead of Pro because call sites passed `dbUser?.plan || "free"` (= `"free"` for trial users). The rate-limiter only flipped to Pro when `plan === "trial"`, but that string only surfaces from `getUserPlanType()`.
+
+**Fix**: Replaced `dbUser?.plan || "free"` with `await getUserPlanType(userId)` at all 19 call sites across 17 files. The `getUserPlanType` function correctly returns `"trial"` for synthetic-trial users via a 5-min cached query.
+
+Files modified (19 call sites):
+
+- `ai-preamble.ts`, `user/voice-profile`, `user/profile`, `user/preferences`
+- `link-preview`, `affiliate`, `analytics/runs`, `analytics/competitor`
+- `templates` (GET + POST), `notifications` (GET + PATCH), `feedback`, `media/upload`
+- `chat`, `posts`, `ai/history`, `ai/quota`, `ai/image/status`
+
+Also removed now-unused `dbUser` queries and associated imports (`user` from schema, `eq` from drizzle-orm, `db` from `@/lib/db`) in each file.
+
+**Verification:** `pnpm run check` (0/0/2800), `pnpm test` (34/322/322). Grep confirms zero remaining `dbUser?.plan || "free"` in `src/app/api/` and `src/lib/api/`.
+
+---
+
 ## 2026-05-14 — Phase 2 Billing Audit: Quota Leak Sweep (Findings #4 + #4b)
 
 Implemented Phase 2 (quota leak fixes) from `.claude/plans/2026-05-14-billing-pricing-plans-audit-findings.md`. Fixes audit findings #4 and #4b across all 16 AI routes that both consume quota and call `checkModeration`.

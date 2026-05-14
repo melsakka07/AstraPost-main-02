@@ -14,6 +14,7 @@ import { getServerEnv } from "@/lib/env";
 import {
   checkAiLimitDetailed,
   createPlanLimitResponse,
+  getUserPlanType,
   type PlanGateResult,
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
@@ -192,7 +193,11 @@ export async function aiPreamble(
   const idemCheck = await checkIdempotency(session.user.id, idempotencyKey);
   if (idemCheck.cached) return idemCheck.response;
 
-  const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
+  const rlResult = await checkRateLimit(
+    session.user.id,
+    await getUserPlanType(session.user.id),
+    "ai"
+  );
   if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   if (featureGate) {

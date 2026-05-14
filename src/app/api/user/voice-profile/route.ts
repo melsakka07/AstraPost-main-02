@@ -9,9 +9,15 @@ import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
 import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { checkAiLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import {
+  checkVoiceProfileAccessDetailed,
+  createPlanLimitResponse,
+  getUserPlanType,
+} from "@/lib/middleware/require-plan";
+import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 
@@ -41,28 +47,23 @@ export async function POST(req: Request) {
       return ApiError.unauthorized();
     }
 
+    const correlationId = getCorrelationId(req);
+    logger.info("voice_profile_request", { correlationId, userId: session.user.id });
+
     // Idempotency check — prevents duplicate voice profile analyses.
     const idempotencyKey = req.headers.get("x-idempotency-key") || crypto.randomUUID();
     const idemCheck = await checkIdempotency(session.user.id, idempotencyKey);
     if (idemCheck.cached) return idemCheck.response;
 
-    // Analyzing voice is a Pro feature
-    const aiAccess = await checkAiLimitDetailed(session.user.id);
-    if (!aiAccess.allowed && aiAccess.plan === "free") {
-      // Voice profile creation is strictly Pro
-      return createPlanLimitResponse({
-        allowed: false,
-        error: "upgrade_required",
-        message: "Voice Profile is a Pro feature",
-        feature: "voice_profile",
-        plan: "free",
-        limit: 0,
-        used: 1,
-        suggestedPlan: "pro_monthly",
-        trialActive: false,
-        resetAt: null,
-      });
-    }
+    const rlResult = await checkRateLimit(
+      session.user.id,
+      await getUserPlanType(session.user.id),
+      "ai"
+    );
+    if (!rlResult.success) return createRateLimitResponse(rlResult);
+
+    const voiceAccess = await checkVoiceProfileAccessDetailed(session.user.id);
+    if (!voiceAccess.allowed) return createPlanLimitResponse(voiceAccess);
 
     const json = await req.json();
     const result = analyzeRequestSchema.safeParse(json);

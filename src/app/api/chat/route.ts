@@ -8,16 +8,18 @@ import { formatVoiceProfile, voiceProfileSchema } from "@/lib/ai/voice-profile";
 import { ApiError } from "@/lib/api/errors";
 import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { auth } from "@/lib/auth";
+import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import {
   checkAiLimitDetailed,
-  checkAiQuotaDetailed,
   createPlanLimitResponse,
+  getUserPlanType,
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
+import { tryConsumeAiQuota, releaseAiQuota } from "@/lib/services/ai-quota-atomic";
 import { moderateOutput } from "@/lib/services/moderation";
 
 // Zod schema for message validation
@@ -73,17 +75,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const rlResult = await checkRateLimit(session.user.id, dbUser?.plan || "free", "ai");
+  const correlationId = getCorrelationId(req);
+  logger.info("chat_request", { correlationId, userId: session.user.id });
+
+  const planType = await getUserPlanType(session.user.id);
+  const rlResult = await checkRateLimit(session.user.id, planType, "ai");
   if (!rlResult.success) return createRateLimitResponse(rlResult);
 
   const aiAccess = await checkAiLimitDetailed(session.user.id);
   if (!aiAccess.allowed) {
     return createPlanLimitResponse(aiAccess);
-  }
-
-  const aiQuota = await checkAiQuotaDetailed(session.user.id);
-  if (!aiQuota.allowed) {
-    return createPlanLimitResponse(aiQuota);
   }
 
   let body: unknown;
@@ -99,6 +100,24 @@ export async function POST(req: Request) {
   }
 
   const { messages }: { messages: UIMessage[] } = parsed.data as { messages: UIMessage[] };
+
+  // Consume quota only after the request is known to be valid — prevents
+  // malformed bodies from burning AI credits with no refund path.
+  const quotaResult = await tryConsumeAiQuota(session.user.id, 1);
+  if (!quotaResult.allowed) {
+    return createPlanLimitResponse({
+      allowed: false,
+      error: "quota_exceeded",
+      feature: "ai_quota",
+      message: `You've used ${quotaResult.used}/${quotaResult.limit} AI generations this month.`,
+      plan: planType,
+      limit: quotaResult.limit,
+      used: quotaResult.used,
+      suggestedPlan: "pro_monthly",
+      trialActive: false,
+      resetAt: quotaResult.resetAt,
+    });
+  }
 
   // Resolve voice profile: validate raw DB value, format deterministically, wrap as untrusted
   const parsedVoice = voiceProfileSchema.safeParse(dbUser?.voiceProfile ?? undefined);
@@ -180,6 +199,9 @@ ${JAILBREAK_GUARD}`;
       result as unknown as { toUIMessageStreamResponse: () => Response }
     ).toUIMessageStreamResponse();
   } catch (err) {
+    releaseAiQuota(session.user.id, 1).catch((releaseErr) => {
+      logger.error("[chat] releaseAiQuota error:", { error: releaseErr });
+    });
     logger.error("[chat] streamText error:", { error: err });
     return ApiError.serviceUnavailable("AI service unavailable. Please try again later.");
   }

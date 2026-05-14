@@ -1,23 +1,21 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject, type LanguageModel } from "ai";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { withRetry } from "@/lib/ai/with-retry";
 import { withTimeout } from "@/lib/ai/with-timeout";
 import { ApiError } from "@/lib/api/errors";
 import { checkIdempotency, cacheIdempotentResponse } from "@/lib/api/idempotency";
 import { getCorrelationId } from "@/lib/correlation";
-import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import {
   checkAiLimitDetailed,
-  checkAiQuotaDetailed,
   checkCompetitorAnalyzerAccessDetailed,
   createPlanLimitResponse,
+  getUserPlanType,
 } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { user } from "@/lib/schema";
 import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
+import { tryConsumeAiQuota, releaseAiQuota } from "@/lib/services/ai-quota-atomic";
 import { buildCompetitorAnalysisPrompt, fetchUserTweets } from "@/lib/services/competitor-analysis";
 import { getTeamContext } from "@/lib/team-context";
 
@@ -49,17 +47,13 @@ export async function POST(req: Request) {
     const ctx = await getTeamContext();
     if (!ctx) return ApiError.unauthorized();
 
-    const dbUser = await db.query.user.findFirst({
-      where: eq(user.id, ctx.currentTeamId),
-      columns: { plan: true },
-    });
-
     // Idempotency check — prevents duplicate analyses for the same client key.
     const idempotencyKey = req.headers.get("x-idempotency-key") || correlationId;
     const idemCheck = await checkIdempotency(ctx.currentTeamId, idempotencyKey);
     if (idemCheck.cached) return idemCheck.response;
 
-    const rlResult = await checkRateLimit(ctx.currentTeamId, dbUser?.plan || "free", "ai");
+    const planType = await getUserPlanType(ctx.currentTeamId);
+    const rlResult = await checkRateLimit(ctx.currentTeamId, planType, "ai");
     if (!rlResult.success) return createRateLimitResponse(rlResult);
 
     const access = await checkCompetitorAnalyzerAccessDetailed(ctx.currentTeamId);
@@ -67,9 +61,6 @@ export async function POST(req: Request) {
 
     const aiAccess = await checkAiLimitDetailed(ctx.currentTeamId);
     if (!aiAccess.allowed) return createPlanLimitResponse(aiAccess);
-
-    const aiQuota = await checkAiQuotaDetailed(ctx.currentTeamId);
-    if (!aiQuota.allowed) return createPlanLimitResponse(aiQuota);
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -109,16 +100,44 @@ export async function POST(req: Request) {
     const prompt = buildCompetitorAnalysisPrompt(username, twitterData.tweets, language);
     const modelId = process.env.OPENROUTER_MODEL!;
 
+    // Atomic quota consumption — closes the race condition between concurrent
+    // analyses where two requests could both pass a non-atomic check. Consumed
+    // here (after external API success) so username typos don't burn credits.
+    const quotaResult = await tryConsumeAiQuota(ctx.currentTeamId, 1);
+    if (!quotaResult.allowed) {
+      return createPlanLimitResponse({
+        allowed: false,
+        error: "quota_exceeded",
+        feature: "ai_quota",
+        message: `You've used ${quotaResult.used}/${quotaResult.limit} AI generations this month.`,
+        plan: planType,
+        limit: quotaResult.limit,
+        used: quotaResult.used,
+        suggestedPlan: "pro_monthly",
+        trialActive: false,
+        resetAt: quotaResult.resetAt,
+      });
+    }
+
     const t0 = performance.now();
-    const { object, usage } = await withRetry(() =>
-      withTimeout(
-        generateObject({
-          model,
-          schema: analysisSchema,
-          prompt,
-        })
-      )
-    );
+    let object;
+    let usage;
+    try {
+      ({ object, usage } = await withRetry(() =>
+        withTimeout(
+          generateObject({
+            model,
+            schema: analysisSchema,
+            prompt,
+          })
+        )
+      ));
+    } catch (err) {
+      releaseAiQuota(ctx.currentTeamId, 1).catch((releaseErr) => {
+        logger.error("competitor_release_quota_error", { error: releaseErr });
+      });
+      throw err;
+    }
     const latencyMs = Math.round(performance.now() - t0);
 
     // Phase 2: uses new options-object signature

@@ -4,7 +4,15 @@ import { ApiError } from "@/lib/api/errors";
 import { getCorrelationId } from "@/lib/correlation";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { checkPostLimitDetailed, createPlanLimitResponse } from "@/lib/middleware/require-plan";
+import {
+  checkInstagramAccountLimitDetailed,
+  checkPostLimitDetailed,
+  checkScheduleHorizonDetailed,
+  checkThreadAccessDetailed,
+  checkVideoUploadAccessDetailed,
+  createPlanLimitResponse,
+  getUserPlanType,
+} from "@/lib/middleware/require-plan";
 import { scheduleQueue, SCHEDULE_JOB_OPTIONS } from "@/lib/queue/client";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import {
@@ -70,7 +78,11 @@ export async function POST(req: Request) {
     });
 
     // Rate limit check against the Team Owner's plan
-    const rlResult = await checkRateLimit(ctx.currentTeamId, dbUser?.plan || "free", "posts");
+    const rlResult = await checkRateLimit(
+      ctx.currentTeamId,
+      await getUserPlanType(ctx.currentTeamId),
+      "posts"
+    );
     if (!rlResult.success) return createRateLimitResponse(rlResult);
 
     const correlationId = getCorrelationId(req);
@@ -171,6 +183,45 @@ export async function POST(req: Request) {
       const postLimit = await checkPostLimitDetailed(ctx.currentTeamId, selectedAccounts.length);
       if (!postLimit.allowed) {
         return createPlanLimitResponse(postLimit);
+      }
+    }
+
+    // Thread access gate: block free users from creating multi-tweet threads
+    if (tweetsData.length > 1) {
+      const threadAccess = await checkThreadAccessDetailed(ctx.currentTeamId);
+      if (!threadAccess.allowed) {
+        return createPlanLimitResponse(threadAccess);
+      }
+    }
+
+    // Video/GIF upload gate: block free users from attaching video/gif media
+    const hasVideoOrGif = tweetsData.some((t) =>
+      t.media?.some((m) => m.fileType === "video" || m.fileType === "gif")
+    );
+    if (hasVideoOrGif) {
+      const videoAccess = await checkVideoUploadAccessDetailed(ctx.currentTeamId);
+      if (!videoAccess.allowed) {
+        return createPlanLimitResponse(videoAccess);
+      }
+    }
+
+    // Instagram gate: block users whose plan doesn't allow Instagram accounts
+    const hasInstagramTarget = selectedAccounts.some((a) => a.platform === "instagram");
+    if (hasInstagramTarget) {
+      const instagramGate = await checkInstagramAccountLimitDetailed(ctx.currentTeamId, 0);
+      if (!instagramGate.allowed) {
+        return createPlanLimitResponse(instagramGate);
+      }
+    }
+
+    // Schedule horizon gate: block free/trial users from scheduling too far ahead
+    if (scheduledAt && action !== "draft") {
+      const horizonGate = await checkScheduleHorizonDetailed(
+        ctx.currentTeamId,
+        new Date(scheduledAt)
+      );
+      if (!horizonGate.allowed) {
+        return createPlanLimitResponse(horizonGate);
       }
     }
 
