@@ -9,6 +9,7 @@
  *   • customer.subscription.updated with plan change → user.plan updated
  *   • customer.subscription.updated without plan change → user.plan NOT updated
  *   • customer.subscription.deleted → user.plan reset to "free"
+ *   • customer.subscription.deleted (trialing) → trial-expired email + notification
  *   • invoice.payment_failed → planExpiresAt grace period set
  *   • Unhandled event type → 200 (silent ignore)
  *   • Processing error → 500, event NOT recorded (so Stripe retries)
@@ -32,6 +33,8 @@ const {
   mockDbUpdateSetFn,
   mockDbTransactionFn,
   mockOnConflictDoNothingReturning,
+  mockNotifyBillingEvent,
+  mockSendBillingEmail,
 } = vi.hoisted(() => {
   const mockConstructEvent = vi.fn();
   const mockStripeSubscriptionsRetrieve = vi.fn();
@@ -40,6 +43,9 @@ const {
   const mockDbQuerySubscriptionsFindFirst = vi.fn();
   const mockDbQueryUserFindFirst = vi.fn();
   const mockDbQueryXAccountsFindMany = vi.fn();
+
+  const mockNotifyBillingEvent = vi.fn().mockResolvedValue(undefined);
+  const mockSendBillingEmail = vi.fn().mockResolvedValue(undefined);
 
   const mockDbUpdateSetFn = vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) }));
   const mockOnConflictDoNothingReturning = vi.fn().mockResolvedValue([{ id: "new-row" }]);
@@ -75,6 +81,8 @@ const {
     mockDbUpdateSetFn,
     mockDbTransactionFn,
     mockOnConflictDoNothingReturning,
+    mockNotifyBillingEvent,
+    mockSendBillingEmail,
   };
 });
 
@@ -116,11 +124,11 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/services/notifications", () => ({
-  notifyBillingEvent: vi.fn().mockResolvedValue(undefined),
+  notifyBillingEvent: mockNotifyBillingEvent,
 }));
 
 vi.mock("@/lib/services/email", () => ({
-  sendBillingEmail: vi.fn().mockResolvedValue(undefined),
+  sendBillingEmail: mockSendBillingEmail,
 }));
 
 // ─── Test fixtures ────────────────────────────────────────────────────────────
@@ -383,6 +391,72 @@ describe("POST /api/billing/webhook", () => {
     const updateSetCalls = getSetArgs(mockDbUpdateSetFn);
     const freeUpdate = updateSetCalls.find((v) => v.plan === "free");
     expect(freeUpdate).toBeDefined();
+  });
+
+  it("sends trial-expired email/notification when a trialing subscription is deleted", async () => {
+    // A subscription with status "trialing" being deleted means the trial
+    // expired without converting to paid — NOT a cancellation. The webhook
+    // must route to the trial-expired path (TrialExpiredEmail + billing_trial_expired).
+    const sub = {
+      id: "sub_trial_del",
+      status: "incomplete_expired",
+      cancel_at_period_end: true,
+      canceled_at: 1700100000,
+      trial_end: 1700000000,
+      items: { data: [] },
+      current_period_start: 1697500000,
+      current_period_end: 1702592000,
+    };
+    mockConstructEvent.mockReturnValue(makeStripeEvent("customer.subscription.deleted", sub));
+    mockDbQuerySubscriptionsFindFirst.mockResolvedValue({
+      id: "db-sub-trial",
+      userId: "user-trial",
+      plan: "pro_monthly",
+      status: "trialing",
+      stripeSubscriptionId: "sub_trial_del",
+    });
+    mockDbQueryUserFindFirst.mockResolvedValue({
+      email: "trial@example.com",
+      name: "Trial User",
+      language: "en",
+    });
+
+    const res = await POST(makeRequest());
+
+    expect(res.status).toBe(200);
+
+    // Must have used the trial-expired notification, not the cancellation one
+    const notifyCalls = mockNotifyBillingEvent.mock.calls as unknown as Array<
+      [Record<string, unknown>]
+    >;
+    const trialExpiredCall = notifyCalls.find(([p]) => p.type === "billing_trial_expired");
+    const cancelledCall = notifyCalls.find(([p]) => p.type === "billing_subscription_cancelled");
+
+    expect(trialExpiredCall).toBeDefined();
+    expect(cancelledCall).toBeUndefined();
+
+    // Must have sent TrialExpiredEmail, NOT SubscriptionCancelledEmail
+    const emailCalls = mockSendBillingEmail.mock.calls as unknown as Array<
+      [Record<string, unknown>]
+    >;
+    const trialEmailCall = emailCalls.find(([p]) => {
+      const meta = (p.metadata ?? {}) as Record<string, unknown>;
+      return meta.event === "trial_expired_via_deleted";
+    });
+    const cancelEmailCall = emailCalls.find(([p]) => {
+      const meta = (p.metadata ?? {}) as Record<string, unknown>;
+      return meta.event === "customer.subscription.deleted";
+    });
+
+    expect(trialEmailCall).toBeDefined();
+    expect(cancelEmailCall).toBeUndefined();
+
+    // planChangeLog reason must reflect trial expiry
+    const insertValuesCalls = mockDbInsertValuesFn.mock.calls as unknown as Array<
+      [Record<string, unknown>]
+    >;
+    const logCall = insertValuesCalls.find(([v]) => v.reason === "trial_expired_via_deleted");
+    expect(logCall).toBeDefined();
   });
 
   // ── invoice.payment_failed ────────────────────────────────────────────────

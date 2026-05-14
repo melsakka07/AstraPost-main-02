@@ -1,5 +1,23 @@
 # Recent Fixes & Changes
 
+## 2026-05-14 — Phase 4 Billing Audit: Webhook Trial-vs-Cancel (Finding #7)
+
+### Trial-expired subscription deletion routing
+
+`handleSubscriptionDeleted` in `src/app/api/billing/webhook/route.ts` now detects when a deleted subscription was an expired trial (not a paid cancellation) and routes to the trial-expired notification/email flow. Detection uses three signals:
+
+1. `subscription.status === "incomplete_expired"` (Stripe sentinel for trial expiry before first payment)
+2. Subscription had `trial_end` and was `canceled_at` within 24h of trial end (covers webhook backlog without admitting genuine paid cancellations)
+3. Local DB `subRecord.status === "trialing"` (tiebreaker when Stripe signals are ambiguous)
+
+When `isTrialExpiry` is true: sends `billing_trial_expired` notification + `TrialExpiredEmail`, and writes `planChangeLog` with reason `"trial_expired_via_deleted"`. When false: original paid cancellation path (`billing_subscription_cancelled` + `SubscriptionCancelledEmail` + reason `"subscription_deleted"`).
+
+### Test coverage
+
+New Vitest test in `route.test.ts` asserts trial-expired notification + `TrialExpiredEmail` fire (not cancellation variants) when a trialing-status subscription is deleted, and verifies `planChangeLog` reason is `"trial_expired_via_deleted"`.
+
+---
+
 ## 2026-05-14 — Phase 2 Billing Audit: Quota Leak Sweep (Findings #4 + #4b)
 
 ### Moderation quota refund (#4)

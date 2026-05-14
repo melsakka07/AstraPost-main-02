@@ -1,5 +1,11 @@
 # Latest Updates
 
+## 2026-05-14 — Phase 4 Billing Audit: Webhook Trial-vs-Cancel (Finding #7)
+
+Modified `handleSubscriptionDeleted` in `src/app/api/billing/webhook/route.ts` to detect trial-expired subscription deletions and route them to the trial-expired email/notification flow instead of the cancellation flow. Detection uses three signals: (1) `subscription.status === "incomplete_expired"`, (2) subscription `trial_end` and `canceled_at` within 24h of trial end, (3) local DB `subRecord.status === "trialing"` (tiebreaker). Added Vitest test asserting `billing_trial_expired` notification + `TrialExpiredEmail` fire (not cancellation variants) when a trialing-status subscription is deleted. `planChangeLog` reason is `"trial_expired_via_deleted"` for the trial-expiry path, `"subscription_deleted"` for genuine paid cancellations.
+
+---
+
 ## 2026-05-14 — Phase 3 Billing Audit: Rate-Limiter Plan Plumbing (Finding #6)
 
 Implemented Phase 3 from `.claude/plans/2026-05-14-billing-pricing-plans-audit-findings.md`. Fixes audit finding #6 across 19 call sites in 17 files.

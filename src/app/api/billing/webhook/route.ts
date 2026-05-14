@@ -176,6 +176,9 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
 
   const subStatus = toSubscriptionStatus(subscription.status);
 
+  // Derive billing cycle from the Stripe price's recurring interval
+  const billingCycle = firstItem?.price?.recurring?.interval === "year" ? "annual" : "monthly";
+
   // Multi-table write — must be atomic.
   await db.transaction(async (tx) => {
     await tx
@@ -210,6 +213,7 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
         cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
         cancelledAt: unixToDate(subscription.canceled_at),
         trialEnd: unixToDate(subscription.trial_end),
+        billingCycle,
       })
       .onConflictDoUpdate({
         target: subscriptions.stripeSubscriptionId,
@@ -222,6 +226,7 @@ export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) 
           cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
           cancelledAt: unixToDate(subscription.canceled_at),
           trialEnd: unixToDate(subscription.trial_end),
+          billingCycle,
         },
       });
   });
@@ -646,6 +651,23 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
   const subRecord = await getSubscriptionRecord(subscription.id);
   if (!subRecord) return;
 
+  // ── Trial-expiry detection ─────────────────────────────────────────────
+  // Stripe can dispatch customer.subscription.deleted without an intermediate
+  // customer.subscription.updated for trials that never converted to paid.
+  // Detect this case so we send the trial-expired email instead of the
+  // cancellation email — semantically correct and less alarming for the user.
+  //
+  // Signal 1: stripe status is incomplete_expired (trial expired before first payment)
+  // Signal 2: subscription had a trial period AND was canceled within 24h of trial end
+  //           (24h grace covers webhook backlog without admitting genuine paid cancellations)
+  // Signal 3 (tiebreaker): local DB row still shows trialing status
+  const isTrialExpiry =
+    subscription.status === "incomplete_expired" ||
+    (subscription.trial_end != null &&
+      (subscription.canceled_at == null ||
+        subscription.canceled_at <= subscription.trial_end + 86400)) ||
+    subRecord.status === "trialing";
+
   // Multi-table write — must be atomic.
   await db.transaction(async (tx) => {
     await tx
@@ -670,10 +692,14 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
       userId: subRecord.userId,
       oldPlan: subRecord.plan,
       newPlan: "free",
-      reason: "subscription_deleted",
+      reason: isTrialExpiry ? "trial_expired_via_deleted" : "subscription_deleted",
       stripeSubscriptionId: subscription.id,
     });
   });
+
+  // Invalidate plan cache to prevent stale paid-plan reads (matches pattern in
+  // handleSubscriptionUpdated, handleInvoicePaymentFailed, handleSubscriptionPaused, etc.)
+  await cache.delete(`plan:${subRecord.userId}`);
 
   // ── Over-limit account detection on subscription deletion ─────────────
   // When a subscription is deleted (canceled), the user is downgraded to "free"
@@ -705,44 +731,83 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
     );
   }
 
-  await runSideEffect(
-    () =>
-      notifyBillingEvent({
-        userId: subRecord.userId,
-        type: "billing_subscription_cancelled",
-        title: "Subscription canceled",
-        message: "Your subscription has been canceled and your plan is now Free.",
-        metadata: { stripeSubscriptionId: subscription.id },
-      }),
-    "billing_subscription_cancelled"
-  );
-
-  // Send cancellation email
+  // Fetch user for side-effect emails (needed by both branches)
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, subRecord.userId),
     columns: { email: true, name: true, language: true },
   });
-  if (dbUser?.email) {
-    const userLocale = dbUser.language || "en";
-    const st = getEmailTranslations(userLocale);
+
+  if (isTrialExpiry) {
+    // ── Trial-expired path ───────────────────────────────────────────────
+    // Reuses the same TrialExpiredEmail + billing_trial_expired notification
+    // pattern from handleSubscriptionUpdated:376–409.
     await runSideEffect(
       () =>
-        sendBillingEmail({
-          to: dbUser.email,
-          subject: st.subscription_cancelled.subject,
-          text: `${st.common.greeting.replace("{name}", dbUser.name || "there")}\n\n${st.subscription_cancelled.body}\n\n${st.subscription_cancelled.resubscribe_anytime || "You can resubscribe at any time from your account settings."}\n\n${st.common.thank_you_customer || "Thank you for being an AstraPost customer."}`,
-          react: SubscriptionCancelledEmail({
-            userName: dbUser.name || "there",
-            locale: userLocale,
-          }),
-          metadata: {
-            event: "customer.subscription.deleted",
-            userId: subRecord.userId,
-            stripeSubscriptionId: subscription.id,
-          },
+        notifyBillingEvent({
+          userId: subRecord.userId,
+          type: "billing_trial_expired",
+          title: "Trial expired",
+          message: "Your trial has ended. Your account has been moved to the Free plan.",
+          metadata: { stripeSubscriptionId: subscription.id },
         }),
-      "email_subscription_cancelled"
+      "billing_trial_expired"
     );
+
+    if (dbUser?.email) {
+      const userLocale = dbUser.language || "en";
+      const t = getEmailTranslations(userLocale);
+      await runSideEffect(
+        () =>
+          sendBillingEmail({
+            to: dbUser.email,
+            subject: t.trial_expired.subject,
+            text: `${t.common.greeting.replace("{name}", dbUser.name || "there")}\n\n${t.trial_expired.body}\n\n${t.trial_expired.upgrade_description}\n\n${t.common.closing}\n${t.common.closing_team}`,
+            react: TrialExpiredEmail({ userName: dbUser.name || "there", locale: userLocale }),
+            metadata: {
+              event: "trial_expired_via_deleted",
+              userId: subRecord.userId,
+              stripeSubscriptionId: subscription.id,
+            },
+          }),
+        "email_trial_expired"
+      );
+    }
+  } else {
+    // ── Paid cancellation path (existing) ────────────────────────────────
+    await runSideEffect(
+      () =>
+        notifyBillingEvent({
+          userId: subRecord.userId,
+          type: "billing_subscription_cancelled",
+          title: "Subscription canceled",
+          message: "Your subscription has been canceled and your plan is now Free.",
+          metadata: { stripeSubscriptionId: subscription.id },
+        }),
+      "billing_subscription_cancelled"
+    );
+
+    if (dbUser?.email) {
+      const userLocale = dbUser.language || "en";
+      const st = getEmailTranslations(userLocale);
+      await runSideEffect(
+        () =>
+          sendBillingEmail({
+            to: dbUser.email,
+            subject: st.subscription_cancelled.subject,
+            text: `${st.common.greeting.replace("{name}", dbUser.name || "there")}\n\n${st.subscription_cancelled.body}\n\n${st.subscription_cancelled.resubscribe_anytime || "You can resubscribe at any time from your account settings."}\n\n${st.common.thank_you_customer || "Thank you for being an AstraPost customer."}`,
+            react: SubscriptionCancelledEmail({
+              userName: dbUser.name || "there",
+              locale: userLocale,
+            }),
+            metadata: {
+              event: "customer.subscription.deleted",
+              userId: subRecord.userId,
+              stripeSubscriptionId: subscription.id,
+            },
+          }),
+        "email_subscription_cancelled"
+      );
+    }
   }
 }
 
