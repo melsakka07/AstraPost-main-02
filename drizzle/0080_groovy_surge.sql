@@ -1,0 +1,2 @@
+ALTER TYPE "public"."notification_type" ADD VALUE 'post_over_quota' BEFORE 'tier_downgrade_warning';--> statement-breakpoint
+ALTER TYPE "public"."notification_type" ADD VALUE 'trial_expiring_soon' BEFORE 'webhook_processing_failed';

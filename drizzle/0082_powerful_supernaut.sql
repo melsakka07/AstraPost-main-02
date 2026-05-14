@@ -1,0 +1,1 @@
+ALTER TYPE "public"."notification_type" ADD VALUE 'post_account_inactive' BEFORE 'tier_downgrade_warning';

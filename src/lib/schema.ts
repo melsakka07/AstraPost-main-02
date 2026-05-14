@@ -15,6 +15,7 @@ import {
 
 // ── Admin / Billing enums ────────────────────────────────────────────────────
 export const discountTypeEnum = pgEnum("discount_type", ["percentage", "fixed"]);
+export const billingCycleEnum = pgEnum("billing_cycle", ["monthly", "annual"]);
 
 // ── Enums ──────────────────────────────────────────────────────────────────
 
@@ -27,6 +28,7 @@ export const postStatusEnum = pgEnum("post_status", [
   "cancelled",
   "awaiting_approval",
   "paused_needs_reconnect",
+  "over_quota",
 ]);
 
 export const planEnum = pgEnum("plan", ["free", "pro_monthly", "pro_annual", "agency"]);
@@ -146,6 +148,8 @@ export const aiGenerationTypeEnum = pgEnum("ai_generation_type", [
 export const notificationTypeEnum = pgEnum("notification_type", [
   "admin",
   "post_failed",
+  "post_over_quota",
+  "post_account_inactive",
   "tier_downgrade_warning",
   "token_expiring_soon",
   "billing_checkout_completed",
@@ -161,6 +165,7 @@ export const notificationTypeEnum = pgEnum("notification_type", [
   "billing_trial_will_end",
   "billing_checkout_expired",
   "billing_grace_period_expired",
+  "trial_expiring_soon",
   "webhook_processing_failed",
   "referral_credit_earned",
   "referral_trial_extended",
@@ -762,6 +767,7 @@ export const subscriptions = pgTable(
     currentPeriodStart: timestamp("current_period_start"),
     currentPeriodEnd: timestamp("current_period_end"),
     cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+    billingCycle: billingCycleEnum("billing_cycle"),
     cancelledAt: timestamp("cancelled_at"),
     trialEnd: timestamp("trial_end"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
