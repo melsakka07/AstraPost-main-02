@@ -1,5 +1,40 @@
 # Latest Updates
 
+## 2026-05-15 — Billing Audit Close-Out: #4b Observability Sweep + #6 Stragglers + Production Deploy
+
+Final close-out of the 2026-05-14 billing/pricing audit. All 12 P0/P1 findings now FIXED or PARTIAL→FIXED.
+
+### Code changes (commit `01cf96c`)
+
+- **#4b observability standardization (13 AI routes)** — replaced per-route log names (`bio_generation_failed`, `affiliate_generation_failed`, etc.) with canonical `logger.error("ai_stream_failed", { route, userId, correlationId, error })` + `Sentry.captureException(error, { tags: { route, userId, correlationId } })` in: `affiliate`, `bio`, `calendar`, `hashtags`, `inspire`, `pdf-to-thread/generate`, `refine`, `reply`, `score`, `summarize`, `tools`, `translate`, `variants`. Brings parity with the 3 reference routes (`thread`, `agentic`, `template-generate`) that already used this pattern. Quota correctness was already in place — releaseQuota() was always called in catch, recordAiUsage never inside it. This change is purely operability: one Sentry tag query now catches all 16 routes.
+- **#6 rate-limiter stragglers** — two sites outside the original 16-site audit list still resolved plan from raw `dbUser.plan`/`normalizePlan(userRecord.plan)`, throttling synthetic-trial users at free-tier limits:
+  - `src/app/api/x/tweet-lookup/route.ts:69` → now `await getUserPlanType(userId)`
+  - `src/app/api/community/contact/route.ts:54` → now `await getUserPlanType(session.user.id)`
+
+### Production deploy
+
+- Pre-deploy enum anchor check passed — `tier_downgrade_warning` confirmed present on prod, so `drizzle/0082_powerful_supernaut.sql` (`ADD VALUE 'post_account_inactive' BEFORE 'tier_downgrade_warning'`) applied cleanly. No 2026-05-07-style outage.
+- Vercel deploy `dpl_BdvPDHyCsqcHNWBgez3s15K9jFcD` → READY in ~3 min. All pending drizzle migrations applied (`post_over_quota`, `trial_expiring_soon`, `post_account_inactive`, `billing_cycle` column).
+- `billing_cycle` backfill runbook (`docs/sql-runbooks/2026-05-14-billingcycle-backfill.sql`) executed against prod with per-env Stripe price IDs substituted. Result: zero rows touched — `subscriptions` table is empty (pre-paying-customer stage), so no legacy NULLs existed to backfill. Verification query confirmed no unexpected NULLs in any paid-plan rows.
+
+### Verification
+
+- `pnpm run check` passes (1 pre-existing warning unrelated)
+- `pnpm test` passes (34 files, 323 tests)
+- All 16 AI routes now grep-match `ai_stream_failed` and `Sentry.captureException`
+- 18 rate-limiter call sites resolve plan via `getUserPlanType`
+
+### Manual smoke tests still recommended (operator)
+
+- Stripe CLI: `customer.subscription.deleted` on a trialing fixture → confirm `TrialExpiredEmail` (not cancellation) — Finding #7
+- Cancel a Pro test account with 2 IG accounts → confirm IG #2 deactivates → enqueue post for #2 → worker fails with "Account inactive" — Findings #9/#10
+
+### Test-coverage gap (deferred, not blocking)
+
+- No Vitest fixture for #6 synthetic-trial isolation (stub `getPlanContext`, loop `checkRateLimit` 100× for `posts`, assert no 429 before 500). Recommended before next audit cycle.
+
+---
+
 ## 2026-05-15 — Phases 5–7 Billing Audit: Worker Re-Gate, Webhook Cleanup, PlanLimits Refactor (Findings #9, #10, #12, #13, #20, #21)
 
 ### Phase 5a — Schema migration for post_account_inactive (#9)
