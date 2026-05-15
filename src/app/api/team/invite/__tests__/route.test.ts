@@ -84,7 +84,7 @@ describe("POST /api/team/invite", () => {
     // Gate: allowed by default
     mockCheckTeamMemberLimitDetailed.mockResolvedValue({ allowed: true });
     mockCreatePlanLimitResponse.mockReturnValue(
-      new Response(JSON.stringify({ error: "upgrade_required" }), { status: 402 })
+      Response.json({ error: "upgrade_required" }, { status: 402 })
     );
   });
 
