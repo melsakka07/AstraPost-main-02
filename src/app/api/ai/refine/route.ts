@@ -1,5 +1,6 @@
 import "server-only";
 
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -32,11 +33,10 @@ const FOCUS_INSTRUCTIONS: Record<string, string> = {
 
 export async function POST(req: Request) {
   let releaseQuota: () => Promise<void> = async () => {};
+  const correlationId = getCorrelationId(req);
+  let userId: string | undefined;
 
   try {
-    // Step 1: Correlation ID
-    const correlationId = getCorrelationId(req);
-
     logger.info("ai.refine_request", { correlationId });
 
     // Step 2: AI Preamble — refinement costs 1 quota unit (cheaper than fresh gen)
@@ -44,6 +44,7 @@ export async function POST(req: Request) {
     if (preamble instanceof Response) return preamble;
     const { session, model, releaseQuota: preambleReleaseQuota, checkModeration } = preamble;
     releaseQuota = preambleReleaseQuota ?? releaseQuota;
+    userId = session.user.id;
 
     // Step 3: Parse + validate body
     let body: unknown;
@@ -170,8 +171,14 @@ CRITICAL RULES:
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("ai.refine_failed", {
+    logger.error("ai_stream_failed", {
+      route: "refine",
+      userId,
+      correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "refine", userId, correlationId },
     });
     const message = error instanceof Error ? error.message : "Refinement failed";
     return ApiError.serviceUnavailable(message);

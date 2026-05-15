@@ -11,7 +11,7 @@ import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { normalizePlan } from "@/lib/plan-limits";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { importTweet, isValidTweetUrl } from "@/lib/services/tweet-importer";
 
@@ -63,10 +63,12 @@ export async function POST(req: NextRequest) {
       return ApiError.notFound("User not found");
     }
 
-    const plan = normalizePlan(userRecord.plan);
-
     // 5. Check rate limit
-    const rateLimitResult = await checkRateLimit(userId, plan, "tweet_lookup");
+    const rateLimitResult = await checkRateLimit(
+      userId,
+      await getUserPlanType(userId),
+      "tweet_lookup"
+    );
     if (!rateLimitResult.success) return createRateLimitResponse(rateLimitResult);
 
     // 6. Import tweet

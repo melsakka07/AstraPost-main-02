@@ -5,6 +5,7 @@
  * AI-powered content adaptation from imported tweets
  */
 
+import * as Sentry from "@sentry/nextjs";
 import { generateText, generateObject } from "ai";
 import { z } from "zod";
 import { buildInspirePrompts, VERSION } from "@/lib/ai/inspire-prompts";
@@ -53,6 +54,7 @@ const ThreadSchema = z.object({
 export async function POST(req: Request) {
   const correlationId = getCorrelationId(req);
   let releaseQuota: () => Promise<void> = async () => {};
+  let userId: string | undefined;
 
   try {
     const preamble = await aiPreamble({
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
       checkModeration,
     } = preamble;
     releaseQuota = preambleReleaseQuota ?? releaseQuota;
-    const userId = session.user.id;
+    userId = session.user.id;
 
     const body = await req.json();
     const validationResult = InspireRequestSchema.safeParse(body);
@@ -151,9 +153,14 @@ export async function POST(req: Request) {
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("inspire_generation_failed", {
+    logger.error("ai_stream_failed", {
+      route: "inspire",
+      userId,
       correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "inspire", userId, correlationId },
     });
     return ApiError.internal("Failed to generate inspired content");
   }

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
@@ -21,9 +22,10 @@ const hashtagResponseSchema = z.object({
 
 export async function POST(req: Request) {
   let releaseQuota: () => Promise<void> = async () => {};
+  const correlationId = getCorrelationId(req);
+  let userId: string | undefined;
 
   try {
-    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const {
@@ -34,6 +36,7 @@ export async function POST(req: Request) {
       checkModeration,
     } = preamble;
     releaseQuota = preambleReleaseQuota ?? releaseQuota;
+    userId = session.user.id;
 
     const json = await req.json();
     const result = hashtagRequestSchema.safeParse(json);
@@ -105,8 +108,14 @@ export async function POST(req: Request) {
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("hashtag_generation_failed", {
+    logger.error("ai_stream_failed", {
+      route: "hashtags",
+      userId,
+      correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "hashtags", userId, correlationId },
     });
     return ApiError.internal("Failed to generate hashtags");
   }

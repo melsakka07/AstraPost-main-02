@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -64,9 +65,10 @@ export async function GET(_req: Request) {
 
 export async function POST(req: Request) {
   let releaseQuota: () => Promise<void> = async () => {};
+  const correlationId = getCorrelationId(req);
+  let userId: string | undefined;
 
   try {
-    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkBioOptimizerAccessDetailed });
     if (preamble instanceof Response) return preamble;
     const {
@@ -77,6 +79,7 @@ export async function POST(req: Request) {
       checkModeration,
     } = preamble;
     releaseQuota = preambleReleaseQuota ?? releaseQuota;
+    userId = session.user.id;
 
     const json = await req.json();
     const result = requestSchema.safeParse(json);
@@ -160,8 +163,14 @@ For each variant provide:
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("bio_generation_failed", {
+    logger.error("ai_stream_failed", {
+      route: "bio",
+      userId,
+      correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "bio", userId, correlationId },
     });
     return ApiError.internal("Failed to generate bio variants");
   }

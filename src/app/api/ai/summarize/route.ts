@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { INPUT_LIMITS, truncate } from "@/lib/ai/input-limits";
@@ -149,9 +150,14 @@ export async function POST(req: Request) {
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("url_summarize_error", {
+    logger.error("ai_stream_failed", {
+      route: "summarize",
+      userId: session.user.id,
       correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "summarize", userId: session.user.id, correlationId },
     });
     return ApiError.internal("Failed to generate thread from URL");
   }

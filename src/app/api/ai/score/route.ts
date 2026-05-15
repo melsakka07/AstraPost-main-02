@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getArabicInstructions } from "@/lib/ai/arabic-prompt";
@@ -22,8 +23,11 @@ const scoreResponseSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const correlationId = getCorrelationId(req);
+  let userId: string | undefined;
+  let releaseQuota: () => Promise<void> = async () => {};
+
   try {
-    const correlationId = getCorrelationId(req);
     // Score route uses viral-score access check instead of the standard AI access check,
     // and skips quota consumption since scoring doesn't burn generation credits.
     const preamble = await aiPreamble({
@@ -31,7 +35,15 @@ export async function POST(req: Request) {
       skipQuotaCheck: true,
     });
     if (preamble instanceof Response) return preamble;
-    const { model, session, dbUser, releaseQuota, checkModeration } = preamble;
+    const {
+      model,
+      session,
+      dbUser,
+      releaseQuota: preambleReleaseQuota,
+      checkModeration,
+    } = preamble;
+    releaseQuota = preambleReleaseQuota ?? releaseQuota;
+    userId = session.user.id;
 
     const json = await req.json();
     const result = scoreRequestSchema.safeParse(json);
@@ -105,8 +117,15 @@ export async function POST(req: Request) {
     res.headers.set("x-correlation-id", correlationId);
     return res;
   } catch (error) {
-    logger.error("ai_scoring_error", {
+    await releaseQuota();
+    logger.error("ai_stream_failed", {
+      route: "score",
+      userId,
+      correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "score", userId, correlationId },
     });
     return ApiError.internal("Failed to score content");
   }

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { buildLanguageBlock } from "@/lib/ai/language";
@@ -21,13 +22,15 @@ const responseSchema = z.object({
 
 export async function POST(req: Request) {
   let releaseQuota: () => Promise<void> = async () => {};
+  const correlationId = getCorrelationId(req);
+  let userId: string | undefined;
 
   try {
-    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble();
     if (preamble instanceof Response) return preamble;
     const { session, model, releaseQuota: preambleReleaseQuota, checkModeration } = preamble;
     releaseQuota = preambleReleaseQuota ?? releaseQuota;
+    userId = session.user.id;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
@@ -102,8 +105,14 @@ ${tweets.map((t, i) => `--- Tweet ${i + 1} ---\n${wrapUntrusted(`TWEET_${i + 1}`
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("translation_error", {
+    logger.error("ai_stream_failed", {
+      route: "translate",
+      userId,
+      correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "translate", userId, correlationId },
     });
     const message = error instanceof Error ? error.message : "Translation failed";
     return ApiError.serviceUnavailable(message);

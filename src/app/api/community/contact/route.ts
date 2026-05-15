@@ -1,12 +1,10 @@
 import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { ApiError } from "@/lib/api/errors";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
-import { user } from "@/lib/schema";
 import { sendEmail } from "@/lib/services/email";
 
 // ── Validation ──────────────────────────────────────────────────────────────
@@ -42,14 +40,7 @@ export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id ?? `ip_${ip}`;
 
-  let plan = "free";
-  if (session?.user?.id) {
-    const dbUser = await db.query.user.findFirst({
-      where: eq(user.id, session.user.id),
-      columns: { plan: true },
-    });
-    if (dbUser?.plan) plan = dbUser.plan;
-  }
+  const plan = session?.user?.id ? await getUserPlanType(session.user.id) : "free";
 
   const rateLimit = await checkRateLimit(userId, plan, "contact");
   if (!rateLimit.success) return createRateLimitResponse(rateLimit);

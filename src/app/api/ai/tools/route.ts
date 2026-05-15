@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { getArabicInstructions, getArabicToneGuidance } from "@/lib/ai/arabic-prompt";
@@ -30,9 +31,10 @@ const responseSchema = z.object({
 
 export async function POST(req: Request) {
   let releaseQuota: () => Promise<void> = async () => {};
+  const correlationId = getCorrelationId(req);
+  let userId: string | undefined;
 
   try {
-    const correlationId = getCorrelationId(req);
     const preamble = await aiPreamble({ featureGate: checkToolsAccessDetailed });
     if (preamble instanceof Response) return preamble;
     const {
@@ -43,6 +45,7 @@ export async function POST(req: Request) {
       checkModeration,
     } = preamble;
     releaseQuota = preambleReleaseQuota ?? releaseQuota;
+    userId = session.user.id;
 
     const json = await req.json();
     const parsed = requestSchema.safeParse(json);
@@ -149,7 +152,15 @@ ${input || ""}`;
     return res;
   } catch (err) {
     await releaseQuota();
-    logger.error("ai_tools_error", { error: err instanceof Error ? err.message : String(err) });
+    logger.error("ai_stream_failed", {
+      route: "tools",
+      userId,
+      correlationId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    Sentry.captureException(err, {
+      tags: { route: "tools", userId, correlationId },
+    });
     return ApiError.internal("AI tool failed");
   }
 }

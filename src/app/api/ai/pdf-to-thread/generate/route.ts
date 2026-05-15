@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -238,10 +239,19 @@ export async function POST(req: Request) {
         .set({ quotaReleased: true, updatedAt: new Date() })
         .where(eq(pdfThreadJobs.id, jobId));
     }
-    logger.error("pdf_to_thread_generate_error", {
+    logger.error("ai_stream_failed", {
+      route: "pdf-to-thread/generate",
+      userId: session.user.id,
       correlationId,
       jobId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: {
+        route: "pdf-to-thread/generate",
+        userId: session.user.id,
+        correlationId,
+      },
     });
     return ApiError.internal("Failed to generate thread from PDF.");
   }

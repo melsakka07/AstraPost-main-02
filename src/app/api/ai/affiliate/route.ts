@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { generateObject } from "ai";
 import * as cheerio from "cheerio";
 import { nanoid } from "nanoid";
@@ -213,8 +214,14 @@ export async function POST(req: Request) {
     return res;
   } catch (error) {
     await releaseQuota();
-    logger.error("affiliate_generation_failed", {
+    logger.error("ai_stream_failed", {
+      route: "affiliate",
+      userId: session.user.id,
+      correlationId,
       error: error instanceof Error ? error.message : String(error),
+    });
+    Sentry.captureException(error, {
+      tags: { route: "affiliate", userId: session.user.id, correlationId },
     });
     return ApiError.internal("Failed to generate affiliate tweet");
   }
