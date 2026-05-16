@@ -58,6 +58,11 @@ const serverEnvSchema = z.object({
   // When set, getProxiedFetch() pulls a fresh proxy from the Webshare free-tier proxy list and
   // caches it in Redis (1h TTL). Failures auto-rotate; YOUTUBE_PROXY_URL is the fallback.
   API_KEY_WEBSHARE: z.string().optional(),
+  // Optional: base64-encoded YouTube cookies (Netscape format) for innertube + yt-dlp auth.
+  // When set, the watch-page, innertube /player, and audio-stream fetches inject a Cookie header
+  // built from this blob, and the worker writes it to /tmp/youtube_cookies.txt for yt-dlp.
+  // Refresh by exporting cookies from a logged-in browser → base64 → update this env var.
+  YOUTUBE_COOKIES_BASE64: z.string().optional(),
 
   // AI - YouTube transcription (optional — feature disabled if neither is set)
   YOUTUBE_DEEPGRAM_API_KEY: z.string().optional(),

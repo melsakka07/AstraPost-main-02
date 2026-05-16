@@ -1,5 +1,41 @@
 # Latest Updates
 
+## 2026-05-16 — YouTube Innertube Cookie Auth (Unlock Full Transcript Pipeline)
+
+Production verification of the auto-rotating proxy (this morning) confirmed the proxy + Webshare resolver work end-to-end, but every request was still landing in the worker's title-only branch because YouTube was bot-flagging innertube even through the Webshare IPs. Root cause: innertube + watch-page HTTP fetches had no cookie auth, so YouTube treated every request as anonymous from a datacenter IP. Worker already had cookie auth for yt-dlp via `YOUTUBE_COOKIES_BASE64`, but the metadata fetch in `getVideoInfoHttp` never reached yt-dlp because `durationVerified === false` short-circuited to title-only.
+
+This change extends the existing cookie blob to the HTTP path so innertube can succeed → duration verifies → worker invokes yt-dlp → full transcript pipeline (which already had cookies wired) runs end-to-end.
+
+### Code changes
+
+- **NEW `src/lib/services/youtube-cookies.ts`** — single exported helper `getYouTubeCookieHeader()` decodes `YOUTUBE_COOKIES_BASE64` (Netscape format), filters to `.youtube.com` / `.google.com` cookies, drops expired entries, builds a `name=value; name=value; ...` Cookie-header string. Module-level cache keyed on the raw env value so a redeploy with refreshed cookies picks up automatically. Returns `""` when env var is unset → callers spread-no-op the Cookie header.
+- **MODIFY `src/lib/services/youtube.ts`** — three HTTP fetches now inject the cookie header via the `...(cookieHeader && { Cookie: cookieHeader })` pattern (preserves `exactOptionalPropertyTypes`):
+  - `extractYouTubePageConfig` (watch-page scrape, captures fresh `visitorData`)
+  - `fetchYouTubePlayer` (innertube `/player` — the actual unlock)
+  - `downloadAudioStream` (audio CDN URL — defense in depth, yt-dlp also has cookies)
+  - `getVideoInfoOembed` left alone — public endpoint, no anti-bot rejection.
+- **MODIFY `src/lib/env.ts`** — registered `YOUTUBE_COOKIES_BASE64: z.string().optional()` so it's typed alongside `API_KEY_WEBSHARE` and `YOUTUBE_PROXY_URL`. Optional preserves no-op behaviour when unset.
+
+### Ops checklist (you handle these)
+
+1. Encode the fresh local `youtube_cookies.txt` to base64 (PowerShell one-liner):
+   ```powershell
+   [Convert]::ToBase64String([IO.File]::ReadAllBytes("youtube_cookies.txt")) | Set-Clipboard
+   ```
+2. Paste into `YOUTUBE_COOKIES_BASE64` in Vercel (Production + Preview) AND Railway (worker).
+3. Redeploy Vercel + restart the Railway worker so they pick up the new env var.
+
+### Security flag (still open from earlier today)
+
+- `youtube_cookies_base64.txt` is committed at the repo root. That's live Google session cookies in a public GitHub repo. Recommend: gitignore it, remove from HEAD, rotate the cookies (you already refreshed locally — re-grab once more after gitignoring to invalidate the leaked set), and only set `YOUTUBE_COOKIES_BASE64` via dashboards going forward. Did not touch this in this commit — separate cleanup task.
+
+### Verification
+
+- `pnpm run check` passes (lint + typecheck + i18n).
+- Production verification after deploy: look for `youtube_cookie_header_loaded {cookieCount: N}` log on cold start (confirms env var decoded), then `youtube_get_video_info_http_success` instead of the current `youtube_falling_back_to_oembed` pattern. Worker should log `youtube_thread_job_completed` without `mode: "title_only"`.
+
+---
+
 ## 2026-05-16 — Auto-Rotating YouTube Proxy via Webshare API
 
 Follow-up to this morning's outage fix. The static `YOUTUBE_PROXY_URL` model required manual rotation every few days + a Vercel redeploy each time (warm Lambdas held the cached dead proxy even after env-var changes — confirmed in production logs today). Replaced with a self-healing resolver that pulls fresh proxies from the Webshare proxy-list API on demand, caches them in Redis (shared across all serverless instances), and auto-rotates on the first network error.

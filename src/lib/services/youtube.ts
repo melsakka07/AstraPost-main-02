@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import path from "path";
 import { promisify } from "util";
 import { logger } from "@/lib/logger";
+import { getYouTubeCookieHeader } from "@/lib/services/youtube-cookies";
 import { getProxiedFetch, invalidateActiveProxy } from "@/lib/services/youtube-proxy";
 
 // ---------------------------------------------------------------------------
@@ -48,11 +49,13 @@ async function extractYouTubePageConfig(
 
   try {
     const fetchFn = await getProxiedFetch();
+    const cookieHeader = getYouTubeCookieHeader();
     const res = await fetchFn(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
+        ...(cookieHeader && { Cookie: cookieHeader }),
       },
       signal: controller.signal,
     });
@@ -381,6 +384,7 @@ async function fetchYouTubePlayer(
   let data: YouTubePlayerResponse;
   try {
     const fetchFn = await getProxiedFetch();
+    const cookieHeader = getYouTubeCookieHeader();
     const res = await fetchFn(url, {
       method: "POST",
       headers: {
@@ -390,6 +394,7 @@ async function fetchYouTubePlayer(
         Accept: "*/*",
         Origin: "https://www.youtube.com",
         Referer: "https://www.youtube.com/",
+        ...(cookieHeader && { Cookie: cookieHeader }),
       },
       body: JSON.stringify({
         videoId,
@@ -815,6 +820,7 @@ async function downloadAudioStream(streamUrl: string, outputPath: string): Promi
 
   try {
     const fetchFn = await getProxiedFetch();
+    const cookieHeader = getYouTubeCookieHeader();
     const res = await fetchFn(streamUrl, {
       headers: {
         "User-Agent":
@@ -822,6 +828,7 @@ async function downloadAudioStream(streamUrl: string, outputPath: string): Promi
         Accept: "*/*",
         Origin: "https://www.youtube.com",
         Referer: "https://www.youtube.com/",
+        ...(cookieHeader && { Cookie: cookieHeader }),
       },
       signal: controller.signal,
     });
