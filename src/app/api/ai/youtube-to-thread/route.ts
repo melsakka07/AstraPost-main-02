@@ -78,9 +78,13 @@ export async function POST(req: Request) {
         videoId,
         error: message,
       });
-      return ApiError.badRequest(
-        message || "Failed to access the video. Please check the URL and try again."
-      );
+      // Bare undici "fetch failed" / TypeError means a network-layer issue (proxy down, DNS, etc).
+      // Don't leak that to end users — show something actionable instead.
+      const isNetworkError = message === "fetch failed" || message.startsWith("TypeError");
+      const userMessage = isNetworkError
+        ? "Could not reach YouTube right now. Please try again in a moment."
+        : message || "Failed to access the video. Please check the URL and try again.";
+      return ApiError.badRequest(userMessage);
     }
 
     const durationVerified = videoInfo.durationVerified !== false;

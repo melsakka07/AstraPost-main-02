@@ -138,13 +138,29 @@ function extractYtcfgJson(html: string): Record<string, unknown> | null {
  */
 async function getVideoInfoOembed(videoId: string): Promise<VideoInfo> {
   const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+  const headers = {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  };
 
-  const res = await getProxiedFetch()(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    },
-  });
+  // oEmbed is a public no-auth endpoint and doesn't need anti-bot bypass.
+  // If the proxy is dead, retry once without it so the worker's title-only branch can still run.
+  let res: Response;
+  try {
+    res = await getProxiedFetch()(url, { headers });
+  } catch (err) {
+    const isProxyNetworkError = err instanceof TypeError && !!process.env.YOUTUBE_PROXY_URL;
+    if (!isProxyNetworkError) throw err;
+    const cause =
+      "cause" in err ? (err.cause as { code?: string; message?: string } | undefined) : undefined;
+    logger.warn("youtube_oembed_proxy_bypass", {
+      videoId,
+      error: err.message,
+      causeCode: cause?.code,
+      causeMessage: cause?.message,
+    });
+    res = await globalThis.fetch(url, { headers });
+  }
 
   if (!res.ok) {
     throw new Error(`oEmbed API returned HTTP ${res.status}`);
@@ -321,10 +337,17 @@ export async function getVideoInfoHttp(
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       lastError = message;
+      const cause =
+        err instanceof Error && "cause" in err
+          ? (err.cause as { code?: string; message?: string } | undefined)
+          : undefined;
       logger.warn("youtube_player_client_failed", {
         videoId,
         client: client.name,
         error: message,
+        causeCode: cause?.code,
+        causeMessage: cause?.message,
+        viaProxy: !!process.env.YOUTUBE_PROXY_URL,
       });
     }
   }
@@ -336,7 +359,17 @@ export async function getVideoInfoHttp(
       return await getVideoInfoOembed(videoId);
     } catch (oembedErr) {
       const message = oembedErr instanceof Error ? oembedErr.message : String(oembedErr);
-      logger.error("youtube_oembed_failed", { videoId, error: message });
+      const cause =
+        oembedErr instanceof Error && "cause" in oembedErr
+          ? (oembedErr.cause as { code?: string; message?: string } | undefined)
+          : undefined;
+      logger.error("youtube_oembed_failed", {
+        videoId,
+        error: message,
+        causeCode: cause?.code,
+        causeMessage: cause?.message,
+        viaProxy: !!process.env.YOUTUBE_PROXY_URL,
+      });
     }
   }
 

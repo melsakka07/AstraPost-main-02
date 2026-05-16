@@ -1,5 +1,35 @@
 # Latest Updates
 
+## 2026-05-16 — YouTube-to-Thread Proxy Outage Fix: oEmbed Bypass + Error Observability
+
+Production `POST /api/ai/youtube-to-thread` started returning 400 with bare `fetch failed` after the `YOUTUBE_PROXY_URL` Webshare proxy became unreachable. Diagnosis confirmed from Vercel runtime logs: every failed request hit all three log markers (`youtube_proxy_configured` + `youtube_player_client_failed` + `youtube_oembed_failed`), meaning every fetch through `getProxiedFetch()` was failing at the network layer (undici `TypeError`). Operator rotated the proxy URL; this commit adds the missing resilience + observability so the same dead-proxy condition degrades gracefully next time.
+
+### Code changes
+
+- **`src/lib/services/youtube.ts` — `getVideoInfoOembed()` proxy bypass-on-failure**: oEmbed is a public no-auth GET endpoint that doesn't need anti-bot bypass. On `TypeError` from the proxied fetch (and only when `YOUTUBE_PROXY_URL` is set), retry once via `globalThis.fetch`. Lets the worker's title-only safety net (`processors.ts:1444–1558`) still run when the proxy itself dies. Logs `youtube_oembed_proxy_bypass` on activation. Real HTTP `4xx`/`5xx` from oEmbed still propagate.
+- **`src/lib/services/youtube.ts` — `youtube_player_client_failed` + `youtube_oembed_failed` logs enriched**: now include `causeCode` (e.g. `UND_ERR_SOCKET`, `ENOTFOUND`, `ECONNREFUSED`) and `causeMessage` unwrapped from undici's hidden `err.cause`, plus `viaProxy: !!process.env.YOUTUBE_PROXY_URL`. Next proxy outage diagnosable in seconds instead of guesswork.
+- **`src/app/api/ai/youtube-to-thread/route.ts` — friendlier user-facing error**: catch at the `getVideoInfoHttp` call now maps bare `"fetch failed"` / `TypeError` messages to `"Could not reach YouTube right now. Please try again in a moment."` Other validation errors (invalid URL, private/live video, etc.) still surface their original message.
+
+### Resilience layers (now)
+
+| Scenario                              | What saves us                                        |
+| ------------------------------------- | ---------------------------------------------------- |
+| Innertube works                       | Full transcript pipeline                             |
+| Innertube blocked, oEmbed works       | Title-only fallback in worker (`mode: "title_only"`) |
+| Innertube blocked, oEmbed proxy fails | **NEW**: oEmbed retried direct → title-only branch   |
+| Both proxied + direct oEmbed fail     | User-friendly 400, structured log with `causeCode`   |
+
+### Verification
+
+- `pnpm run check` passes
+- Manual prod test pending after operator deploys with rotated proxy
+
+### Plan
+
+- `.claude/plans/can-you-please-check-whimsical-perlis.md`
+
+---
+
 ## 2026-05-15 — Billing Audit Close-Out: #4b Observability Sweep + #6 Stragglers + Production Deploy
 
 Final close-out of the 2026-05-14 billing/pricing audit. All 12 P0/P1 findings now FIXED or PARTIAL→FIXED.
