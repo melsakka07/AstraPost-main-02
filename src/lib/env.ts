@@ -51,8 +51,13 @@ const serverEnvSchema = z.object({
   // used for video metadata fetching. Defaults to the well-known key.
   YOUTUBE_INNERTUBE_API_KEY: z.string().default("AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"),
   // Optional: HTTP(S) proxy URL for YouTube innertube API calls (bypasses IP-based bot detection).
-  // Format: http://user:pass@host:port. When not set, calls go direct (datacenter IP → likely blocked).
+  // Format: http://user:pass@host:port. Now the last-resort fallback — preferred path is the
+  // Webshare API (set API_KEY_WEBSHARE). When neither is set, calls go direct (likely bot-blocked).
   YOUTUBE_PROXY_URL: z.string().optional(),
+  // Optional: Webshare API key for auto-rotating YouTube proxies.
+  // When set, getProxiedFetch() pulls a fresh proxy from the Webshare free-tier proxy list and
+  // caches it in Redis (1h TTL). Failures auto-rotate; YOUTUBE_PROXY_URL is the fallback.
+  API_KEY_WEBSHARE: z.string().optional(),
 
   // AI - YouTube transcription (optional — feature disabled if neither is set)
   YOUTUBE_DEEPGRAM_API_KEY: z.string().optional(),

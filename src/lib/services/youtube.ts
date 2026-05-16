@@ -4,30 +4,8 @@ import { execFile } from "child_process";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import path from "path";
 import { promisify } from "util";
-import { ProxyAgent, fetch as undiciFetch } from "undici";
 import { logger } from "@/lib/logger";
-
-// ── Proxy-aware fetch (bypasses YouTube IP-based bot detection) ────────────
-let _proxiedFetch: ((url: string, init?: RequestInit) => Promise<Response>) | undefined;
-
-function getProxiedFetch(): (url: string, init?: RequestInit) => Promise<Response> {
-  if (_proxiedFetch) return _proxiedFetch;
-  const proxyUrl = process.env.YOUTUBE_PROXY_URL;
-  if (!proxyUrl) {
-    _proxiedFetch = globalThis.fetch.bind(globalThis);
-    return _proxiedFetch;
-  }
-  logger.info("youtube_proxy_configured", { proxyUrl: proxyUrl.replace(/\/\/.*@/, "//<creds>@") });
-  const agent = new ProxyAgent({ uri: proxyUrl });
-  _proxiedFetch = (url: string, init?: RequestInit): Promise<Response> => {
-    const opts = { ...(init ?? {}), dispatcher: agent } as Record<string, unknown>;
-    return undiciFetch(
-      url,
-      opts as Parameters<typeof undiciFetch>[1]
-    ) as unknown as Promise<Response>;
-  };
-  return _proxiedFetch;
-}
+import { getProxiedFetch, invalidateActiveProxy } from "@/lib/services/youtube-proxy";
 
 // ---------------------------------------------------------------------------
 // HTTP-based video info (no yt-dlp binary required)
@@ -69,7 +47,8 @@ async function extractYouTubePageConfig(
   const timeout = setTimeout(() => controller.abort(), 5_000);
 
   try {
-    const res = await getProxiedFetch()(`https://www.youtube.com/watch?v=${videoId}`, {
+    const fetchFn = await getProxiedFetch();
+    const res = await fetchFn(`https://www.youtube.com/watch?v=${videoId}`, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -147,10 +126,12 @@ async function getVideoInfoOembed(videoId: string): Promise<VideoInfo> {
   // If the proxy is dead, retry once without it so the worker's title-only branch can still run.
   let res: Response;
   try {
-    res = await getProxiedFetch()(url, { headers });
+    const fetchFn = await getProxiedFetch();
+    res = await fetchFn(url, { headers });
   } catch (err) {
-    const isProxyNetworkError = err instanceof TypeError && !!process.env.YOUTUBE_PROXY_URL;
-    if (!isProxyNetworkError) throw err;
+    // Network-layer failure (proxy unreachable, DNS, etc) — only retry direct if we actually
+    // had a proxy configured. Real HTTP 4xx/5xx from oEmbed are NOT caught here.
+    if (!(err instanceof TypeError)) throw err;
     const cause =
       "cause" in err ? (err.cause as { code?: string; message?: string } | undefined) : undefined;
     logger.warn("youtube_oembed_proxy_bypass", {
@@ -159,6 +140,8 @@ async function getVideoInfoOembed(videoId: string): Promise<VideoInfo> {
       causeCode: cause?.code,
       causeMessage: cause?.message,
     });
+    // Invalidate so the next call resolves a fresh proxy instead of reusing the dead one.
+    await invalidateActiveProxy("oembed_typeerror");
     res = await globalThis.fetch(url, { headers });
   }
 
@@ -347,8 +330,12 @@ export async function getVideoInfoHttp(
         error: message,
         causeCode: cause?.code,
         causeMessage: cause?.message,
-        viaProxy: !!process.env.YOUTUBE_PROXY_URL,
+        viaProxy: !!process.env.YOUTUBE_PROXY_URL || !!process.env.API_KEY_WEBSHARE,
       });
+      // Network-layer failure means the current proxy is likely dead — rotate before next client.
+      if (err instanceof TypeError) {
+        await invalidateActiveProxy("player_typeerror");
+      }
     }
   }
 
@@ -368,7 +355,7 @@ export async function getVideoInfoHttp(
         error: message,
         causeCode: cause?.code,
         causeMessage: cause?.message,
-        viaProxy: !!process.env.YOUTUBE_PROXY_URL,
+        viaProxy: !!process.env.YOUTUBE_PROXY_URL || !!process.env.API_KEY_WEBSHARE,
       });
     }
   }
@@ -393,7 +380,8 @@ async function fetchYouTubePlayer(
 
   let data: YouTubePlayerResponse;
   try {
-    const res = await getProxiedFetch()(url, {
+    const fetchFn = await getProxiedFetch();
+    const res = await fetchFn(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -826,7 +814,8 @@ async function downloadAudioStream(streamUrl: string, outputPath: string): Promi
   const timeout = setTimeout(() => controller.abort(), 20_000);
 
   try {
-    const res = await getProxiedFetch()(streamUrl, {
+    const fetchFn = await getProxiedFetch();
+    const res = await fetchFn(streamUrl, {
       headers: {
         "User-Agent":
           "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",

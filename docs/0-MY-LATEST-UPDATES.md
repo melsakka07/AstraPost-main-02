@@ -1,5 +1,55 @@
 # Latest Updates
 
+## 2026-05-16 — Auto-Rotating YouTube Proxy via Webshare API
+
+Follow-up to this morning's outage fix. The static `YOUTUBE_PROXY_URL` model required manual rotation every few days + a Vercel redeploy each time (warm Lambdas held the cached dead proxy even after env-var changes — confirmed in production logs today). Replaced with a self-healing resolver that pulls fresh proxies from the Webshare proxy-list API on demand, caches them in Redis (shared across all serverless instances), and auto-rotates on the first network error.
+
+### Code changes
+
+- **NEW `src/lib/services/webshare.ts`** — thin wrapper around `GET /api/v2/proxy/list/?mode=direct&valid=true` (auth: `Authorization: Token $API_KEY_WEBSHARE`). Picks a random valid proxy from the response, returns a fully-formed `http://user:pass@host:port` URL. Never throws — returns `null` on any failure so the resolver can fall through. Logs proxy address + port (never credentials).
+- **NEW `src/lib/services/youtube-proxy.ts`** — proxy resolver with 5-step resolution order: (1) in-memory cache 60s TTL → (2) Redis `youtube:proxy:active` 1h TTL → (3) Webshare API call (single-flight via Redis `SETNX` lock) → (4) static `YOUTUBE_PROXY_URL` env-var fallback → (5) direct fetch. Exports `getProxiedFetch()` (async now), `invalidateActiveProxy(reason)`, and `getActiveProxyStatus()`. All Redis calls are `.catch()`-guarded so local dev without Redis still works.
+- **MODIFY `src/lib/services/youtube.ts`** — removed inline `_proxiedFetch` cache, imports from `youtube-proxy.ts`. Four call sites awaited. `fetchYouTubePlayer` and `getVideoInfoOembed` catch blocks now call `invalidateActiveProxy()` on `TypeError` so the 7-client innertube loop organically rotates proxies between clients instead of beating the same dead proxy 7×.
+- **MODIFY `src/lib/env.ts`** — registered `API_KEY_WEBSHARE: z.string().optional()`. Optional means local dev / preview environments work without it (resolver skips steps 2-3 → straight to static fallback).
+- **NEW `src/app/api/admin/youtube-proxy/route.ts`** — admin-only ops endpoint. `GET` returns `{ activeProxy: <masked URL>, source, remainingTtlSecs }`; `DELETE` triggers `invalidateActiveProxy("admin_manual")` for force-rotation without redis-cli. Uses `requireAdminApi` + `checkAdminRateLimit("read" | "write")`.
+
+### Resolution flow
+
+```
+getProxiedFetch()
+  ↓
+in-memory (60s) → Redis (1h) → Webshare API → YOUTUBE_PROXY_URL → no proxy
+                                    ↑
+                          single-flight Redis SETNX lock (10s)
+```
+
+### Rotation triggers
+
+| Event                                   | Action                                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `TypeError` from innertube `/player`    | `invalidateActiveProxy("player_typeerror")` — next client picks fresh proxy                          |
+| `TypeError` from oEmbed proxied fetch   | `invalidateActiveProxy("oembed_typeerror")` + bypass to direct fetch (already shipped earlier today) |
+| Admin `DELETE /api/admin/youtube-proxy` | `invalidateActiveProxy("admin_manual")`                                                              |
+| Redis 1h TTL expiry                     | Next call re-resolves through Webshare                                                               |
+
+### Operational impact
+
+- **No more manual env-var rotation** — Webshare returns the current free-tier proxy pool on every miss.
+- **No more redeploy required** — Redis cache is shared across instances + 60s in-memory TTL bounds staleness.
+- **Free-tier safe** — single-flight lock + 1h Redis TTL means at most ~24 Webshare API calls per day per Redis cluster.
+- **Backward compatible** — if `API_KEY_WEBSHARE` is unset, behaviour is identical to today (just `YOUTUBE_PROXY_URL` → no proxy).
+
+### Verification
+
+- `pnpm run check` passes (lint + typecheck + i18n).
+- End-to-end preview test plan in `.claude/plans/can-you-please-check-whimsical-perlis.md` (cold start, forced rotation, static fallback, TypeError rotation).
+- Ops env-var checklist: add `API_KEY_WEBSHARE` to Vercel production + preview; leave `YOUTUBE_PROXY_URL` set as fallback.
+
+### Plan
+
+- `.claude/plans/can-you-please-check-whimsical-perlis.md`
+
+---
+
 ## 2026-05-16 — YouTube-to-Thread Proxy Outage Fix: oEmbed Bypass + Error Observability
 
 Production `POST /api/ai/youtube-to-thread` started returning 400 with bare `fetch failed` after the `YOUTUBE_PROXY_URL` Webshare proxy became unreachable. Diagnosis confirmed from Vercel runtime logs: every failed request hit all three log markers (`youtube_proxy_configured` + `youtube_player_client_failed` + `youtube_oembed_failed`), meaning every fetch through `getProxiedFetch()` was failing at the network layer (undici `TypeError`). Operator rotated the proxy URL; this commit adds the missing resilience + observability so the same dead-proxy condition degrades gracefully next time.
