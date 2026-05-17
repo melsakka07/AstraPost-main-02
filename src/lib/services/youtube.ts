@@ -180,8 +180,26 @@ interface YouTubeClient {
 /**
  * Client contexts to try in order. Ordered by likelihood of success.
  * Versions sourced from YouTube.js v15.1.0 constants.
+ *
+ * IOS first: 2026-05-16 diagnostic showed IOS passed while ANDROID_VR was bot-challenged
+ * on the same proxy IP. ANDROID_VR retained as #2 fallback (still useful when IOS rate-limits).
  */
 const YOUTUBE_CLIENTS: YouTubeClient[] = [
+  {
+    name: "IOS",
+    context: {
+      client: {
+        clientName: "IOS",
+        clientVersion: "20.11.6",
+        deviceMake: "Apple",
+        deviceModel: "iPhone10,4",
+        osName: "iOS",
+        osVersion: "16.7.7.20H330",
+        hl: "en",
+      },
+    },
+    userAgent: "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
+  },
   {
     // ANDROID_VR (Oculus Quest 3) — least restricted, no PO token needed
     name: "ANDROID_VR",
@@ -211,21 +229,6 @@ const YOUTUBE_CLIENTS: YouTubeClient[] = [
     userAgent:
       "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.7 Mobile/15E148 Safari/604.1",
     needsVisitorData: true,
-  },
-  {
-    name: "IOS",
-    context: {
-      client: {
-        clientName: "IOS",
-        clientVersion: "20.11.6",
-        deviceMake: "Apple",
-        deviceModel: "iPhone10,4",
-        osName: "iOS",
-        osVersion: "16.7.7.20H330",
-        hl: "en",
-      },
-    },
-    userAgent: "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
   },
   {
     name: "ANDROID",
