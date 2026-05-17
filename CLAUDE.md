@@ -129,3 +129,93 @@ Plan files: `YYYY-MM-DD-<short-kebab-case-description>.md` in `.claude/plans/`. 
 - **Latest updates log**: `docs/0-MY-LATEST-UPDATES.md`
 - **Common task patterns**: `docs/claude/common-tasks.md`
 - **Available scripts**: `docs/claude/scripts.md`
+
+# General Coding Guidelines
+
+Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+
+## 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+**Skills to leverage:** `researcher` agent for AstraPost code, `Explore` agent for general lookups, `plan-feature` or `feature-dev:feature-dev` before implementation, `prp-core:codebase-analyst` to trace data flow, `prime` to load project context fast.
+
+## 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+**Skills to leverage:** `simplify` skill for reuse + efficiency review, `prp-core:code-simplifier` to reduce complexity while preserving behavior, `convention-enforcer` agent to flag deviations from AstraPost patterns.
+
+## 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+**Skills to leverage:** `code-reviewer` + `convention-enforcer` agents in parallel after edits, `prp-core:silent-failure-hunter` to catch swallowed errors / inappropriate fallbacks, `prp-core:comment-analyzer` to flag stale comments, `prp-core:prp-review-agents` for multi-agent PR review in one pass.
+
+## 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+**Skills to leverage:** `check` skill as the canonical quality gate, `pre-commit` before committing, `test-runner` agent for tests/lint/typecheck, `prp-core:prp-implement` for plan-driven validation loops, `prp-core:prp-ralph` for autonomous retry-until-green, `prp-core:prp-debug` for root-cause analysis on failures, `loop` for interval-based polling.
+
+---
+
+## Pillar Quick-Reference
+
+| Pillar      | First-Reach Skill                                | Backup                                                                  |
+| ----------- | ------------------------------------------------ | ----------------------------------------------------------------------- |
+| 1. Think    | `researcher` / `Explore`                         | `plan-feature`, `prp-core:codebase-analyst`, `prime`                    |
+| 2. Simplify | `simplify`                                       | `prp-core:code-simplifier`, `convention-enforcer`                       |
+| 3. Surgical | `code-reviewer` + `convention-enforcer` parallel | `prp-core:silent-failure-hunter`, `prp-core:prp-review-agents`          |
+| 4. Verify   | `check`                                          | `pre-commit`, `test-runner`, `prp-core:prp-ralph`, `prp-core:prp-debug` |
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
