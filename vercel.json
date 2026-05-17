@@ -1,5 +1,6 @@
 {
   "buildCommand": "pnpm run build:ci",
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ':(exclude)docs/' ':(exclude).trae.backup/' ':(exclude).github/' ':(exclude)CLAUDE.md' ':(exclude)CODE_WIKI.md' ':(exclude)ONBOARDING.md' ':(exclude)AGENTS.md' ':(exclude)*.md'",
   "crons": [
     {
       "path": "/api/cron/billing-cleanup",

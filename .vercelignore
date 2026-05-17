@@ -1,0 +1,26 @@
+# Planning, audits, and agent docs — useful in git, not in production
+docs/
+.trae.backup/
+.github/
+scripts/
+tests/
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+
+# Root markdown — keep README.md, drop the rest
+CLAUDE.md
+CODE_WIKI.md
+ONBOARDING.md
+AGENTS.md
+
+# Log artifacts that escape .gitignore
+*.log
+logs/
+
+# Editor / agent state (also in .gitignore but defensive)
+.claude/
+.cursor/
+.vscode/
+.trae/
