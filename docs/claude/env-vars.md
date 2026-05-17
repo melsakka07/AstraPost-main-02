@@ -32,7 +32,10 @@
 - `OPENROUTER_MODEL_YOUTUBE_TO_THREAD` — Dedicated model for YouTube-to-Thread generation. Optional; falls back to `OPENROUTER_MODEL` if not set. Allows cost/quality tuning for long-context transcription to thread pipelines.
 - `YOUTUBE_INNERTUBE_API_KEY` — YouTube innertube API key for video metadata fetching. Defaults to the well-known public key. Optional; set only if the default key stops working.
 - `YOUTUBE_DEEPGRAM_API_KEY` — Deepgram API key for YouTube transcription ($200 free credit at console.deepgram.com). Optional; if not set, Deepgram option is hidden from the UI. Pricing: ~$0.0059/minute: a 20-minute video costs ~$0.12; a 90-minute video costs ~$0.53. Feature warns if neither Deepgram nor Whisper (OpenAI) is configured.
-- `YOUTUBE_PROXY_URL` — HTTP(S) proxy URL for YouTube innertube API calls (bypasses IP-based bot detection). Format: `http://user:pass@host:port`. Optional; when not set, calls go direct.
+- `YOUTUBE_PROXY_URL` — Static HTTP(S) proxy URL — rare-failure fallback (used only when Webshare API + Redis cache both fail). Format: `http://user:pass@host:port`. Optional. **Currently set on Railway only**; removed from Vercel on 2026-05-17 since Vercel has `API_KEY_WEBSHARE` working and the static URL was dead weight + leaked-secret risk.
+- `API_KEY_WEBSHARE` — Webshare API token for the auto-rotating proxy tier (step 2 of `src/lib/services/youtube-proxy.ts:resolveProxyUrl`). Required for auto-rotation; without it, the resolver skips step 2 and goes directly to the static `YOUTUBE_PROXY_URL` or no-proxy fallback. Set on Vercel + Railway.
+- `YOUTUBE_PROXY_REDIS_TTL_SECS` — TTL (seconds) for the `youtube:proxy:active` Redis cache key. Optional; defaults to `300` (5 min). Lower = faster recovery from Webshare auto-replacement; higher = fewer Webshare API calls. Set on Vercel + Railway. The hardcoded 3600s default was causing 73.83% `no_proxies_allocated` 407 errors (proxies removed from Webshare mid-cache); reduced to 300s on 2026-05-17.
+- `YOUTUBE_COOKIES_BASE64` — Base64-encoded `youtube_cookies.txt` (Netscape format) for innertube + watch-page authentication. Without it, YouTube treats every request as anonymous from a datacenter IP → most innertube calls get bot-challenged. Set on Vercel + Railway.
 
 ### Replicate (image generation)
 

@@ -1,5 +1,38 @@
 # Latest Updates
 
+## 2026-05-17 (PM) — YouTube Proxy: Jitter + Per-Job Invalidation Cap + IOS-First Client Order + Ops Rotation
+
+Three follow-up commits on top of the morning's 407/bot-challenge fix to convert "works on retry" into "works first try" for popular bot-flagged videos. Production verified end-to-end full-mode on two test jobs (jobIds `b0571108…` tweetCount=5 and `88478274…` tweetCount=8) after the full series shipped.
+
+### Code changes
+
+- **`8c2b962` — `perf(youtube): promote IOS client ahead of ANDROID_VR`** — One-line reorder of `YOUTUBE_CLIENTS[]` in `src/lib/services/youtube.ts:184`. The 2026-05-16 diagnostic against the same proxy IP showed IOS returning `playabilityStatus.status="OK"` while ANDROID_VR was bot-challenged. New order: `IOS, ANDROID_VR, MWEB, ANDROID, WEB, TVHTML5_SIMPLY_EMBEDDED_PLAYER, TVHTML5_SIMPLY`.
+
+- **`73e4016` — `perf(youtube): add inter-client jitter + cap per-job proxy invalidations`** — Two complementary fixes in `getVideoInfoHttp`:
+  1. **500-800ms jitter** between client attempts (skipped on first attempt) — gives a freshly-rotated proxy time to look "human" before YouTube fingerprints it on this video. Production trace had shown 4-7 fresh proxies being burned in ~1s with all getting bot-flagged immediately.
+  2. **Cap of 2 proxy invalidations per job** via new `BotChallengeError` typed error. After the cap, remaining clients exhaust on the current proxy and fall through to oEmbed. Avoids burning Webshare API calls when YouTube is globally rate-limiting the video (not just blocking the current IP).
+  3. New log key `youtube_bot_challenge_invalidation_cap_reached` (info level) for forensics when the cap kicks in.
+
+### Ops changes (no code)
+
+- **Webshare API key + proxy credentials rotated** on the dashboard (previous credentials were leaked via shell history).
+- **`API_KEY_WEBSHARE` added to Railway** — was missing, so the auto-rotation tier was never active on the worker. The worker had been silently relying on the static `YOUTUBE_PROXY_URL` for all jobs. Adding the API key activated step 2 of the resolver on Railway.
+- **`YOUTUBE_PROXY_URL` removed from Vercel** (all 3 envs) — Vercel has `API_KEY_WEBSHARE` working, so the static fallback was dead weight + leaked-secret risk. Railway retains it as rare-failure fallback (`45.38.107.97:6014`, post-rotation value).
+- **Redis `youtube:proxy:active` cache verified empty** post-rotation.
+
+### Verification
+
+- `pnpm run check` + 323 unit tests — PASS
+- Production logs (Vercel JSON + Railway): `webshare_proxy_selected` firing with fresh IPs (23.229.19.94, 45.38.107.97, 142.111.48.253, 198.105.121.200, 2.57.20.2), `youtube_get_video_info_http_success clientUsed=IOS` on first-try paths, `mode=full` on worker job completions, **zero `youtube_proxy_407_detected` events post-deploy**.
+
+### Architecture state captured for future sessions
+
+Full current design archived in memory at `project_youtube_proxy_architecture.md` — read it FIRST when troubleshooting YouTube job failures. Covers: 4-step resolution chain, 7 invalidation triggers, env var matrix, commit timeline, log-key reference, and a troubleshooting playbook for the 3 most common failure modes.
+
+Tracking: `.claude/plans/2026-05-16-youtube-proxy-bot-detection-followups.md` (now marked ✅ resolved).
+
+---
+
 ## 2026-05-17 — YouTube Proxy: 407 / Bot-Challenge Invalidate-and-Rotate + Shorter TTL
 
 Webshare logs analysis (`tests/logs-prox.md`) showed 73.83% of recent failures are HTTP 407 `no_proxies_allocated` — all on the _same_ proxy IP `31.59.20.176:6754`, hammered continuously for ~1h across multiple Vercel/Railway egress IPs. Pattern matches the 3600s Redis TTL exactly: Webshare auto-replaced the proxy mid-cache, but `youtube:proxy:active` kept handing the dead URL to every worker invocation until the hour expired. The existing rotation logic (`invalidateActiveProxy` on `TypeError`) never fired because 407 came back as a successful HTTP response, not a network-layer throw — and YouTube's 429 / bot-challenge responses also kept the same dead proxy cached.

@@ -1,7 +1,15 @@
 # YouTube Bot Detection — Investigation Report
 
-**Date:** 2026-05-08 (updated 2026-05-11)  
+**Date:** 2026-05-08 (updated 2026-05-17 — **resolved**)
 **Feature:** YouTube-to-Thread (`/api/ai/youtube-to-thread`)
+
+> **Status (2026-05-17):** ✅ **RESOLVED end-to-end.** Production verified `mode=full` (audio download + whisper transcription + tweet thread) on multiple test jobs. The architecture documented below describes the original investigation; the current finished design is captured in:
+>
+> - **Memory:** `project_youtube_proxy_architecture.md` (read this FIRST for current state)
+> - **Plan:** `.claude/plans/2026-05-16-youtube-proxy-bot-detection-followups.md`
+> - **Latest changes:** `docs/0-MY-LATEST-UPDATES.md` (2026-05-17 entries)
+>
+> Key shipped fixes: 407 invalidate-and-rotate (`cac7f97`), bot-challenge typed error + 2-invalidation/job cap + 500-800ms inter-client jitter (`73e4016`), IOS-first client order (`8c2b962`), Webshare credentials rotated, `API_KEY_WEBSHARE` added to Railway, `YOUTUBE_PROXY_REDIS_TTL_SECS=300`.
 
 ## Summary
 
