@@ -178,6 +178,26 @@ interface YouTubeClient {
 }
 
 /**
+ * Thrown when the innertube response indicates YouTube has flagged the request
+ * as a bot ("LOGIN_REQUIRED" or reason matching /not a bot/i). The per-client
+ * loop catches this specifically to apply a per-job proxy-rotation cap, which
+ * avoids burning Webshare proxies when the video is globally rate-limited
+ * (vs. just IP-flagged).
+ */
+class BotChallengeError extends Error {
+  constructor(reason: string) {
+    super(reason);
+    this.name = "BotChallengeError";
+  }
+}
+
+/** Max times we'll rotate the cached proxy within a single getVideoInfoHttp call. */
+const MAX_PROXY_INVALIDATIONS_PER_JOB = 2;
+/** Jitter between client attempts so a freshly-rotated proxy gets a moment to look "human". */
+const CLIENT_RETRY_JITTER_MIN_MS = 500;
+const CLIENT_RETRY_JITTER_MAX_MS = 800;
+
+/**
  * Client contexts to try in order. Ordered by likelihood of success.
  * Versions sourced from YouTube.js v15.1.0 constants.
  *
@@ -310,10 +330,22 @@ export async function getVideoInfoHttp(
   }
 
   let lastError: string | null = null;
+  let attemptCount = 0;
+  let proxyInvalidationCount = 0;
 
   for (const client of YOUTUBE_CLIENTS) {
     // WEB client needs visitorData from page scraping; skip if unavailable
     if (client.needsVisitorData && !pageConfig?.visitorData) continue;
+
+    // Jitter between attempts so a freshly-rotated proxy gets ~500-800ms
+    // before YouTube fingerprints it on this video. First attempt has no delay.
+    if (attemptCount > 0) {
+      const jitterMs =
+        CLIENT_RETRY_JITTER_MIN_MS +
+        Math.floor(Math.random() * (CLIENT_RETRY_JITTER_MAX_MS - CLIENT_RETRY_JITTER_MIN_MS));
+      await new Promise((r) => setTimeout(r, jitterMs));
+    }
+    attemptCount++;
 
     // Pass scraped API key and visitorData to ALL clients, not just WEB.
     // visitorData links the request to a watch-page session, reducing bot flags.
@@ -344,8 +376,24 @@ export async function getVideoInfoHttp(
         causeMessage: cause?.message,
         viaProxy: !!process.env.YOUTUBE_PROXY_URL || !!process.env.API_KEY_WEBSHARE,
       });
-      // Network-layer failure means the current proxy is likely dead — rotate before next client.
-      if (err instanceof TypeError) {
+
+      // Bot challenge — rotate the proxy, but only up to MAX_PROXY_INVALIDATIONS_PER_JOB.
+      // Beyond that, let remaining clients exhaust on the current proxy and fall through
+      // to oEmbed. Avoids burning Webshare API calls when YouTube is globally rate-limiting
+      // this video (not just blocking the current IP).
+      if (err instanceof BotChallengeError) {
+        if (proxyInvalidationCount < MAX_PROXY_INVALIDATIONS_PER_JOB) {
+          proxyInvalidationCount++;
+          await invalidateActiveProxy("innertube_bot_challenge");
+        } else {
+          logger.info("youtube_bot_challenge_invalidation_cap_reached", {
+            videoId,
+            cap: MAX_PROXY_INVALIDATIONS_PER_JOB,
+            clientName: client.name,
+          });
+        }
+      } else if (err instanceof TypeError) {
+        // Network-layer failure means the current proxy is likely dead — rotate before next client.
         await invalidateActiveProxy("player_typeerror");
       }
     }
@@ -426,8 +474,8 @@ async function fetchYouTubePlayer(
   const { playabilityStatus, videoDetails } = data;
 
   // Bot-challenge detection — YouTube returns LOGIN_REQUIRED or a "not a bot"
-  // reason when the IP is flagged. Rotate the proxy so the next client in the
-  // loop gets a fresh egress IP; let the existing throw flow continue.
+  // reason when the IP is flagged. Throw a typed error so the per-client loop
+  // can apply the per-job proxy-invalidation cap.
   const botChallengeReason = playabilityStatus?.reason ?? "";
   const isBotChallenge =
     playabilityStatus?.status === "LOGIN_REQUIRED" || /not a bot/i.test(botChallengeReason);
@@ -437,7 +485,7 @@ async function fetchYouTubePlayer(
       clientName: client.name,
       reason: botChallengeReason,
     });
-    await invalidateActiveProxy("innertube_bot_challenge");
+    throw new BotChallengeError(botChallengeReason || "Sign in to confirm you're not a bot");
   }
 
   if (!playabilityStatus || playabilityStatus.status !== "OK") {
