@@ -1,5 +1,51 @@
 # Latest Updates
 
+## 2026-05-17 — YouTube Proxy: 407 / Bot-Challenge Invalidate-and-Rotate + Shorter TTL
+
+Webshare logs analysis (`tests/logs-prox.md`) showed 73.83% of recent failures are HTTP 407 `no_proxies_allocated` — all on the _same_ proxy IP `31.59.20.176:6754`, hammered continuously for ~1h across multiple Vercel/Railway egress IPs. Pattern matches the 3600s Redis TTL exactly: Webshare auto-replaced the proxy mid-cache, but `youtube:proxy:active` kept handing the dead URL to every worker invocation until the hour expired. The existing rotation logic (`invalidateActiveProxy` on `TypeError`) never fired because 407 came back as a successful HTTP response, not a network-layer throw — and YouTube's 429 / bot-challenge responses also kept the same dead proxy cached.
+
+### Code changes
+
+- **MODIFY `src/lib/services/youtube-proxy.ts`** — three changes:
+  1. **Configurable TTL** — `REDIS_TTL_SECS` now reads `process.env.YOUTUBE_PROXY_REDIS_TTL_SECS`, defaults to **300s** (5 min, down from hardcoded 3600s). Faster recovery from Webshare auto-replacement.
+  2. **`buildFetchFn` now wraps the undici fetch** — on `res.status === 407` logs `youtube_proxy_407_detected` (masked proxy + request host), calls `invalidateActiveProxy("proxy_407_no_proxies_allocated")`, throws `TypeError("proxy returned 407")` so existing `TypeError` handlers retry direct/with a fresh proxy. On undici proxy-layer throws (`err.cause.code` in `{UND_ERR_SOCKET, ECONNRESET, ECONNREFUSED, ENOTFOUND}` or message contains "proxy"/"407") calls `invalidateActiveProxy("proxy_layer_error")` then re-throws unchanged.
+  3. **`invalidateActiveProxy`** now includes the masked URL that was killed in the `youtube_proxy_invalidated` log for grep-friendly forensics.
+- **MODIFY `src/lib/services/youtube.ts`** — two changes:
+  1. **`extractYouTubePageConfig`** — on HTTP 429 from watch page, log `youtube_watch_page_rate_limited`, invalidate, return null (caller falls through to env-var ytcfg).
+  2. **`fetchYouTubePlayer`** — detect `playabilityStatus.status === "LOGIN_REQUIRED"` or reason matching `/not a bot/i`; log `youtube_innertube_bot_challenge` with `{videoId, clientName, reason}`, invalidate, then let existing throw fire so the per-client loop retries on next client with a fresh proxy.
+
+### Env vars
+
+- **NEW** `YOUTUBE_PROXY_REDIS_TTL_SECS` (optional, default `300`) — TTL for `youtube:proxy:active`. Add to Vercel + Railway only if you want to override the default.
+
+### New log keys (search-friendly)
+
+| Key                               | Trigger                                                       |
+| --------------------------------- | ------------------------------------------------------------- |
+| `youtube_proxy_407_detected`      | Proxy returned 407 `no_proxies_allocated` — rotation imminent |
+| `youtube_proxy_invalidated`       | Cache cleared; includes `reason` + masked `proxyUrl`          |
+| `youtube_watch_page_rate_limited` | Watch page returned 429                                       |
+| `youtube_innertube_bot_challenge` | Player API returned `LOGIN_REQUIRED` or "not a bot" reason    |
+
+### Verification
+
+- `pnpm run check` — PASS (lint + typecheck + i18n)
+- `pnpm test` — PASS (323 tests, 34 files, 16.24s)
+- `convention-enforcer` agent — clean after two `?.`-at-every-level nits fixed
+- `security-reviewer` agent — clean; all log paths mask credentials, request hostnames stripped of query strings
+
+### Post-deploy verification (after `git push origin main`)
+
+1. Wait 2-3 min for Vercel + Railway auto-deploys.
+2. `railway logs --service AstraPost-main-02 | grep youtube_proxy_resolved` — confirm worker restarted and emits resolved log.
+3. Trigger a `youtube-to-thread` job for a popular video.
+4. Look for the rotation chain: `youtube_proxy_407_detected` → `youtube_proxy_invalidated reason=proxy_407_no_proxies_allocated` → fresh `youtube_proxy_resolved source=webshare_api`.
+5. Webshare dashboard error rate for `no_proxies_allocated` should drop from 73.83% well below 10% within ~24h.
+
+Tracking: `.claude/plans/2026-05-16-youtube-proxy-bot-detection-followups.md` (shipped-this-session section).
+
+---
+
 ## 2026-05-16 — YouTube Innertube Cookie Auth (Unlock Full Transcript Pipeline)
 
 Production verification of the auto-rotating proxy (this morning) confirmed the proxy + Webshare resolver work end-to-end, but every request was still landing in the worker's title-only branch because YouTube was bot-flagging innertube even through the Webshare IPs. Root cause: innertube + watch-page HTTP fetches had no cookie auth, so YouTube treated every request as anonymous from a datacenter IP. Worker already had cookie auth for yt-dlp via `YOUTUBE_COOKIES_BASE64`, but the metadata fetch in `getVideoInfoHttp` never reached yt-dlp because `durationVerified === false` short-circuited to title-only.

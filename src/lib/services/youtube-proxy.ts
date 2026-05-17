@@ -7,7 +7,10 @@ import { fetchWebshareProxy } from "@/lib/services/webshare";
 
 const REDIS_KEY_ACTIVE = "youtube:proxy:active";
 const REDIS_KEY_LOCK = "youtube:proxy:lock";
-const REDIS_TTL_SECS = 3600;
+const REDIS_TTL_SECS = (() => {
+  const parsed = parseInt(process.env.YOUTUBE_PROXY_REDIS_TTL_SECS ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
+})();
 const LOCK_TTL_SECS = 10;
 const IN_MEMORY_TTL_MS = 60_000;
 
@@ -21,15 +24,68 @@ interface CachedProxy {
 
 let _cached: CachedProxy | undefined;
 
+/**
+ * Codes that signal a proxy-layer (transport) failure rather than an
+ * upstream HTTP error. When the wrapped fetch throws with one of these
+ * codes (via undici's `err.cause`), we invalidate the cached proxy.
+ */
+const PROXY_LAYER_ERROR_CODES = new Set([
+  "UND_ERR_SOCKET",
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "ENOTFOUND",
+]);
+
+function isProxyLayerFailure(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const cause =
+    "cause" in err ? (err.cause as { code?: string; message?: string } | undefined) : undefined;
+  if (cause?.code && PROXY_LAYER_ERROR_CODES.has(cause?.code)) return true;
+  const message = `${err.message ?? ""} ${cause?.message ?? ""}`.toLowerCase();
+  return message.includes("proxy") || message.includes("407");
+}
+
+function safeHostname(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "<invalid-url>";
+  }
+}
+
 function buildFetchFn(proxyUrl: string | null): ProxiedFetch {
   if (!proxyUrl) return globalThis.fetch.bind(globalThis);
   const agent = new ProxyAgent({ uri: proxyUrl });
-  return (url, init) => {
+  const maskedProxy = maskProxyUrl(proxyUrl);
+  return async (url, init) => {
     const opts = { ...(init ?? {}), dispatcher: agent } as Record<string, unknown>;
-    return undiciFetch(
-      url,
-      opts as Parameters<typeof undiciFetch>[1]
-    ) as unknown as Promise<Response>;
+    let res: Response;
+    try {
+      res = (await undiciFetch(
+        url,
+        opts as Parameters<typeof undiciFetch>[1]
+      )) as unknown as Response;
+    } catch (err) {
+      // Proxy-layer (transport) failure — rotate the cached proxy before re-throwing.
+      // Callers' existing TypeError handlers (e.g. getVideoInfoOembed) will then
+      // resolve a fresh proxy on the next call.
+      if (isProxyLayerFailure(err)) {
+        await invalidateActiveProxy("proxy_layer_error");
+      }
+      throw err;
+    }
+
+    if (res.status === 407) {
+      logger.warn("youtube_proxy_407_detected", {
+        proxyUrl: maskedProxy,
+        requestHost: safeHostname(url),
+      });
+      await invalidateActiveProxy("proxy_407_no_proxies_allocated");
+      // Re-shape as TypeError so existing network-failure handlers retry direct/with a fresh proxy.
+      throw new TypeError("proxy returned 407");
+    }
+
+    return res;
   };
 }
 
@@ -88,9 +144,10 @@ export async function getProxiedFetch(): Promise<ProxiedFetch> {
 }
 
 export async function invalidateActiveProxy(reason: string): Promise<void> {
+  const maskedProxy = _cached?.url ? maskProxyUrl(_cached?.url) : null;
   _cached = undefined;
   await redis.del(REDIS_KEY_ACTIVE).catch(() => undefined);
-  logger.warn("youtube_proxy_invalidated", { reason });
+  logger.warn("youtube_proxy_invalidated", { reason, proxyUrl: maskedProxy });
 }
 
 /**

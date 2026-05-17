@@ -60,6 +60,12 @@ async function extractYouTubePageConfig(
       signal: controller.signal,
     });
 
+    if (res.status === 429) {
+      logger.warn("youtube_watch_page_rate_limited", { videoId });
+      await invalidateActiveProxy("watch_page_429");
+      return null;
+    }
+
     if (!res.ok) return null;
 
     const html = await res.text();
@@ -415,6 +421,21 @@ async function fetchYouTubePlayer(
   }
 
   const { playabilityStatus, videoDetails } = data;
+
+  // Bot-challenge detection — YouTube returns LOGIN_REQUIRED or a "not a bot"
+  // reason when the IP is flagged. Rotate the proxy so the next client in the
+  // loop gets a fresh egress IP; let the existing throw flow continue.
+  const botChallengeReason = playabilityStatus?.reason ?? "";
+  const isBotChallenge =
+    playabilityStatus?.status === "LOGIN_REQUIRED" || /not a bot/i.test(botChallengeReason);
+  if (isBotChallenge) {
+    logger.warn("youtube_innertube_bot_challenge", {
+      videoId,
+      clientName: client.name,
+      reason: botChallengeReason,
+    });
+    await invalidateActiveProxy("innertube_bot_challenge");
+  }
 
   if (!playabilityStatus || playabilityStatus.status !== "OK") {
     const reason = playabilityStatus?.reason ?? "Video is not available";
