@@ -63,6 +63,10 @@ const serverEnvSchema = z.object({
   // built from this blob, and the worker writes it to /tmp/youtube_cookies.txt for yt-dlp.
   // Refresh by exporting cookies from a logged-in browser → base64 → update this env var.
   YOUTUBE_COOKIES_BASE64: z.string().optional(),
+  // TTL (seconds) for the youtube:proxy:active Redis cache key.
+  // Lower = faster recovery from Webshare auto-replacement; higher = fewer Webshare API calls.
+  // Default 300s came from the 2026-05-17 hardening (was 3600s, caused 73% no_proxies_allocated 407s).
+  YOUTUBE_PROXY_REDIS_TTL_SECS: z.coerce.number().int().positive().default(300),
 
   // AI - YouTube transcription (optional — feature disabled if neither is set)
   YOUTUBE_DEEPGRAM_API_KEY: z.string().optional(),

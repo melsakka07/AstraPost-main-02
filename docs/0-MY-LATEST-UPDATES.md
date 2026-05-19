@@ -1,5 +1,25 @@
 # Latest Updates
 
+## 2026-05-19 — AST-4: Route YouTube proxy env reads through the Zod-validated module
+
+Closes [AST-4](https://linear.app/thunderlight07/issue/AST-4). All 5 direct `process.env.YOUTUBE_PROXY*` reads now go through `getServerEnv()`, aligning the YouTube proxy subsystem with the rest of the codebase (`ai-preamble.ts`, `youtube-to-thread/route.ts`).
+
+### Code changes
+
+- **`src/lib/env.ts`** — added `YOUTUBE_PROXY_REDIS_TTL_SECS: z.coerce.number().int().positive().default(300)` to `serverEnvSchema`. Previously read directly via `parseInt(process.env.…)` with an inline fallback; now validated at startup like its siblings.
+- **`src/lib/services/youtube-proxy.ts`** — 3 sites migrated. The old module-init `REDIS_TTL_SECS` IIFE was removed; both env reads (`YOUTUBE_PROXY_URL` + `YOUTUBE_PROXY_REDIS_TTL_SECS`) now happen via a single destructure at the top of `resolveProxyUrl()`. `getActiveProxyStatus()` reads `getServerEnv().YOUTUBE_PROXY_URL` lazily inside the function. **Lazy reads matter:** an earlier draft called `getServerEnv()` at module load — that crashed 5 test suites because the call validates the full schema (and most envs aren't set in unit-test setup). Matches the existing pattern in `ai-preamble.ts:239`.
+- **`src/lib/services/youtube.ts`** — 2 sites migrated (the `viaProxy` diagnostic field in `youtube_player_client_failed` and `youtube_oembed_failed` logs). `API_KEY_WEBSHARE` left as `process.env` for now (out of scope per AST-4 — separate cleanup).
+
+### Deliberate deviation from the issue acceptance criteria
+
+AST-4 acceptance said _"Boot fails loudly if `YOUTUBE_PROXY_URL` or `API_KEY_WEBSHARE` is missing in production"_. Skipped — `YOUTUBE_PROXY_URL` was intentionally removed from Vercel on 2026-05-17 (kept on Railway only). Making it required would break the Vercel deploy. Both vars stay `.optional()`. No behavioral change beyond the env wiring.
+
+### Verification
+
+- `rg "process\.env\.YOUTUBE_PROXY" src/` → 0 hits
+- `pnpm run check` (lint + typecheck) — PASS
+- `pnpm test` — PASS
+
 ## 2026-05-17 (PM) — YouTube Proxy: Jitter + Per-Job Invalidation Cap + IOS-First Client Order + Ops Rotation
 
 Three follow-up commits on top of the morning's 407/bot-challenge fix to convert "works on retry" into "works first try" for popular bot-flagged videos. Production verified end-to-end full-mode on two test jobs (jobIds `b0571108…` tweetCount=5 and `88478274…` tweetCount=8) after the full series shipped.

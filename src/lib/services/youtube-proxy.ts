@@ -1,16 +1,13 @@
 import "server-only";
 
 import { ProxyAgent, fetch as undiciFetch } from "undici";
+import { getServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { connection as redis } from "@/lib/queue/client";
 import { fetchWebshareProxy } from "@/lib/services/webshare";
 
 const REDIS_KEY_ACTIVE = "youtube:proxy:active";
 const REDIS_KEY_LOCK = "youtube:proxy:lock";
-const REDIS_TTL_SECS = (() => {
-  const parsed = parseInt(process.env.YOUTUBE_PROXY_REDIS_TTL_SECS ?? "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
-})();
 const LOCK_TTL_SECS = 10;
 const IN_MEMORY_TTL_MS = 60_000;
 
@@ -94,6 +91,7 @@ function maskProxyUrl(url: string): string {
 }
 
 async function resolveProxyUrl(): Promise<{ url: string | null; source: string }> {
+  const { YOUTUBE_PROXY_URL, YOUTUBE_PROXY_REDIS_TTL_SECS } = getServerEnv();
   // Redis is optional here — if it's down (local dev) we silently skip cache/lock and resolve fresh each time.
   const cached = await redis.get(REDIS_KEY_ACTIVE).catch(() => null);
   if (cached) return { url: cached, source: "redis_cache" };
@@ -106,7 +104,9 @@ async function resolveProxyUrl(): Promise<{ url: string | null; source: string }
       try {
         const fresh = await fetchWebshareProxy();
         if (fresh) {
-          await redis.set(REDIS_KEY_ACTIVE, fresh, "EX", REDIS_TTL_SECS).catch(() => undefined);
+          await redis
+            .set(REDIS_KEY_ACTIVE, fresh, "EX", YOUTUBE_PROXY_REDIS_TTL_SECS)
+            .catch(() => undefined);
           return { url: fresh, source: "webshare_api" };
         }
       } finally {
@@ -124,8 +124,7 @@ async function resolveProxyUrl(): Promise<{ url: string | null; source: string }
     }
   }
 
-  const staticUrl = process.env.YOUTUBE_PROXY_URL;
-  if (staticUrl) return { url: staticUrl, source: "static_env" };
+  if (YOUTUBE_PROXY_URL) return { url: YOUTUBE_PROXY_URL, source: "static_env" };
 
   return { url: null, source: "none" };
 }
@@ -168,7 +167,7 @@ export async function getActiveProxyStatus(): Promise<{
       remainingTtlSecs: ttl >= 0 ? ttl : 0,
     };
   }
-  const staticUrl = process.env.YOUTUBE_PROXY_URL;
+  const staticUrl = getServerEnv().YOUTUBE_PROXY_URL;
   if (staticUrl) {
     return { activeProxy: maskProxyUrl(staticUrl), source: "static_env", remainingTtlSecs: -1 };
   }
