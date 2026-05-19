@@ -1,5 +1,25 @@
 # Latest Updates
 
+## 2026-05-19 (PM) — Hotfix: revert AST-4's `getServerEnv()` calls in youtube-proxy.ts (Railway regression)
+
+Production logs after deploying 924057a showed Railway worker throwing `"Invalid server environment variables"` on every `youtube_audio_http_download_failed` — `getServerEnv()` validates the **whole** schema, and Railway doesn't set `REPLICATE_MODEL_*` (the worker doesn't generate images). Jobs still completed via the yt-dlp fallback, but the HTTP fast-path was effectively dead on the worker.
+
+### Changes
+
+- **`src/lib/services/youtube-proxy.ts`** — reverted to direct `process.env.YOUTUBE_PROXY_URL` + `process.env.YOUTUBE_PROXY_REDIS_TTL_SECS` reads. Restored the module-init IIFE for `REDIS_TTL_SECS` with the 300s fallback. Added a comment explaining why we don't call `getServerEnv()` here.
+- **`src/lib/services/youtube.ts`** — `viaProxy` log fields reverted to `process.env.YOUTUBE_PROXY_URL`. Removed the `getServerEnv` import.
+- **`src/lib/env.ts`** — kept the `YOUTUBE_PROXY_REDIS_TTL_SECS` schema entry as passive documentation (it doesn't hurt; no code path validates it on the worker now).
+
+### Lesson (memory updated)
+
+`getServerEnv()` is only safe in Vercel-only code paths. Service-layer modules that run on both Vercel and Railway (`src/lib/services/*` reachable from `scripts/worker.ts`) must read `process.env.X` directly. The Railway worker hasn't set the full env superset (and shouldn't need to). See `feedback_getserverenv_lazy.md` (rewritten 2026-05-19 PM) for the full rule.
+
+### Verification
+
+- `pnpm run check` (lint + typecheck) — PASS
+- `pnpm test` — 323/323 PASS
+- Production check pending after this commit deploys
+
 ## 2026-05-19 — AST-4: Route YouTube proxy env reads through the Zod-validated module
 
 Closes [AST-4](https://linear.app/thunderlight07/issue/AST-4). All 5 direct `process.env.YOUTUBE_PROXY*` reads now go through `getServerEnv()`, aligning the YouTube proxy subsystem with the rest of the codebase (`ai-preamble.ts`, `youtube-to-thread/route.ts`).

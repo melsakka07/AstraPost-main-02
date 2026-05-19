@@ -4,7 +4,6 @@ import { execFile } from "child_process";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import path from "path";
 import { promisify } from "util";
-import { getServerEnv } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { getYouTubeCookieHeader } from "@/lib/services/youtube-cookies";
 import { getProxiedFetch, invalidateActiveProxy } from "@/lib/services/youtube-proxy";
@@ -375,7 +374,7 @@ export async function getVideoInfoHttp(
         error: message,
         causeCode: cause?.code,
         causeMessage: cause?.message,
-        viaProxy: !!getServerEnv().YOUTUBE_PROXY_URL || !!process.env.API_KEY_WEBSHARE,
+        viaProxy: !!process.env.YOUTUBE_PROXY_URL || !!process.env.API_KEY_WEBSHARE,
       });
 
       // Bot challenge — rotate the proxy, but only up to MAX_PROXY_INVALIDATIONS_PER_JOB.
@@ -416,7 +415,7 @@ export async function getVideoInfoHttp(
         error: message,
         causeCode: cause?.code,
         causeMessage: cause?.message,
-        viaProxy: !!getServerEnv().YOUTUBE_PROXY_URL || !!process.env.API_KEY_WEBSHARE,
+        viaProxy: !!process.env.YOUTUBE_PROXY_URL || !!process.env.API_KEY_WEBSHARE,
       });
     }
   }
