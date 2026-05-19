@@ -1,5 +1,41 @@
 # Latest Updates
 
+## 2026-05-19 (PM-2) — YouTube: rescue title-only jobs + delete dead HTTP audio fast-path
+
+Two pre-existing issues found while verifying the earlier AST-4 hotfix. Both shipped together.
+
+### Fix 1: Worker rescues `mode="title_only"` jobs via yt-dlp metadata
+
+When the Vercel API's `getVideoInfoHttp` got bot-challenged through all 7 innertube clients, it fell back to oEmbed → `durationVerified: false`. The worker then jumped straight to title-only LLM generation, **never giving yt-dlp a chance**. Production logs showed multiple videos taking this path even though yt-dlp on Railway (cookies + iOS UA) routinely succeeds where the Vercel-side innertube API fails.
+
+`src/lib/queue/processors.ts` — added a rescue step before the title-only branch (around line 1444). When `row.durationVerified === false`:
+
+1. Call `getVideoInfo(row.youtubeUrl)` — yt-dlp `--print` for id/title/duration, 15s timeout.
+2. Re-check the duration plan gate via `checkYoutubeVideoDurationDetailed(userId, durationSeconds)`. This prevents a billing leak: a Pro user can't sneak a 4-hour video through by exploiting the API's gate-pass on `durationSeconds=0`.
+3. If gate allows: persist the verified metadata (`videoTitle`, `durationSeconds`, `durationVerified: true`) and fall through to the full audio pipeline.
+4. If gate denies (or yt-dlp throws): keep `durationVerified=false`, log the reason, fall through to the existing title-only branch unchanged.
+
+New log keys (for ops): `youtube_thread_duration_verified_via_ytdlp`, `youtube_thread_duration_exceeded_plan_falling_back`, `youtube_thread_ytdlp_metadata_failed`.
+
+### Fix 2: Removed HTTP audio fast-path (100% failure in prod)
+
+`src/lib/services/youtube.ts` — `extractAudio()` was a two-phase optimization: phase 1 ran `yt-dlp --get-url` to extract a CDN stream URL, phase 2 HTTP-fetched the URL through the Webshare proxy with a 20s AbortController, and phase 3 fell back to a full yt-dlp download. Production logs (every captured job since at least 2026-05-19 14:10) showed phase 2 hitting the 20s timeout **every single time** with `error="This operation was aborted"`. Root cause: googlevideo.com CDN session-binds URLs to the originating IP, and rotating the Webshare proxy between phases broke the binding.
+
+Net before fix: ~20s wasted timeout per job + falling through to yt-dlp full download anyway.
+Net after fix: yt-dlp full download immediately. ~20s saved per YouTube job.
+
+Deleted: `getYtDlpStreamUrl` (40 lines), `downloadAudioStream` (27 lines). Total: ~67 lines removed, 3 added.
+
+### Verification
+
+- `pnpm run check` (lint + typecheck) — PASS
+- `pnpm test` — 323/323 PASS
+- Production check pending after Railway deploys this commit.
+
+### Architecture note
+
+The YouTube proxy infrastructure (4-step resolver, 7 invalidation triggers, 2-invalidation/job cap, jitter, IOS-first client order — see `project_youtube_proxy_architecture.md` memory) still protects the innertube API path on both Vercel and the worker. Only the audio download codepath changed: that hop never benefited from proxying because the CDN target (googlevideo.com) requires direct-IP affinity. The proxy is no longer involved in audio extraction; yt-dlp manages its own connections.
+
 ## 2026-05-19 (PM) — Hotfix: revert AST-4's `getServerEnv()` calls in youtube-proxy.ts (Railway regression)
 
 Production logs after deploying 924057a showed Railway worker throwing `"Invalid server environment variables"` on every `youtube_audio_http_download_failed` — `getServerEnv()` validates the **whole** schema, and Railway doesn't set `REPLICATE_MODEL_*` (the worker doesn't generate images). Jobs still completed via the yt-dlp fallback, but the HTTP fast-path was effectively dead on the worker.

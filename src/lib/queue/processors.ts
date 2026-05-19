@@ -28,7 +28,7 @@ import { JAILBREAK_GUARD } from "@/lib/ai/untrusted";
 import { db } from "@/lib/db";
 import { checkMilestone } from "@/lib/gamification";
 import { logger } from "@/lib/logger";
-import { getUserPlanType } from "@/lib/middleware/require-plan";
+import { getUserPlanType, checkYoutubeVideoDurationDetailed } from "@/lib/middleware/require-plan";
 import { getPlanLimits } from "@/lib/plan-limits";
 import {
   scheduleQueue,
@@ -67,7 +67,7 @@ import { transcribe } from "@/lib/services/transcription";
 import { XApiService } from "@/lib/services/x-api";
 import { classifyRefreshError, getBackoffForFailures } from "@/lib/services/x-error";
 import { canPostLongContent } from "@/lib/services/x-subscription";
-import { extractAudio, getAudioMimeType } from "@/lib/services/youtube";
+import { extractAudio, getAudioMimeType, getVideoInfo } from "@/lib/services/youtube";
 import { getMonthWindow } from "@/lib/utils/time";
 
 /** Shape of a post as loaded by the schedule processor (post + tweets + media). */
@@ -1441,6 +1441,51 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
   try {
+    // ── Rescue: when Vercel innertube bot-failed, retry metadata via yt-dlp ──
+    // Vercel's stateless innertube API gets bot-challenged on data-center IPs much
+    // more often than yt-dlp does on Railway (cookies + iOS UA). When the API route
+    // had to fall back to oEmbed (durationVerified=false), give yt-dlp a chance to
+    // verify duration here so we can run the full transcription pipeline.
+    // Re-checking the plan duration gate prevents billing leaks for over-limit videos.
+    if (row.durationVerified === false) {
+      try {
+        const meta = await getVideoInfo(row.youtubeUrl);
+        const gate = await checkYoutubeVideoDurationDetailed(userId, meta.durationSeconds);
+        if (gate.allowed) {
+          logger.info("youtube_thread_duration_verified_via_ytdlp", {
+            jobId,
+            durationSeconds: meta.durationSeconds,
+          });
+          await db
+            .update(youtubeThreadJobs)
+            .set({
+              videoTitle: meta.title,
+              durationSeconds: meta.durationSeconds,
+              durationVerified: true,
+              updatedAt: new Date(),
+            })
+            .where(eq(youtubeThreadJobs.id, jobId));
+          row.videoTitle = meta.title;
+          row.durationSeconds = meta.durationSeconds;
+          row.durationVerified = true;
+        } else {
+          logger.info("youtube_thread_duration_exceeded_plan_falling_back", {
+            jobId,
+            durationSeconds: meta.durationSeconds,
+            plan: gate.plan,
+            limit: gate.limit,
+          });
+          // durationVerified stays false → title-only branch below
+        }
+      } catch (err) {
+        logger.warn("youtube_thread_ytdlp_metadata_failed", {
+          jobId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        // yt-dlp metadata failed too — keep title-only behavior
+      }
+    }
+
     // ── Branch: title-only generation (oEmbed fallback, no duration) ──────
 
     if (row.durationVerified === false) {

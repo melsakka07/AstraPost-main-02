@@ -816,102 +816,19 @@ function getYtDlpCookieArgs(): string[] {
 /**
  * Extract the best audio stream to outputPath.
  *
- * Two-phase: (1) yt-dlp --get-url extracts the CDN stream URL (~5s), then
- * Node.js HTTP fetch downloads it; (2) fall back to yt-dlp full download.
+ * Uses yt-dlp's full download. An older two-phase optimization (yt-dlp --get-url
+ * to extract a CDN stream URL, then HTTP-fetch it via proxy) was removed on
+ * 2026-05-19 — production logs showed 100% failure on the HTTP step: the
+ * googlevideo.com CDN session-binds URLs to the originating IP, and rotating
+ * the Webshare proxy between extract and fetch broke the binding. The 20s
+ * AbortController timeout fired every time before falling through to here.
+ *
  * Uses YouTube cookies (youtube_cookies.txt) when available.
  */
 export async function extractAudio(url: string, outputPath: string): Promise<void> {
   logger.info("youtube_extract_audio_start", { url, outputPath });
-
-  // Phase 1: get the CDN stream URL via yt-dlp, then download via HTTP
-  const streamUrl = await getYtDlpStreamUrl(url);
-  if (streamUrl) {
-    logger.info("youtube_audio_got_stream_url", { url });
-    try {
-      await downloadAudioStream(streamUrl, outputPath);
-      logger.info("youtube_extract_audio_success", { url, outputPath, method: "get-url+http" });
-      return;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      logger.warn("youtube_audio_http_download_failed", { url, error: message });
-    }
-  }
-
-  // Phase 2: full yt-dlp download
-  logger.info("youtube_extract_audio_ytdlp_fallback", { url });
   await extractAudioViaYtDlp(url, outputPath);
   logger.info("youtube_extract_audio_success", { url, outputPath, method: "yt-dlp" });
-}
-
-/** Use yt-dlp --get-url to resolve the CDN stream URL quickly (~5s). */
-async function getYtDlpStreamUrl(url: string): Promise<string | null> {
-  const ytDlpPath = resolveYtDlpPath();
-  const cookieArgs = getYtDlpCookieArgs();
-
-  try {
-    const { stdout } = await execFileAsync(
-      ytDlpPath,
-      [
-        "-f",
-        "bestaudio[ext=m4a]/bestaudio",
-        "--get-url",
-        "--no-playlist",
-        "--socket-timeout",
-        "15",
-        "--force-ipv4",
-        ...cookieArgs,
-        "--user-agent",
-        "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
-        "--add-header",
-        "Accept:*/*",
-        "--add-header",
-        "Origin:https://www.youtube.com",
-        "--add-header",
-        "Referer:https://www.youtube.com/",
-        "--add-header",
-        "Accept-Language:en-US,en;q=0.9",
-        url,
-      ],
-      { timeout: 30_000, maxBuffer: 1024 * 1024 }
-    );
-
-    const result = stdout.trim();
-    if (result && result.startsWith("http")) return result;
-    return null;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.warn("youtube_get_stream_url_failed", { url, error: message });
-    return null;
-  }
-}
-
-/** Download an audio stream URL via HTTP fetch (no yt-dlp overhead). */
-async function downloadAudioStream(streamUrl: string, outputPath: string): Promise<void> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20_000);
-
-  try {
-    const fetchFn = await getProxiedFetch();
-    const cookieHeader = getYouTubeCookieHeader();
-    const res = await fetchFn(streamUrl, {
-      headers: {
-        "User-Agent":
-          "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
-        Accept: "*/*",
-        Origin: "https://www.youtube.com",
-        Referer: "https://www.youtube.com/",
-        ...(cookieHeader && { Cookie: cookieHeader }),
-      },
-      signal: controller.signal,
-    });
-
-    if (!res.ok) throw new Error(`Audio stream HTTP ${res.status}`);
-
-    const buffer = Buffer.from(await res.arrayBuffer());
-    writeFileSync(outputPath, buffer);
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 /** Full yt-dlp download fallback with anti-detection headers and cookies. */
