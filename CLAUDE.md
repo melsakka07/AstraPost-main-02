@@ -6,6 +6,10 @@
 
 Next.js 16 (App Router), React 19, TypeScript 5.9, PostgreSQL 18 (pgvector), Drizzle ORM, BullMQ + Redis, shadcn/ui + Tailwind CSS 4, Better Auth (X OAuth 2.0, Instagram, LinkedIn), Stripe, Vercel AI SDK 5 + OpenRouter, Replicate API, Zod 4, next-intl (ar/en), Sentry, Resend
 
+## Source of Truth
+
+The code base is the only source of truth.
+
 ## First Steps
 
 - Check the latest two updates in the (the first 100 lines) `docs/0-MY-LATEST-UPDATES.md` for recent changes before starting work, update the file with the latest changes once done
