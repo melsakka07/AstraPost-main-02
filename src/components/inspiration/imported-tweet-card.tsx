@@ -176,7 +176,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                 ) : (
                   <div className="relative aspect-video w-full">
                     <Image
-                      src={tweet.media[0]?.url ?? ""}
+                      src={tweet.media[0]?.thumbnailUrl ?? tweet.media[0]?.url ?? ""}
                       alt="Tweet media"
                       fill
                       className="object-cover"
@@ -194,7 +194,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                     className="border-border relative aspect-square overflow-hidden rounded-2xl border"
                   >
                     <Image
-                      src={media.url}
+                      src={media.thumbnailUrl ?? media.url}
                       alt={`Tweet media ${i + 1}`}
                       fill
                       className="object-cover"
@@ -212,7 +212,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                     className="border-border relative aspect-square overflow-hidden rounded-2xl border"
                   >
                     <Image
-                      src={media.url}
+                      src={media.thumbnailUrl ?? media.url}
                       alt={`Tweet media ${i + 1}`}
                       fill
                       className="object-cover"
@@ -223,7 +223,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                 {tweet.media[2] && (
                   <div className="border-border relative aspect-square overflow-hidden rounded-2xl border">
                     <Image
-                      src={tweet.media[2].url}
+                      src={tweet.media[2].thumbnailUrl ?? tweet.media[2].url}
                       alt="Tweet media 3"
                       fill
                       className="object-cover"
@@ -241,7 +241,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                     className="border-border relative aspect-square overflow-hidden rounded-2xl border"
                   >
                     <Image
-                      src={media.url}
+                      src={media.thumbnailUrl ?? media.url}
                       alt={`Tweet media ${i + 1}`}
                       fill
                       className="object-cover"

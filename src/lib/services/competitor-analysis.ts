@@ -71,6 +71,15 @@ export async function fetchUserTweets(username: string): Promise<TwitterFetchRes
         message: "Twitter API authentication failed. Please check TWITTER_BEARER_TOKEN.",
       };
     }
+    if (userRes.status === 402) {
+      logger.warn("competitor_analysis_paid_tier_required", { username });
+      return {
+        ok: false,
+        status: 503,
+        message:
+          "Competitor analysis requires a paid X API tier. The current bearer token does not have access to this endpoint.",
+      };
+    }
     if (userRes.status === 404) {
       return {
         ok: false,
@@ -114,6 +123,15 @@ export async function fetchUserTweets(username: string): Promise<TwitterFetchRes
         ok: false,
         status: 429,
         message: "Twitter API rate limit reached. Please wait a few minutes and try again.",
+      };
+    }
+    if (tweetsRes.status === 402) {
+      logger.warn("competitor_analysis_paid_tier_required", { username, stage: "tweets" });
+      return {
+        ok: false,
+        status: 503,
+        message:
+          "Competitor analysis requires a paid X API tier. The current bearer token does not have access to this endpoint.",
       };
     }
     return { ok: false, status: 422, message: `Could not fetch tweets for @${username}.` };

@@ -88,207 +88,84 @@ export function isValidTweetUrl(url: string): boolean {
 }
 
 // ============================================================================
-// X API v2 Integration
+// Twitter Syndication Integration
 // ============================================================================
+// X API v2 lookup requires a paid Basic tier ($200/mo) and returns 402 on Free.
+// We use the public syndication endpoint (same one Vercel's react-tweet uses):
+// public, free, no auth. Trade-off: public metrics and conversation context
+// are not available, so they degrade to zeros / empty arrays.
 
-/**
- * Get X API bearer token from environment
- */
-function getXApiToken(): string {
-  const token = process.env.TWITTER_BEARER_TOKEN || process.env.X_API_TOKEN;
-  if (!token) {
-    throw new Error(
-      "Twitter/X API Bearer Token not configured. " +
-        "Please set TWITTER_BEARER_TOKEN in your .env file. " +
-        "Get it from: https://developer.twitter.com/en/portal/dashboard -> Your App -> Keys and Tokens -> Bearer Token"
-    );
-  }
-  return token;
+const SYNDICATION_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+
+function syndicationToken(id: string): string {
+  return ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, "");
 }
 
-/**
- * Fetch a single tweet by ID using X API v2
- */
-async function fetchTweet(tweetId: string): Promise<Tweet | null> {
-  const token = getXApiToken();
-  const url = `https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,public_metrics,conversation_id,entities,attachments,author_id&expansions=author_id,attachments.media_keys,referenced_tweets.id&user.fields=verified,profile_image_url&media.fields=url,width,height,preview_image_url,type,variants`;
+async function fetchTweetFromSyndication(tweetId: string): Promise<Tweet | null> {
+  const token = syndicationToken(tweetId);
+  const url = `https://cdn.syndication.twimg.com/tweet-result?id=${encodeURIComponent(tweetId)}&token=${encodeURIComponent(token)}&lang=en`;
 
   const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: { "User-Agent": SYNDICATION_UA, Accept: "application/json" },
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
-      return null;
-    }
-    if (response.status === 429) {
-      throw new Error("Rate limited by X API");
-    }
-    throw new Error(`X API error: ${response.status}`);
+    if (response.status === 404) return null;
+    if (response.status === 403) throw new Error("Private or protected account");
+    if (response.status === 429) throw new Error("Rate limited by Twitter syndication");
+    throw new Error(`Twitter syndication error: ${response.status}`);
   }
 
   const data = await response.json();
-  return parseTweetResponse(data);
+  if (!data || data.__typename === "TweetTombstone") return null;
+
+  return parseSyndicationTweet(data);
 }
 
-/**
- * Parse X API v2 response into Tweet object
- */
-function parseTweetResponse(data: any): Tweet | null {
-  const tweetData = data.data;
-  if (!tweetData) return null;
+function parseSyndicationTweet(raw: any): Tweet | null {
+  if (!raw || !raw.id_str || !raw.user) return null;
 
-  const includes = data.includes || {};
-  const users = includes.users || [];
-  const media = includes.media || [];
-
-  const authorData = users.find((u: any) => u.id === tweetData.author_id);
-  if (!authorData) return null;
-
+  const u = raw.user;
   const author: TweetAuthor = {
-    id: authorData.id,
-    name: authorData.name,
-    username: authorData.username,
-    avatarUrl: authorData.profile_image_url,
-    verified: authorData.verified || false,
+    id: u.id_str,
+    name: u.name,
+    username: u.screen_name,
+    avatarUrl: u.profile_image_url_https,
+    verified: Boolean(u.verified || u.is_blue_verified),
   };
 
   const tweetMedia: TweetMedia[] = [];
-  if (tweetData.attachments?.media_keys) {
-    for (const mediaKey of tweetData.attachments.media_keys) {
-      const mediaData = media.find((m: any) => m.media_key === mediaKey);
-      if (mediaData) {
-        let bestUrl = mediaData.url || mediaData.preview_image_url;
+  const mediaDetails = Array.isArray(raw.mediaDetails) ? raw.mediaDetails : [];
+  for (const m of mediaDetails) {
+    let bestUrl: string = m.media_url_https;
+    const kind: "image" | "video" | "gif" =
+      m.type === "video" ? "video" : m.type === "animated_gif" ? "gif" : "image";
 
-        // For videos/gifs, try to find the best mp4 variant
-        if (
-          (mediaData.type === "video" || mediaData.type === "animated_gif") &&
-          mediaData.variants
-        ) {
-          const mp4Variants = mediaData.variants.filter((v: any) => v.content_type === "video/mp4");
-          if (mp4Variants.length > 0) {
-            // Sort by highest bitrate first
-            mp4Variants.sort((a: any, b: any) => (b.bit_rate || 0) - (a.bit_rate || 0));
-            bestUrl = mp4Variants[0].url;
-          }
-        }
-
-        tweetMedia.push({
-          type: mediaData.type,
-          url: bestUrl,
-          thumbnailUrl: mediaData.preview_image_url,
-          width: mediaData.width,
-          height: mediaData.height,
-        });
+    if ((m.type === "video" || m.type === "animated_gif") && m.video_info?.variants) {
+      const mp4 = m.video_info.variants.filter((v: any) => v.content_type === "video/mp4");
+      if (mp4.length > 0) {
+        mp4.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
+        bestUrl = mp4[0].url;
       }
     }
-  }
 
-  const metrics: TweetMetrics = {
-    likes: tweetData.public_metrics?.like_count || 0,
-    retweets: tweetData.public_metrics?.retweet_count || 0,
-    replies: tweetData.public_metrics?.reply_count || 0,
-    impressions: tweetData.public_metrics?.impression_count || 0,
-  };
-
-  return {
-    id: tweetData.id,
-    text: tweetData.text,
-    author,
-    createdAt: new Date(tweetData.created_at),
-    media: tweetMedia,
-    metrics,
-  };
-}
-
-/**
- * Fetch conversation context (parent tweets and replies)
- */
-async function fetchConversationContext(
-  conversationId: string,
-  originalTweetId: string
-): Promise<{ parentTweets: Tweet[]; topReplies: Tweet[] }> {
-  const token = getXApiToken();
-
-  // Fetch conversation timeline
-  const url = `https://api.twitter.com/2/tweets/search/recent?query=conversation_id:${conversationId}&max_results=20&tweet.fields=created_at,public_metrics,conversation_id,in_reply_to_user_id,author_id,entities&expansions=author_id&user.fields=verified,profile_image_url`;
-
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    // If context fetch fails, return empty arrays
-    logger.warn("tweet_conversation_context_failed");
-    return { parentTweets: [], topReplies: [] };
-  }
-
-  const data = await response.json();
-  const tweets = data.data || [];
-  const includes = data.includes || {};
-  const users = includes.users || [];
-
-  // Parse all tweets
-  const mappedTweets = tweets
-    .filter((t: any) => t.id !== originalTweetId)
-    .map((t: any) => {
-      const authorData = users.find((u: any) => u.id === t.author_id);
-      if (!authorData) return null;
-
-      return {
-        id: t.id,
-        text: t.text,
-        author: {
-          id: authorData.id,
-          name: authorData.name,
-          username: authorData.username,
-          avatarUrl: authorData.profile_image_url,
-          verified: authorData.verified || false,
-        },
-        createdAt: new Date(t.created_at),
-        media: [],
-        metrics: {
-          likes: t.public_metrics?.like_count || 0,
-          retweets: t.public_metrics?.retweet_count || 0,
-          replies: t.public_metrics?.reply_count || 0,
-          impressions: t.public_metrics?.impression_count || 0,
-        },
-      };
+    tweetMedia.push({
+      type: kind,
+      url: bestUrl,
+      thumbnailUrl: m.media_url_https,
+      width: m.original_info?.width,
+      height: m.original_info?.height,
     });
-
-  const parsedTweets: Tweet[] = mappedTweets.filter((t: Tweet | null): t is Tweet => t !== null);
-
-  // Separate into parents (in-reply-to) and replies
-  const parentTweets: Tweet[] = [];
-  const topReplies: Tweet[] = [];
-
-  for (const tweet of parsedTweets) {
-    // Check if this tweet is a reply to another tweet in the conversation
-    const isInReplyTo = tweets.some((t: any) => t.id === tweet.id && t.in_reply_to_user_id);
-
-    if (isInReplyTo && tweet.createdAt < new Date()) {
-      // This is likely a parent tweet (older)
-      parentTweets.push(tweet);
-    } else {
-      // This is a reply
-      topReplies.push(tweet);
-    }
   }
 
-  // Sort parents by date descending (newest first)
-  parentTweets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-  // Sort replies by likes (most popular first)
-  topReplies.sort((a, b) => b.metrics.likes - a.metrics.likes);
-
-  // Limit results
   return {
-    parentTweets: parentTweets.slice(0, 5),
-    topReplies: topReplies.slice(0, 10),
+    id: raw.id_str,
+    text: raw.text ?? "",
+    author,
+    createdAt: new Date(raw.created_at),
+    media: tweetMedia,
+    metrics: { likes: 0, retweets: 0, replies: 0, impressions: 0 },
   };
 }
 
@@ -345,8 +222,7 @@ export async function importTweet(
   }
 
   try {
-    // Fetch the tweet
-    const tweet = await fetchTweet(tweetId);
+    const tweet = await fetchTweetFromSyndication(tweetId);
 
     if (!tweet) {
       return {
@@ -355,13 +231,10 @@ export async function importTweet(
       };
     }
 
-    // Fetch conversation context
-    const { parentTweets, topReplies } = await fetchConversationContext(tweet.id, tweet.id);
-
     const result: ImportedTweetContext = {
       originalTweet: tweet,
-      parentTweets,
-      topReplies,
+      parentTweets: [],
+      topReplies: [],
       conversationId: tweet.id,
     };
 
@@ -379,6 +252,12 @@ export async function importTweet(
         return {
           error: "Rate limited by X API. Please try again later.",
           code: "RATE_LIMITED",
+        };
+      }
+      if (error.message.includes("Private or protected")) {
+        return {
+          error: "This tweet is from a private or protected account.",
+          code: "PRIVATE_ACCOUNT",
         };
       }
     }

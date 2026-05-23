@@ -66,7 +66,7 @@ export function AdaptationPanel({
 }: AdaptationPanelProps) {
   const { data: session } = useSession();
   const t = useTranslations("inspiration");
-  const th = useTranslations("ai_hub");
+  const th = useTranslations("ai_writer");
   const td = useTranslations("dashboard_shell");
   const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
   const [aiAction, setAiAction] = useState("rephrase");
