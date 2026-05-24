@@ -1,5 +1,47 @@
 # Latest Updates
 
+## 2026-05-24 (PM-2) — Dev DB rebuild + diagnose-x-accounts extension
+
+Closed two follow-up items from the morning token-warning UX work.
+
+### Dev DB rebuild via prod schema restore
+
+Local Postgres at `127.0.0.1:5499/postgres_dev` had drifted: only 75/84 migrations applied, `notification_type` enum missing, and `pnpm db:migrate` against a fresh container failed at multiple historical migrations (0052 default-cast issue on `affiliate_links.platform`; 0058 duplicates the `failed_jobs` `CREATE TABLE` from 0055; `db:push` errored on a unique-index collision). Prod survived the same migration chain only because it migrated incrementally over time across different schema states — a fresh rebuild can't reproduce that.
+
+Recovery: dumped prod's schema + `drizzle` schema via `pg_dump --schema-only` (Neon DB, no data), restored both into the freshly-wiped local container. Result: 40 tables, 84 `__drizzle_migrations` rows, `last_notified_failure_count` column present on `x_accounts`, `pnpm db:migrate` reports nothing to apply, `pnpm test` 326/326 still green.
+
+Known-bad historical migrations (0052, 0058) are not fixed — left as-is since touching them would change hashes and break prod's `__drizzle_migrations` chain. Future fresh local rebuilds will hit the same wall; the documented recovery is to `pg_dump` from prod (or whichever known-good environment).
+
+### `diagnose-x-accounts.ts` learned the refresh-failure signal
+
+`scripts/diagnose-x-accounts.ts` (run via `pnpm diagnose:x-accounts` or `railway run --service AstraPost-main-02 -- pnpm diagnose:x-accounts` for prod) previously only surfaced the old token-expiry signal (`HEALTHY` / `EXPIRING_SOON` / `EXPIRED` / `NO_REFRESH_TOKEN` / `UNKNOWN`) — which the new token-warning UX explicitly _doesn't_ trigger off. Added a parallel report "Refresh-Failure Distribution" that classifies each account by the new `notifyState`:
+
+| State                 | Condition                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------- |
+| `healthy`             | `consecutiveRefreshFailures === 0`                                                           |
+| `pending-level-1`     | `=== 1` and `lastNotifiedFailureCount !== 1` (next cron will email)                          |
+| `awaiting-escalation` | `=== 2` (breathing-room gap)                                                                 |
+| `pending-level-2`     | `>= 3` and `lastNotifiedFailureCount !== count` (next cron will email)                       |
+| `notified`            | `lastNotifiedFailureCount === count` (already emailed; waiting for resolution or escalation) |
+
+Existing token-status table + `--fix` flag untouched — additive only.
+
+### Prod snapshot captured
+
+`railway run -- pnpm diagnose:x-accounts` (2026-05-24, post-rewrite):
+
+- 6 X accounts total
+- Old token-status view: **4 CRITICAL** (`EXPIRED` access tokens) + 1 warning + 1 inactive — what the old email cron would have spammed
+- **New refresh-failure view: all 6 `healthy`** — `consecutiveRefreshFailures = 0` everywhere; auto-refresh is doing its job
+
+Direct evidence that the rewrite was the right call: 4 accounts that _would have been alarmed daily_ under the old model are factually fine because their refresh tokens keep working.
+
+### Files changed
+
+- `scripts/diagnose-x-accounts.ts` — added `NotifyState` type, two new fields on `AccountReport`, derived `notifyState` for each account, new bottom section
+
+No schema changes, no migrations, no commit needed for the DB rebuild (local-only operation).
+
 ## 2026-05-24 (PM) — Token-warning UX: refresh-failure trigger + escalation + at-risk posts
 
 Rewrote the X-token expiry warning system. Old behavior fired emails when the **access token** (2h lifetime) was within 24h of expiry — but auto-refresh handles that silently at the next publish attempt, so most warnings alarmed users about non-problems and the cron resent the same email every day. The 2026-05-24 prod test (`token_health` job 125) confirmed the spam.

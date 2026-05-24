@@ -6,6 +6,13 @@ import { logger } from "@/lib/logger";
 
 type TokenStatus = "HEALTHY" | "EXPIRING_SOON" | "EXPIRED" | "NO_REFRESH_TOKEN" | "UNKNOWN";
 
+type NotifyState =
+  | "healthy"
+  | "pending-level-1"
+  | "awaiting-escalation"
+  | "pending-level-2"
+  | "notified";
+
 interface AccountReport {
   id: string;
   username: string;
@@ -14,6 +21,9 @@ interface AccountReport {
   tokenStatus: TokenStatus;
   expiresAt: Date | null;
   tier: string;
+  consecutiveRefreshFailures: number;
+  lastNotifiedFailureCount: number | null;
+  notifyState: NotifyState;
 }
 
 async function main() {
@@ -29,6 +39,8 @@ async function main() {
       tokenExpiresAt: xAccounts.tokenExpiresAt,
       tier: xAccounts.xSubscriptionTier,
       email: user.email,
+      consecutiveRefreshFailures: xAccounts.consecutiveRefreshFailures,
+      lastNotifiedFailureCount: xAccounts.lastNotifiedFailureCount,
     })
     .from(xAccounts)
     .innerJoin(user, eq(xAccounts.userId, user.id))
@@ -52,6 +64,21 @@ async function main() {
       tokenStatus = "HEALTHY";
     }
 
+    const consecutiveRefreshFailures = row.consecutiveRefreshFailures ?? 0;
+    const lastNotifiedFailureCount = row.lastNotifiedFailureCount ?? null;
+
+    let notifyState: NotifyState;
+    if (consecutiveRefreshFailures === 0) {
+      notifyState = "healthy";
+    } else if (consecutiveRefreshFailures === 1) {
+      notifyState = lastNotifiedFailureCount === 1 ? "notified" : "pending-level-1";
+    } else if (consecutiveRefreshFailures === 2) {
+      notifyState = "awaiting-escalation";
+    } else {
+      notifyState =
+        lastNotifiedFailureCount === consecutiveRefreshFailures ? "notified" : "pending-level-2";
+    }
+
     return {
       id: row.id,
       username: row.username,
@@ -60,6 +87,9 @@ async function main() {
       tokenStatus,
       expiresAt,
       tier: row.tier ?? "None",
+      consecutiveRefreshFailures,
+      lastNotifiedFailureCount,
+      notifyState,
     };
   });
 
@@ -131,6 +161,42 @@ async function main() {
     console.log(`Fix mode: ${deactivatedCount} account(s) deactivated`);
   } else if (criticalCount > 0) {
     console.log("Run with --fix to deactivate critical accounts (NO_REFRESH_TOKEN or EXPIRED)");
+  }
+
+  // Refresh-failure distribution (new model: token-warning UX gate)
+  console.log();
+  console.log("─".repeat(80));
+  console.log("Refresh-Failure Distribution (token-warning email gate)");
+  console.log("─".repeat(80));
+
+  const byState: Record<NotifyState, number> = {
+    healthy: 0,
+    "pending-level-1": 0,
+    "awaiting-escalation": 0,
+    "pending-level-2": 0,
+    notified: 0,
+  };
+  for (const r of reports) byState[r.notifyState]++;
+
+  for (const state of [
+    "healthy",
+    "pending-level-1",
+    "awaiting-escalation",
+    "pending-level-2",
+    "notified",
+  ] as const) {
+    console.log(`  ${state.padEnd(22)} ${byState[state]}`);
+  }
+
+  const nonHealthy = reports.filter((r) => r.notifyState !== "healthy").slice(0, 5);
+  if (nonHealthy.length > 0) {
+    console.log();
+    console.log(`Sample of first ${nonHealthy.length} non-healthy:`);
+    for (const r of nonHealthy) {
+      console.log(
+        `  @${r.username.padEnd(20)} active=${r.isActive} failures=${r.consecutiveRefreshFailures} lastNotified=${r.lastNotifiedFailureCount ?? "null"} state=${r.notifyState}`
+      );
+    }
   }
   console.log();
 
