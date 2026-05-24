@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import type { NavItem, SidebarSection } from "@/components/dashboard/sidebar-nav-data";
@@ -15,7 +16,7 @@ interface CollapsibleSectionProps {
   onNavigate?: () => void;
   isMobile: boolean;
   userPlan?: string;
-  t?: (key: string, options?: { defaultValue?: string }) => string;
+  t?: ((key: string) => string) & { has: (key: string) => boolean };
 }
 
 export function CollapsibleSection({
@@ -27,6 +28,7 @@ export function CollapsibleSection({
   userPlan = "free",
   t,
 }: CollapsibleSectionProps) {
+  const router = useRouter();
   const hasActiveChild = section.items.some(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   );
@@ -58,9 +60,10 @@ export function CollapsibleSection({
         // Prevent keyboard interaction on desktop where the button is decorative
         tabIndex={isMobile ? 0 : -1}
       >
-        {t
-          ? t(section.label.toLowerCase().replace(/\s+/g, "_"), { defaultValue: section.label })
-          : section.label}
+        {(() => {
+          const sectionKey = section.label.toLowerCase().replace(/\s+/g, "_");
+          return t && t.has(sectionKey) ? t(sectionKey) : section.label;
+        })()}
         {isMobile && (
           <ChevronDown
             className={cn(
@@ -82,9 +85,7 @@ export function CollapsibleSection({
         {section.items.map((item) => {
           const isActive = isItemActive(item.href, pathname, allNavItems);
           const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
-          const translatedItemLabel = t
-            ? t(itemLabelKey, { defaultValue: item.label })
-            : item.label;
+          const translatedItemLabel = t && t.has(itemLabelKey) ? t(itemLabelKey) : item.label;
           return (
             <Link
               key={item.href}
@@ -112,14 +113,26 @@ export function CollapsibleSection({
               {item.isPro &&
                 !item.isNew &&
                 (userPlan === "free" ? (
-                  <Link href="/pricing" onClick={(e) => e.stopPropagation()} className="ms-auto">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onNavigate?.();
+                      router.push("/pricing");
+                    }}
+                    aria-label={
+                      t && t.has("upgrade_to_pro") ? t("upgrade_to_pro") : "Upgrade to Pro"
+                    }
+                    className="ms-auto"
+                  >
                     <Badge
                       variant="outline"
                       className="border-primary/30 text-primary hover:bg-primary/10 h-4 cursor-pointer px-1.5 py-0 text-[10px]"
                     >
                       Pro
                     </Badge>
-                  </Link>
+                  </button>
                 ) : (
                   <Badge
                     variant="outline"

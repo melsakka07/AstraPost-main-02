@@ -40,7 +40,8 @@ export function BottomNav() {
           // Special handling: /dashboard/ai matches /dashboard/ai and /dashboard/ai/...
           // but not /dashboard/ai-related paths (e.g., /dashboard/analytics is not under /dashboard/ai)
           const isActive = pathname === href || pathname.startsWith(`${href}/`);
-          const translatedLabel = t(label.toLowerCase() as any, { defaultValue: label });
+          const labelKey = label.toLowerCase();
+          const translatedLabel = t.has(labelKey as any) ? t(labelKey as any) : label;
 
           return (
             <Link

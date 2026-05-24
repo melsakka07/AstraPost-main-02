@@ -337,6 +337,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     // Handle plan change logging if plan is being updated
     const updates: Record<string, unknown> = { ...parsed.data };
+    // When an admin moves a user to a paid plan, also clear the trial window so
+    // status badges and plan gates stop treating them as trialing. Free stays
+    // as-is — free users in trial are legitimately on trial.
+    const PAID_PLANS = new Set(["pro_monthly", "pro_annual", "agency"]);
+    if (parsed.data.plan !== undefined && PAID_PLANS.has(parsed.data.plan)) {
+      updates.trialEndsAt = null;
+    }
     await db.transaction(async (tx) => {
       if (parsed.data.plan !== undefined && parsed.data.plan !== existing.plan) {
         await tx.insert(planChangeLog).values({

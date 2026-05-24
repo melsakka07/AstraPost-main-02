@@ -144,7 +144,9 @@ function SidebarContent({
       >
         {filteredSections.map((section, idx) => {
           const sectionLabelKey = section.label.toLowerCase().replace(/\s+/g, "_");
-          const translatedSectionLabel = t(sectionLabelKey as any, { defaultValue: section.label });
+          const translatedSectionLabel = t.has(sectionLabelKey as any)
+            ? t(sectionLabelKey as any)
+            : section.label;
 
           return (
             <div key={section.label} className={cn(idx > 0 && "mt-6")}>
@@ -154,9 +156,9 @@ function SidebarContent({
                   {section.items.map((item) => {
                     const isActive = isItemActive(item.href, pathname, allNavItems);
                     const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
-                    const translatedItemLabel = t(itemLabelKey as any, {
-                      defaultValue: item.label,
-                    });
+                    const translatedItemLabel = t.has(itemLabelKey as any)
+                      ? t(itemLabelKey as any)
+                      : item.label;
                     return (
                       <Link
                         key={item.href}
@@ -201,9 +203,9 @@ function SidebarContent({
                     {section.items.map((item) => {
                       const isActive = isItemActive(item.href, pathname, allNavItems);
                       const itemLabelKey = item.label.toLowerCase().replace(/\s+/g, "_");
-                      const translatedItemLabel = t(itemLabelKey as any, {
-                        defaultValue: item.label,
-                      });
+                      const translatedItemLabel = t.has(itemLabelKey as any)
+                        ? t(itemLabelKey as any)
+                        : item.label;
                       return (
                         <Link
                           key={item.href}
