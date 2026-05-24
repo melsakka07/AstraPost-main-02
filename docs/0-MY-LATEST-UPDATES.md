@@ -1,5 +1,52 @@
 # Latest Updates
 
+## 2026-05-24 (PM) — Token-warning UX: refresh-failure trigger + escalation + at-risk posts
+
+Rewrote the X-token expiry warning system. Old behavior fired emails when the **access token** (2h lifetime) was within 24h of expiry — but auto-refresh handles that silently at the next publish attempt, so most warnings alarmed users about non-problems and the cron resent the same email every day. The 2026-05-24 prod test (`token_health` job 125) confirmed the spam.
+
+### New trigger model
+
+Drives off `xAccounts.consecutiveRefreshFailures` instead of access-token expiry:
+
+| Level            | Condition                                                             | Email                                                                                      |
+| ---------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 1 — notice       | `consecutiveRefreshFailures === 1` and `isActive === true`            | Friendly heads-up; auto-refresh may still recover next publish. Amber accent.              |
+| 2 — urgent       | `consecutiveRefreshFailures >= 3` and `isActive === true`             | Strong reconnect CTA. Red accent.                                                          |
+| 3 — deactivation | `isActive` flips `true → false` (tier-refresh permanent failure path) | Sent inline at the deactivation point, not by the daily cron. Red accent + "Paused" badge. |
+
+Count===2 is intentionally skipped — breathing room before escalation; once the count climbs to 3 the level-2 email fires.
+
+### De-duplication
+
+New column `xAccounts.lastNotifiedFailureCount` (Drizzle migration `drizzle/0083_nasty_molly_hayes.sql`). The cron only sends when `consecutiveRefreshFailures !== lastNotifiedFailureCount`. On successful refresh, `src/lib/services/x-api.ts` resets both `consecutiveRefreshFailures` and `lastNotifiedFailureCount` to start the next failure cycle clean. The deduplication update only fires when the email actually succeeded, so a transient Resend outage will retry the next day.
+
+### At-risk scheduled posts
+
+New helper `getAtRiskScheduledPosts(xAccountId)` (`src/lib/queue/processors.ts` ~1124). Returns `{ count: number; nextScheduledAt: Date | null }` from a single aggregate query. Surfaced in both the level-1/2 token-warning email and the deactivation email so users see exactly what's at stake. Bilingual (en/ar) via existing `getEmailTranslations`.
+
+### Email language confirmation
+
+Confirmed `user.language` (set in `/dashboard/settings/profile` → `PATCH /api/user/profile`, `src/app/api/user/profile/route.ts:112`) is the source of truth for all customer-facing emails: trial, post-failure, token-warning, account-deactivated, team-invite, all billing-webhook emails. **Bonus fix:** `auth/password-reset` was hardcoded English — now routes through `getEmailTranslations` and uses the user's interface language. New keys `emails.passwordReset.{request,confirmation}` in both `en.json` and `ar.json`.
+
+### Files changed
+
+- Schema + migration: `src/lib/schema.ts`, `drizzle/0083_nasty_molly_hayes.sql`
+- Processor + helpers: `src/lib/queue/processors.ts` (token-health rewrite, tier-refresh deactivation hook, `getAtRiskScheduledPosts`)
+- Token-refresh reset: `src/lib/services/x-api.ts`
+- Email service signatures: `src/lib/services/email.ts` (`sendTokenExpiringEmail`, `sendAccountDeactivatedEmail`)
+- Templates: `src/components/email/token-expiring-email.tsx` (level branching + at-risk block), `account-deactivated-email.tsx` (at-risk block + Paused badge)
+- i18n: `src/i18n/messages/en.json` + `ar.json` (new `emails.tokenWarning.*`, `emails.accountDeactivated.atRiskPosts.*`, `emails.passwordReset.*`, `emails.common.paused`)
+- Password-reset language fix: `src/app/api/auth/password-reset/route.ts`
+- Tests: `src/lib/queue/__tests__/token-health-processor.test.ts` rewritten for the failure-count model
+
+### Verification
+
+- `pnpm run check` — PASS (lint + typecheck + i18n parity at 2828 leaf keys per locale)
+- `pnpm test` — PASS, 326/326 (was 323; 3 net new). New cases cover level-1 trigger, level-2 escalation, count===2 skip, email-failure preserves de-dup state, multi-account loop continues past notification insert failure.
+- Production live-fire pending after Railway redeploys. Vercel `build:ci` will auto-apply migration `0083` on production deploy per memory `project_vercel_build_migrations`.
+
+Plan archive: `.claude/plans/please-check-my-terminal-indexed-hamming.md`.
+
 ## 2026-05-24 — Resend domain verified: `post.astravision.ai` + `RESEND_FROM_EMAIL` rotated
 
 Token-health worker job on 2026-05-24 05:42 logged `email_send_failed: The astravision.ai domain is not verified` while trying to email the X-token-expiry warning. Two follow-ups:

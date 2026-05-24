@@ -6,6 +6,18 @@ import { logger } from "@/lib/logger";
 import { connection as redis } from "@/lib/queue/client";
 import { user, verification } from "@/lib/schema";
 import { sendBillingEmail } from "@/lib/services/email";
+import { getEmailTranslations } from "@/lib/services/email-translations";
+
+interface PasswordResetTranslations {
+  passwordReset: {
+    request: { subject: string; greeting: string; body: string; cta: string; ignore: string };
+    confirmation: { subject: string; greeting: string; body: string; footer: string };
+  };
+}
+
+function applyVars(template: string, vars: Record<string, string>): string {
+  return Object.entries(vars).reduce((acc, [k, v]) => acc.split(`{${k}}`).join(v), template);
+}
 
 const passwordResetRequestSchema = z.object({
   email: z.string().email(),
@@ -63,7 +75,7 @@ export async function POST(req: Request) {
       // Check if user exists
       const userRecord = await db.query.user.findFirst({
         where: eq(user.email, email),
-        columns: { id: true, email: true, name: true },
+        columns: { id: true, email: true, name: true, language: true },
       });
 
       if (!userRecord) {
@@ -98,12 +110,16 @@ export async function POST(req: Request) {
 
       // Send reset email
       const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${tokenHex}`;
+      const locale = userRecord.language || "en";
+      const pr = (getEmailTranslations(locale) as unknown as PasswordResetTranslations)
+        .passwordReset.request;
+      const greeting = applyVars(pr.greeting, { name: userRecord.name || "" });
+      const bodyText = applyVars(pr.body, { resetUrl });
 
       await sendBillingEmail({
         to: userRecord.email,
-        subject: "Reset your AstraPost password",
-        text: `Hi ${userRecord.name || "there"},\n\nClick here to reset your password: ${resetUrl}\n\nThis link expires in 15 minutes.\n\nIf you didn't request this, ignore this email.`,
-        react: null as any, // Using text only for simplicity
+        subject: pr.subject,
+        text: `${greeting}\n\n${bodyText}\n\n${pr.cta}: ${resetUrl}\n\n${pr.ignore}`,
         metadata: {
           event: "password_reset_request",
           userId: userRecord.id,
@@ -160,7 +176,7 @@ export async function POST(req: Request) {
       // Find user by email
       const userRecord = await db.query.user.findFirst({
         where: eq(user.email, tokenRecord.identifier),
-        columns: { id: true, email: true, name: true },
+        columns: { id: true, email: true, name: true, language: true },
       });
 
       if (!userRecord) {
@@ -188,11 +204,15 @@ export async function POST(req: Request) {
       logger.info("password_reset_completed", { userId: userRecord.id, email: userRecord.email });
 
       // Send confirmation email
+      const confLocale = userRecord.language || "en";
+      const conf = (getEmailTranslations(confLocale) as unknown as PasswordResetTranslations)
+        .passwordReset.confirmation;
+      const confGreeting = applyVars(conf.greeting, { name: userRecord.name || "" });
+
       await sendBillingEmail({
         to: userRecord.email,
-        subject: "Your AstraPost password has been reset",
-        text: `Hi ${userRecord.name || "there"},\n\nYour password has been successfully reset. You can now log in with your new password.\n\nIf you didn't make this change, please contact support immediately.`,
-        react: null as any,
+        subject: conf.subject,
+        text: `${confGreeting}\n\n${conf.body}\n\n${conf.footer}`,
         metadata: {
           event: "password_reset_completed",
           userId: userRecord.id,

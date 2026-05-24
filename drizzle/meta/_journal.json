@@ -582,6 +582,13 @@
       "when": 1778793241181,
       "tag": "0082_powerful_supernaut",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1779608257686,
+      "tag": "0083_nasty_molly_hayes",
+      "breakpoints": true
     }
   ]
 }

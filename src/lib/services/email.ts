@@ -96,38 +96,125 @@ export async function sendPostFailureEmail(
   });
 }
 
+export interface AtRiskPostsSummary {
+  count: number;
+  nextScheduledAt: Date | null;
+}
+
+function applyPlaceholders(template: string, vars: Record<string, string | number>): string {
+  return Object.entries(vars).reduce(
+    (acc, [key, value]) => acc.split(`{${key}}`).join(String(value)),
+    template
+  );
+}
+
+function formatNextScheduled(date: Date | null, locale: string): string {
+  if (!date) return "";
+  try {
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar" : locale, {
+      dateStyle: "long",
+      timeStyle: "short",
+    }).format(date);
+  } catch {
+    return date.toISOString();
+  }
+}
+
+function buildAtRiskBlock(
+  template: { one: string; other: string; nextScheduled: string },
+  atRiskPosts: AtRiskPostsSummary,
+  xUsername: string,
+  locale: string
+): string | null {
+  if (atRiskPosts.count <= 0) return null;
+  const base = applyPlaceholders(atRiskPosts.count === 1 ? template.one : template.other, {
+    count: atRiskPosts.count,
+    xUsername,
+  });
+  if (atRiskPosts.nextScheduledAt) {
+    const next = applyPlaceholders(template.nextScheduled, {
+      date: formatNextScheduled(atRiskPosts.nextScheduledAt, locale),
+    });
+    return `${base}\n${next}`;
+  }
+  return base;
+}
+
 export async function sendTokenExpiringEmail(
   to: string,
   xUsername: string,
-  hoursUntilExpiry: number,
+  level: 1 | 2,
+  atRiskPosts: AtRiskPostsSummary,
   locale: string = "en"
 ) {
   const reconnectUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/settings/integrations`;
   const t = getEmailTranslations(locale);
+  const tw = t.tokenWarning;
+  const levelStrings = level === 2 ? tw.levelUrgent : tw.levelNotice;
+
+  const subject = applyPlaceholders(levelStrings.subject, { xUsername });
+  const heading = applyPlaceholders(levelStrings.heading, { xUsername });
+  const body = applyPlaceholders(levelStrings.body, { xUsername });
+  const cta: string = levelStrings.cta;
+  const atRiskBlock = buildAtRiskBlock(tw.atRiskPosts, atRiskPosts, xUsername, locale);
+
+  const textParts = [heading, body];
+  if (atRiskBlock) textParts.push(atRiskBlock);
+  textParts.push(`${cta}: ${reconnectUrl}`);
 
   await sendEmail({
     to,
-    subject: t.token_expiring.subject.replace("{username}", xUsername),
-    react: TokenExpiringEmail({ xUsername, hoursUntilExpiry, reconnectUrl, locale }),
-    text: `${t.token_expiring.body.replace("{username}", `@${xUsername}`).replace("{hours}", String(hoursUntilExpiry))}\n\n${t.token_expiring.impact}\n\n${reconnectUrl}`,
-    metadata: { xUsername, hoursUntilExpiry: String(hoursUntilExpiry), type: "token_expiring" },
+    subject,
+    react: TokenExpiringEmail({
+      xUsername,
+      level,
+      atRiskPosts,
+      reconnectUrl,
+      locale,
+    }),
+    text: textParts.join("\n\n"),
+    metadata: {
+      xUsername,
+      level: String(level),
+      atRiskCount: String(atRiskPosts.count),
+      type: "token_expiring",
+    },
   });
 }
 
 export async function sendAccountDeactivatedEmail(
   to: string,
   xUsername: string,
+  atRiskPosts: AtRiskPostsSummary,
   locale: string = "en"
 ) {
   const reconnectUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/settings/integrations`;
   const t = getEmailTranslations(locale);
+  const atRiskBlock = buildAtRiskBlock(
+    t.accountDeactivated.atRiskPosts,
+    atRiskPosts,
+    xUsername,
+    locale
+  );
+
+  const subject = applyPlaceholders(t.account_deactivated.subject, { username: xUsername });
+  const body = applyPlaceholders(t.account_deactivated.body, { username: `@${xUsername}` });
+
+  const textParts = [body, t.account_deactivated.impact];
+  if (atRiskBlock) textParts.push(atRiskBlock);
+  textParts.push(reconnectUrl);
 
   await sendEmail({
     to,
-    subject: t.account_deactivated.subject.replace("{username}", xUsername),
-    react: AccountDeactivatedEmail({ xUsername, reconnectUrl, locale }),
-    text: `${t.account_deactivated.body.replace("{username}", `@${xUsername}`)}\n\n${t.account_deactivated.impact}\n\n${reconnectUrl}`,
-    metadata: { xUsername, type: "account_deactivated" },
+    subject,
+    react: AccountDeactivatedEmail({
+      xUsername,
+      reconnectUrl,
+      atRiskPosts,
+      locale,
+    }),
+    text: textParts.join("\n\n"),
+    metadata: { xUsername, atRiskCount: String(atRiskPosts.count), type: "account_deactivated" },
   });
 }
 

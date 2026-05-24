@@ -1,0 +1,1 @@
+ALTER TABLE "x_accounts" ADD COLUMN "last_notified_failure_count" integer;

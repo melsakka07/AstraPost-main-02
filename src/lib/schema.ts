@@ -345,6 +345,7 @@ export const xAccounts = pgTable(
     xSubscriptionTierUpdatedAt: timestamp("x_subscription_tier_updated_at"),
     consecutiveRefreshFailures: integer("consecutive_refresh_failures").default(0).notNull(),
     lastRefreshFailureAt: timestamp("last_refresh_failure_at"),
+    lastNotifiedFailureCount: integer("last_notified_failure_count"),
     refreshFailureReason: text("refresh_failure_reason"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

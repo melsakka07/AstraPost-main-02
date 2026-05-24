@@ -7,18 +7,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { generateObject } from "ai";
 import { Job, DelayedError, UnrecoverableError } from "bullmq";
 import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-import {
-  type InferSelectModel,
-  eq,
-  ne,
-  and,
-  or,
-  sql,
-  isNotNull,
-  isNull,
-  lt,
-  gte,
-} from "drizzle-orm";
+import { type InferSelectModel, eq, ne, and, or, sql, isNull, lt, gte } from "drizzle-orm";
 import { z } from "zod";
 import { INPUT_LIMITS } from "@/lib/ai/input-limits";
 import { buildLanguageBlock } from "@/lib/ai/language";
@@ -722,9 +711,20 @@ export const scheduleProcessor = async (job: Job<PublishPostPayload>) => {
           .limit(1);
 
         if (userRecord?.email && post.xAccount) {
+          const [atRiskRow] = await db
+            .select({
+              c: sql<number>`count(*)::int`,
+              next: sql<Date | null>`min(${posts.scheduledAt})`,
+            })
+            .from(posts)
+            .where(and(eq(posts.xAccountId, post.xAccount.id), eq(posts.status, "scheduled")));
           await sendAccountDeactivatedEmail(
             userRecord.email,
             post.xAccount.xUsername,
+            {
+              count: Number(atRiskRow?.c ?? 0),
+              nextScheduledAt: atRiskRow?.next ?? null,
+            },
             userRecord.language || "en"
           );
         }
@@ -1027,6 +1027,52 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
             accountId: account.id,
             xUsername: account.xUsername,
           });
+
+          // Notify the user inline — first signal the account is dead should
+          // be an email, not a failed scheduled post the next morning.
+          try {
+            const [userRecordRow, atRiskPosts] = await Promise.all([
+              db
+                .select({ email: user.email, language: user.language })
+                .from(user)
+                .where(eq(user.id, account.userId))
+                .limit(1),
+              (async () => {
+                const [row] = await db
+                  .select({
+                    c: sql<number>`count(*)::int`,
+                    next: sql<Date | null>`min(${posts.scheduledAt})`,
+                  })
+                  .from(posts)
+                  .where(and(eq(posts.xAccountId, account.id), eq(posts.status, "scheduled")));
+                return {
+                  count: Number(row?.c ?? 0),
+                  nextScheduledAt: row?.next ?? null,
+                };
+              })(),
+            ]);
+            const userRecord = userRecordRow[0];
+            if (userRecord?.email) {
+              await sendAccountDeactivatedEmail(
+                userRecord.email,
+                account.xUsername,
+                atRiskPosts,
+                userRecord.language || "en"
+              );
+              logger.info("x_tier_refresh_deactivation_email_sent", {
+                accountId: account.id,
+                xUsername: account.xUsername,
+                atRiskCount: atRiskPosts.count,
+              });
+            }
+          } catch (emailErr) {
+            logger.warn("tier_refresh_deactivation_email_failed", {
+              accountId: account.id,
+              xUsername: account.xUsername,
+              error: emailErr instanceof Error ? emailErr.message : "Unknown",
+            });
+          }
+
           skipped++;
         } else {
           // Transient, rate-limited, or unknown — don't deactivate
@@ -1072,8 +1118,38 @@ export const refreshXTiersProcessor = async (job: Job<RefreshXTiersJobPayload>) 
 // ── Token Health Check Processor ─────────────────────────────────────────────────
 
 /**
- * Checks X account token expiration dates and notifies users whose tokens
- * expire within 48 hours. Runs daily at 2 AM UTC.
+ * Returns the count and next scheduled date of posts that will fail if an
+ * X account stays disconnected. Scoped to a single xAccount.
+ */
+async function getAtRiskScheduledPosts(
+  xAccountId: string
+): Promise<{ count: number; nextScheduledAt: Date | null }> {
+  const [row] = await db
+    .select({
+      c: sql<number>`count(*)::int`,
+      next: sql<Date | null>`min(${posts.scheduledAt})`,
+    })
+    .from(posts)
+    .where(and(eq(posts.xAccountId, xAccountId), eq(posts.status, "scheduled")));
+  return {
+    count: Number(row?.c ?? 0),
+    nextScheduledAt: row?.next ?? null,
+  };
+}
+
+/**
+ * Notifies users when their X account refresh has started failing.
+ * Triggered by the `consecutiveRefreshFailures` counter rather than token
+ * lifetime — auto-refresh handles short-lived access tokens silently, so
+ * the only meaningful signal is "refresh actually failed".
+ *
+ * Level 1 (notice): consecutiveRefreshFailures === 1
+ * Level 2 (urgent): consecutiveRefreshFailures >= 3
+ * count === 2 is intentionally skipped to give the failure a chance to
+ * self-resolve before escalating.
+ *
+ * De-dup via lastNotifiedFailureCount — only fire when the counter has
+ * moved since the last notification. Runs daily at 2 AM UTC.
  */
 export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
   const { correlationId } = job.data;
@@ -1086,23 +1162,27 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
   });
 
   try {
-    // Find accounts with tokens expiring within 48 hours
-    const expiringSoon = await db.query.xAccounts.findMany({
+    // Find active accounts with refresh failures whose counter has not yet
+    // been notified at this level (covers brand-new failures and escalations).
+    const candidates = await db.query.xAccounts.findMany({
       where: and(
         eq(xAccounts.isActive, true),
-        isNotNull(xAccounts.tokenExpiresAt),
-        lt(xAccounts.tokenExpiresAt, sql`NOW() + INTERVAL '48 hours'`)
+        gte(xAccounts.consecutiveRefreshFailures, 1),
+        or(
+          isNull(xAccounts.lastNotifiedFailureCount),
+          ne(xAccounts.consecutiveRefreshFailures, xAccounts.lastNotifiedFailureCount)
+        )
       ),
     });
 
-    if (expiringSoon.length === 0) {
+    if (candidates.length === 0) {
       logger.info("token_health_no_expiring_tokens", { correlationId: jobCorrelationId });
       return;
     }
 
     logger.info("token_health_expiring_found", {
       correlationId: jobCorrelationId,
-      count: expiringSoon.length,
+      count: candidates.length,
     });
 
     let notificationsCreated = 0;
@@ -1110,25 +1190,42 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
     let emailsSent = 0;
     let emailErrors = 0;
 
-    for (const account of expiringSoon) {
-      const expiresAt = account.tokenExpiresAt;
-      if (!expiresAt) continue;
+    for (const account of candidates) {
+      const failureCount = account.consecutiveRefreshFailures ?? 0;
 
-      const hoursUntilExpiry = Math.floor((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60));
+      // Only fire on count === 1 (level 1) or count >= 3 (level 2).
+      // count === 2 is the deliberate breathing-room gap.
+      let level: 1 | 2 | null = null;
+      if (failureCount === 1) level = 1;
+      else if (failureCount >= 3) level = 2;
+      if (level === null) continue;
 
-      // Always create in-app notification for expiring tokens
+      // Fetch user record + at-risk posts in parallel
+      const [userRecordRow, atRiskPosts] = await Promise.all([
+        db
+          .select({ email: user.email, language: user.language })
+          .from(user)
+          .where(eq(user.id, account.userId))
+          .limit(1),
+        getAtRiskScheduledPosts(account.id),
+      ]);
+      const userRecord = userRecordRow[0];
+
+      // In-app notification — same de-dup gate (we only reach here when the
+      // counter has moved since lastNotifiedFailureCount).
       try {
         await db.insert(notifications).values({
           id: crypto.randomUUID(),
           userId: account.userId,
           type: "token_expiring_soon",
           title: "X Account Token Expiring Soon",
-          message: `Your X account @${account.xUsername} token will expire in ${hoursUntilExpiry} hour${hoursUntilExpiry === 1 ? "" : "s"}. Please reconnect your account in Settings to avoid scheduling interruptions.`,
+          message: `Your X account @${account.xUsername} can no longer refresh its connection (level ${level}). ${atRiskPosts.count} scheduled post${atRiskPosts.count === 1 ? "" : "s"} at risk. Please reconnect in Settings.`,
           metadata: {
             xAccountId: account.id,
             xUsername: account.xUsername,
-            tokenExpiresAt: expiresAt.toISOString(),
-            hoursUntilExpiry,
+            level,
+            consecutiveRefreshFailures: failureCount,
+            atRiskCount: atRiskPosts.count,
           },
           isRead: false,
         });
@@ -1138,7 +1235,8 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
           correlationId: jobCorrelationId,
           userId: account.userId,
           xUsername: account.xUsername,
-          hoursUntilExpiry,
+          level,
+          failureCount,
         });
       } catch (notifErr) {
         notificationErrors++;
@@ -1150,38 +1248,54 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
         });
       }
 
-      // Send proactive email when token expires within 24 hours
-      if (hoursUntilExpiry <= 24) {
+      // Email — errors now propagate; wrap to avoid taking down the loop.
+      let emailSucceeded = false;
+      if (userRecord?.email) {
         try {
-          const [userRecord] = await db
-            .select({ email: user.email, language: user.language })
-            .from(user)
-            .where(eq(user.id, account.userId))
-            .limit(1);
-
-          if (userRecord?.email) {
-            await sendTokenExpiringEmail(
-              userRecord.email,
-              account.xUsername,
-              hoursUntilExpiry,
-              userRecord.language || "en"
-            );
-            emailsSent++;
-            logger.info("token_health_email_sent", {
-              correlationId: jobCorrelationId,
-              userId: account.userId,
-              xUsername: account.xUsername,
-              hoursUntilExpiry,
-              email: userRecord.email,
-            });
-          }
+          await sendTokenExpiringEmail(
+            userRecord.email,
+            account.xUsername,
+            level,
+            atRiskPosts,
+            userRecord.language || "en"
+          );
+          emailsSent++;
+          emailSucceeded = true;
+          logger.info("token_health_email_sent", {
+            correlationId: jobCorrelationId,
+            userId: account.userId,
+            xUsername: account.xUsername,
+            level,
+            failureCount,
+            atRiskCount: atRiskPosts.count,
+            email: userRecord.email,
+          });
         } catch (emailErr) {
           emailErrors++;
           logger.warn("token_health_email_failed", {
             correlationId: jobCorrelationId,
             userId: account.userId,
             xUsername: account.xUsername,
+            level,
             error: emailErr instanceof Error ? emailErr.message : "Unknown",
+          });
+        }
+      }
+
+      // Only mark the failure count as "notified" if the email actually went
+      // out. If the email failed, leave lastNotifiedFailureCount alone so the
+      // next cron run retries.
+      if (emailSucceeded) {
+        try {
+          await db
+            .update(xAccounts)
+            .set({ lastNotifiedFailureCount: failureCount })
+            .where(eq(xAccounts.id, account.id));
+        } catch (updateErr) {
+          logger.warn("token_health_dedup_update_failed", {
+            correlationId: jobCorrelationId,
+            xAccountId: account.id,
+            error: updateErr instanceof Error ? updateErr.message : "Unknown",
           });
         }
       }
@@ -1192,7 +1306,7 @@ export const tokenHealthProcessor = async (job: Job<TokenHealthJobPayload>) => {
       jobId: job.id,
       correlationId: jobCorrelationId,
       summary: {
-        totalChecked: expiringSoon.length,
+        totalChecked: candidates.length,
         notificationsCreated,
         notificationErrors,
         emailsSent,

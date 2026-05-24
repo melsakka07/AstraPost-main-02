@@ -197,6 +197,7 @@ export class XApiService {
           consecutiveRefreshFailures: 0,
           lastRefreshFailureAt: null,
           refreshFailureReason: null,
+          lastNotifiedFailureCount: null,
         })
         .where(eq(xAccounts.id, account.id));
 

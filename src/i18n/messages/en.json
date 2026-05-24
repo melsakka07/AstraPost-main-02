@@ -2699,6 +2699,7 @@
       "greeting_no_name": "Hello,",
       "closing": "Best regards,",
       "closing_team": "The AstraPost Team",
+      "paused": "Paused",
       "button": {
         "upgrade_now": "Upgrade Now",
         "retry": "Retry",
@@ -2792,6 +2793,47 @@
       "body": "Your X account {username} has been disconnected because the access token expired or was revoked. Scheduled posts for this account are now paused.",
       "impact": "Your scheduled posts are paused. Reconnect your account to resume publishing.",
       "cta": "Reconnect Account"
+    },
+    "tokenWarning": {
+      "levelNotice": {
+        "subject": "X connection issue for @{xUsername}",
+        "heading": "We had trouble refreshing your X connection",
+        "body": "We weren't able to refresh the connection for @{xUsername}. Most issues self-resolve next time you publish — but if it keeps failing, your scheduled posts won't go out.",
+        "cta": "Check connection"
+      },
+      "levelUrgent": {
+        "subject": "Action needed: reconnect @{xUsername} on AstraPost",
+        "heading": "Your X account needs reconnecting",
+        "body": "We've been unable to refresh @{xUsername} for several days. Reconnect now to keep your scheduled posts publishing.",
+        "cta": "Reconnect now"
+      },
+      "atRiskPosts": {
+        "one": "{count} scheduled post will fail unless you reconnect.",
+        "other": "{count} scheduled posts will fail unless you reconnect.",
+        "nextScheduled": "Next post is scheduled for {date}."
+      }
+    },
+    "accountDeactivated": {
+      "atRiskPosts": {
+        "one": "{count} scheduled post is paused.",
+        "other": "{count} scheduled posts are paused.",
+        "nextScheduled": "Next post was scheduled for {date}."
+      }
+    },
+    "passwordReset": {
+      "request": {
+        "subject": "Reset your AstraPost password",
+        "greeting": "Hi {name},",
+        "body": "Click below to reset your password. This link expires in 15 minutes.",
+        "cta": "Reset password",
+        "ignore": "If you didn't request this, ignore this email."
+      },
+      "confirmation": {
+        "subject": "Your AstraPost password has been reset",
+        "greeting": "Hi {name},",
+        "body": "Your password has been successfully reset. You can now log in with your new password.",
+        "footer": "If you didn't make this change, please contact support immediately."
+      }
     }
   },
   "email": {
