@@ -10,13 +10,30 @@ Token-health worker job on 2026-05-24 05:42 logged `email_send_failed: The astra
 - Resend dashboard verified `post.astravision.ai`.
 - Rotated `RESEND_FROM_EMAIL` from `noreply@astravision.ai` (unverified) → `noreply@post.astravision.ai`:
   - `.env` (local) — updated
-  - Vercel: Production + Development — updated via `vercel env rm` + `vercel env add` (CLI v53.1.0)
-  - Vercel: Preview — **not yet updated via CLI** (v53.1.0 rejects the "all branches" flow with `git_branch_required` despite docs; upgrade to v54.1.0 or add via dashboard). Tracked for manual completion.
+  - Vercel: Production + Development — updated via `vercel env rm` + `vercel env add`.
+  - Vercel: Preview — added via dashboard (CLI v53/v54 both reject the "all branches" flow with `git_branch_required` despite docs).
   - Railway worker service `AstraPost-main-02` — updated via `railway variables --set`.
 
-### Pending code change (next commit)
+### Code change — fix silent email-failure in `sendEmail()`
 
-`src/lib/services/email.ts:76-81` — `sendEmail()` swallows Resend errors and returns `undefined`, so callers like the token-health processor log `token_health_email_sent` and `emailsSent: 1` even when the send failed. Plan: `.claude/plans/please-check-my-terminal-indexed-hamming.md`. Fix: remove the outer try/catch in `sendEmail()` so errors propagate to the per-call handlers that already increment `emailErrors`.
+`src/lib/services/email.ts` — `sendEmail()` previously wrapped its body in a try/catch that swallowed all errors and returned `undefined`. Callers like the token-health processor relied on a thrown error to detect failure, so summaries reported `emailsSent: 1, emailErrors: 0` even when Resend rejected the send. Removed the outer try/catch; the inner `throw new Error("Email sending failed: ...")` (line 71) now propagates, the existing `logger.error("email_send_failed", ...)` still fires, and the deleted `email_send_error` log is no longer needed.
+
+**Call-site audit** — three bare `await sendEmail(...)` sites that previously trusted the silent-success contract are now wrapped:
+
+- `src/app/api/team/invite/route.ts:88` — invite row already committed; logs `team_invite_email_failed` on throw.
+- `src/app/api/admin/users/[userId]/extend-trial/route.ts:104` — trial extension already committed; logs `extend_trial_email_failed` on throw.
+- `src/app/api/cron/ai-cost-alarm/route.ts:138` — cron should not crash on alert delivery; logs `ai_cost_alarm_email_failed` on throw.
+
+Other call sites (`processors.ts:725/855/1163`, `cron/trial-expiry-warning`, `community/contact`, `auth/password-reset`, `billing/webhook` via `runSideEffect`) already had try/catch or `.catch()` wrappers and now correctly increment their `emailErrors` counters.
+
+### Verification
+
+- `pnpm run check` — PASS (lint + typecheck + i18n)
+- `pnpm test` — 323/323 PASS. `token-health-processor.test.ts` summary now reports `emailsSent: 0, emailErrors: 1` when the send throws (was `1, 0` before).
+- **Local end-to-end** — manually enqueued `token-health-check` against local Redis; worker delivered 1 real email via Resend (`id=cebe2ba9-…`), summary `{ emailsSent: 1, emailErrors: 0 }`, no `email_send_failed`.
+- **Production end-to-end** — manually enqueued against prod Upstash Redis via `railway run`; Railway worker delivered 4 real emails to users with already-expired tokens (Resend IDs `36597dca-…`, `1b3e0bba-…`, `f8e2cbb6-…`, `1766af7e-…`), summary `{ emailsSent: 4, emailErrors: 0 }`, zero failures.
+
+Plan archive: `.claude/plans/please-check-my-terminal-indexed-hamming.md`.
 
 ## 2026-05-19 (PM-2) — YouTube: rescue title-only jobs + delete dead HTTP audio fast-path
 
