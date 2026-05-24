@@ -12,7 +12,7 @@
 
 ---
 
-## Table of Contents
+## Table of Contents of AstraPost
 
 - [Overview](#overview)
 - [Features](#features)
