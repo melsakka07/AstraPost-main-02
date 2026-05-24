@@ -135,31 +135,38 @@ export async function GET(_req: Request) {
           )
           .join("\n");
 
-        await sendEmail({
-          to: opsEmail,
-          subject: `[AstraPost] AI Daily Budget Exceeded — ${dayLabel}`,
-          text: [
-            `AI spend for ${dayLabel} has exceeded the daily budget.`,
-            "",
-            `Spend: $${spend.toFixed(2)}`,
-            `Budget: $${budget.toFixed(2)}`,
-            `Total Tokens: ${totalTokens.toLocaleString()}`,
-            `Total Generations: ${totalRows}`,
-            rowsWithCost < totalRows
-              ? `Note: ${totalRows - rowsWithCost} rows estimated from token counts (cost not yet recorded).`
-              : "",
-            "",
-            "Per-model breakdown:",
-            breakdownLines || "  (no model data available)",
-            "",
-            "This is an automated alert from AstraPost AI Cost Monitor.",
-          ].join("\n"),
-          metadata: {
-            type: "ai_cost_alarm",
+        try {
+          await sendEmail({
+            to: opsEmail,
+            subject: `[AstraPost] AI Daily Budget Exceeded — ${dayLabel}`,
+            text: [
+              `AI spend for ${dayLabel} has exceeded the daily budget.`,
+              "",
+              `Spend: $${spend.toFixed(2)}`,
+              `Budget: $${budget.toFixed(2)}`,
+              `Total Tokens: ${totalTokens.toLocaleString()}`,
+              `Total Generations: ${totalRows}`,
+              rowsWithCost < totalRows
+                ? `Note: ${totalRows - rowsWithCost} rows estimated from token counts (cost not yet recorded).`
+                : "",
+              "",
+              "Per-model breakdown:",
+              breakdownLines || "  (no model data available)",
+              "",
+              "This is an automated alert from AstraPost AI Cost Monitor.",
+            ].join("\n"),
+            metadata: {
+              type: "ai_cost_alarm",
+              date: dayLabel,
+              spend: spend.toFixed(2),
+            },
+          });
+        } catch (emailErr) {
+          logger.error("ai_cost_alarm_email_failed", {
             date: dayLabel,
-            spend: spend.toFixed(2),
-          },
-        });
+            error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+          });
+        }
       }
     }
 

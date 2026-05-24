@@ -1,5 +1,23 @@
 # Latest Updates
 
+## 2026-05-24 — Resend domain verified: `post.astravision.ai` + `RESEND_FROM_EMAIL` rotated
+
+Token-health worker job on 2026-05-24 05:42 logged `email_send_failed: The astravision.ai domain is not verified` while trying to email the X-token-expiry warning. Two follow-ups:
+
+### Ops change (this update)
+
+- Added DKIM/SPF/MX/DMARC records for `post.astravision.ai` in HostGator Zone Editor; all four resolve via `8.8.8.8`.
+- Resend dashboard verified `post.astravision.ai`.
+- Rotated `RESEND_FROM_EMAIL` from `noreply@astravision.ai` (unverified) → `noreply@post.astravision.ai`:
+  - `.env` (local) — updated
+  - Vercel: Production + Development — updated via `vercel env rm` + `vercel env add` (CLI v53.1.0)
+  - Vercel: Preview — **not yet updated via CLI** (v53.1.0 rejects the "all branches" flow with `git_branch_required` despite docs; upgrade to v54.1.0 or add via dashboard). Tracked for manual completion.
+  - Railway worker service `AstraPost-main-02` — updated via `railway variables --set`.
+
+### Pending code change (next commit)
+
+`src/lib/services/email.ts:76-81` — `sendEmail()` swallows Resend errors and returns `undefined`, so callers like the token-health processor log `token_health_email_sent` and `emailsSent: 1` even when the send failed. Plan: `.claude/plans/please-check-my-terminal-indexed-hamming.md`. Fix: remove the outer try/catch in `sendEmail()` so errors propagate to the per-call handlers that already increment `emailErrors`.
+
 ## 2026-05-19 (PM-2) — YouTube: rescue title-only jobs + delete dead HTTP audio fast-path
 
 Two pre-existing issues found while verifying the earlier AST-4 hotfix. Both shipped together.

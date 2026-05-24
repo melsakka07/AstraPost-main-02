@@ -38,47 +38,40 @@ export async function sendEmail(input: SendEmailInput) {
     return;
   }
 
-  try {
-    let html = input.html;
-    if (input.react) {
-      html = await render(input.react);
-    }
-
-    if (!html && !input.text) {
-      throw new Error("Email must have either HTML or text content");
-    }
-
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: input.to,
-      subject: input.subject,
-      text: input.text || "",
-      ...(html ? { html } : {}),
-      ...(input.metadata
-        ? {
-            tags: Object.entries(input.metadata).map(([name, value]) => ({
-              name: name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 256),
-              value: String(value)
-                .replace(/[^a-zA-Z0-9_-]/g, "_")
-                .slice(0, 256),
-            })),
-          }
-        : {}),
-    });
-
-    if (error) {
-      logger.error("email_send_failed", { error });
-      throw new Error(`Email sending failed: ${error.message}`);
-    }
-
-    logger.info("email_sent", { to: input.to, data });
-    return data;
-  } catch (error) {
-    logger.error("email_send_error", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return undefined;
+  let html = input.html;
+  if (input.react) {
+    html = await render(input.react);
   }
+
+  if (!html && !input.text) {
+    throw new Error("Email must have either HTML or text content");
+  }
+
+  const { data, error } = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: input.to,
+    subject: input.subject,
+    text: input.text || "",
+    ...(html ? { html } : {}),
+    ...(input.metadata
+      ? {
+          tags: Object.entries(input.metadata).map(([name, value]) => ({
+            name: name.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 256),
+            value: String(value)
+              .replace(/[^a-zA-Z0-9_-]/g, "_")
+              .slice(0, 256),
+          })),
+        }
+      : {}),
+  });
+
+  if (error) {
+    logger.error("email_send_failed", { error });
+    throw new Error(`Email sending failed: ${error.message}`);
+  }
+
+  logger.info("email_sent", { to: input.to, data });
+  return data;
 }
 
 export async function sendBillingEmail(input: SendEmailInput) {

@@ -94,3 +94,5 @@ tmp_brand_kit/
 # YouTube cookies (contains auth tokens — never commit)
 youtube_cookies.txt
 youtube_cookies_base64.txt
+
+.vercel

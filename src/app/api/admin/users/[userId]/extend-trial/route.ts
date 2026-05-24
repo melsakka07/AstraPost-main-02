@@ -101,12 +101,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
       ? `أخبار رائعة! تم تمديد فترتك التجريبية المجانية لـ AstraPost Pro بمقدار ${daysLabel}.\n\nتاريخ انتهاء فترتك التجريبية الجديد: ${endDateStr}\n\n${reason ? `${reasonLine}\n\n` : ""}${loginLine}`
       : `Great news! Your AstraPost Pro free trial has been extended by ${days} ${daysLabel}.\n\nYour new trial end date: ${endDateStr}\n\n${reason ? `${reasonLine}\n\n` : ""}${loginLine}`;
 
-    await sendEmail({
-      to: targetUser.email,
-      subject,
-      text,
-      metadata: { type: "trial_extension", userId, days },
-    });
+    try {
+      await sendEmail({
+        to: targetUser.email,
+        subject,
+        text,
+        metadata: { type: "trial_extension", userId, days },
+      });
+    } catch (emailErr) {
+      logger.error("extend_trial_email_failed", {
+        adminId: auth.session.user.id,
+        targetUserId: userId,
+        error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+      });
+    }
 
     logger.info("admin_extend_trial", {
       adminId: auth.session.user.id,

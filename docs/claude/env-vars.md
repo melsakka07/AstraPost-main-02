@@ -60,7 +60,7 @@
 - `STRIPE_PRICE_ID_AGENCY_MONTHLY` — Price ID for Agency Monthly plan
 - `STRIPE_PRICE_ID_AGENCY_ANNUAL` — Price ID for Agency Annual plan
 - `BLOB_READ_WRITE_TOKEN` — Vercel Blob (production storage; falls back to local filesystem in dev)
-- `RESEND_API_KEY`, `RESEND_FROM_EMAIL` — Email (welcome, schedule confirmation, failure, trial extension, token-expiring warnings, account deactivated)
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL` — Email (welcome, schedule confirmation, failure, trial extension, token-expiring warnings, account deactivated). Sender must be on a Resend-verified domain. Current verified domain: `post.astravision.ai` (DKIM/SPF/MX/DMARC on HostGator, verified 2026-05-24). Use `noreply@post.astravision.ai` or similar.
 - `RESEND_OPS_EMAIL` — Ops alert email recipient (falls back to `RESEND_FROM_EMAIL`); used by AI cost alarm cron
 - `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` — Error tracking via Sentry
 - `CRON_SECRET` — Bearer token for `/api/cron/*` endpoints (billing-cleanup, ai-cost-alarm, ai-counter-rollover)

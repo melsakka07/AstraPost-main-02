@@ -85,13 +85,22 @@ export async function POST(req: NextRequest) {
       }),
     ]);
 
-    // Send email
-    await sendTeamInvitationEmail(
-      email,
-      token,
-      ownerRow?.name || "AstraPost Team",
-      invitee?.language || "en"
-    );
+    // Send email — non-blocking; invite row already committed
+    try {
+      await sendTeamInvitationEmail(
+        email,
+        token,
+        ownerRow?.name || "AstraPost Team",
+        invitee?.language || "en"
+      );
+    } catch (emailErr) {
+      logger.error("team_invite_email_failed", {
+        userId: ctx.session.user.id,
+        teamId: ctx.currentTeamId,
+        invitedEmail: email,
+        error: emailErr instanceof Error ? emailErr.message : String(emailErr),
+      });
+    }
 
     logger.info("team_invite_created", {
       userId: ctx.session.user.id,
