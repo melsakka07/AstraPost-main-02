@@ -831,48 +831,150 @@ export async function extractAudio(url: string, outputPath: string): Promise<voi
   logger.info("youtube_extract_audio_success", { url, outputPath, method: "yt-dlp" });
 }
 
-/** Full yt-dlp download fallback with anti-detection headers and cookies. */
+/**
+ * Reason taxonomy for {@link YoutubeAudioUnavailableError}.
+ * - `n_challenge`: yt-dlp could not solve the n-parameter JS challenge
+ * - `po_token_required`: video requires a PO token (GVS) we can't synthesize
+ * - `format_unavailable`: yt-dlp returned no usable audio formats
+ * - `network`: transport-layer or generic failure
+ */
+export type YoutubeAudioUnavailableReason =
+  | "n_challenge"
+  | "po_token_required"
+  | "format_unavailable"
+  | "network";
+
+/** Thrown when yt-dlp cannot extract audio after both default and cookie-retry passes. */
+export class YoutubeAudioUnavailableError extends Error {
+  reason: YoutubeAudioUnavailableReason;
+  constructor(message: string, reason: YoutubeAudioUnavailableReason) {
+    super(message);
+    this.name = "YoutubeAudioUnavailableError";
+    this.reason = reason;
+  }
+}
+
+function parseYtDlpStderrReason(stderr: string): YoutubeAudioUnavailableReason {
+  if (/n\s*challenge/i.test(stderr)) return "n_challenge";
+  if (/po\s*token/i.test(stderr)) return "po_token_required";
+  if (/Requested format is not available|Only images are available/i.test(stderr)) {
+    return "format_unavailable";
+  }
+  return "network";
+}
+
+const YT_DLP_COMMON_ARGS = [
+  "--no-playlist",
+  "--extractor-retries",
+  "3",
+  "--retries",
+  "3",
+  "--fragment-retries",
+  "3",
+  "--socket-timeout",
+  "30",
+  "--force-ipv4",
+  "--user-agent",
+  "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
+  "--add-header",
+  "Accept:*/*",
+  "--add-header",
+  "Origin:https://www.youtube.com",
+  "--add-header",
+  "Referer:https://www.youtube.com/",
+  "--add-header",
+  "Accept-Language:en-US,en;q=0.9",
+];
+
+/**
+ * Full yt-dlp audio download.
+ *
+ * Default invocation runs WITHOUT cookies and pins
+ * `player_client=tv,android_vr,ios` — these clients surface DASH m4a tracks
+ * (139/140) without needing the n-challenge JS solver or a GVS PO token. Cookies
+ * disable iOS / android_vr clients in yt-dlp, so attaching them by default
+ * leaves only web/mweb (which currently return image storyboards only).
+ *
+ * On failure, retry ONCE with cookies + `player_client=mweb,web_safari` — but
+ * only if a cookies file is actually present. Both attempts are logged.
+ */
 async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<void> {
   const ytDlpPath = resolveYtDlpPath();
   const cookieArgs = getYtDlpCookieArgs();
 
+  const defaultArgs = [
+    "-f",
+    "bestaudio[ext=m4a]/bestaudio",
+    "-o",
+    outputPath,
+    "--extractor-args",
+    "youtube:player_client=tv,android_vr,ios",
+    ...YT_DLP_COMMON_ARGS,
+    url,
+  ];
+
   try {
-    await execFileAsync(
-      ytDlpPath,
-      [
-        "-f",
-        "bestaudio[ext=m4a]/bestaudio",
-        "-o",
-        outputPath,
-        "--no-playlist",
-        "--extractor-retries",
-        "3",
-        "--retries",
-        "3",
-        "--fragment-retries",
-        "3",
-        "--socket-timeout",
-        "30",
-        "--force-ipv4",
-        ...cookieArgs,
-        "--user-agent",
-        "com.google.ios.youtube/20.11.6 (iPhone10,4; U; CPU iOS 16_7_7 like Mac OS X)",
-        "--add-header",
-        "Accept:*/*",
-        "--add-header",
-        "Origin:https://www.youtube.com",
-        "--add-header",
-        "Referer:https://www.youtube.com/",
-        "--add-header",
-        "Accept-Language:en-US,en;q=0.9",
-        url,
-      ],
-      { timeout: 120000, maxBuffer: 1024 * 1024 }
-    );
+    await execFileAsync(ytDlpPath, defaultArgs, {
+      timeout: 120000,
+      maxBuffer: 1024 * 1024,
+    });
+    return;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("youtube_extract_audio_ytdlp_failed", { url, outputPath, error: message });
-    throw new Error(`yt-dlp audio extraction failed: ${message}`);
+    const stderr =
+      typeof (err as { stderr?: unknown }).stderr === "string"
+        ? ((err as { stderr: string }).stderr ?? "")
+        : "";
+    const reason = parseYtDlpStderrReason(`${message}\n${stderr}`);
+    logger.error("youtube_extract_audio_ytdlp_failed", {
+      url,
+      outputPath,
+      attempt: 1,
+      reason,
+      error: message,
+    });
+
+    if (cookieArgs.length === 0) {
+      throw new YoutubeAudioUnavailableError(`yt-dlp audio extraction failed: ${message}`, reason);
+    }
+
+    const retryArgs = [
+      "-f",
+      "bestaudio[ext=m4a]/bestaudio",
+      "-o",
+      outputPath,
+      "--extractor-args",
+      "youtube:player_client=mweb,web_safari",
+      ...cookieArgs,
+      ...YT_DLP_COMMON_ARGS,
+      url,
+    ];
+
+    try {
+      await execFileAsync(ytDlpPath, retryArgs, {
+        timeout: 120000,
+        maxBuffer: 1024 * 1024,
+      });
+      return;
+    } catch (retryErr) {
+      const retryMessage = retryErr instanceof Error ? retryErr.message : String(retryErr);
+      const retryStderr =
+        typeof (retryErr as { stderr?: unknown }).stderr === "string"
+          ? ((retryErr as { stderr: string }).stderr ?? "")
+          : "";
+      const retryReason = parseYtDlpStderrReason(`${retryMessage}\n${retryStderr}`);
+      logger.error("youtube_extract_audio_ytdlp_failed", {
+        url,
+        outputPath,
+        attempt: 2,
+        reason: retryReason,
+        error: retryMessage,
+      });
+      throw new YoutubeAudioUnavailableError(
+        `yt-dlp audio extraction failed: ${retryMessage}`,
+        retryReason
+      );
+    }
   }
 }
 

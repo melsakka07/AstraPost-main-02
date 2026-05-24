@@ -1,5 +1,43 @@
 # Latest Updates
 
+## 2026-05-24 (PM-3) — YouTube-to-Thread: audio download fix + thumbnail aspect-ratio
+
+### Bug 1: yt-dlp audio format selection
+
+Current yt-dlp build (2026.03.17) on Railway with `--cookies` disables iOS and android_vr player clients, leaving only web/mweb/tv_embedded. Web client requires either an EJS JS-runtime n-challenge solver or GVS PO token (neither installed), resulting in zero audio formats and fallback to title-only generation. Fixed in `src/lib/services/youtube.ts:extractAudioViaYtDlp`:
+
+- Default invocation now passes `--extractor-args "youtube:player_client=tv,android_vr,ios"` without cookies. Verified locally on `fCTvUxuptaI`: returns m4a 139 + 140.
+- On failure, single retry with `--extractor-args "youtube:player_client=mweb,web_safari"` + cookies (only if cookies file exists). Covers age-gated / private videos.
+- New typed `YoutubeAudioUnavailableError` with `reason` parsed from stderr: `"n_challenge" | "po_token_required" | "format_unavailable" | "network"`. Exported and consumed by `src/lib/queue/processors.ts`.
+
+Observability: `youtube_thread_title_only_fallback` log now carries `reason`. New `youtube_thread_job_terminal_failure` log at terminal-failure site.
+
+### Bug 2: Next/Image aspect-ratio warning
+
+`src/components/ai/youtube-to-thread/youtube-url-input.tsx` had `<Image width=112 height=64>` inside a flex parent; the 16×9 constraint didn't match YouTube hqdefault's 4:3 ratio. Replaced with sized wrapper + `fill`:
+
+```tsx
+<div className="relative h-16 w-28 flex-shrink-0 overflow-hidden rounded">
+  <Image src={...} alt={...} fill sizes="112px" className="object-cover" />
+</div>
+```
+
+Console warning gone.
+
+### Files changed
+
+- `src/lib/services/youtube.ts` — audio client selection + retry logic
+- `src/lib/queue/processors.ts` — `YoutubeAudioUnavailableError` import + logging
+- `src/components/ai/youtube-to-thread/youtube-url-input.tsx` — Image wrapper fix
+
+### Verification
+
+- `pnpm run check` — PASS (lint + typecheck + i18n at 2828 leaf keys).
+- `pnpm test` — 326/326 PASS.
+- Local probe of `fCTvUxuptaI` with new args: m4a audio formats returned.
+
+---
+
 ## 2026-05-24 (PM-2) — Dev DB rebuild + diagnose-x-accounts extension
 
 Closed two follow-up items from the morning token-warning UX work.

@@ -255,13 +255,15 @@ export function YoutubeUrlInput({
             )}
             {preview && (
               <div className="bg-muted/40 flex gap-3 rounded-md border p-2.5">
-                <Image
-                  src={preview.thumbnailUrl}
-                  alt={preview.videoTitle}
-                  width={112}
-                  height={64}
-                  className="rounded object-cover"
-                />
+                <div className="relative h-16 w-28 flex-shrink-0 overflow-hidden rounded">
+                  <Image
+                    src={preview.thumbnailUrl}
+                    alt={preview.videoTitle}
+                    fill
+                    sizes="112px"
+                    className="object-cover"
+                  />
+                </div>
                 <div className="min-w-0 space-y-1">
                   <p className="line-clamp-2 text-sm font-medium">{preview.videoTitle}</p>
                   <p className="text-muted-foreground text-xs">{formattedDuration}</p>

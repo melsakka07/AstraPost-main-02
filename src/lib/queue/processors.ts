@@ -56,7 +56,12 @@ import { transcribe } from "@/lib/services/transcription";
 import { XApiService } from "@/lib/services/x-api";
 import { classifyRefreshError, getBackoffForFailures } from "@/lib/services/x-error";
 import { canPostLongContent } from "@/lib/services/x-subscription";
-import { extractAudio, getAudioMimeType, getVideoInfo } from "@/lib/services/youtube";
+import {
+  extractAudio,
+  getAudioMimeType,
+  getVideoInfo,
+  YoutubeAudioUnavailableError,
+} from "@/lib/services/youtube";
 import { getMonthWindow } from "@/lib/utils/time";
 
 /** Shape of a post as loaded by the schedule processor (post + tweets + media). */
@@ -1919,12 +1924,19 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
     const maxAttempts = job.opts?.attempts ?? 1;
     const isLastAttempt = (job.attemptsMade ?? 0) + 1 >= maxAttempts;
 
+    const audioReason: string =
+      err instanceof YoutubeAudioUnavailableError ? err.reason : "unknown";
+
     if (isLastAttempt) {
       // ── Title-only fallback on last attempt ──────────────────────────
       const title = row.videoTitle;
       if (title) {
         try {
-          logger.info("youtube_thread_title_only_fallback", { jobId, title });
+          logger.info("youtube_thread_title_only_fallback", {
+            jobId,
+            title,
+            reason: audioReason,
+          });
           await db
             .update(youtubeThreadJobs)
             .set({ status: "generating", updatedAt: new Date() })
@@ -2048,6 +2060,11 @@ export const youtubeThreadProcessor = async (job: Job<YoutubeThreadJobPayload>) 
 
       // ── Terminal failure ─────────────────────────────────────────────
       const ec = classifyYoutubeError(msg);
+      logger.error("youtube_thread_job_terminal_failure", {
+        jobId,
+        errorCode: ec,
+        reason: audioReason,
+      });
       const flipped = await db
         .update(youtubeThreadJobs)
         .set({

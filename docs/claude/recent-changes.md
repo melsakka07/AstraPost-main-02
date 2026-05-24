@@ -1,5 +1,17 @@
 # Recent Fixes & Changes
 
+## 2026-05-24 — YouTube-to-Thread: yt-dlp audio client selection + Image aspect-ratio fix
+
+### Audio format selection on Railway with yt-dlp 2026.03.17
+
+`src/lib/services/youtube.ts:extractAudioViaYtDlp` now defaults to `--extractor-args "youtube:player_client=tv,android_vr,ios"` without cookies (avoids disabling iOS/android_vr clients). On failure, retries with mweb+web_safari clients + cookies if available. Returns `YoutubeAudioUnavailableError` with typed `reason` field for observability.
+
+### Image constraint fix
+
+`youtube-url-input.tsx` replaced inline `<Image width=112 height=64>` (16×9) with sized wrapper + `fill` to match YouTube hqdefault 4:3 ratio in flex layout.
+
+---
+
 ## 2026-05-14 — Phase 4 Billing Audit: Webhook Trial-vs-Cancel (Finding #7)
 
 ### Trial-expired subscription deletion routing
