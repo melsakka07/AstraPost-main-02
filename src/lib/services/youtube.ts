@@ -680,38 +680,86 @@ function buildYoutubeThumbnailUrl(videoId: string): string {
 /**
  * Get video metadata via yt-dlp.
  *
- * Calls:
- *   yt-dlp --print "%(id)s" --print "%(title)s" --print "%(duration)s"
- *          --no-playlist <url>
+ * Two-pass invocation mirroring {@link extractAudioViaYtDlp}:
+ *   Attempt 1: `player_client=tv,android_vr,ios` + YT_DLP_COMMON_ARGS, NO cookies
+ *              (cookies disable iOS / android_vr clients in yt-dlp).
+ *   Attempt 2: `player_client=web_safari,web_embedded,tv_embedded` + cookies +
+ *              YT_DLP_COMMON_ARGS — only if a cookies file is present.
  *
- * with a 15s timeout. Throws if duration is missing, > 90 min, or < 30 seconds.
+ * Both attempts use a 15s timeout. Throws if duration is missing, > 90 min, or
+ * < 30 seconds.
  */
 export async function getVideoInfo(url: string): Promise<VideoInfo> {
   const ytDlpPath = resolveYtDlpPath();
+  const cookieArgs = getYtDlpCookieArgs();
 
   logger.info("youtube_get_video_info_start", { url });
 
+  const printArgs = ["--print", "%(id)s", "--print", "%(title)s", "--print", "%(duration)s"];
+
+  const attempt1Args = [
+    ...printArgs,
+    "--extractor-args",
+    "youtube:player_client=tv,android_vr,ios",
+    ...YT_DLP_COMMON_ARGS,
+    url,
+  ];
+
   let stdout: string;
   try {
-    const result = await execFileAsync(
-      ytDlpPath,
-      [
-        "--print",
-        "%(id)s",
-        "--print",
-        "%(title)s",
-        "--print",
-        "%(duration)s",
-        "--no-playlist",
-        url,
-      ],
-      { timeout: 15000, maxBuffer: 1024 * 1024 }
-    );
+    const result = await execFileAsync(ytDlpPath, attempt1Args, {
+      timeout: 15000,
+      maxBuffer: 1024 * 1024,
+    });
     stdout = result.stdout;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logger.error("youtube_get_video_info_failed", { url, error: message });
-    throw new Error(`yt-dlp failed to fetch video info: ${message}`);
+    const stderr =
+      typeof (err as { stderr?: unknown }).stderr === "string"
+        ? ((err as { stderr: string }).stderr ?? "")
+        : "";
+    const reason = parseYtDlpStderrReason(`${message}\n${stderr}`);
+    logger.error("youtube_get_video_info_failed", {
+      url,
+      attempt: 1,
+      reason,
+      error: message,
+    });
+
+    if (cookieArgs.length === 0) {
+      throw new Error(`yt-dlp failed to fetch video info: ${message}`);
+    }
+
+    const attempt2Args = [
+      ...printArgs,
+      "--extractor-args",
+      "youtube:player_client=web_safari,web_embedded,tv_embedded",
+      ...cookieArgs,
+      ...YT_DLP_COMMON_ARGS,
+      url,
+    ];
+
+    try {
+      const retryResult = await execFileAsync(ytDlpPath, attempt2Args, {
+        timeout: 15000,
+        maxBuffer: 1024 * 1024,
+      });
+      stdout = retryResult.stdout;
+    } catch (retryErr) {
+      const retryMessage = retryErr instanceof Error ? retryErr.message : String(retryErr);
+      const retryStderr =
+        typeof (retryErr as { stderr?: unknown }).stderr === "string"
+          ? ((retryErr as { stderr: string }).stderr ?? "")
+          : "";
+      const retryReason = parseYtDlpStderrReason(`${retryMessage}\n${retryStderr}`);
+      logger.error("youtube_get_video_info_failed", {
+        url,
+        attempt: 2,
+        reason: retryReason,
+        error: retryMessage,
+      });
+      throw new Error(`yt-dlp failed to fetch video info: ${retryMessage}`);
+    }
   }
 
   const lines = stdout.trim().split("\n");
@@ -895,8 +943,11 @@ const YT_DLP_COMMON_ARGS = [
  * disable iOS / android_vr clients in yt-dlp, so attaching them by default
  * leaves only web/mweb (which currently return image storyboards only).
  *
- * On failure, retry ONCE with cookies + `player_client=mweb,web_safari` — but
- * only if a cookies file is actually present. Both attempts are logged.
+ * On failure, retry ONCE with cookies +
+ * `player_client=web_safari,web_embedded,tv_embedded` — but only if a cookies
+ * file is actually present. (mweb was dropped 2026-05-26 after YouTube began
+ * requiring a GVS PO Token for mweb that yt-dlp cannot synthesize.) Both
+ * attempts are logged.
  */
 async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<void> {
   const ytDlpPath = resolveYtDlpPath();
@@ -944,7 +995,7 @@ async function extractAudioViaYtDlp(url: string, outputPath: string): Promise<vo
       "-o",
       outputPath,
       "--extractor-args",
-      "youtube:player_client=mweb,web_safari",
+      "youtube:player_client=web_safari,web_embedded,tv_embedded",
       ...cookieArgs,
       ...YT_DLP_COMMON_ARGS,
       url,
