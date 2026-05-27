@@ -3,4 +3,6 @@ CREATE TYPE "public"."notification_type" AS ENUM('admin', 'post_failed', 'tier_d
 CREATE TYPE "public"."affiliate_platform" AS ENUM('amazon', 'noon', 'aliexpress', 'other');--> statement-breakpoint
 ALTER TABLE "ai_generations" ALTER COLUMN "type" SET DATA TYPE "public"."ai_generation_type" USING "type"::"public"."ai_generation_type";--> statement-breakpoint
 ALTER TABLE "notifications" ALTER COLUMN "type" SET DATA TYPE "public"."notification_type" USING "type"::"public"."notification_type";--> statement-breakpoint
-ALTER TABLE "affiliate_links" ALTER COLUMN "platform" SET DATA TYPE "public"."affiliate_platform" USING "platform"::"public"."affiliate_platform";
+ALTER TABLE "affiliate_links" ALTER COLUMN "platform" DROP DEFAULT;--> statement-breakpoint
+ALTER TABLE "affiliate_links" ALTER COLUMN "platform" SET DATA TYPE "public"."affiliate_platform" USING "platform"::"public"."affiliate_platform";--> statement-breakpoint
+ALTER TABLE "affiliate_links" ALTER COLUMN "platform" SET DEFAULT 'amazon';
