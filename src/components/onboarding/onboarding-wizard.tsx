@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import twitter from "twitter-text";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,6 +30,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -49,6 +51,7 @@ function getSteps(t: (key: string) => string): {
   icon: React.ComponentType<{ className?: string }>;
   description: string;
 }[] {
+  // Collapsed flow: 1=Connect, 2=Compose (with inline preferences), 3=Schedule, 4=Done
   return [
     {
       id: 1,
@@ -58,33 +61,24 @@ function getSteps(t: (key: string) => string): {
     },
     {
       id: 2,
-      title: t("onboarding.steps.preferences"),
-      icon: Globe,
-      description: t("onboarding.steps.preferences_description"),
-    },
-    {
-      id: 3,
       title: t("onboarding.steps.compose"),
       icon: PenTool,
       description: t("onboarding.steps.compose_description"),
     },
     {
-      id: 4,
+      id: 3,
       title: t("onboarding.steps.schedule"),
       icon: Calendar,
       description: t("onboarding.steps.pick_time"),
     },
     {
-      id: 5,
-      title: t("onboarding.steps.explore_ai"),
+      id: 4,
+      title: t("onboarding.steps.done"),
       icon: Rocket,
       description: t("onboarding.steps.explore_ai_description"),
     },
   ];
 }
-
-// TIME_OPTIONS and TIMEZONE_GROUPS are now defined inside the component
-// as useMemo hooks to access translations (t & t_dt).
 
 export function OnboardingWizard() {
   const t = useTranslations("auth");
@@ -92,6 +86,11 @@ export function OnboardingWizard() {
 
   const steps = getSteps(t);
   const t_dt = useTranslations("date_time_picker");
+
+  // Stable idempotency key for the lifetime of this wizard mount.
+  // Used on the Step 2 (Compose) POST to /api/posts so that re-submission
+  // via Back→Continue returns the existing draft instead of creating a duplicate.
+  const onboardingIdemKey = useRef<string>(crypto.randomUUID());
 
   // Time options grouped by period — translated via date_time_picker namespace
   const TIME_OPTIONS = useMemo(() => {
@@ -208,13 +207,14 @@ export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Holds the in-flight onboarding-complete API promise so all step-4
+  // Holds the in-flight onboarding-complete API promise so all final-step
   // navigation can await it before doing a hard reload.
   const onboardingCompleteRef = useRef<Promise<void> | null>(null);
 
-  // Step 1 — Preferences
+  // Preferences (now inline on Compose step)
   const [prefLanguage, setPrefLanguage] = useState("ar");
   const [prefTimezone, setPrefTimezone] = useState("Asia/Riyadh");
+  const [prefsPopoverOpen, setPrefsPopoverOpen] = useState(false);
 
   // X Account State
   const [xAccounts, setXAccounts] = useState<
@@ -230,12 +230,14 @@ export function OnboardingWizard() {
 
   // Post State
   const [tweetContent, setTweetContent] = useState("");
-  // Step 3 — date (YYYY-MM-DD) + time (HH:mm)
   const [scheduledDate, setScheduledDate] = useState("");
   const [scheduledTime, setScheduledTime] = useState("09:00");
   const [createdPostId, setCreatedPostId] = useState<string | null>(null);
+  // Tracks which post id has already been scheduled/published in this session
+  // so going Back to Schedule and pressing Continue again does not re-PATCH.
+  const [scheduledPostId, setScheduledPostId] = useState<string | null>(null);
 
-  // O2 — Character counter thresholds matching tweet-card.tsx
+  // Char counter thresholds matching tweet-card.tsx
   const tweetWeightedLength = twitter.parseTweet(tweetContent).weightedLength;
   const isOverStandardLimit = tweetWeightedLength > 280;
   const isOverHardLimit = tweetWeightedLength > 1000;
@@ -249,6 +251,18 @@ export function OnboardingWizard() {
       // fall back to default Asia/Riyadh
     }
 
+    // Auto-detect browser language → Arabic if browser is Arabic, else English
+    try {
+      const navLang = typeof navigator !== "undefined" ? navigator.language : "";
+      if (navLang.startsWith("ar")) {
+        setPrefLanguage("ar");
+      } else {
+        setPrefLanguage("en");
+      }
+    } catch {
+      // keep default
+    }
+
     const stepParam = searchParams.get("step");
     if (stepParam) {
       const step = parseInt(stepParam);
@@ -256,14 +270,18 @@ export function OnboardingWizard() {
     }
   }, [searchParams, steps]);
 
-  // Fetch connected X accounts
+  // Fetch connected X accounts; auto-skip Step 1 when an account is already connected.
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
         const res = await fetch("/api/x/accounts");
         if (res.ok) {
           const data = await res.json();
-          setXAccounts(data.accounts || []);
+          const accounts = data.accounts || [];
+          setXAccounts(accounts);
+          if (accounts.length > 0 && currentStep === 1 && !searchParams.get("step")) {
+            setCurrentStep(2);
+          }
         }
       } catch (error) {
         clientLogger.error("Failed to fetch X accounts", {
@@ -274,6 +292,7 @@ export function OnboardingWizard() {
       }
     };
     fetchAccounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** Combine date + time into an ISO string */
@@ -303,7 +322,7 @@ export function OnboardingWizard() {
     }
   }, [currentStep, steps, t]);
 
-  // All step-4 navigation must go through here.
+  // All final-step navigation must go through here.
   // Awaiting the promise ensures onboardingCompleted is committed to the DB
   // before the hard reload causes dashboard/layout.tsx to re-check it.
   // Using window.location.href (hard nav) instead of <Link> is essential —
@@ -316,13 +335,16 @@ export function OnboardingWizard() {
     window.location.href = href;
   };
 
-  const handleSkipSchedule = async () => {
-    // O5 — skip step 4 (Schedule), stay as draft, go to step 5
-    setCurrentStep(5);
-  };
+  // Auto-redirect from final step after 2s
+  useEffect(() => {
+    if (currentStep !== steps.length) return;
+    const timer = setTimeout(() => {
+      void navigateAfterOnboarding("/dashboard?tour=true");
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [currentStep, steps.length]);
 
   const handleSkipOnboarding = async () => {
-    // B-U03 — Skip entire wizard, allow resume later from settings
     setLoading(true);
     try {
       const res = await fetch("/api/user/onboarding/skip", { method: "POST" });
@@ -331,7 +353,6 @@ export function OnboardingWizard() {
         setLoading(false);
         return;
       }
-      // Navigate to dashboard — user can resume from settings
       window.location.href = "/dashboard";
     } catch (error) {
       clientLogger.error("Failed to skip onboarding", {
@@ -342,19 +363,38 @@ export function OnboardingWizard() {
     }
   };
 
+  const handleSavePreferences = async () => {
+    try {
+      const res = await fetch("/api/user/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timezone: prefTimezone, language: prefLanguage }),
+      });
+      if (!res.ok) {
+        toast.error(t("onboarding.prefs_failed"));
+      }
+    } catch (error) {
+      clientLogger.error("Failed to save preferences", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error(t("onboarding.prefs_failed"));
+    }
+  };
+
   const handleSendNow = async () => {
     setLoading(true);
     try {
-      if (createdPostId) {
+      if (createdPostId && scheduledPostId !== createdPostId) {
         const res = await fetch(`/api/posts/${createdPostId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "publish_now" }),
         });
         if (!res.ok) throw new Error("Failed to publish");
+        setScheduledPostId(createdPostId);
         toast.success(t("onboarding.post_queued"));
       }
-      setCurrentStep(5);
+      setCurrentStep(4);
     } catch {
       toast.error(t("onboarding.post_failed"));
     } finally {
@@ -369,20 +409,7 @@ export function OnboardingWizard() {
         // Step 1 — X Account confirmation (just continue)
         setCurrentStep(2);
       } else if (currentStep === 2) {
-        // Step 2 — save language + timezone
-        const res = await fetch("/api/user/preferences", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ timezone: prefTimezone, language: prefLanguage }),
-        });
-        if (!res.ok) {
-          toast.error(t("onboarding.prefs_failed"));
-          setLoading(false);
-          return;
-        }
-        setCurrentStep(3);
-      } else if (currentStep === 3) {
-        // Step 3 — Compose
+        // Step 2 — Compose (idempotent draft create/update)
         if (!tweetContent.trim()) {
           toast.error(t("onboarding.write_something"));
           setLoading(false);
@@ -399,29 +426,49 @@ export function OnboardingWizard() {
           return;
         }
 
-        const res = await fetch("/api/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tweets: [{ content: tweetContent }],
-            action: "draft",
-          }),
-        });
-
-        if (!res.ok) throw new Error("Failed to create draft");
-
-        const data = await res.json();
-        setCreatedPostId(data.postIds[0]);
-        setCurrentStep(4);
-      } else if (currentStep === 4) {
-        // Step 4 — Schedule
+        if (createdPostId === null) {
+          // First-time draft create — send idempotency key so server-side
+          // replay protection collapses any accidental double-POST.
+          const res = await fetch("/api/posts", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Idempotency-Key": onboardingIdemKey.current,
+            },
+            body: JSON.stringify({
+              tweets: [{ content: tweetContent }],
+              action: "draft",
+            }),
+          });
+          if (!res.ok) throw new Error("Failed to create draft");
+          const data = await res.json();
+          setCreatedPostId(data.postIds[0]);
+        } else {
+          // Returning to compose after Back — update existing draft in place.
+          const res = await fetch(`/api/posts/${createdPostId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tweets: [{ content: tweetContent }],
+              action: "draft",
+            }),
+          });
+          if (!res.ok) throw new Error("Failed to update draft");
+        }
+        setCurrentStep(3);
+      } else if (currentStep === 3) {
+        // Step 3 — Schedule. Skip the PATCH if we have already scheduled
+        // this exact post (prevents duplicate schedule via Back→Continue).
+        if (createdPostId && scheduledPostId === createdPostId) {
+          setCurrentStep(4);
+          return;
+        }
         const iso = getScheduledISO();
         if (!iso) {
           toast.error(t("onboarding.select_date"));
           setLoading(false);
           return;
         }
-
         if (createdPostId) {
           const res = await fetch(`/api/posts/${createdPostId}`, {
             method: "PATCH",
@@ -429,10 +476,11 @@ export function OnboardingWizard() {
             body: JSON.stringify({ action: "schedule", scheduledAt: iso }),
           });
           if (!res.ok) throw new Error("Failed to schedule");
+          setScheduledPostId(createdPostId);
         }
-        setCurrentStep(5);
-      } else if (currentStep === 5) {
-        // Step 5 — Explore AI → go to dashboard with tour enabled
+        setCurrentStep(4);
+      } else if (currentStep === 4) {
+        // Final step — go to dashboard with tour enabled
         await navigateAfterOnboarding("/dashboard?tour=true");
       }
     } catch (error) {
@@ -445,6 +493,19 @@ export function OnboardingWizard() {
       setLoading(false);
     }
   };
+
+  // Lookup helpers for the inline preferences strip
+  const languageLabel = useMemo(
+    () => LANGUAGES.find((l) => l.code === prefLanguage)?.label ?? prefLanguage,
+    [prefLanguage]
+  );
+  const timezoneLabel = useMemo(() => {
+    for (const group of TIMEZONE_GROUPS) {
+      const z = group.zones.find((zone) => zone.value === prefTimezone);
+      if (z) return z.label;
+    }
+    return prefTimezone;
+  }, [prefTimezone, TIMEZONE_GROUPS]);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 md:py-12">
@@ -500,14 +561,26 @@ export function OnboardingWizard() {
       </div>
 
       {/* Step Content */}
-      <Card className="flex min-h-[300px] flex-col border-2 shadow-lg md:min-h-[400px]">
+      <Card className="relative flex min-h-[300px] flex-col border-2 shadow-lg md:min-h-[400px]">
+        {/* Single top-right Skip link (replaces the two CardFooter skip buttons) */}
+        {currentStep < steps.length && (
+          <button
+            type="button"
+            onClick={handleSkipOnboarding}
+            disabled={loading}
+            className="text-muted-foreground hover:text-foreground absolute end-4 top-3 text-xs underline-offset-2 hover:underline disabled:opacity-50"
+          >
+            {t("onboarding.skip")}
+          </button>
+        )}
+
         <CardHeader className="bg-muted/20 border-b text-center">
           <CardTitle className="text-2xl">{steps[currentStep - 1]!.title}</CardTitle>
           <CardDescription>{steps[currentStep - 1]!.description}</CardDescription>
         </CardHeader>
 
         <CardContent className="flex flex-1 flex-col items-center justify-center space-y-6 p-4 md:p-8">
-          {/* Step 1 — X Account Confirmation */}
+          {/* Step 1 — X Account Confirmation (auto-skipped when account exists) */}
           {currentStep === 1 && (
             <div className="w-full max-w-md space-y-6 text-center">
               {loadingAccounts ? (
@@ -523,7 +596,6 @@ export function OnboardingWizard() {
                   <h3 className="text-xl font-bold">{t("onboarding.account_connected")}</h3>
                   <p className="text-muted-foreground">{t("onboarding.ready_to_start")}</p>
 
-                  {/* Connected account card */}
                   <div className="bg-muted/50 rounded-lg p-4 text-left">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
@@ -576,63 +648,102 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 2 — Preferences (language + timezone) */}
+          {/* Step 2 — Compose (with inline preferences strip) */}
           {currentStep === 2 && (
-            <div className="w-full max-w-sm space-y-5">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium">
-                  <Languages className="text-primary h-4 w-4" />
-                  {t("onboarding.preferred_language")}
-                </label>
-                <Select value={prefLanguage} onValueChange={setPrefLanguage}>
-                  <SelectTrigger className="w-full" aria-label={t("onboarding.select_language")}>
-                    <SelectValue placeholder={t("onboarding.select_language")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-xs">{t("onboarding.language_hint")}</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium">
-                  <Globe className="text-primary h-4 w-4" />
-                  {t("onboarding.time_zone_label")}
-                </label>
-                <Select value={prefTimezone} onValueChange={setPrefTimezone}>
-                  <SelectTrigger className="w-full" aria-label={t("onboarding.select_timezone")}>
-                    <SelectValue placeholder={t("onboarding.select_timezone")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIMEZONE_GROUPS.map((group) => (
-                      <SelectGroup key={group.label}>
-                        <SelectLabel>{group.label}</SelectLabel>
-                        {group.zones.map((zone) => (
-                          <SelectItem key={zone.value} value={zone.value}>
-                            {zone.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-xs">{t("onboarding.timezone_hint")}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 — Compose — O2, O3, O6 */}
-          {currentStep === 3 && (
             <div className="w-full max-w-md space-y-3">
-              <label className="text-sm font-medium">
-                {t("onboarding.draft_your_first_tweet")}
-              </label>
-              {/* O3 — shadcn Textarea */}
+              {/* Inline preferences strip */}
+              <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                <span>
+                  {t("onboarding.preferences_detected", {
+                    language: languageLabel,
+                    timezone: timezoneLabel,
+                  })}
+                </span>
+                <Popover
+                  open={prefsPopoverOpen}
+                  onOpenChange={(open) => {
+                    setPrefsPopoverOpen(open);
+                    if (!open) {
+                      void handleSavePreferences();
+                    }
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary h-auto p-0 text-xs underline-offset-2 hover:underline"
+                    >
+                      {t("onboarding.change_preferences")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-medium">
+                          <Languages className="text-primary h-4 w-4" />
+                          {t("onboarding.preferred_language")}
+                        </label>
+                        <Select value={prefLanguage} onValueChange={setPrefLanguage}>
+                          <SelectTrigger
+                            className="w-full"
+                            aria-label={t("onboarding.select_language")}
+                          >
+                            <SelectValue placeholder={t("onboarding.select_language")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LANGUAGES.map((lang) => (
+                              <SelectItem key={lang.code} value={lang.code}>
+                                {lang.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-medium">
+                          <Globe className="text-primary h-4 w-4" />
+                          {t("onboarding.time_zone_label")}
+                        </label>
+                        <Select value={prefTimezone} onValueChange={setPrefTimezone}>
+                          <SelectTrigger
+                            className="w-full"
+                            aria-label={t("onboarding.select_timezone")}
+                          >
+                            <SelectValue placeholder={t("onboarding.select_timezone")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TIMEZONE_GROUPS.map((group) => (
+                              <SelectGroup key={group.label}>
+                                <SelectLabel>{group.label}</SelectLabel>
+                                {group.zones.map((zone) => (
+                                  <SelectItem key={zone.value} value={zone.value}>
+                                    {zone.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-sm font-medium">
+                  {t("onboarding.draft_your_first_tweet")}
+                </label>
+                {createdPostId !== null && (
+                  <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600">
+                    <CheckCircle2 className="me-1 h-3 w-3" />
+                    {t("onboarding.draft_saved_badge")}
+                  </Badge>
+                )}
+              </div>
               <Textarea
                 value={tweetContent}
                 onChange={(e) => setTweetContent(e.target.value)}
@@ -640,7 +751,6 @@ export function OnboardingWizard() {
                 placeholder={t("onboarding.first_tweet_placeholder")}
                 autoFocus
               />
-              {/* O2 — char counter with amber/destructive thresholds */}
               <p
                 className={cn(
                   "text-right text-xs font-medium",
@@ -659,12 +769,12 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* Step 4 — Schedule — O1 */}
-          {currentStep === 4 && (
+          {/* Step 3 — Schedule (Send Now primary, date/time collapsible) */}
+          {currentStep === 3 && (
             <div className="w-full max-w-xs space-y-4 text-center">
               <p className="text-sm font-medium">{t("onboarding.when_to_publish")}</p>
 
-              {/* Send Now option */}
+              {/* Send Now — primary path */}
               <button
                 type="button"
                 onClick={handleSendNow}
@@ -675,62 +785,67 @@ export function OnboardingWizard() {
                 {t("onboarding.send_now")}
               </button>
 
-              <div className="text-muted-foreground relative flex items-center gap-2 text-xs">
-                <div className="flex-1 border-t" />
-                <span>{t("onboarding.or_schedule_later")}</span>
-                <div className="flex-1 border-t" />
-              </div>
-
-              {/* O1 — DatePicker + time Select */}
-              <div className="space-y-2 text-left">
-                <label className="text-muted-foreground text-xs">
-                  {t("onboarding.date_label")}
-                </label>
-                <DatePicker
-                  value={scheduledDate}
-                  onChange={setScheduledDate}
-                  placeholder={t("onboarding.pick_date")}
-                />
-              </div>
-              <div className="space-y-2 text-left">
-                <label className="text-muted-foreground text-xs">
-                  {t("onboarding.time_label")}
-                </label>
-                <Select value={scheduledTime} onValueChange={setScheduledTime}>
-                  <SelectTrigger className="w-full" aria-label={t("onboarding.select_time")}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TIME_OPTIONS.map((group) => (
-                      <SelectGroup key={group.label}>
-                        <SelectLabel>{group.label}</SelectLabel>
-                        {group.options.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
+              {/* Collapsed date/time picker */}
+              <details className="group rounded-md border text-left">
+                <summary className="text-muted-foreground hover:text-foreground cursor-pointer list-none p-3 text-xs select-none">
+                  <span className="flex items-center justify-between">
+                    <span>{t("onboarding.or_schedule_later")}</span>
+                    <span className="transition-transform group-open:rotate-180">v</span>
+                  </span>
+                </summary>
+                <div className="space-y-3 border-t p-3">
+                  <div className="space-y-2">
+                    <label className="text-muted-foreground text-xs">
+                      {t("onboarding.date_label")}
+                    </label>
+                    <DatePicker
+                      value={scheduledDate}
+                      onChange={setScheduledDate}
+                      placeholder={t("onboarding.pick_date")}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-muted-foreground text-xs">
+                      {t("onboarding.time_label")}
+                    </label>
+                    <Select value={scheduledTime} onValueChange={setScheduledTime}>
+                      <SelectTrigger className="w-full" aria-label={t("onboarding.select_time")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIME_OPTIONS.map((group) => (
+                          <SelectGroup key={group.label}>
+                            <SelectLabel>{group.label}</SelectLabel>
+                            {group.options.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
                         ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <p className="text-muted-foreground text-sm">{t("onboarding.auto_publish_hint")}</p>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    {t("onboarding.auto_publish_hint")}
+                  </p>
+                </div>
+              </details>
             </div>
           )}
 
-          {/* Step 5 — Explore AI — O4, O7 */}
-          {currentStep === 5 && (
+          {/* Step 4 — Done (auto-redirects after 2s) */}
+          {currentStep === 4 && (
             <div className="w-full max-w-lg space-y-6 text-center">
               <div className="bg-primary/5 mb-2 inline-block rounded-full p-6">
                 <Rocket className="text-primary h-12 w-12" />
               </div>
               <h3 className="text-xl font-bold">{t("onboarding.youre_all_set")}</h3>
               <p className="text-muted-foreground">{t("onboarding.all_set_body")}</p>
-              {/* O4 + O7 — 4 real linked feature cards.
-                  Must use navigateAfterOnboarding (hard reload) — not <Link>.
-                  Client-side nav is faster than the DB write, causing the
-                  dashboard layout to see onboardingCompleted=false and
-                  redirect back to the onboarding shell (missing sidebar). */}
+              {/* Feature cards — must use navigateAfterOnboarding (hard reload), not <Link>.
+                  Client-side nav is faster than the DB write, causing the dashboard
+                  layout to see onboardingCompleted=false and redirect back to the
+                  onboarding shell (missing sidebar). */}
               <div className="mt-4 grid grid-cols-2 gap-3 text-left">
                 {(
                   [
@@ -789,34 +904,10 @@ export function OnboardingWizard() {
             {t("onboarding.back")}
           </Button>
 
-          <div className="flex items-center gap-2">
-            {/* B-U03 — Skip entire wizard on any step (except last) */}
-            {currentStep < steps.length && (
-              <Button
-                variant="ghost"
-                onClick={handleSkipOnboarding}
-                disabled={loading}
-                className="text-muted-foreground min-h-[44px]"
-              >
-                {t("onboarding.skip")}
-              </Button>
-            )}
-            {/* O5 — Skip scheduling on step 4 */}
-            {currentStep === 4 && (
-              <Button
-                variant="ghost"
-                onClick={handleSkipSchedule}
-                disabled={loading}
-                className="text-muted-foreground min-h-[44px]"
-              >
-                {t("onboarding.skip_save_as_draft")}
-              </Button>
-            )}
-            <Button onClick={handleNext} disabled={loading} size="lg" className="min-h-[44px]">
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {currentStep === steps.length ? t("onboarding.finish") : t("onboarding.continue")}
-            </Button>
-          </div>
+          <Button onClick={handleNext} disabled={loading} size="lg" className="min-h-[44px]">
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {currentStep === steps.length ? t("onboarding.finish") : t("onboarding.continue")}
+          </Button>
         </CardFooter>
       </Card>
     </div>

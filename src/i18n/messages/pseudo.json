@@ -254,7 +254,8 @@
         "compose": "‏[Compose]‏",
         "compose_description": "‏[Write your first tweet or thread. thread.d.]‏",
         "explore_ai": "‏[Explore AI AI]‏",
-        "explore_ai_description": "‏[Discover AI-powered features. features.s.]‏"
+        "explore_ai_description": "‏[Discover AI-powered features. features.s.]‏",
+        "done": "‏[Done Donene]‏"
       },
       "feature_cards": {
         "ai_writer": "‏[AI Writer Writerer]‏",
@@ -272,7 +273,10 @@
       "loading_account": "‏[Loading your account... account.....]‏",
       "account_connected": "‏[Your X Account is Connected! Connected!d!]‏",
       "ready_to_start": "‏[You're ready to start scheduling posts with AstraPost. AstraPost.t.]‏",
-      "default_label": "‏[Default]‏"
+      "default_label": "‏[Default]‏",
+      "preferences_detected": "‏[We detected {language} · {timezone} {timezone}}]‏",
+      "change_preferences": "‏[change changege]‏",
+      "draft_saved_badge": "‏[Draft saved savededed]‏"
     }
   },
   "dashboard_shell": {
@@ -519,7 +523,15 @@
     "failed_posts_heading": "‏[Failed Posts Poststs]‏",
     "retry_failed_hint": "‏[Retry or edit failed content quickly quicklyly]‏",
     "all_clear": "‏[All clear! clear!r!]‏",
-    "no_failed_posts": "‏[No failed posts. All queue jobs are healthy. healthy.y.]‏"
+    "no_failed_posts": "‏[No failed posts. All queue jobs are healthy. healthy.y.]‏",
+    "dismiss": "‏[Dismiss Dismissss]‏",
+    "dismiss_confirm_title": "‏[Dismiss this failed post? post?t?]‏",
+    "dismiss_confirm_description": "‏[This permanently deletes the post. If it was actually published to X, the tweet on X is unaffected. unaffected.d.]‏",
+    "dismiss_confirm_button": "‏[Dismiss Dismissss]‏",
+    "cancel": "‏[Cancel Cancell]‏",
+    "toasts": {
+      "post_dismissed": "‏[Post dismissed dismisseded]‏"
+    }
   },
   "calendar": {
     "title": "‏[Calendar]‏",

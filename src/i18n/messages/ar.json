@@ -311,7 +311,8 @@
         "explore_ai": "استكشاف الذكاء الاصطناعي",
         "explore_ai_description": "اكتشف الميزات المدعومة بالذكاء الاصطناعي.",
         "confirm_account": "تأكيد حساب X المتصل.",
-        "pick_time": "اختر وقتاً للنشر."
+        "pick_time": "اختر وقتاً للنشر.",
+        "done": "اكتمل"
       },
       "feature_cards": {
         "ai_writer": "الكاتب الذكي",
@@ -370,7 +371,10 @@
       "timezone_group_europe": "أوروبا",
       "timezone_group_americas": "الأمريكتان",
       "timezone_group_asia_pacific": "آسيا والمحيط الهادئ",
-      "timezone_group_africa": "أفريقيا"
+      "timezone_group_africa": "أفريقيا",
+      "preferences_detected": "اخترنا {language} · {timezone}",
+      "change_preferences": "تغيير",
+      "draft_saved_badge": "تم حفظ المسودة"
     },
     "sign_in_with_x": "تسجيل الدخول باستخدام X",
     "loading": "جاري التحميل...",
@@ -715,12 +719,18 @@
     "retry_failed_hint": "أعد المحاولة أو عدل المحتوى الفاشل بسرعة",
     "all_clear": "كل شيء على ما يرام!",
     "no_failed_posts": "لا توجد منشورات فاشلة. جميع مهام قائمة الانتظار سليمة.",
+    "dismiss": "تجاهل",
+    "dismiss_confirm_title": "تجاهل هذا المنشور الفاشل؟",
+    "dismiss_confirm_description": "سيتم حذف المنشور نهائيًا. إذا كان قد نُشر بالفعل على X، فلن يتأثر التغريد على X.",
+    "dismiss_confirm_button": "تجاهل",
+    "cancel": "إلغاء",
     "toasts": {
       "retry_scheduled": "تمت جدولة إعادة المحاولة",
       "post_cancelled": "تم إلغاء المنشور",
       "something_wrong": "حدث خطأ ما",
       "post_published": "تم نشر المنشور بنجاح",
-      "bulk_update_failed": "تعذر تحديث بعض المنشورات"
+      "bulk_update_failed": "تعذر تحديث بعض المنشورات",
+      "post_dismissed": "تم تجاهل المنشور"
     }
   },
   "calendar": {

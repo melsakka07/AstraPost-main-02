@@ -311,7 +311,8 @@
         "explore_ai": "Explore AI",
         "explore_ai_description": "Discover AI-powered features.",
         "confirm_account": "Confirm your connected X account.",
-        "pick_time": "Pick a time to publish."
+        "pick_time": "Pick a time to publish.",
+        "done": "Done"
       },
       "feature_cards": {
         "ai_writer": "AI Writer",
@@ -370,7 +371,10 @@
       "timezone_group_europe": "Europe",
       "timezone_group_americas": "Americas",
       "timezone_group_asia_pacific": "Asia Pacific",
-      "timezone_group_africa": "Africa"
+      "timezone_group_africa": "Africa",
+      "preferences_detected": "We detected {language} · {timezone}",
+      "change_preferences": "change",
+      "draft_saved_badge": "Draft saved"
     },
     "sign_in_with_x": "Sign in with X",
     "loading": "Loading...",
@@ -715,12 +719,18 @@
     "retry_failed_hint": "Retry or edit failed content quickly",
     "all_clear": "All clear!",
     "no_failed_posts": "No failed posts. All queue jobs are healthy.",
+    "dismiss": "Dismiss",
+    "dismiss_confirm_title": "Dismiss this failed post?",
+    "dismiss_confirm_description": "This permanently deletes the post. If it was actually published to X, the tweet on X is unaffected.",
+    "dismiss_confirm_button": "Dismiss",
+    "cancel": "Cancel",
     "toasts": {
       "retry_scheduled": "Retry scheduled",
       "post_cancelled": "Post cancelled",
       "something_wrong": "Something went wrong",
       "post_published": "Post published successfully",
-      "bulk_update_failed": "Some posts could not be updated"
+      "bulk_update_failed": "Some posts could not be updated",
+      "post_dismissed": "Post dismissed"
     }
   },
   "calendar": {

@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { BulkApproveButton } from "@/components/queue/bulk-approve-button";
 import { CancelPostButton } from "@/components/queue/cancel-post-button";
+import { DismissPostButton } from "@/components/queue/dismiss-post-button";
 import { PostApprovalActions } from "@/components/queue/post-approval-actions";
 import { QueueRealtimeListener } from "@/components/queue/queue-realtime-listener";
 import { RescheduleInlineDialog } from "@/components/queue/reschedule-inline-dialog";
@@ -448,6 +449,10 @@ export function QueueContent({
                         <RetryPostButton
                           postId={post.id}
                           ariaLabel={`Retry failed post ${index + 1}: ${String(post.tweets[0]?.content ?? "").slice(0, 50)}`}
+                        />
+                        <DismissPostButton
+                          postId={post.id}
+                          ariaLabel={`Dismiss failed post ${index + 1}`}
                         />
                       </div>
                     </div>

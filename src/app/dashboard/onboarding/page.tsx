@@ -12,7 +12,7 @@ import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 // stay in sync naturally.
 export default function OnboardingPage() {
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <OnboardingWizard />
     </Suspense>
   );

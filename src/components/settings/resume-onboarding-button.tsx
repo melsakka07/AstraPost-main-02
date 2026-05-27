@@ -15,8 +15,11 @@ export function ResumeOnboardingButton() {
   const handleResumeOnboarding = async () => {
     setIsLoading(true);
     try {
-      // Navigate to onboarding modal/shell which will show the wizard
-      window.location.href = "/onboarding";
+      // Flip onboardingCompleted=false server-side so the dashboard layout
+      // doesn't bounce the user back to /dashboard when they hit the wizard route.
+      const res = await fetch("/api/user/onboarding/resume", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to resume");
+      window.location.href = "/dashboard/onboarding";
     } catch (error) {
       clientLogger.error("Failed to navigate to onboarding", {
         error: error instanceof Error ? error.message : String(error),

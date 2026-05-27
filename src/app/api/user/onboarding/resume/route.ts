@@ -14,14 +14,10 @@ export async function POST() {
   }
 
   try {
-    // Skip exits onboarding — the dashboard layout gate checks onboardingCompleted
-    // to decide redirects. Setting true lets the user through. They can manually
-    // revisit /dashboard/onboarding from settings if they change their mind.
-    await db.update(user).set({ onboardingCompleted: true }).where(eq(user.id, session.user.id));
-
+    await db.update(user).set({ onboardingCompleted: false }).where(eq(user.id, session.user.id));
     return Response.json({ success: true });
   } catch (error) {
-    logger.error("Failed to skip onboarding", { error });
-    return ApiError.internal("Failed to skip onboarding");
+    logger.error("Failed to resume onboarding", { error });
+    return ApiError.internal("Failed to resume onboarding");
   }
 }
