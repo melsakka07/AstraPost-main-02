@@ -42,7 +42,7 @@ import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import { useSession } from "@/lib/auth-client";
 import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
-import { type AiLengthOptionId } from "@/lib/schemas/common";
+import { type AiLengthOptionId, type XSubscriptionTier } from "@/lib/schemas/common";
 import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
 import { cn } from "@/lib/utils";
 
@@ -296,7 +296,7 @@ function AIWriterContent() {
     }
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
-    toast.success(t("toasts.copied"));
+    toast.success(t("toasts.copied"), { id: "copy" });
   };
 
   const copyTweet = async (text: string, idx: number) => {
@@ -306,7 +306,7 @@ function AIWriterContent() {
       return;
     }
     setCopiedTweetIdx(idx);
-    toast.success(t("toasts.copied"));
+    toast.success(t("toasts.copied"), { id: "copy" });
     setTimeout(() => setCopiedTweetIdx(null), 2000);
   };
 
@@ -381,7 +381,7 @@ function AIWriterContent() {
     }
     setUrlCopied(true);
     setTimeout(() => setUrlCopied(false), 2000);
-    toast.success(t("toasts.copied"));
+    toast.success(t("toasts.copied"), { id: "copy" });
   };
 
   // ── A/B Variants ───────────────────────────────────────────────────────────
@@ -437,7 +437,7 @@ function AIWriterContent() {
     }
     setVariantCopied(idx);
     setTimeout(() => setVariantCopied(null), 2000);
-    toast.success(t("toasts.copied"));
+    toast.success(t("toasts.copied"), { id: "copy" });
   };
 
   const applyVariant = (text: string) => {
@@ -578,7 +578,7 @@ function AIWriterContent() {
                   <AiLengthSelector
                     selectedLength={lengthOption}
                     onLengthChange={setLengthOption}
-                    xSubscriptionTier={xTier as any}
+                    xSubscriptionTier={xTier as XSubscriptionTier | null}
                   />
                 )}
 
@@ -615,7 +615,8 @@ function AIWriterContent() {
                   {isGenerating ? (
                     <>
                       <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                      {t("generating")} ({threadElapsed}s)
+                      {t("generating")}
+                      {threadElapsed >= 5 ? ` (${threadElapsed}s)` : ""}
                     </>
                   ) : (
                     <>
@@ -650,7 +651,7 @@ function AIWriterContent() {
                                 }
                                 setCopiedAll(true);
                                 setTimeout(() => setCopiedAll(false), 2000);
-                                toast.success(t("copy"));
+                                toast.success(t("copy"), { id: "copy" });
                               }}
                               aria-label={t("copy")}
                             >
@@ -687,9 +688,10 @@ function AIWriterContent() {
                             aria-label="Edit generated post"
                           />
                           <p
-                            className={`mt-2 text-xs tabular-nums ${(generatedTweets[0]?.length ?? 0) > getMaxCharacterLimit(xTier as any) ? "text-destructive" : (generatedTweets[0]?.length ?? 0) >= getMaxCharacterLimit(xTier as any) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
+                            className={`mt-2 text-xs tabular-nums ${(generatedTweets[0]?.length ?? 0) > getMaxCharacterLimit(xTier as XSubscriptionTier | null) ? "text-destructive" : (generatedTweets[0]?.length ?? 0) >= getMaxCharacterLimit(xTier as XSubscriptionTier | null) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
                           >
-                            {generatedTweets[0]?.length ?? 0}/{getMaxCharacterLimit(xTier as any)}
+                            {generatedTweets[0]?.length ?? 0}/
+                            {getMaxCharacterLimit(xTier as XSubscriptionTier | null)}
                           </p>
                         </CardContent>
                       </Card>
@@ -766,9 +768,10 @@ function AIWriterContent() {
                               aria-label={`Edit tweet ${idx + 1}`}
                             />
                             <p
-                              className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}
+                              className={`mt-2 text-xs tabular-nums ${tweet.length > getMaxCharacterLimit(xTier as XSubscriptionTier | null) ? "text-destructive" : tweet.length >= getMaxCharacterLimit(xTier as XSubscriptionTier | null) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
                             >
-                              {tweet.length}/280
+                              {tweet.length}/
+                              {getMaxCharacterLimit(xTier as XSubscriptionTier | null)}
                             </p>
                           </CardContent>
                         </Card>
@@ -828,40 +831,38 @@ function AIWriterContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Link2 className="text-primary h-5 w-5" />
-                  Article / URL to Thread
+                  {t("url.title")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="articleUrl">Article or Blog URL</Label>
+                  <Label htmlFor="articleUrl">{t("url.input_label")}</Label>
                   <Input
                     id="articleUrl"
-                    placeholder="https://example.com/article..."
+                    placeholder={t("url.placeholder")}
                     value={articleUrl}
                     onChange={(e) => setArticleUrl(e.target.value)}
                   />
-                  <p className="text-muted-foreground text-xs">
-                    Paste any publicly accessible article, blog post, or news URL.
-                  </p>
+                  <p className="text-muted-foreground text-xs">{t("url.description")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Tone</Label>
+                    <Label>{t("tone_label")}</Label>
                     <Select value={urlTone} onValueChange={setUrlTone}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="educational">Educational</SelectItem>
-                        <SelectItem value="casual">Casual</SelectItem>
-                        <SelectItem value="professional">Professional</SelectItem>
-                        <SelectItem value="inspirational">Inspirational</SelectItem>
-                        <SelectItem value="viral">Viral</SelectItem>
+                        <SelectItem value="educational">{t("tone.educational")}</SelectItem>
+                        <SelectItem value="casual">{t("tone.casual")}</SelectItem>
+                        <SelectItem value="professional">{t("tone.professional")}</SelectItem>
+                        <SelectItem value="inspirational">{t("tone.inspirational")}</SelectItem>
+                        <SelectItem value="viral">{t("tone.viral")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Output Language</Label>
+                    <Label>{t("url.output_language")}</Label>
                     <Select value={urlLanguage} onValueChange={setUrlLanguage}>
                       <SelectTrigger>
                         <SelectValue />
@@ -883,9 +884,9 @@ function AIWriterContent() {
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label>Thread Length</Label>
+                    <Label>{t("url.thread_length")}</Label>
                     <span className="text-muted-foreground text-sm font-medium tabular-nums">
-                      {urlTweetCount} tweets
+                      {t("url.tweets_count", { count: urlTweetCount })}
                     </span>
                   </div>
                   <Slider
@@ -906,7 +907,8 @@ function AIWriterContent() {
                   {urlLoading ? (
                     <>
                       <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                      Converting... ({urlElapsed}s)
+                      {t("url.converting")}
+                      {urlElapsed >= 5 ? ` (${urlElapsed}s)` : ""}
                     </>
                   ) : (
                     <>
@@ -925,7 +927,7 @@ function AIWriterContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-muted-foreground text-sm font-medium">
-                        {urlResult.tweets.length} tweets
+                        {t("url.tweets_count", { count: urlResult.tweets.length })}
                       </span>
                       {urlResult.title && (
                         <p className="text-muted-foreground max-w-[200px] truncate text-xs">
@@ -984,9 +986,9 @@ function AIWriterContent() {
                           aria-label={`Edit URL tweet ${idx + 1}`}
                         />
                         <p
-                          className={`mt-2 text-xs tabular-nums ${tweet.length > 280 ? "text-destructive" : tweet.length >= 240 ? "text-amber-500" : "text-muted-foreground"}`}
+                          className={`mt-2 text-xs tabular-nums ${tweet.length > getMaxCharacterLimit(xTier as XSubscriptionTier | null) ? "text-destructive" : tweet.length >= getMaxCharacterLimit(xTier as XSubscriptionTier | null) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
                         >
-                          {tweet.length}/280
+                          {tweet.length}/{getMaxCharacterLimit(xTier as XSubscriptionTier | null)}
                         </p>
                       </CardContent>
                     </Card>
@@ -1018,10 +1020,8 @@ function AIWriterContent() {
                     ))}
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-medium">Paste a URL to convert</p>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      Any article, blog post, or newsletter — we&apos;ll extract and thread it
-                    </p>
+                    <p className="text-sm font-medium">{t("url.placeholder")}</p>
+                    <p className="text-muted-foreground mt-1 text-xs">{t("url.description")}</p>
                   </div>
                 </div>
               )}
@@ -1036,23 +1036,25 @@ function AIWriterContent() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shuffle className="text-primary h-5 w-5" />
-                  A/B Variant Generator
+                  {t("variants.title")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-2">
-                  <Label htmlFor="variantTweet">Original Tweet</Label>
+                  <Label htmlFor="variantTweet">{t("variants.original_tweet_label")}</Label>
                   <Textarea
                     id="variantTweet"
-                    placeholder="Paste your tweet here..."
+                    placeholder={t("variants.paste_placeholder")}
                     className="min-h-[120px] resize-none"
                     value={variantTweet}
                     onChange={(e) => setVariantTweet(e.target.value)}
                   />
-                  <p className="text-muted-foreground text-xs">{variantTweet.length} chars</p>
+                  <p className="text-muted-foreground text-xs">
+                    {t("variants.chars", { count: variantTweet.length })}
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Language</Label>
+                  <Label>{t("language_label")}</Label>
                   <Select value={variantLanguage} onValueChange={setVariantLanguage}>
                     <SelectTrigger>
                       <SelectValue />
@@ -1080,7 +1082,8 @@ function AIWriterContent() {
                   {variantLoading ? (
                     <>
                       <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                      {t("generating")} ({variantElapsed}s)
+                      {t("generating")}
+                      {variantElapsed >= 5 ? ` (${variantElapsed}s)` : ""}
                     </>
                   ) : (
                     <>

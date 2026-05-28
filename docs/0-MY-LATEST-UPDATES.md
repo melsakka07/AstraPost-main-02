@@ -1,5 +1,245 @@
 # Latest Updates
 
+## 2026-05-28 — Wave 5 Onboarding Reframe (Skippable Wizard + Billing Bypass)
+
+Made the onboarding wizard skippable with explicit account confirmation on step 1. Added `onboardingSkippedAt` timestamp to the user table. The stripe checkout success URL now bypasses the onboarding redirect so upgrading users aren't bounced back to the wizard.
+
+### Changes
+
+- **Schema**: `onboardingSkippedAt` timestamp column on `user` (migration 0085)
+- **Skip API**: `/api/user/onboarding/skip` now also sets `onboardingSkippedAt`
+- **Wizard step 1**: Removed auto-skip — users always see their detected X account with "We found @username" and explicit Continue. "Use a different account" link replaces "Add another account"
+- **Wizard step 2**: Skip link reworded to "Skip — let me explore first", redirects to `/dashboard?checklist=open` so the setup checklist is expanded on arrival
+- **Billing bypass**: `/dashboard/settings/billing?session_id=...` bypasses onboarding redirect (finding #20). Proxy now passes `x-search-params` header
+- **i18n**: 3 new keys — `onboarding.skip_explore`, `onboarding.found_account`, `onboarding.use_different_account` (en + ar + pseudo)
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 2 pre-existing warnings)
+- `pnpm test` — PASS (326 tests, 34 files)
+- Audit findings resolved: #3, #11, #20
+
+## 2026-05-28 — Wave 4 IA Consolidation (Dashboard Sidebar + Schedule Merge)
+
+Collapsed the dashboard sidebar from 6 sections to 4 (Overview / Create / Grow / Account) plus an admin-only section. Merged Queue + Calendar into a single `/dashboard/schedule` route with `?view=list|month|week|day` tabs. Old routes (`/dashboard/queue`, `/dashboard/calendar`) redirect with query param preservation. Updated all 19+ inbound links across components, notifications, emails, onboarding wizard, bottom nav, and tests. Fixed dashboard page-wrapper icon (Home instead of LayoutDashboard). Hid multi-account selector in composer for single-account users.
+
+## 2026-05-28 — Wave 4 IA Consolidation — Task 2: Merge Queue + Calendar into `/dashboard/schedule`
+
+Merged queue and calendar into a single `/dashboard/schedule` route with view-tab switching. Old routes redirect with query-param preservation.
+
+### New merged page
+
+- `src/app/dashboard/schedule/page.tsx` — new RSC page combining both data-fetching paths
+  - Auth via `getTeamContext()` (consistent with queue page pattern)
+  - **List mode** (default, `view=list`): Ports all queue data fetching — paginated scheduled posts, failed posts, awaiting approval, post count, plan limits
+  - **Calendar mode** (`view=month|week|day`): Ports all calendar data fetching — date validation, calendar range calculation, scheduled + draft post queries, `CalendarViewClient` rendering
+  - Calendar mode uses `ctx.currentTeamId` instead of `session.user.id` for team-scoped queries
+  - Both modes reuse existing i18n namespaces (`queue` and `calendar`) — no new i18n keys needed
+
+### Redirect shells
+
+- `src/app/dashboard/queue/page.tsx` — redirects to `/dashboard/schedule?view=list`, preserving all other query params
+- `src/app/dashboard/calendar/page.tsx` — redirects to `/dashboard/schedule?view=month`, preserving date and view params
+
+### Other updates
+
+- `src/lib/services/email.ts` line 87 — post-failure retry URL updated from `/dashboard/queue` to `/dashboard/schedule?view=list`
+- `tests/e2e/dashboard-layout.e2e.ts` — DASHBOARD_ROUTES merged to single `/dashboard/schedule` entry, page.goto updated
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, 1 pre-existing warning in register/page.tsx; typecheck: clean; i18n: 2881 keys)
+
+### Files changed
+
+- `src/app/dashboard/schedule/page.tsx` — NEW
+- `src/app/dashboard/queue/page.tsx` — redirect shell
+- `src/app/dashboard/calendar/page.tsx` — redirect shell
+- `src/lib/services/email.ts` — URL update
+- `tests/e2e/dashboard-layout.e2e.ts` — route update
+
+---
+
+## 2026-05-28 — Dashboard UI/UX Audit — Wave 1 Quick Wins
+
+Implemented Wave 1 of the phased dashboard UI/UX audit (`.claude/plans/2026-05-28-dashboard-ui-ux-audit-implementation.md`). 8 findings closed, all low-risk correctness fixes — no IA or design changes.
+
+### i18n drift in AI Writer (#4)
+
+- Added `ai_writer.url.*` (9 keys) and `ai_writer.variants.*` (3 keys) to both `en.json` and `ar.json`
+- Replaced hardcoded English strings in the URL → Thread and A/B Variants tabs with `t()` calls
+- Fixed 10 double-namespaced keys (`t("ai_writer.url.title")` → `t("url.title")` — the component already scopes to `ai_writer`)
+
+### Char-limit consistency (#7)
+
+- Thread and URL output tabs now use `getMaxCharacterLimit(xTier)` instead of hardcoded `280`/`240`
+- Warning threshold uses the same `* 0.9` pattern as the single-post path
+
+### Register error fallback (#2)
+
+- Error handling now branches on status code: 409 → `email_exists`, 400 → `data.error`, 5xx → `server_error`, network → `network_error`
+- 500+ branch uses sanitized i18n fallback only (no raw server error mirroring)
+
+### Setup-checklist "Upgrade to Pro" label (#10)
+
+- Final step label changed from "Completed" to "Upgrade to Pro" / "الترقية إلى Pro"
+
+### AI Writer elapsed counter (#25)
+
+- "Generating ({n}s)" no longer shows elapsed seconds until ≥ 5s elapsed
+
+### Setup-checklist mobile CTA visibility (#26)
+
+- CTA text now visible on screens < `md` without hover: `opacity-100 md:opacity-0`
+
+### Onboarding timezone fallback (#30)
+
+- Browser timezone detection failure now falls back to `UTC` instead of `Asia/Riyadh`
+
+### Sonner toast deduplication (#34)
+
+- All copy-to-clipboard toasts now use `{ id: "copy" }` to prevent stacked duplicates
+
+### Verification
+
+- `pnpm run check` — PASS (lint + typecheck + i18n at 2854 leaf keys)
+- `pnpm test` — 34 files / 326 tests PASS
+- convention-enforcer + security-reviewer audit passed (1 medium finding fixed, 3 pre-existing in composer noted)
+
+### Files changed
+
+- `src/i18n/messages/en.json`, `src/i18n/messages/ar.json` — new locale keys
+- `src/app/dashboard/ai/writer/page.tsx` — i18n replacements, char-limit, elapsed counter, toast dedup
+- `src/components/dashboard/setup-checklist.tsx` — label + mobile CTA
+- `src/app/(auth)/register/page.tsx` — error branching
+- `src/components/onboarding/onboarding-wizard.tsx` — timezone fallback
+
+---
+
+## 2026-05-28 — Dashboard UI/UX Audit — Wave 2 (Accessibility + Form Polish)
+
+Implemented Wave 2 of the phased dashboard UI/UX audit. 4 findings closed — accessibility improvements and register form polish.
+
+### Skip-to-content link + banner aria-labels (#12)
+
+- Added `sr-only focus:not-sr-only` skip link as first focusable element in dashboard layout, targeting `<main id="main-content">`
+- Wrapped all 6 pre-main banners in `<section aria-label={t("dashboard.banners.*")}>` for screen-reader landmark navigation
+- `getTranslations("dashboard")` used for server-side i18n (layout is RSC)
+
+### Sign-in button focus ring (#13)
+
+- Replaced invisible `focus-visible:ring-black` with `focus-visible:ring-primary` + `focus-visible:ring-offset-background` on both active and disabled button variants
+- Primary ring adapts to dark/light mode via CSS variable; visible contrast on black background in both modes
+
+### Password show/hide toggle + strength meter (#14)
+
+- Eye/EyeOff toggle buttons on both password and confirm-password fields with `aria-label` i18n keys
+- 4-segment strength meter using project design tokens: `bg-destructive` (weak), `bg-warning` (okay), `bg-success-8` (strong), `bg-success` (great)
+- Strength heuristic: <8 → weak, 8-11 → okay, 12-15 → strong, 16+ with upper+lower+digit+special → great
+- Confirm-password validation triggers on blur via `form.trigger("confirmPassword")`
+
+### Confirm-password inline indicator (#29)
+
+- Green `Check` icon (`text-success`) appears when passwords match and confirm field is non-empty
+- Red `X` icon (`text-destructive`) appears on mismatch
+- Positioned at `right-9` inside input, before the eye toggle at `right-3`
+
+### i18n additions
+
+- 17 new keys across `en.json` + `ar.json`: `dashboard.skip_to_content`, 6 `dashboard.banners.*`, 10 `auth.register.password.*`
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, typecheck: clean, i18n: 2,872 keys)
+- `pnpm test` — 34 files / 326 tests PASS
+- convention-enforcer + security-reviewer audit: 0 violations, 0 security issues (1 a11y observation about `tabIndex={-1}` on eye toggles — intentional per design)
+- `bg-lime-500` (non-project token) replaced with `bg-success-8` during audit
+
+### Files changed
+
+- `src/app/dashboard/layout.tsx` — skip link + section wrappers
+- `src/components/auth/sign-in-button.tsx` — focus ring tokens
+- `src/app/(auth)/register/page.tsx` — password toggle, strength meter, confirm indicator, onBlur validation
+- `src/i18n/messages/en.json`, `src/i18n/messages/ar.json` — 17 new keys
+- `docs/audit/2026-05-28-dashboard-ui-ux-audit.md` — findings #12, #13, #14, #29 struck through
+
+---
+
+## 2026-05-28 — Dashboard UI/UX Audit — Wave 3 (Notification Center)
+
+Implemented Wave 3 of the phased dashboard UI/UX audit (`.claude/plans/2026-05-28-dashboard-ui-ux-audit-implementation.md`). Findings #5, #24, #36 closed. Replaced the 6-banner dashboard stack with a single notification bell popover.
+
+### DB schema: `notification_dismissals`
+
+- New table in `schema.ts` with columns: `id`, `user_id` (FK cascade), `notification_key`, `dismissed_at`, `snapshot_data` (jsonb), `created_at`
+- Unique index on `(user_id, notification_key)` for idempotent upserts
+- Migration `0084_sparkling_mad_thinker.sql` — idempotent (CREATE TABLE IF NOT EXISTS, CREATE INDEX IF NOT EXISTS, DO $$ BEGIN blocks)
+- Relation added to `userRelations`
+
+### Service layer: `src/lib/services/notification-dismissals.ts`
+
+- `upsertDismissal(userId, notificationKey, snapshotData?)` — pure business logic, throws on error (Hard Rule #14: `import "server-only"` first line)
+- `getDismissedNotifications(userId)` → `Map<key, dismissedAt>` — for layout filtering
+- `getDismissedWithSnapshot(userId)` → `Map<key, { dismissedAt, snapshotData }>` — for failure suppression logic
+
+### Server action: `src/lib/actions/notification-actions.ts`
+
+- `dismissNotification(formData)` — parses FormData, authenticates via `getTeamContext()`, validates `snapshotData` with Zod schema, calls service
+- Returns `{ success: boolean; error?: string }` plain objects
+- Importable from client components (no `"use server"` boundary issue)
+
+### NotificationCenter component: `src/components/dashboard/notification-center.tsx`
+
+- Bell icon + Popover (from `@/components/ui/popover`), replacing 5 full-width banners
+- Accepts `serverNotifications: Notification[]` prop; supports `dismissSnapshot` for suppression state round-trip
+- Severity-based color treatment (error/warning/info) using project design tokens
+- Optimistic dismissal via `startTransition` + server action
+- Empty state, dismiss-all, per-item action links, RTL `dir="auto"`, dark mode, mobile responsive
+
+### Layout integration: `src/app/dashboard/layout.tsx`
+
+- Three notification types built server-side from existing data:
+  - **Failed post** (severity=error) — suppressed until new failure occurs (snapshot-based)
+  - **Inactive X account** (severity=warning) — per-account dismissal
+  - **Trial expiring** (severity=info/warning for ≤3d) — per-day dismissal
+- Dismissal filtering via `getDismissedWithSnapshot()` before passing to `DashboardHeader`
+- All 5 banners removed (ChangelogBanner, AnnouncementBanner, TokenWarningBanner, FailureBanner, TrialBanner)
+- **ImpersonationBanner** remains as full-width blocking banner (security-critical — verified by security-reviewer)
+- Header receives `serverNotifications` prop
+
+### i18n
+
+- 23 new keys under `dashboard_shell.notifications.*` in both `en.json` + `ar.json` (2889 leaf keys)
+- ICU MessageFormat for interpolation (`{username}`, `{days}`)
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, typecheck: clean, i18n: all keys match)
+- `pnpm test` — 34 files / 326 tests PASS
+- convention-enforcer: 3 SRV violations resolved (service/action layer split, explicit return types, throw-on-error)
+- security-reviewer: 0 critical/high; 2 medium (rate-limiting deferred, snapshotData now Zod-validated)
+- ImpersonationBanner confirmed full-width + blocking (read from layout code)
+
+### Files changed
+
+- `src/lib/schema.ts` — new `notification_dismissals` table + relation
+- `drizzle/0084_sparkling_mad_thinker.sql` — idempotent migration
+- `src/lib/services/notification-dismissals.ts` — new: pure service (upsert + queries)
+- `src/lib/actions/notification-actions.ts` — new: server action (auth + validation)
+- `src/components/dashboard/notification-center.tsx` — new: bell + popover component
+- `src/components/dashboard/dashboard-header.tsx` — `serverNotifications` prop, NotificationBell → NotificationCenter
+- `src/app/dashboard/layout.tsx` — notification data assembly, banner removal, ImpersonationBanner retained
+- `src/i18n/messages/en.json`, `src/i18n/messages/ar.json` — 23 new notification keys
+
+### Manual verification scenarios
+
+- **(a) Failed post in last 24h**: error notification "Post failed to publish" with "View queue" link in bell popover; dismissible, suppressed until new failure
+- **(b) Inactive X account**: warning notification "X account disconnected @username" with "Reconnect" link to settings; per-account dismissal
+- **(c) Trial expiring in 3 days**: warning notification with days remaining + "Upgrade" link to pricing; per-day dismissal (reappears next day)
+- **(d) Impersonating admin session**: full-width red ImpersonationBanner above header (NOT in popover); non-dismissible, blocking; notification bell visible alongside it
+
+---
+
 ## 2026-05-24 (PM-3) — YouTube-to-Thread: audio download fix + thumbnail aspect-ratio
 
 ### Bug 1: yt-dlp audio format selection

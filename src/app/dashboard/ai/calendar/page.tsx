@@ -316,10 +316,10 @@ export default function ContentCalendarPage() {
 
     if (errorCount === 0) {
       toast.success(t("toasts.scheduled_count", { count: successCount }));
-      router.push("/dashboard/queue");
+      router.push("/dashboard/schedule?view=list");
     } else if (successCount > 0) {
       toast.warning(t("toasts.scheduled_partial", { success: successCount, failed: errorCount }));
-      router.push("/dashboard/queue");
+      router.push("/dashboard/schedule?view=list");
     } else {
       toast.error(t("toasts.schedule_failed"));
     }

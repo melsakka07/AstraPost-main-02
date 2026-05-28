@@ -2186,17 +2186,19 @@ export function Composer() {
           <CardContent className="space-y-3 px-3 pt-3 sm:space-y-4 sm:px-6 sm:pt-5">
             <p className="text-muted-foreground/70 text-xs font-medium">{t("label.publishing")}</p>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="post-accounts" className="text-xs sm:text-sm">
-                {t("label.post_to_accounts")}
-              </Label>
-              <TargetAccountsSelect
-                value={targetAccountIds}
-                onChange={setTargetAccountIds}
-                accounts={accounts}
-                loading={accountsLoading}
-              />
-            </div>
+            {accounts.length > 1 && (
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label htmlFor="post-accounts" className="text-xs sm:text-sm">
+                  {t("label.post_to_accounts")}
+                </Label>
+                <TargetAccountsSelect
+                  value={targetAccountIds}
+                  onChange={setTargetAccountIds}
+                  accounts={accounts}
+                  loading={accountsLoading}
+                />
+              </div>
+            )}
 
             {/* Schedule date picker — shown when user clicks Schedule or already has a date */}
             {showAdvancedOptions && (

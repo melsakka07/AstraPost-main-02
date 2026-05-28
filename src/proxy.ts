@@ -22,8 +22,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Set pathname header for server layouts
+  // Set pathname + search params headers for server layouts
   requestHeaders.set("x-pathname", pathname);
+  requestHeaders.set("x-search-params", request.nextUrl.searchParams.toString());
 
   // Auth protection for protected routes
   const isDashboardRoute = pathname.startsWith("/dashboard");

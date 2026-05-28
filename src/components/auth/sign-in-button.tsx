@@ -14,7 +14,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
     return (
       <button
         disabled
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white opacity-50"
+        className="focus-visible:ring-primary focus-visible:ring-offset-background flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
       >
         <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
           <circle
@@ -65,7 +65,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
         type="button"
         onClick={handleSignIn}
         disabled={isPending}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:bg-black/90 focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
+        className="focus-visible:ring-primary focus-visible:ring-offset-background flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:bg-black/90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
         aria-label={t("sign_in_aria")}
       >
         {isPending ? (

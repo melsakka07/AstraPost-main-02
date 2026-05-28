@@ -70,7 +70,7 @@ export function NotificationBell() {
                       description: n.message,
                       action: {
                         label: "View Queue",
-                        onClick: () => router.push("/dashboard/queue"),
+                        onClick: () => router.push("/dashboard/schedule?view=list"),
                       },
                     });
                   }
@@ -175,7 +175,7 @@ export function NotificationBell() {
     }
     // Navigate if applicable
     if (n.type === "post_failed" && n.metadata?.postId) {
-      router.push("/dashboard/queue");
+      router.push("/dashboard/schedule?view=list");
     }
   };
 

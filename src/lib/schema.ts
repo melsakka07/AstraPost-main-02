@@ -208,6 +208,7 @@ export const user = pgTable(
     trialEndsAt: timestamp("trial_ends_at"),
     trialExtendedAt: timestamp("trial_extended_at"),
     onboardingCompleted: boolean("onboarding_completed").default(false),
+    onboardingSkippedAt: timestamp("onboarding_skipped_at"),
     voiceProfile: jsonb("voice_profile"),
     voiceVariant: text("voice_variant").default("default").notNull(),
     notificationSettings: jsonb("notification_settings"),
@@ -995,6 +996,27 @@ export const notifications = pgTable(
   ]
 );
 
+export const notificationDismissals = pgTable(
+  "notification_dismissals",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    notificationKey: text("notification_key").notNull(),
+    dismissedAt: timestamp("dismissed_at").defaultNow().notNull(),
+    snapshotData: jsonb("snapshot_data"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("nd_user_key_unique").on(table.userId, table.notificationKey),
+    index("nd_user_id_idx").on(table.userId),
+  ]
+);
+
+export type NotificationDismissal = typeof notificationDismissals.$inferSelect;
+export type InsertNotificationDismissal = typeof notificationDismissals.$inferInsert;
+
 export const templates = pgTable(
   "templates",
   {
@@ -1106,6 +1128,7 @@ export const userRelations = relations(user, ({ one, many }) => ({
   posts: many(posts, { relationName: "user_posts" }),
   subscriptions: many(subscriptions),
   notifications: many(notifications),
+  notificationDismissals: many(notificationDismissals),
   templates: many(templates),
   affiliateLinks: many(affiliateLinks),
   teamMemberships: many(teamMembers, { relationName: "membership" }),

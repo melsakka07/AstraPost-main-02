@@ -84,10 +84,10 @@ export function SetupChecklist({
     },
     {
       id: "upgrade-pro",
-      label: t("setup_checklist.completed"),
+      label: t("setup_checklist.upgrade_to_pro"),
       completed: hasProPlan,
       href: "/pricing",
-      cta: t("setup_checklist.completed"),
+      cta: t("setup_checklist.upgrade_to_pro"),
     },
   ];
 
@@ -183,7 +183,7 @@ export function SetupChecklist({
                   {step.label}
                 </span>
                 {!step.completed && (
-                  <span className="text-primary ml-1 text-xs font-medium opacity-0 transition-opacity group-hover:opacity-100">
+                  <span className="text-primary ml-1 text-xs font-medium opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                     {step.cta}
                   </span>
                 )}

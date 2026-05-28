@@ -7,7 +7,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  LayoutDashboard,
+  Home,
   PenSquare,
   PlusCircle,
   Send,
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardPageWrapper
-      icon={LayoutDashboard}
+      icon={Home}
       title={t("title")}
       description={t("welcome", { name: session?.user?.name ?? "" })}
       actions={
@@ -244,7 +244,7 @@ export default async function DashboardPage() {
           <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm">{t("failed_posts", { count: data.failedCount })}</span>
             <Button size="sm" variant="outline" asChild className="w-full sm:w-auto">
-              <Link href="/dashboard/queue">{t("view_retry")}</Link>
+              <Link href="/dashboard/schedule?view=list">{t("view_retry")}</Link>
             </Button>
           </AlertDescription>
         </Alert>
@@ -287,7 +287,7 @@ export default async function DashboardPage() {
             <CardTitle className="text-base sm:text-lg">{t("upcoming_queue")}</CardTitle>
             {data.upcomingPosts.length > 0 && (
               <Button variant="ghost" size="sm" asChild className="w-full text-xs sm:w-auto">
-                <Link href="/dashboard/queue">{t("view_all")}</Link>
+                <Link href="/dashboard/schedule?view=list">{t("view_all")}</Link>
               </Button>
             )}
           </CardHeader>
@@ -319,7 +319,7 @@ export default async function DashboardPage() {
                 {data.upcomingPosts.map((post) => (
                   <Link
                     key={post.id}
-                    href="/dashboard/queue"
+                    href="/dashboard/schedule?view=list"
                     className="hover:bg-muted/50 block min-w-0 items-start gap-3 rounded-lg border p-3 transition-colors"
                   >
                     <div className="flex gap-3">

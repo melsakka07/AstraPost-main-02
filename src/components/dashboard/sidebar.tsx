@@ -9,7 +9,7 @@ import { Drawer as DrawerPrimitive } from "vaul";
 import { LogoMark } from "@/components/brand";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { CollapsibleSection } from "@/components/dashboard/sidebar-collapsible-section";
-import { SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
+import { SIDEBAR_SECTIONS, ADMIN_SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,9 @@ import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { cn } from "@/lib/utils";
 
 // Flattened array of all nav items for active state checking
-const allNavItems = SIDEBAR_SECTIONS.flatMap((section) => section.items);
+const allNavItems = [...SIDEBAR_SECTIONS, ...ADMIN_SIDEBAR_SECTIONS].flatMap(
+  (section) => section.items
+);
 
 // ── SidebarContent ────────────────────────────────────────────────────────────
 
@@ -100,11 +102,14 @@ function SidebarContent({
       items = items.filter((item) => !item.isAdmin);
     }
     // Hide Referrals when feature flag is off
-    if (section.label === "Growth" && !referralsEnabled) {
+    if (section.label === "Account" && !referralsEnabled) {
       items = items.filter((item) => item.label !== "Referrals");
     }
     return { ...section, items };
   }).filter((section) => section.items.length > 0);
+
+  // Append admin-only sections when user is an admin
+  const allSections = isAdmin ? [...filteredSections, ...ADMIN_SIDEBAR_SECTIONS] : filteredSections;
 
   return (
     <div className="flex h-full flex-col">
@@ -142,7 +147,7 @@ function SidebarContent({
         className="flex-1 overflow-y-auto px-3 py-4"
         aria-label={tSidebar("dashboard_navigation")}
       >
-        {filteredSections.map((section, idx) => {
+        {allSections.map((section, idx) => {
           const sectionLabelKey = section.label.toLowerCase().replace(/\s+/g, "_");
           const translatedSectionLabel = t.has(sectionLabelKey as any)
             ? t(sectionLabelKey as any)

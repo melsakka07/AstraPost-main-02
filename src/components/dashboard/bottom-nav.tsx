@@ -2,21 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, LayoutDashboard, ListOrdered, Menu, PenSquare, Settings } from "lucide-react";
+import { Bot, CalendarDays, LayoutDashboard, Menu, PenSquare, Settings } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 const BOTTOM_NAV_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: PenSquare, label: "Compose", href: "/dashboard/compose" },
-  { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
+  { icon: CalendarDays, label: "Schedule", href: "/dashboard/schedule" },
   { icon: Bot, label: "AI", href: "/dashboard/ai" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ] as const;
 
 /**
  * M1 — Sticky bottom navigation bar visible only on mobile (< md).
- * Shows 5 primary navigation items: Dashboard, Compose, Queue, AI, Settings.
+ * Shows 5 primary navigation items: Dashboard, Compose, Schedule, AI, Settings.
  * Additional routes accessible via "More" button which dispatches the `sidebar:open` event,
  * opening the full Sheet with all navigation items.
  *
@@ -61,8 +61,8 @@ export function BottomNav() {
         })}
 
         {/* "More" — opens the full sidebar Sheet via custom event.
-            Routes accessible through More: Drafts, Calendar, Analytics, Viral Analyzer,
-            Competitor, Achievements, Referrals, Jobs (admin), plus all collapsible sections. */}
+            Routes accessible through More: Drafts, Analytics, Inspiration,
+            Agentic Posting, Achievements, Referrals, Affiliate Dashboard, Jobs (admin), plus all collapsible sections. */}
         <button
           type="button"
           aria-label={tShell("open_navigation")}

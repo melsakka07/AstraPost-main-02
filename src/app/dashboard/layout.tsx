@@ -1,26 +1,25 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { differenceInCalendarDays } from "date-fns";
 import { eq, and, gte } from "drizzle-orm";
-import { AnnouncementBanner } from "@/components/announcement-banner";
+import { getTranslations } from "next-intl/server";
 import { LogoMark } from "@/components/brand";
-import { ChangelogBanner } from "@/components/changelog-banner";
 import { BottomNav } from "@/components/dashboard/bottom-nav";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { DashboardHeaderSkeleton } from "@/components/dashboard/dashboard-header-skeleton";
-import { FailureBanner } from "@/components/dashboard/failure-banner";
+import type { Notification } from "@/components/dashboard/notification-center";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { SidebarSkeleton } from "@/components/dashboard/sidebar-skeleton";
-import { TokenWarningBanner } from "@/components/dashboard/token-warning-banner";
 import { DashboardTour } from "@/components/onboarding/dashboard-tour";
 import { ReferralCookieProcessor } from "@/components/referral/referral-cookie-processor";
 import { ImpersonationBanner } from "@/components/ui/impersonation-banner";
-import { TrialBanner } from "@/components/ui/trial-banner";
 import { cachedQuery } from "@/lib/cache";
 import { db } from "@/lib/db";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { user, posts, teamMembers, xAccounts } from "@/lib/schema";
 import { getMonthlyAiUsage, getMonthlyImageUsage } from "@/lib/services/ai-quota";
+import { getDismissedWithSnapshot } from "@/lib/services/notification-dismissals";
 import { getTeamContext } from "@/lib/team-context";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -39,9 +38,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const referralsEnabled = await isFeatureEnabled("referral_program");
 
+  const searchParams = headersList.get("x-search-params") ?? "";
   const isOnboarded = dbUser?.onboardingCompleted ?? false;
   if (!isOnboarded && !isOnboardingRoute) {
-    redirect("/dashboard/onboarding");
+    // Allow Stripe checkout success redirects to /dashboard/settings/billing
+    // so returning users don't bounce back to onboarding after upgrading (#20).
+    const isBillingReturn =
+      pathname === "/dashboard/settings/billing" && searchParams.includes("session_id");
+    if (!isBillingReturn) {
+      redirect("/dashboard/onboarding");
+    }
   }
   if (isOnboarded && isOnboardingRoute) {
     redirect("/dashboard");
@@ -87,7 +93,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         eq(posts.status, "failed"),
         gte(posts.updatedAt, oneDayAgo)
       ),
-      columns: { id: true },
+      columns: { id: true, updatedAt: true },
     }),
     db.query.xAccounts.findFirst({
       where: and(eq(xAccounts.userId, session.user.id), eq(xAccounts.isActive, false)),
@@ -114,8 +120,95 @@ export default async function DashboardLayout({ children }: { children: React.Re
     role: m.role,
   }));
 
+  // ── Notification center: build server notifications from fetched data ──────
+
+  const dismissedMap = await getDismissedWithSnapshot(session.user.id);
+  const td = await getTranslations("dashboard_shell");
+
+  const serverNotifications: Notification[] = [];
+
+  // 1. Failed post in last 24h
+  if (failedPost) {
+    const dismissal = dismissedMap.get("failed_post");
+    const snapshot = dismissal?.snapshotData as { latestFailureAt?: string } | undefined;
+    const latestFailureAt = failedPost.updatedAt?.toISOString();
+    // Show if never dismissed, or if a NEW failure occurred after dismissal
+    const isNew =
+      !dismissal ||
+      (!!snapshot?.latestFailureAt &&
+        !!latestFailureAt &&
+        latestFailureAt > snapshot.latestFailureAt);
+    if (isNew) {
+      serverNotifications.push({
+        key: "failed_post",
+        severity: "error",
+        title: td("notifications.failed_post.title"),
+        description: td("notifications.failed_post.description"),
+        action: {
+          label: td("notifications.failed_post.action"),
+          href: "/dashboard/schedule?view=list",
+        },
+        dismissible: true,
+        ...(latestFailureAt ? { dismissSnapshot: { latestFailureAt } } : {}),
+      });
+    }
+  }
+
+  // 2. Inactive X account
+  if (inactiveAccount) {
+    const key = `inactive_x_account:${inactiveAccount.xUsername ?? "unknown"}`;
+    if (!dismissedMap.has(key)) {
+      serverNotifications.push({
+        key,
+        severity: "warning",
+        title: td("notifications.inactive_x_account.title"),
+        description: td("notifications.inactive_x_account.description", {
+          username: inactiveAccount.xUsername ? `@${inactiveAccount.xUsername}` : "",
+        }),
+        action: {
+          label: td("notifications.inactive_x_account.action"),
+          href: "/dashboard/settings",
+        },
+        dismissible: true,
+      });
+    }
+  }
+
+  // 3. Trial expiring within 7 days
+  if (dbUser?.trialEndsAt && dbUser.plan === "free") {
+    const daysLeft = differenceInCalendarDays(new Date(dbUser.trialEndsAt), new Date());
+    if (daysLeft >= 0 && daysLeft <= 7) {
+      const dateKey = new Date(dbUser.trialEndsAt).toISOString().slice(0, 10);
+      const key = `trial_expiring:${dateKey}`;
+      if (!dismissedMap.has(key)) {
+        serverNotifications.push({
+          key,
+          severity: daysLeft <= 3 ? "warning" : "info",
+          title:
+            daysLeft === 0
+              ? td("notifications.trial_expiring.title_ending_today")
+              : td("notifications.trial_expiring.title"),
+          description:
+            daysLeft === 0
+              ? td("notifications.trial_expiring.description_ending_today")
+              : td("notifications.trial_expiring.description", { days: daysLeft }),
+          action: { label: td("notifications.trial_expiring.action"), href: "/pricing" },
+          dismissible: true,
+        });
+      }
+    }
+  }
+
+  const t = await getTranslations("dashboard");
+
   return (
     <div data-dashboard-layout className="bg-background pb-safe flex min-h-dvh">
+      <a
+        href="#main-content"
+        className="focus:bg-primary focus:text-primary-foreground sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-3 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:outline-none"
+      >
+        {t("skip_to_content")}
+      </a>
       <Suspense fallback={null}>
         <DashboardTour />
       </Suspense>
@@ -132,12 +225,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
       </Suspense>
       <div className="flex min-w-0 flex-1 flex-col">
         {session.session.impersonatedBy && (
-          <ImpersonationBanner
-            sessionId={session.session.id}
-            impersonatedBy={session.session.impersonatedBy as string}
-            targetUserEmail={session.user.email}
-            expiresAt={session.session.expiresAt}
-          />
+          <section aria-label={t("banners.impersonation")}>
+            <ImpersonationBanner
+              sessionId={session.session.id}
+              impersonatedBy={session.session.impersonatedBy as string}
+              targetUserEmail={session.user.email}
+              expiresAt={session.session.expiresAt}
+            />
+          </section>
         )}
         <Suspense fallback={<DashboardHeaderSkeleton />}>
           <DashboardHeader
@@ -148,13 +243,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
             }}
             currentTeamId={ctx?.currentTeamId || session.user.id}
             memberships={formattedMemberships}
+            serverNotifications={serverNotifications}
           />
         </Suspense>
-        <ChangelogBanner />
-        <AnnouncementBanner />
-        {inactiveAccount && <TokenWarningBanner username={inactiveAccount.xUsername} />}
-        <FailureBanner hasFailures={!!failedPost} />
-        <TrialBanner trialEndsAt={dbUser?.trialEndsAt ?? null} plan={dbUser?.plan ?? "free"} />
         <main id="main-content" tabIndex={-1} className="p-page flex-1 outline-none">
           {children}
         </main>

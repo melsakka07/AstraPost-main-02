@@ -268,6 +268,9 @@
         "queue_desc": "‏[Manage scheduled posts. posts.s.]‏"
       },
       "skip": "‏[Skip for now nowow]‏",
+      "skip_explore": "‏[Skip — let me explore first firstrst]‏",
+      "found_account": "‏[We found @{username} @{username}ame}]‏",
+      "use_different_account": "‏[Use a different account accountunt]‏",
       "continue": "‏[Continue]‏",
       "finish": "‏[Get started starteded]‏",
       "loading_account": "‏[Loading your account... account.....]‏",
@@ -284,7 +287,14 @@
     "close_navigation": "‏[Close navigation navigationon]‏",
     "switch_language": "‏[Switch language languagege]‏",
     "switch_language_failed": "‏[Failed to switch language languagege]‏",
-    "notifications": "‏[Notifications]‏",
+    "notifications": {
+      "label": "‏[Notifications]‏",
+      "no_notifications": "‏[No notifications]‏",
+      "dismiss_all": "‏[Dismiss all]‏",
+      "dismiss": "‏[Dismiss]‏",
+      "mark_all_read_success": "‏[All notifications marked as read]‏",
+      "mark_all_read_failed": "‏[Failed to mark all as read]‏"
+    },
     "mark_all_read": "‏[Mark all as read readad]‏",
     "no_notifications": "‏[No notifications notificationsns]‏",
     "unread_count": "‏[{count, plural, one {# unread notification} other {# unread notifications}} notifications}}}}]‏",

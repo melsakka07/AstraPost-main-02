@@ -10,10 +10,11 @@
     "blog": "Blog",
     "changelog": "Changelog",
     "overview": "Overview",
-    "content": "Content",
+    "create": "Create",
+    "grow": "Grow",
+    "account": "Account",
     "ai_tools": "AI Tools",
-    "growth": "Growth",
-    "system": "System",
+    "schedule": "Schedule",
     "ai": "AI",
     "compose": "Compose",
     "drafts": "Drafts",
@@ -259,7 +260,22 @@
         "password_min": "Password must be at least 8 characters",
         "password_max": "Password must be less than 128 characters",
         "password_mismatch": "Passwords do not match.",
-        "terms_required": "You must agree to the Terms of Service and Privacy Policy"
+        "terms_required": "You must agree to the Terms of Service and Privacy Policy",
+        "server_error": "Server error. Please try again later.",
+        "network_error": "Network error. Check your connection and try again.",
+        "rate_limited": "Too many attempts. Please wait a moment and try again."
+      },
+      "password": {
+        "show_password": "Show password",
+        "hide_password": "Hide password",
+        "strength_label": "Password strength",
+        "strength_empty": "Enter a password",
+        "strength_weak": "Weak",
+        "strength_okay": "Okay",
+        "strength_strong": "Strong",
+        "strength_great": "Great",
+        "match_yes": "Passwords match",
+        "match_no": "Passwords do not match"
       }
     },
     "forgot_password": {
@@ -325,6 +341,9 @@
         "queue_desc": "Manage scheduled posts."
       },
       "skip": "Skip for now",
+      "skip_explore": "Skip — let me explore first",
+      "found_account": "We found @{username}",
+      "use_different_account": "Use a different account",
       "continue": "Continue",
       "finish": "Get started",
       "loading_account": "Loading your account...",
@@ -411,8 +430,31 @@
     "language_english": "English",
     "notifications": {
       "label": "Notifications",
+      "no_notifications": "No notifications",
+      "dismiss_all": "Dismiss all",
+      "dismiss": "Dismiss",
       "mark_all_read_success": "All notifications marked as read",
-      "mark_all_read_failed": "Failed to mark all as read"
+      "mark_all_read_failed": "Failed to mark all as read",
+
+      "failed_post": {
+        "title": "Post failed to publish",
+        "description": "A scheduled post failed to publish. Check the queue for details.",
+        "action": "View queue"
+      },
+
+      "inactive_x_account": {
+        "title": "X account disconnected",
+        "description": "Your X account {username} needs to be reconnected to continue publishing.",
+        "action": "Reconnect"
+      },
+
+      "trial_expiring": {
+        "title": "Trial ending soon",
+        "description": "Your free trial ends in {days} days. Upgrade to keep your scheduled posts.",
+        "title_ending_today": "Trial ends today",
+        "description_ending_today": "Your free trial ends today. Upgrade now to keep your scheduled posts.",
+        "action": "Upgrade"
+      }
     },
     "mark_all_read": "Mark all as read",
     "no_notifications": "No notifications",
@@ -446,7 +488,8 @@
       "use_ai": "Use the AI writer",
       "view_analytics": "View your analytics",
       "completed": "Completed",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "upgrade_to_pro": "Upgrade to Pro"
     },
     "quick_compose": {
       "title": "Quick Compose",
@@ -489,7 +532,11 @@
     "queue_empty_description": "Schedule your first post to get started",
     "create_post": "Create Post",
     "generate_ai": "Generate with AI",
-    "no_date": "No date"
+    "no_date": "No date",
+    "skip_to_content": "Skip to main content",
+    "banners": {
+      "impersonation": "Impersonation notice"
+    }
   },
   "compose": {
     "title": "Compose",
@@ -1395,6 +1442,22 @@
     "toasts": {
       "copied": "Copied to clipboard",
       "loaded_editor": "Loaded into editor"
+    },
+    "url": {
+      "title": "Article / URL to Thread",
+      "input_label": "Article or Blog URL",
+      "placeholder": "Paste a URL to convert",
+      "description": "Any article, blog post, or newsletter — we'll extract and thread it",
+      "converting": "Converting…",
+      "output_language": "Output Language",
+      "thread_length": "Thread Length",
+      "tweets_count": "{count} tweets"
+    },
+    "variants": {
+      "title": "A/B Variants",
+      "original_tweet_label": "Original Tweet",
+      "paste_placeholder": "Paste your tweet here…",
+      "chars": "{count} chars"
     }
   },
   "ai_agentic": {

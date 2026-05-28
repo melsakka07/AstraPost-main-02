@@ -6,7 +6,7 @@ import { UserProfile } from "@/components/auth/user-profile";
 import { CommandPalette } from "@/components/command-palette";
 import { AccountSwitcher } from "@/components/dashboard/account-switcher";
 import { LanguageSwitcher } from "@/components/dashboard/language-switcher";
-import { NotificationBell } from "@/components/dashboard/notification-bell";
+import { NotificationCenter, type Notification } from "@/components/dashboard/notification-center";
 import { ThemeSwitcher } from "@/components/dashboard/theme-switcher";
 import { Button } from "@/components/ui/button";
 
@@ -25,9 +25,15 @@ interface DashboardHeaderProps {
     };
     role: string;
   }[];
+  serverNotifications?: Notification[];
 }
 
-export function DashboardHeader({ user, currentTeamId, memberships }: DashboardHeaderProps) {
+export function DashboardHeader({
+  user,
+  currentTeamId,
+  memberships,
+  serverNotifications,
+}: DashboardHeaderProps) {
   const t = useTranslations("dashboard_shell");
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 flex h-14 shrink-0 items-center gap-x-2 border-b px-3 backdrop-blur sm:gap-x-3 sm:px-4 md:gap-x-4 md:px-6 lg:px-8">
@@ -52,7 +58,7 @@ export function DashboardHeader({ user, currentTeamId, memberships }: DashboardH
         <CommandPalette />
         <ThemeSwitcher />
         <LanguageSwitcher />
-        <NotificationBell />
+        <NotificationCenter serverNotifications={serverNotifications ?? []} />
         <div className="bg-border hidden h-6 w-px md:block" aria-hidden="true" />
         <UserProfile user={user} />
       </div>
