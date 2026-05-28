@@ -226,6 +226,7 @@
       "register_link": "سجّل الآن",
       "or_divider": "أو",
       "email_label": "البريد الإلكتروني",
+      "email_placeholder": "example@example.com",
       "password_label": "كلمة المرور",
       "email_sign_in": "تسجيل الدخول بالبريد",
       "errors": {
