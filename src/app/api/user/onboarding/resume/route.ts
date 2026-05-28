@@ -23,7 +23,10 @@ export async function POST() {
   if (!rateLimit.success) return createRateLimitResponse(rateLimit);
 
   try {
-    await db.update(user).set({ onboardingCompleted: false }).where(eq(user.id, session.user.id));
+    await db
+      .update(user)
+      .set({ onboardingCompleted: false, onboardingSkippedAt: null })
+      .where(eq(user.id, session.user.id));
     return Response.json({ success: true });
   } catch (error) {
     logger.error("Failed to resume onboarding", { error });

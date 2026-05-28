@@ -292,7 +292,6 @@ export function OnboardingWizard() {
       }
     };
     fetchAccounts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** Combine date + time into an ISO string */
@@ -598,7 +597,7 @@ export function OnboardingWizard() {
                   </h3>
                   <p className="text-muted-foreground">{t("onboarding.ready_to_start")}</p>
 
-                  <div className="bg-muted/50 rounded-lg p-4 text-left">
+                  <div className="bg-muted/50 rounded-lg p-4 text-start">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
                         <AvatarImage

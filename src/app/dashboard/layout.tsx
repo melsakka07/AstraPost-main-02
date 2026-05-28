@@ -43,8 +43,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!isOnboarded && !isOnboardingRoute) {
     // Allow Stripe checkout success redirects to /dashboard/settings/billing
     // so returning users don't bounce back to onboarding after upgrading (#20).
+    // session_id must start with cs_ (Stripe Checkout Session prefix) to prevent
+    // trivial bypass with an arbitrary query string.
     const isBillingReturn =
-      pathname === "/dashboard/settings/billing" && searchParams.includes("session_id");
+      pathname === "/dashboard/settings/billing" && /(?:^|&)session_id=cs_/.test(searchParams);
     if (!isBillingReturn) {
       redirect("/dashboard/onboarding");
     }

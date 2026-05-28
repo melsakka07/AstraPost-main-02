@@ -7,6 +7,7 @@ import { Check, Eye, EyeOff, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { SignInButton } from "@/components/auth/sign-in-button";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -32,6 +33,7 @@ export default function RegisterPage() {
 
   const registerSchema = z
     .object({
+      name: z.string().min(1, t("register.errors.name_required")),
       email: z.string().email(t("register.errors.invalid_email")),
       password: z
         .string()
@@ -68,6 +70,7 @@ export default function RegisterPage() {
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -88,6 +91,7 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: values.name,
           email: values.email,
           password: values.password,
         }),
@@ -136,8 +140,44 @@ export default function RegisterPage() {
           ))}
         </div>
 
+        <div className="space-y-4">
+          <SignInButton {...(ref != null && { referralCode: ref })} variant="outline">
+            {t("register.continue_with_x")}
+          </SignInButton>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="border-border w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background text-muted-foreground px-2">
+                {t("register.or_divider")}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("register.name_label")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t("register.name_placeholder")}
+                      autoCapitalize="words"
+                      autoComplete="name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="email"

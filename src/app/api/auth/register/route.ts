@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       body: {
         email,
         password,
-        name: name ?? email.split("@")[0], // Use email prefix as default name
+        name,
       },
       headers: await headers(),
     });

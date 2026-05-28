@@ -1,5 +1,87 @@
 # Latest Updates
 
+## 2026-05-28 — Wave 6 Auth Unification + AI Cost Transparency + Analytics Polish (Final Wave)
+
+Completed the final and largest wave of the dashboard UI/UX audit implementation. All 10 findings from the audit are now resolved. The audit implementation is complete.
+
+### Product Decisions
+
+- **Auth**: Dual-path — both `/login` and `/register` expose X OAuth + email/password with equal visibility
+- **Quota chip**: Both sidebar footer AND AI Writer header
+- **Controversial tone**: Gated behind "Advanced tones" disclosure with safety tooltip
+
+### Changes
+
+- **Auth unification (#1, #37)**: Both login and register pages now show X OAuth button + "or" divider + email/password form. New `SignInEmailForm` component using Better Auth `signIn.email()`. `SignInButton` gained `variant` (primary/outline) and `children` props for reuse across pages. Register page now collects `name` field explicitly.
+- **AI quota visibility (#8)**: New `AiQuotaChip` component (compact pill with AI + image usage, links to billing). Rendered in sidebar footer (quota cards now clickable to `/dashboard/settings/billing`) and AI Writer page header. AI Writer page refactored: server component wrapper fetches usage data, new `AIWriterClient` client component receives it as props.
+- **State-aware dashboard CTAs (#9)**: Empty queue block branches on `hasXAccount` — users without an X account see "Connect your X account" CTA instead of Compose/AI buttons.
+- **Controversial tone gating (#15)**: Controversial tone moved behind "Advanced tones" collapsible disclosure with safety tooltip. "Viral" tone renamed to "Attention-Grabbing".
+- **Stat card tooltips + trend deltas (#16)**: Each stat card title has a definition tooltip. Published-today card shows delta vs yesterday. Engagement card shows percentage-point change vs previous 30-day period.
+- **Composer progressive disclosure (#18)**: Recurrence, templates, and target-account selector wrapped in "Advanced options" disclosure. Action buttons (Post Now, Schedule, Save Draft) remain always visible.
+- **Pricing trust signals (#19)**: 3 testimonial cards, "14-day money-back guarantee" under each plan, X API compliance footer line.
+- **Analytics metric tooltips (#21)**: All 5 metric cards + engagement rate heading have definition tooltips (X-API definitions). Engagement rate shows formula.
+- **Analytics empty state branching (#22)**: Distinguishes "no posts yet" (CTA to compose) from "analytics pending" (refresh button).
+- **API fix**: Register route `name` field kept required — frontend now collects it explicitly with a name input field.
+- **Security fix**: Login page no longer reflects raw `error_description` query params for unrecognized error codes (prevents phishing text injection).
+- **i18n**: 31 new keys across auth, ai_writer, dashboard, analytics, composer, and pricing namespaces (en + ar).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 7 pre-existing warnings)
+- `pnpm test` — PASS (326 tests, 34 files)
+- Audit findings resolved: #1, #8, #9, #15, #16, #18, #19, #21, #22, #37
+- **All 10 Wave 6 findings closed. The dashboard UI/UX audit implementation is complete.**
+
+## 2026-05-28 — Wave 5 Onboarding Reframe (Skippable Wizard + Billing Bypass)
+
+### Composer Progressive Disclosure (#18)
+
+- Added `hasScheduledPost?: boolean` prop to `Composer` — defaults open for returning schedulers, closed for first-timers
+- Wrapped advanced features in a collapsible "Advanced options" disclosure with `ChevronDown` toggle
+- Disclosure contains: target account selector (when `accounts.length > 1`), schedule date/time picker + recurrence settings, and save-as-template button
+- Removed the OR divider; Save Template moved from main action buttons into the disclosure
+- i18n key: `composer.advanced_options` (i18n-dev adds in parallel)
+
+### Pricing Page Trust Signals (#19)
+
+- **Refund policy line**: "14-day money-back guarantee" displayed below the PricingTable component
+- **Testimonial section**: 3 testimonial cards (content creator, social media manager, small business owner) in a 3-column grid below the features section
+- **X API compliance line**: Footer note about API terms of service compliance at the page bottom
+- i18n keys: `pricing.refund_policy`, `pricing.testimonial_1_quote` through `pricing.testimonial_3_author`, `pricing.compliance` (i18n-dev adds in parallel)
+
+### Sidebar Quota Clickable (#8 sidebar part)
+
+- Wrapped AI credits and image quota cards in `Link` components pointing to `/dashboard/settings/billing`
+- Added `ChevronRight` icons to each quota card header to indicate clickability
+- Added `hover:bg-muted/50 cursor-pointer transition-colors` styles
+
+### Files changed
+
+- `src/components/composer/composer.tsx` — `hasScheduledPost` prop, disclosure UI, restructured publishing card
+- `src/app/(marketing)/pricing/page.tsx` — testimonials, refund policy, compliance notice
+- `src/components/dashboard/sidebar.tsx` — quota cards as clickable Links with chevron icons
+
+### DoD
+
+- `pnpm run check` — pending (tool unavailable in this context)
+
+## 2026-05-28 — Wave 6 AI Writer: Quota Chip + Controversial Tone Gating (#8, #15)
+
+Added a quota chip to the AI Writer page header showing AI and image generation usage. Gated the controversial tone option behind an "Advanced tones" collapsible disclosure with a safety tooltip. Renamed "viral" tone to "attention-grabbing" in both Thread and URL tone selectors.
+
+### Changes
+
+- **New component**: `src/components/ai/ai-quota-chip.tsx` — compact quota indicator with Sparkles + Image icons, links to billing, uses Tooltip
+- **New component**: `src/components/ai/ai-writer-client.tsx` — extracted from page.tsx as a client component accepting `aiUsage` + `imageUsage` props
+- **Page restructure**: `src/app/dashboard/ai/writer/page.tsx` — now a server component fetching quota data via `getMonthlyAiUsage` + `getMonthlyImageUsage`
+- **Controversial tone**: Thread Writer tone selector now has collapsible "Advanced tones" section with tooltip + hidden controversial option
+- **Viral rename**: `t("tone.viral")` changed to `t("tones.attention_grabbing")` in both Thread and URL tone selectors
+- **i18n keys used** (already exist): `ai_writer.quota.*`, `ai_writer.advanced_tones`, `ai_writer.advanced_tones_tooltip`, `ai_writer.tones.attention_grabbing`
+
+### DoD
+
+- `pnpm run check` — pending
+
 ## 2026-05-28 — Wave 5 Onboarding Reframe (Skippable Wizard + Billing Bypass)
 
 Made the onboarding wizard skippable with explicit account confirmation on step 1. Added `onboardingSkippedAt` timestamp to the user table. The stripe checkout success URL now bypasses the onboarding redirect so upgrading users aren't bounced back to the wizard.

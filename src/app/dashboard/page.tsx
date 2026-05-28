@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { and, asc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lt, lte, sql } from "drizzle-orm";
 import {
   AlertCircle,
   Calendar,
@@ -11,6 +11,7 @@ import {
   PenSquare,
   PlusCircle,
   Send,
+  TrendingDown,
   TrendingUp,
   Wand2,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { aiGenerations, posts, tweetAnalytics, tweets, user, xAccounts } from "@/lib/schema";
@@ -32,6 +34,30 @@ async function getDashboardData(userId: string) {
   const endOfDay = new Date(today.setHours(23, 59, 59, 999));
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const startOfYesterday = new Date(
+    yesterdayDate.getFullYear(),
+    yesterdayDate.getMonth(),
+    yesterdayDate.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
+  const endOfYesterday = new Date(
+    yesterdayDate.getFullYear(),
+    yesterdayDate.getMonth(),
+    yesterdayDate.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
 
   const [
     publishedTodayPosts,
@@ -46,6 +72,9 @@ async function getDashboardData(userId: string) {
     hasUsedAI,
     userInfo,
     failedPosts,
+    // Previous period queries
+    yesterdayPublishedPosts,
+    prevPeriodAnalytics,
   ] = await Promise.all([
     // Published today (status = published + scheduledAt today)
     db
@@ -121,7 +150,35 @@ async function getDashboardData(userId: string) {
       .select({ count: sql<number>`count(*)` })
       .from(posts)
       .where(and(eq(posts.userId, userId), eq(posts.status, "failed"))),
+    // Yesterday published count (for delta comparison)
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.userId, userId),
+          eq(posts.status, "published"),
+          gte(posts.scheduledAt, startOfYesterday),
+          lte(posts.scheduledAt, endOfYesterday)
+        )
+      ),
+    // Previous period avg engagement (30-60 days ago)
+    db
+      .select({ avg: sql<number>`avg(${tweetAnalytics.engagementRate})` })
+      .from(tweetAnalytics)
+      .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(
+        and(
+          eq(posts.userId, userId),
+          gte(posts.scheduledAt, sixtyDaysAgo),
+          lt(posts.scheduledAt, thirtyDaysAgo)
+        )
+      ),
   ]);
+
+  const yesterdayPublishedCount = Number(yesterdayPublishedPosts[0]?.count || 0);
+  const prevAvgEngagement = Number(prevPeriodAnalytics[0]?.avg || 0);
 
   return {
     publishedTodayCount: Number(publishedTodayPosts[0]?.count || 0),
@@ -131,6 +188,8 @@ async function getDashboardData(userId: string) {
     avgEngagement: Number(analytics[0]?.avg || 0).toFixed(2),
     upcomingPosts,
     failedCount: Number(failedPosts[0]?.count || 0),
+    yesterdayPublishedCount,
+    prevAvgEngagement,
     checklist: {
       hasXAccount: !!hasXAccount,
       hasScheduledPost: !!hasScheduledPost,
@@ -188,6 +247,8 @@ export default async function DashboardPage() {
         avgEngagement: "0.00",
         upcomingPosts: [],
         failedCount: 0,
+        yesterdayPublishedCount: 0,
+        prevAvgEngagement: 0,
         checklist: {
           hasXAccount: false,
           hasScheduledPost: false,
@@ -197,26 +258,68 @@ export default async function DashboardPage() {
         userPlan: "free",
       };
 
-  const statValues: Record<string, { value: string; sub: string; label: string }> = {
+  const publishedTodayDelta =
+    data.yesterdayPublishedCount > 0 || data.publishedTodayCount > 0
+      ? data.publishedTodayCount !== data.yesterdayPublishedCount
+        ? {
+            text:
+              data.publishedTodayCount > data.yesterdayPublishedCount
+                ? `+${data.publishedTodayCount - data.yesterdayPublishedCount}`
+                : `${data.publishedTodayCount - data.yesterdayPublishedCount}`,
+            positive: data.publishedTodayCount > data.yesterdayPublishedCount,
+          }
+        : null
+      : null;
+
+  const engagementDelta =
+    data.prevAvgEngagement > 0
+      ? (() => {
+          const diff = parseFloat(data.avgEngagement) - data.prevAvgEngagement;
+          if (Math.abs(diff) < 0.01) return null;
+          return {
+            text: `${diff > 0 ? "+" : ""}${diff.toFixed(1)}%`,
+            positive: diff > 0,
+          };
+        })()
+      : null;
+
+  const statValues: Record<
+    string,
+    {
+      value: string;
+      sub: string;
+      label: string;
+      tooltip: string;
+      delta: { text: string; positive: boolean } | null;
+    }
+  > = {
     publishedToday: {
       value: String(data.publishedTodayCount),
       sub: t("today"),
       label: t("published_today"),
+      tooltip: t("stat_tooltips.published_today"),
+      delta: publishedTodayDelta,
     },
     scheduledToday: {
       value: String(data.scheduledTodayCount),
       sub: t("today"),
       label: t("scheduled_today"),
+      tooltip: t("stat_tooltips.scheduled_today"),
+      delta: null,
     },
     scheduled: {
       value: String(data.scheduledCount),
       sub: t("total_in_queue"),
       label: t("scheduled"),
+      tooltip: t("stat_tooltips.scheduled"),
+      delta: null,
     },
     engagement: {
       value: `${data.avgEngagement}%`,
       sub: t("last_30_days"),
       label: t("avg_engagement"),
+      tooltip: t("stat_tooltips.engagement"),
+      delta: engagementDelta,
     },
   };
 
@@ -253,32 +356,57 @@ export default async function DashboardPage() {
       <PostUsageBar />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-        {STAT_CARDS.map((card) => {
-          const stat = statValues[card.key]!;
-          return (
-            <Card
-              key={card.key}
-              className={`border-s-4 ${card.accent} transition-shadow hover:shadow-md`}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3 pb-2">
-                <CardTitle className="text-muted-foreground text-xs font-medium sm:text-sm">
-                  {stat.label}
-                </CardTitle>
-                <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.iconBg}`}
-                >
-                  <card.icon className={`h-4 w-4 ${card.iconColor}`} />
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 py-2">
-                <div className="text-xl font-bold tracking-tight sm:text-2xl">{stat.value}</div>
-                <p className="text-muted-foreground mt-1 text-xs">{stat.sub}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <TooltipProvider>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+          {STAT_CARDS.map((card) => {
+            const stat = statValues[card.key]!;
+            return (
+              <Card
+                key={card.key}
+                className={`border-s-4 ${card.accent} transition-shadow hover:shadow-md`}
+              >
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3 pb-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CardTitle className="text-muted-foreground cursor-help text-xs font-medium sm:text-sm">
+                        {stat.label}
+                      </CardTitle>
+                    </TooltipTrigger>
+                    <TooltipContent>{stat.tooltip}</TooltipContent>
+                  </Tooltip>
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.iconBg}`}
+                  >
+                    <card.icon className={`h-4 w-4 ${card.iconColor}`} />
+                  </div>
+                </CardHeader>
+                <CardContent className="px-4 py-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-bold tracking-tight sm:text-2xl">
+                      {stat.value}
+                    </span>
+                    {stat.delta && (
+                      <span
+                        className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+                          stat.delta.positive ? "text-emerald-600" : "text-red-500"
+                        }`}
+                      >
+                        {stat.delta.positive ? (
+                          <TrendingUp className="h-3 w-3" />
+                        ) : (
+                          <TrendingDown className="h-3 w-3" />
+                        )}
+                        {stat.delta.text}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground mt-1 text-xs">{stat.sub}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </TooltipProvider>
 
       {/* Upcoming Queue + Quick Compose */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
@@ -293,27 +421,45 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             {data.upcomingPosts.length === 0 ? (
-              <div className="border-border/60 flex flex-col items-center justify-center rounded-lg border border-dashed py-10">
-                <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
-                  <Send className="text-muted-foreground h-5 w-5" />
+              data.checklist.hasXAccount ? (
+                <div className="border-border/60 flex flex-col items-center justify-center rounded-lg border border-dashed py-10">
+                  <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
+                    <Send className="text-muted-foreground h-5 w-5" />
+                  </div>
+                  <p className="mt-4 text-sm font-medium">{t("queue_empty")}</p>
+                  <p className="text-muted-foreground mt-1 max-w-[240px] text-center text-xs">
+                    {t("queue_empty_description")}
+                  </p>
+                  <Button size="sm" asChild className="mt-4">
+                    <Link href="/dashboard/compose">
+                      <PenSquare className="me-2 h-3.5 w-3.5" />
+                      {t("create_post")}
+                    </Link>
+                  </Button>
+                  <Button size="sm" variant="outline" asChild className="mt-2">
+                    <Link href="/dashboard/ai/agentic">
+                      <Wand2 className="me-2 h-3.5 w-3.5" />
+                      {t("generate_ai")}
+                    </Link>
+                  </Button>
                 </div>
-                <p className="mt-4 text-sm font-medium">{t("queue_empty")}</p>
-                <p className="text-muted-foreground mt-1 max-w-[240px] text-center text-xs">
-                  {t("queue_empty_description")}
-                </p>
-                <Button size="sm" asChild className="mt-4">
-                  <Link href="/dashboard/compose">
-                    <PenSquare className="me-2 h-3.5 w-3.5" />
-                    {t("create_post")}
-                  </Link>
-                </Button>
-                <Button size="sm" variant="outline" asChild className="mt-2">
-                  <Link href="/dashboard/ai/agentic">
-                    <Wand2 className="me-2 h-3.5 w-3.5" />
-                    {t("generate_ai")}
-                  </Link>
-                </Button>
-              </div>
+              ) : (
+                <div className="border-border/60 flex flex-col items-center justify-center rounded-lg border border-dashed py-10">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
+                    <AlertCircle className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <p className="mt-4 text-sm font-medium">{t("connect_x_account")}</p>
+                  <p className="text-muted-foreground mt-1 max-w-[240px] text-center text-xs">
+                    {t("connect_x_description")}
+                  </p>
+                  <Button size="sm" asChild className="mt-4">
+                    <Link href="/dashboard/settings">
+                      <PlusCircle className="me-2 h-3.5 w-3.5" />
+                      {t("connect_x_account")}
+                    </Link>
+                  </Button>
+                </div>
+              )
             ) : (
               <div className="space-y-3">
                 {data.upcomingPosts.map((post) => (

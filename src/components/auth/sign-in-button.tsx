@@ -1,21 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { signIn, useSession } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 
-export function SignInButton({ referralCode }: { referralCode?: string }) {
+interface SignInButtonProps {
+  referralCode?: string;
+  variant?: "primary" | "outline";
+  children?: ReactNode;
+}
+
+export function SignInButton({ referralCode, variant = "primary", children }: SignInButtonProps) {
   const { data: session, isPending: sessionPending } = useSession();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const t = useTranslations("auth");
 
+  const baseClasses =
+    "focus-visible:ring-primary focus-visible:ring-offset-background flex h-11 w-full items-center justify-center gap-2 rounded-md text-sm font-medium transition-opacity focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50";
+  const variantClasses =
+    variant === "outline"
+      ? "border border-border bg-background text-foreground hover:bg-muted"
+      : "bg-black text-white hover:bg-black/90";
+
   if (sessionPending) {
     return (
-      <button
-        disabled
-        className="focus-visible:ring-primary focus-visible:ring-offset-background flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-      >
+      <button disabled className={cn(baseClasses, variantClasses, "opacity-50")}>
         <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
           <circle
             className="opacity-25"
@@ -65,7 +76,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
         type="button"
         onClick={handleSignIn}
         disabled={isPending}
-        className="focus-visible:ring-primary focus-visible:ring-offset-background flex h-11 w-full items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:bg-black/90 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50"
+        className={cn(baseClasses, variantClasses)}
         aria-label={t("sign_in_aria")}
       >
         {isPending ? (
@@ -89,7 +100,7 @@ export function SignInButton({ referralCode }: { referralCode?: string }) {
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
           </svg>
         )}
-        {isPending ? t("redirecting") : t("sign_in_with_x")}
+        {isPending ? t("redirecting") : (children ?? t("sign_in_with_x"))}
       </button>
 
       {error && (

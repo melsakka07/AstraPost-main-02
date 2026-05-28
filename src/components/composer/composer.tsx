@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import {
   BookmarkPlus,
+  ChevronDown,
   Clock,
   FileText,
   ListOrdered,
@@ -85,6 +86,7 @@ import { LANGUAGES } from "@/lib/constants";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { canPostLongContent } from "@/lib/services/x-subscription";
 import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
+import { cn } from "@/lib/utils";
 
 // Phase 4: Feedback, refine, and upsell components for AI outputs
 
@@ -136,7 +138,7 @@ interface PlanLimitPayload {
   reset_at?: string | null;
 }
 
-export function Composer() {
+export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
   const t = useTranslations("compose");
 
   function formatTimeAgo(date: Date): string {
@@ -260,6 +262,7 @@ export function Composer() {
   const [aiTranslateTarget, setAiTranslateTarget] = useState<string>("en");
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(() => {
+    if (hasScheduledPost !== undefined) return hasScheduledPost;
     return !!searchParams?.get("scheduledAt");
   });
   const [templateTitle, setTemplateTitle] = useState("");
@@ -2186,112 +2189,6 @@ export function Composer() {
           <CardContent className="space-y-3 px-3 pt-3 sm:space-y-4 sm:px-6 sm:pt-5">
             <p className="text-muted-foreground/70 text-xs font-medium">{t("label.publishing")}</p>
 
-            {accounts.length > 1 && (
-              <div className="space-y-1.5 sm:space-y-2">
-                <Label htmlFor="post-accounts" className="text-xs sm:text-sm">
-                  {t("label.post_to_accounts")}
-                </Label>
-                <TargetAccountsSelect
-                  value={targetAccountIds}
-                  onChange={setTargetAccountIds}
-                  accounts={accounts}
-                  loading={accountsLoading}
-                />
-              </div>
-            )}
-
-            {/* Schedule date picker — shown when user clicks Schedule or already has a date */}
-            {showAdvancedOptions && (
-              <div className="animate-in fade-in slide-in-from-top-2 space-y-4">
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="schedule-date" className="text-xs sm:text-sm">
-                      {t("label.schedule_for")}
-                    </Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground h-auto px-2 py-0.5 text-[10px] sm:text-xs"
-                      onClick={() => {
-                        setShowAdvancedOptions(false);
-                        setScheduledDate("");
-                        setRecurrencePattern("none");
-                        setRecurrenceEndDate("");
-                      }}
-                    >
-                      {t("label.cancel")}
-                      <XIcon className="ml-1 h-3 w-3" />
-                    </Button>
-                  </div>
-                  <div className="bg-muted/30 space-y-1.5 rounded-lg p-2 sm:space-y-2 sm:p-3">
-                    <DateTimePicker
-                      id="schedule-date"
-                      value={scheduledDate}
-                      onChange={(val) => {
-                        if (!val) {
-                          setScheduledDate("");
-                          setRecurrencePattern("none");
-                          setRecurrenceEndDate("");
-                        } else {
-                          setScheduledDate(val);
-                        }
-                      }}
-                    />
-                    <BestTimeSuggestions onSelect={setScheduledDate} hideHeader />
-                  </div>
-                  {browserTimezone && (
-                    <p className="text-muted-foreground/60 text-[10px] sm:text-xs">
-                      {t("label.times_are_in")}{" "}
-                      <span className="text-foreground font-medium">{browserTimezone}</span>{" "}
-                      <span className="tabular-nums">
-                        (UTC
-                        {(() => {
-                          const off = -new Date().getTimezoneOffset();
-                          const h = Math.floor(Math.abs(off) / 60);
-                          const m = Math.abs(off) % 60;
-                          return `${off >= 0 ? "+" : "-"}${h}${m > 0 ? `:${String(m).padStart(2, "0")}` : ""}`;
-                        })()}
-                        )
-                      </span>
-                    </p>
-                  )}
-
-                  {scheduledDate && (
-                    <div className="grid grid-cols-1 gap-2 pt-1.5 sm:grid-cols-2 sm:pt-2">
-                      <div className="space-y-1">
-                        <label className="text-muted-foreground text-xs font-medium">
-                          {t("label.repeat")}
-                        </label>
-                        <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
-                          <SelectTrigger className="h-8 sm:h-9">
-                            <SelectValue placeholder={t("label.none")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">{t("label.none")}</SelectItem>
-                            <SelectItem value="daily">{t("label.daily")}</SelectItem>
-                            <SelectItem value="weekly">{t("label.weekly")}</SelectItem>
-                            <SelectItem value="monthly">{t("label.monthly")}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {recurrencePattern !== "none" && (
-                        <div className="space-y-1">
-                          <label className="text-muted-foreground text-xs font-medium">
-                            {t("label.end_date")}
-                          </label>
-                          <DatePicker
-                            className="h-8 sm:h-9"
-                            value={recurrenceEndDate}
-                            onChange={setRecurrenceEndDate}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* H2: Action context — shows what will happen before the user clicks */}
             <p className="text-muted-foreground text-center text-[10px] sm:text-xs">
               {scheduledDate ? (
@@ -2367,7 +2264,7 @@ export function Composer() {
                   </TooltipProvider>
                 </>
               ) : (
-                /* No date set — Post Now primary, Schedule reveals date picker */
+                /* No date set — Post Now primary, Schedule reveals advanced options */
                 <>
                   <TooltipProvider>
                     <Tooltip>
@@ -2428,23 +2325,138 @@ export function Composer() {
                   {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
                 </Tooltip>
               </TooltipProvider>
-              <div className="relative">
-                <div className="absolute inset-x-0 top-0 flex justify-center">
-                  <div className="bg-card relative px-2">
-                    <span className="text-muted-foreground/60 text-[10px] tracking-wider uppercase">
-                      {t("label.or_divider")}
-                    </span>
+            </div>
+
+            {/* Advanced Options disclosure */}
+            <div className="border-t pt-3">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                aria-expanded={showAdvancedOptions}
+                className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between text-xs font-medium transition-colors"
+              >
+                <span>{t("advanced_options")}</span>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform duration-200",
+                    showAdvancedOptions && "rotate-180"
+                  )}
+                />
+              </button>
+              {showAdvancedOptions && (
+                <div className="animate-in fade-in slide-in-from-top-2 space-y-4 pt-3">
+                  {/* Target account selector — only when multiple accounts available */}
+                  {accounts.length > 1 && (
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="post-accounts" className="text-xs sm:text-sm">
+                        {t("label.post_to_accounts")}
+                      </Label>
+                      <TargetAccountsSelect
+                        value={targetAccountIds}
+                        onChange={setTargetAccountIds}
+                        accounts={accounts}
+                        loading={accountsLoading}
+                      />
+                    </div>
+                  )}
+
+                  {/* Schedule section */}
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="schedule-date" className="text-xs sm:text-sm">
+                        {t("label.schedule_for")}
+                      </Label>
+                      {scheduledDate && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground h-auto px-2 py-0.5 text-[10px] sm:text-xs"
+                          onClick={() => {
+                            setScheduledDate("");
+                            setRecurrencePattern("none");
+                            setRecurrenceEndDate("");
+                          }}
+                        >
+                          {t("label.cancel")}
+                          <XIcon className="ml-1 h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="bg-muted/30 space-y-1.5 rounded-lg p-2 sm:space-y-2 sm:p-3">
+                      <DateTimePicker
+                        id="schedule-date"
+                        value={scheduledDate}
+                        onChange={(val) => {
+                          if (!val) {
+                            setScheduledDate("");
+                            setRecurrencePattern("none");
+                            setRecurrenceEndDate("");
+                          } else {
+                            setScheduledDate(val);
+                          }
+                        }}
+                      />
+                      <BestTimeSuggestions onSelect={setScheduledDate} hideHeader />
+                    </div>
+                    {browserTimezone && (
+                      <p className="text-muted-foreground/60 text-[10px] sm:text-xs">
+                        {t("label.times_are_in")}{" "}
+                        <span className="text-foreground font-medium">{browserTimezone}</span>{" "}
+                        <span className="tabular-nums">
+                          (UTC
+                          {(() => {
+                            const off = -new Date().getTimezoneOffset();
+                            const h = Math.floor(Math.abs(off) / 60);
+                            const m = Math.abs(off) % 60;
+                            return `${off >= 0 ? "+" : "-"}${h}${m > 0 ? `:${String(m).padStart(2, "0")}` : ""}`;
+                          })()}
+                          )
+                        </span>
+                      </p>
+                    )}
+
+                    {scheduledDate && (
+                      <div className="grid grid-cols-1 gap-2 pt-1.5 sm:grid-cols-2 sm:pt-2">
+                        <div className="space-y-1">
+                          <label className="text-muted-foreground text-xs font-medium">
+                            {t("label.repeat")}
+                          </label>
+                          <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
+                            <SelectTrigger className="h-8 sm:h-9">
+                              <SelectValue placeholder={t("label.none")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">{t("label.none")}</SelectItem>
+                              <SelectItem value="daily">{t("label.daily")}</SelectItem>
+                              <SelectItem value="weekly">{t("label.weekly")}</SelectItem>
+                              <SelectItem value="monthly">{t("label.monthly")}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {recurrencePattern !== "none" && (
+                          <div className="space-y-1">
+                            <label className="text-muted-foreground text-xs font-medium">
+                              {t("label.end_date")}
+                            </label>
+                            <DatePicker
+                              className="h-8 sm:h-9"
+                              value={recurrenceEndDate}
+                              onChange={setRecurrenceEndDate}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="absolute inset-x-0 top-1/2 border-t" />
-                </div>
-                <div className="pt-4">
+
+                  {/* Save as Template */}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span tabIndex={0}>
                           <Button
                             variant="ghost"
-                            className="text-muted-foreground hover:text-foreground h-9 w-full text-xs sm:h-9 sm:text-sm"
+                            className="text-muted-foreground hover:text-foreground h-9 w-full justify-start text-xs sm:h-9 sm:text-sm"
                             onClick={() => setIsSaveTemplateOpen(true)}
                             disabled={isSubmitting || !hasContent}
                           >
@@ -2457,7 +2469,7 @@ export function Composer() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>

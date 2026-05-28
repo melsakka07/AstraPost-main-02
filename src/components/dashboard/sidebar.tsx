@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { LogOut, ExternalLink, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { LogoMark } from "@/components/brand";
@@ -258,12 +258,18 @@ function SidebarContent({
 
       {/* Bottom: AI credits + image quota + sign out */}
       <div className="border-border shrink-0 space-y-3 border-t p-4">
-        <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
+        <Link
+          href="/dashboard/settings/billing"
+          className="border-border bg-muted/30 hover:bg-muted/50 block cursor-pointer space-y-2 rounded-lg border p-3 transition-colors"
+        >
           {aiUsage ? (
             <>
               <div className="flex items-center justify-between">
                 <span className="text-foreground text-xs font-medium">{t("ai_credits")}</span>
-                <span className="text-muted-foreground text-xs">{aiProgressLabel}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-muted-foreground text-xs">{aiProgressLabel}</span>
+                  <ChevronRight className="text-muted-foreground h-3 w-3" />
+                </div>
               </div>
               <Progress value={aiProgress} className="h-1.5" />
               <p className="text-muted-foreground text-xs">
@@ -282,9 +288,12 @@ function SidebarContent({
               <Skeleton className="h-3 w-28" />
             </>
           )}
-        </div>
+        </Link>
 
-        <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
+        <Link
+          href="/dashboard/settings/billing"
+          className="border-border bg-muted/30 hover:bg-muted/50 block cursor-pointer space-y-2 rounded-lg border p-3 transition-colors"
+        >
           {imageQuota ? (
             <>
               <div className="flex items-center justify-between">
@@ -292,7 +301,10 @@ function SidebarContent({
                   <ImageIcon className="h-3 w-3" />
                   <span className="text-foreground text-xs font-medium">{t("images_credits")}</span>
                 </div>
-                <span className="text-muted-foreground text-xs">{imageProgressLabel}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-muted-foreground text-xs">{imageProgressLabel}</span>
+                  <ChevronRight className="text-muted-foreground h-3 w-3" />
+                </div>
               </div>
               <Progress value={imageProgress} className="h-1.5" />
               <p className="text-muted-foreground text-xs">
@@ -311,7 +323,7 @@ function SidebarContent({
               <Skeleton className="h-3 w-28" />
             </>
           )}
-        </div>
+        </Link>
         {/* Desktop-only sign-out button (mobile has quick-sign-out in drawer header M7) */}
         {!isMobile && (
           <Button
