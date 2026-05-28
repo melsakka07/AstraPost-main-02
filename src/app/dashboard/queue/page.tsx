@@ -7,7 +7,10 @@ export default async function QueuePage(props: {
   const searchString = new URLSearchParams();
   searchString.set("view", "list");
   for (const [key, value] of Object.entries(params)) {
-    if (key !== "view" && typeof value === "string") {
+    if (key === "view" || value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) searchString.append(key, v);
+    } else {
       searchString.set(key, value);
     }
   }

@@ -388,7 +388,7 @@ export default async function DashboardPage() {
                     {stat.delta && (
                       <span
                         className={`inline-flex items-center gap-0.5 text-xs font-medium ${
-                          stat.delta.positive ? "text-emerald-600" : "text-red-500"
+                          stat.delta.positive ? "text-success-11" : "text-danger-11"
                         }`}
                       >
                         {stat.delta.positive ? (

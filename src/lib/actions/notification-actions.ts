@@ -4,10 +4,7 @@ import { z } from "zod";
 import { upsertDismissal } from "@/lib/services/notification-dismissals";
 import { getTeamContext } from "@/lib/team-context";
 
-const snapshotSchema = z
-  .object({ latestFailureAt: z.string().datetime() })
-  .passthrough()
-  .optional();
+const snapshotSchema = z.object({ latestFailureAt: z.string().datetime() }).strict().optional();
 
 const VALID_KEY_PREFIXES = ["failed_post", "inactive_x_account:", "trial_expiring:"] as const;
 

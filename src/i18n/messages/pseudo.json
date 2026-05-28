@@ -1,6 +1,10 @@
 {
   "nav": {
     "dashboard": "‏[Dashboard]‏",
+    "create": "‏[Create Createte]‏",
+    "grow": "‏[Grow Groww]‏",
+    "account": "‏[Account Accountnt]‏",
+    "schedule": "‏[Schedule Schedulele]‏",
     "queue": "‏[Queue]‏",
     "analytics": "‏[Analytics]‏",
     "settings": "‏[Settings]‏",
@@ -157,6 +161,11 @@
     "server_error": "‏[Something went wrong. Please try again later. later.r.]‏"
   },
   "auth": {
+    "sign_in_aria": "‏[Sign in with X Xx]‏",
+    "sign_in_with_x": "‏[Sign in with X Xx]‏",
+    "loading": "‏[Loading... ...]‏",
+    "redirecting": "‏[Redirecting... ...]‏",
+    "sign_in_error": "‏[Failed to redirect to X. Please try again. again.n.]‏",
     "login": {
       "title": "‏[Sign in with X to get started starteded]‏",
       "subtitle": "‏[Connect your X account to manage, schedule, and analyze your content. content.t.]‏",
@@ -175,6 +184,7 @@
         "server_error": "‏[X is currently unavailable. Please try again in a few minutes. minutes.s.]‏",
         "callback_error": "‏[Sign-in failed. Please try again. again.n.]‏",
         "email_not_found": "‏[We couldn't get your email from X. Please ensure your X account has a verified email address. address.s.]‏",
+        "invalid_credentials": "‏[Invalid email or password. password.d.]‏",
         "default": "‏[An unexpected error occurred. Please try again. again.n.]‏"
       }
     },
@@ -206,7 +216,23 @@
         "password_min": "‏[Password must be at least 8 characters charactersrs]‏",
         "password_max": "‏[Password must be less than 128 characters charactersrs]‏",
         "password_mismatch": "‏[Passwords do not match. match.h.]‏",
-        "terms_required": "‏[You must agree to the Terms of Service and Privacy Policy Policycy]‏"
+        "terms_required": "‏[You must agree to the Terms of Service and Privacy Policy Policycy]‏",
+        "server_error": "‏[Server error. Please try again later. later.r.]‏",
+        "network_error": "‏[Network error. Check your connection and try again. again.n.]‏",
+        "rate_limited": "‏[Too many attempts. Please wait a moment and try again. again.n.]‏",
+        "name_required": "‏[Name is required requiredd]‏"
+      },
+      "password": {
+        "show_password": "‏[Show password passwordrd]‏",
+        "hide_password": "‏[Hide password passwordrd]‏",
+        "strength_label": "‏[Password strength strengthth]‏",
+        "strength_empty": "‏[Enter a password passwordrd]‏",
+        "strength_weak": "‏[Weak Weakk]‏",
+        "strength_okay": "‏[Okay Okayy]‏",
+        "strength_strong": "‏[Strong Strongng]‏",
+        "strength_great": "‏[Great Greatt]‏",
+        "match_yes": "‏[Passwords match matchh]‏",
+        "match_no": "‏[Passwords do not match matchh]‏"
       }
     },
     "forgot_password": {
@@ -293,7 +319,24 @@
       "dismiss_all": "‏[Dismiss all]‏",
       "dismiss": "‏[Dismiss]‏",
       "mark_all_read_success": "‏[All notifications marked as read]‏",
-      "mark_all_read_failed": "‏[Failed to mark all as read]‏"
+      "mark_all_read_failed": "‏[Failed to mark all as read]‏",
+      "failed_post": {
+        "title": "‏[Post failed to publish publishsh]‏",
+        "description": "‏[A scheduled post failed to publish. Check the queue for details. details.s.]‏",
+        "action": "‏[View queue queuee]‏"
+      },
+      "inactive_x_account": {
+        "title": "‏[X account disconnected disconnecteded]‏",
+        "description": "‏[Your X account {username} needs to be reconnected to continue publishing. publishing.g.]‏",
+        "action": "‏[Reconnect Reconnectct]‏"
+      },
+      "trial_expiring": {
+        "title": "‏[Trial ending soon soonn]‏",
+        "description": "‏[Your free trial ends in {days} days. Upgrade to keep your scheduled posts. posts.s.]‏",
+        "title_ending_today": "‏[Trial ends today todayy]‏",
+        "description_ending_today": "‏[Your free trial ends today. Upgrade now to keep your scheduled posts. posts.s.]‏",
+        "action": "‏[Upgrade Upgradede]‏"
+      }
     },
     "mark_all_read": "‏[Mark all as read readad]‏",
     "no_notifications": "‏[No notifications notificationsns]‏",
@@ -323,7 +366,8 @@
       "use_ai": "‏[Use the AI writer writerer]‏",
       "view_analytics": "‏[View your analytics analyticscs]‏",
       "completed": "‏[Completed]‏",
-      "dismiss": "‏[Dismiss]‏"
+      "dismiss": "‏[Dismiss]‏",
+      "upgrade_to_pro": "‏[Upgrade to Pro Proro]‏"
     },
     "quick_compose": {
       "title": "‏[Quick Compose Composese]‏",
@@ -366,7 +410,11 @@
     "queue_empty_description": "‏[Schedule your first post to get started starteded]‏",
     "create_post": "‏[Create Post Postst]‏",
     "generate_ai": "‏[Generate with AI AI]‏",
-    "no_date": "‏[No date datete]‏"
+    "no_date": "‏[No date datete]‏",
+    "skip_to_content": "‏[Skip to main content contentnt]‏",
+    "banners": {
+      "impersonation": "‏[Impersonation notice noticece]‏"
+    }
   },
   "compose": {
     "title": "‏[Compose]‏",
@@ -757,6 +805,17 @@
       "educational": "‏[Educational]‏",
       "inspirational": "‏[Inspirational]‏",
       "viral": "‏[Viral]‏"
+    },
+    "tones": {
+      "attention_grabbing": "‏[Attention-Grabbing Grabbingng]‏"
+    },
+    "advanced_tones": "‏[Advanced tones tonesss]‏",
+    "advanced_tones_tooltip": "‏[May generate provocative content. Use responsibly. responsibly.y.]‏",
+    "quota": {
+      "ai_remaining": "‏[AI: {used}/{limit}]‏",
+      "images_remaining": "‏[Images: {used}/{limit}]‏",
+      "unlimited": "‏[Unlimited Unlimiteded]‏",
+      "view_billing": "‏[View billing billingng]‏"
     },
     "errors": {
       "generation_failed": "‏[Failed to generate content. Please try again. again.n.]‏",

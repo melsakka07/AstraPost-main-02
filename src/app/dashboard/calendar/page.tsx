@@ -9,7 +9,10 @@ export default async function CalendarPage(props: {
   const oldView = typeof params.view === "string" ? params.view : "month";
   searchString.set("view", oldView);
   for (const [key, value] of Object.entries(params)) {
-    if (key !== "view" && typeof value === "string") {
+    if (key === "view" || value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) searchString.append(key, v);
+    } else {
       searchString.set(key, value);
     }
   }

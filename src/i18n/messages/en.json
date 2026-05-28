@@ -233,6 +233,7 @@
         "server_error": "X is currently unavailable. Please try again in a few minutes.",
         "callback_error": "Sign-in failed. Please try again.",
         "email_not_found": "We couldn't get your email from X. Please ensure your X account has a verified email address.",
+        "invalid_credentials": "Invalid email or password.",
         "default": "An unexpected error occurred. Please try again."
       }
     },

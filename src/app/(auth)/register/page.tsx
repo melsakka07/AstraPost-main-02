@@ -210,7 +210,7 @@ export default function RegisterPage() {
                         placeholder={t("register.password_placeholder")}
                         type={showPassword ? "text" : "password"}
                         autoComplete="new-password"
-                        className="pr-10"
+                        className="pe-10"
                         {...field}
                       />
                       <button
@@ -284,7 +284,9 @@ export default function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <p className="text-muted-foreground text-xs">{t(strengthKey)}</p>
+                  <p className="text-muted-foreground text-xs" role="status" aria-live="polite">
+                    {t(strengthKey)}
+                  </p>
                 </div>
               );
             })()}
@@ -305,7 +307,7 @@ export default function RegisterPage() {
                           placeholder={t("register.confirm_password_placeholder")}
                           type={showConfirmPassword ? "text" : "password"}
                           autoComplete="new-password"
-                          className="pr-10"
+                          className="pe-10"
                           {...field}
                           onBlur={() => {
                             field.onBlur();

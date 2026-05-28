@@ -22,11 +22,16 @@ export function SignInEmailForm() {
     setError(null);
 
     try {
-      await signIn.email({
+      const { error: signInError } = await signIn.email({
         email,
         password,
         callbackURL: "/dashboard",
       });
+      if (signInError) {
+        setError(t("login.errors.invalid_credentials"));
+        setIsPending(false);
+        return;
+      }
       router.push("/dashboard");
     } catch {
       setError(t("login.errors.default"));

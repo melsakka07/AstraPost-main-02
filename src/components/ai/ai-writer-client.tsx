@@ -73,11 +73,11 @@ interface Variant {
 }
 
 const ANGLE_COLORS: Record<string, string> = {
-  emotional: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-  factual: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  question: "bg-green-500/10 text-green-600 border-green-500/20",
-  story: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  list: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  emotional: "bg-chart-5/10 text-chart-5 border-chart-5/20",
+  factual: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+  question: "bg-chart-3/10 text-chart-3 border-chart-3/20",
+  story: "bg-chart-4/10 text-chart-4 border-chart-4/20",
+  list: "bg-chart-1/10 text-chart-1 border-chart-1/20",
 };
 
 type ActiveTab = "thread" | "url" | "variants" | "hashtags";
