@@ -555,6 +555,19 @@
       "scheduled_today": "Posts scheduled to publish today",
       "scheduled": "Total posts waiting in the queue",
       "engagement": "Average engagement rate across all published posts in the last 30 days"
+    },
+    "whats_next": {
+      "title": "What's next",
+      "connect_x": "Connect X account",
+      "connect_x_desc": "Link your X account to start scheduling and publishing posts.",
+      "schedule_first": "Schedule your first post",
+      "schedule_first_desc": "Plan your first post and let AstraPost publish it for you.",
+      "try_ai": "Try AI generation",
+      "try_ai_desc": "Generate a thread or post idea with AI in seconds.",
+      "compose": "Compose a post",
+      "compose_desc": "Write something new and share it with your audience.",
+      "compose_action": "Compose",
+      "schedule_action": "Schedule"
     }
   },
   "compose": {
