@@ -53,7 +53,7 @@ src/
 │   ├── brand/                    # Brand primitives (Logo lockup, LogoMark sparkle, made-with-astrapost-footer, index)
 │   ├── calendar/                 # Calendar components (Grid, Event cards)
 │   ├── community/                # Community components (Contact form)
-│   ├── composer/                 # Composer (Editor, Preview, AI Tools Panel, Best Time, Alerts)
+│   ├── composer/                 # Composer — thin 345-line shell (composer.tsx) orchestrating focused hooks (use-composer-{drafts,ai,data,publish,tweets,shortcuts,media,bridge}.ts) + subcomponents (composer-{editor,preview,ai-tools,dialogs,publishing-panel,alerts}.tsx); pure logic in composer-utils.ts
 │   ├── dashboard/                # Dashboard layout (Sidebar, Header, Bottom Nav, Banners)
 │   ├── drafts/                   # Draft components
 │   ├── email/                    # Email templates (React Email)

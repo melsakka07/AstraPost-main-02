@@ -1,265 +1,69 @@
 "use client";
 
-import { useState, useRef, useEffect, useId, lazy, Suspense } from "react";
-import dynamic from "next/dynamic";
+import { useState, useRef, useId } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
-  BookmarkPlus,
-  ChevronDown,
-  Clock,
-  FileText,
-  ListOrdered,
-  Loader2,
-  Plus,
-  Send,
-  Sparkles,
-  X as XIcon,
-} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { FeedbackButtons } from "@/components/ai/feedback-buttons";
-import { RefineInlineForm } from "@/components/ai/refine-inline-form";
-import { UpsellBanner } from "@/components/ai/upsell-banner";
-import { BestTimeSuggestions } from "@/components/composer/best-time-suggestions";
-import { ComposerAlerts } from "@/components/composer/composer-alerts";
+import { ComposerAiTools } from "@/components/composer/composer-ai-tools";
+import { ComposerDialogs } from "@/components/composer/composer-dialogs";
+import { ComposerEditor } from "@/components/composer/composer-editor";
 import { ComposerPreview } from "@/components/composer/composer-preview";
+import { ComposerPublishingPanel } from "@/components/composer/composer-publishing-panel";
+import type { TweetDraft } from "@/components/composer/composer-types";
 import { SaveTemplateDialog } from "@/components/composer/save-template-dialog";
-import { SortableTweet } from "@/components/composer/sortable-tweet";
-import {
-  TargetAccountsSelect,
-  SocialAccountLite,
-} from "@/components/composer/target-accounts-select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { DatePicker } from "@/components/ui/date-picker";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useComposerAi } from "@/components/composer/use-composer-ai";
+import { useComposerBridge } from "@/components/composer/use-composer-bridge";
+import { useComposerData } from "@/components/composer/use-composer-data";
+import { useComposerDrafts } from "@/components/composer/use-composer-drafts";
+import { useComposerMedia } from "@/components/composer/use-composer-media";
+import { useComposerPublish } from "@/components/composer/use-composer-publish";
+import { useComposerShortcuts } from "@/components/composer/use-composer-shortcuts";
+import { useComposerTweets } from "@/components/composer/use-composer-tweets";
+import { Card } from "@/components/ui/card";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
-import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { type OutputFormat, type TemplatePromptConfig } from "@/lib/ai/template-prompts";
 import { useSession } from "@/lib/auth-client";
 import { clientLogger } from "@/lib/client-logger";
-import type { ComposerPayload } from "@/lib/composer-bridge";
-import { LANGUAGES } from "@/lib/constants";
-import { fetchWithAuth } from "@/lib/fetch-with-auth";
 import { canPostLongContent } from "@/lib/services/x-subscription";
-import { createUserTemplate, type TemplateAiMeta } from "@/lib/templates";
-import { cn } from "@/lib/utils";
-
-// Phase 4: Feedback, refine, and upsell components for AI outputs
-
-const AiImageDialog = dynamic(() =>
-  import("@/components/composer/ai-image-dialog").then((m) => m.AiImageDialog)
-);
-const AiToolsPanel = dynamic(() =>
-  import("@/components/composer/ai-tools-panel").then((m) => m.AiToolsPanel)
-);
-// P4-E: Lazy-load TemplatesDialog — it's 834 lines and only needed on user interaction
-const TemplatesDialog = lazy(() =>
-  import("@/components/composer/templates-dialog").then((m) => ({ default: m.TemplatesDialog }))
-);
-
-interface LinkPreview {
-  url: string;
-  title?: string;
-  description?: string;
-  images?: string[];
-  siteName?: string;
-}
-
-interface TweetDraft {
-  id: string;
-  content: string;
-  media: Array<{
-    url: string;
-    mimeType: string;
-    fileType: "image" | "video" | "gif";
-    size: number;
-    uploading?: boolean;
-    placeholderId?: string;
-  }>;
-  linkPreview?: LinkPreview | null;
-}
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
+import { createUserTemplate } from "@/lib/templates";
 
 export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
   const t = useTranslations("compose");
 
-  function formatTimeAgo(date: Date): string {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 60) return t("label.just_now");
-    return `${Math.floor(seconds / 60)}${t("label.minutes_ago")}`;
-  }
   const dndId = useId();
   const router = useRouter();
   const searchParams = useSearchParams();
   const draftId = searchParams?.get("draft");
   const [tweets, setTweets] = useState<TweetDraft[]>([{ id: "1", content: "", media: [] }]);
-  const [confirmNavDialog, setConfirmNavDialog] = useState(false);
-  const [pendingNavHref, setPendingNavHref] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState<string>(
     searchParams?.get("scheduledAt") ?? ""
   );
-  const [browserTimezone, setBrowserTimezone] = useState<string | null>(null);
   const [recurrencePattern, setRecurrencePattern] = useState<string>("none");
   const [recurrenceEndDate, setRecurrenceEndDate] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [targetAccountIds, setTargetAccountIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Tracks whether bridge content (sessionStorage / URL prefill) was loaded on
   // mount, so the localStorage auto-save restore doesn't overwrite it.
   const bridgeLoadedRef = useRef(false);
+  // Bridge hook must run before the drafts hook: its mount effect sets
+  // bridgeLoadedRef, which the drafts hook's restore-banner check reads.
+  const { sourceAttribution, setSourceAttribution, calendarMeta, setCalendarMeta } =
+    useComposerBridge({ draftId, searchParams, setTweets, bridgeLoadedRef });
+  const {
+    lastSavedAt,
+    showSavedLabel,
+    pendingDraftRestore,
+    acceptDraftRestore,
+    discardDraftRestore,
+    confirmNavDialog,
+    setConfirmNavDialog,
+    pendingNavHref,
+    setPendingNavHref,
+  } = useComposerDrafts({ tweets, setTweets, draftId, bridgeLoadedRef, router, t });
   const [activeTweetId, setActiveTweetId] = useState<string | null>(null);
-
-  const [accounts, setAccounts] = useState<SocialAccountLite[]>([]);
-  const [accountsLoading, setAccountsLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
-  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  // Used to restore the draft's linked account once accounts have loaded
-  const [draftXAccountId, setDraftXAccountId] = useState<string | null>(null);
 
-  // W4: Source attribution from Inspiration page / AI tools
-  const [sourceAttribution, setSourceAttribution] = useState<{
-    handle?: string;
-    url?: string;
-    label?: string;
-  } | null>(null);
-  // W5: Calendar metadata hint (tone + topic) from Content Calendar page
-  const [calendarMeta, setCalendarMeta] = useState<{ tone: string; topic: string } | null>(null);
-
-  // AI State
-  const [isAiOpen, setIsAiOpen] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  // Phase 1: Added "inspire" and "template" to tool type (template for Phase 2)
-  const [aiTool, setAiTool] = useState<
-    "thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags"
-  >("thread");
-  const [aiTargetTweetId, setAiTargetTweetId] = useState<string | null>(null);
-  const [aiTopic, setAiTopic] = useState("");
-  const [aiHook, setAiHook] = useState("");
-  // Phase 1: Inspiration state (moved from dialog to inline panel)
-  const [inspirationTopics, setInspirationTopics] = useState<
-    Array<{ topic: string; hook: string }>
-  >([]);
-  const [inspirationNiche, setInspirationNiche] = useState("Technology");
-  const [isLoadingInspiration, setIsLoadingInspiration] = useState(false);
-  // Phase 2: Template state (moved from dialog to inline panel)
-  const [templateConfig, setTemplateConfig] = useState<TemplatePromptConfig | null>(null);
-  const [templatesDialogOpen, setTemplatesDialogOpen] = useState(false);
-  const [templateFormat, setTemplateFormat] = useState<OutputFormat>("thread-short");
-  const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
-  // P3-A: Restore AI tone + language from localStorage (session language takes priority once loaded)
-  const [aiTone, setAiTone] = useState<string>("professional");
-  const [aiCount, setAiCount] = useState([3]);
-  const [aiLanguage, setAiLanguage] = useState<string>("en");
-  const [aiLengthOption, setAiLengthOption] = useState<"short" | "medium" | "long">("short");
-  const [aiRewriteText, setAiRewriteText] = useState("");
-
-  // Load AI preferences from localStorage on mount (client-only)
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
-      if (saved.tone) setAiTone(saved.tone);
-      if (saved.language) {
-        setAiLanguage(saved.language);
-      } else {
-        const browserLang = navigator.language.split("-")[0] ?? "en";
-        const supported: string[] = LANGUAGES.map((l) => l.code);
-        if (supported.includes(browserLang)) setAiLanguage(browserLang);
-      }
-    } catch {
-      // keep defaults
-    }
-  }, []);
-
-  // UI language ≠ content language; default to user's content preference
-  useEffect(() => {
-    if (session?.user && "language" in session.user && (session.user as any).language) {
-      setAiLanguage((session.user as any).language);
-    }
-    // Phase 4: Track plan for upsell banner
-    if (session?.user && "plan" in session.user) {
-      setUserPlan((session.user as { plan?: string }).plan ?? null);
-    }
-  }, [session?.user]);
-
-  // P3-A: Persist AI tone + language preferences across sessions
-  useEffect(() => {
-    try {
-      const existing = JSON.parse(localStorage.getItem("astra-ai-prefs") ?? "{}");
-      localStorage.setItem(
-        "astra-ai-prefs",
-        JSON.stringify({ ...existing, tone: aiTone, language: aiLanguage })
-      );
-    } catch {
-      // localStorage unavailable — non-critical
-    }
-  }, [aiTone, aiLanguage]);
-
-  // Phase 4: Feedback/Refine — track the last AI generation ID for feedback buttons
-  const [lastGenerationId, setLastGenerationId] = useState<string | null>(null);
-  // Phase 4: Track user plan for upsell banner visibility
-  const [userPlan, setUserPlan] = useState<string | null>(null);
-
-  const [aiAddNumbering, setAiAddNumbering] = useState(true);
-  const [aiTranslateTarget, setAiTranslateTarget] = useState<string>("en");
   const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(() => {
     if (hasScheduledPost !== undefined) return hasScheduledPost;
@@ -268,394 +72,29 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
   const [templateTitle, setTemplateTitle] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [templateCategory, setTemplateCategory] = useState("Personal");
-  // AI meta from the last template generation — stored so it can be saved with the template
-  const [lastTemplateAiMeta, setLastTemplateAiMeta] = useState<TemplateAiMeta | null>(null);
-
-  // Overwrite confirmation (C1)
-  const [confirmOverwrite, setConfirmOverwrite] = useState(false);
-  const [pendingTweets, setPendingTweets] = useState<TweetDraft[] | null>(null);
-  // P2-F: Save original tweets before streaming so we can revert on overwrite rejection
-  const preStreamTweetsRef = useRef<TweetDraft[] | null>(null);
-  // P2-F: Track streaming progress and pending AI stream confirmation
-  const [streamingTweetCount, setStreamingTweetCount] = useState(0);
-  const [pendingAiStreamGenerate, setPendingAiStreamGenerate] = useState(false);
-  // Phase 0: Undo snapshot for destructive operations
-  const previousTweetsRef = useRef<TweetDraft[] | null>(null);
-  // Phase 0: Translate confirmation dialog
-  const [confirmTranslate, setConfirmTranslate] = useState(false);
 
   // Preview carousel index (H6)
   const [previewIndex, setPreviewIndex] = useState(0);
 
-  // Auto-save timestamp (H5)
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  // P0-A: Delay showing the saved label by 5s to avoid "just now" appearing prematurely
-  const [showSavedLabel, setShowSavedLabel] = useState(false);
-  // Draft restore banner state
-  const [pendingDraftRestore, setPendingDraftRestore] = useState<TweetDraft[] | null>(null);
-
-  // AI Image Dialog State
-  const [isAiImageOpen, setIsAiImageOpen] = useState(false);
-  const [aiImageTargetTweetId, setAiImageTargetTweetId] = useState<string | null>(null);
-  const [userPlanLimits, setUserPlanLimits] = useState<{
-    availableModels: ("nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2")[];
-    preferredModel: "nano-banana-2" | "nano-banana-pro" | "nano-banana" | "gpt-image-2";
-    remainingQuota: number;
-  }>({
-    availableModels: ["nano-banana-2"],
-    preferredModel: "nano-banana-2",
-    // Start at 0 — updated from server once session is available.
-    // Avoids showing a stale hard-coded value before the API responds.
-    remainingQuota: 0,
-  });
-
   const { openWithContext: openUpgradeModal } = useUpgradeModal();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        setAccountsLoading(true);
-        const res = await fetchWithAuth("/api/accounts", { method: "GET" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled) return;
-        const list = (data.accounts || []) as SocialAccountLite[];
-        setAccounts(list);
-
-        if (targetAccountIds.length === 0) {
-          const defaults = list.filter((a) => a.isDefault).map((a) => a.id);
-          setTargetAccountIds(defaults.length > 0 ? defaults : list.slice(0, 1).map((a) => a.id));
-        }
-      } finally {
-        if (!cancelled) setAccountsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Fetch server-authoritative AI image plan limits.
-  // The server is the single source of truth for available models and quota —
-  // this removes the client-side getLimitsForPlan that diverged from plan-limits.ts.
-  useEffect(() => {
-    if (!session?.user) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetchWithAuth("/api/ai/image/quota");
-        if (!res.ok || cancelled) return;
-        const data = await res.json();
-        setUserPlanLimits({
-          availableModels: data.availableModels ?? ["nano-banana-2"],
-          preferredModel: data.preferredModel ?? "nano-banana-2",
-          remainingQuota: data.remainingImages ?? 0,
-        });
-      } catch (e) {
-        clientLogger.error("Failed to fetch AI image quota", {
-          error: e instanceof Error ? e.message : String(e),
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [session?.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Detect browser timezone once after mount (SSR-safe — avoids hydration mismatch)
-  useEffect(() => {
-    setBrowserTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone);
-  }, []);
-
-  // ── Composer Bridge ─────────────────────────────────────────────────────────
-  // Reads content injected by AI tool pages via sessionStorage or the ?prefill
-  // URL param. Priority order:
-  //   1. composer_payload  (AI Writer, Affiliate — multi-tweet array)
-  //   2. inspiration_tweets (Inspiration page — adapted tweet array)
-  //   3. ?prefill=<text>   (Calendar, Reply — single tweet string)
-  // Sets bridgeLoadedRef so the localStorage auto-save restore below doesn't
-  // overwrite content that was just injected.
-  useEffect(() => {
-    if (draftId) return; // Hard draft from URL takes highest priority
-
-    // 1. composer_payload (AI Writer, Affiliate, Hashtag Generator)
-    const payloadStr = sessionStorage.getItem("composer_payload");
-    if (payloadStr) {
-      try {
-        const payload = JSON.parse(payloadStr) as ComposerPayload;
-        if (Array.isArray(payload.tweets) && payload.tweets.length > 0) {
-          const firstTweetImage = payload.firstTweetImage;
-          setTweets(
-            payload.tweets.map((c, i) => ({
-              id: Math.random().toString(36).substr(2, 9),
-              content: c,
-              media:
-                i === 0 && firstTweetImage?.url
-                  ? [
-                      {
-                        url: firstTweetImage.url,
-                        mimeType: "image/png",
-                        fileType: "image" as const,
-                        size: 0,
-                      },
-                    ]
-                  : [],
-            }))
-          );
-          // Source attribution for AI tools
-          if (payload.source === "pdf-to-thread") {
-            setSourceAttribution({ label: "PDF → Thread" });
-          } else if (payload.source === "youtube-to-thread") {
-            setSourceAttribution({ label: "YouTube → Thread" });
-          }
-          bridgeLoadedRef.current = true;
-          sessionStorage.removeItem("composer_payload");
-          return;
-        }
-      } catch {
-        // Malformed payload — fall through
-      }
-    }
-
-    // 2. inspiration_tweets (Inspiration page)
-    const inspirationStr = sessionStorage.getItem("inspiration_tweets");
-    if (inspirationStr) {
-      try {
-        // W4: Read source attribution before removing from storage
-        const attributionStr = sessionStorage.getItem("inspiration_attribution");
-        if (attributionStr) {
-          try {
-            setSourceAttribution(JSON.parse(attributionStr) as { handle: string; url: string });
-          } catch {}
-          sessionStorage.removeItem("inspiration_attribution");
-        }
-
-        const inspirationTweets = JSON.parse(inspirationStr) as string[];
-        if (Array.isArray(inspirationTweets) && inspirationTweets.length > 0) {
-          setTweets(
-            inspirationTweets.map((c) => ({
-              id: Math.random().toString(36).substr(2, 9),
-              content: c,
-              media: [],
-            }))
-          );
-          bridgeLoadedRef.current = true;
-          sessionStorage.removeItem("inspiration_tweets");
-          sessionStorage.removeItem("inspiration_source_id");
-          return;
-        }
-      } catch {
-        // Malformed — fall through
-      }
-    }
-
-    // 3. ?prefill=<text> URL param (Calendar, Reply Suggester)
-    const prefill = searchParams?.get("prefill");
-    if (prefill) {
-      setTweets([{ id: "1", content: prefill, media: [] }]);
-      bridgeLoadedRef.current = true;
-      // W5: Read calendar metadata (tone + topic) passed from Content Calendar
-      const calendarTone = searchParams?.get("tone");
-      const calendarTopic = searchParams?.get("topic");
-      if (calendarTone || calendarTopic) {
-        setCalendarMeta({ tone: calendarTone ?? "", topic: calendarTopic ?? "" });
-      }
-      // Remove the param without a navigation so Back still works
-      window.history.replaceState(null, "", "/dashboard/compose");
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-save restore check - show banner instead of auto-restoring
-  useEffect(() => {
-    if (draftId) return; // Draft will be loaded from API — skip localStorage restore
-    if (bridgeLoadedRef.current) return; // Bridge content loaded — don't show banner
-    const saved = localStorage.getItem("astra-post-drafts");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Only show banner if we are at default state or empty
-          if (tweets.length === 1 && tweets[0]?.content === "" && tweets[0]?.media.length === 0) {
-            setPendingDraftRestore(parsed);
-          }
-        }
-      } catch (e) {
-        clientLogger.error("Failed to load drafts", {
-          error: e instanceof Error ? e.message : String(e),
-        });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleAcceptDraftRestore = () => {
-    if (pendingDraftRestore) {
-      setTweets(pendingDraftRestore);
-      toast.success(t("toast.draft_restored"));
-      setPendingDraftRestore(null);
-    }
-  };
-
-  const handleDiscardDraftRestore = () => {
-    localStorage.removeItem("astra-post-drafts");
-    setPendingDraftRestore(null);
-  };
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      // Strip uploading placeholders before persisting so reloads don't show ghost items
-      const saveable = tweets.map((t) => ({
-        ...t,
-        media: t.media.filter((m) => !m.uploading),
-      }));
-      const hasContent = saveable.some((t) => t.content.trim().length > 0 || t.media.length > 0);
-      if (!hasContent) {
-        localStorage.removeItem("astra-post-drafts");
-        return;
-      }
-      localStorage.setItem("astra-post-drafts", JSON.stringify(saveable));
-      setLastSavedAt(new Date());
-    }, 2000);
-    return () => clearTimeout(timeout);
-  }, [tweets]);
-
-  // P0-A: Only show the "Auto-saved" label after a 5s delay to avoid premature "just now"
-  useEffect(() => {
-    if (!lastSavedAt) {
-      setShowSavedLabel(false);
-      return;
-    }
-    setShowSavedLabel(false);
-    const t = setTimeout(() => setShowSavedLabel(true), 5000);
-    return () => clearTimeout(t);
-  }, [lastSavedAt]);
-
-  // P0-E + P2-D: Warn user before closing tab with unsaved content OR active uploads
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      const hasUnsavedContent = tweets.some((t) => t.content.trim().length > 0);
-      const hasUploadingMedia = tweets.some((t) => t.media.some((m) => m.uploading));
-      if (hasUnsavedContent || hasUploadingMedia) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [tweets]);
-
-  // UA-A13: Warn user before SPA navigation away mid-draft
-  // Store a ref to the original router.push to intercept calls
-  const originalRouterPush = useRef(router.push);
-
-  useEffect(() => {
-    const hasUnsavedContent = tweets.some((t) => t.content.trim().length > 0);
-    const hasUploadingMedia = tweets.some((t) => t.media.some((m) => m.uploading));
-    const isDrafty = hasUnsavedContent || hasUploadingMedia;
-
-    if (!isDrafty) return;
-
-    // Override router.push to check for unsaved content before navigation
-    const wrappedPush = async (href: string) => {
-      // Don't warn if navigating to the same page or within compose
-      if (href.startsWith("/dashboard/compose")) {
-        return originalRouterPush.current(href);
-      }
-
-      setConfirmNavDialog(true);
-      setPendingNavHref(href);
-      return undefined;
-    };
-
-    // Monkey-patch the router.push method
-    (router.push as any) = wrappedPush;
-
-    // Capture the original push in this effect scope to avoid stale ref in cleanup
-    const originalPush = originalRouterPush.current;
-
-    return () => {
-      // Restore original push
-      (router.push as any) = originalPush;
-    };
-  }, [tweets, router]);
-
-  // Load draft from database when ?draft=<id> is present in the URL
-  useEffect(() => {
-    if (!draftId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/posts/${draftId}`);
-        if (!res.ok || cancelled) return;
-        const post = await res.json();
-        if (cancelled) return;
-
-        const loadedTweets: TweetDraft[] = (post.tweets || []).map(
-          (t: {
-            content?: string;
-            media?: Array<{
-              fileUrl: string;
-              fileType: "image" | "video" | "gif";
-              fileSize?: number;
-            }>;
-          }) => ({
-            id: Math.random().toString(36).substr(2, 9),
-            content: t.content || "",
-            media: (t.media || []).map((m) => ({
-              url: m.fileUrl,
-              mimeType:
-                m.fileType === "image"
-                  ? "image/jpeg"
-                  : m.fileType === "video"
-                    ? "video/mp4"
-                    : "image/gif",
-              fileType: m.fileType,
-              size: m.fileSize || 0,
-            })),
-          })
-        );
-
-        if (loadedTweets.length > 0) {
-          setTweets(loadedTweets);
-          setEditingDraftId(draftId);
-          if (post.xAccountId) setDraftXAccountId(post.xAccountId);
-          if (post.scheduledAt) {
-            setScheduledDate(new Date(post.scheduledAt).toISOString().slice(0, 16));
-          }
-          toast.success(t("toast.draft_loaded"));
-        }
-      } catch (e) {
-        clientLogger.error("Failed to load draft", {
-          draftId,
-          error: e instanceof Error ? e.message : String(e),
-        });
-        toast.error(t("toast.draft_load_failed"));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [draftId, t]);
-
-  // Once both accounts and the draft's linked account ID are known, restore the selection
-  useEffect(() => {
-    if (!draftXAccountId || accounts.length === 0) return;
-    if (accounts.some((a) => a.id === draftXAccountId)) {
-      setTargetAccountIds([draftXAccountId]);
-    }
-  }, [draftXAccountId, accounts]);
+  const {
+    accounts,
+    accountsLoading,
+    mounted,
+    editingDraftId,
+    setEditingDraftId,
+    browserTimezone,
+    userPlanLimits,
+  } = useComposerData({
+    draftId,
+    sessionUserId: session?.user?.id,
+    setTweets,
+    setScheduledDate,
+    targetAccountIds,
+    setTargetAccountIds,
+  });
 
   const handleSaveTemplate = async () => {
     if (!templateTitle.trim()) {
@@ -670,7 +109,7 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
         description: templateDescription,
         category: templateCategory,
         content: tweets.map((t) => t.content),
-        ...(lastTemplateAiMeta ? { aiMeta: lastTemplateAiMeta } : {}),
+        ...(ai.lastTemplateAiMeta ? { aiMeta: ai.lastTemplateAiMeta } : {}),
       });
       toast.success(t("toast.template_saved"));
       setIsSaveTemplateOpen(false);
@@ -687,1079 +126,68 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      setTweets((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const handlePlanLimit = async (res: Response, _fallbackMessage: string) => {
-    let payload: PlanLimitPayload | null = null;
-    try {
-      payload = (await res.json()) as PlanLimitPayload;
-    } catch {}
-
-    openUpgradeModal({
-      error: payload?.error,
-      code: payload?.code,
-      message: payload?.message,
-      feature: payload?.feature,
-      plan: payload?.plan,
-      limit: payload?.limit,
-      used: payload?.used,
-      remaining: payload?.remaining,
-      upgradeUrl: payload?.upgrade_url,
-      suggestedPlan: payload?.suggested_plan,
-      trialActive: payload?.trial_active,
-      resetAt: payload?.reset_at,
-    });
-  };
-
-  const addTweet = () => {
-    // P3-B: When a thread reaches 3+ tweets and auto-numbering is on, apply 1/N prefixes
-    const nextTweets: typeof tweets = [
-      ...tweets,
-      { id: Math.random().toString(36).substr(2, 9), content: "", media: [] },
-    ];
-    setTweets(aiAddNumbering && nextTweets.length >= 3 ? applyNumbering(nextTweets) : nextTweets);
-  };
-
-  const removeTweet = (id: string) => {
-    if (tweets.length === 1) return;
-    const previousTweets = [...tweets];
-    const nextTweets = tweets.filter((t) => t.id !== id);
-    setTweets(nextTweets);
-    setPreviewIndex((prev) => Math.min(prev, nextTweets.length - 1));
-    toast(t("toast.tweet_removed"), {
-      action: {
-        label: t("toast.undo"),
-        onClick: () => {
-          setTweets(previousTweets);
-          setPreviewIndex((prev) => Math.min(prev, previousTweets.length - 1));
-        },
-      },
-    });
-  };
-
-  const clearTweet = (id: string) => {
-    const previous = tweets.find((t) => t.id === id);
-    if (!previous || (previous.content === "" && previous.media.length === 0)) return;
-    setTweets((prev) => prev.map((t) => (t.id === id ? { ...t, content: "", media: [] } : t)));
-    setGeneratedHashtags([]);
-    toast("Tweet cleared", {
-      action: {
-        label: t("toast.undo"),
-        onClick: () => setTweets((prev) => prev.map((t) => (t.id === id ? previous : t))),
-      },
-    });
-  };
-
-  const moveTweet = (fromIndex: number, toIndex: number) => {
-    setTweets((items) => arrayMove(items, fromIndex, toIndex));
-  };
+  const { isSubmitting, setIsSubmitting, handlePlanLimit, handleSubmit } = useComposerPublish({
+    tweets,
+    setTweets,
+    setPreviewIndex,
+    editingDraftId,
+    setEditingDraftId,
+    scheduledDate,
+    setScheduledDate,
+    recurrencePattern,
+    setRecurrencePattern,
+    recurrenceEndDate,
+    setRecurrenceEndDate,
+    targetAccountIds,
+    openUpgradeModal,
+  });
 
   const updateTweet = (id: string, content: string) => {
     setTweets(tweets.map((t) => (t.id === id ? { ...t, content } : t)));
   };
 
-  const updateTweetPreview = (id: string, preview: any) => {
-    setTweets(tweets.map((t) => (t.id === id ? { ...t, linkPreview: preview } : t)));
-  };
-
-  const removeTweetMedia = (id: string, url: string) => {
-    setTweets(
-      tweets.map((t) => (t.id === id ? { ...t, media: t.media.filter((m) => m.url !== url) } : t))
-    );
-  };
-
-  const applyNumbering = (drafts: TweetDraft[]) => {
-    const total = drafts.length;
-    return drafts.map((t, idx) => {
-      const prefix = `${idx + 1}/${total} `;
-      const cleaned = t.content.replace(/^\s*\d+\/\d+\s+/g, "");
-      const maxLen = 1000 - prefix.length;
-      const next = cleaned.length > maxLen ? cleaned.slice(0, maxLen) : cleaned;
-      return { ...t, content: `${prefix}${next}` };
-    });
-  };
-
-  const removeNumbering = (drafts: TweetDraft[]) =>
-    drafts.map((t) => ({ ...t, content: t.content.replace(/^\s*\d+\/\d+\s+/g, "") }));
-
-  // True when every non-empty tweet starts with the N/M prefix pattern
-  const isTweetsNumbered = tweets.length > 1 && tweets.every((t) => /^\d+\/\d+\s/.test(t.content));
-
-  // P3-D: Detect dominant language of tweet content to suggest a smart translate target
-  const detectTranslateTarget = (content: string): string => {
-    const arabicChars = (content.match(/[\u0600-\u06FF]/g) ?? []).length;
-    const latinChars = (content.match(/[a-zA-Z]/g) ?? []).length;
-    if (arabicChars > latinChars) return "en"; // Arabic content → suggest English
-    if (arabicChars === 0 && latinChars > 0) return "ar"; // Latin content → suggest Arabic
-    return aiLanguage === "ar" ? "en" : "ar"; // fallback
-  };
-
-  const openAiTool = (
-    tool: "thread" | "inspire" | "template" | "hook" | "cta" | "rewrite" | "translate" | "hashtags",
-    tweetId?: string
-  ) => {
-    setAiTool(tool);
-    setGeneratedHashtags([]);
-    // Phase 0: Hook now targets active tweet (same as rewrite/hashtags)
-    if ((tool === "rewrite" || tool === "hashtags" || tool === "hook") && tweetId) {
-      setAiTargetTweetId(tweetId);
-      const targetTweet = tweets.find((x) => x.id === tweetId);
-      setAiRewriteText(targetTweet?.content || "");
-      setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
-    } else {
-      setAiTargetTweetId(null);
-      setAiRewriteText("");
-      if (tool === "translate") {
-        // P3-D: Smart default — infer best target language from first tweet's content
-        const firstContent =
-          tweets.find((t) => t.id === (tweetId ?? activeTweetId ?? tweets[0]?.id))?.content ??
-          tweets[0]?.content ??
-          "";
-        setAiTranslateTarget(detectTranslateTarget(firstContent));
-      } else {
-        setAiTranslateTarget(aiLanguage === "ar" ? "en" : "ar");
-      }
-      if (tool === "thread") {
-        setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
-      }
-    }
-    setIsAiOpen(true);
-  };
-
-  // AI Image Dialog handlers
-  const openAiImageDialog = (tweetId: string) => {
-    setAiImageTargetTweetId(tweetId);
-    setIsAiImageOpen(true);
-  };
-
-  const handleAiImageAttach = (image: {
-    imageUrl: string;
-    width: number;
-    height: number;
-    model: string;
-    prompt: string;
-  }) => {
-    if (!aiImageTargetTweetId) return;
-
-    // Add image to the tweet's media array
-    setTweets((prev) =>
-      prev.map((tweet) => {
-        if (tweet.id === aiImageTargetTweetId) {
-          const currentMediaCount = tweet.media.length;
-          if (currentMediaCount >= 4) {
-            toast.error(t("toasts.max_images"));
-            return tweet; // return unchanged
-          }
-          return {
-            ...tweet,
-            media: [
-              ...tweet.media,
-              {
-                url: image.imageUrl,
-                mimeType: "image/png",
-                fileType: "image" as const,
-                size: 0, // Will be determined on upload
-              },
-            ],
-          };
-        }
-        return tweet;
-      })
-    );
-    // Dialog stays open — user can generate and attach more images (up to 4)
-  };
-
-  // Phase 1: Inspiration handlers (moved from dialog to composer)
-  const handleFetchInspiration = async () => {
-    setIsLoadingInspiration(true);
-    try {
-      const res = await fetchWithAuth(
-        `/api/ai/inspiration?niche=${inspirationNiche}&language=${aiLanguage}`
-      );
-      if (res.status === 402) {
-        openUpgradeModal({ feature: "ai_writer" });
-        return;
-      }
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
-      setInspirationTopics(data.topics || []);
-    } catch (e) {
-      clientLogger.error("Failed to load inspiration topics", {
-        niche: inspirationNiche,
-        error: e instanceof Error ? e.message : String(e),
-      });
-      toast.error(t("toasts.inspiration_load_failed"));
-    } finally {
-      setIsLoadingInspiration(false);
-    }
-  };
-
-  const handleInspirationSelect = (topic: string, hook: string) => {
-    setAiTopic(topic);
-    setAiHook(hook);
-    setAiTool("thread"); // Switch to Write tab
-    toast.success(t("toasts.inspiration_topic_set"));
-    // User manually clicks Generate - no auto-fire
-  };
-
-  // Phase 2: Template handlers (moved from dialog to inline panel)
-  const handleTemplateConfigSelect = (config: TemplatePromptConfig) => {
-    setTemplateConfig(config);
-    setAiTone(config.defaultTone);
-    setTemplateFormat(config.defaultFormat);
-    setAiTopic("");
-    setAiTool("template"); // Switch to Template tab
-    setIsAiOpen(true); // Ensure panel is open
-  };
-
-  const restoreHistory = (item: any) => {
-    const content = item.outputContent;
-    if (!content) return;
-
-    if (item.type === "thread" && content.tweets) {
-      setTweets(
-        content.tweets.map((t: string) => ({
-          id: Math.random().toString(36).substr(2, 9),
-          content: t,
-          media: [],
-        }))
-      );
-      setIsAiOpen(false);
-      toast.success(t("toasts.history_restored_thread"));
-    } else if (
-      (item.type === "hook" || item.type === "rewrite" || item.type === "cta") &&
-      content.text
-    ) {
-      if (aiTargetTweetId) {
-        updateTweet(aiTargetTweetId, content.text);
-      } else if (tweets[0]) {
-        updateTweet(tweets[0].id, content.text);
-      }
-      setIsAiOpen(false);
-      toast.success(t("toasts.history_restored_content"));
-    } else if (item.type === "translate" && content.tweets) {
-      setTweets(
-        content.tweets.map((t: string, idx: number) => ({
-          ...(tweets[idx] || { id: Math.random().toString(36).substr(2, 9), media: [] }),
-          content: t,
-        }))
-      );
-      setIsAiOpen(false);
-      toast.success(t("toasts.history_restored_translation"));
-    } else if (item.type === "hashtags" && content.hashtags) {
-      setGeneratedHashtags(content.hashtags);
-      setAiTool("hashtags");
-      // Don't close, let them pick
-    }
-  };
-
-  const restoreId = searchParams?.get("restore");
-
-  useEffect(() => {
-    if (restoreId) {
-      fetchWithAuth(`/api/ai/history?id=${restoreId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.item) {
-            restoreHistory(data.item);
-            window.history.replaceState(null, "", "/dashboard/compose");
-          }
-        })
-        .catch((e) => {
-          clientLogger.error("Failed to restore AI history", {
-            restoreId,
-            error: e instanceof Error ? e.message : String(e),
-          });
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restoreId]);
-
-  const handleTemplateSelect = (contents: string[], aiMeta?: TemplateAiMeta) => {
-    const newTweets = contents.map((c) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      content: c,
-      media: [] as TweetDraft["media"],
-    }));
-    // Store AI meta so it can be embedded when saving as a template
-    setLastTemplateAiMeta(aiMeta ?? null);
-    // C1: ask before overwriting existing content (threshold: 50+ chars)
-    if (tweets.some((t) => t.content.trim().length > 50)) {
-      setPendingTweets(newTweets);
-      setConfirmOverwrite(true);
-      return;
-    }
-    setTweets(newTweets);
-    setPreviewIndex(0);
-    toast.success(t("toasts.template_applied"));
-  };
-
-  const handleAiRun = async (overrides?: {
-    topic?: string;
-    hook?: string;
-    skipOverwriteCheck?: boolean;
-    skipTranslateCheck?: boolean;
-  }) => {
-    setIsGenerating(true);
-    try {
-      const runTopic = overrides?.topic ?? aiTopic;
-      const runHook = overrides?.hook ?? aiHook;
-      if (aiTool === "thread") {
-        if (!runTopic) throw new Error("Topic is required");
-        const isSinglePost = tweets.length === 1;
-
-        // P2-F: Pre-check overwrite guard BEFORE starting API call
-        // Show confirmation dialog if user has substantive content
-        if (
-          !isSinglePost &&
-          !overrides?.skipOverwriteCheck &&
-          tweets.some((t) => t.content.trim().length > 50)
-        ) {
-          preStreamTweetsRef.current = [...tweets];
-          setPendingAiStreamGenerate(true);
-          setConfirmOverwrite(true);
-          setIsGenerating(false);
-          return;
-        }
-
-        const res = await fetchWithAuth("/api/ai/thread", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            topic: runTopic,
-            tone: aiTone,
-            tweetCount: aiCount[0],
-            language: aiLanguage,
-            mode: isSinglePost ? "single" : "thread",
-            ...(isSinglePost ? { lengthOption: aiLengthOption } : {}),
-            ...(isSinglePost && targetAccountIds[0]
-              ? { targetAccountId: targetAccountIds[0] }
-              : {}),
-            ...(runHook ? { hook: runHook } : {}),
-          }),
-        });
-        if (!res.ok) {
-          if (res.status === 402) {
-            await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
-            return;
-          } else if (res.status === 429) {
-            const body = (await res.json().catch(() => ({}))) as { retryAfter?: number };
-            const wait = body.retryAfter ? ` Try again in ${body.retryAfter}s.` : "";
-            toast.error(`Rate limit reached.${wait}`);
-          }
-          throw new Error("Generation failed");
-        }
-        if (!res.body) throw new Error("No response body");
-
-        if (isSinglePost) {
-          // Single-post mode: plain text response (unchanged)
-          const genId = res.headers.get("X-Generation-Id");
-          if (genId) setLastGenerationId(genId);
-          const text = await res.text();
-          if (!text || text.trim().length === 0) throw new Error("No content generated");
-
-          // Phase 0: Save previous state for undo
-          const previousTweets = structuredClone(tweets);
-
-          const newTweet: TweetDraft = {
-            id: tweets[0]?.id ?? Math.random().toString(36).substr(2, 9),
-            content: text.trim(),
-            media: tweets[0]?.media ?? [],
-          };
-          setTweets([newTweet]);
-          setPreviewIndex(0);
-          setIsAiOpen(false);
-          // Phase 0: Undo toast for single post generation
-          toast.success(t("toast.post_generated"), {
-            action: {
-              label: t("toast.undo"),
-              onClick: () => {
-                setTweets(previousTweets);
-                toast.info(t("toasts.post_restored"));
-              },
-            },
-            duration: 5000,
-          });
-          return;
-        }
-
-        // P2-F: Thread mode — stream each tweet directly into composer cards in real-time
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let sseBuffer = "";
-        let streamDone = false;
-
-        // Start with empty cards — streaming will populate them one by one
-        setTweets([]);
-        setPreviewIndex(0);
-        setStreamingTweetCount(0);
-
-        while (!streamDone) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          sseBuffer += decoder.decode(value, { stream: true });
-          const lines = sseBuffer.split("\n");
-          sseBuffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data: ")) continue;
-            const jsonStr = trimmed.slice(6);
-            if (!jsonStr) continue;
-
-            try {
-              const event = JSON.parse(jsonStr) as {
-                done?: boolean;
-                error?: string;
-                index?: number;
-                tweet?: string;
-                generationId?: string;
-              };
-              if (event.error) {
-                toast.error(t("toasts.generation_failed"));
-                streamDone = true;
-                break;
-              }
-              if (event.done) {
-                if (event.generationId) setLastGenerationId(event.generationId);
-                streamDone = true;
-                break;
-              }
-              if (typeof event.tweet === "string" && event.tweet.length > 0) {
-                // P2-F: Stream this tweet into composer immediately
-                const newDraft: TweetDraft = {
-                  id: Math.random().toString(36).substr(2, 9),
-                  content: event.tweet,
-                  media: [],
-                };
-                setTweets((prev) => {
-                  const updated = [...prev, newDraft];
-                  return aiAddNumbering ? applyNumbering(updated) : updated;
-                });
-                setStreamingTweetCount((c) => c + 1);
-              }
-            } catch {
-              // partial line — skip
-            }
-          }
-        }
-
-        // Finalize — close panel after a brief delay so user sees the last card appear
-        await new Promise((r) => setTimeout(r, 400));
-        setIsAiOpen(false);
-        const previousTweets = preStreamTweetsRef.current;
-        preStreamTweetsRef.current = null;
-        // Phase 3: Standardized toast messages
-        toast.success(t("toast.ai_writer_generated"), {
-          action: previousTweets
-            ? {
-                label: t("toast.undo"),
-                onClick: () => {
-                  setTweets(previousTweets);
-                  toast.info(t("toasts.thread_restored"));
-                },
-              }
-            : undefined,
-          duration: 5000,
-        });
-        return;
-      }
-
-      // Phase 2: Template generation — uses same SSE streaming pattern as thread
-      if (aiTool === "template") {
-        if (!templateConfig) {
-          toast.error(t("toasts.select_template_first"));
-          return;
-        }
-        if (!aiTopic || aiTopic.trim().length < 3) {
-          toast.error(t("toasts.topic_min_length"));
-          return;
-        }
-
-        // Pre-check overwrite guard
-        if (!overrides?.skipOverwriteCheck && tweets.some((t) => t.content.trim().length > 50)) {
-          preStreamTweetsRef.current = [...tweets];
-          setPendingAiStreamGenerate(true);
-          setConfirmOverwrite(true);
-          setIsGenerating(false);
-          return;
-        }
-
-        const res = await fetchWithAuth("/api/ai/template-generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            templateId: templateConfig.id,
-            topic: aiTopic.trim(),
-            tone: aiTone,
-            language: aiLanguage,
-            outputFormat: templateFormat,
-          }),
-        });
-
-        if (!res.ok) {
-          if (res.status === 402) {
-            await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
-            return;
-          } else if (res.status === 429) {
-            const body = (await res.json().catch(() => ({}))) as { retryAfter?: number };
-            const wait = body.retryAfter ? ` Try again in ${body.retryAfter}s.` : "";
-            toast.error(`Rate limit reached.${wait}`);
-            return;
-          }
-          throw new Error("Template generation failed");
-        }
-
-        if (!res.body) throw new Error("No response body");
-
-        // Stream tweets using same pattern as thread
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let sseBuffer = "";
-        let streamDone = false;
-
-        setTweets([]);
-        setPreviewIndex(0);
-        setStreamingTweetCount(0);
-
-        while (!streamDone) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          sseBuffer += decoder.decode(value, { stream: true });
-          const lines = sseBuffer.split("\n");
-          sseBuffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data: ")) continue;
-            const jsonStr = trimmed.slice(6);
-            if (!jsonStr) continue;
-
-            try {
-              const event = JSON.parse(jsonStr) as {
-                done?: boolean;
-                error?: string;
-                index?: number;
-                tweet?: string;
-                generationId?: string;
-              };
-              if (event.error) {
-                toast.error(t("toasts.generation_failed"));
-                streamDone = true;
-                break;
-              }
-              if (event.done) {
-                if (event.generationId) setLastGenerationId(event.generationId);
-                streamDone = true;
-                break;
-              }
-              if (typeof event.tweet === "string" && event.tweet.length > 0) {
-                const newDraft: TweetDraft = {
-                  id: Math.random().toString(36).substr(2, 9),
-                  content: event.tweet,
-                  media: [],
-                };
-                setTweets((prev) => {
-                  const updated = [...prev, newDraft];
-                  return aiAddNumbering ? applyNumbering(updated) : updated;
-                });
-                setStreamingTweetCount((c) => c + 1);
-              }
-            } catch {
-              // partial line — skip
-            }
-          }
-        }
-
-        await new Promise((r) => setTimeout(r, 400));
-        setIsAiOpen(false);
-        const previousTweets = preStreamTweetsRef.current;
-        preStreamTweetsRef.current = null;
-
-        // Store AI meta for saving as template later
-        const templateAiMeta: TemplateAiMeta = {
-          templateId: templateConfig.id,
-          tone: aiTone,
-          language: aiLanguage,
-          outputFormat: templateFormat,
-        };
-        setLastTemplateAiMeta(templateAiMeta);
-
-        // Phase 3: Standardized toast messages
-        toast.success(t("toast.template_generated"), {
-          action: previousTweets
-            ? {
-                label: t("toast.undo"),
-                onClick: () => {
-                  setTweets(previousTweets);
-                  toast.info(t("toasts.content_restored"));
-                },
-              }
-            : undefined,
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (aiTool === "hook") {
-        // Phase 0: Hook targets active tweet, not always tweet[0]
-        const targetTweet = aiTargetTweetId
-          ? tweets.find((t) => t.id === aiTargetTweetId)
-          : tweets[0];
-        if (!targetTweet) throw new Error("No tweet to update");
-
-        // Phase 0: Overwrite guard for Hook
-        if (targetTweet.content.trim().length > 50) {
-          previousTweetsRef.current = structuredClone(tweets);
-        }
-
-        const res = await fetchWithAuth("/api/ai/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tool: "hook",
-            topic: aiTopic || targetTweet.content || "",
-            tone: aiTone,
-            language: aiLanguage,
-          }),
-        });
-        if (!res.ok) {
-          if (res.status === 402) {
-            await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
-            return;
-          }
-          throw new Error("Hook generation failed");
-        }
-        const data = (await res.json()) as { text: string; generationId?: string };
-        if (data.generationId) setLastGenerationId(data.generationId);
-        updateTweet(targetTweet.id, data.text);
-        setIsAiOpen(false);
-        // Phase 3: Standardized toast messages
-        toast.success(t("toast.hook_generated"), {
-          action: previousTweetsRef.current
-            ? {
-                label: t("toast.undo"),
-                onClick: () => {
-                  if (previousTweetsRef.current) {
-                    setTweets(previousTweetsRef.current);
-                    previousTweetsRef.current = null;
-                    toast.info(t("toasts.changes_undone"));
-                  }
-                },
-              }
-            : undefined,
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (aiTool === "cta") {
-        // Phase 2: CTA now has access to thread context for better relevance
-        const threadContext = tweets
-          .map((t) => t.content)
-          .filter(Boolean)
-          .join(" ")
-          .slice(0, 500);
-        const res = await fetchWithAuth("/api/ai/tools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tool: "cta",
-            tone: aiTone,
-            language: aiLanguage,
-            context: threadContext || undefined,
-          }),
-        });
-        if (!res.ok) {
-          if (res.status === 402) {
-            await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
-            return;
-          }
-          throw new Error("CTA generation failed");
-        }
-        const data = (await res.json()) as { text: string; generationId?: string };
-        if (data.generationId) setLastGenerationId(data.generationId);
-        const last = tweets[tweets.length - 1];
-        if (!last) throw new Error("No tweet to update");
-        updateTweet(last.id, `${last.content}\n\n${data.text}`.trim());
-        setIsAiOpen(false);
-        // Phase 3: Standardized toast messages
-        toast.success(t("toast.cta_added"));
-        return;
-      }
-
-      if (aiTool === "translate") {
-        const nonEmptyTweets = tweets.filter((t) => t.content.trim());
-        if (nonEmptyTweets.length === 0) {
-          toast.error(t("toasts.add_content_to_translate"));
-          return;
-        }
-
-        // Phase 0: Show confirmation dialog before translating
-        if (!overrides?.skipTranslateCheck) {
-          setConfirmTranslate(true);
-          setIsGenerating(false);
-          return;
-        }
-
-        // Phase 0: Save state for undo before translating
-        previousTweetsRef.current = structuredClone(tweets);
-
-        const res = await fetchWithAuth("/api/ai/translate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tweets: nonEmptyTweets.map((t) => t.content),
-            targetLanguage: aiTranslateTarget,
-          }),
-        });
-        if (!res.ok) {
-          if (res.status === 402) {
-            await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
-            return;
-          }
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || "Translation failed");
-        }
-        const data = await res.json();
-        let translatedIdx = 0;
-        const next = tweets.map((t) => {
-          if (!t.content.trim()) return t;
-          const translated = data.tweets?.[translatedIdx++];
-          return translated ? { ...t, content: translated } : t;
-        });
-        setTweets(next);
-        setIsAiOpen(false);
-        // Phase 3: Standardized toast messages
-        const translatedCount = nonEmptyTweets.length;
-        toast.success(t("toast.translated", { count: translatedCount }), {
-          action: {
-            label: t("toast.undo"),
-            onClick: () => {
-              if (previousTweetsRef.current) {
-                setTweets(previousTweetsRef.current);
-                previousTweetsRef.current = null;
-                toast.info(t("toasts.translation_undone"));
-              }
-            },
-          },
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (aiTool === "hashtags") {
-        const targetId = aiTargetTweetId;
-        if (!targetId) throw new Error("No tweet selected");
-        const targetTweet = tweets.find((x) => x.id === targetId);
-        if (!targetTweet?.content.trim()) throw new Error("Tweet is empty");
-
-        const res = await fetchWithAuth("/api/ai/hashtags", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: targetTweet.content,
-            language: aiLanguage,
-          }),
-        });
-        if (!res.ok) {
-          if (res.status === 402) {
-            await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
-            return;
-          }
-          throw new Error("Hashtag generation failed");
-        }
-        const data = await res.json();
-        setGeneratedHashtags(data.hashtags || []);
-        // Phase 3: Keep panel open - hashtags appear as inline chips in panel
-        toast.success(t("toast.hashtags_generated", { count: data.hashtags?.length || 0 }));
-        return;
-      }
-
-      // Phase 0: Rewrite branch (note: this is the "rewrite" tool, distinct from hook/cta)
-      const targetId = aiTargetTweetId;
-      if (!targetId) throw new Error("No tweet selected");
-
-      // Phase 0: Save previous content for undo
-      const targetTweet = tweets.find((t) => t.id === targetId);
-      if (targetTweet?.content) {
-        previousTweetsRef.current = structuredClone(tweets);
-      }
-
-      const res = await fetchWithAuth("/api/ai/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tool: "rewrite",
-          input: aiRewriteText,
-          tone: aiTone,
-          language: aiLanguage,
-        }),
-      });
-      if (!res.ok) {
-        if (res.status === 402) {
-          await handlePlanLimit(res, "AI limit reached. Upgrade to continue.");
-          return;
-        }
-        throw new Error("Rewrite failed");
-      }
-      const data = (await res.json()) as { text: string; generationId?: string };
-      if (data.generationId) setLastGenerationId(data.generationId);
-      updateTweet(targetId, data.text);
-      setIsAiOpen(false);
-      // Phase 3: Standardized toast messages
-      toast.success(t("toast.rewrite_generated"), {
-        action: {
-          label: t("toast.undo"),
-          onClick: () => {
-            if (previousTweetsRef.current) {
-              setTweets(previousTweetsRef.current);
-              previousTweetsRef.current = null;
-              toast.info(t("toasts.rewrite_undone"));
-            }
-          },
-        },
-        duration: 5000,
-      });
-    } catch (error) {
-      clientLogger.error("AI request failed", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      toast.error(error instanceof Error ? error.message : "AI request failed");
-    } finally {
-      setIsGenerating(false);
-      setAiHook("");
-    }
-  };
-
-  // NOTE: generatedHashtags is cleared at the start of every openAiTool() call.
-  // A useEffect that cleared them on panel close was removed here because it
-  // ran synchronously in the same render batch as setIsAiOpen(false) in the
-  // hashtags branch — wiping chips before they ever rendered.
-
-  // Phase 1: Removed auto-fire useEffect - Inspiration now pre-fills topic but user clicks Generate manually
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !activeTweetId) return;
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-
-    const tweetId = activeTweetId;
-    const existingCount = tweets.find((t) => t.id === tweetId)?.media.length ?? 0;
-    const remaining = Math.max(0, 4 - existingCount);
-    const toUpload = files.slice(0, remaining);
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
-
-    if (toUpload.length === 0) {
-      toast.error(t("toasts.max_media"));
-      return;
-    }
-
-    // Add placeholder spinner items immediately so the user sees feedback
-    const placeholders: TweetDraft["media"] = toUpload.map((file) => ({
-      url: "",
-      mimeType: file.type,
-      fileType: (file.type.startsWith("video/")
-        ? "video"
-        : file.type === "image/gif"
-          ? "gif"
-          : "image") as "image" | "video" | "gif",
-      size: file.size,
-      uploading: true,
-      placeholderId: Math.random().toString(36).slice(2, 11),
-    }));
-
-    setTweets((prev) =>
-      prev.map((t) => (t.id === tweetId ? { ...t, media: [...t.media, ...placeholders] } : t))
-    );
-
-    let successCount = 0;
-    for (let i = 0; i < toUpload.length; i++) {
-      const file = toUpload[i]!;
-      const { placeholderId } = placeholders[i]!;
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetchWithAuth("/api/media/upload", { method: "POST", body: formData });
-        if (!res.ok) {
-          const msg = await res.text().catch(() => "Upload failed");
-          throw new Error(msg || "Upload failed");
-        }
-        const data = await res.json();
-        // Replace placeholder with real media item
-        setTweets((prev) =>
-          prev.map((t) =>
-            t.id === tweetId
-              ? {
-                  ...t,
-                  media: t.media.map((m) =>
-                    m.placeholderId === placeholderId
-                      ? {
-                          url: data.url,
-                          mimeType: data.mimeType,
-                          fileType: data.fileType,
-                          size: data.size,
-                        }
-                      : m
-                  ),
-                }
-              : t
-          )
-        );
-        // Show optimization hint if the server provided one
-        if (data.optimizationHint) {
-          toast.info(data.optimizationHint);
-        }
-        successCount++;
-      } catch (error) {
-        clientLogger.error("File upload failed", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        // Remove failed placeholder
-        setTweets((prev) =>
-          prev.map((t) =>
-            t.id === tweetId
-              ? { ...t, media: t.media.filter((m) => m.placeholderId !== placeholderId) }
-              : t
-          )
-        );
-        toast.error(error instanceof Error ? error.message : "Failed to upload file");
-      }
-    }
-
-    if (successCount > 0) {
-      toast.success(successCount === 1 ? "Media uploaded" : `${successCount} files uploaded`);
-    }
-  };
-
-  const triggerFileUpload = (tweetId: string) => {
-    setActiveTweetId(tweetId);
-    fileInputRef.current?.click();
-  };
+  const ai = useComposerAi({
+    tweets,
+    setTweets,
+    updateTweet,
+    setPreviewIndex,
+    targetAccountIds,
+    activeTweetId,
+    handlePlanLimit,
+    openUpgradeModal,
+    session,
+    searchParams,
+    t,
+  });
+
+  const {
+    isAiImageOpen,
+    setIsAiImageOpen,
+    aiImageTargetTweetId,
+    openAiImageDialog,
+    handleAiImageAttach,
+    handleFileUpload,
+    triggerFileUpload,
+  } = useComposerMedia({ tweets, setTweets, activeTweetId, setActiveTweetId, fileInputRef });
+
+  const {
+    addTweet,
+    removeTweet,
+    clearTweet,
+    moveTweet,
+    updateTweetPreview,
+    removeTweetMedia,
+    handleDragEnd,
+    isTweetsNumbered,
+  } = useComposerTweets({
+    tweets,
+    setTweets,
+    setPreviewIndex,
+    setGeneratedHashtags: ai.setGeneratedHashtags,
+    aiAddNumbering: ai.aiAddNumbering,
+  });
 
   const hasContent = tweets.every((t) => t.content.trim().length > 0);
-
-  const handleSubmit = async (action: "draft" | "schedule" | "publish_now") => {
-    const isUploading = tweets.some((t) => t.media.some((m) => m.uploading));
-    if (isUploading) {
-      toast.error(t("toasts.wait_for_upload"));
-      return;
-    }
-
-    // Validate that every tweet has content (API rejects empty strings)
-    const emptyIndex = tweets.findIndex((t) => !t.content.trim());
-    if (emptyIndex !== -1) {
-      const label =
-        tweets.length > 1 ? `Tweet ${emptyIndex + 1} is empty.` : "Tweet content cannot be empty.";
-      toast.error(label);
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      let res: Response;
-      if (editingDraftId) {
-        // Update the existing draft via PATCH
-        res = await fetchWithAuth(`/api/posts/${editingDraftId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tweets: tweets.map((t) => ({
-              content: t.content,
-              media: t.media,
-            })),
-            scheduledAt: scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
-            action,
-          }),
-        });
-      } else {
-        res = await fetchWithAuth("/api/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tweets: tweets.map((t) => ({
-              content: t.content,
-              media: t.media,
-            })),
-            targetAccountIds,
-            scheduledAt: scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
-            recurrencePattern: recurrencePattern === "none" ? undefined : recurrencePattern,
-            recurrenceEndDate: recurrenceEndDate || undefined,
-            action,
-          }),
-        });
-      }
-
-      if (!res.ok) {
-        if (res.status === 402) {
-          await handlePlanLimit(res, "Plan limit reached. Upgrade to continue.");
-          return;
-        }
-        const error = await res.json();
-        const detail =
-          error.issues
-            ?.map(
-              (i: { path?: (string | number)[]; message?: string }) =>
-                `${i.path?.join(".") ?? ""}: ${i.message}`
-            )
-            .join("; ") ??
-          error.error ??
-          "Failed to submit";
-        throw new Error(detail);
-      }
-
-      let message: string;
-      if (editingDraftId) {
-        if (action === "draft") message = "Draft saved!";
-        else if (action === "schedule") message = "Post scheduled!";
-        else message = "Post sent to queue — publishing shortly.";
-      } else {
-        const data = await res.json();
-        const count = Array.isArray(data.postIds) ? data.postIds.length : 1;
-        if (action === "schedule") {
-          message = count > 1 ? `Scheduled ${count} posts.` : "Post scheduled!";
-        } else if (action === "publish_now") {
-          // Posts are handed off to the background worker — they publish within seconds,
-          // not instantly. "Sent to queue" is accurate; "published" would be premature.
-          message =
-            count > 1
-              ? `${count} posts sent to queue — publishing shortly.`
-              : "Post sent to queue — publishing shortly.";
-        } else {
-          message = count > 1 ? `Created ${count} drafts.` : "Post drafted!";
-        }
-      }
-
-      toast.success(message);
-      setTweets([{ id: Math.random().toString(36).substr(2, 9), content: "", media: [] }]);
-      setPreviewIndex(0);
-      setScheduledDate("");
-      setRecurrencePattern("none");
-      setRecurrenceEndDate("");
-      setEditingDraftId(null);
-      localStorage.removeItem("astra-post-drafts"); // Clear auto-save
-    } catch (error) {
-      clientLogger.error("Post submission failed", {
-        action,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const selectedAccount = accounts.find((a) => targetAccountIds.includes(a.id)) || accounts[0];
   const userImage = mounted ? selectedAccount?.avatarUrl || session?.user?.image : null;
@@ -1800,79 +228,23 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
   const previewTweet = tweets[safePreviewIndex];
 
   const isAiGenerateDisabled =
-    isGenerating ||
-    (aiTool === "thread" && !aiTopic) ||
-    (aiTool === "hook" && !aiTopic && !(tweets[0]?.content || "").trim()) ||
-    (aiTool === "rewrite" && !aiRewriteText.trim()) ||
-    (aiTool === "translate" && !tweets.some((t) => t.content.trim())) ||
-    (aiTool === "hashtags" &&
-      !(tweets.find((t) => t.id === aiTargetTweetId)?.content ?? "").trim());
+    ai.isGenerating ||
+    (ai.aiTool === "thread" && !ai.aiTopic) ||
+    (ai.aiTool === "hook" && !ai.aiTopic && !(tweets[0]?.content || "").trim()) ||
+    (ai.aiTool === "rewrite" && !ai.aiRewriteText.trim()) ||
+    (ai.aiTool === "translate" && !tweets.some((t) => t.content.trim())) ||
+    (ai.aiTool === "hashtags" &&
+      !(tweets.find((t) => t.id === ai.aiTargetTweetId)?.content ?? "").trim());
 
-  // P3-C: Global keyboard shortcuts — must be called after handleSubmit is declared
-  useKeyboardShortcuts([
-    {
-      key: "Enter",
-      metaOrCtrl: true,
-      label: "⌘↵ Publish",
-      handler: () => {
-        if (hasContent && !isSubmitting) handleSubmit(scheduledDate ? "schedule" : "publish_now");
-      },
-    },
-    {
-      key: "d",
-      metaOrCtrl: true,
-      label: "⌘D Draft",
-      handler: () => {
-        if (hasContent && !isSubmitting) handleSubmit("draft");
-      },
-    },
-    {
-      key: "k",
-      metaOrCtrl: true,
-      label: "⌘K AI",
-      handler: () => {
-        if (!isAiOpen) openAiTool("thread");
-        else setIsAiOpen(false);
-      },
-    },
-    // Phase 4: Keyboard shortcuts for AI tools
-    {
-      key: "w",
-      metaOrCtrl: true,
-      shift: true,
-      label: "⌘⇧W Write",
-      handler: () => {
-        openAiTool("thread");
-      },
-    },
-    {
-      key: "i",
-      metaOrCtrl: true,
-      shift: true,
-      label: "⌘⇧I Inspire",
-      handler: () => {
-        openAiTool("inspire");
-      },
-    },
-    {
-      key: "t",
-      metaOrCtrl: true,
-      shift: true,
-      label: "⌘⇧T Translate",
-      handler: () => {
-        openAiTool("translate");
-      },
-    },
-    {
-      key: "h",
-      metaOrCtrl: true,
-      shift: true,
-      label: "⌘⇧H Hashtags",
-      handler: () => {
-        openAiTool("hashtags");
-      },
-    },
-  ]);
+  useComposerShortcuts({
+    hasContent,
+    isSubmitting,
+    scheduledDate,
+    handleSubmit,
+    isAiOpen: ai.isAiOpen,
+    setIsAiOpen: ai.setIsAiOpen,
+    openAiTool: ai.openAiTool,
+  });
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
@@ -1888,155 +260,35 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
       />
 
       {/* Editor Column */}
-      <div className="space-y-3 sm:space-y-4 lg:col-span-2">
-        {/* P3-E: First-time composer hint overlay & all other alerts */}
-        <ComposerAlerts
-          tweets={tweets}
-          effectiveTier={effectiveTier ?? null}
-          userHandle={userHandle}
-          pendingDraftRestore={pendingDraftRestore}
-          onAcceptDraftRestore={handleAcceptDraftRestore}
-          onDiscardDraftRestore={handleDiscardDraftRestore}
-          sourceAttribution={sourceAttribution}
-          onDismissSourceAttribution={() => setSourceAttribution(null)}
-          calendarMeta={calendarMeta}
-          onDismissCalendarMeta={() => setCalendarMeta(null)}
-          hasMixedTiers={hasMixedTiers}
-        />
-
-        <DndContext
-          id={dndId}
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={tweets.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-            {tweets.map((tweet, index) => {
-              // Phase 3: Compute isAiTarget based on aiTool
-              const isAiTarget = (() => {
-                if (!isAiOpen) return false;
-                if (aiTool === "thread" || aiTool === "inspire" || aiTool === "template")
-                  return true;
-                if (aiTool === "hook" || aiTool === "rewrite" || aiTool === "hashtags")
-                  return tweet.id === aiTargetTweetId;
-                if (aiTool === "cta") return index === tweets.length - 1;
-                if (aiTool === "translate") return tweet.content.trim().length > 0;
-                return false;
-              })();
-
-              return (
-                <SortableTweet
-                  key={tweet.id}
-                  id={tweet.id}
-                  tweet={tweet}
-                  index={index}
-                  totalTweets={tweets.length}
-                  updateTweet={updateTweet}
-                  updateTweetPreview={updateTweetPreview}
-                  removeTweet={removeTweet}
-                  removeTweetMedia={removeTweetMedia}
-                  triggerFileUpload={triggerFileUpload}
-                  openAiImage={openAiImageDialog}
-                  onMove={moveTweet}
-                  onClearTweet={() => clearTweet(tweet.id)}
-                  tier={effectiveTier}
-                  isAiTarget={isAiTarget}
-                  isTweetsNumbered={isTweetsNumbered}
-                  onToggleNumbering={() =>
-                    setTweets(
-                      isTweetsNumbered ? removeNumbering([...tweets]) : applyNumbering([...tweets])
-                    )
-                  }
-                  selectedTier={effectiveTier}
-                  {...(index === 0 && { onConvertToThread: addTweet })}
-                  {...(tweet.id === aiTargetTweetId &&
-                    generatedHashtags.length > 0 && {
-                      suggestedHashtags: generatedHashtags,
-                      onHashtagClick: (tag: string) => {
-                        updateTweet(tweet.id, `${tweet.content} ${tag}`.trim());
-                        setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
-                      },
-                    })}
-                />
-              );
-            })}
-          </SortableContext>
-        </DndContext>
-
-        {/* Phase 4: Feedback + Refine for last AI generation */}
-        {lastGenerationId && (
-          <div className="animate-in fade-in flex flex-wrap items-center gap-2 px-1 duration-200">
-            <FeedbackButtons generationId={lastGenerationId} />
-            <RefineInlineForm
-              generationId={lastGenerationId}
-              originalOutput={tweets.map((t) => t.content).join("\n\n")}
-              onRefined={(refined) => {
-                // Replace first tweet with refined output for single-post,
-                // or show refined text below for thread
-                if (!refined) return;
-                setLastGenerationId(null);
-                toast.success("Output refined! Review the changes below.", {
-                  description: refined.slice(0, 150) + (refined.length > 150 ? "..." : ""),
-                });
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground h-7 gap-1 text-xs"
-              onClick={() => setLastGenerationId(null)}
-            >
-              <XIcon className="h-3 w-3" />
-              Dismiss
-            </Button>
-          </div>
-        )}
-
-        {/* Phase 4: Upsell banner after AI generation for free/trial users */}
-        {lastGenerationId && <UpsellBanner plan={userPlan} className="mb-2" />}
-
-        {lastSavedAt && showSavedLabel && (
-          <div className="text-muted-foreground/60 flex items-center justify-end gap-1 px-1 text-xs">
-            <Clock className="h-3 w-3" />
-            <span>
-              {t("label.auto_saved")} · {formatTimeAgo(lastSavedAt)}
-            </span>
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 border-dashed py-4 text-sm sm:py-6 sm:text-base"
-            onClick={addTweet}
-          >
-            <Plus className="mr-1.5 h-4 w-4 sm:mr-2" />
-            {tweets.length === 1 ? t("label.convert_to_thread") : t("label.add_to_thread")}
-          </Button>
-          {/* P3-B: Auto-numbering status chip — visible when thread has 3+ tweets */}
-          {tweets.length >= 3 && (
-            <Button
-              variant={aiAddNumbering ? "secondary" : "ghost"}
-              size="sm"
-              className="h-9 shrink-0 gap-1 text-xs sm:h-9"
-              onClick={() => {
-                const next = !aiAddNumbering;
-                setAiAddNumbering(next);
-                setTweets(next ? applyNumbering([...tweets]) : removeNumbering([...tweets]));
-              }}
-              title={
-                aiAddNumbering
-                  ? "Auto-numbering on — click to disable"
-                  : "Auto-numbering off — click to enable"
-              }
-            >
-              <ListOrdered className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">
-                {aiAddNumbering ? t("label.thread_mode_on") : t("label.thread_mode_off")}
-              </span>
-            </Button>
-          )}
-        </div>
-      </div>
+      <ComposerEditor
+        {...ai}
+        tweets={tweets}
+        setTweets={setTweets}
+        effectiveTier={effectiveTier}
+        userHandle={userHandle}
+        pendingDraftRestore={pendingDraftRestore}
+        onAcceptDraftRestore={acceptDraftRestore}
+        onDiscardDraftRestore={discardDraftRestore}
+        sourceAttribution={sourceAttribution}
+        onDismissSourceAttribution={() => setSourceAttribution(null)}
+        calendarMeta={calendarMeta}
+        onDismissCalendarMeta={() => setCalendarMeta(null)}
+        hasMixedTiers={hasMixedTiers}
+        dndId={dndId}
+        onDragEnd={handleDragEnd}
+        updateTweet={updateTweet}
+        updateTweetPreview={updateTweetPreview}
+        removeTweet={removeTweet}
+        removeTweetMedia={removeTweetMedia}
+        triggerFileUpload={triggerFileUpload}
+        openAiImage={openAiImageDialog}
+        onMoveTweet={moveTweet}
+        onClearTweet={clearTweet}
+        isTweetsNumbered={isTweetsNumbered}
+        addTweet={addTweet}
+        lastSavedAt={lastSavedAt}
+        showSavedLabel={showSavedLabel}
+      />
 
       {/* Sidebar Column */}
       <div className="flex flex-col space-y-3 sm:space-y-4">
@@ -2053,426 +305,36 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
         </Card>
 
         {/* Card 1: AI Tools — single entry point; tool switching via tabs inside panel */}
-        <Card>
-          <CardContent className="space-y-2 px-3 pt-3 sm:space-y-3 sm:px-6 sm:pt-5">
-            <div className="flex items-center justify-between">
-              <p className="text-muted-foreground/70 text-xs font-medium">{t("label.ai_tools")}</p>
-              {isAiOpen && (
-                <p className="text-muted-foreground/50 text-[10px] sm:text-xs">
-                  {aiTool === "thread" && "Writer"}
-                  {aiTool === "inspire" && "Inspire"}
-                  {aiTool === "template" && "Template"}
-                  {aiTool === "hook" && "Hook"}
-                  {aiTool === "cta" && "CTA"}
-                  {aiTool === "rewrite" && "Rewrite"}
-                  {aiTool === "translate" && "Translate"}
-                  {aiTool === "hashtags" && "#Tags"}
-                </p>
-              )}
-            </div>
-            <Suspense
-              fallback={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-10 w-full justify-center gap-2 text-sm sm:h-11"
-                  disabled
-                >
-                  <Sparkles className="text-primary h-4 w-4 shrink-0" />
-                  <span>{t("label.ai_tools")}</span>
-                </Button>
-              }
-            >
-              <TemplatesDialog
-                open={templatesDialogOpen}
-                onOpenChange={setTemplatesDialogOpen}
-                onSelect={(tweets, aiMeta) => handleTemplateSelect(tweets, aiMeta)}
-                onTemplateSelect={handleTemplateConfigSelect}
-              />
-            </Suspense>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-10 w-full justify-center gap-2 text-sm sm:h-11 sm:text-sm"
-              onClick={() => {
-                if (isAiOpen) {
-                  setIsAiOpen(false);
-                } else {
-                  openAiTool(aiTool || "thread");
-                }
-              }}
-            >
-              <Sparkles className="text-primary h-4 w-4 shrink-0 sm:h-4.5 sm:w-4.5" />
-              {isAiOpen ? (
-                <>
-                  <span>{t("label.close")}</span>
-                  <XIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                </>
-              ) : (
-                <span>{t("label.ai_tools")}</span>
-              )}
-            </Button>
-            {/* P1-B/C: Inline AI panel expands here on desktop when open */}
-            {isAiOpen && isDesktop && (
-              <div className="border-t pt-2">
-                <AiToolsPanel
-                  aiTool={aiTool}
-                  onToolChange={(tool) => {
-                    setAiTool(tool);
-                    setGeneratedHashtags([]);
-                    if (tool === "hashtags" || tool === "hook" || tool === "rewrite") {
-                      setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
-                    }
-                    if (tool === "thread") {
-                      setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
-                    }
-                  }}
-                  aiTopic={aiTopic}
-                  onTopicChange={setAiTopic}
-                  aiTone={aiTone}
-                  onToneChange={setAiTone}
-                  aiLanguage={aiLanguage}
-                  onLanguageChange={setAiLanguage}
-                  aiCount={aiCount}
-                  onCountChange={setAiCount}
-                  aiAddNumbering={aiAddNumbering}
-                  onAddNumberingChange={setAiAddNumbering}
-                  onBrowseTemplates={() => setTemplatesDialogOpen(true)}
-                  aiLengthOption={aiLengthOption}
-                  onLengthOptionChange={setAiLengthOption}
-                  selectedTier={selectedTier ?? null}
-                  tweets={tweets}
-                  aiRewriteText={aiRewriteText}
-                  onRewriteTextChange={setAiRewriteText}
-                  aiTranslateTarget={aiTranslateTarget}
-                  onTranslateTargetChange={setAiTranslateTarget}
-                  aiTargetTweetId={aiTargetTweetId}
-                  isGenerating={isGenerating}
-                  streamingTweetCount={streamingTweetCount}
-                  {...(typeof aiCount[0] === "number" && { totalTweetCount: aiCount[0] })}
-                  onGenerate={handleAiRun}
-                  onClose={() => setIsAiOpen(false)}
-                  // Phase 1: Inspiration props
-                  inspirationTopics={inspirationTopics}
-                  inspirationNiche={inspirationNiche}
-                  isLoadingInspiration={isLoadingInspiration}
-                  onInspirationNicheChange={setInspirationNiche}
-                  onFetchInspiration={handleFetchInspiration}
-                  onInspirationSelect={handleInspirationSelect}
-                  // Phase 2: Template props
-                  templateConfig={templateConfig}
-                  templateFormat={templateFormat}
-                  onTemplateFormatChange={setTemplateFormat}
-                  onClearTemplate={() => setTemplateConfig(null)}
-                  // Phase 3: Hashtag chips props
-                  generatedHashtags={generatedHashtags}
-                  onHashtagClick={(tag) => {
-                    const targetId = aiTargetTweetId ?? activeTweetId ?? tweets[0]?.id;
-                    if (targetId) {
-                      const tweet = tweets.find((t) => t.id === targetId);
-                      if (tweet) {
-                        updateTweet(targetId, `${tweet.content} ${tag}`.trim());
-                        setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
-                      }
-                    }
-                  }}
-                  onHashtagsDone={() => setGeneratedHashtags([])}
-                  isAiOpen={isAiOpen}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ComposerAiTools
+          {...ai}
+          isDesktop={isDesktop}
+          selectedTier={selectedTier ?? null}
+          tweets={tweets}
+          activeTweetId={activeTweetId}
+          updateTweet={updateTweet}
+          isAiGenerateDisabled={isAiGenerateDisabled}
+        />
 
         {/* Card 2: Publishing (H1 — split from content tools) */}
-        <Card>
-          <CardContent className="space-y-3 px-3 pt-3 sm:space-y-4 sm:px-6 sm:pt-5">
-            <p className="text-muted-foreground/70 text-xs font-medium">{t("label.publishing")}</p>
-
-            {/* H2: Action context — shows what will happen before the user clicks */}
-            <p className="text-muted-foreground text-center text-[10px] sm:text-xs">
-              {scheduledDate ? (
-                <>
-                  Scheduling for{" "}
-                  <span className="text-foreground font-medium">
-                    {new Date(scheduledDate).toLocaleDateString(undefined, {
-                      weekday: "short",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                    {t("at_separator")}
-                    {new Date(scheduledDate).toLocaleTimeString(undefined, {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                </>
-              ) : (
-                <>
-                  {t("posting_immediately_to")}{" "}
-                  <span className="text-foreground font-medium">
-                    {accounts.find((a) => targetAccountIds.includes(a.id))?.username
-                      ? `@${accounts.find((a) => targetAccountIds.includes(a.id))?.username}`
-                      : t("selected_account")}
-                  </span>
-                </>
-              )}
-            </p>
-
-            <div className="flex flex-col gap-1.5 sm:gap-2">
-              {scheduledDate ? (
-                /* Date is set — show Schedule as primary, Post Now as secondary */
-                <>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span tabIndex={0}>
-                          <Button
-                            className="h-10 w-full text-sm font-semibold sm:h-11 sm:text-base"
-                            onClick={() => handleSubmit("schedule")}
-                            disabled={isSubmitting || !hasContent}
-                          >
-                            {isSubmitting ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                            ) : (
-                              <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            )}
-                            {t("label.schedule")}
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span tabIndex={0}>
-                          <Button
-                            variant="outline"
-                            className="h-9 w-full text-sm sm:h-10"
-                            onClick={() => handleSubmit("publish_now")}
-                            disabled={isSubmitting || !hasContent}
-                          >
-                            <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            {t("label.post_now")}
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                    </Tooltip>
-                  </TooltipProvider>
-                </>
-              ) : (
-                /* No date set — Post Now primary, Schedule reveals advanced options */
-                <>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span tabIndex={0}>
-                          <Button
-                            className="h-10 w-full text-sm font-semibold sm:h-11 sm:text-base"
-                            onClick={() => handleSubmit("publish_now")}
-                            disabled={isSubmitting || !hasContent}
-                          >
-                            {isSubmitting ? (
-                              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                            ) : (
-                              <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            )}
-                            {t("label.post_now")}
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                    </Tooltip>
-                  </TooltipProvider>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span tabIndex={0}>
-                          <Button
-                            variant="outline"
-                            className="h-9 w-full text-sm sm:h-10"
-                            onClick={() => setShowAdvancedOptions(true)}
-                            disabled={isSubmitting || !hasContent}
-                          >
-                            <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            {t("label.schedule")}
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                    </Tooltip>
-                  </TooltipProvider>
-                </>
-              )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0}>
-                      <Button
-                        variant="outline"
-                        className="h-9 w-full text-sm sm:h-10"
-                        onClick={() => handleSubmit("draft")}
-                        disabled={isSubmitting || !hasContent}
-                      >
-                        <FileText className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                        {t("label.save_draft")}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
-            {/* Advanced Options disclosure */}
-            <div className="border-t pt-3">
-              <button
-                type="button"
-                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                aria-expanded={showAdvancedOptions}
-                className="text-muted-foreground hover:text-foreground flex w-full items-center justify-between text-xs font-medium transition-colors"
-              >
-                <span>{t("advanced_options")}</span>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    showAdvancedOptions && "rotate-180"
-                  )}
-                />
-              </button>
-              {showAdvancedOptions && (
-                <div className="animate-in fade-in slide-in-from-top-2 space-y-4 pt-3">
-                  {/* Target account selector — only when multiple accounts available */}
-                  {accounts.length > 1 && (
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="post-accounts" className="text-xs sm:text-sm">
-                        {t("label.post_to_accounts")}
-                      </Label>
-                      <TargetAccountsSelect
-                        value={targetAccountIds}
-                        onChange={setTargetAccountIds}
-                        accounts={accounts}
-                        loading={accountsLoading}
-                      />
-                    </div>
-                  )}
-
-                  {/* Schedule section */}
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="schedule-date" className="text-xs sm:text-sm">
-                        {t("label.schedule_for")}
-                      </Label>
-                      {scheduledDate && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground h-auto px-2 py-0.5 text-[10px] sm:text-xs"
-                          onClick={() => {
-                            setScheduledDate("");
-                            setRecurrencePattern("none");
-                            setRecurrenceEndDate("");
-                          }}
-                        >
-                          {t("label.cancel")}
-                          <XIcon className="ml-1 h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                    <div className="bg-muted/30 space-y-1.5 rounded-lg p-2 sm:space-y-2 sm:p-3">
-                      <DateTimePicker
-                        id="schedule-date"
-                        value={scheduledDate}
-                        onChange={(val) => {
-                          if (!val) {
-                            setScheduledDate("");
-                            setRecurrencePattern("none");
-                            setRecurrenceEndDate("");
-                          } else {
-                            setScheduledDate(val);
-                          }
-                        }}
-                      />
-                      <BestTimeSuggestions onSelect={setScheduledDate} hideHeader />
-                    </div>
-                    {browserTimezone && (
-                      <p className="text-muted-foreground/60 text-[10px] sm:text-xs">
-                        {t("label.times_are_in")}{" "}
-                        <span className="text-foreground font-medium">{browserTimezone}</span>{" "}
-                        <span className="tabular-nums">
-                          (UTC
-                          {(() => {
-                            const off = -new Date().getTimezoneOffset();
-                            const h = Math.floor(Math.abs(off) / 60);
-                            const m = Math.abs(off) % 60;
-                            return `${off >= 0 ? "+" : "-"}${h}${m > 0 ? `:${String(m).padStart(2, "0")}` : ""}`;
-                          })()}
-                          )
-                        </span>
-                      </p>
-                    )}
-
-                    {scheduledDate && (
-                      <div className="grid grid-cols-1 gap-2 pt-1.5 sm:grid-cols-2 sm:pt-2">
-                        <div className="space-y-1">
-                          <label className="text-muted-foreground text-xs font-medium">
-                            {t("label.repeat")}
-                          </label>
-                          <Select value={recurrencePattern} onValueChange={setRecurrencePattern}>
-                            <SelectTrigger className="h-8 sm:h-9">
-                              <SelectValue placeholder={t("label.none")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">{t("label.none")}</SelectItem>
-                              <SelectItem value="daily">{t("label.daily")}</SelectItem>
-                              <SelectItem value="weekly">{t("label.weekly")}</SelectItem>
-                              <SelectItem value="monthly">{t("label.monthly")}</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {recurrencePattern !== "none" && (
-                          <div className="space-y-1">
-                            <label className="text-muted-foreground text-xs font-medium">
-                              {t("label.end_date")}
-                            </label>
-                            <DatePicker
-                              className="h-8 sm:h-9"
-                              value={recurrenceEndDate}
-                              onChange={setRecurrenceEndDate}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Save as Template */}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span tabIndex={0}>
-                          <Button
-                            variant="ghost"
-                            className="text-muted-foreground hover:text-foreground h-9 w-full justify-start text-xs sm:h-9 sm:text-sm"
-                            onClick={() => setIsSaveTemplateOpen(true)}
-                            disabled={isSubmitting || !hasContent}
-                          >
-                            <BookmarkPlus className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
-                            {t("label.save_template")}
-                          </Button>
-                        </span>
-                      </TooltipTrigger>
-                      {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <ComposerPublishingPanel
+          scheduledDate={scheduledDate}
+          setScheduledDate={setScheduledDate}
+          recurrencePattern={recurrencePattern}
+          setRecurrencePattern={setRecurrencePattern}
+          recurrenceEndDate={recurrenceEndDate}
+          setRecurrenceEndDate={setRecurrenceEndDate}
+          showAdvancedOptions={showAdvancedOptions}
+          setShowAdvancedOptions={setShowAdvancedOptions}
+          isSubmitting={isSubmitting}
+          hasContent={hasContent}
+          accounts={accounts}
+          accountsLoading={accountsLoading}
+          targetAccountIds={targetAccountIds}
+          setTargetAccountIds={setTargetAccountIds}
+          browserTimezone={browserTimezone}
+          onSubmit={handleSubmit}
+          onOpenSaveTemplate={() => setIsSaveTemplateOpen(true)}
+        />
 
         <SaveTemplateDialog
           open={isSaveTemplateOpen}
@@ -2483,227 +345,28 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
           onDescriptionChange={setTemplateDescription}
           category={templateCategory}
           onCategoryChange={setTemplateCategory}
-          aiMeta={lastTemplateAiMeta}
+          aiMeta={ai.lastTemplateAiMeta}
           isSubmitting={isSubmitting}
           onSave={handleSaveTemplate}
         />
       </div>
-      {/* Mobile AI panel — Sheet (P1-B: desktop uses inline accordion above) */}
-      {!isDesktop && (
-        <Sheet open={isAiOpen} onOpenChange={setIsAiOpen}>
-          <SheetContent
-            side="bottom"
-            className="pb-safe mx-2 flex h-[80dvh] flex-col gap-0 overflow-hidden rounded-t-2xl px-0 sm:mx-0 sm:h-[60dvh]"
-          >
-            <SheetHeader className="shrink-0 px-4 pb-2 sm:px-6">
-              <SheetTitle>{t("ai_tools.title")}</SheetTitle>
-              <SheetDescription>{t("ai_tools.sheet_description")}</SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto px-4 py-2 sm:px-6">
-              <AiToolsPanel
-                aiTool={aiTool}
-                onToolChange={(tool) => {
-                  setAiTool(tool);
-                  setGeneratedHashtags([]);
-                  if (tool === "hashtags" || tool === "hook" || tool === "rewrite") {
-                    setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
-                  }
-                  if (tool === "thread") {
-                    setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
-                  }
-                }}
-                aiTopic={aiTopic}
-                onTopicChange={setAiTopic}
-                aiTone={aiTone}
-                onToneChange={setAiTone}
-                aiLanguage={aiLanguage}
-                onLanguageChange={setAiLanguage}
-                aiCount={aiCount}
-                onCountChange={setAiCount}
-                aiAddNumbering={aiAddNumbering}
-                onAddNumberingChange={setAiAddNumbering}
-                onBrowseTemplates={() => setTemplatesDialogOpen(true)}
-                aiLengthOption={aiLengthOption}
-                onLengthOptionChange={setAiLengthOption}
-                selectedTier={selectedTier ?? null}
-                tweets={tweets}
-                aiRewriteText={aiRewriteText}
-                onRewriteTextChange={setAiRewriteText}
-                aiTranslateTarget={aiTranslateTarget}
-                onTranslateTargetChange={setAiTranslateTarget}
-                aiTargetTweetId={aiTargetTweetId}
-                isGenerating={isGenerating}
-                streamingTweetCount={streamingTweetCount}
-                {...(typeof aiCount[0] === "number" && { totalTweetCount: aiCount[0] })}
-                onGenerate={handleAiRun}
-                onClose={() => setIsAiOpen(false)}
-                hideActions
-                // Phase 1: Inspiration props
-                inspirationTopics={inspirationTopics}
-                inspirationNiche={inspirationNiche}
-                isLoadingInspiration={isLoadingInspiration}
-                onInspirationNicheChange={setInspirationNiche}
-                onFetchInspiration={handleFetchInspiration}
-                onInspirationSelect={handleInspirationSelect}
-                // Phase 2: Template props
-                templateConfig={templateConfig}
-                templateFormat={templateFormat}
-                onTemplateFormatChange={setTemplateFormat}
-                onClearTemplate={() => setTemplateConfig(null)}
-                // Phase 3: Hashtag chips props
-                generatedHashtags={generatedHashtags}
-                onHashtagClick={(tag) => {
-                  const targetId = aiTargetTweetId ?? activeTweetId ?? tweets[0]?.id;
-                  if (targetId) {
-                    const tweet = tweets.find((t) => t.id === targetId);
-                    if (tweet) {
-                      updateTweet(targetId, `${tweet.content} ${tag}`.trim());
-                      setGeneratedHashtags((prev) => prev.filter((t) => t !== tag));
-                    }
-                  }
-                }}
-                onHashtagsDone={() => setGeneratedHashtags([])}
-                isAiOpen={isAiOpen}
-              />
-            </div>
-            <div className="mt-2 flex shrink-0 justify-end gap-2 border-t px-4 pt-3 pb-4 sm:px-6 sm:pt-4 sm:pb-6">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10 sm:h-9"
-                onClick={() => setIsAiOpen(false)}
-              >
-                {t("label.cancel")}
-              </Button>
-              <Button
-                size="sm"
-                className="h-10 sm:h-9"
-                onClick={() => handleAiRun()}
-                disabled={isAiGenerateDisabled}
-              >
-                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {t("ai_tools.generate")}
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
 
-      {/* C1: Confirm before overwriting existing compose content */}
-      <AlertDialog open={confirmOverwrite} onOpenChange={setConfirmOverwrite}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("dialog.replace_title")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("dialog.replace_description")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setConfirmOverwrite(false);
-                setPendingTweets(null);
-                setPendingAiStreamGenerate(false);
-                preStreamTweetsRef.current = null;
-              }}
-            >
-              {t("dialog.keep_editing")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingTweets) {
-                  // Template application case
-                  setTweets(pendingTweets);
-                  setPreviewIndex(0);
-                  setPendingTweets(null);
-                  setIsAiOpen(false);
-                  toast.success(t("toasts.thread_generated"));
-                } else if (pendingAiStreamGenerate) {
-                  // P2-F: AI streaming case — resume generation after confirmation
-                  setPendingAiStreamGenerate(false);
-                  void handleAiRun({ skipOverwriteCheck: true });
-                }
-                setConfirmOverwrite(false);
-              }}
-            >
-              {t("dialog.replace_generate")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Phase 0: Confirm before translating all tweets */}
-      <AlertDialog open={confirmTranslate} onOpenChange={setConfirmTranslate}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("dialog.translate_title")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("dialog.translate_description", {
-                count: tweets.filter((t) => t.content.trim()).length,
-                language:
-                  LANGUAGES.find((l) => l.code === aiTranslateTarget)?.label || aiTranslateTarget,
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmTranslate(false)}>
-              {t("label.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmTranslate(false);
-                void handleAiRun({ skipTranslateCheck: true });
-              }}
-            >
-              {t("dialog.translate_button")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* AI Image Dialog */}
-      <AiImageDialog
-        open={isAiImageOpen}
-        onOpenChange={setIsAiImageOpen}
-        tweetContent={
-          aiImageTargetTweetId
-            ? tweets.find((t) => t.id === aiImageTargetTweetId)?.content || ""
-            : ""
-        }
-        onImageAttach={handleAiImageAttach}
-        availableModels={userPlanLimits.availableModels}
-        userPreferredModel={userPlanLimits.preferredModel}
-        remainingQuota={userPlanLimits.remainingQuota}
-        attachedCount={
-          aiImageTargetTweetId
-            ? (tweets.find((t) => t.id === aiImageTargetTweetId)?.media.length ?? 0)
-            : 0
-        }
+      <ComposerDialogs
+        {...ai}
+        tweets={tweets}
+        setTweets={setTweets}
+        setPreviewIndex={setPreviewIndex}
+        isAiImageOpen={isAiImageOpen}
+        setIsAiImageOpen={setIsAiImageOpen}
+        aiImageTargetTweetId={aiImageTargetTweetId}
+        onAiImageAttach={handleAiImageAttach}
+        userPlanLimits={userPlanLimits}
+        confirmNavDialog={confirmNavDialog}
+        setConfirmNavDialog={setConfirmNavDialog}
+        pendingNavHref={pendingNavHref}
+        setPendingNavHref={setPendingNavHref}
+        navigate={(href) => router.push(href)}
       />
-
-      {/* UA-A13: Confirm before SPA navigation away mid-draft */}
-      <AlertDialog open={confirmNavDialog} onOpenChange={setConfirmNavDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("dialog.discard_title")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("dialog.discard_description")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingNavHref(null)}>
-              {t("label.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingNavHref) {
-                  router.push(pendingNavHref);
-                  setPendingNavHref(null);
-                }
-                setConfirmNavDialog(false);
-              }}
-            >
-              {t("dialog.continue")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
