@@ -73,7 +73,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
       },
       {
         icon: Lightbulb,
-        label: "Inspiration",
+        label: "Import & Adapt",
         href: "/dashboard/inspiration",
         dataTour: "inspiration",
       },

@@ -37,6 +37,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -59,16 +60,11 @@ interface Bookmark {
 
 interface HistoryItem {
   id: string;
-  sourceTweet: {
-    id: string;
-    text: string;
-    author: {
-      name: string;
-      username: string;
-    };
-  };
-  adaptedTweets: string[];
-  action: string;
+  sourceTweetId: string;
+  sourceTweetUrl: string;
+  sourceAuthorHandle: string;
+  sourceText: string;
+  action: string | null;
   createdAt: string;
 }
 
@@ -101,27 +97,29 @@ function InspirationContent() {
 
   // History and Bookmarks state
   const [activeTab, setActiveTab] = useState<"import" | "history" | "bookmarks">("import");
-  const [history, setHistory] = useState<HistoryItem[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const stored = localStorage.getItem("inspiration_history");
-      return stored ? (JSON.parse(stored) as HistoryItem[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const importElapsed = useElapsedTime(isLoading);
 
-  // Persist history to localStorage whenever it changes
+  // Fetch history from API on mount
   useEffect(() => {
-    try {
-      localStorage.setItem("inspiration_history", JSON.stringify(history));
-    } catch {
-      // localStorage may be unavailable (private mode, storage full) — fail silently
-    }
-  }, [history]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/inspiration/history");
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setHistory(data.history as HistoryItem[]);
+        }
+      } catch {
+        // Non-critical — silently fail, user sees empty history
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // URL validation
   const validateUrl = useCallback((url: string) => {
@@ -214,22 +212,33 @@ function InspirationContent() {
       const result = await response.json();
       setImportedData(result.data);
 
-      // Add to history
-      const historyItem: HistoryItem = {
-        id: Date.now().toString(),
-        sourceTweet: {
-          id: result.data.originalTweet.id,
-          text: result.data.originalTweet.text,
-          author: {
-            name: result.data.originalTweet.author.name,
-            username: result.data.originalTweet.author.username,
-          },
+      // Add to history via API
+      fetch("/api/inspiration/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceTweetId: result.data.originalTweet.id,
+          sourceTweetUrl: tweetUrl,
+          sourceAuthorHandle: result.data.originalTweet.author.username,
+          sourceText: result.data.originalTweet.text,
+          action: "imported",
+        }),
+      }).catch(() => {
+        /* non-critical */
+      });
+      // Optimistic UI update
+      setHistory((prev) => [
+        {
+          id: Date.now().toString(),
+          sourceTweetId: result.data.originalTweet.id,
+          sourceTweetUrl: tweetUrl,
+          sourceAuthorHandle: result.data.originalTweet.author.username,
+          sourceText: result.data.originalTweet.text,
+          action: "imported",
+          createdAt: new Date().toISOString(),
         },
-        adaptedTweets: [],
-        action: "imported",
-        createdAt: new Date().toISOString(),
-      };
-      setHistory((prev) => [historyItem, ...prev.slice(0, 19)]); // Keep last 20
+        ...prev.slice(0, 19),
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("error_import"));
     } finally {
@@ -384,7 +393,11 @@ function InspirationContent() {
 
   return (
     <DashboardPageWrapper icon={Lightbulb} title={t("title")} description={t("description")}>
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "import" | "history" | "bookmarks")}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full max-w-md grid-cols-3 overflow-x-auto">
           <TabsTrigger value="import">
             <Download className="me-2 h-4 w-4" />
@@ -450,9 +463,9 @@ function InspirationContent() {
 
                 {/* Success Message */}
                 {successMessage && (
-                  <Alert className="border-emerald-500/50 bg-emerald-500/10">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    <AlertDescription className="text-emerald-600">
+                  <Alert className="border-success-6 bg-success-3">
+                    <CheckCircle2 className="text-success-11 h-4 w-4" />
+                    <AlertDescription className="text-success-11">
                       {successMessage}
                     </AlertDescription>
                   </Alert>
@@ -553,19 +566,13 @@ function InspirationContent() {
 
           {/* Empty State */}
           {!importedData && !isLoading && !error && (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center px-4 py-12 text-center sm:py-16">
-                <div className="from-primary/10 to-primary/5 border-primary/10 mb-4 flex h-16 w-16 items-center justify-center rounded-full border bg-gradient-to-br sm:mb-6 sm:h-20 sm:w-20">
-                  <Lightbulb className="text-primary h-8 w-8 sm:h-10 sm:w-10" />
-                </div>
-                <h3 className="mb-2 text-lg font-semibold sm:mb-3 sm:text-xl">
-                  {t("no_tweet_imported")}
-                </h3>
-                <p className="text-muted-foreground max-w-md text-sm sm:text-base">
-                  {t("no_tweet_description")}
-                </p>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={<Lightbulb className="h-8 w-8" />}
+              iconBgClass="from-primary/10 to-primary/5 border-primary/10 border bg-gradient-to-br text-primary"
+              title={t("no_tweet_imported")}
+              description={t("no_tweet_description")}
+              className="py-12 sm:py-16"
+            />
           )}
         </TabsContent>
 
@@ -574,10 +581,11 @@ function InspirationContent() {
           <Card>
             <CardContent className="p-6">
               {history.length === 0 ? (
-                <div className="py-16 text-center">
-                  <History className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
-                  <p className="text-muted-foreground">{t("no_history")}</p>
-                </div>
+                <EmptyState
+                  icon={<History className="h-5 w-5 opacity-50" />}
+                  title={t("no_history")}
+                  className="border-0 bg-transparent py-16"
+                />
               ) : (
                 <ul role="list" className="space-y-3">
                   {history.map((item) => (
@@ -588,10 +596,12 @@ function InspirationContent() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <span className="font-medium">@{item.sourceTweet.author.username}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {item.action}
-                            </Badge>
+                            <span className="font-medium">@{item.sourceAuthorHandle}</span>
+                            {item.action && (
+                              <Badge variant="outline" className="text-xs">
+                                {item.action}
+                              </Badge>
+                            )}
                             <span className="text-muted-foreground text-xs">
                               {formatDistanceToNow(new Date(item.createdAt), {
                                 addSuffix: true,
@@ -600,7 +610,7 @@ function InspirationContent() {
                             </span>
                           </div>
                           <p className="text-muted-foreground line-clamp-2 text-sm">
-                            {item.sourceTweet.text}
+                            {item.sourceText}
                           </p>
                         </div>
                         <div className="flex shrink-0 flex-col gap-1">
@@ -609,8 +619,8 @@ function InspirationContent() {
                             size="sm"
                             className="h-9 min-h-[36px] text-xs"
                             onClick={() => {
-                              const tweetUrl = `https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`;
-                              setTweetUrl(tweetUrl);
+                              const url = `https://x.com/${item.sourceAuthorHandle}/status/${item.sourceTweetId}`;
+                              setTweetUrl(url);
                               setIsValidUrl(true);
                               setActiveTab("import");
                             }}
@@ -619,7 +629,7 @@ function InspirationContent() {
                             {t("re_import")}
                           </Button>
                           <a
-                            href={`https://x.com/${item.sourceTweet.author.username}/status/${item.sourceTweet.id}`}
+                            href={`https://x.com/${item.sourceAuthorHandle}/status/${item.sourceTweetId}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             dir="ltr"
@@ -643,10 +653,11 @@ function InspirationContent() {
           <Card>
             <CardContent className="p-6">
               {bookmarks.length === 0 ? (
-                <div className="py-16 text-center">
-                  <Bookmark className="text-muted-foreground mx-auto mb-4 h-12 w-12 opacity-50" />
-                  <p className="text-muted-foreground">{t("no_bookmarks")}</p>
-                </div>
+                <EmptyState
+                  icon={<Bookmark className="h-5 w-5 opacity-50" />}
+                  title={t("no_bookmarks")}
+                  className="border-0 bg-transparent py-16"
+                />
               ) : (
                 <ul role="list" className="space-y-3">
                   {bookmarks.map((bookmark) => (

@@ -151,7 +151,7 @@ export function AiToolsGrid({
                 {locked && (
                   <Badge
                     variant="outline"
-                    className="flex h-5 items-center gap-1 border-amber-500/40 bg-amber-500/10 px-1.5 py-0 text-[10px] text-amber-700 dark:text-amber-400"
+                    className="border-warning-9/40 bg-warning-3 text-warning-11 dark:text-warning-11 flex h-5 items-center gap-1 px-1.5 py-0 text-[10px]"
                   >
                     <Lock className="h-2.5 w-2.5" aria-hidden="true" />
                     {t("locked_overlay_title")}
@@ -165,11 +165,14 @@ export function AiToolsGrid({
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   {t(`tools.${toolId}.description`)}
                 </p>
+                <p className="text-muted-foreground/70 text-[11px] leading-relaxed italic">
+                  {t(`tools.${toolId}.capability`)}
+                </p>
               </div>
               <p
                 className={`mt-auto text-xs font-medium transition-opacity ${
                   locked
-                    ? "text-amber-700 opacity-100 dark:text-amber-400"
+                    ? "text-warning-11 dark:text-warning-11 opacity-100"
                     : "text-primary opacity-0 group-hover:opacity-100"
                 }`}
               >

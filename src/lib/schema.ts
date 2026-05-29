@@ -755,6 +755,29 @@ export const inspirationBookmarks = pgTable(
   ]
 );
 
+export const inspirationHistory = pgTable(
+  "inspiration_history",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    sourceTweetId: text("source_tweet_id").notNull(),
+    sourceTweetUrl: text("source_tweet_url").notNull(),
+    sourceAuthorHandle: text("source_author_handle").notNull(),
+    sourceText: text("source_text").notNull(),
+    adaptedText: text("adapted_text"),
+    action: text("action"),
+    tone: text("tone"),
+    language: text("language"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("inspiration_history_user_id_idx").on(table.userId),
+    index("inspiration_history_created_at_idx").on(table.createdAt),
+  ]
+);
+
 export const subscriptions = pgTable(
   "subscriptions",
   {

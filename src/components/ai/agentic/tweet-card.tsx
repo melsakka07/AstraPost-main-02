@@ -1,7 +1,5 @@
 "use client";
 
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, ImageIcon, Pencil, RefreshCw, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { XAccountAvatar } from "@/components/ai/agentic/x-account-avatar";
@@ -191,22 +189,5 @@ export function AgenticTweetCard({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-// ── Sortable wrapper for drag-and-drop ────────────────────────────────────────
-
-export function SortableTweetCard({ id, ...props }: { id: string } & AgenticTweetCardProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-  });
-  const dndStyle = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-  return (
-    <div ref={setNodeRef} style={dndStyle} className={isDragging ? "opacity-50" : ""}>
-      <AgenticTweetCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
-    </div>
   );
 }

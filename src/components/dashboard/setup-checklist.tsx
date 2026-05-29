@@ -163,32 +163,29 @@ export function SetupChecklist({
       >
         <div className="overflow-hidden">
           <div className="flex flex-wrap gap-2 px-4 pb-4">
-            {steps.map((step) => (
-              <Link
-                key={step.id}
-                href={step.completed ? "#" : step.href}
-                className={cn(
-                  "group flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all",
-                  step.completed
-                    ? "text-muted-foreground pointer-events-none border-green-500/20 bg-green-500/5"
-                    : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
-                )}
-              >
-                {step.completed ? (
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
-                ) : (
+            {steps.map((step) =>
+              step.completed ? (
+                <div
+                  key={step.id}
+                  className="text-muted-foreground border-success-9/20 bg-success-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+                >
+                  <CheckCircle2 className="text-success-11 h-4 w-4 shrink-0" />
+                  <span className="whitespace-nowrap line-through">{step.label}</span>
+                </div>
+              ) : (
+                <Link
+                  key={step.id}
+                  href={step.href}
+                  className="group border-border bg-background hover:border-primary/30 hover:bg-primary/5 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all"
+                >
                   <Circle className="text-muted-foreground group-hover:text-primary h-4 w-4 shrink-0" />
-                )}
-                <span className={cn("whitespace-nowrap", step.completed && "line-through")}>
-                  {step.label}
-                </span>
-                {!step.completed && (
+                  <span className="whitespace-nowrap">{step.label}</span>
                   <span className="text-primary ml-1 text-xs font-medium opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                     {step.cta}
                   </span>
-                )}
-              </Link>
-            ))}
+                </Link>
+              )
+            )}
           </div>
         </div>
       </div>

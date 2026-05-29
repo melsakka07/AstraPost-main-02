@@ -8,6 +8,8 @@ interface EmptyStateProps {
   primaryAction?: ReactNode;
   secondaryAction?: ReactNode;
   className?: string;
+  /** Override the default bg-background on the icon circle. */
+  iconBgClass?: string;
   /** Accepted for backwards-compatibility with admin consumers — currently unused. */
   variant?: string;
 }
@@ -19,6 +21,8 @@ export function EmptyState({
   primaryAction,
   secondaryAction,
   className,
+  iconBgClass,
+  variant: _variant,
 }: EmptyStateProps) {
   return (
     <div
@@ -28,7 +32,12 @@ export function EmptyState({
       )}
     >
       {icon ? (
-        <div className="bg-background text-muted-foreground mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full">
+        <div
+          className={cn(
+            "text-muted-foreground mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full",
+            iconBgClass || "bg-background"
+          )}
+        >
           {icon}
         </div>
       ) : null}

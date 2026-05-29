@@ -23,6 +23,8 @@ import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -204,30 +206,30 @@ const STAT_CARDS = [
   {
     key: "publishedToday",
     icon: CheckCircle2,
-    accent: "border-s-emerald-500",
-    iconColor: "text-emerald-500",
-    iconBg: "bg-emerald-500/10",
+    accent: "border-s-success-9",
+    iconColor: "text-success-11",
+    iconBg: "bg-success-3",
   },
   {
     key: "scheduledToday",
     icon: Calendar,
-    accent: "border-s-blue-500",
-    iconColor: "text-blue-500",
-    iconBg: "bg-blue-500/10",
+    accent: "border-s-info-9",
+    iconColor: "text-info-11",
+    iconBg: "bg-info-3",
   },
   {
     key: "scheduled",
     icon: Clock,
-    accent: "border-s-amber-500",
-    iconColor: "text-amber-500",
-    iconBg: "bg-amber-500/10",
+    accent: "border-s-warning-9",
+    iconColor: "text-warning-11",
+    iconBg: "bg-warning-3",
   },
   {
     key: "engagement",
     icon: TrendingUp,
-    accent: "border-s-purple-500",
-    iconColor: "text-purple-500",
-    iconBg: "bg-purple-500/10",
+    accent: "border-s-info-9",
+    iconColor: "text-info-11",
+    iconBg: "bg-info-3",
   },
 ] as const;
 
@@ -337,7 +339,7 @@ export default async function DashboardPage() {
         </Button>
       }
     >
-      <Suspense fallback={null}>
+      <Suspense fallback={<Skeleton className="h-12 w-full rounded-xl" />}>
         <SetupChecklist {...data.checklist} />
       </Suspense>
 
@@ -422,43 +424,42 @@ export default async function DashboardPage() {
           <CardContent>
             {data.upcomingPosts.length === 0 ? (
               data.checklist.hasXAccount ? (
-                <div className="border-border/60 flex flex-col items-center justify-center rounded-lg border border-dashed py-10">
-                  <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
-                    <Send className="text-muted-foreground h-5 w-5" />
-                  </div>
-                  <p className="mt-4 text-sm font-medium">{t("queue_empty")}</p>
-                  <p className="text-muted-foreground mt-1 max-w-[240px] text-center text-xs">
-                    {t("queue_empty_description")}
-                  </p>
-                  <Button size="sm" asChild className="mt-4">
-                    <Link href="/dashboard/compose">
-                      <PenSquare className="me-2 h-3.5 w-3.5" />
-                      {t("create_post")}
-                    </Link>
-                  </Button>
-                  <Button size="sm" variant="outline" asChild className="mt-2">
-                    <Link href="/dashboard/ai/agentic">
-                      <Wand2 className="me-2 h-3.5 w-3.5" />
-                      {t("generate_ai")}
-                    </Link>
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={<Send className="h-5 w-5" />}
+                  title={t("queue_empty")}
+                  description={t("queue_empty_description")}
+                  primaryAction={
+                    <Button size="sm" asChild>
+                      <Link href="/dashboard/compose">
+                        <PenSquare className="me-2 h-3.5 w-3.5" />
+                        {t("create_post")}
+                      </Link>
+                    </Button>
+                  }
+                  secondaryAction={
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href="/dashboard/ai/agentic">
+                        <Wand2 className="me-2 h-3.5 w-3.5" />
+                        {t("generate_ai")}
+                      </Link>
+                    </Button>
+                  }
+                />
               ) : (
-                <div className="border-border/60 flex flex-col items-center justify-center rounded-lg border border-dashed py-10">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10">
-                    <AlertCircle className="h-5 w-5 text-amber-500" />
-                  </div>
-                  <p className="mt-4 text-sm font-medium">{t("connect_x_account")}</p>
-                  <p className="text-muted-foreground mt-1 max-w-[240px] text-center text-xs">
-                    {t("connect_x_description")}
-                  </p>
-                  <Button size="sm" asChild className="mt-4">
-                    <Link href="/dashboard/settings">
-                      <PlusCircle className="me-2 h-3.5 w-3.5" />
-                      {t("connect_x_account")}
-                    </Link>
-                  </Button>
-                </div>
+                <EmptyState
+                  icon={<AlertCircle className="h-5 w-5" />}
+                  iconBgClass="bg-warning-3 text-warning-11"
+                  title={t("connect_x_account")}
+                  description={t("connect_x_description")}
+                  primaryAction={
+                    <Button size="sm" asChild>
+                      <Link href="/dashboard/settings">
+                        <PlusCircle className="me-2 h-3.5 w-3.5" />
+                        {t("connect_x_account")}
+                      </Link>
+                    </Button>
+                  }
+                />
               )
             ) : (
               <div className="space-y-3">

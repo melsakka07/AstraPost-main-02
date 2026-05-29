@@ -1195,39 +1195,48 @@
     "tools": {
       "thread_writer": {
         "title": "‏[Thread Writer Writerer]‏",
-        "description": "‏[Turn any topic into a compelling multi-tweet thread. thread.d.]‏"
+        "description": "‏[Turn any topic into a compelling multi-tweet thread. thread.d.]‏",
+        "capability": "‏[Best for long-form storytelling, tutorials, and opinion threads threadsads]‏"
       },
       "url_to_thread": {
         "title": "‏[URL → Thread Threadad]‏",
-        "description": "‏[Paste a URL and get an instant thread summary. summary.y.]‏"
+        "description": "‏[Paste a URL and get an instant thread summary. summary.y.]‏",
+        "capability": "‏[Best for quickly summarizing articles, news, and blog posts poststs]‏"
       },
       "ab_variants": {
         "title": "‏[A/B Variants Variantsts]‏",
-        "description": "‏[Generate multiple angles for the same tweet idea. idea.a.]‏"
+        "description": "‏[Generate multiple angles for the same tweet idea. idea.a.]‏",
+        "capability": "‏[Best for testing different hooks, tones, and angles for the same idea ideaea]‏"
       },
       "hashtag_generator": {
         "title": "‏[Hashtag Generator Generatoror]‏",
-        "description": "‏[Find the best hashtags for your content and niche. niche.e.]‏"
+        "description": "‏[Find the best hashtags for your content and niche. niche.e.]‏",
+        "capability": "‏[Best for discovering trending and niche-specific hashtags hashtagsgs]‏"
       },
       "bio_generator": {
         "title": "‏[Bio Generator Generatoror]‏",
-        "description": "‏[Generate multiple professional bio options for your X profile. profile.e.]‏"
+        "description": "‏[Generate multiple professional bio options for your X profile. profile.e.]‏",
+        "capability": "‏[Best for crafting a professional or creative X profile bio bioso]‏"
       },
       "reply_generator": {
         "title": "‏[Reply Generator Generatoror]‏",
-        "description": "‏[Craft smart, contextual replies to any tweet. tweet.t.]‏"
+        "description": "‏[Craft smart, contextual replies to any tweet. tweet.t.]‏",
+        "capability": "‏[Best for engaging with your audience through smart, contextual replies repliesies]‏"
       },
       "ai_calendar": {
         "title": "‏[AI Calendar Calendarar]‏",
-        "description": "‏[Let AI pick the best times and build your posting schedule. schedule.e.]‏"
+        "description": "‏[Let AI pick the best times and build your posting schedule. schedule.e.]‏",
+        "capability": "‏[Best for optimizing your posting schedule for maximum reach reachach]‏"
       },
       "pdf_to_thread": {
         "title": "‏[PDF → Thread]‏",
-        "description": "‏[Upload a PDF report and get a ready-to-publish X thread.]‏"
+        "description": "‏[Upload a PDF report and get a ready-to-publish X thread.]‏",
+        "capability": "‏[Best for turning reports, whitepapers, and documents into threads threadsads]‏"
       },
       "youtube_to_thread": {
         "title": "‏[YouTube → Thread]‏",
-        "description": "‏[Turn a YouTube video into a ready-to-publish X thread]‏"
+        "description": "‏[Turn a YouTube video into a ready-to-publish X thread]‏",
+        "capability": "‏[Best for repurposing video content into text-based threads threadsads]‏"
       }
     },
     "try_it": "‏[Try it → →]‏",
@@ -1838,8 +1847,8 @@
     "showing_x_to_y": "‏[{from}–{to} of {total}]‏"
   },
   "inspiration": {
-    "title": "‏[Inspiration]‏",
-    "description": "‏[Paste an X/Twitter URL to import a tweet, then adapt it with AI — or browse your saved inspiration. inspiration.n.]‏",
+    "title": "‏[Import & Adapt Adaptpt]‏",
+    "description": "‏[Paste an X/Twitter URL to import a tweet and adapt it with AI — remix tone, structure, and messaging for your audience. audience.e.]‏",
     "tabs": {
       "import": "‏[Import Tweet Tweetet]‏",
       "history": "‏[History]‏",

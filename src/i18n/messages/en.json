@@ -1228,39 +1228,48 @@
     "tools": {
       "thread_writer": {
         "title": "Thread Writer",
-        "description": "Turn any topic into a compelling multi-tweet thread."
+        "description": "Turn any topic into a compelling multi-tweet thread.",
+        "capability": "Best for long-form storytelling, tutorials, and opinion threads"
       },
       "url_to_thread": {
         "title": "URL → Thread",
-        "description": "Paste a URL and get an instant thread summary."
+        "description": "Paste a URL and get an instant thread summary.",
+        "capability": "Best for quickly summarizing articles, news, and blog posts"
       },
       "ab_variants": {
         "title": "A/B Variants",
-        "description": "Generate multiple angles for the same tweet idea."
+        "description": "Generate multiple angles for the same tweet idea.",
+        "capability": "Best for testing different hooks, tones, and angles for the same idea"
       },
       "hashtag_generator": {
         "title": "Hashtag Generator",
-        "description": "Find the best hashtags for your content and niche."
+        "description": "Find the best hashtags for your content and niche.",
+        "capability": "Best for discovering trending and niche-specific hashtags"
       },
       "bio_generator": {
         "title": "Bio Generator",
-        "description": "Generate multiple professional bio options for your X profile."
+        "description": "Generate multiple professional bio options for your X profile.",
+        "capability": "Best for crafting a professional or creative X profile bio"
       },
       "reply_generator": {
         "title": "Reply Generator",
-        "description": "Craft smart, contextual replies to any tweet."
+        "description": "Craft smart, contextual replies to any tweet.",
+        "capability": "Best for engaging with your audience through smart, contextual replies"
       },
       "ai_calendar": {
         "title": "AI Calendar",
-        "description": "Let AI pick the best times and build your posting schedule."
+        "description": "Let AI pick the best times and build your posting schedule.",
+        "capability": "Best for optimizing your posting schedule for maximum reach"
       },
       "pdf_to_thread": {
         "title": "PDF → Thread",
-        "description": "Upload a PDF report and get a ready-to-publish X thread."
+        "description": "Upload a PDF report and get a ready-to-publish X thread.",
+        "capability": "Best for turning reports, whitepapers, and documents into threads"
       },
       "youtube_to_thread": {
         "title": "YouTube → Thread",
-        "description": "Turn a YouTube video into a ready-to-publish X thread"
+        "description": "Turn a YouTube video into a ready-to-publish X thread",
+        "capability": "Best for repurposing video content into text-based threads"
       }
     },
     "pdf_to_thread": {
@@ -1936,8 +1945,8 @@
     "network_error": "Network error — could not check image status. Please try again."
   },
   "inspiration": {
-    "title": "Inspiration",
-    "description": "Paste an X/Twitter URL to import a tweet, then adapt it with AI — or browse your saved inspiration.",
+    "title": "Import & Adapt",
+    "description": "Paste an X/Twitter URL to import a tweet and adapt it with AI — remix tone, structure, and messaging for your audience.",
     "tabs": {
       "import": "Import Tweet",
       "history": "History",
