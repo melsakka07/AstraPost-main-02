@@ -1,5 +1,42 @@
 # Latest Updates
 
+## 2026-05-29 — Dashboard UI/UX Wave 6 (Complete)
+
+Implemented all five Wave 6 tasks from `.claude/plans/2026-05-29-dashboard-ux-wave-6.md` in the prescribed execution order (2 → 3/4 parallel → 5 → 1 last), each gated by a parallel `convention-enforcer` + `code-reviewer` audit.
+
+### Task 2 — WCAG 2.5.8 target sizes
+
+- `inspiration/page.tsx` history/bookmarks action buttons: `h-9 min-h-[36px]` → `h-11 min-h-11` (≥44px). `bottom-nav.tsx` verified already ≥44×44 (56px cells) — left untouched.
+
+### Task 3 — `/dashboard` Action Launchpad
+
+- New `src/components/dashboard/quick-actions.tsx` (RSC): pure `selectNextBestAction()` ladder (connect X → schedule first → try AI → compose) + a "What's next" hero. Confirmed layout with user: **Action-hero-leads**.
+- `dashboard/page.tsx` reordered so the hero + Quick Compose lead above the fold; the 4 stat cards are demoted to a compact secondary strip at the bottom. No query/skeleton changes (CLS preserved). 11 new `dashboard.whats_next.*` i18n keys across en/ar/pseudo.
+- Review fix: hero's next-best-action now mirrors `SetupChecklist` semantics (dropped the extra `scheduledCount > 0` gate that contradicted the checklist).
+
+### Task 4 — Shared AI char-count hook
+
+- New canonical `src/lib/tweet-char.ts` (weighted length via `twitter.parseTweet().weightedLength`, tier max via `getMaxCharacterLimit`, `STANDARD_TWEET_LIMIT = 280`, `MEDIUM_ZONE_LIMIT = 1000`, zone + severity) + thin `src/hooks/use-tweet-char-count.ts`. One definition of the 280/tier/zone rule.
+- Migrated 8 call sites onto it (tweet-editor-list, composer/tweet-card, ai-writer-client, ai/reply, onboarding-wizard, pdf-to-thread/thread-result-preview, agentic/tweet-card). The 160-char X-bio counter (`ai/bio`) intentionally left — unrelated limit. +20 node unit tests (`tweet-char.test.ts`).
+
+### Task 5 — Inspiration page decomposition
+
+- `inspiration/page.tsx`: **735 → 140-line shell**. Extracted to `src/components/inspiration/`: hooks (`use-inspiration-{import,history,bookmarks,tabs,composer-bridge}.ts`), subcomponents (`inspiration-{import-panel,history-list,bookmarks-list}.tsx`), `inspiration-types.ts`, `inspiration-utils.ts` (+ node tests). **Zero behavior delta** (verified against `git HEAD` by code-reviewer). Char count kept as simple `.length` (documented) to avoid a behavior delta from the weighted hook.
+- E2E: `tests/e2e/inspiration-wave6.e2e.ts` (tab render/switch + URL-validation gating; full import→history needs a live X account).
+
+### Task 1 — RTL / Arabic audit (Phase 1)
+
+- Swapped ~50 physical-direction Tailwind classes → logical (`ml/mr/pl/pr → ms/me/ps/pe`, `left/right → start/end`, `text-left/right → text-start/end`, `border-l/r → border-s/e`, `rounded-r-md → rounded-e-md`) across the Phase-1 surfaces: `components/{dashboard,composer,ai,inspiration,onboarding,queue,ui}` + `app/(marketing)` content.
+- `calendar.tsx` chevrons already mirror via `rtl:scale-x-[-1]`; calendar nav buttons now `start-1`/`end-1`.
+- **Intentional exclusions (legitimately physical):** `sidebar.tsx` mobile drawer branch (paired with vaul's physical `direction={sheetSide}` prop), `directional-icon.tsx` JSDoc example, the `<Play>` video-overlay glyph (media controls don't mirror), and Recharts margins / decorative centered gradient blobs.
+- **Deferred (not in Phase-1 dir scope):** `components/admin`, `components/settings`, `components/{analytics,billing,affiliate,community,calendar}`, `command-palette`, `mobile-menu`, `drafts`, and standalone `app/{profile,brand,chat}` pages.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing `register/page.tsx` warning), i18n parity (2956 keys)
+- `pnpm test` — PASS (37 files, 372 tests; +29 new across tweet-char + inspiration-utils)
+- `node scripts/verify-dashboard-tokens.mjs` — PASS
+
 ## 2026-05-29 — Cross-Wave Verification + Dashboard Token Sweep (Complete)
 
 Ran the dashboard UI/UX initiative's final "Cross-wave verification" regression sweep (`docs/audit/dashboard-ui-ux-implementation-plan.md`). Five of six checks passed on first run; the one failure was **token coverage** — the `dashboard-tokens` CI guard (uncommitted) flagged **34 raw Tailwind palette classes across 10 dashboard files outside Wave 1's original 3-file scope** and would have turned CI red on first push. Migrated all 34 to semantic tokens.
