@@ -348,7 +348,7 @@ export function ViralTab() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-3xl font-bold ${s.highlight ? "text-green-600" : ""}`}>
+                  <div className={`text-3xl font-bold ${s.highlight ? "text-success-11" : ""}`}>
                     {s.value}
                   </div>
                 </CardContent>

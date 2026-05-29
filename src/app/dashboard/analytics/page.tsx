@@ -438,7 +438,7 @@ export default async function AnalyticsPage({
                     const statusIcon =
                       r.status === "success" ? (
                         <CheckCircle2
-                          className="h-3.5 w-3.5 shrink-0 text-emerald-500"
+                          className="text-success-11 h-3.5 w-3.5 shrink-0"
                           aria-hidden="true"
                         />
                       ) : r.status === "failed" ? (
@@ -469,7 +469,7 @@ export default async function AnalyticsPage({
                             className={
                               "rounded px-2 py-0.5 text-xs " +
                               (r.status === "success"
-                                ? "bg-emerald-500/10 text-emerald-600"
+                                ? "bg-success-3 text-success-11"
                                 : r.status === "failed"
                                   ? "bg-destructive/10 text-destructive"
                                   : "bg-muted text-muted-foreground")
@@ -566,7 +566,7 @@ export default async function AnalyticsPage({
                   {current.toLocaleString(userLocale)}
                 </div>
                 {d !== null && (
-                  <p className={`mt-1 text-xs ${d >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                  <p className={`mt-1 text-xs ${d >= 0 ? "text-success-11" : "text-destructive"}`}>
                     {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString(userLocale)} {t("vs_prev")}{" "}
                     {effectiveRange}
                   </p>

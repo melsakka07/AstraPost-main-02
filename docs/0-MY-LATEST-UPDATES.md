@@ -1,5 +1,142 @@
 # Latest Updates
 
+## 2026-05-29 — Cross-Wave Verification + Dashboard Token Sweep (Complete)
+
+Ran the dashboard UI/UX initiative's final "Cross-wave verification" regression sweep (`docs/audit/dashboard-ui-ux-implementation-plan.md`). Five of six checks passed on first run; the one failure was **token coverage** — the `dashboard-tokens` CI guard (uncommitted) flagged **34 raw Tailwind palette classes across 10 dashboard files outside Wave 1's original 3-file scope** and would have turned CI red on first push. Migrated all 34 to semantic tokens.
+
+### Token migration
+
+- **Files (10):** `ai/calendar/page.tsx`, `ai/page.tsx`, `ai/bio/page.tsx`, `ai/reply/page.tsx`, `analytics/page.tsx`, `analytics/_components/viral-tab.tsx`, `analytics/_components/competitor-tab.tsx`, `inspiration/page.tsx`, `components/dashboard/notification-bell.tsx`, `components/dashboard/sidebar-collapsible-section.tsx`.
+- **Mapping:** `emerald`/`green` → `success`, `amber`/`yellow` → `warning`, `red` → `danger`, `blue` → `info`, `purple` → `brand`. Steps: text/icon → `-11` (AA), tinted bg → `-3`, border → `-6`, solid fill → `-9`. `dark:` variants dropped — semantic tokens are mode-aware. The AI calendar's categorical content-type colors (tweet/thread/poll/question) now use four distinct design-system scales (info/brand/warning/success) instead of raw palette hues.
+- `scripts/verify-dashboard-tokens.mjs` now passes (exit 0) across the entire dashboard tree; the new `dashboard-tokens` CI job will go green.
+
+### Sweep results (mapped to audit Top-10)
+
+- ✅ WCAG Level-A failures (2.4.3 focus order, 4.1.2 name/role/value) resolved — `setup-checklist.tsx` renders completed steps as non-interactive `<div>`; zero `href="#"`.
+- ✅ Token coverage now zero across `src/app/dashboard` + `src/components/dashboard`.
+- ✅ Reduced-motion reset intact (`globals.css:433`); CLS skeletons fixed-height (`page.tsx:342`, `post-usage-bar.tsx:70`).
+- ⚠️ Documented Wave 5 deviation stands: composer keeps its own `tweet-card.tsx`/`composer-preview.tsx` (the shared `<TweetEditorList>`/`<XThreadPreview>` cover agentic). Empty-state fully unified.
+- ◻️ Deferred: **2.5.8 Target Size** (AA "at risk", never a Level-A failure) — `bottom-nav.tsx` `h-14`, inspiration actions `min-h-[36px]`.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing register/page.tsx warning)
+- `pnpm test` — PASS (343 tests, 35 files)
+- `node scripts/verify-dashboard-tokens.mjs` — PASS (0 violations)
+
+## 2026-05-29 — Wave 5 Composer Decomposition (Complete)
+
+Implemented Wave 5 (P1-1) from the dashboard UI/UX audit — decomposed the monolithic composer into a thin shell + focused hooks/subcomponents with **zero behavior delta**.
+
+### Changes
+
+- **Shell**: `src/components/composer/composer.tsx` reduced from ~2,709 → **345 lines**. It now only owns top-level state and orchestration; all logic lives in hooks/subcomponents.
+- **Hooks extracted**: `use-composer-drafts.ts` (localStorage autosave + restore banner + nav guards), `use-composer-ai.ts` (AI panel/streaming/templates), `use-composer-data.ts` (accounts, image quota, draft load, timezone), `use-composer-publish.ts` (submit + plan-limit handling), `use-composer-tweets.ts` (add/remove/clear/move/numbering), `use-composer-shortcuts.ts` (⌘↵ / ⌘D / ⌘K / ⌘⇧W/I/T/H), `use-composer-media.ts` (upload + AI image attach), `use-composer-bridge.ts` (cross-page handoff).
+- **Subcomponents**: `composer-editor.tsx`, `composer-preview.tsx`, `composer-ai-tools.tsx`, `composer-dialogs.tsx`, `composer-publishing-panel.tsx`, `composer-alerts.tsx`. The shell spreads the full `ai` hook object (`{...ai}`) into AI-consuming children to avoid hand-wiring ~67 props.
+- **Pure logic**: extracted to `composer-utils.ts` (numbering, draft serialization, content checks) with node unit tests — consistent with the node-only test infra (no RTL/jsdom).
+- **Pragmatic deviation**: the composer keeps its tightly-coupled `tweet-card.tsx` (DnD/char-count) and rich `composer-preview.tsx` rather than force-migrating onto the shared `<TweetEditorList>`/`<XThreadPreview>` from Wave 3 — those target simpler editor surfaces, and re-coupling the composer's per-tweet media / AI image attach / link previews / numbering chips would carry regression risk for no user-facing gain.
+- **E2E smoke**: `tests/e2e/composer-wave5.e2e.ts` behavior-locks the two flows most at risk from the split — autosave → restore-draft banner, and the ⌘K shortcut toggling the AI panel.
+
+### Verification
+
+- Final parallel audit: code-reviewer confirmed **no behavior-changing bugs** vs. the monolith (traced circular-dependency ordering, stale closures, mount-effect ordering); convention-enforcer flagged one type-duplication (fixed — `composer-alerts.tsx` now imports `TweetDraft` from `composer-types.ts`).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing register/page.tsx warning)
+- `pnpm test` — PASS (343 tests, 35 files)
+- `pnpm check:i18n` — PASS (2945 keys, en = ar = pseudo)
+
+## 2026-05-29 — Wave 4 Inspiration Overhaul (Complete)
+
+Implemented the full Wave 4 from the dashboard UI/UX audit — rename + DB-backed history.
+
+### P1-4: Rename "Inspiration" → "Import & Adapt"
+
+The page was a URL importer + AI adaptation tool, not an inspiration feed. Renamed everywhere:
+
+- **Sidebar nav** (`sidebar-nav-data.ts`): `label: "Import & Adapt"`
+- **Page title**: `"Import & Adapt"` (en), `"استيراد وتكييف"` (ar)
+- **Description**: Updated to reflect actual functionality — paste a URL, adapt with AI
+- **i18n**: en.json, ar.json, pseudo.json all updated
+
+### P1-3: DB-Backed History
+
+Replaced localStorage-based history with a server-side `inspiration_history` table and API.
+
+- **Schema**: New `inspirationHistory` table in `src/lib/schema.ts` — mirrors `inspirationBookmarks` structure. Migration `0086_wandering_roland_deschain.sql` generated and ready to commit.
+- **API routes**:
+  - `GET /api/inspiration/history` — list history (capped at 50, ordered by date desc)
+  - `POST /api/inspiration/history` — record an import/adaptation (auto-prunes beyond 50)
+  - `DELETE /api/inspiration/history/[id]` — remove a history entry
+- **Frontend**: `inspiration/page.tsx` now fetches history from API on mount (useEffect). Importing a tweet POSTs to `/api/inspiration/history` with optimistic UI update. Removed all localStorage read/write for history. `HistoryItem` interface flattened to match DB row shape.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- `pnpm typecheck` — PASS
+- `pnpm check:i18n` — PASS (2945 keys, en = ar = pseudo)
+
+## 2026-05-28 — Wave 3 Shared Component Extraction (Complete)
+
+Implemented all three shared component extractions from the dashboard UI/UX audit §5.
+
+### Changes
+
+- **EmptyState migration (§5.3)**: Extended `src/components/ui/empty-state.tsx` with `iconBgClass` prop. Migrated 5 hand-rolled empty-state blocks in page.tsx (2) and inspiration/page.tsx (3). Restored `variant` prop for admin backwards-compatibility.
+- **XThreadPreview unification (§5.2)**: Created shared `src/components/dashboard/x-thread-preview.tsx` with `ThreadTweet` data interface. Agentic side is now a thin 34-line wrapper. ComposerPreview retained its complex implementation (ViralScoreBadge, per-tweet avatars — different UX needs).
+- **TweetEditorList extraction (§5.1)**: Created headless shared `src/components/dashboard/tweet-editor-list.tsx` — owns the canonical DnD setup (PointerSensor + KeyboardSensor + sortableKeyboardCoordinates), weighted char counting via `twitter.parseTweet().weightedLength`, tier-aware max limits via `getMaxCharacterLimit()`, and keyboard reorder (moveUp/moveDown). Exposes a render-prop API (`children`) so consumers provide their own card markup. Migrated agentic `review-screen.tsx` onto it — removed the local `DndContext`/`SortableContext`/`sensors`/`handleDragEnd` setup, removed `SortableTweetCard` wrapper from agentic `tweet-card.tsx`. Composer retains its own DnD setup (its 620-line `TweetCard` is tightly coupled to the composer's emoji picker, link preview fetching, media management, and AI image panels).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- `pnpm typecheck` — PASS
+
+### Files
+
+New: `src/components/dashboard/tweet-editor-list.tsx` (198 lines)
+New: `src/components/dashboard/x-thread-preview.tsx` (127 lines)
+Modified: EmptyState (extended), agentic review-screen (migrated to TweetEditorList), agentic tweet-card (SortableTweetCard removed), agentic x-thread-preview (thin wrapper), index.ts (cleanup)
+
+## 2026-05-28 — Wave 2 Type Safety + AI Capability Microcopy
+
+Implemented Wave 2 of the dashboard UI/UX audit — removing `any` type casts and adding "best for…" capability lines to AI tool cards.
+
+### Changes
+
+- **P1-5 Type safety**: Replaced `setActiveTab(v as any)` in `src/app/dashboard/inspiration/page.tsx` with `v as "import" | "history" | "bookmarks"` (the existing union type). Exported `TweetDraft` and `LinkPreview` interfaces from `src/components/composer/composer.tsx`. In `sortable-tweet.tsx`, typed `tweet` as `TweetDraft` and `preview` as `LinkPreview | null` instead of `any`. Fixed internal `updateTweetPreview` in composer.tsx:771 to use `LinkPreview | null`.
+- **P2-2 AI capability microcopy**: Added a `"capability"` line to each of the 9 AI tool cards in `ai-tools-grid.tsx`, rendered as italicized text below the description. Strings come from i18n keys (`ai_hub.tools.{toolId}.capability`), not hardcoded.
+- **i18n**: Added 9 `capability` keys to `en.json`, `ar.json`, and `pseudo.json` for all AI tools: thread_writer, url_to_thread, pdf_to_thread, youtube_to_thread, ab_variants, hashtag_generator, bio_generator, reply_generator, ai_calendar. Arabic translations provided for MENA audience.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- `pnpm check:i18n` — PASS (2945 leaf keys, en = ar = pseudo)
+- Zero `any` types in all changed lines
+- convention-enforcer — 1 violation found and fixed (composer.tsx:771 `preview: any` → `LinkPreview | null`)
+
+## 2026-05-28 — Wave 1 P0 Accessibility + Design-Token Consistency
+
+Implemented Wave 1 of the dashboard UI/UX audit — replacing raw Tailwind palette classes with AA-tuned semantic tokens, fixing a11y issues, and adding layout-shift skeletons.
+
+### Changes
+
+- **P0-1 Token consistency**: Replaced all raw Tailwind palette classes in `src/app/dashboard/page.tsx` STAT_CARDS (emerald/blue/amber/purple-500 → success/info/warning tokens), the failed-posts badge (amber → warning), and `src/components/dashboard/setup-checklist.tsx` (green → success). Each card's color scale now matches its meaning: published = success, scheduled-today = info, queued = warning, engagement = info.
+- **P0-2 Setup checklist a11y**: Completed steps now render as non-interactive `<div>` elements instead of `<Link href="#">` with `pointer-events-none`. Completed steps are no longer in the tab order and no longer announce a "link" role.
+- **P2-3 AI tools grid**: Locked badge amber-500/amber-700 literals replaced with warning-\* tokens in `src/components/ai/ai-tools-grid.tsx` — matches the agentic processing screen's warning scale.
+- **P2-1 CLS fix**: Replaced `Suspense fallback={null}` for SetupChecklist and `return null` in PostUsageBar with fixed-height `<Skeleton>` placeholders (h-12 and h-10 respectively) to prevent layout shift.
+- **§9 CI guard**: New `scripts/verify-dashboard-tokens.mjs` — greps `src/app/dashboard` and `src/components/dashboard` for raw Tailwind palette classes. Added as `check:dashboard-tokens` script in package.json and as a standalone CI job in `.github/workflows/ci.yml`. Not yet wired into `pnpm run check` (34 pre-existing violations in other dashboard files remain for subsequent waves).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- convention-enforcer — 0 violations
+- security-reviewer — 0 issues
+
 ## 2026-05-28 — Wave 6 Auth Unification + AI Cost Transparency + Analytics Polish (Final Wave)
 
 Completed the final and largest wave of the dashboard UI/UX audit implementation. All 10 findings from the audit are now resolved. The audit implementation is complete.
