@@ -10,10 +10,11 @@
     "blog": "Blog",
     "changelog": "Changelog",
     "overview": "Overview",
-    "content": "Content",
+    "create": "Create",
+    "grow": "Grow",
+    "account": "Account",
     "ai_tools": "AI Tools",
-    "growth": "Growth",
-    "system": "System",
+    "schedule": "Schedule",
     "ai": "AI",
     "compose": "Compose",
     "drafts": "Drafts",
@@ -223,17 +224,27 @@
       "privacy_link": "Privacy Policy",
       "no_account": "Don't have an account?",
       "register_link": "Register",
+      "or_divider": "or",
+      "email_label": "Email",
+      "email_placeholder": "you@example.com",
+      "password_label": "Password",
+      "email_sign_in": "Sign in with Email",
       "errors": {
         "access_denied": "You need to authorize AstraPost to access your X account to continue.",
         "server_error": "X is currently unavailable. Please try again in a few minutes.",
         "callback_error": "Sign-in failed. Please try again.",
         "email_not_found": "We couldn't get your email from X. Please ensure your X account has a verified email address.",
+        "invalid_credentials": "Invalid email or password.",
         "default": "An unexpected error occurred. Please try again."
       }
     },
     "register": {
       "title": "Create your AstraPost account",
       "subtitle": "Join thousands of creators managing their X presence.",
+      "continue_with_x": "Continue with X",
+      "or_divider": "or",
+      "name_label": "Name",
+      "name_placeholder": "Your name",
       "email_label": "Email address",
       "email_placeholder": "you@example.com",
       "password_label": "Password",
@@ -259,7 +270,23 @@
         "password_min": "Password must be at least 8 characters",
         "password_max": "Password must be less than 128 characters",
         "password_mismatch": "Passwords do not match.",
-        "terms_required": "You must agree to the Terms of Service and Privacy Policy"
+        "terms_required": "You must agree to the Terms of Service and Privacy Policy",
+        "server_error": "Server error. Please try again later.",
+        "network_error": "Network error. Check your connection and try again.",
+        "rate_limited": "Too many attempts. Please wait a moment and try again.",
+        "name_required": "Name is required"
+      },
+      "password": {
+        "show_password": "Show password",
+        "hide_password": "Hide password",
+        "strength_label": "Password strength",
+        "strength_empty": "Enter a password",
+        "strength_weak": "Weak",
+        "strength_okay": "Okay",
+        "strength_strong": "Strong",
+        "strength_great": "Great",
+        "match_yes": "Passwords match",
+        "match_no": "Passwords do not match"
       }
     },
     "forgot_password": {
@@ -325,6 +352,9 @@
         "queue_desc": "Manage scheduled posts."
       },
       "skip": "Skip for now",
+      "skip_explore": "Skip — let me explore first",
+      "found_account": "We found @{username}",
+      "use_different_account": "Use a different account",
       "continue": "Continue",
       "finish": "Get started",
       "loading_account": "Loading your account...",
@@ -411,8 +441,31 @@
     "language_english": "English",
     "notifications": {
       "label": "Notifications",
+      "no_notifications": "No notifications",
+      "dismiss_all": "Dismiss all",
+      "dismiss": "Dismiss",
       "mark_all_read_success": "All notifications marked as read",
-      "mark_all_read_failed": "Failed to mark all as read"
+      "mark_all_read_failed": "Failed to mark all as read",
+
+      "failed_post": {
+        "title": "Post failed to publish",
+        "description": "A scheduled post failed to publish. Check the queue for details.",
+        "action": "View queue"
+      },
+
+      "inactive_x_account": {
+        "title": "X account disconnected",
+        "description": "Your X account {username} needs to be reconnected to continue publishing.",
+        "action": "Reconnect"
+      },
+
+      "trial_expiring": {
+        "title": "Trial ending soon",
+        "description": "Your free trial ends in {days} days. Upgrade to keep your scheduled posts.",
+        "title_ending_today": "Trial ends today",
+        "description_ending_today": "Your free trial ends today. Upgrade now to keep your scheduled posts.",
+        "action": "Upgrade"
+      }
     },
     "mark_all_read": "Mark all as read",
     "no_notifications": "No notifications",
@@ -446,7 +499,8 @@
       "use_ai": "Use the AI writer",
       "view_analytics": "View your analytics",
       "completed": "Completed",
-      "dismiss": "Dismiss"
+      "dismiss": "Dismiss",
+      "upgrade_to_pro": "Upgrade to Pro"
     },
     "quick_compose": {
       "title": "Quick Compose",
@@ -489,7 +543,19 @@
     "queue_empty_description": "Schedule your first post to get started",
     "create_post": "Create Post",
     "generate_ai": "Generate with AI",
-    "no_date": "No date"
+    "no_date": "No date",
+    "skip_to_content": "Skip to main content",
+    "banners": {
+      "impersonation": "Impersonation notice"
+    },
+    "connect_x_account": "Connect your X account",
+    "connect_x_description": "Connect your X account to start scheduling posts.",
+    "stat_tooltips": {
+      "published_today": "Posts published today",
+      "scheduled_today": "Posts scheduled to publish today",
+      "scheduled": "Total posts waiting in the queue",
+      "engagement": "Average engagement rate across all published posts in the last 30 days"
+    }
   },
   "compose": {
     "title": "Compose",
@@ -679,7 +745,8 @@
       "wait_for_upload": "Please wait for all media to finish uploading.",
       "thread_generated": "Thread generated!",
       "inspiration_topic_set": "Topic set from inspiration — click Generate when ready"
-    }
+    },
+    "advanced_options": "Advanced options"
   },
   "queue": {
     "title": "Queue",
@@ -829,7 +896,27 @@
     "toasts": {
       "refresh_queued": "Refresh queued",
       "export_failed": "Failed to export analytics"
-    }
+    },
+    "metric_tooltips": {
+      "engagement_rate": "(Likes + Replies + Reposts + Quote Posts) / Impressions × 100",
+      "impressions": "Number of times posts were displayed to users on X",
+      "likes": "Number of likes across all published posts",
+      "replies": "Number of replies received across all published posts",
+      "reposts": "Number of reposts across all published posts",
+      "quote_posts": "Number of quote posts across all published posts",
+      "clicks": "Number of clicks on links within posts",
+      "profile_visits": "Number of visits to your X profile",
+      "followers_gained": "Net new followers during the selected period",
+      "current_followers": "Current number of followers on your X account",
+      "growth": "Change in followers during the selected period",
+      "start_of_period": "Number of followers at the start of the selected period"
+    },
+    "empty_no_posts": "No posts yet",
+    "empty_no_posts_description": "Publish your first post to start seeing analytics.",
+    "empty_no_posts_cta": "Publish your first post",
+    "empty_pending": "Analytics data is being collected",
+    "empty_pending_description": "Your analytics will appear here once X processes your published posts.",
+    "empty_pending_refresh": "Refresh now"
   },
   "analytics_viral": {
     "title": "Viral Analyzer",
@@ -1141,39 +1228,48 @@
     "tools": {
       "thread_writer": {
         "title": "Thread Writer",
-        "description": "Turn any topic into a compelling multi-tweet thread."
+        "description": "Turn any topic into a compelling multi-tweet thread.",
+        "capability": "Best for long-form storytelling, tutorials, and opinion threads"
       },
       "url_to_thread": {
         "title": "URL → Thread",
-        "description": "Paste a URL and get an instant thread summary."
+        "description": "Paste a URL and get an instant thread summary.",
+        "capability": "Best for quickly summarizing articles, news, and blog posts"
       },
       "ab_variants": {
         "title": "A/B Variants",
-        "description": "Generate multiple angles for the same tweet idea."
+        "description": "Generate multiple angles for the same tweet idea.",
+        "capability": "Best for testing different hooks, tones, and angles for the same idea"
       },
       "hashtag_generator": {
         "title": "Hashtag Generator",
-        "description": "Find the best hashtags for your content and niche."
+        "description": "Find the best hashtags for your content and niche.",
+        "capability": "Best for discovering trending and niche-specific hashtags"
       },
       "bio_generator": {
         "title": "Bio Generator",
-        "description": "Generate multiple professional bio options for your X profile."
+        "description": "Generate multiple professional bio options for your X profile.",
+        "capability": "Best for crafting a professional or creative X profile bio"
       },
       "reply_generator": {
         "title": "Reply Generator",
-        "description": "Craft smart, contextual replies to any tweet."
+        "description": "Craft smart, contextual replies to any tweet.",
+        "capability": "Best for engaging with your audience through smart, contextual replies"
       },
       "ai_calendar": {
         "title": "AI Calendar",
-        "description": "Let AI pick the best times and build your posting schedule."
+        "description": "Let AI pick the best times and build your posting schedule.",
+        "capability": "Best for optimizing your posting schedule for maximum reach"
       },
       "pdf_to_thread": {
         "title": "PDF → Thread",
-        "description": "Upload a PDF report and get a ready-to-publish X thread."
+        "description": "Upload a PDF report and get a ready-to-publish X thread.",
+        "capability": "Best for turning reports, whitepapers, and documents into threads"
       },
       "youtube_to_thread": {
         "title": "YouTube → Thread",
-        "description": "Turn a YouTube video into a ready-to-publish X thread"
+        "description": "Turn a YouTube video into a ready-to-publish X thread",
+        "capability": "Best for repurposing video content into text-based threads"
       }
     },
     "pdf_to_thread": {
@@ -1388,6 +1484,17 @@
       "inspirational": "Inspirational",
       "viral": "Viral"
     },
+    "quota": {
+      "ai_remaining": "AI: {used}/{limit}",
+      "images_remaining": "Images: {used}/{limit}",
+      "unlimited": "Unlimited",
+      "view_billing": "View billing"
+    },
+    "advanced_tones": "Advanced tones",
+    "advanced_tones_tooltip": "May generate provocative content. Use responsibly.",
+    "tones": {
+      "attention_grabbing": "Attention-Grabbing"
+    },
     "errors": {
       "generation_failed": "Failed to generate content. Please try again.",
       "quota_exceeded": "AI quota exceeded. Upgrade your plan to generate more content."
@@ -1395,6 +1502,22 @@
     "toasts": {
       "copied": "Copied to clipboard",
       "loaded_editor": "Loaded into editor"
+    },
+    "url": {
+      "title": "Article / URL to Thread",
+      "input_label": "Article or Blog URL",
+      "placeholder": "Paste a URL to convert",
+      "description": "Any article, blog post, or newsletter — we'll extract and thread it",
+      "converting": "Converting…",
+      "output_language": "Output Language",
+      "thread_length": "Thread Length",
+      "tweets_count": "{count} tweets"
+    },
+    "variants": {
+      "title": "A/B Variants",
+      "original_tweet_label": "Original Tweet",
+      "paste_placeholder": "Paste your tweet here…",
+      "chars": "{count} chars"
     }
   },
   "ai_agentic": {
@@ -1822,8 +1945,8 @@
     "network_error": "Network error — could not check image status. Please try again."
   },
   "inspiration": {
-    "title": "Inspiration",
-    "description": "Paste an X/Twitter URL to import a tweet, then adapt it with AI — or browse your saved inspiration.",
+    "title": "Import & Adapt",
+    "description": "Paste an X/Twitter URL to import a tweet and adapt it with AI — remix tone, structure, and messaging for your audience.",
     "tabs": {
       "import": "Import Tweet",
       "history": "History",
@@ -2449,7 +2572,15 @@
     "plan_agency_annual_feature_8": "2 Months Free",
     "toggle_monthly": "Monthly",
     "toggle_annual": "Annual",
-    "toggle_save": "Save 17%"
+    "toggle_save": "Save 17%",
+    "testimonial_1_quote": "AstraPost saved me hours every week. The AI Writer is incredibly accurate for Arabic content.",
+    "testimonial_1_author": "A content creator",
+    "testimonial_2_quote": "The scheduling system is flawless. I manage 5 X accounts and AstraPost handles them all perfectly.",
+    "testimonial_2_author": "A social media manager",
+    "testimonial_3_quote": "Finally, an AI tool that actually understands Arabic. The engagement on my posts has doubled.",
+    "testimonial_3_author": "A small business owner",
+    "refund_policy": "14-day money-back guarantee",
+    "compliance": "AstraPost complies with X's API terms of service. All posting is done through official X API endpoints."
   },
   "features": {
     "badge": "Features",

@@ -248,7 +248,7 @@ export function QueueContent({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight">{t("scheduled_posts_heading")}</h2>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/dashboard/calendar">{t("open_calendar")}</Link>
+          <Link href="/dashboard/schedule?view=month">{t("open_calendar")}</Link>
         </Button>
       </div>
 

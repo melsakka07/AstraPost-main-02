@@ -70,7 +70,7 @@ export function NotificationBell() {
                       description: n.message,
                       action: {
                         label: "View Queue",
-                        onClick: () => router.push("/dashboard/queue"),
+                        onClick: () => router.push("/dashboard/schedule?view=list"),
                       },
                     });
                   }
@@ -175,7 +175,7 @@ export function NotificationBell() {
     }
     // Navigate if applicable
     if (n.type === "post_failed" && n.metadata?.postId) {
-      router.push("/dashboard/queue");
+      router.push("/dashboard/schedule?view=list");
     }
   };
 
@@ -187,7 +187,7 @@ export function NotificationBell() {
           {unreadCount > 0 && (
             <span
               aria-hidden="true"
-              className="ring-background absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-600 ring-2"
+              className="ring-background bg-danger-9 absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2"
             />
           )}
           <span className="sr-only">

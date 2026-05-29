@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { LogOut, ExternalLink, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { LogoMark } from "@/components/brand";
 import { isItemActive } from "@/components/dashboard/sidebar-active-state";
 import { CollapsibleSection } from "@/components/dashboard/sidebar-collapsible-section";
-import { SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
+import { SIDEBAR_SECTIONS, ADMIN_SIDEBAR_SECTIONS } from "@/components/dashboard/sidebar-nav-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,9 @@ import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { cn } from "@/lib/utils";
 
 // Flattened array of all nav items for active state checking
-const allNavItems = SIDEBAR_SECTIONS.flatMap((section) => section.items);
+const allNavItems = [...SIDEBAR_SECTIONS, ...ADMIN_SIDEBAR_SECTIONS].flatMap(
+  (section) => section.items
+);
 
 // ── SidebarContent ────────────────────────────────────────────────────────────
 
@@ -100,11 +102,14 @@ function SidebarContent({
       items = items.filter((item) => !item.isAdmin);
     }
     // Hide Referrals when feature flag is off
-    if (section.label === "Growth" && !referralsEnabled) {
+    if (section.label === "Account" && !referralsEnabled) {
       items = items.filter((item) => item.label !== "Referrals");
     }
     return { ...section, items };
   }).filter((section) => section.items.length > 0);
+
+  // Append admin-only sections when user is an admin
+  const allSections = isAdmin ? [...filteredSections, ...ADMIN_SIDEBAR_SECTIONS] : filteredSections;
 
   return (
     <div className="flex h-full flex-col">
@@ -142,7 +147,7 @@ function SidebarContent({
         className="flex-1 overflow-y-auto px-3 py-4"
         aria-label={tSidebar("dashboard_navigation")}
       >
-        {filteredSections.map((section, idx) => {
+        {allSections.map((section, idx) => {
           const sectionLabelKey = section.label.toLowerCase().replace(/\s+/g, "_");
           const translatedSectionLabel = t.has(sectionLabelKey as any)
             ? t(sectionLabelKey as any)
@@ -253,12 +258,18 @@ function SidebarContent({
 
       {/* Bottom: AI credits + image quota + sign out */}
       <div className="border-border shrink-0 space-y-3 border-t p-4">
-        <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
+        <Link
+          href="/dashboard/settings/billing"
+          className="border-border bg-muted/30 hover:bg-muted/50 block cursor-pointer space-y-2 rounded-lg border p-3 transition-colors"
+        >
           {aiUsage ? (
             <>
               <div className="flex items-center justify-between">
                 <span className="text-foreground text-xs font-medium">{t("ai_credits")}</span>
-                <span className="text-muted-foreground text-xs">{aiProgressLabel}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-muted-foreground text-xs">{aiProgressLabel}</span>
+                  <ChevronRight className="text-muted-foreground h-3 w-3" />
+                </div>
               </div>
               <Progress value={aiProgress} className="h-1.5" />
               <p className="text-muted-foreground text-xs">
@@ -277,9 +288,12 @@ function SidebarContent({
               <Skeleton className="h-3 w-28" />
             </>
           )}
-        </div>
+        </Link>
 
-        <div className="border-border bg-muted/30 space-y-2 rounded-lg border p-3">
+        <Link
+          href="/dashboard/settings/billing"
+          className="border-border bg-muted/30 hover:bg-muted/50 block cursor-pointer space-y-2 rounded-lg border p-3 transition-colors"
+        >
           {imageQuota ? (
             <>
               <div className="flex items-center justify-between">
@@ -287,7 +301,10 @@ function SidebarContent({
                   <ImageIcon className="h-3 w-3" />
                   <span className="text-foreground text-xs font-medium">{t("images_credits")}</span>
                 </div>
-                <span className="text-muted-foreground text-xs">{imageProgressLabel}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-muted-foreground text-xs">{imageProgressLabel}</span>
+                  <ChevronRight className="text-muted-foreground h-3 w-3" />
+                </div>
               </div>
               <Progress value={imageProgress} className="h-1.5" />
               <p className="text-muted-foreground text-xs">
@@ -306,7 +323,7 @@ function SidebarContent({
               <Skeleton className="h-3 w-28" />
             </>
           )}
-        </div>
+        </Link>
         {/* Desktop-only sign-out button (mobile has quick-sign-out in drawer header M7) */}
         {!isMobile && (
           <Button

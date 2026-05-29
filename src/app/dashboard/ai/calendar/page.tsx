@@ -48,10 +48,10 @@ interface CalendarItem {
 }
 
 const TWEET_TYPE_COLORS: Record<string, string> = {
-  tweet: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  thread: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  poll: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  question: "bg-green-500/10 text-green-600 border-green-500/20",
+  tweet: "bg-info-3 text-info-11 border-info-6",
+  thread: "bg-brand-3 text-brand-11 border-brand-6",
+  poll: "bg-warning-3 text-warning-11 border-warning-6",
+  question: "bg-success-3 text-success-11 border-success-6",
 };
 
 interface PlanLimitPayload {
@@ -316,10 +316,10 @@ export default function ContentCalendarPage() {
 
     if (errorCount === 0) {
       toast.success(t("toasts.scheduled_count", { count: successCount }));
-      router.push("/dashboard/queue");
+      router.push("/dashboard/schedule?view=list");
     } else if (successCount > 0) {
       toast.warning(t("toasts.scheduled_partial", { success: successCount, failed: errorCount }));
-      router.push("/dashboard/queue");
+      router.push("/dashboard/schedule?view=list");
     } else {
       toast.error(t("toasts.schedule_failed"));
     }

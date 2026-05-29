@@ -2,14 +2,15 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { TweetCard } from "./tweet-card";
+import type { LinkPreview, TweetDraft } from "./composer-types";
 
 interface SortableTweetProps {
   id: string;
-  tweet: any;
+  tweet: TweetDraft;
   index: number;
   totalTweets: number;
   updateTweet: (id: string, content: string) => void;
-  updateTweetPreview?: ((id: string, preview: any) => void) | undefined;
+  updateTweetPreview?: ((id: string, preview: LinkPreview | null) => void) | undefined;
   removeTweet: (id: string) => void;
   removeTweetMedia: (id: string, url: string) => void;
   triggerFileUpload: (id: string) => void;

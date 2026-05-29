@@ -160,7 +160,7 @@ export default function BioOptimizerPage() {
                     currentBio.length > 160
                       ? "text-destructive"
                       : currentBio.length >= 130
-                        ? "text-amber-500"
+                        ? "text-warning-11"
                         : "text-muted-foreground"
                   }`}
                 >
@@ -302,7 +302,7 @@ export default function BioOptimizerPage() {
                 <p className="text-sm leading-relaxed font-medium">{v.text}</p>
                 <div className="flex items-center justify-between gap-2">
                   <p
-                    className={`text-xs tabular-nums ${v.text.length > 160 ? "text-destructive" : "text-emerald-500"}`}
+                    className={`text-xs tabular-nums ${v.text.length > 160 ? "text-destructive" : "text-success-11"}`}
                   >
                     {v.text.length > 160
                       ? t("chars_over_limit", { count: v.text.length })

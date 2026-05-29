@@ -5,7 +5,7 @@ export { ORDERED_STEPS, STEP_CONFIG } from "@/components/ai/agentic/processing-s
 export type { StepProgress } from "@/components/ai/agentic/processing-screen";
 export { ReviewScreen } from "@/components/ai/agentic/review-screen";
 export { SuccessScreen } from "@/components/ai/agentic/success-screen";
-export { AgenticTweetCard, SortableTweetCard } from "@/components/ai/agentic/tweet-card";
+export { AgenticTweetCard } from "@/components/ai/agentic/tweet-card";
 export { XThreadPreview } from "@/components/ai/agentic/x-thread-preview";
 export { XAccountAvatar } from "@/components/ai/agentic/x-account-avatar";
 export { StepIcon } from "@/components/ai/agentic/step-icon";

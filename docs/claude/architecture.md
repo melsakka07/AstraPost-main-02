@@ -53,7 +53,7 @@ src/
 │   ├── brand/                    # Brand primitives (Logo lockup, LogoMark sparkle, made-with-astrapost-footer, index)
 │   ├── calendar/                 # Calendar components (Grid, Event cards)
 │   ├── community/                # Community components (Contact form)
-│   ├── composer/                 # Composer (Editor, Preview, AI Tools Panel, Best Time, Alerts)
+│   ├── composer/                 # Composer — thin 345-line shell (composer.tsx) orchestrating focused hooks (use-composer-{drafts,ai,data,publish,tweets,shortcuts,media,bridge}.ts) + subcomponents (composer-{editor,preview,ai-tools,dialogs,publishing-panel,alerts}.tsx); pure logic in composer-utils.ts
 │   ├── dashboard/                # Dashboard layout (Sidebar, Header, Bottom Nav, Banners)
 │   ├── drafts/                   # Draft components
 │   ├── email/                    # Email templates (React Email)
@@ -87,6 +87,10 @@ src/
 Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral, brand, info, success, warning, danger) at 12 calibrated steps per mode. 21 semantic tokens feed shadcn/ui. Raw scale utilities: `bg-brand-9`, `text-success-11`, `border-danger-6`, etc. `src/lib/tokens.ts` exposes hex constants via `as const` tuples for runtime contexts (Recharts, OG images, transactional emails). Regenerate via the Node.js script in `src/lib/tokens.ts`.
 
 **Scales:** neutral (slate), brand (indigo #3E63DD), info (blue #0090FF), success (green #46A758), warning (amber #FFC53D), danger (red #E5484D).
+
+### Dashboard Sidebar IA
+
+The dashboard sidebar (defined in `src/components/dashboard/sidebar-nav-data.ts`) is organized into 4 sections for regular users: **Overview** (Dashboard), **Create** (Compose, Drafts, Schedule -- merged Queue + Calendar with `?view=list|month|week|day` view tabs), **Grow** (Analytics, AI Tools, Inspiration, Agentic Posting), and **Account** (Settings, Achievements, Referrals, Affiliate Dashboard). Admin users see an additional **Admin** section (Jobs, History) appended below Account. The old `/dashboard/queue` and `/dashboard/calendar` routes redirect to `/dashboard/schedule` with query-param preservation. Mobile bottom nav surfaces the Create, Grow, and Account sections.
 
 ```
 

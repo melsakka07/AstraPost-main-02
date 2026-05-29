@@ -1,6 +1,10 @@
 {
   "nav": {
     "dashboard": "‏[Dashboard]‏",
+    "create": "‏[Create Createte]‏",
+    "grow": "‏[Grow Groww]‏",
+    "account": "‏[Account Accountnt]‏",
+    "schedule": "‏[Schedule Schedulele]‏",
     "queue": "‏[Queue]‏",
     "analytics": "‏[Analytics]‏",
     "settings": "‏[Settings]‏",
@@ -10,10 +14,7 @@
     "blog": "‏[Blog]‏",
     "changelog": "‏[Changelog]‏",
     "overview": "‏[Overview]‏",
-    "content": "‏[Content]‏",
     "ai_tools": "‏[AI Tools Toolsls]‏",
-    "growth": "‏[Growth]‏",
-    "system": "‏[System]‏",
     "ai": "‏[AI]‏",
     "compose": "‏[Compose]‏",
     "drafts": "‏[Drafts]‏",
@@ -62,7 +63,10 @@
       "analytics": "‏[Analytics]‏",
       "growth": "‏[Growth]‏",
       "system": "‏[System]‏"
-    }
+    },
+    "pdf_to_thread": "‏[PDF to Thread]‏",
+    "youtube_to_thread": "‏[YouTube to Thread]‏",
+    "upgrade_to_pro": "‏[Upgrade to Pro]‏"
   },
   "mobile_menu": {
     "open_navigation_menu": "‏[Open navigation menu menunu]‏",
@@ -78,7 +82,11 @@
     "mobile_navigation": "‏[Mobile navigation navigationon]‏"
   },
   "sidebar": {
-    "dashboard_navigation": "‏[Dashboard navigation navigationon]‏"
+    "dashboard_navigation": "‏[Dashboard navigation navigationon]‏",
+    "ai": {
+      "pdf_to_thread": "‏[PDF → Thread]‏",
+      "youtube_to_thread": "‏[YouTube to Thread]‏"
+    }
   },
   "setup_checklist": {
     "expand_checklist": "‏[Expand checklist checklistst]‏",
@@ -117,13 +125,51 @@
     "generate_thread": "‏[Generate Thread Threadad]‏",
     "generate_image": "‏[Generate Image Imagege]‏",
     "generating": "‏[Generating...]‏",
-    "quota_exceeded": "‏[AI quota exceeded. Upgrade your plan to generate more content. content.t.]‏"
+    "quota_exceeded": "‏[AI quota exceeded. Upgrade your plan to generate more content. content.t.]‏",
+    "pii_redaction_notice": "‏[Personal info was redacted from the source for your privacy]‏",
+    "dismiss": "‏[Dismiss]‏",
+    "refine": {
+      "title": "‏[Refine Output]‏",
+      "feedback_label": "‏[What would you like to change?]‏",
+      "focus_tone": "‏[Tone]‏",
+      "focus_length": "‏[Length]‏",
+      "focus_hook": "‏[Hook]‏",
+      "focus_hashtags": "‏[Hashtags]‏",
+      "submit": "‏[Refine]‏",
+      "refining": "‏[Refining...]‏",
+      "success": "‏[Output refined!]‏",
+      "error": "‏[Refinement failed. Please try again.]‏"
+    },
+    "feedback": {
+      "thanks": "‏[Thanks for your feedback!]‏",
+      "helpful": "‏[Helpful]‏",
+      "not_helpful": "‏[Not helpful]‏"
+    },
+    "upsell": {
+      "banner_text": "‏[Pro uses Sonnet 4.6 for stronger output.]‏",
+      "upgrade_link": "‏[Upgrade →]‏",
+      "dismiss": "‏[Dismiss]‏"
+    },
+    "score": {
+      "tier_weak": "‏[Weak]‏",
+      "tier_ok": "‏[OK]‏",
+      "tier_strong": "‏[Strong]‏",
+      "tier_viral": "‏[Viral]‏"
+    },
+    "thread_preview": {
+      "copy_tweet": "‏[Copy tweet]‏",
+      "char_count": "‏[{n}/280]‏"
+    }
   },
   "billing": {
     "upgrade": "‏[Upgrade Plan Planan]‏",
     "current_plan": "‏[Current Plan Planan]‏",
     "next_billing_date": "‏[Next billing date: {date} {date}e}]‏",
-    "cancel_subscription": "‏[Cancel Subscription Subscriptionon]‏"
+    "cancel_subscription": "‏[Cancel Subscription Subscriptionon]‏",
+    "pause": {
+      "link": "‏[Pause subscription]‏",
+      "description": "‏[Temporarily pause your subscription instead of canceling]‏"
+    }
   },
   "upgrade_modal": {
     "ai_generation": "‏[AI generation generationon]‏",
@@ -154,9 +200,22 @@
   "errors": {
     "unauthorized": "‏[You are not authorized to perform this action actionon]‏",
     "not_found": "‏[Not found foundnd]‏",
-    "server_error": "‏[Something went wrong. Please try again later. later.r.]‏"
+    "server_error": "‏[Something went wrong. Please try again later. later.r.]‏",
+    "unexpected": "‏[An unexpected error occurred. Please try again.]‏",
+    "try_again": "‏[Try again]‏",
+    "something_wrong": "‏[Something went wrong]‏",
+    "error_id": "‏[Error ID: {id}]‏",
+    "go_home": "‏[Go home]‏",
+    "page_not_found": "‏[Page Not Found]‏",
+    "page_not_found_description": "‏[The page you're looking for doesn't exist or has been moved.]‏",
+    "unexpected_with_support": "‏[An unexpected error occurred. Please try again or contact support if the problem persists.]‏"
   },
   "auth": {
+    "sign_in_aria": "‏[Sign in with X Xx]‏",
+    "sign_in_with_x": "‏[Sign in with X Xx]‏",
+    "loading": "‏[Loading... ...]‏",
+    "redirecting": "‏[Redirecting... ...]‏",
+    "sign_in_error": "‏[Failed to redirect to X. Please try again. again.n.]‏",
     "login": {
       "title": "‏[Sign in with X to get started starteded]‏",
       "subtitle": "‏[Connect your X account to manage, schedule, and analyze your content. content.t.]‏",
@@ -175,8 +234,14 @@
         "server_error": "‏[X is currently unavailable. Please try again in a few minutes. minutes.s.]‏",
         "callback_error": "‏[Sign-in failed. Please try again. again.n.]‏",
         "email_not_found": "‏[We couldn't get your email from X. Please ensure your X account has a verified email address. address.s.]‏",
+        "invalid_credentials": "‏[Invalid email or password. password.d.]‏",
         "default": "‏[An unexpected error occurred. Please try again. again.n.]‏"
-      }
+      },
+      "or_divider": "‏[or]‏",
+      "email_label": "‏[Email]‏",
+      "email_placeholder": "‏[you@example.com]‏",
+      "password_label": "‏[Password]‏",
+      "email_sign_in": "‏[Sign in with Email]‏"
     },
     "register": {
       "title": "‏[Create your AstraPost account accountnt]‏",
@@ -206,8 +271,28 @@
         "password_min": "‏[Password must be at least 8 characters charactersrs]‏",
         "password_max": "‏[Password must be less than 128 characters charactersrs]‏",
         "password_mismatch": "‏[Passwords do not match. match.h.]‏",
-        "terms_required": "‏[You must agree to the Terms of Service and Privacy Policy Policycy]‏"
-      }
+        "terms_required": "‏[You must agree to the Terms of Service and Privacy Policy Policycy]‏",
+        "server_error": "‏[Server error. Please try again later. later.r.]‏",
+        "network_error": "‏[Network error. Check your connection and try again. again.n.]‏",
+        "rate_limited": "‏[Too many attempts. Please wait a moment and try again. again.n.]‏",
+        "name_required": "‏[Name is required requiredd]‏"
+      },
+      "password": {
+        "show_password": "‏[Show password passwordrd]‏",
+        "hide_password": "‏[Hide password passwordrd]‏",
+        "strength_label": "‏[Password strength strengthth]‏",
+        "strength_empty": "‏[Enter a password passwordrd]‏",
+        "strength_weak": "‏[Weak Weakk]‏",
+        "strength_okay": "‏[Okay Okayy]‏",
+        "strength_strong": "‏[Strong Strongng]‏",
+        "strength_great": "‏[Great Greatt]‏",
+        "match_yes": "‏[Passwords match matchh]‏",
+        "match_no": "‏[Passwords do not match matchh]‏"
+      },
+      "continue_with_x": "‏[Continue with X]‏",
+      "or_divider": "‏[or]‏",
+      "name_label": "‏[Name]‏",
+      "name_placeholder": "‏[Your name]‏"
     },
     "forgot_password": {
       "title": "‏[Reset your password passwordrd]‏",
@@ -240,7 +325,9 @@
         "invalid_token": "‏[This reset link is invalid or has expired. Please request a new one. one.e.]‏",
         "password_mismatch": "‏[Passwords do not match. match.h.]‏",
         "weak_password": "‏[Password must be at least 8 characters. characters.s.]‏"
-      }
+      },
+      "hide_password": "‏[Hide password]‏",
+      "show_password": "‏[Show password]‏"
     },
     "onboarding": {
       "title": "‏[Welcome to AstraPost AstraPostst]‏",
@@ -255,7 +342,9 @@
         "compose_description": "‏[Write your first tweet or thread. thread.d.]‏",
         "explore_ai": "‏[Explore AI AI]‏",
         "explore_ai_description": "‏[Discover AI-powered features. features.s.]‏",
-        "done": "‏[Done Donene]‏"
+        "done": "‏[Done Donene]‏",
+        "confirm_account": "‏[Confirm your connected X account.]‏",
+        "pick_time": "‏[Pick a time to publish.]‏"
       },
       "feature_cards": {
         "ai_writer": "‏[AI Writer Writerer]‏",
@@ -268,6 +357,9 @@
         "queue_desc": "‏[Manage scheduled posts. posts.s.]‏"
       },
       "skip": "‏[Skip for now nowow]‏",
+      "skip_explore": "‏[Skip — let me explore first firstrst]‏",
+      "found_account": "‏[We found @{username} @{username}ame}]‏",
+      "use_different_account": "‏[Use a different account accountunt]‏",
       "continue": "‏[Continue]‏",
       "finish": "‏[Get started starteded]‏",
       "loading_account": "‏[Loading your account... account.....]‏",
@@ -276,15 +368,85 @@
       "default_label": "‏[Default]‏",
       "preferences_detected": "‏[We detected {language} · {timezone} {timezone}}]‏",
       "change_preferences": "‏[change changege]‏",
-      "draft_saved_badge": "‏[Draft saved savededed]‏"
-    }
+      "draft_saved_badge": "‏[Draft saved savededed]‏",
+      "save_error": "‏[Could not save onboarding status. Please try again.]‏",
+      "skip_failed": "‏[Failed to skip onboarding]‏",
+      "post_queued": "‏[Post queued for immediate publishing!]‏",
+      "post_failed": "‏[Failed to send post]‏",
+      "prefs_failed": "‏[Failed to save preferences]‏",
+      "write_something": "‏[Please write something]‏",
+      "select_date": "‏[Please select a date]‏",
+      "something_wrong": "‏[Something went wrong]‏",
+      "select_language": "‏[Select language]‏",
+      "select_timezone": "‏[Select timezone]‏",
+      "first_tweet_placeholder": "‏[Hello World! This is my first tweet via AstraPost.]‏",
+      "pick_date": "‏[Pick a date]‏",
+      "select_time": "‏[Select time]‏",
+      "add_more_accounts_hint": "‏[You can add more accounts later from Settings. Pro & Agency plans let you manage multiple X accounts under one subscription.]‏",
+      "add_another_account": "‏[Add another account]‏",
+      "no_x_account_connected": "‏[No X Account Connected]‏",
+      "please_connect_x_account": "‏[Please connect your X account to continue with AstraPost.]‏",
+      "go_to_settings": "‏[Go to Settings]‏",
+      "preferred_language": "‏[Preferred Language]‏",
+      "language_hint": "‏[Used for AI-generated content and writing tools.]‏",
+      "time_zone_label": "‏[Time Zone]‏",
+      "timezone_hint": "‏[Ensures your scheduled posts go out at the right local time.]‏",
+      "draft_your_first_tweet": "‏[Draft your first tweet]‏",
+      "over_standard_limit": "‏[(over X standard limit)]‏",
+      "when_to_publish": "‏[When should this go out?]‏",
+      "send_now": "‏[Send Now]‏",
+      "or_schedule_later": "‏[or schedule for later]‏",
+      "date_label": "‏[Date]‏",
+      "time_label": "‏[Time]‏",
+      "auto_publish_hint": "‏[We'll automatically publish it at this time.]‏",
+      "youre_all_set": "‏[You're all set!]‏",
+      "all_set_body": "‏[Your first post is scheduled. Head over to the dashboard to track its performance or create more content with our AI tools.]‏",
+      "back": "‏[Back]‏",
+      "skip_save_as_draft": "‏[Skip — save as draft]‏",
+      "step_x_of_y": "‏[Step {current} of {total}]‏",
+      "tweet_too_long": "‏[Tweet is too long ({current}/{max} characters)]‏",
+      "timezone_group_mena": "‏[Middle East & North Africa]‏",
+      "timezone_group_europe": "‏[Europe]‏",
+      "timezone_group_americas": "‏[Americas]‏",
+      "timezone_group_asia_pacific": "‏[Asia Pacific]‏",
+      "timezone_group_africa": "‏[Africa]‏"
+    },
+    "sign_out": "‏[Sign out]‏",
+    "sign_up": "‏[Sign up]‏",
+    "user": "‏[User]‏",
+    "your_profile": "‏[Your Profile]‏",
+    "log_out": "‏[Log out]‏"
   },
   "dashboard_shell": {
     "open_navigation": "‏[Open navigation navigationon]‏",
     "close_navigation": "‏[Close navigation navigationon]‏",
     "switch_language": "‏[Switch language languagege]‏",
     "switch_language_failed": "‏[Failed to switch language languagege]‏",
-    "notifications": "‏[Notifications]‏",
+    "notifications": {
+      "label": "‏[Notifications]‏",
+      "no_notifications": "‏[No notifications]‏",
+      "dismiss_all": "‏[Dismiss all]‏",
+      "dismiss": "‏[Dismiss]‏",
+      "mark_all_read_success": "‏[All notifications marked as read]‏",
+      "mark_all_read_failed": "‏[Failed to mark all as read]‏",
+      "failed_post": {
+        "title": "‏[Post failed to publish publishsh]‏",
+        "description": "‏[A scheduled post failed to publish. Check the queue for details. details.s.]‏",
+        "action": "‏[View queue queuee]‏"
+      },
+      "inactive_x_account": {
+        "title": "‏[X account disconnected disconnecteded]‏",
+        "description": "‏[Your X account {username} needs to be reconnected to continue publishing. publishing.g.]‏",
+        "action": "‏[Reconnect Reconnectct]‏"
+      },
+      "trial_expiring": {
+        "title": "‏[Trial ending soon soonn]‏",
+        "description": "‏[Your free trial ends in {days} days. Upgrade to keep your scheduled posts. posts.s.]‏",
+        "title_ending_today": "‏[Trial ends today todayy]‏",
+        "description_ending_today": "‏[Your free trial ends today. Upgrade now to keep your scheduled posts. posts.s.]‏",
+        "action": "‏[Upgrade Upgradede]‏"
+      }
+    },
     "mark_all_read": "‏[Mark all as read readad]‏",
     "no_notifications": "‏[No notifications notificationsns]‏",
     "unread_count": "‏[{count, plural, one {# unread notification} other {# unread notifications}} notifications}}}}]‏",
@@ -313,7 +475,8 @@
       "use_ai": "‏[Use the AI writer writerer]‏",
       "view_analytics": "‏[View your analytics analyticscs]‏",
       "completed": "‏[Completed]‏",
-      "dismiss": "‏[Dismiss]‏"
+      "dismiss": "‏[Dismiss]‏",
+      "upgrade_to_pro": "‏[Upgrade to Pro Proro]‏"
     },
     "quick_compose": {
       "title": "‏[Quick Compose Composese]‏",
@@ -335,7 +498,13 @@
     },
     "bottom_nav": {
       "more": "‏[More]‏"
-    }
+    },
+    "language_arabic": "‏[Arabic]‏",
+    "language_english": "‏[English]‏",
+    "toggle_theme": "‏[Toggle theme]‏",
+    "theme_light": "‏[Light]‏",
+    "theme_dark": "‏[Dark]‏",
+    "theme_system": "‏[System]‏"
   },
   "dashboard": {
     "title": "‏[Dashboard]‏",
@@ -356,7 +525,19 @@
     "queue_empty_description": "‏[Schedule your first post to get started starteded]‏",
     "create_post": "‏[Create Post Postst]‏",
     "generate_ai": "‏[Generate with AI AI]‏",
-    "no_date": "‏[No date datete]‏"
+    "no_date": "‏[No date datete]‏",
+    "skip_to_content": "‏[Skip to main content contentnt]‏",
+    "banners": {
+      "impersonation": "‏[Impersonation notice noticece]‏"
+    },
+    "connect_x_account": "‏[Connect your X account]‏",
+    "connect_x_description": "‏[Connect your X account to start scheduling posts.]‏",
+    "stat_tooltips": {
+      "published_today": "‏[Posts published today]‏",
+      "scheduled_today": "‏[Posts scheduled to publish today]‏",
+      "scheduled": "‏[Total posts waiting in the queue]‏",
+      "engagement": "‏[Average engagement rate across all published posts in the last 30 days]‏"
+    }
   },
   "compose": {
     "title": "‏[Compose]‏",
@@ -431,8 +612,47 @@
     },
     "ai_tools": {
       "title": "‏[AI Tools Toolsls]‏",
-      "description": "‏[Generate content with AI assistance assistancece]‏",
-      "generate": "‏[Generate]‏"
+      "description": {
+        "thread": "‏[Generate a full thread or single post from a topic you provide.]‏",
+        "inspire": "‏[Get trending topic ideas and example opening hooks for your chosen niche.]‏",
+        "template": "‏[Generate content using a structured template — great for consistent brand voice.]‏",
+        "hook": "‏[Craft a scroll-stopping opening line that grabs attention immediately.]‏",
+        "cta": "‏[Append a compelling call-to-action to encourage engagement.]‏",
+        "rewrite": "‏[Improve your tweet's clarity, tone, or impact while keeping its meaning.]‏",
+        "translate": "‏[Translate your tweets to reach a broader audience.]‏",
+        "hashtags": "‏[Get AI-suggested hashtags — click to add them to your tweet.]‏"
+      },
+      "generate": "‏[Generate]‏",
+      "sheet_description": "‏[Generate content with AI assistance]‏",
+      "tooltip": {
+        "thread": "‏[Generate a full thread or single post from a topic]‏",
+        "inspire": "‏[Get trending topic ideas and opening hooks for your niche]‏",
+        "template": "‏[Generate content using structured templates like How-To or Product Launch]‏",
+        "hook": "‏[Craft an attention-grabbing opening line]‏",
+        "cta": "‏[Add a call-to-action to the end of your thread]‏",
+        "rewrite": "‏[Rewrite and improve existing tweet text]‏",
+        "translate": "‏[Translate tweets between English and Arabic]‏",
+        "hashtags": "‏[Generate relevant hashtags for your tweet]‏"
+      },
+      "generating": {
+        "thread": "‏[Generating thread…]‏",
+        "hook": "‏[Crafting an opening hook…]‏",
+        "cta": "‏[Writing a call-to-action…]‏",
+        "rewrite": "‏[Rewriting your tweet…]‏",
+        "translate": "‏[Translating tweets…]‏",
+        "hashtags": "‏[Generating hashtags…]‏",
+        "template": "‏[Generating with template…]‏",
+        "inspire": "‏[Finding inspiration…]‏"
+      },
+      "template": {
+        "select_prompt": "‏[Choose a template to get started]‏",
+        "select_description": "‏[Browse structured templates like How-To Guide, Personal Story, or Product Launch.]‏",
+        "browse": "‏[Browse Templates]‏"
+      },
+      "hashtags": {
+        "dismiss": "‏[Dismiss]‏",
+        "all_added": "‏[All hashtags added!]‏"
+      }
     },
     "dialog": {
       "replace_title": "‏[Replace existing content? content?t?]‏",
@@ -484,7 +704,31 @@
       "long": "‏[Long post postst]‏"
     },
     "over_standard_limit_warning": "‏[This exceeds 280 characters. characters.s.]‏",
-    "exceeds_280_thread_warning": "‏[Exceeds 280 chars — threads use standard tweet length lengthth]‏"
+    "exceeds_280_thread_warning": "‏[Exceeds 280 chars — threads use standard tweet length lengthth]‏",
+    "toasts": {
+      "save_template_failed": "‏[Failed to save template]‏",
+      "max_images": "‏[Maximum 4 images per tweet]‏",
+      "inspiration_load_failed": "‏[Failed to load inspiration topics]‏",
+      "history_restored_thread": "‏[Restored thread from history]‏",
+      "history_restored_content": "‏[Restored content from history]‏",
+      "history_restored_translation": "‏[Restored translation from history]‏",
+      "template_applied": "‏[Template applied!]‏",
+      "post_restored": "‏[Post restored]‏",
+      "generation_failed": "‏[Generation failed. Please try again.]‏",
+      "thread_restored": "‏[Thread restored]‏",
+      "select_template_first": "‏[Please select a template first]‏",
+      "topic_min_length": "‏[Topic must be at least 3 characters]‏",
+      "content_restored": "‏[Content restored]‏",
+      "changes_undone": "‏[Changes undone]‏",
+      "add_content_to_translate": "‏[Please add some content to translate]‏",
+      "translation_undone": "‏[Translation undone]‏",
+      "rewrite_undone": "‏[Rewrite undone]‏",
+      "max_media": "‏[Max 4 media per tweet]‏",
+      "wait_for_upload": "‏[Please wait for all media to finish uploading.]‏",
+      "thread_generated": "‏[Thread generated!]‏",
+      "inspiration_topic_set": "‏[Topic set from inspiration — click Generate when ready]‏"
+    },
+    "advanced_options": "‏[Advanced options]‏"
   },
   "queue": {
     "title": "‏[Queue]‏",
@@ -530,7 +774,12 @@
     "dismiss_confirm_button": "‏[Dismiss Dismissss]‏",
     "cancel": "‏[Cancel Cancell]‏",
     "toasts": {
-      "post_dismissed": "‏[Post dismissed dismisseded]‏"
+      "post_dismissed": "‏[Post dismissed dismisseded]‏",
+      "retry_scheduled": "‏[Retry scheduled]‏",
+      "post_cancelled": "‏[Post cancelled]‏",
+      "something_wrong": "‏[Something went wrong]‏",
+      "post_published": "‏[Post published successfully]‏",
+      "bulk_update_failed": "‏[Some posts could not be updated]‏"
     }
   },
   "calendar": {
@@ -549,7 +798,18 @@
     "paste_tweets": "‏[Paste your tweets here, one per line... line.....]‏",
     "import_button": "‏[Import]‏",
     "importing": "‏[Importing...]‏",
-    "import_csv": "‏[Import CSV CSVSV]‏"
+    "import_csv": "‏[Import CSV CSVSV]‏",
+    "toasts": {
+      "rescheduled": "‏[Post rescheduled]‏",
+      "reschedule_failed": "‏[Failed to reschedule post]‏",
+      "rescheduled_short": "‏[Rescheduled]‏",
+      "scheduled_count": "‏[{count, plural, one {# post scheduled} other {# posts scheduled}}]‏",
+      "scheduled_partial": "‏[{success} scheduled, {failed} failed — check your calendar]‏",
+      "schedule_failed": "‏[Failed to schedule posts. Please try again.]‏"
+    },
+    "scheduling_progress": "‏[{current} of {total}]‏",
+    "schedule_n_posts": "‏[Schedule {count} {count, plural, one {Draft} other {Drafts}}]‏",
+    "cancel": "‏[Cancel]‏"
   },
   "drafts": {
     "title": "‏[Drafts]‏",
@@ -602,22 +862,197 @@
     "connect_x_cta": "‏[Connect your X account to view analytics analyticscs]‏",
     "no_data_cta": "‏[No analytics data yet. Start publishing! publishing!g!]‏",
     "impressions_history_cta": "‏[Upgrade to view impressions history historyry]‏",
-    "engagement_history_cta": "‏[Upgrade to view engagement history historyry]‏"
+    "engagement_history_cta": "‏[Upgrade to view engagement history historyry]‏",
+    "connect_x_description": "‏[Follower and performance insights appear after an active account is connected.]‏",
+    "upgrade_banner_title": "‏[Unlock Advanced Analytics]‏",
+    "upgrade_banner_description": "‏[See 30-day history, top performing tweets, and deeper insights with Pro.]‏",
+    "switch_to_comfortable": "‏[Switch to comfortable view]‏",
+    "switch_to_compact": "‏[Switch to compact view]‏",
+    "follower_history_cta": "‏[Upgrade to Pro to see detailed follower growth over time.]‏",
+    "impressions_history_cta_detail": "‏[Upgrade to Pro to see detailed impressions history over time.]‏",
+    "engagement_rate_title": "‏[Engagement Rate ({range})]‏",
+    "engagement_history_cta_detail": "‏[Upgrade to Pro to see your engagement rate trends over time.]‏",
+    "optimization_cta_detail": "‏[Upgrade to Pro to see when your audience is most active.]‏",
+    "top_tweets_cta_detail": "‏[See your best performing content with Pro analytics.]‏",
+    "vs_prev": "‏[vs prev]‏",
+    "toasts": {
+      "refresh_queued": "‏[Refresh queued]‏",
+      "export_failed": "‏[Failed to export analytics]‏"
+    },
+    "metric_tooltips": {
+      "engagement_rate": "‏[(Likes + Replies + Reposts + Quote Posts) / Impressions × 100]‏",
+      "impressions": "‏[Number of times posts were displayed to users on X]‏",
+      "likes": "‏[Number of likes across all published posts]‏",
+      "replies": "‏[Number of replies received across all published posts]‏",
+      "reposts": "‏[Number of reposts across all published posts]‏",
+      "quote_posts": "‏[Number of quote posts across all published posts]‏",
+      "clicks": "‏[Number of clicks on links within posts]‏",
+      "profile_visits": "‏[Number of visits to your X profile]‏",
+      "followers_gained": "‏[Net new followers during the selected period]‏",
+      "current_followers": "‏[Current number of followers on your X account]‏",
+      "growth": "‏[Change in followers during the selected period]‏",
+      "start_of_period": "‏[Number of followers at the start of the selected period]‏"
+    },
+    "empty_no_posts": "‏[No posts yet]‏",
+    "empty_no_posts_description": "‏[Publish your first post to start seeing analytics.]‏",
+    "empty_no_posts_cta": "‏[Publish your first post]‏",
+    "empty_pending": "‏[Analytics data is being collected]‏",
+    "empty_pending_description": "‏[Your analytics will appear here once X processes your published posts.]‏",
+    "empty_pending_refresh": "‏[Refresh now]‏"
   },
   "analytics_viral": {
     "title": "‏[Viral Analyzer Analyzerer]‏",
-    "description": "‏[Analyze viral content trends trendsds]‏"
+    "description": "‏[Analyze viral content trends trendsds]‏",
+    "unlock_title": "‏[Unlock Viral Insights]‏",
+    "unlock_description": "‏[Publish 5+ tweets with 100+ impressions to unlock AI-powered analysis of your top-performing content patterns.]‏",
+    "periods": {
+      "30": "‏[Last 30 days]‏",
+      "60": "‏[Last 60 days]‏",
+      "90": "‏[Last 90 days]‏",
+      "180": "‏[Last 180 days]‏",
+      "365": "‏[Last year]‏"
+    },
+    "analyze_button": "‏[Analyze]‏",
+    "analyzing": "‏[Analyzing...]‏",
+    "export_button": "‏[Export]‏",
+    "export_copy_markdown": "‏[Copy as Markdown]‏",
+    "export_download_csv": "‏[Download CSV]‏",
+    "error_fetch": "‏[Failed to fetch analysis]‏",
+    "error_analyze": "‏[Failed to analyze viral content]‏",
+    "insufficient_title": "‏[Not enough data to analyze]‏",
+    "insufficient_description": "‏[Publish more tweets (at least 5 with 100+ impressions) to get viral content insights.]‏",
+    "stats": {
+      "tweets_analyzed": "‏[Tweets Analyzed]‏",
+      "avg_engagement": "‏[Avg Engagement]‏",
+      "top_engagement": "‏[Top Engagement]‏",
+      "total_impressions": "‏[Total Impressions]‏"
+    },
+    "insights_title": "‏[AI-Generated Insights]‏",
+    "action_plan": {
+      "title": "‏[Your Action Plan]‏",
+      "description": "‏[3 specific steps to improve your engagement based on your data.]‏",
+      "post_on": "‏[Post on {day}s at {hour} — your engagement is highest then.]‏",
+      "include_hashtag": "‏[Include #{tag} — your top hashtag by engagement rate.]‏",
+      "write_length": "‏[Write {length} tweets — they get the most engagement in your account.]‏"
+    },
+    "cards": {
+      "top_hashtags": "‏[Top Hashtags]‏",
+      "top_hashtags_desc": "‏[Hashtags that drive the most engagement]‏",
+      "top_keywords": "‏[Top Keywords]‏",
+      "top_keywords_desc": "‏[Word patterns that resonate with your audience]‏",
+      "tweet_length": "‏[Tweet Length Performance]‏",
+      "tweet_length_desc": "‏[Which lengths perform best for you]‏",
+      "best_days": "‏[Best Days to Post]‏",
+      "best_days_desc": "‏[Days when your content gets the most engagement]‏",
+      "best_hours": "‏[Best Hours to Post]‏",
+      "best_hours_desc": "‏[24-hour engagement — top 3 highlighted]‏",
+      "content_types": "‏[Content Type Performance]‏",
+      "content_types_desc": "‏[Which types of content work best for you]‏"
+    },
+    "empty": {
+      "no_hashtags": "‏[No hashtag data yet]‏",
+      "no_keywords": "‏[No keyword data yet]‏",
+      "no_length": "‏[No length data yet]‏",
+      "no_days": "‏[No day data yet]‏",
+      "no_content_types": "‏[No content type data yet]‏"
+    },
+    "length_legend": "‏[Short <100 · Medium 100–200 · Long >200 chars]‏",
+    "toasts": {
+      "report_copied": "‏[Report copied to clipboard]‏",
+      "csv_downloaded": "‏[CSV downloaded]‏"
+    }
   },
   "analytics_competitor": {
     "title": "‏[Competitor Analysis Analysisis]‏",
-    "description": "‏[Track and analyze competitor performance performancece]‏"
+    "description": "‏[Track and analyze competitor performance performancece]‏",
+    "username_label": "‏[X Username]‏",
+    "username_placeholder": "‏[username]‏",
+    "language_label": "‏[Analysis Language]‏",
+    "language_arabic": "‏[Arabic]‏",
+    "language_english": "‏[English]‏",
+    "analyze_button": "‏[Analyze]‏",
+    "analyzing": "‏[Analyzing...]‏",
+    "empty_title": "‏[Enter a public X username to analyze]‏",
+    "empty_description": "‏[Analyze any public X account to discover their posting patterns, top topics, and engagement strategy.]‏",
+    "loading_label": "‏[Loading competitor analysis]‏",
+    "results": {
+      "followers": "‏[followers]‏",
+      "tweets_analyzed": "‏[tweets analyzed]‏",
+      "analyze_another": "‏[Analyze Another]‏"
+    },
+    "metrics": {
+      "followers": "‏[Followers]‏",
+      "tweets_analyzed": "‏[Tweets Analyzed]‏",
+      "content_types": "‏[Content Types]‏",
+      "top_hashtags": "‏[Top Hashtags]‏"
+    },
+    "compare": {
+      "title": "‏[Compare with Your Account]‏",
+      "no_data_title": "‏[No data to compare yet]‏",
+      "no_data_description": "‏[Publish posts from AstraPost to see how you stack up against @{username}.]‏",
+      "your_account": "‏[Your Account]‏",
+      "tweets_last_90_days": "‏[{count} tweets · last 90 days]‏",
+      "their_tweets_analyzed": "‏[{count} tweets analyzed]‏",
+      "posting_frequency": "‏[Posting Frequency]‏",
+      "top_hashtags": "‏[Top Hashtags]‏",
+      "shared_tags_highlighted": "‏[shared tags highlighted]‏",
+      "no_hashtags_yet": "‏[No hashtags yet]‏",
+      "content_types": "‏[Content Types]‏",
+      "no_data_yet": "‏[No data yet]‏",
+      "best_posting_times": "‏[Best Posting Times]‏",
+      "your_account_label": "‏[Your account]‏",
+      "see_best_time_predictor": "‏[See Best Time Predictor for details]‏"
+    },
+    "charts": {
+      "title": "‏[Charts]‏",
+      "hashtag_prominence": "‏[Hashtag Prominence]‏",
+      "content_mix": "‏[Content Mix]‏"
+    },
+    "summary": {
+      "title": "‏[Strategic Summary]‏"
+    },
+    "insights": {
+      "title": "‏[Topics, Hashtags & Insights]‏",
+      "top_topics": "‏[Top Topics]‏",
+      "top_hashtags": "‏[Top Hashtags]‏",
+      "key_strengths": "‏[Key Strengths]‏",
+      "your_opportunities": "‏[Your Opportunities]‏"
+    },
+    "tone": {
+      "title": "‏[Tone Profile]‏"
+    },
+    "empty": {
+      "no_hashtags": "‏[No hashtags found]‏",
+      "no_data": "‏[No data found]‏",
+      "no_content_types": "‏[No content types found]‏"
+    },
+    "toasts": {
+      "enter_username": "‏[Please enter a username]‏",
+      "analysis_failed": "‏[Failed to analyze account]‏",
+      "analysis_failed_retry": "‏[Failed to analyze account. Please try again.]‏"
+    }
   },
   "achievements": {
     "title": "‏[Achievements]‏",
     "description": "‏[Track your milestones and rewards rewardsds]‏",
     "unlocked": "‏[Unlocked]‏",
     "locked": "‏[Locked]‏",
-    "progress": "‏[Progress]‏"
+    "progress": "‏[Progress]‏",
+    "empty_title": "‏[No achievements yet]‏",
+    "empty_description": "‏[Start creating content to unlock badges and track your progress.]‏",
+    "create_first_post": "‏[Create Your First Post]‏",
+    "view_analytics": "‏[View Analytics]‏",
+    "unlock_message": "‏[Unlock badges by growing your audience and posting consistently.]‏",
+    "milestones": {
+      "first_post": "‏[First Post]‏",
+      "first_post_desc": "‏[Published your first post]‏",
+      "10_posts": "‏[Consistent Creator]‏",
+      "10_posts_desc": "‏[Published 10 posts]‏",
+      "100_followers": "‏[Growing Audience]‏",
+      "100_followers_desc": "‏[Reached 100 followers]‏",
+      "10_day_streak": "‏[On Fire]‏",
+      "10_day_streak_desc": "‏[Posted for 10 consecutive days]‏"
+    }
   },
   "referrals": {
     "title": "‏[Referrals]‏",
@@ -625,7 +1060,23 @@
     "invite_link": "‏[Your Invite Link Linknk]‏",
     "copied": "‏[Copied!]‏",
     "referral_count": "‏[Referrals]‏",
-    "rewards": "‏[Rewards]‏"
+    "rewards": "‏[Rewards]‏",
+    "total_referrals": "‏[Total Referrals]‏",
+    "friends_joined": "‏[Friends joined using your code]‏",
+    "earned_credits": "‏[Earned Credits]‏",
+    "available_for_invoice": "‏[Available for next invoice]‏",
+    "share_your_link": "‏[Share Your Link]‏",
+    "share_description": "‏[Share this link with your friends to earn rewards.]‏",
+    "referral_link_label": "‏[Referral Link]‏",
+    "your_code": "‏[Your Code]‏",
+    "generating": "‏[Generating...]‏",
+    "how_it_works": "‏[How it works]‏",
+    "how_step_1": "‏[Share your unique referral link or code.]‏",
+    "how_step_2": "‏[Friends sign up and get a 21-day extended trial.]‏",
+    "how_step_3": "‏[You get $5 credit for every friend who subscribes to Pro.]‏",
+    "no_referrals_yet": "‏[No referrals yet]‏",
+    "empty_description": "‏[Share your unique referral link with friends to start earning credits. Every friend who subscribes gets you $5 in account credit.]‏",
+    "copy_referral_link": "‏[Copy Referral Link]‏"
   },
   "affiliate": {
     "title": "‏[Affiliate Dashboard Dashboardrd]‏",
@@ -633,7 +1084,68 @@
     "earnings": "‏[Earnings]‏",
     "clicks": "‏[Clicks]‏",
     "conversions": "‏[Conversions]‏",
-    "link": "‏[Affiliate Link Linknk]‏"
+    "link": "‏[Affiliate Link Linknk]‏",
+    "product_details": "‏[Product Details]‏",
+    "product_url_label": "‏[Product URL]‏",
+    "product_url_placeholder": "‏[https://amazon.com/product...]‏",
+    "product_url_help": "‏[Paste the product link you want to promote.]‏",
+    "platform_label": "‏[Platform]‏",
+    "platforms": {
+      "amazon": "‏[Amazon]‏",
+      "noon": "‏[Noon]‏",
+      "aliexpress": "‏[AliExpress]‏",
+      "other": "‏[Other]‏"
+    },
+    "language_label": "‏[Tweet Language]‏",
+    "languages": {
+      "ar": "‏[Arabic]‏",
+      "en": "‏[English]‏",
+      "fr": "‏[French]‏",
+      "de": "‏[German]‏",
+      "es": "‏[Spanish]‏",
+      "tr": "‏[Turkish]‏"
+    },
+    "tag_label": "‏[Affiliate Tag (Optional)]‏",
+    "tag_placeholder_amazon": "‏[your-tag-20]‏",
+    "tag_placeholder_other": "‏[Coupon Code / ID]‏",
+    "tag_help": "‏[Your affiliate tag will be added to the generated tweet.]‏",
+    "generating": "‏[Analyzing... ({elapsed}s)]‏",
+    "generate_tweet": "‏[Generate Tweet]‏",
+    "generated_result": "‏[Generated Result]‏",
+    "copy_aria_label": "‏[Copy affiliate tweet]‏",
+    "copied_button": "‏[Copied!]‏",
+    "copy_button": "‏[Copy]‏",
+    "compose_button": "‏[Compose]‏",
+    "detected_prefix": "‏[Detected:]‏",
+    "empty_title": "‏[Your affiliate tweet will appear here]‏",
+    "empty_description": "‏[Paste a product URL above and click Generate Tweet]‏",
+    "recent_generations": "‏[Recent Generations]‏",
+    "loading": "‏[Loading recent generations...]‏",
+    "refresh": "‏[Refresh]‏",
+    "no_links_title": "‏[No affiliate links yet]‏",
+    "no_links_description": "‏[Generate your first affiliate tweet above to start tracking clicks and conversions.]‏",
+    "table": {
+      "product": "‏[Product]‏",
+      "platform": "‏[Platform]‏",
+      "clicks": "‏[Clicks]‏",
+      "generated_content": "‏[Generated Content]‏",
+      "date": "‏[Date]‏",
+      "status": "‏[Status]‏",
+      "actions": "‏[Actions]‏",
+      "product_thumbnail": "‏[Product thumbnail]‏",
+      "unknown": "‏[Unknown]‏",
+      "unknown_product": "‏[Unknown Product]‏",
+      "view_product": "‏[View Product]‏",
+      "scheduled": "‏[Scheduled]‏",
+      "generated": "‏[Generated]‏",
+      "copy_tweet": "‏[Copy Tweet]‏",
+      "schedule": "‏[Schedule]‏"
+    },
+    "toasts": {
+      "generation_failed": "‏[Failed to generate affiliate tweet]‏",
+      "copied": "‏[Copied to clipboard]‏",
+      "history_failed": "‏[Failed to load history]‏"
+    }
   },
   "jobs": {
     "title": "‏[Jobs]‏",
@@ -642,8 +1154,31 @@
       "pending": "‏[Pending]‏",
       "processing": "‏[Processing]‏",
       "completed": "‏[Completed]‏",
-      "failed": "‏[Failed]‏"
-    }
+      "failed": "‏[Failed]‏",
+      "running": "‏[Running]‏",
+      "retrying": "‏[Retrying]‏",
+      "success": "‏[Success]‏"
+    },
+    "filter_title": "‏[Filter Jobs]‏",
+    "filter_status_label": "‏[Status]‏",
+    "filter_status_all": "‏[All statuses]‏",
+    "filter_queue_label": "‏[Queue]‏",
+    "filter_queue_all": "‏[All queues]‏",
+    "filter_queue_schedule": "‏[Schedule Queue]‏",
+    "filter_queue_analytics": "‏[Analytics Queue]‏",
+    "filter_search_label": "‏[Search]‏",
+    "filter_search_placeholder": "‏[Search postId / jobId / correlationId]‏",
+    "filter_apply": "‏[Apply Filters]‏",
+    "empty_title": "‏[No jobs found]‏",
+    "empty_description": "‏[Try adjusting your filters or check back later for job history.]‏",
+    "job_id": "‏[Job ID:]‏",
+    "correlation": "‏[Correlation:]‏",
+    "attempts": "‏[Attempts:]‏",
+    "duration": "‏[Duration:]‏",
+    "unknown": "‏[—]‏",
+    "previous": "‏[← Previous]‏",
+    "next": "‏[Next →]‏",
+    "page": "‏[Page {page}]‏"
   },
   "ai_hub": {
     "title": "‏[AI Hub Hubub]‏",
@@ -660,34 +1195,187 @@
     "tools": {
       "thread_writer": {
         "title": "‏[Thread Writer Writerer]‏",
-        "description": "‏[Turn any topic into a compelling multi-tweet thread. thread.d.]‏"
+        "description": "‏[Turn any topic into a compelling multi-tweet thread. thread.d.]‏",
+        "capability": "‏[Best for long-form storytelling, tutorials, and opinion threads threadsads]‏"
       },
       "url_to_thread": {
         "title": "‏[URL → Thread Threadad]‏",
-        "description": "‏[Paste a URL and get an instant thread summary. summary.y.]‏"
+        "description": "‏[Paste a URL and get an instant thread summary. summary.y.]‏",
+        "capability": "‏[Best for quickly summarizing articles, news, and blog posts poststs]‏"
       },
       "ab_variants": {
         "title": "‏[A/B Variants Variantsts]‏",
-        "description": "‏[Generate multiple angles for the same tweet idea. idea.a.]‏"
+        "description": "‏[Generate multiple angles for the same tweet idea. idea.a.]‏",
+        "capability": "‏[Best for testing different hooks, tones, and angles for the same idea ideaea]‏"
       },
       "hashtag_generator": {
         "title": "‏[Hashtag Generator Generatoror]‏",
-        "description": "‏[Find the best hashtags for your content and niche. niche.e.]‏"
+        "description": "‏[Find the best hashtags for your content and niche. niche.e.]‏",
+        "capability": "‏[Best for discovering trending and niche-specific hashtags hashtagsgs]‏"
       },
       "bio_generator": {
         "title": "‏[Bio Generator Generatoror]‏",
-        "description": "‏[Generate multiple professional bio options for your X profile. profile.e.]‏"
+        "description": "‏[Generate multiple professional bio options for your X profile. profile.e.]‏",
+        "capability": "‏[Best for crafting a professional or creative X profile bio bioso]‏"
       },
       "reply_generator": {
         "title": "‏[Reply Generator Generatoror]‏",
-        "description": "‏[Craft smart, contextual replies to any tweet. tweet.t.]‏"
+        "description": "‏[Craft smart, contextual replies to any tweet. tweet.t.]‏",
+        "capability": "‏[Best for engaging with your audience through smart, contextual replies repliesies]‏"
       },
       "ai_calendar": {
         "title": "‏[AI Calendar Calendarar]‏",
-        "description": "‏[Let AI pick the best times and build your posting schedule. schedule.e.]‏"
+        "description": "‏[Let AI pick the best times and build your posting schedule. schedule.e.]‏",
+        "capability": "‏[Best for optimizing your posting schedule for maximum reach reachach]‏"
+      },
+      "pdf_to_thread": {
+        "title": "‏[PDF → Thread]‏",
+        "description": "‏[Upload a PDF report and get a ready-to-publish X thread.]‏",
+        "capability": "‏[Best for turning reports, whitepapers, and documents into threads threadsads]‏"
+      },
+      "youtube_to_thread": {
+        "title": "‏[YouTube → Thread]‏",
+        "description": "‏[Turn a YouTube video into a ready-to-publish X thread]‏",
+        "capability": "‏[Best for repurposing video content into text-based threads threadsads]‏"
       }
     },
-    "try_it": "‏[Try it → →]‏"
+    "try_it": "‏[Try it → →]‏",
+    "locked_overlay_title": "‏[Pro feature]‏",
+    "locked_overlay_cta": "‏[Upgrade to unlock]‏",
+    "quota_overlay_cta": "‏[Upgrade to continue]‏",
+    "pdf_to_thread": {
+      "title": "‏[PDF to Thread]‏",
+      "description": "‏[Upload a PDF document and turn it into a Twitter thread]‏",
+      "dropzone": {
+        "drag_active": "‏[Drop your PDF here]‏",
+        "click_to_upload": "‏[Click to upload or drag and drop]‏",
+        "supported_formats": "‏[PDF files only, up to 50 MB]‏",
+        "file_too_large": "‏[File is too large. Maximum size is 50 MB]‏",
+        "invalid_type": "‏[Only PDF files are supported]‏",
+        "not_valid_pdf": "‏[The file does not appear to be a valid PDF]‏",
+        "uploading": "‏[Uploading...]‏",
+        "upload_success": "‏[PDF uploaded successfully]‏"
+      },
+      "preview": {
+        "pages": "‏[{count, plural, =1 {# page} other {# pages}}]‏",
+        "characters": "‏[{count} characters extracted]‏",
+        "sync_eligible": "‏[Quick generation available]‏",
+        "async_eligible": "‏[Background generation]‏"
+      },
+      "attestation": {
+        "label": "‏[I own or have the necessary rights to this document]‏",
+        "required_error": "‏[You must confirm that you have rights to this document]‏"
+      },
+      "options": {
+        "heading": "‏[Generation Options]‏",
+        "language": "‏[Language]‏",
+        "language_ar": "‏[Arabic]‏",
+        "language_en": "‏[English]‏",
+        "tweet_count": "‏[Tweet Count]‏",
+        "tone": "‏[Tone]‏",
+        "tone_professional": "‏[Professional]‏",
+        "tone_educational": "‏[Educational]‏",
+        "tone_casual": "‏[Casual]‏",
+        "tone_formal": "‏[Formal]‏",
+        "tone_enthusiastic": "‏[Enthusiastic]‏",
+        "include_first_tweet_image": "‏[Generate image for the first tweet]‏",
+        "include_first_tweet_image_description": "‏[Uses 1 image credit from your monthly quota.]‏",
+        "include_first_tweet_image_generating": "‏[Generating image…]‏",
+        "include_first_tweet_image_failed": "‏[Image generation failed. Sending without image.]‏"
+      },
+      "actions": {
+        "generate_sync": "‏[Generate Thread]‏",
+        "enqueue_async": "‏[Generate in Background]‏",
+        "cancel": "‏[Cancel]‏",
+        "cancel_confirm_title": "‏[Cancel generation?]‏",
+        "cancel_confirm_description": "‏[This will stop the current job. You'll need to re-upload to try again.]‏",
+        "back": "‏[Back]‏",
+        "upload_new": "‏[Upload New PDF]‏",
+        "retry": "‏[Retry]‏"
+      },
+      "progress": {
+        "queued": "‏[Waiting in queue...]‏",
+        "processing": "‏[Generating your thread...]‏",
+        "status": "‏[Status]‏",
+        "status_queued": "‏[Queued]‏",
+        "status_processing": "‏[Processing]‏",
+        "elapsed": "‏[Elapsed: {seconds}s]‏",
+        "uploading": "‏[Uploading your PDF...]‏",
+        "extracting": "‏[Extracting text...]‏",
+        "ready": "‏[Thread ready!]‏",
+        "failed": "‏[Generation failed]‏",
+        "status_uploading": "‏[Uploading]‏",
+        "status_extracting": "‏[Extracting]‏",
+        "status_ready": "‏[Ready]‏",
+        "status_failed": "‏[Failed]‏"
+      },
+      "result": {
+        "title": "‏[Your Thread]‏",
+        "tweets_count": "‏[{count, plural, =1 {# tweet} other {# tweets}}]‏",
+        "send_to_composer": "‏[Send to Composer]‏",
+        "copy_button": "‏[Copy]‏",
+        "copy_thread": "‏[Copy Thread]‏",
+        "copied": "‏[Copied!]‏",
+        "source_language": "‏[Source Language]‏",
+        "redactions_notice": "‏[Personal information was redacted from this document]‏",
+        "generated_success": "‏[Thread generated successfully]‏",
+        "regenerate": "‏[Regenerate]‏"
+      },
+      "recent": {
+        "title": "‏[Recent]‏",
+        "untitled": "‏[Untitled]‏",
+        "empty": "‏[No recent jobs]‏"
+      },
+      "errors": {
+        "upload_failed": "‏[Failed to upload PDF. Please try again.]‏",
+        "generate_failed": "‏[Failed to generate thread. Please try again.]‏",
+        "rate_limited": "‏[Too many requests. Please wait a moment.]‏",
+        "upgrade_required": "‏[This feature requires a Pro subscription]‏",
+        "pdf_no_text": "‏[This PDF has no extractable text. Ensure it contains a text layer.]‏",
+        "pdf_parse_failed": "‏[Could not parse the PDF. The file may be corrupted.]‏",
+        "attestation_required": "‏[You must confirm you have rights to this document.]‏",
+        "generic": "‏[Something went wrong. Please try again.]‏",
+        "polling_connection": "‏[Connection issue — retrying...]‏",
+        "polling_timeout": "‏[Generation is taking longer than expected. You can cancel and try again.]‏"
+      }
+    },
+    "youtube_to_thread": {
+      "title": "‏[YouTube to Thread]‏",
+      "description": "‏[Paste a YouTube video URL and turn it into a Twitter thread]‏",
+      "url_label": "‏[YouTube URL]‏",
+      "url_placeholder": "‏[https://www.youtube.com/watch?v=...]‏",
+      "provider": {
+        "label": "‏[Transcription Provider]‏",
+        "deepgram": "‏[Deepgram (faster)]‏",
+        "whisper": "‏[OpenAI Whisper (accurate)]‏"
+      },
+      "tweet_count": "‏[Tweet Count]‏",
+      "submit": "‏[Generate Thread]‏",
+      "progress": {
+        "elapsed": "‏[Elapsed]‏",
+        "downloading": "‏[Downloading audio...]‏",
+        "transcribing": "‏[Transcribing audio...]‏",
+        "generating": "‏[Generating thread...]‏",
+        "status_downloading": "‏[Downloading]‏",
+        "status_transcribing": "‏[Transcribing]‏",
+        "status_generating": "‏[Generating]‏",
+        "ready": "‏[Thread ready!]‏",
+        "failed": "‏[Generation failed]‏"
+      },
+      "actions": {
+        "cancel": "‏[Cancel]‏",
+        "retry": "‏[Retry]‏",
+        "new_url": "‏[Try Another Video]‏"
+      },
+      "errors": {
+        "no_url": "‏[Please enter a YouTube URL]‏",
+        "upgrade_required": "‏[This feature requires a Pro subscription]‏",
+        "generate_failed": "‏[Failed to generate thread. Please try again.]‏",
+        "generic": "‏[Something went wrong. Please try again.]‏",
+        "polling_connection": "‏[Connection issue — retrying...]‏",
+        "polling_timeout": "‏[Generation is taking longer than expected. You can cancel and try again.]‏"
+      }
+    }
   },
   "ai_writer": {
     "title": "‏[AI Writer Writerer]‏",
@@ -748,9 +1436,58 @@
       "inspirational": "‏[Inspirational]‏",
       "viral": "‏[Viral]‏"
     },
+    "tones": {
+      "attention_grabbing": "‏[Attention-Grabbing Grabbingng]‏"
+    },
+    "advanced_tones": "‏[Advanced tones tonesss]‏",
+    "advanced_tones_tooltip": "‏[May generate provocative content. Use responsibly. responsibly.y.]‏",
+    "quota": {
+      "ai_remaining": "‏[AI: {used}/{limit}]‏",
+      "images_remaining": "‏[Images: {used}/{limit}]‏",
+      "unlimited": "‏[Unlimited Unlimiteded]‏",
+      "view_billing": "‏[View billing billingng]‏"
+    },
     "errors": {
       "generation_failed": "‏[Failed to generate content. Please try again. again.n.]‏",
       "quota_exceeded": "‏[AI quota exceeded. Upgrade your plan to generate more content. content.t.]‏"
+    },
+    "tab_meta": {
+      "thread": {
+        "title": "‏[Thread Writer]‏",
+        "description": "‏[Turn any topic into a compelling multi-tweet thread.]‏"
+      },
+      "url": {
+        "title": "‏[URL → Thread]‏",
+        "description": "‏[Paste a URL and get an instant thread summary.]‏"
+      },
+      "variants": {
+        "title": "‏[A/B Variants]‏",
+        "description": "‏[Generate multiple angles for the same tweet idea.]‏"
+      },
+      "hashtags": {
+        "title": "‏[Hashtag Generator]‏",
+        "description": "‏[Find the best hashtags for your content and niche.]‏"
+      }
+    },
+    "toasts": {
+      "copied": "‏[Copied to clipboard]‏",
+      "loaded_editor": "‏[Loaded into editor]‏"
+    },
+    "url": {
+      "title": "‏[Article / URL to Thread]‏",
+      "input_label": "‏[Article or Blog URL]‏",
+      "placeholder": "‏[Paste a URL to convert]‏",
+      "description": "‏[Any article, blog post, or newsletter — we'll extract and thread it]‏",
+      "converting": "‏[Converting…]‏",
+      "output_language": "‏[Output Language]‏",
+      "thread_length": "‏[Thread Length]‏",
+      "tweets_count": "‏[{count} tweets]‏"
+    },
+    "variants": {
+      "title": "‏[A/B Variants]‏",
+      "original_tweet_label": "‏[Original Tweet]‏",
+      "paste_placeholder": "‏[Paste your tweet here…]‏",
+      "chars": "‏[{count} chars]‏"
     }
   },
   "ai_agentic": {
@@ -774,7 +1511,9 @@
       "include_images_description": "‏[Generate visuals for key tweets tweetsts]‏",
       "audience_hint": "‏[Audience hint (optional) (optional)l)]‏",
       "audience_placeholder": "‏[e.g., developers, marketers, students studentsts]‏",
-      "posting_as": "‏[Posting as as]‏"
+      "posting_as": "‏[Posting as as]‏",
+      "voice_profile_active": "‏[Writing in your voice]‏",
+      "voice_profile_disable": "‏[Turn off]‏"
     },
     "processing_screen": {
       "generating_for_topic": "‏[Generating for topic topicic]‏",
@@ -796,7 +1535,9 @@
       "broad_topic_title": "‏[Your topic is broad. Pick a specific angle: angle:e:]‏",
       "angles_found": "‏[{count, plural, one {# angle found} other {# angles found}} found}}}}]‏",
       "format": "‏[{format} · {count, plural, one {# tweet} other {# tweets}} tweets}}}}]‏",
-      "quality_score": "‏[Quality score: {score}/10 {score}/1010]‏"
+      "quality_score": "‏[Quality score: {score}/10 {score}/1010]‏",
+      "run_in_background": "‏[Run in background]‏",
+      "background_description": "‏[We'll notify you when your thread is ready]‏"
     },
     "review_screen": {
       "ready": "‏[Your post is ready readydy]‏",
@@ -830,7 +1571,12 @@
       "content_ready": "‏[Your AI-generated content is ready. ready.y.]‏",
       "create_another": "‏[Create Another Anotherer]‏",
       "view_in_queue": "‏[View in Queue Queueue]‏",
-      "go_to_calendar": "‏[Go to Calendar Calendarar]‏"
+      "go_to_calendar": "‏[Go to Calendar Calendarar]‏",
+      "schedule_time_hint": "‏[Posting at {time} ({tz})]‏",
+      "quality_issues_title": "‏[Issues]‏",
+      "issue_tweet_over_limit": "‏[Tweet {n} exceeds 280 characters]‏",
+      "issue_image_no_alt": "‏[Image in tweet {n} has no description]‏",
+      "no_quality_issues": "‏[No issues found]‏"
     },
     "dialogs": {
       "regenerate_title": "‏[Regenerate entire thread? thread?d?]‏",
@@ -841,6 +1587,54 @@
       "discard_description": "‏[This thread will be deleted and you'll return to input screen. This can't be undone. undone.e.]‏",
       "cancel_button": "‏[Cancel]‏",
       "discard_button": "‏[Discard]‏"
+    },
+    "toasts": {
+      "pipeline_failed": "‏[Pipeline failed. Please try again.]‏",
+      "enhancement_failed": "‏[Enhancement failed. Please try again.]‏",
+      "session_resumed": "‏[Resumed your previous session.]‏",
+      "session_in_progress": "‏[A pipeline is already running for \"{topic}\"]‏",
+      "rewrite_failed": "‏[Rewrite failed]‏",
+      "tweet_removed": "‏[Tweet removed]‏",
+      "undo": "‏[Undo]‏",
+      "background_started": "‏[Running in background. We'll notify you when ready.]‏",
+      "pipeline_ready": "‏[Your thread for \"{topic}\" is ready!]‏"
+    },
+    "trends": {
+      "trending_on_x": "‏[Trending on X]‏",
+      "updated": "‏[Updated {time}]‏",
+      "just_now": "‏[just now]‏",
+      "min_ago": "‏[{count} min ago]‏",
+      "mins_ago": "‏[{count} mins ago]‏",
+      "hide": "‏[Hide]‏",
+      "show": "‏[Show]‏",
+      "loading": "‏[Loading trends]‏",
+      "couldnt_load": "‏[Couldn't load trends right now.]‏",
+      "retry": "‏[Retry]‏",
+      "trending_topics": "‏[Trending topics]‏",
+      "post": "‏[Post]‏",
+      "post_about": "‏[Post about: {topic}]‏",
+      "generate": "‏[Generate]‏",
+      "generate_about": "‏[Generate thread about: {topic}]‏",
+      "collapse": "‏[Collapse trending topics]‏",
+      "show_trending": "‏[Show trending topics]‏",
+      "categories": {
+        "all": "‏[All]‏",
+        "technology": "‏[Technology]‏",
+        "business": "‏[Business]‏",
+        "news": "‏[News]‏",
+        "lifestyle": "‏[Lifestyle]‏",
+        "sports": "‏[Sports]‏",
+        "entertainment": "‏[Entertainment]‏"
+      },
+      "post_count_high": "‏[High]‏",
+      "post_count_normal": "‏[Normal]‏"
+    },
+    "suggestions": {
+      "coding": "‏[AI coding tools]‏",
+      "funding": "‏[Startup funding]‏",
+      "content_creation": "‏[Content creation]‏",
+      "mena_tech": "‏[MENA tech scene]‏",
+      "remote_work": "‏[Remote work]‏"
     }
   },
   "ai_bio": {
@@ -867,7 +1661,10 @@
     "open_x_settings": "‏[Open X Settings Settingsgs]‏",
     "copy": "‏[Copy]‏",
     "copied": "‏[Copied!]‏",
-    "error": "‏[Failed to generate bio variants. Please try again. again.n.]‏"
+    "error": "‏[Failed to generate bio variants. Please try again. again.n.]‏",
+    "toasts": {
+      "copied": "‏[Copied to clipboard]‏"
+    }
   },
   "ai_reply": {
     "title": "‏[Reply Suggester Suggesterer]‏",
@@ -903,7 +1700,10 @@
     "fetch_error": "‏[Failed to preview tweet. Please try again. again.n.]‏",
     "generation_error": "‏[Failed to generate replies. Please try again. again.n.]‏",
     "3_replies_appear": "‏[3 reply suggestions will appear here herere]‏",
-    "works_with_any": "‏[Works with any public tweet from x.com or twitter.com twitter.comom]‏"
+    "works_with_any": "‏[Works with any public tweet from x.com or twitter.com twitter.comom]‏",
+    "toasts": {
+      "copied": "‏[Copied to clipboard]‏"
+    }
   },
   "ai_calendar": {
     "title": "‏[AI Content Calendar Calendarar]‏",
@@ -962,7 +1762,35 @@
       "tr": "‏[Turkish]‏",
       "ru": "‏[Russian]‏",
       "hi": "‏[Hindi]‏"
-    }
+    },
+    "toasts": {
+      "enter_topic": "‏[Please enter your niche or topic focus]‏",
+      "generation_failed": "‏[Failed to generate calendar. Please try again.]‏",
+      "load_accounts_failed": "‏[Failed to load accounts]‏",
+      "select_account": "‏[Please select an X account]‏",
+      "select_start_date": "‏[Please set a start date for Week 1]‏",
+      "schedule_failed": "‏[Failed to schedule posts. Please try again.]‏",
+      "scheduled_count": "‏[{count, plural, one {# post scheduled} other {# posts scheduled}}]‏",
+      "scheduled_partial": "‏[{success} scheduled, {failed} failed]‏"
+    },
+    "schedule_dialog_title": "‏[Schedule All Calendar Items]‏",
+    "schedule_dialog_description": "‏[Schedule all {count} posts from your content calendar. Each item's brief will be used as the initial draft content — review and refine in your queue before publishing.]‏",
+    "post_to": "‏[Post to]‏",
+    "loading_accounts": "‏[Loading accounts…]‏",
+    "no_connected_accounts": "‏[No connected X accounts found.]‏",
+    "connect_in_settings": "‏[Connect one in Settings]‏",
+    "account_placeholder": "‏[Select account]‏",
+    "default_badge": "‏[(default)]‏",
+    "week_starts_on": "‏[Week 1 starts on]‏",
+    "week_start_help": "‏[Monday of the first week. Day names in the calendar will be resolved to actual dates from this anchor.]‏",
+    "cancel": "‏[Cancel]‏",
+    "scheduling": "‏[Scheduling…]‏",
+    "schedule_n_posts": "‏[Schedule {count} {count, plural, one {Post} other {Posts}}]‏",
+    "open_in_composer": "‏[Open in Composer]‏",
+    "breadcrumb": "‏[Content Calendar]‏",
+    "generating_with_time": "‏[Generating... ({elapsed}s)]‏",
+    "week_label_same_month": "‏[Week {weekNum} · {startMonth} {startDay}–{endDay}]‏",
+    "week_label_cross_month": "‏[Week {weekNum} · {startMonth} {startDay}–{endMonth} {endDay}]‏"
   },
   "ai_history": {
     "title": "‏[AI Generation History Historyry]‏",
@@ -1012,11 +1840,15 @@
       "youtube_to_thread": "‏[YouTube to Thread]‏",
       "transcription": "‏[Transcription]‏",
       "pdf_to_thread": "‏[PDF to Thread]‏"
-    }
+    },
+    "previous": "‏[Previous]‏",
+    "next": "‏[Next]‏",
+    "page_x_of_y": "‏[Page {page} of {total}]‏",
+    "showing_x_to_y": "‏[{from}–{to} of {total}]‏"
   },
   "inspiration": {
-    "title": "‏[Inspiration]‏",
-    "description": "‏[Paste an X/Twitter URL to import a tweet, then adapt it with AI — or browse your saved inspiration. inspiration.n.]‏",
+    "title": "‏[Import & Adapt Adaptpt]‏",
+    "description": "‏[Paste an X/Twitter URL to import a tweet and adapt it with AI — remix tone, structure, and messaging for your audience. audience.e.]‏",
     "tabs": {
       "import": "‏[Import Tweet Tweetet]‏",
       "history": "‏[History]‏",
@@ -1128,7 +1960,8 @@
       "accounts": "‏[Accounts]‏",
       "ai_voice": "‏[AI Voice Voicece]‏",
       "notifications": "‏[Notifications]‏",
-      "privacy": "‏[Privacy]‏"
+      "privacy": "‏[Privacy]‏",
+      "team": "‏[Team]‏"
     },
     "profile": {
       "title": "‏[Profile Settings Settingsgs]‏",
@@ -1175,7 +2008,17 @@
       "onboarding_desc": "‏[Complete the setup wizard anytime anytimeme]‏",
       "onboarding_body": "‏[Skipped the onboarding wizard earlier? You can resume at any time to complete your setup, schedule your first post, and explore AI-powered features. features.s.]‏",
       "onboarding_button": "‏[Resume Onboarding Onboardingng]‏",
-      "onboarding_loading": "‏[Loading...]‏"
+      "onboarding_loading": "‏[Loading...]‏",
+      "voice_variant_label": "‏[AI Writing Style]‏",
+      "voice_variant_placeholder": "‏[Select writing style]‏",
+      "voice_variant_default": "‏[Balanced — professional yet relatable]‏",
+      "voice_variant_professional": "‏[Professional — authoritative, concise, no slang]‏",
+      "voice_variant_casual": "‏[Casual — conversational, warm, light humor]‏",
+      "voice_variant_description": "‏[Sets the default tone for all AI-generated content]‏",
+      "show_made_with_description": "‏[Pro users can hide this footer on public template shares]‏",
+      "show_made_with_label": "‏[Show 'Made with AstraPost' on shared pages]‏",
+      "show_made_with_astrapost_label": "‏[Show 'Made with AstraPost' on shared pages]‏",
+      "show_made_with_astrapost_desc": "‏[Display a subtle AstraPost credit footer on your public shared pages]‏"
     },
     "billing": {
       "title": "‏[Billing & Subscription Subscriptionon]‏",
@@ -1259,7 +2102,11 @@
       "team_invites_label": "‏[Team invite notifications notificationsns]‏",
       "team_invites_desc": "‏[Notify me when I'm invited to join a team teamam]‏",
       "saved": "‏[Notifications updated updateded]‏",
-      "error_save": "‏[Failed to update notifications notificationsns]‏"
+      "error_save": "‏[Failed to update notifications notificationsns]‏",
+      "post_over_quota_title": "‏[Post Skipped — Plan Limit Reached]‏",
+      "post_over_quota_message": "‏[A scheduled post was not published because you've reached your plan limit. Upgrade to restore scheduling.]‏",
+      "post_account_inactive_title": "‏[Post Skipped — Account Inactive]‏",
+      "post_account_inactive_message": "‏[A scheduled post could not be published because the connected account is no longer active. Reconnect the account in Settings or remove this post.]‏"
     },
     "team": {
       "title": "‏[Team Management Managementnt]‏",
@@ -1309,7 +2156,8 @@
       "role_update_error": "‏[Failed to update role rolele]‏",
       "cannot_remove_self": "‏[Cannot remove yourself yourselflf]‏",
       "manage_team_button": "‏[Manage Team Teamam]‏",
-      "collaborate_hint": "‏[Collaborate with your team by inviting members to your workspace. workspace.e.]‏"
+      "collaborate_hint": "‏[Collaborate with your team by inviting members to your workspace. workspace.e.]‏",
+      "members_count_with_pending": "‏[Members ({current}/{max}) · {pending} pending]‏"
     },
     "integrations": {
       "title": "‏[Integrations & Accounts Accountsts]‏",
@@ -1430,7 +2278,15 @@
       "account_remove_failed": "‏[Failed to remove account accountnt]‏",
       "account_deactivated": "‏[Account @{username} deactivated successfully successfullyly]‏",
       "account_deactivate_failed": "‏[Failed to deactivate account accountnt]‏",
-      "default_update_failed": "‏[Failed to update default defaultlt]‏"
+      "default_update_failed": "‏[Failed to update default defaultlt]‏",
+      "reconnect_required": "‏[Reconnect Required]‏",
+      "connection_issues": "‏[Connection issues]‏",
+      "account_deactivated_warning": "‏[Your X account @{username} has been disconnected. Scheduled posts are paused.]‏",
+      "transient_failure_info": "‏[Connection attempt failed {count, plural, one {# time} other {# times}}. The system will retry automatically.]‏",
+      "disconnect_error": "‏[Failed to disconnect account. Please try again.]‏"
+    },
+    "toasts": {
+      "resume_onboarding_failed": "‏[Failed to resume onboarding]‏"
     }
   },
   "hashtag_generator": {
@@ -1449,7 +2305,8 @@
     "count": "‏[{count}]‏",
     "click_copy": "‏[Click any hashtag to copy it, or use \"Copy All\" to get everything. Click × to remove a hashtag. hashtag.g.]‏",
     "error_enter_content": "‏[Please enter some content contentnt]‏",
-    "error_generation": "‏[Failed to generate hashtags hashtagsgs]‏"
+    "error_generation": "‏[Failed to generate hashtags hashtagsgs]‏",
+    "remove_hashtag": "‏[Remove hashtag]‏"
   },
   "legal": {
     "privacy_badge": "‏[Legal]‏",
@@ -1586,7 +2443,6 @@
     "plan_pro_feature_4": "‏[Advanced analytics analyticscs]‏",
     "plan_pro_feature_5": "‏[AI image generation (50 images/month) images/month)h))]‏",
     "plan_pro_feature_6": "‏[Thread/Sard creator creatoror]‏",
-    "plan_pro_feature_7": "‏[Priority support supportrt]‏",
     "plan_pro_feature_8": "‏[Viral Score & Best Times Timeses]‏",
     "plan_pro_feature_9": "‏[Competitor Analyzer Analyzerer]‏",
     "plan_pro_feature_10": "‏[Content Calendar & URL-to-Thread Threadad]‏",
@@ -1604,7 +2460,6 @@
     "plan_agency_feature_4": "‏[Unlimited AI images imageses]‏",
     "plan_agency_feature_5": "‏[Team collaboration collaborationon]‏",
     "plan_agency_feature_6": "‏[White-label reports reportsts]‏",
-    "plan_agency_feature_7": "‏[Dedicated account manager managerger]‏",
     "plan_pro_annual_feature_2": "‏[4 X Accounts Accountsts]‏",
     "plan_pro_annual_feature_3": "‏[150 AI Text Generations/month monthth]‏",
     "plan_pro_annual_feature_16": "‏[Annual Bonus: +50 AI gens & extra X account accountnt]‏",
@@ -1612,7 +2467,22 @@
     "plan_agency_annual_feature_8": "‏[2 Months Free Freeee]‏",
     "toggle_monthly": "‏[Monthly Monthlyly]‏",
     "toggle_annual": "‏[Annual Annualal]‏",
-    "toggle_save": "‏[Save 17% 17%%]‏"
+    "toggle_save": "‏[Save 17% 17%%]‏",
+    "enterprise_contact": "‏[Contact Us]‏",
+    "enterprise_description": "‏[Custom solutions for teams and agencies. Dedicated support, custom AI models, and volume pricing.]‏",
+    "enterprise_feature_1": "‏[Dedicated account manager]‏",
+    "enterprise_feature_2": "‏[Custom AI model training]‏",
+    "enterprise_feature_3": "‏[Priority API access]‏",
+    "enterprise_feature_4": "‏[Custom SLA & support]‏",
+    "enterprise_title": "‏[Enterprise]‏",
+    "testimonial_1_quote": "‏[AstraPost saved me hours every week. The AI Writer is incredibly accurate for Arabic content.]‏",
+    "testimonial_1_author": "‏[A content creator]‏",
+    "testimonial_2_quote": "‏[The scheduling system is flawless. I manage 5 X accounts and AstraPost handles them all perfectly.]‏",
+    "testimonial_2_author": "‏[A social media manager]‏",
+    "testimonial_3_quote": "‏[Finally, an AI tool that actually understands Arabic. The engagement on my posts has doubled.]‏",
+    "testimonial_3_author": "‏[A small business owner]‏",
+    "refund_policy": "‏[14-day money-back guarantee]‏",
+    "compliance": "‏[AstraPost complies with X's API terms of service. All posting is done through official X API endpoints.]‏"
   },
   "profile": {
     "loading": "‏[Loading... Loading.........]‏",
@@ -1710,16 +2580,34 @@
     "team_detail_2": "‏[Approval workflows workflowsws]‏",
     "team_detail_3": "‏[Shared media library libraryry]‏",
     "team_detail_4": "‏[Activity logs logsgs]‏",
-    "crossposting_title": "‏[Cross-Posting]‏",
-    "crossposting_desc": "‏[Sync your content across platforms (Coming Soon). Soon).).]‏",
-    "crossposting_detail_1": "‏[LinkedIn integration integrationon]‏",
-    "crossposting_detail_2": "‏[Threads integration integrationon]‏",
-    "crossposting_detail_3": "‏[Customizable formats per platform platformrm]‏",
-    "crossposting_detail_4": "‏[Unified inbox inboxox]‏",
     "cta_title": "‏[Ready to get started? started?d?]‏",
     "cta_subtitle": "‏[Join thousands of creators using AstraPost to grow their audience. audience.e.]‏",
     "cta_start_trial": "‏[Start Free Trial Trialal]‏",
-    "cta_view_pricing": "‏[View Pricing Pricingng]‏"
+    "cta_view_pricing": "‏[View Pricing Pricingng]‏",
+    "agentic_title": "‏[Agentic Posting]‏",
+    "agentic_desc": "‏[Drop a topic and let AI handle everything — research, drafting, and scheduling. Your autonomous content assistant.]‏",
+    "agentic_detail_1": "‏[Autonomous research & drafting]‏",
+    "agentic_detail_2": "‏[Voice profile customization]‏",
+    "agentic_detail_3": "‏[Automated scheduling pipeline]‏",
+    "agentic_detail_4": "‏[Full content calendar integration]‏",
+    "repurposing_title": "‏[Content Repurposing]‏",
+    "repurposing_desc": "‏[Turn any content into high-performing threads. Convert PDFs, YouTube videos, and existing tweets.]‏",
+    "repurposing_detail_1": "‏[PDF to thread conversion]‏",
+    "repurposing_detail_2": "‏[YouTube video summarization]‏",
+    "repurposing_detail_3": "‏[Tweet import & remixing]‏",
+    "repurposing_detail_4": "‏[Multi-format content adaptation]‏",
+    "growth_title": "‏[Growth & Engagement]‏",
+    "growth_desc": "‏[Boost your presence with gamified achievements, viral analytics, and AI-powered engagement tools.]‏",
+    "growth_detail_1": "‏[Achievement milestones & badges]‏",
+    "growth_detail_2": "‏[Viral score analysis]‏",
+    "growth_detail_3": "‏[Competitor tracking]‏",
+    "growth_detail_4": "‏[AI reply suggestions]‏",
+    "arabic_ai_title": "‏[Arabic-First AI]‏",
+    "arabic_ai_desc": "‏[Built for the MENA region with native RTL support, Arabic-optimized AI models, and a fully bilingual experience.]‏",
+    "arabic_ai_detail_1": "‏[Native right-to-left support]‏",
+    "arabic_ai_detail_2": "‏[Arabic-optimized AI models]‏",
+    "arabic_ai_detail_3": "‏[Bilingual dashboard (EN/AR)]‏",
+    "arabic_ai_detail_4": "‏[MENA timezone & culture aware]‏"
   },
   "community": {
     "badge": "‏[Community]‏",
@@ -1753,7 +2641,7 @@
     "faq_2_question": "‏[How do I get feedback on my threads before posting? posting?g?]‏",
     "faq_2_answer": "‏[Share your draft in the #feedback-lounge channel on Discord. Tag it with your niche (e.g. #tech, #finance, #arabic-content) for targeted responses. Pro and Agency users also get access to dedicated review channels. channels.s.]‏",
     "faq_3_question": "‏[Is there a regular challenge or contest schedule? schedule?e?]‏",
-    "faq_3_answer": "‏[Yes \u2014 every Monday we post a weekly content challenge in #weekly-challenge. Winners are announced on Fridays and featured in our newsletter. Prizes range from plan upgrades to sponsored shoutouts. shoutouts.s.]‏",
+    "faq_3_answer": "‏[Yes — every Monday we post a weekly content challenge in #weekly-challenge. Winners are announced on Fridays and featured in our newsletter. Prizes range from plan upgrades to sponsored shoutouts. shoutouts.s.]‏",
     "faq_4_question": "‏[Who should I contact for partnership or business inquiries? inquiries?s?]‏",
     "faq_4_answer": "‏[Use the contact form below and select \"Partnership / Business\" as the category. Our partnerships team reviews all submissions and responds within 2 business days. days.s.]‏",
     "faq_5_question": "‏[How often are the Creator AMAs held? held?d?]‏",
@@ -1761,13 +2649,13 @@
     "faq_6_question": "‏[I found a bug. What's the fastest way to report it? it?t?]‏",
     "faq_6_answer": "‏[Use the contact form below and select \"Bug Report\". Include your browser, the page URL, and steps to reproduce. For critical issues (e.g. posts not publishing), email us directly at support@astrapost.app. app.p.]‏",
     "contact_form_title": "‏[Send us a message messagege]‏",
-    "contact_form_desc": "‏[We typically respond within 1\u20132 business days. days.s.]‏",
+    "contact_form_desc": "‏[We typically respond within 1–2 business days. days.s.]‏",
     "contact_label_name": "‏[Your name nameme]‏",
     "contact_placeholder_name": "‏[Fatima Al-Rashid Al-Rashidd]‏",
     "contact_label_email": "‏[Email address addressss]‏",
     "contact_placeholder_email": "‏[you@example.com example.comom]‏",
     "contact_label_category": "‏[Category]‏",
-    "contact_placeholder_category": "‏[Select a category\u2026 category\u2026y\u2026]‏",
+    "contact_placeholder_category": "‏[Select a category… category…y…]‏",
     "contact_category_general": "‏[General Question Questionon]‏",
     "contact_category_bug": "‏[Bug Report Reportrt]‏",
     "contact_category_feature": "‏[Feature Request Requestst]‏",
@@ -1776,11 +2664,11 @@
     "contact_label_subject": "‏[Subject]‏",
     "contact_placeholder_subject": "‏[Brief description of your question questionon]‏",
     "contact_label_message": "‏[Message]‏",
-    "contact_placeholder_message": "‏[Tell us more about your question or issue\u2026 issue\u2026e\u2026]‏",
+    "contact_placeholder_message": "‏[Tell us more about your question or issue… issue…e…]‏",
     "contact_button_submit": "‏[Send Message Messagege]‏",
-    "contact_button_sending": "‏[Sending\u2026 ing\u2026g\u2026]‏",
+    "contact_button_sending": "‏[Sending… ing…g…]‏",
     "contact_success_title": "‏[Message sent! sent!t!]‏",
-    "contact_success_message": "‏[We've received your message and will reply within 1\u20132 business days. Check your inbox for a confirmation email. email.l.]‏",
+    "contact_success_message": "‏[We've received your message and will reply within 1–2 business days. Check your inbox for a confirmation email. email.l.]‏",
     "contact_success_button": "‏[Send another message messagege]‏",
     "contact_error_too_many": "‏[Too many submissions. Please wait before trying again. again.n.]‏",
     "contact_error_invalid_field": "‏[Invalid field fieldld]‏",
@@ -1935,7 +2823,8 @@
       "thank_you_customer": "‏[Thank you for being an AstraPost customer. customer.r.]‏",
       "thank_you_staying": "‏[Thank you for staying with AstraPost! AstraPost!t!]‏",
       "thank_you_continued": "‏[Thank you for your continued subscription! subscription!n!]‏",
-      "thank_you_trying": "‏[Thank you for trying AstraPost! AstraPost!t!]‏"
+      "thank_you_trying": "‏[Thank you for trying AstraPost! AstraPost!t!]‏",
+      "paused": "‏[Paused]‏"
     },
     "post_failure": {
       "subject": "‏[Your post failed to publish publishsh]‏",
@@ -2001,6 +2890,59 @@
       "team_name_label": "‏[Team]‏",
       "join_button": "‏[Accept Invitation Invitationon]‏",
       "expires": "‏[This invitation expires in 7 days. days.s.]‏"
+    },
+    "token_expiring": {
+      "subject": "‏[Your X account @{username} token expires soon]‏",
+      "body": "‏[Your X account {username} access token will expire in approximately {hours} hours. Once expired, scheduled posts for this account will be paused until you reconnect.]‏",
+      "impact": "‏[Scheduled posts will be paused when the token expires. Reconnect now to avoid interruptions.]‏",
+      "cta": "‏[Reconnect Now]‏"
+    },
+    "account_deactivated": {
+      "subject": "‏[Your X account @{username} has been disconnected]‏",
+      "body": "‏[Your X account {username} has been disconnected because the access token expired or was revoked. Scheduled posts for this account are now paused.]‏",
+      "impact": "‏[Your scheduled posts are paused. Reconnect your account to resume publishing.]‏",
+      "cta": "‏[Reconnect Account]‏"
+    },
+    "tokenWarning": {
+      "levelNotice": {
+        "subject": "‏[X connection issue for @{xUsername}]‏",
+        "heading": "‏[We had trouble refreshing your X connection]‏",
+        "body": "‏[We weren't able to refresh the connection for @{xUsername}. Most issues self-resolve next time you publish — but if it keeps failing, your scheduled posts won't go out.]‏",
+        "cta": "‏[Check connection]‏"
+      },
+      "levelUrgent": {
+        "subject": "‏[Action needed: reconnect @{xUsername} on AstraPost]‏",
+        "heading": "‏[Your X account needs reconnecting]‏",
+        "body": "‏[We've been unable to refresh @{xUsername} for several days. Reconnect now to keep your scheduled posts publishing.]‏",
+        "cta": "‏[Reconnect now]‏"
+      },
+      "atRiskPosts": {
+        "one": "‏[{count} scheduled post will fail unless you reconnect.]‏",
+        "other": "‏[{count} scheduled posts will fail unless you reconnect.]‏",
+        "nextScheduled": "‏[Next post is scheduled for {date}.]‏"
+      }
+    },
+    "accountDeactivated": {
+      "atRiskPosts": {
+        "one": "‏[{count} scheduled post is paused.]‏",
+        "other": "‏[{count} scheduled posts are paused.]‏",
+        "nextScheduled": "‏[Next post was scheduled for {date}.]‏"
+      }
+    },
+    "passwordReset": {
+      "request": {
+        "subject": "‏[Reset your AstraPost password]‏",
+        "greeting": "‏[Hi {name},]‏",
+        "body": "‏[Click below to reset your password. This link expires in 15 minutes.]‏",
+        "cta": "‏[Reset password]‏",
+        "ignore": "‏[If you didn't request this, ignore this email.]‏"
+      },
+      "confirmation": {
+        "subject": "‏[Your AstraPost password has been reset]‏",
+        "greeting": "‏[Hi {name},]‏",
+        "body": "‏[Your password has been successfully reset. You can now log in with your new password.]‏",
+        "footer": "‏[If you didn't make this change, please contact support immediately.]‏"
+      }
     }
   },
   "resources": {
@@ -2077,5 +3019,463 @@
     "accept_invite": "‏[Accept Invitation Invitationon]‏",
     "loading_page": "‏[Loading page pagege]‏",
     "loading": "‏[Loading...]‏"
+  },
+  "date_time_picker": {
+    "time_group_morning": "‏[Morning]‏",
+    "time_group_afternoon": "‏[Afternoon]‏",
+    "time_group_evening": "‏[Evening]‏",
+    "time_group_night": "‏[Night]‏",
+    "am": "‏[AM]‏",
+    "pm": "‏[PM]‏",
+    "schedule_for": "‏[Schedule for]‏",
+    "schedule_for_date": "‏[Schedule for {date}]‏",
+    "clear_schedule": "‏[Clear schedule]‏",
+    "select_date_first": "‏[Select a date first]‏",
+    "clear_button": "‏[Clear]‏",
+    "apply_button": "‏[Apply]‏",
+    "apply_button_with_date": "‏[Apply · {date}]‏"
+  },
+  "languages": {
+    "ar": "‏[Arabic]‏",
+    "en": "‏[English]‏",
+    "fr": "‏[French]‏",
+    "de": "‏[German]‏",
+    "es": "‏[Spanish]‏",
+    "it": "‏[Italian]‏",
+    "pt": "‏[Portuguese]‏",
+    "tr": "‏[Turkish]‏",
+    "ru": "‏[Russian]‏",
+    "hi": "‏[Hindi]‏"
+  },
+  "ai_image": {
+    "service_busy": "‏[Service busy — retrying automatically...]‏",
+    "switching_model": "‏[Switching to backup model...]‏",
+    "generated_success": "‏[Image generated successfully!]‏",
+    "quota_reached": "‏[You've reached your monthly AI image quota. Upgrade to continue.]‏",
+    "enter_prompt": "‏[Please enter a prompt or write tweet content first.]‏",
+    "rate_limited": "‏[Rate limit exceeded. Please wait a moment.]‏",
+    "generation_failed": "‏[Failed to generate image. Please try again.]‏",
+    "download_failed": "‏[Failed to download image]‏",
+    "attached": "‏[Image attached to tweet!]‏",
+    "close": "‏[Close]‏",
+    "locked_model": "‏[Upgrade to Pro for {model}]‏",
+    "free_models": "‏[Available on your plan]‏",
+    "title": "‏[Generate AI Image]‏",
+    "description": "‏[Create an AI-generated image for your tweet using the power of multiple image models.]‏",
+    "monthly_quota": "‏[Monthly quota:]‏",
+    "unlimited": "‏[Unlimited]‏",
+    "remaining_quota": "‏[{count} remaining]‏",
+    "image_prompt": "‏[Image Prompt]‏",
+    "prompt_placeholder_from_tweet": "‏[AI will generate a prompt from: \"{content}\"]‏",
+    "prompt_placeholder_empty": "‏[Describe the image you want to generate...]‏",
+    "auto_generate_hint": "‏[Leave empty to auto-generate from tweet content]‏",
+    "model": "‏[Model]‏",
+    "locked_model_hint": "‏[Upgrade to Pro to unlock all models]‏",
+    "aspect_ratio": "‏[Aspect Ratio]‏",
+    "aspect_ratio_labels": {
+      "1:1": "‏[1:1 (Square)]‏",
+      "16:9": "‏[16:9 (Landscape)]‏",
+      "4:3": "‏[4:3 (Standard)]‏",
+      "9:16": "‏[9:16 (Portrait)]‏"
+    },
+    "style_optional": "‏[Style (Optional)]‏",
+    "style_none": "‏[None]‏",
+    "style_photorealistic": "‏[Photorealistic]‏",
+    "style_illustration": "‏[Illustration]‏",
+    "style_minimalist": "‏[Minimalist]‏",
+    "style_abstract": "‏[Abstract]‏",
+    "style_infographic": "‏[Infographic]‏",
+    "style_meme": "‏[Meme]‏",
+    "model_nano-banana-2": "‏[Nano Banana 2 (Fast)]‏",
+    "model_nano-banana-pro": "‏[Nano Banana Pro (Best)]‏",
+    "model_nano-banana": "‏[Nano Banana]‏",
+    "model_gpt-image-2": "‏[GPT Image 2 (Advanced)]‏",
+    "generated_image": "‏[Generated Image]‏",
+    "history": "‏[History ({count})]‏",
+    "select_image": "‏[Select generated image {index}]‏",
+    "generating_aria": "‏[Generating image]‏",
+    "generating_status": "‏[Generating your image...]‏",
+    "taking_longer": "‏[Taking longer than usual...]‏",
+    "still_working": "‏[Still working — this sometimes happens with complex prompts.]‏",
+    "usually_takes": "‏[Usually takes 10–20 seconds.]‏",
+    "error_service_unavailable": "‏[Service temporarily unavailable]‏",
+    "error_content_blocked": "‏[Prompt blocked by safety filters]‏",
+    "error_generation_failed": "‏[Image generation failed]‏",
+    "no_credits_used": "‏[No credits were used — you can try again freely.]‏",
+    "try_adjusted_prompt": "‏[Try with adjusted prompt]‏",
+    "try_again": "‏[Try Again]‏",
+    "cancel": "‏[Cancel]‏",
+    "generating": "‏[Generating...]‏",
+    "generate": "‏[Generate]‏",
+    "regenerate": "‏[Regenerate]‏",
+    "downloading": "‏[Downloading...]‏",
+    "download": "‏[Download]‏",
+    "max_images_reached": "‏[Max images reached (4/4)]‏",
+    "attach_to_tweet_count": "‏[Attach to Tweet ({count}/4)]‏",
+    "attach_to_tweet": "‏[Attach to Tweet]‏",
+    "network_error": "‏[Network error — could not check image status. Please try again.]‏"
+  },
+  "common": {
+    "made_with_astrapost": "‏[Made with AstraPost]‏",
+    "copy_failed": "‏[Failed to copy to clipboard]‏"
+  },
+  "command_palette": {
+    "open": "‏[Open command palette]‏",
+    "title": "‏[Command Palette]‏",
+    "hint": "‏[Press ESC to close, or type to search]‏",
+    "placeholder": "‏[Search commands...]‏",
+    "no_results": "‏[No commands found for \"{search}\"]‏",
+    "category_navigation": "‏[Navigation]‏",
+    "category_theme": "‏[Theme]‏",
+    "theme_light": "‏[Light Theme]‏",
+    "theme_dark": "‏[Dark Theme]‏",
+    "footer_hint": "‏[Press <mac>⌘K</mac> or <win>Ctrl+K</win> anytime]‏"
+  },
+  "email": {
+    "trial_extended_body": "‏[Great news! Your trial period has been extended by {days} days. Your trial now ends on {endDate}. Log in to continue creating content.]‏",
+    "trial_extended_cta": "‏[Log in to AstraPost]‏",
+    "trial_extended_subject": "‏[Your AstraPost trial has been extended by {days} days]‏"
+  },
+  "trial_banner": {
+    "expired": "‏[Your free trial has expired. Upgrade to continue using Pro features.]‏",
+    "upgrade_now": "‏[Upgrade Now]‏",
+    "dismiss": "‏[Dismiss trial banner]‏",
+    "ending_today": "‏[Your free trial ends today.]‏",
+    "ending_in_days": "‏[Your free trial ends in {days} days.]‏",
+    "upgrade_to_pro": "‏[Upgrade to Pro]‏"
+  },
+  "admin": {
+    "nav": {
+      "overview": "‏[Overview]‏",
+      "dashboard": "‏[Dashboard]‏",
+      "system_health": "‏[System Health]‏",
+      "users": "‏[Users]‏",
+      "subscribers": "‏[Subscribers]‏",
+      "ai_usage": "‏[AI Usage]‏",
+      "teams": "‏[Teams]‏",
+      "impersonation": "‏[Impersonation]‏",
+      "billing": "‏[Billing]‏",
+      "billing_overview": "‏[Billing Overview]‏",
+      "billing_analytics": "‏[Analytics]‏",
+      "billing_promo_codes": "‏[Promo Codes]‏",
+      "product": "‏[Product]‏",
+      "content_performance": "‏[Content Performance]‏",
+      "referrals": "‏[Referrals]‏",
+      "agentic_posts": "‏[Agentic Posts]‏",
+      "affiliate": "‏[Affiliate]‏",
+      "announcement": "‏[Announcement]‏",
+      "roadmap": "‏[Roadmap]‏",
+      "system": "‏[System]‏",
+      "audit_log": "‏[Audit Log]‏",
+      "feature_flags": "‏[Feature Flags]‏",
+      "jobs": "‏[Jobs (BullMQ)]‏",
+      "notifications": "‏[Notifications]‏",
+      "webhooks": "‏[Webhooks]‏",
+      "soft_delete_recovery": "‏[Soft-Delete Recovery]‏",
+      "ai_cost": "‏[AI Cost]‏",
+      "ai_metrics": "‏[AI Metrics]‏",
+      "back_to_app": "‏[Back to App]‏",
+      "expand_sidebar": "‏[Expand sidebar]‏",
+      "collapse_sidebar": "‏[Collapse sidebar]‏",
+      "open_menu": "‏[Open admin menu]‏"
+    },
+    "common": {
+      "save": "‏[Save]‏",
+      "cancel": "‏[Cancel]‏",
+      "delete": "‏[Delete]‏",
+      "edit": "‏[Edit]‏",
+      "create": "‏[Create]‏",
+      "search": "‏[Search]‏",
+      "export": "‏[Export]‏",
+      "refresh": "‏[Refresh]‏",
+      "ban": "‏[Ban]‏",
+      "unban": "‏[Unban]‏",
+      "suspend": "‏[Suspend]‏",
+      "unsuspend": "‏[Unsuspend]‏",
+      "restore": "‏[Restore]‏",
+      "approve": "‏[Approve]‏",
+      "reject": "‏[Reject]‏",
+      "close": "‏[Close]‏",
+      "back": "‏[Back]‏",
+      "confirm": "‏[Confirm]‏",
+      "replay": "‏[Replay]‏",
+      "no_data": "‏[No data available]‏",
+      "loading": "‏[Loading...]‏",
+      "error": "‏[An error occurred]‏",
+      "confirm_delete": "‏[Are you sure you want to delete this?]‏",
+      "search_placeholder": "‏[Search...]‏",
+      "showing": "‏[Showing]‏",
+      "of": "‏[of]‏",
+      "page": "‏[Page]‏",
+      "no_results": "‏[No results found]‏",
+      "previous": "‏[Previous]‏",
+      "next": "‏[Next]‏",
+      "page_x_of_y": "‏[Page {page} of {total}]‏",
+      "showing_x_to_y_of_z": "‏[{from}–{to} of {total}]‏"
+    },
+    "pages": {
+      "dashboard": {
+        "title": "‏[Dashboard]‏",
+        "description": "‏[Platform overview and key metrics]‏"
+      },
+      "health": {
+        "title": "‏[System Health]‏",
+        "description": "‏[Real-time status of all infrastructure services]‏"
+      },
+      "subscribers": {
+        "title": "‏[Subscribers]‏",
+        "description": "‏[Manage users, plans, and account status]‏"
+      },
+      "subscriber_detail": {
+        "title": "‏[Subscriber Detail]‏",
+        "description": "‏[View and manage individual subscriber account]‏"
+      },
+      "ai_usage": {
+        "title": "‏[AI Usage]‏",
+        "description": "‏[Monitor AI generation usage and costs]‏"
+      },
+      "teams": {
+        "title": "‏[Teams]‏",
+        "description": "‏[View and manage team accounts]‏"
+      },
+      "impersonation": {
+        "title": "‏[Impersonation]‏",
+        "description": "‏[Active and past admin impersonation sessions]‏"
+      },
+      "billing_overview": {
+        "title": "‏[Billing Overview]‏",
+        "description": "‏[Subscription revenue, MRR, and plan distribution]‏"
+      },
+      "billing_analytics": {
+        "title": "‏[Billing Analytics]‏",
+        "description": "‏[Cohort retention, MRR trends, and LTV estimates]‏"
+      },
+      "billing_promo_codes": {
+        "title": "‏[Promo Codes]‏",
+        "description": "‏[Create and manage discount codes]‏"
+      },
+      "content": {
+        "title": "‏[Content Performance]‏",
+        "description": "‏[Top posts, engagement metrics, and content analytics]‏"
+      },
+      "referrals": {
+        "title": "‏[Referrals]‏",
+        "description": "‏[Track referral program performance]‏"
+      },
+      "agentic": {
+        "title": "‏[Agentic Posts]‏",
+        "description": "‏[AI-powered autonomous posting sessions]‏"
+      },
+      "affiliate": {
+        "title": "‏[Affiliate]‏",
+        "description": "‏[Affiliate program management and performance]‏"
+      },
+      "announcement": {
+        "title": "‏[Announcement Banner]‏",
+        "description": "‏[Display a global banner at the top of the dashboard for all users]‏"
+      },
+      "roadmap": {
+        "title": "‏[Roadmap]‏",
+        "description": "‏[Manage feature requests and community voting]‏"
+      },
+      "audit": {
+        "title": "‏[Audit Log]‏",
+        "description": "‏[Track all admin actions across the platform]‏"
+      },
+      "feature_flags": {
+        "title": "‏[Feature Flags]‏",
+        "description": "‏[Toggle platform features on and off]‏"
+      },
+      "jobs": {
+        "title": "‏[Job Queues]‏",
+        "description": "‏[Monitor background processing status]‏"
+      },
+      "notifications": {
+        "title": "‏[Notifications]‏",
+        "description": "‏[Send and manage admin notifications]‏"
+      },
+      "webhooks": {
+        "title": "‏[Webhooks]‏",
+        "description": "‏[Stripe webhook status and dead-letter queue]‏"
+      },
+      "soft_delete": {
+        "title": "‏[Soft-Delete Recovery]‏",
+        "description": "‏[Restore deleted users and posts]‏"
+      }
+    },
+    "audit": {
+      "empty": "‏[No audit log entries found]‏",
+      "filter_action": "‏[Filter by action]‏",
+      "filter_admin": "‏[Filter by admin]‏",
+      "all_actions": "‏[All Actions]‏",
+      "all_admins": "‏[All Admins]‏",
+      "export": "‏[Export Logs]‏",
+      "severity_critical": "‏[Critical]‏",
+      "severity_high": "‏[High]‏",
+      "severity_medium": "‏[Medium]‏",
+      "severity_low": "‏[Low]‏"
+    },
+    "subscribers": {
+      "empty": "‏[No subscribers found]‏",
+      "search_placeholder": "‏[Search by name or email...]‏",
+      "filter_plan": "‏[Filter by plan]‏",
+      "all_plans": "‏[All Plans]‏",
+      "sort_by": "‏[Sort by]‏",
+      "sort_newest": "‏[Newest]‏",
+      "sort_oldest": "‏[Oldest]‏",
+      "bulk_actions": "‏[Bulk Actions]‏",
+      "selected_count": "‏[{count} selected]‏",
+      "last_active": "‏[Last active]‏",
+      "never": "‏[Never]‏",
+      "sessions": "‏[Recent sessions]‏",
+      "no_sessions": "‏[No sessions found]‏",
+      "activity": "‏[Recent activity]‏",
+      "no_activity": "‏[No recent activity]‏",
+      "unknown_device": "‏[Unknown device]‏",
+      "expired": "‏[Expired]‏"
+    },
+    "jobs": {
+      "active": "‏[Active]‏",
+      "waiting": "‏[Waiting]‏",
+      "delayed": "‏[Delayed]‏",
+      "failed": "‏[Failed]‏",
+      "completed": "‏[Completed]‏",
+      "no_active_jobs": "‏[No active jobs]‏",
+      "all_processed": "‏[All jobs have been processed]‏",
+      "schedule_queue": "‏[Schedule Queue]‏",
+      "analytics_queue": "‏[Analytics Queue]‏",
+      "dead_letter_queue": "‏[Dead Letter Queue]‏",
+      "recent_jobs": "‏[Recent Jobs]‏",
+      "permanently_failed": "‏[Permanently Failed Jobs]‏",
+      "attempts": "‏[{count} attempts]‏",
+      "clear_queue": "‏[Clear Queue]‏",
+      "clear_confirm_title": "‏[Clear {queue} queue?]‏",
+      "clear_confirm_desc": "‏[This will remove all completed, failed, waiting, and delayed jobs from the {queue} queue. Active jobs will not be affected. This action cannot be undone.]‏",
+      "cleared": "‏[{queue} queue cleared]‏",
+      "clear_failed": "‏[Failed to clear {queue} queue]‏"
+    },
+    "notifications": {
+      "history": "‏[Notification History]‏",
+      "no_notifications": "‏[No notifications yet]‏",
+      "delete_confirm": "‏[Delete this notification?]‏",
+      "cancel_confirm": "‏[Cancel this scheduled notification?]‏",
+      "deleted": "‏[Notification deleted]‏",
+      "cancelled": "‏[Notification cancelled]‏",
+      "delete_failed": "‏[Failed to delete notification]‏",
+      "cancel_failed": "‏[Failed to cancel notification]‏",
+      "create_title": "‏[Create Notification]‏",
+      "title_label": "‏[Title]‏",
+      "body_label": "‏[Body]‏",
+      "target_label": "‏[Target]‏",
+      "target_all": "‏[All Users]‏",
+      "target_segment": "‏[Segment]‏",
+      "target_individual": "‏[Individual Users]‏",
+      "segment_trial": "‏[Trial Users]‏",
+      "segment_inactive": "‏[Inactive (90 days)]‏",
+      "schedule_label": "‏[Schedule (optional)]‏",
+      "send_now": "‏[Send Now]‏",
+      "send_scheduled": "‏[Schedule]‏",
+      "target_count": "‏[{count} recipients]‏",
+      "delivered_read": "‏[Delivered / Read]‏",
+      "clear_all": "‏[Clear All]‏",
+      "clear_confirm_title": "‏[Clear all notifications?]‏",
+      "clear_confirm_desc": "‏[This will permanently clear all notification history. This action cannot be undone.]‏",
+      "cleared": "‏[All notifications cleared]‏",
+      "clear_failed": "‏[Failed to clear notifications]‏"
+    },
+    "grant_quota": {
+      "title": "‏[Grant AI Quota]‏",
+      "amount": "‏[Amount]‏",
+      "reason": "‏[Reason]‏",
+      "submit": "‏[Grant]‏",
+      "success": "‏[Granted {amount} generations to user]‏"
+    }
+  },
+  "youtube_to_thread": {
+    "title": "‏[YouTube to Thread]‏",
+    "description": "‏[Paste a YouTube video URL and turn it into a Twitter thread]‏",
+    "url_input": {
+      "label": "‏[YouTube URL]‏",
+      "placeholder": "‏[https://www.youtube.com/watch?v=...]‏",
+      "invalid": "‏[Please enter a valid YouTube video URL]‏",
+      "preview_duration": "‏[{minutes}m {seconds}s]‏",
+      "quota_remaining": "‏[{used}/{limit} this month]‏",
+      "try_sample": "‏[Try a sample]‏",
+      "long_video_warning": "‏[Long video — generation may take 2+ minutes]‏"
+    },
+    "options": {
+      "heading": "‏[Options]‏",
+      "provider": "‏[Transcription Provider]‏",
+      "provider_deepgram": "‏[Deepgram (faster)]‏",
+      "provider_whisper": "‏[OpenAI Whisper (accurate)]‏",
+      "language": "‏[Language]‏",
+      "tweet_count": "‏[Tweet Count]‏",
+      "tweets": "‏[{count, plural, one {# tweet} other {# tweets}}]‏",
+      "tone": "‏[Tone]‏",
+      "tone_professional": "‏[Professional]‏",
+      "tone_educational": "‏[Educational]‏",
+      "tone_casual": "‏[Casual]‏",
+      "tone_formal": "‏[Formal]‏",
+      "tone_enthusiastic": "‏[Enthusiastic]‏",
+      "include_first_tweet_image": "‏[Generate image for the first tweet]‏",
+      "include_first_tweet_image_description": "‏[Uses 1 image credit from your monthly quota.]‏",
+      "include_first_tweet_image_generating": "‏[Generating image…]‏",
+      "include_first_tweet_image_failed": "‏[Image generation failed. Sending without image.]‏"
+    },
+    "actions": {
+      "submit": "‏[Generate Thread]‏",
+      "submitting": "‏[Generating...]‏",
+      "cancel": "‏[Cancel]‏",
+      "retry": "‏[Try Again]‏",
+      "back": "‏[Back]‏",
+      "cancel_confirm_title": "‏[Cancel generation?]‏",
+      "cancel_confirm_description": "‏[This will stop the current job and release the consumed quota.]‏"
+    },
+    "progress": {
+      "queued": "‏[Waiting in queue...]‏",
+      "downloading": "‏[Downloading audio...]‏",
+      "transcribing": "‏[Transcribing audio...]‏",
+      "generating": "‏[Generating thread...]‏",
+      "elapsed": "‏[Elapsed: {seconds}s]‏",
+      "estimated_time": "‏[Typically ~{seconds}s]‏",
+      "ready": "‏[Thread ready!]‏",
+      "failed": "‏[Generation failed]‏"
+    },
+    "result": {
+      "title": "‏[Generated Thread]‏",
+      "tweets_count": "‏[{count, plural, one {# tweet} other {# tweets}}]‏",
+      "send_to_composer": "‏[Send to Composer]‏",
+      "copy_thread": "‏[Copy Thread]‏",
+      "copied": "‏[Thread copied to clipboard!]‏",
+      "generated_success": "‏[Thread generated successfully]‏",
+      "show_transcript": "‏[Show transcript]‏",
+      "regenerate": "‏[Regenerate]‏",
+      "watch_on_youtube": "‏[Watch on YouTube]‏",
+      "generated_in": "‏[Generated in {seconds}s]‏"
+    },
+    "errors": {
+      "video_too_long": "‏[Video is too long. Maximum duration is 90 minutes.]‏",
+      "video_private": "‏[This video is private and cannot be accessed.]‏",
+      "video_age_gated": "‏[This video is age-restricted and cannot be accessed.]‏",
+      "video_live": "‏[Live streams are not supported.]‏",
+      "video_no_audio": "‏[No audio track found in this video.]‏",
+      "transcription_failed": "‏[Failed to transcribe audio. Please try again.]‏",
+      "moderation_flagged": "‏[The generated thread was flagged by content moderation.]‏",
+      "provider_error": "‏[AI provider error. Please try again later.]‏",
+      "cancelled": "‏[Job was cancelled.]‏",
+      "duplicate_in_flight": "‏[A job for this video is already in progress.]‏",
+      "generation_failed": "‏[Failed to generate thread. Please try again.]‏",
+      "upgrade_required": "‏[YouTube to Thread is available on Pro and Agency plans.]‏",
+      "no_provider_key": "‏[Transcription service is not configured. Please contact support.]‏",
+      "invalid_url": "‏[Please enter a valid YouTube video URL]‏",
+      "polling_connection": "‏[Connection issue — retrying...]‏",
+      "polling_timeout": "‏[Taking longer than expected. The thread is still being generated.]‏",
+      "video_too_long_plan": "‏[Your plan supports videos up to {minutes} minutes. Upgrade to process longer videos.]‏"
+    },
+    "recent": {
+      "title": "‏[Recent]‏",
+      "untitled": "‏[Untitled]‏",
+      "empty": "‏[No recent jobs]‏"
+    }
   }
 }

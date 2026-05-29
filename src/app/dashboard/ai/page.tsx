@@ -101,8 +101,8 @@ export default async function AIHubPage() {
                   </Button>
                 </div>
               ) : quotaPercentage >= 80 ? (
-                <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
-                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                <div className="border-warning-6 bg-warning-3 rounded-lg border p-3">
+                  <p className="text-warning-11 text-sm font-medium">
                     {t.rich("quota_warning", {
                       quota: quotaPercentage,
                     })}

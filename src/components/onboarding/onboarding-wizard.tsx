@@ -248,7 +248,8 @@ export function OnboardingWizard() {
       const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (detected) setPrefTimezone(detected);
     } catch {
-      // fall back to default Asia/Riyadh
+      // Detection failed — fall back to UTC instead of the MENA-centric initial default
+      setPrefTimezone("UTC");
     }
 
     // Auto-detect browser language → Arabic if browser is Arabic, else English
@@ -279,9 +280,8 @@ export function OnboardingWizard() {
           const data = await res.json();
           const accounts = data.accounts || [];
           setXAccounts(accounts);
-          if (accounts.length > 0 && currentStep === 1 && !searchParams.get("step")) {
-            setCurrentStep(2);
-          }
+          // Step 1 now always renders — user explicitly confirms their detected account.
+          // Auto-skip removed per finding #3: silent skips erode trust.
         }
       } catch (error) {
         clientLogger.error("Failed to fetch X accounts", {
@@ -292,7 +292,6 @@ export function OnboardingWizard() {
       }
     };
     fetchAccounts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** Combine date + time into an ISO string */
@@ -353,7 +352,7 @@ export function OnboardingWizard() {
         setLoading(false);
         return;
       }
-      window.location.href = "/dashboard";
+      window.location.href = "/dashboard?checklist=open";
     } catch (error) {
       clientLogger.error("Failed to skip onboarding", {
         error: error instanceof Error ? error.message : String(error),
@@ -570,7 +569,7 @@ export function OnboardingWizard() {
             disabled={loading}
             className="text-muted-foreground hover:text-foreground absolute end-4 top-3 text-xs underline-offset-2 hover:underline disabled:opacity-50"
           >
-            {t("onboarding.skip")}
+            {t("onboarding.skip_explore")}
           </button>
         )}
 
@@ -593,10 +592,12 @@ export function OnboardingWizard() {
                   <div className="bg-primary/5 mb-2 inline-block rounded-full p-6">
                     <Twitter className="text-primary h-12 w-12" />
                   </div>
-                  <h3 className="text-xl font-bold">{t("onboarding.account_connected")}</h3>
+                  <h3 className="text-xl font-bold">
+                    {t("onboarding.found_account", { username: xAccounts[0]!.xUsername })}
+                  </h3>
                   <p className="text-muted-foreground">{t("onboarding.ready_to_start")}</p>
 
-                  <div className="bg-muted/50 rounded-lg p-4 text-left">
+                  <div className="bg-muted/50 rounded-lg p-4 text-start">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
                         <AvatarImage
@@ -627,7 +628,7 @@ export function OnboardingWizard() {
                   <Button variant="outline" asChild>
                     <a href="/dashboard/settings">
                       <Twitter className="mr-2 h-4 w-4" />
-                      {t("onboarding.add_another_account")}
+                      {t("onboarding.use_different_account")}
                     </a>
                   </Button>
                 </>
@@ -871,7 +872,7 @@ export function OnboardingWizard() {
                       icon: ListOrdered,
                       title: t("onboarding.feature_cards.queue"),
                       description: t("onboarding.feature_cards.queue_desc"),
-                      href: "/dashboard/queue",
+                      href: "/dashboard/schedule?view=list",
                     },
                   ] as const
                 ).map((card) => (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
@@ -66,7 +67,7 @@ export function PostUsageBar({ className }: PostUsageBarProps) {
     };
   }, []);
 
-  if (!data) return null;
+  if (!data) return <Skeleton className="h-10 w-full rounded-lg" />;
 
   const isFree = data.plan === "free";
   const postLimit = data.limits.postsPerMonth;

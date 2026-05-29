@@ -353,7 +353,7 @@ export default function ReplyGeneratorPage() {
                     </Badge>
                     <p className="text-sm leading-relaxed">{reply.text}</p>
                     <p
-                      className={`text-xs tabular-nums ${reply.text.length > 280 ? "text-destructive" : reply.text.length >= 200 ? "text-amber-500" : "text-emerald-500"}`}
+                      className={`text-xs tabular-nums ${reply.text.length > 280 ? "text-destructive" : reply.text.length >= 200 ? "text-warning-11" : "text-success-11"}`}
                     >
                       {reply.text.length}/280
                     </p>

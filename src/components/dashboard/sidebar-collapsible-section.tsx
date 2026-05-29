@@ -106,7 +106,7 @@ export function CollapsibleSection({
               <item.icon className="h-4.5 w-4.5 shrink-0" />
               {translatedItemLabel}
               {item.isNew && (
-                <Badge className="ms-auto h-4 border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0 text-[10px] text-emerald-600">
+                <Badge className="border-success-6 bg-success-3 text-success-11 ms-auto h-4 border px-1.5 py-0 text-[10px]">
                   New
                 </Badge>
               )}

@@ -1,31 +1,10 @@
 import { CalendarDays, CheckCircle2, Info, Sparkles, X as XIcon } from "lucide-react";
 import { ComposerOnboardingHint } from "@/components/composer/composer-onboarding-hint";
+import type { TweetDraft } from "@/components/composer/composer-types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { canPostLongContent } from "@/lib/services/x-subscription";
-
-interface LinkPreview {
-  url: string;
-  title?: string;
-  description?: string;
-  images?: string[];
-  siteName?: string;
-}
-
-export interface TweetDraft {
-  id: string;
-  content: string;
-  media: Array<{
-    url: string;
-    mimeType: string;
-    fileType: "image" | "video" | "gif";
-    size: number;
-    uploading?: boolean;
-    placeholderId?: string;
-  }>;
-  linkPreview?: LinkPreview | null;
-}
 
 interface ComposerAlertsProps {
   tweets: TweetDraft[];

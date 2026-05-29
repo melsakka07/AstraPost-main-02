@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Check } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { SignInButton } from "@/components/auth/sign-in-button";
+import { SignInEmailForm } from "@/components/auth/sign-in-email-form";
 import { auth } from "@/lib/auth";
 import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
@@ -54,7 +55,22 @@ export default async function LoginPage({
           ))}
         </div>
 
-        <SignInButton {...(ref !== undefined && { referralCode: ref })} />
+        <div className="space-y-4">
+          <SignInButton {...(ref !== undefined && { referralCode: ref })} />
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="border-border w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background text-muted-foreground px-2">
+                {t("login.or_divider")}
+              </span>
+            </div>
+          </div>
+
+          <SignInEmailForm />
+        </div>
 
         {error && (
           <p role="alert" className="text-destructive text-center text-sm">
@@ -90,7 +106,7 @@ export default async function LoginPage({
 
 type TFunction = Awaited<ReturnType<typeof getTranslations<"auth">>>;
 
-function getErrorMessage(error: string, description: string | undefined, t: TFunction): string {
+function getErrorMessage(error: string, _description: string | undefined, t: TFunction): string {
   const knownErrors = [
     "access_denied",
     "server_error",
@@ -99,5 +115,5 @@ function getErrorMessage(error: string, description: string | undefined, t: TFun
   ] as const;
   const isKnown = (knownErrors as readonly string[]).includes(error);
   if (isKnown) return t(`login.errors.${error}` as Parameters<TFunction>[0]);
-  return description || t("login.errors.default");
+  return t("login.errors.default");
 }

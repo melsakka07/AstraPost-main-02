@@ -43,7 +43,7 @@ export function DashboardTour() {
             },
           },
           {
-            element: '[data-tour="calendar"]',
+            element: '[data-tour="schedule"]',
             popover: {
               title: "Content Calendar",
               description:

@@ -2,20 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
   ArrowLeft,
   BookmarkIcon,
   Calendar,
@@ -29,9 +15,10 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { AccountInfo } from "@/components/ai/agentic/input-screen";
-import { SortableTweetCard } from "@/components/ai/agentic/tweet-card";
+import { AgenticTweetCard } from "@/components/ai/agentic/tweet-card";
 import { XThreadPreview } from "@/components/ai/agentic/x-thread-preview";
 import { UpsellBanner } from "@/components/ai/upsell-banner";
+import { TweetEditorList } from "@/components/dashboard/tweet-editor-list";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -105,17 +92,6 @@ export function ReviewScreen({
   onDiscard,
 }: ReviewScreenProps) {
   const t = useTranslations("ai_agentic");
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      onReorder(String(active.id), String(over.id));
-    }
-  };
 
   const qualityIssues = useMemo(() => {
     const issues: string[] = [];
@@ -163,50 +139,56 @@ export function ReviewScreen({
         <UpsellBanner {...(userPlan !== undefined && { plan: userPlan })} />
 
         {/* Tweet cards — sortable */}
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={editedTweets.map((_, i) => String(i))}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-0">
-              {editedTweets.map((tweet, idx) => (
-                <div key={idx} className="relative">
-                  {idx < editedTweets.length - 1 && (
-                    <div className="bg-border absolute start-5 top-full z-10 h-4 w-0.5" />
-                  )}
-                  <SortableTweetCard
-                    id={String(idx)}
-                    tweet={tweet}
-                    index={idx}
-                    total={editedTweets.length}
-                    isEditing={editingIndex === idx}
-                    isRewriting={rewritingIndex === idx}
-                    editText={editText}
-                    setEditText={setEditText}
-                    username={selectedAccount?.username}
-                    profileImageUrl={selectedAccount?.profileImageUrl}
-                    subscriptionTier={selectedAccount?.subscriptionTier}
-                    onEditStart={() => onEditStart(idx)}
-                    onEditSave={() => onEditSave(idx)}
-                    onEditCancel={onEditCancel}
-                    onRewrite={() => onRewrite(idx)}
-                    onRemove={() => onRemove(idx)}
-                  />
-                  <div className="group relative z-20 flex h-4 items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => onAddTweet(idx)}
-                      className="bg-background border-border text-muted-foreground/40 hover:text-primary hover:border-primary/40 absolute flex h-6 w-6 items-center justify-center rounded-full border opacity-0 shadow-sm transition-all group-hover:opacity-100"
-                      aria-label={t("review_screen.add_tweet")}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+        <TweetEditorList
+          items={editedTweets.map((t, i) => ({ id: String(i), content: t.text }))}
+          sortablePrefix="agentic"
+          forceThreadMode
+          className="space-y-0"
+          onReorder={(from, to) => onReorder(String(from), String(to))}
+          renderInsertBetween={(afterIdx) => (
+            <div className="group relative z-20 flex h-4 items-center justify-center">
+              <button
+                type="button"
+                onClick={() => onAddTweet(afterIdx)}
+                className="bg-background border-border text-muted-foreground/40 hover:text-primary hover:border-primary/40 absolute flex h-6 w-6 items-center justify-center rounded-full border opacity-0 shadow-sm transition-all group-hover:opacity-100"
+                aria-label={t("review_screen.add_tweet")}
+              >
+                <Plus className="h-3 w-3" />
+              </button>
             </div>
-          </SortableContext>
-        </DndContext>
+          )}
+        >
+          {(slot) => {
+            const idx = slot.index;
+            const tweet = editedTweets[idx];
+            if (!tweet) return null;
+            return (
+              <div className="relative">
+                {idx < editedTweets.length - 1 && (
+                  <div className="bg-border absolute start-5 top-full z-10 h-4 w-0.5" />
+                )}
+                <AgenticTweetCard
+                  tweet={tweet}
+                  index={idx}
+                  total={editedTweets.length}
+                  isEditing={editingIndex === idx}
+                  isRewriting={rewritingIndex === idx}
+                  editText={editText}
+                  setEditText={setEditText}
+                  username={selectedAccount?.username}
+                  profileImageUrl={selectedAccount?.profileImageUrl}
+                  subscriptionTier={selectedAccount?.subscriptionTier}
+                  onEditStart={() => onEditStart(idx)}
+                  onEditSave={() => onEditSave(idx)}
+                  onEditCancel={onEditCancel}
+                  onRewrite={() => onRewrite(idx)}
+                  onRemove={() => onRemove(idx)}
+                  dragHandleProps={slot.dragHandleProps}
+                />
+              </div>
+            );
+          }}
+        </TweetEditorList>
 
         {/* Add tweet + Regenerate all */}
         <div className="flex items-center justify-between pt-2">

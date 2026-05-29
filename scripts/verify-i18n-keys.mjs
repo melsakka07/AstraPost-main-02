@@ -13,69 +13,49 @@ function extractKeys(obj, prefix = "") {
   return keys.sort();
 }
 
+function leafKeys(root) {
+  return extractKeys(root).filter((k) => {
+    let obj = root;
+    for (const p of k.split(".")) obj = obj?.[p];
+    return typeof obj === "string";
+  });
+}
+
 const en = JSON.parse(readFileSync("src/i18n/messages/en.json", "utf8"));
 const ar = JSON.parse(readFileSync("src/i18n/messages/ar.json", "utf8"));
+const pseudo = JSON.parse(readFileSync("src/i18n/messages/pseudo.json", "utf8"));
 
-const enKeys = extractKeys(en);
-const arKeys = extractKeys(ar);
-
-// Find top-level namespaces
-const enNamespaces = Object.keys(en).sort();
-const arNamespaces = Object.keys(ar).sort();
-
-const missingInAr = enNamespaces.filter((k) => !arNamespaces.includes(k));
-const missingInEn = arNamespaces.filter((k) => !enNamespaces.includes(k));
-
-console.log("=== Top-level namespaces ===");
-console.log("en.json namespaces:", enNamespaces.join(", "));
-console.log("ar.json namespaces:", arNamespaces.join(", "));
-if (missingInAr.length) console.log("MISSING in ar.json:", missingInAr);
-if (missingInEn.length) console.log("MISSING in en.json:", missingInEn);
-
-// Find leaf key differences
-const enLeafKeys = enKeys.filter((k) => {
-  const parts = k.split(".");
-  let obj = en;
-  for (const p of parts) {
-    obj = obj?.[p];
-  }
-  return typeof obj === "string";
-});
-
-const arLeafKeys = arKeys.filter((k) => {
-  const parts = k.split(".");
-  let obj = ar;
-  for (const p of parts) {
-    obj = obj?.[p];
-  }
-  return typeof obj === "string";
-});
-
+const enLeafKeys = leafKeys(en);
 const enSet = new Set(enLeafKeys);
-const arSet = new Set(arLeafKeys);
 
-const onlyInEn = enLeafKeys.filter((k) => !arSet.has(k));
-const onlyInAr = arLeafKeys.filter((k) => !enSet.has(k));
+let hasMismatch = false;
 
-if (onlyInEn.length > 0) {
-  console.log(`\n=== Keys only in en.json (${onlyInEn.length}) ===`);
-  onlyInEn.forEach((k) => console.log(`  - ${k}`));
+// en is the canonical key set; every other locale must match it exactly.
+for (const [name, root] of [
+  ["ar.json", ar],
+  ["pseudo.json", pseudo],
+]) {
+  const keys = leafKeys(root);
+  const set = new Set(keys);
+  const missing = enLeafKeys.filter((k) => !set.has(k));
+  const extra = keys.filter((k) => !enSet.has(k));
+
+  if (missing.length) {
+    hasMismatch = true;
+    console.log(`\n=== Keys missing in ${name} (${missing.length}) ===`);
+    missing.forEach((k) => console.log(`  - ${k}`));
+  }
+  if (extra.length) {
+    hasMismatch = true;
+    console.log(`\n=== Keys only in ${name}, not in en.json (${extra.length}) ===`);
+    extra.forEach((k) => console.log(`  - ${k}`));
+  }
 }
-if (onlyInAr.length > 0) {
-  console.log(`\n=== Keys only in ar.json (${onlyInAr.length}) ===`);
-  onlyInAr.forEach((k) => console.log(`  - ${k}`));
-}
 
-if (
-  onlyInEn.length === 0 &&
-  onlyInAr.length === 0 &&
-  missingInAr.length === 0 &&
-  missingInEn.length === 0
-) {
-  console.log("\n=== ALL KEYS MATCH! ===");
-} else {
+if (hasMismatch) {
   console.log("\n=== MISMATCHES FOUND ===");
   process.exit(1);
 }
 
-console.log(`\nTotal leaf keys: en=${enLeafKeys.length}, ar=${arLeafKeys.length}`);
+console.log("=== ALL KEYS MATCH (en = ar = pseudo) ===");
+console.log(`Total leaf keys: ${enLeafKeys.length}`);

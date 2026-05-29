@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { and, asc, desc, eq, gte, isNotNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNotNull } from "drizzle-orm";
 import {
   BarChart3,
   Heart,
@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Info,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { AccountSelector } from "@/components/analytics/account-selector";
@@ -34,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -130,88 +132,99 @@ export default async function AnalyticsPage({
   const startDate = new Date(nowTimestamp - rangeDays * 24 * 60 * 60 * 1000);
   const prevStartDate = new Date(startDate.getTime() - rangeDays * 24 * 60 * 60 * 1000);
 
-  // ── Round 2: five independent queries in parallel ──────────────────────────
-  const [followerPoints, refreshRuns, snapshots, prevSnapshots, topTweets, bestTimeData] =
-    await Promise.all([
-      selectedAccountId
-        ? db.query.followerSnapshots.findMany({
-            where: and(
-              eq(followerSnapshots.userId, session.user.id),
-              eq(followerSnapshots.xAccountId, selectedAccountId),
-              gte(followerSnapshots.capturedAt, startDate)
-            ),
-            orderBy: [asc(followerSnapshots.capturedAt)],
-            limit: 1000,
-          })
-        : Promise.resolve([]),
-
-      selectedAccountId
-        ? db.query.analyticsRefreshRuns.findMany({
-            where: and(
-              eq(analyticsRefreshRuns.userId, session.user.id),
-              eq(analyticsRefreshRuns.xAccountId, selectedAccountId)
-            ),
-            orderBy: [desc(analyticsRefreshRuns.startedAt)],
-            limit: 5,
-          })
-        : Promise.resolve([]),
-
-      db
-        .select({
-          fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
-          impressions: tweetAnalyticsSnapshots.impressions,
-          likes: tweetAnalyticsSnapshots.likes,
-          retweets: tweetAnalyticsSnapshots.retweets,
-          replies: tweetAnalyticsSnapshots.replies,
-          clicks: tweetAnalyticsSnapshots.linkClicks,
-          engagementRate: tweetAnalyticsSnapshots.engagementRate,
+  // ── Round 2: seven independent queries in parallel ──────────────────────────
+  const [
+    followerPoints,
+    refreshRuns,
+    snapshots,
+    prevSnapshots,
+    topTweets,
+    postCountResult,
+    bestTimeData,
+  ] = await Promise.all([
+    selectedAccountId
+      ? db.query.followerSnapshots.findMany({
+          where: and(
+            eq(followerSnapshots.userId, session.user.id),
+            eq(followerSnapshots.xAccountId, selectedAccountId),
+            gte(followerSnapshots.capturedAt, startDate)
+          ),
+          orderBy: [asc(followerSnapshots.capturedAt)],
+          limit: 1000,
         })
-        .from(tweetAnalyticsSnapshots)
-        .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
-        .innerJoin(posts, eq(tweets.postId, posts.id))
-        .where(
-          and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))
-        ),
+      : Promise.resolve([]),
 
-      db
-        .select({
-          fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
-          impressions: tweetAnalyticsSnapshots.impressions,
-          likes: tweetAnalyticsSnapshots.likes,
-          retweets: tweetAnalyticsSnapshots.retweets,
-          replies: tweetAnalyticsSnapshots.replies,
-          clicks: tweetAnalyticsSnapshots.linkClicks,
+    selectedAccountId
+      ? db.query.analyticsRefreshRuns.findMany({
+          where: and(
+            eq(analyticsRefreshRuns.userId, session.user.id),
+            eq(analyticsRefreshRuns.xAccountId, selectedAccountId)
+          ),
+          orderBy: [desc(analyticsRefreshRuns.startedAt)],
+          limit: 5,
         })
-        .from(tweetAnalyticsSnapshots)
-        .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
-        .innerJoin(posts, eq(tweets.postId, posts.id))
-        .where(
-          and(
-            eq(posts.userId, session.user.id),
-            gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate)
-          )
+      : Promise.resolve([]),
+
+    db
+      .select({
+        fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
+        impressions: tweetAnalyticsSnapshots.impressions,
+        likes: tweetAnalyticsSnapshots.likes,
+        retweets: tweetAnalyticsSnapshots.retweets,
+        replies: tweetAnalyticsSnapshots.replies,
+        clicks: tweetAnalyticsSnapshots.linkClicks,
+        engagementRate: tweetAnalyticsSnapshots.engagementRate,
+      })
+      .from(tweetAnalyticsSnapshots)
+      .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(
+        and(eq(posts.userId, session.user.id), gte(tweetAnalyticsSnapshots.fetchedAt, startDate))
+      ),
+
+    db
+      .select({
+        fetchedAt: tweetAnalyticsSnapshots.fetchedAt,
+        impressions: tweetAnalyticsSnapshots.impressions,
+        likes: tweetAnalyticsSnapshots.likes,
+        retweets: tweetAnalyticsSnapshots.retweets,
+        replies: tweetAnalyticsSnapshots.replies,
+        clicks: tweetAnalyticsSnapshots.linkClicks,
+      })
+      .from(tweetAnalyticsSnapshots)
+      .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(
+        and(
+          eq(posts.userId, session.user.id),
+          gte(tweetAnalyticsSnapshots.fetchedAt, prevStartDate)
         )
-        .then((rows) => rows.filter((r) => new Date(r.fetchedAt) < startDate)),
+      )
+      .then((rows) => rows.filter((r) => new Date(r.fetchedAt) < startDate)),
 
-      db
-        .select({
-          content: tweets.content,
-          xTweetId: tweets.xTweetId,
-          tweetId: tweets.id,
-          impressions: tweetAnalytics.impressions,
-          likes: tweetAnalytics.likes,
-          retweets: tweetAnalytics.retweets,
-          replies: tweetAnalytics.replies,
-        })
-        .from(tweetAnalytics)
-        .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
-        .innerJoin(posts, eq(tweets.postId, posts.id))
-        .where(and(eq(posts.userId, session.user.id), isNotNull(tweets.xTweetId)))
-        .orderBy(desc(tweetAnalytics.impressions))
-        .limit(5),
+    db
+      .select({
+        content: tweets.content,
+        xTweetId: tweets.xTweetId,
+        tweetId: tweets.id,
+        impressions: tweetAnalytics.impressions,
+        likes: tweetAnalytics.likes,
+        retweets: tweetAnalytics.retweets,
+        replies: tweetAnalytics.replies,
+      })
+      .from(tweetAnalytics)
+      .innerJoin(tweets, eq(tweetAnalytics.tweetId, tweets.id))
+      .innerJoin(posts, eq(tweets.postId, posts.id))
+      .where(and(eq(posts.userId, session.user.id), isNotNull(tweets.xTweetId)))
+      .orderBy(desc(tweetAnalytics.impressions))
+      .limit(5),
 
-      AnalyticsEngine.getBestTimesToPost(session.user.id),
-    ]);
+    db.select({ count: count() }).from(posts).where(eq(posts.userId, session.user.id)),
+
+    AnalyticsEngine.getBestTimesToPost(session.user.id),
+  ]);
+
+  const totalPostCount = postCountResult[0]?.count ?? 0;
 
   // ── Derive chart data from query results ───────────────────────────────────
   const followerByDay = new Map<string, number>();
@@ -329,7 +342,14 @@ export default async function AnalyticsPage({
           <div className={`grid sm:grid-cols-2 md:grid-cols-3 ${isCompact ? "gap-3" : "gap-4"}`}>
             <Card>
               <CardHeader className="space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t("current_followers")}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="border-b border-dotted">{t("current_followers")}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>{t("metric_tooltips.current_followers")}</TooltipContent>
+                  </Tooltip>
+                </CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
@@ -340,7 +360,14 @@ export default async function AnalyticsPage({
             <Card>
               <CardHeader className="space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {t("growth", { range: effectiveRange })}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="border-b border-dotted">
+                        {t("growth", { range: effectiveRange })}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{t("metric_tooltips.growth")}</TooltipContent>
+                  </Tooltip>
                 </CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
@@ -352,7 +379,14 @@ export default async function AnalyticsPage({
             </Card>
             <Card>
               <CardHeader className="space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t("start_of_period")}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="border-b border-dotted">{t("start_of_period")}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>{t("metric_tooltips.start_of_period")}</TooltipContent>
+                  </Tooltip>
+                </CardTitle>
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
                 <div className={`${isCompact ? "text-xl" : "text-xl md:text-2xl"} font-bold`}>
@@ -404,7 +438,7 @@ export default async function AnalyticsPage({
                     const statusIcon =
                       r.status === "success" ? (
                         <CheckCircle2
-                          className="h-3.5 w-3.5 shrink-0 text-emerald-500"
+                          className="text-success-11 h-3.5 w-3.5 shrink-0"
                           aria-hidden="true"
                         />
                       ) : r.status === "failed" ? (
@@ -435,7 +469,7 @@ export default async function AnalyticsPage({
                             className={
                               "rounded px-2 py-0.5 text-xs " +
                               (r.status === "success"
-                                ? "bg-emerald-500/10 text-emerald-600"
+                                ? "bg-success-3 text-success-11"
                                 : r.status === "failed"
                                   ? "bg-destructive/10 text-destructive"
                                   : "bg-muted text-muted-foreground")
@@ -475,35 +509,56 @@ export default async function AnalyticsPage({
         {[
           {
             label: t("impressions"),
+            tooltipContent: t("metric_tooltips.impressions"),
             icon: BarChart3,
             current: totals.impressions,
             prev: prevTotals.impressions,
           },
-          { label: t("likes"), icon: Heart, current: totals.likes, prev: prevTotals.likes },
+          {
+            label: t("likes"),
+            tooltipContent: t("metric_tooltips.likes"),
+            icon: Heart,
+            current: totals.likes,
+            prev: prevTotals.likes,
+          },
           {
             label: t("retweets"),
+            tooltipContent: t("metric_tooltips.reposts"),
             icon: Repeat2,
             current: totals.retweets,
             prev: prevTotals.retweets,
           },
           {
             label: t("replies"),
+            tooltipContent: t("metric_tooltips.replies"),
             icon: MessageCircle,
             current: totals.replies,
             prev: prevTotals.replies,
           },
           {
             label: t("link_clicks"),
+            tooltipContent: t("metric_tooltips.clicks"),
             icon: MousePointerClick,
             current: totals.clicks,
             prev: prevTotals.clicks,
           },
-        ].map(({ label, icon: Icon, current, prev }) => {
+        ].map(({ label, tooltipContent, icon: Icon, current, prev }) => {
           const d = delta(current, prev);
           return (
             <Card key={label}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{label}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="border-muted-foreground/40 cursor-help border-b border-dotted">
+                        {label}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{tooltipContent}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </CardTitle>
                 <Icon className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent className={isCompact ? "px-4 pt-0 pb-4" : undefined}>
@@ -511,7 +566,7 @@ export default async function AnalyticsPage({
                   {current.toLocaleString(userLocale)}
                 </div>
                 {d !== null && (
-                  <p className={`mt-1 text-xs ${d >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+                  <p className={`mt-1 text-xs ${d >= 0 ? "text-success-11" : "text-destructive"}`}>
                     {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString(userLocale)} {t("vs_prev")}{" "}
                     {effectiveRange}
                   </p>
@@ -536,9 +591,25 @@ export default async function AnalyticsPage({
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-xl font-semibold">
-          {t("engagement_rate_title", { range: effectiveRange })}
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold">
+            {t("engagement_rate_title", { range: effectiveRange })}
+          </h2>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className="text-muted-foreground hover:bg-muted inline-flex h-5 w-5 items-center justify-center rounded-full transition-colors"
+                aria-label={t("metric_tooltips.engagement_rate")}
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{t("metric_tooltips.engagement_rate")}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <BlurredOverlay
           isLocked={isFree && rangeDays > 7}
           title={t("engagement_history_cta")}
@@ -575,16 +646,38 @@ export default async function AnalyticsPage({
           description={t("top_tweets_cta_detail")}
         >
           {topTweets.length === 0 ? (
-            <EmptyState
-              icon={<BarChart3 className="h-6 w-6" />}
-              title={t("no_tweet_analytics")}
-              description={t("no_tweet_analytics_description")}
-              primaryAction={
-                <Button asChild>
-                  <Link href="/dashboard/compose">{t("publish_post")}</Link>
-                </Button>
-              }
-            />
+            totalPostCount === 0 ? (
+              <EmptyState
+                icon={<BarChart3 className="h-6 w-6" />}
+                title={t("empty_no_posts")}
+                description={t("empty_no_posts_description")}
+                primaryAction={
+                  <Button asChild>
+                    <Link href="/dashboard/compose">{t("empty_no_posts_cta")}</Link>
+                  </Button>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon={<Clock className="h-6 w-6" />}
+                title={t("empty_pending")}
+                description={t("empty_pending_description")}
+                primaryAction={
+                  selectedAccountId ? (
+                    <ManualRefreshButton
+                      xAccountId={selectedAccountId}
+                      lastRefreshedAt={
+                        refreshRuns[0]?.finishedAt ?? refreshRuns[0]?.startedAt ?? null
+                      }
+                    />
+                  ) : (
+                    <Button asChild>
+                      <Link href="/dashboard/compose">{t("empty_no_posts_cta")}</Link>
+                    </Button>
+                  )
+                }
+              />
+            )
           ) : (
             <TopTweetsList
               tweets={topTweets.filter(

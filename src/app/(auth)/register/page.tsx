@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check } from "lucide-react";
+import { Check, Eye, EyeOff, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { SignInButton } from "@/components/auth/sign-in-button";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -18,6 +19,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,10 +27,13 @@ export default function RegisterPage() {
   const ref = searchParams.get("ref");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const t = useTranslations("auth");
 
   const registerSchema = z
     .object({
+      name: z.string().min(1, t("register.errors.name_required")),
       email: z.string().email(t("register.errors.invalid_email")),
       password: z
         .string()
@@ -65,12 +70,15 @@ export default function RegisterPage() {
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
       terms: false,
     },
   });
+
+  const passwordValue = form.watch("password");
 
   async function onSubmit(values: RegisterFormValues) {
     setIsPending(true);
@@ -83,6 +91,7 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          name: values.name,
           email: values.email,
           password: values.password,
         }),
@@ -92,9 +101,13 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         if (response.status === 409) {
-          setError(t("register.errors.email_exists"));
-        } else if (response.status === 429) {
+          setError(data.error || t("register.errors.email_exists"));
+        } else if (response.status === 400) {
           setError(data.error || t("register.errors.weak_password"));
+        } else if (response.status === 429) {
+          setError(data.error || t("register.errors.rate_limited"));
+        } else if (response.status >= 500) {
+          setError(t("register.errors.server_error"));
         } else {
           setError(data.error || t("register.errors.weak_password"));
         }
@@ -105,7 +118,7 @@ export default function RegisterPage() {
       // Success - redirect to dashboard
       router.push("/dashboard");
     } catch (err) {
-      setError(t("register.errors.weak_password"));
+      setError(t("register.errors.network_error"));
       setIsPending(false);
     }
   }
@@ -127,8 +140,44 @@ export default function RegisterPage() {
           ))}
         </div>
 
+        <div className="space-y-4">
+          <SignInButton {...(ref != null && { referralCode: ref })} variant="outline">
+            {t("register.continue_with_x")}
+          </SignInButton>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="border-border w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background text-muted-foreground px-2">
+                {t("register.or_divider")}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("register.name_label")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t("register.name_placeholder")}
+                      autoCapitalize="words"
+                      autoComplete="name"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="email"
@@ -156,35 +205,151 @@ export default function RegisterPage() {
                 <FormItem>
                   <FormLabel>{t("register.password_label")}</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder={t("register.password_placeholder")}
-                      type="password"
-                      autoComplete="new-password"
-                      {...field}
-                    />
+                    <div className="relative">
+                      <Input
+                        placeholder={t("register.password_placeholder")}
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        className="pe-10"
+                        {...field}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="text-muted-foreground hover:text-foreground absolute end-3 top-1/2 -translate-y-1/2"
+                        aria-label={
+                          showPassword
+                            ? t("register.password.hide_password")
+                            : t("register.password.show_password")
+                        }
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            {(() => {
+              let filledBars = 0;
+              let strengthKey: string = "register.password.strength_empty";
+              let barColor = "bg-destructive";
+
+              if (passwordValue && passwordValue.length > 0) {
+                if (passwordValue.length < 8) {
+                  filledBars = 1;
+                  strengthKey = "register.password.strength_weak";
+                  barColor = "bg-destructive";
+                } else if (passwordValue.length < 12) {
+                  filledBars = 2;
+                  strengthKey = "register.password.strength_okay";
+                  barColor = "bg-warning";
+                } else if (passwordValue.length < 16) {
+                  filledBars = 3;
+                  strengthKey = "register.password.strength_strong";
+                  barColor = "bg-success-8";
+                } else {
+                  const hasUpper = /[A-Z]/.test(passwordValue);
+                  const hasLower = /[a-z]/.test(passwordValue);
+                  const hasDigit = /[0-9]/.test(passwordValue);
+                  const hasSpecial = /[^A-Za-z0-9]/.test(passwordValue);
+                  if (hasUpper && hasLower && hasDigit && hasSpecial) {
+                    filledBars = 4;
+                    strengthKey = "register.password.strength_great";
+                    barColor = "bg-success";
+                  } else {
+                    filledBars = 3;
+                    strengthKey = "register.password.strength_strong";
+                    barColor = "bg-success-8";
+                  }
+                }
+              }
+
+              return (
+                <div className="mt-2 space-y-1" aria-label={t("register.password.strength_label")}>
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          "h-1.5 flex-1 rounded-full",
+                          i < filledBars ? barColor : "bg-border"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-muted-foreground text-xs" role="status" aria-live="polite">
+                    {t(strengthKey)}
+                  </p>
+                </div>
+              );
+            })()}
+
             <FormField
               control={form.control}
               name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("register.confirm_password_label")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t("register.confirm_password_placeholder")}
-                      type="password"
-                      autoComplete="new-password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const confirmValue = field.value as string;
+                const isMatch = confirmValue.length > 0 && confirmValue === passwordValue;
+                const isMismatch = confirmValue.length > 0 && confirmValue !== passwordValue;
+                return (
+                  <FormItem>
+                    <FormLabel>{t("register.confirm_password_label")}</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder={t("register.confirm_password_placeholder")}
+                          type={showConfirmPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          className="pe-10"
+                          {...field}
+                          onBlur={() => {
+                            field.onBlur();
+                            if (form.getValues("confirmPassword")) {
+                              form.trigger("confirmPassword");
+                            }
+                          }}
+                        />
+                        {isMatch && (
+                          <Check
+                            className="text-success absolute end-9 top-1/2 h-4 w-4 -translate-y-1/2"
+                            aria-label={t("register.password.match_yes")}
+                          />
+                        )}
+                        {isMismatch && (
+                          <X
+                            className="text-destructive absolute end-9 top-1/2 h-4 w-4 -translate-y-1/2"
+                            aria-label={t("register.password.match_no")}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="text-muted-foreground hover:text-foreground absolute end-3 top-1/2 -translate-y-1/2"
+                          aria-label={
+                            showConfirmPassword
+                              ? t("register.password.hide_password")
+                              : t("register.password.show_password")
+                          }
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField

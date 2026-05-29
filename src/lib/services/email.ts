@@ -84,7 +84,7 @@ export async function sendPostFailureEmail(
   reason: string,
   locale: string = "en"
 ) {
-  const retryUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/queue`;
+  const retryUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/schedule?view=list`;
   const t = getEmailTranslations(locale);
 
   await sendEmail({

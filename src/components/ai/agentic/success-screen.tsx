@@ -62,14 +62,14 @@ export function SuccessScreen({
         </Button>
         <div className="flex gap-4 text-sm">
           <Link
-            href="/dashboard/queue"
+            href="/dashboard/schedule?view=list"
             className="text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <ListOrdered className="h-3.5 w-3.5" />
             {t("review_screen.view_in_queue")}
           </Link>
           <Link
-            href="/dashboard/calendar"
+            href="/dashboard/schedule?view=month"
             className="text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
             <Calendar className="h-3.5 w-3.5" />

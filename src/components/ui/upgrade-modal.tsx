@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-interface UpgradeContext {
+export interface UpgradeContext {
   error?: string | undefined;
   code?: string | undefined;
   feature?: string | undefined;

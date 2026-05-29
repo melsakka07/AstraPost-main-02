@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   PenSquare,
-  ListOrdered,
   FileText,
   BarChart2,
   CalendarDays,
@@ -53,18 +52,18 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [{ icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" }],
   },
   {
-    label: "Content",
+    label: "Create",
     items: [
       { icon: PenSquare, label: "Compose", href: "/dashboard/compose", dataTour: "compose" },
       { icon: FileText, label: "Drafts", href: "/dashboard/drafts" },
-      { icon: ListOrdered, label: "Queue", href: "/dashboard/queue" },
-      { icon: CalendarDays, label: "Calendar", href: "/dashboard/calendar", dataTour: "calendar" },
+      { icon: CalendarDays, label: "Schedule", href: "/dashboard/schedule", dataTour: "schedule" },
     ],
   },
   {
-    label: "AI Tools",
+    label: "Grow",
     collapsible: true,
     items: [
+      { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
       {
         icon: Sparkles,
         label: "AI Tools",
@@ -74,7 +73,7 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
       },
       {
         icon: Lightbulb,
-        label: "Inspiration",
+        label: "Import & Adapt",
         href: "/dashboard/inspiration",
         dataTour: "inspiration",
       },
@@ -87,29 +86,28 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
     ],
   },
   {
-    label: "Analytics",
-    collapsible: true,
+    label: "Account",
     items: [
-      { icon: BarChart2, label: "Analytics", href: "/dashboard/analytics", dataTour: "analytics" },
-    ],
-  },
-  {
-    label: "Growth",
-    items: [
+      { icon: Settings, label: "Settings", href: "/dashboard/settings" },
       { icon: Trophy, label: "Achievements", href: "/dashboard/achievements" },
       { icon: Share2, label: "Referrals", href: "/dashboard/referrals" },
       { icon: DollarSign, label: "Affiliate Dashboard", href: "/dashboard/affiliate" },
     ],
   },
+];
+
+/**
+ * Admin-only navigation section — appended to the sidebar only when `isAdmin` is true.
+ * Each page referenced here MUST call `requireAdmin()` individually because they sit
+ * under the dashboard layout (which uses getTeamContext(), not requireAdmin()).
+ * Forgetting this leaves the page accessible to non-admin users who know the URL.
+ */
+export const ADMIN_SIDEBAR_SECTIONS: SidebarSection[] = [
   {
-    label: "System",
+    label: "Admin",
     items: [
-      // ⚠️ ADMIN-ONLY PAGES: Each page referenced here MUST call `requireAdmin()` individually
-      // because they sit under the dashboard layout (which uses getTeamContext(), not requireAdmin()).
-      // Forgetting this leaves the page accessible to non-admin users who know the URL.
       { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true },
       { icon: History, label: "History", href: "/dashboard/ai/history", isAdmin: true },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings" },
     ],
   },
 ];

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 
@@ -12,5 +13,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <Suspense fallback={null}>{children}</Suspense>;
 }

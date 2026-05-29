@@ -1,5 +1,464 @@
 # Latest Updates
 
+## 2026-05-29 — Cross-Wave Verification + Dashboard Token Sweep (Complete)
+
+Ran the dashboard UI/UX initiative's final "Cross-wave verification" regression sweep (`docs/audit/dashboard-ui-ux-implementation-plan.md`). Five of six checks passed on first run; the one failure was **token coverage** — the `dashboard-tokens` CI guard (uncommitted) flagged **34 raw Tailwind palette classes across 10 dashboard files outside Wave 1's original 3-file scope** and would have turned CI red on first push. Migrated all 34 to semantic tokens.
+
+### Token migration
+
+- **Files (10):** `ai/calendar/page.tsx`, `ai/page.tsx`, `ai/bio/page.tsx`, `ai/reply/page.tsx`, `analytics/page.tsx`, `analytics/_components/viral-tab.tsx`, `analytics/_components/competitor-tab.tsx`, `inspiration/page.tsx`, `components/dashboard/notification-bell.tsx`, `components/dashboard/sidebar-collapsible-section.tsx`.
+- **Mapping:** `emerald`/`green` → `success`, `amber`/`yellow` → `warning`, `red` → `danger`, `blue` → `info`, `purple` → `brand`. Steps: text/icon → `-11` (AA), tinted bg → `-3`, border → `-6`, solid fill → `-9`. `dark:` variants dropped — semantic tokens are mode-aware. The AI calendar's categorical content-type colors (tweet/thread/poll/question) now use four distinct design-system scales (info/brand/warning/success) instead of raw palette hues.
+- `scripts/verify-dashboard-tokens.mjs` now passes (exit 0) across the entire dashboard tree; the new `dashboard-tokens` CI job will go green.
+
+### Sweep results (mapped to audit Top-10)
+
+- ✅ WCAG Level-A failures (2.4.3 focus order, 4.1.2 name/role/value) resolved — `setup-checklist.tsx` renders completed steps as non-interactive `<div>`; zero `href="#"`.
+- ✅ Token coverage now zero across `src/app/dashboard` + `src/components/dashboard`.
+- ✅ Reduced-motion reset intact (`globals.css:433`); CLS skeletons fixed-height (`page.tsx:342`, `post-usage-bar.tsx:70`).
+- ⚠️ Documented Wave 5 deviation stands: composer keeps its own `tweet-card.tsx`/`composer-preview.tsx` (the shared `<TweetEditorList>`/`<XThreadPreview>` cover agentic). Empty-state fully unified.
+- ◻️ Deferred: **2.5.8 Target Size** (AA "at risk", never a Level-A failure) — `bottom-nav.tsx` `h-14`, inspiration actions `min-h-[36px]`.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing register/page.tsx warning)
+- `pnpm test` — PASS (343 tests, 35 files)
+- `node scripts/verify-dashboard-tokens.mjs` — PASS (0 violations)
+
+## 2026-05-29 — Wave 5 Composer Decomposition (Complete)
+
+Implemented Wave 5 (P1-1) from the dashboard UI/UX audit — decomposed the monolithic composer into a thin shell + focused hooks/subcomponents with **zero behavior delta**.
+
+### Changes
+
+- **Shell**: `src/components/composer/composer.tsx` reduced from ~2,709 → **345 lines**. It now only owns top-level state and orchestration; all logic lives in hooks/subcomponents.
+- **Hooks extracted**: `use-composer-drafts.ts` (localStorage autosave + restore banner + nav guards), `use-composer-ai.ts` (AI panel/streaming/templates), `use-composer-data.ts` (accounts, image quota, draft load, timezone), `use-composer-publish.ts` (submit + plan-limit handling), `use-composer-tweets.ts` (add/remove/clear/move/numbering), `use-composer-shortcuts.ts` (⌘↵ / ⌘D / ⌘K / ⌘⇧W/I/T/H), `use-composer-media.ts` (upload + AI image attach), `use-composer-bridge.ts` (cross-page handoff).
+- **Subcomponents**: `composer-editor.tsx`, `composer-preview.tsx`, `composer-ai-tools.tsx`, `composer-dialogs.tsx`, `composer-publishing-panel.tsx`, `composer-alerts.tsx`. The shell spreads the full `ai` hook object (`{...ai}`) into AI-consuming children to avoid hand-wiring ~67 props.
+- **Pure logic**: extracted to `composer-utils.ts` (numbering, draft serialization, content checks) with node unit tests — consistent with the node-only test infra (no RTL/jsdom).
+- **Pragmatic deviation**: the composer keeps its tightly-coupled `tweet-card.tsx` (DnD/char-count) and rich `composer-preview.tsx` rather than force-migrating onto the shared `<TweetEditorList>`/`<XThreadPreview>` from Wave 3 — those target simpler editor surfaces, and re-coupling the composer's per-tweet media / AI image attach / link previews / numbering chips would carry regression risk for no user-facing gain.
+- **E2E smoke**: `tests/e2e/composer-wave5.e2e.ts` behavior-locks the two flows most at risk from the split — autosave → restore-draft banner, and the ⌘K shortcut toggling the AI panel.
+
+### Verification
+
+- Final parallel audit: code-reviewer confirmed **no behavior-changing bugs** vs. the monolith (traced circular-dependency ordering, stale closures, mount-effect ordering); convention-enforcer flagged one type-duplication (fixed — `composer-alerts.tsx` now imports `TweetDraft` from `composer-types.ts`).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing register/page.tsx warning)
+- `pnpm test` — PASS (343 tests, 35 files)
+- `pnpm check:i18n` — PASS (2945 keys, en = ar = pseudo)
+
+## 2026-05-29 — Wave 4 Inspiration Overhaul (Complete)
+
+Implemented the full Wave 4 from the dashboard UI/UX audit — rename + DB-backed history.
+
+### P1-4: Rename "Inspiration" → "Import & Adapt"
+
+The page was a URL importer + AI adaptation tool, not an inspiration feed. Renamed everywhere:
+
+- **Sidebar nav** (`sidebar-nav-data.ts`): `label: "Import & Adapt"`
+- **Page title**: `"Import & Adapt"` (en), `"استيراد وتكييف"` (ar)
+- **Description**: Updated to reflect actual functionality — paste a URL, adapt with AI
+- **i18n**: en.json, ar.json, pseudo.json all updated
+
+### P1-3: DB-Backed History
+
+Replaced localStorage-based history with a server-side `inspiration_history` table and API.
+
+- **Schema**: New `inspirationHistory` table in `src/lib/schema.ts` — mirrors `inspirationBookmarks` structure. Migration `0086_wandering_roland_deschain.sql` generated and ready to commit.
+- **API routes**:
+  - `GET /api/inspiration/history` — list history (capped at 50, ordered by date desc)
+  - `POST /api/inspiration/history` — record an import/adaptation (auto-prunes beyond 50)
+  - `DELETE /api/inspiration/history/[id]` — remove a history entry
+- **Frontend**: `inspiration/page.tsx` now fetches history from API on mount (useEffect). Importing a tweet POSTs to `/api/inspiration/history` with optimistic UI update. Removed all localStorage read/write for history. `HistoryItem` interface flattened to match DB row shape.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- `pnpm typecheck` — PASS
+- `pnpm check:i18n` — PASS (2945 keys, en = ar = pseudo)
+
+## 2026-05-28 — Wave 3 Shared Component Extraction (Complete)
+
+Implemented all three shared component extractions from the dashboard UI/UX audit §5.
+
+### Changes
+
+- **EmptyState migration (§5.3)**: Extended `src/components/ui/empty-state.tsx` with `iconBgClass` prop. Migrated 5 hand-rolled empty-state blocks in page.tsx (2) and inspiration/page.tsx (3). Restored `variant` prop for admin backwards-compatibility.
+- **XThreadPreview unification (§5.2)**: Created shared `src/components/dashboard/x-thread-preview.tsx` with `ThreadTweet` data interface. Agentic side is now a thin 34-line wrapper. ComposerPreview retained its complex implementation (ViralScoreBadge, per-tweet avatars — different UX needs).
+- **TweetEditorList extraction (§5.1)**: Created headless shared `src/components/dashboard/tweet-editor-list.tsx` — owns the canonical DnD setup (PointerSensor + KeyboardSensor + sortableKeyboardCoordinates), weighted char counting via `twitter.parseTweet().weightedLength`, tier-aware max limits via `getMaxCharacterLimit()`, and keyboard reorder (moveUp/moveDown). Exposes a render-prop API (`children`) so consumers provide their own card markup. Migrated agentic `review-screen.tsx` onto it — removed the local `DndContext`/`SortableContext`/`sensors`/`handleDragEnd` setup, removed `SortableTweetCard` wrapper from agentic `tweet-card.tsx`. Composer retains its own DnD setup (its 620-line `TweetCard` is tightly coupled to the composer's emoji picker, link preview fetching, media management, and AI image panels).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- `pnpm typecheck` — PASS
+
+### Files
+
+New: `src/components/dashboard/tweet-editor-list.tsx` (198 lines)
+New: `src/components/dashboard/x-thread-preview.tsx` (127 lines)
+Modified: EmptyState (extended), agentic review-screen (migrated to TweetEditorList), agentic tweet-card (SortableTweetCard removed), agentic x-thread-preview (thin wrapper), index.ts (cleanup)
+
+## 2026-05-28 — Wave 2 Type Safety + AI Capability Microcopy
+
+Implemented Wave 2 of the dashboard UI/UX audit — removing `any` type casts and adding "best for…" capability lines to AI tool cards.
+
+### Changes
+
+- **P1-5 Type safety**: Replaced `setActiveTab(v as any)` in `src/app/dashboard/inspiration/page.tsx` with `v as "import" | "history" | "bookmarks"` (the existing union type). Exported `TweetDraft` and `LinkPreview` interfaces from `src/components/composer/composer.tsx`. In `sortable-tweet.tsx`, typed `tweet` as `TweetDraft` and `preview` as `LinkPreview | null` instead of `any`. Fixed internal `updateTweetPreview` in composer.tsx:771 to use `LinkPreview | null`.
+- **P2-2 AI capability microcopy**: Added a `"capability"` line to each of the 9 AI tool cards in `ai-tools-grid.tsx`, rendered as italicized text below the description. Strings come from i18n keys (`ai_hub.tools.{toolId}.capability`), not hardcoded.
+- **i18n**: Added 9 `capability` keys to `en.json`, `ar.json`, and `pseudo.json` for all AI tools: thread_writer, url_to_thread, pdf_to_thread, youtube_to_thread, ab_variants, hashtag_generator, bio_generator, reply_generator, ai_calendar. Arabic translations provided for MENA audience.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- `pnpm check:i18n` — PASS (2945 leaf keys, en = ar = pseudo)
+- Zero `any` types in all changed lines
+- convention-enforcer — 1 violation found and fixed (composer.tsx:771 `preview: any` → `LinkPreview | null`)
+
+## 2026-05-28 — Wave 1 P0 Accessibility + Design-Token Consistency
+
+Implemented Wave 1 of the dashboard UI/UX audit — replacing raw Tailwind palette classes with AA-tuned semantic tokens, fixing a11y issues, and adding layout-shift skeletons.
+
+### Changes
+
+- **P0-1 Token consistency**: Replaced all raw Tailwind palette classes in `src/app/dashboard/page.tsx` STAT_CARDS (emerald/blue/amber/purple-500 → success/info/warning tokens), the failed-posts badge (amber → warning), and `src/components/dashboard/setup-checklist.tsx` (green → success). Each card's color scale now matches its meaning: published = success, scheduled-today = info, queued = warning, engagement = info.
+- **P0-2 Setup checklist a11y**: Completed steps now render as non-interactive `<div>` elements instead of `<Link href="#">` with `pointer-events-none`. Completed steps are no longer in the tab order and no longer announce a "link" role.
+- **P2-3 AI tools grid**: Locked badge amber-500/amber-700 literals replaced with warning-\* tokens in `src/components/ai/ai-tools-grid.tsx` — matches the agentic processing screen's warning scale.
+- **P2-1 CLS fix**: Replaced `Suspense fallback={null}` for SetupChecklist and `return null` in PostUsageBar with fixed-height `<Skeleton>` placeholders (h-12 and h-10 respectively) to prevent layout shift.
+- **§9 CI guard**: New `scripts/verify-dashboard-tokens.mjs` — greps `src/app/dashboard` and `src/components/dashboard` for raw Tailwind palette classes. Added as `check:dashboard-tokens` script in package.json and as a standalone CI job in `.github/workflows/ci.yml`. Not yet wired into `pnpm run check` (34 pre-existing violations in other dashboard files remain for subsequent waves).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 1 pre-existing warning)
+- `pnpm test` — PASS (326 tests, 34 files)
+- convention-enforcer — 0 violations
+- security-reviewer — 0 issues
+
+## 2026-05-28 — Wave 6 Auth Unification + AI Cost Transparency + Analytics Polish (Final Wave)
+
+Completed the final and largest wave of the dashboard UI/UX audit implementation. All 10 findings from the audit are now resolved. The audit implementation is complete.
+
+### Product Decisions
+
+- **Auth**: Dual-path — both `/login` and `/register` expose X OAuth + email/password with equal visibility
+- **Quota chip**: Both sidebar footer AND AI Writer header
+- **Controversial tone**: Gated behind "Advanced tones" disclosure with safety tooltip
+
+### Changes
+
+- **Auth unification (#1, #37)**: Both login and register pages now show X OAuth button + "or" divider + email/password form. New `SignInEmailForm` component using Better Auth `signIn.email()`. `SignInButton` gained `variant` (primary/outline) and `children` props for reuse across pages. Register page now collects `name` field explicitly.
+- **AI quota visibility (#8)**: New `AiQuotaChip` component (compact pill with AI + image usage, links to billing). Rendered in sidebar footer (quota cards now clickable to `/dashboard/settings/billing`) and AI Writer page header. AI Writer page refactored: server component wrapper fetches usage data, new `AIWriterClient` client component receives it as props.
+- **State-aware dashboard CTAs (#9)**: Empty queue block branches on `hasXAccount` — users without an X account see "Connect your X account" CTA instead of Compose/AI buttons.
+- **Controversial tone gating (#15)**: Controversial tone moved behind "Advanced tones" collapsible disclosure with safety tooltip. "Viral" tone renamed to "Attention-Grabbing".
+- **Stat card tooltips + trend deltas (#16)**: Each stat card title has a definition tooltip. Published-today card shows delta vs yesterday. Engagement card shows percentage-point change vs previous 30-day period.
+- **Composer progressive disclosure (#18)**: Recurrence, templates, and target-account selector wrapped in "Advanced options" disclosure. Action buttons (Post Now, Schedule, Save Draft) remain always visible.
+- **Pricing trust signals (#19)**: 3 testimonial cards, "14-day money-back guarantee" under each plan, X API compliance footer line.
+- **Analytics metric tooltips (#21)**: All 5 metric cards + engagement rate heading have definition tooltips (X-API definitions). Engagement rate shows formula.
+- **Analytics empty state branching (#22)**: Distinguishes "no posts yet" (CTA to compose) from "analytics pending" (refresh button).
+- **API fix**: Register route `name` field kept required — frontend now collects it explicitly with a name input field.
+- **Security fix**: Login page no longer reflects raw `error_description` query params for unrecognized error codes (prevents phishing text injection).
+- **i18n**: 31 new keys across auth, ai_writer, dashboard, analytics, composer, and pricing namespaces (en + ar).
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 7 pre-existing warnings)
+- `pnpm test` — PASS (326 tests, 34 files)
+- Audit findings resolved: #1, #8, #9, #15, #16, #18, #19, #21, #22, #37
+- **All 10 Wave 6 findings closed. The dashboard UI/UX audit implementation is complete.**
+
+## 2026-05-28 — Wave 5 Onboarding Reframe (Skippable Wizard + Billing Bypass)
+
+### Composer Progressive Disclosure (#18)
+
+- Added `hasScheduledPost?: boolean` prop to `Composer` — defaults open for returning schedulers, closed for first-timers
+- Wrapped advanced features in a collapsible "Advanced options" disclosure with `ChevronDown` toggle
+- Disclosure contains: target account selector (when `accounts.length > 1`), schedule date/time picker + recurrence settings, and save-as-template button
+- Removed the OR divider; Save Template moved from main action buttons into the disclosure
+- i18n key: `composer.advanced_options` (i18n-dev adds in parallel)
+
+### Pricing Page Trust Signals (#19)
+
+- **Refund policy line**: "14-day money-back guarantee" displayed below the PricingTable component
+- **Testimonial section**: 3 testimonial cards (content creator, social media manager, small business owner) in a 3-column grid below the features section
+- **X API compliance line**: Footer note about API terms of service compliance at the page bottom
+- i18n keys: `pricing.refund_policy`, `pricing.testimonial_1_quote` through `pricing.testimonial_3_author`, `pricing.compliance` (i18n-dev adds in parallel)
+
+### Sidebar Quota Clickable (#8 sidebar part)
+
+- Wrapped AI credits and image quota cards in `Link` components pointing to `/dashboard/settings/billing`
+- Added `ChevronRight` icons to each quota card header to indicate clickability
+- Added `hover:bg-muted/50 cursor-pointer transition-colors` styles
+
+### Files changed
+
+- `src/components/composer/composer.tsx` — `hasScheduledPost` prop, disclosure UI, restructured publishing card
+- `src/app/(marketing)/pricing/page.tsx` — testimonials, refund policy, compliance notice
+- `src/components/dashboard/sidebar.tsx` — quota cards as clickable Links with chevron icons
+
+### DoD
+
+- `pnpm run check` — pending (tool unavailable in this context)
+
+## 2026-05-28 — Wave 6 AI Writer: Quota Chip + Controversial Tone Gating (#8, #15)
+
+Added a quota chip to the AI Writer page header showing AI and image generation usage. Gated the controversial tone option behind an "Advanced tones" collapsible disclosure with a safety tooltip. Renamed "viral" tone to "attention-grabbing" in both Thread and URL tone selectors.
+
+### Changes
+
+- **New component**: `src/components/ai/ai-quota-chip.tsx` — compact quota indicator with Sparkles + Image icons, links to billing, uses Tooltip
+- **New component**: `src/components/ai/ai-writer-client.tsx` — extracted from page.tsx as a client component accepting `aiUsage` + `imageUsage` props
+- **Page restructure**: `src/app/dashboard/ai/writer/page.tsx` — now a server component fetching quota data via `getMonthlyAiUsage` + `getMonthlyImageUsage`
+- **Controversial tone**: Thread Writer tone selector now has collapsible "Advanced tones" section with tooltip + hidden controversial option
+- **Viral rename**: `t("tone.viral")` changed to `t("tones.attention_grabbing")` in both Thread and URL tone selectors
+- **i18n keys used** (already exist): `ai_writer.quota.*`, `ai_writer.advanced_tones`, `ai_writer.advanced_tones_tooltip`, `ai_writer.tones.attention_grabbing`
+
+### DoD
+
+- `pnpm run check` — pending
+
+## 2026-05-28 — Wave 5 Onboarding Reframe (Skippable Wizard + Billing Bypass)
+
+Made the onboarding wizard skippable with explicit account confirmation on step 1. Added `onboardingSkippedAt` timestamp to the user table. The stripe checkout success URL now bypasses the onboarding redirect so upgrading users aren't bounced back to the wizard.
+
+### Changes
+
+- **Schema**: `onboardingSkippedAt` timestamp column on `user` (migration 0085)
+- **Skip API**: `/api/user/onboarding/skip` now also sets `onboardingSkippedAt`
+- **Wizard step 1**: Removed auto-skip — users always see their detected X account with "We found @username" and explicit Continue. "Use a different account" link replaces "Add another account"
+- **Wizard step 2**: Skip link reworded to "Skip — let me explore first", redirects to `/dashboard?checklist=open` so the setup checklist is expanded on arrival
+- **Billing bypass**: `/dashboard/settings/billing?session_id=...` bypasses onboarding redirect (finding #20). Proxy now passes `x-search-params` header
+- **i18n**: 3 new keys — `onboarding.skip_explore`, `onboarding.found_account`, `onboarding.use_different_account` (en + ar + pseudo)
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors, 2 pre-existing warnings)
+- `pnpm test` — PASS (326 tests, 34 files)
+- Audit findings resolved: #3, #11, #20
+
+## 2026-05-28 — Wave 4 IA Consolidation (Dashboard Sidebar + Schedule Merge)
+
+Collapsed the dashboard sidebar from 6 sections to 4 (Overview / Create / Grow / Account) plus an admin-only section. Merged Queue + Calendar into a single `/dashboard/schedule` route with `?view=list|month|week|day` tabs. Old routes (`/dashboard/queue`, `/dashboard/calendar`) redirect with query param preservation. Updated all 19+ inbound links across components, notifications, emails, onboarding wizard, bottom nav, and tests. Fixed dashboard page-wrapper icon (Home instead of LayoutDashboard). Hid multi-account selector in composer for single-account users.
+
+## 2026-05-28 — Wave 4 IA Consolidation — Task 2: Merge Queue + Calendar into `/dashboard/schedule`
+
+Merged queue and calendar into a single `/dashboard/schedule` route with view-tab switching. Old routes redirect with query-param preservation.
+
+### New merged page
+
+- `src/app/dashboard/schedule/page.tsx` — new RSC page combining both data-fetching paths
+  - Auth via `getTeamContext()` (consistent with queue page pattern)
+  - **List mode** (default, `view=list`): Ports all queue data fetching — paginated scheduled posts, failed posts, awaiting approval, post count, plan limits
+  - **Calendar mode** (`view=month|week|day`): Ports all calendar data fetching — date validation, calendar range calculation, scheduled + draft post queries, `CalendarViewClient` rendering
+  - Calendar mode uses `ctx.currentTeamId` instead of `session.user.id` for team-scoped queries
+  - Both modes reuse existing i18n namespaces (`queue` and `calendar`) — no new i18n keys needed
+
+### Redirect shells
+
+- `src/app/dashboard/queue/page.tsx` — redirects to `/dashboard/schedule?view=list`, preserving all other query params
+- `src/app/dashboard/calendar/page.tsx` — redirects to `/dashboard/schedule?view=month`, preserving date and view params
+
+### Other updates
+
+- `src/lib/services/email.ts` line 87 — post-failure retry URL updated from `/dashboard/queue` to `/dashboard/schedule?view=list`
+- `tests/e2e/dashboard-layout.e2e.ts` — DASHBOARD_ROUTES merged to single `/dashboard/schedule` entry, page.goto updated
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, 1 pre-existing warning in register/page.tsx; typecheck: clean; i18n: 2881 keys)
+
+### Files changed
+
+- `src/app/dashboard/schedule/page.tsx` — NEW
+- `src/app/dashboard/queue/page.tsx` — redirect shell
+- `src/app/dashboard/calendar/page.tsx` — redirect shell
+- `src/lib/services/email.ts` — URL update
+- `tests/e2e/dashboard-layout.e2e.ts` — route update
+
+---
+
+## 2026-05-28 — Dashboard UI/UX Audit — Wave 1 Quick Wins
+
+Implemented Wave 1 of the phased dashboard UI/UX audit (`.claude/plans/2026-05-28-dashboard-ui-ux-audit-implementation.md`). 8 findings closed, all low-risk correctness fixes — no IA or design changes.
+
+### i18n drift in AI Writer (#4)
+
+- Added `ai_writer.url.*` (9 keys) and `ai_writer.variants.*` (3 keys) to both `en.json` and `ar.json`
+- Replaced hardcoded English strings in the URL → Thread and A/B Variants tabs with `t()` calls
+- Fixed 10 double-namespaced keys (`t("ai_writer.url.title")` → `t("url.title")` — the component already scopes to `ai_writer`)
+
+### Char-limit consistency (#7)
+
+- Thread and URL output tabs now use `getMaxCharacterLimit(xTier)` instead of hardcoded `280`/`240`
+- Warning threshold uses the same `* 0.9` pattern as the single-post path
+
+### Register error fallback (#2)
+
+- Error handling now branches on status code: 409 → `email_exists`, 400 → `data.error`, 5xx → `server_error`, network → `network_error`
+- 500+ branch uses sanitized i18n fallback only (no raw server error mirroring)
+
+### Setup-checklist "Upgrade to Pro" label (#10)
+
+- Final step label changed from "Completed" to "Upgrade to Pro" / "الترقية إلى Pro"
+
+### AI Writer elapsed counter (#25)
+
+- "Generating ({n}s)" no longer shows elapsed seconds until ≥ 5s elapsed
+
+### Setup-checklist mobile CTA visibility (#26)
+
+- CTA text now visible on screens < `md` without hover: `opacity-100 md:opacity-0`
+
+### Onboarding timezone fallback (#30)
+
+- Browser timezone detection failure now falls back to `UTC` instead of `Asia/Riyadh`
+
+### Sonner toast deduplication (#34)
+
+- All copy-to-clipboard toasts now use `{ id: "copy" }` to prevent stacked duplicates
+
+### Verification
+
+- `pnpm run check` — PASS (lint + typecheck + i18n at 2854 leaf keys)
+- `pnpm test` — 34 files / 326 tests PASS
+- convention-enforcer + security-reviewer audit passed (1 medium finding fixed, 3 pre-existing in composer noted)
+
+### Files changed
+
+- `src/i18n/messages/en.json`, `src/i18n/messages/ar.json` — new locale keys
+- `src/app/dashboard/ai/writer/page.tsx` — i18n replacements, char-limit, elapsed counter, toast dedup
+- `src/components/dashboard/setup-checklist.tsx` — label + mobile CTA
+- `src/app/(auth)/register/page.tsx` — error branching
+- `src/components/onboarding/onboarding-wizard.tsx` — timezone fallback
+
+---
+
+## 2026-05-28 — Dashboard UI/UX Audit — Wave 2 (Accessibility + Form Polish)
+
+Implemented Wave 2 of the phased dashboard UI/UX audit. 4 findings closed — accessibility improvements and register form polish.
+
+### Skip-to-content link + banner aria-labels (#12)
+
+- Added `sr-only focus:not-sr-only` skip link as first focusable element in dashboard layout, targeting `<main id="main-content">`
+- Wrapped all 6 pre-main banners in `<section aria-label={t("dashboard.banners.*")}>` for screen-reader landmark navigation
+- `getTranslations("dashboard")` used for server-side i18n (layout is RSC)
+
+### Sign-in button focus ring (#13)
+
+- Replaced invisible `focus-visible:ring-black` with `focus-visible:ring-primary` + `focus-visible:ring-offset-background` on both active and disabled button variants
+- Primary ring adapts to dark/light mode via CSS variable; visible contrast on black background in both modes
+
+### Password show/hide toggle + strength meter (#14)
+
+- Eye/EyeOff toggle buttons on both password and confirm-password fields with `aria-label` i18n keys
+- 4-segment strength meter using project design tokens: `bg-destructive` (weak), `bg-warning` (okay), `bg-success-8` (strong), `bg-success` (great)
+- Strength heuristic: <8 → weak, 8-11 → okay, 12-15 → strong, 16+ with upper+lower+digit+special → great
+- Confirm-password validation triggers on blur via `form.trigger("confirmPassword")`
+
+### Confirm-password inline indicator (#29)
+
+- Green `Check` icon (`text-success`) appears when passwords match and confirm field is non-empty
+- Red `X` icon (`text-destructive`) appears on mismatch
+- Positioned at `right-9` inside input, before the eye toggle at `right-3`
+
+### i18n additions
+
+- 17 new keys across `en.json` + `ar.json`: `dashboard.skip_to_content`, 6 `dashboard.banners.*`, 10 `auth.register.password.*`
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, typecheck: clean, i18n: 2,872 keys)
+- `pnpm test` — 34 files / 326 tests PASS
+- convention-enforcer + security-reviewer audit: 0 violations, 0 security issues (1 a11y observation about `tabIndex={-1}` on eye toggles — intentional per design)
+- `bg-lime-500` (non-project token) replaced with `bg-success-8` during audit
+
+### Files changed
+
+- `src/app/dashboard/layout.tsx` — skip link + section wrappers
+- `src/components/auth/sign-in-button.tsx` — focus ring tokens
+- `src/app/(auth)/register/page.tsx` — password toggle, strength meter, confirm indicator, onBlur validation
+- `src/i18n/messages/en.json`, `src/i18n/messages/ar.json` — 17 new keys
+- `docs/audit/2026-05-28-dashboard-ui-ux-audit.md` — findings #12, #13, #14, #29 struck through
+
+---
+
+## 2026-05-28 — Dashboard UI/UX Audit — Wave 3 (Notification Center)
+
+Implemented Wave 3 of the phased dashboard UI/UX audit (`.claude/plans/2026-05-28-dashboard-ui-ux-audit-implementation.md`). Findings #5, #24, #36 closed. Replaced the 6-banner dashboard stack with a single notification bell popover.
+
+### DB schema: `notification_dismissals`
+
+- New table in `schema.ts` with columns: `id`, `user_id` (FK cascade), `notification_key`, `dismissed_at`, `snapshot_data` (jsonb), `created_at`
+- Unique index on `(user_id, notification_key)` for idempotent upserts
+- Migration `0084_sparkling_mad_thinker.sql` — idempotent (CREATE TABLE IF NOT EXISTS, CREATE INDEX IF NOT EXISTS, DO $$ BEGIN blocks)
+- Relation added to `userRelations`
+
+### Service layer: `src/lib/services/notification-dismissals.ts`
+
+- `upsertDismissal(userId, notificationKey, snapshotData?)` — pure business logic, throws on error (Hard Rule #14: `import "server-only"` first line)
+- `getDismissedNotifications(userId)` → `Map<key, dismissedAt>` — for layout filtering
+- `getDismissedWithSnapshot(userId)` → `Map<key, { dismissedAt, snapshotData }>` — for failure suppression logic
+
+### Server action: `src/lib/actions/notification-actions.ts`
+
+- `dismissNotification(formData)` — parses FormData, authenticates via `getTeamContext()`, validates `snapshotData` with Zod schema, calls service
+- Returns `{ success: boolean; error?: string }` plain objects
+- Importable from client components (no `"use server"` boundary issue)
+
+### NotificationCenter component: `src/components/dashboard/notification-center.tsx`
+
+- Bell icon + Popover (from `@/components/ui/popover`), replacing 5 full-width banners
+- Accepts `serverNotifications: Notification[]` prop; supports `dismissSnapshot` for suppression state round-trip
+- Severity-based color treatment (error/warning/info) using project design tokens
+- Optimistic dismissal via `startTransition` + server action
+- Empty state, dismiss-all, per-item action links, RTL `dir="auto"`, dark mode, mobile responsive
+
+### Layout integration: `src/app/dashboard/layout.tsx`
+
+- Three notification types built server-side from existing data:
+  - **Failed post** (severity=error) — suppressed until new failure occurs (snapshot-based)
+  - **Inactive X account** (severity=warning) — per-account dismissal
+  - **Trial expiring** (severity=info/warning for ≤3d) — per-day dismissal
+- Dismissal filtering via `getDismissedWithSnapshot()` before passing to `DashboardHeader`
+- All 5 banners removed (ChangelogBanner, AnnouncementBanner, TokenWarningBanner, FailureBanner, TrialBanner)
+- **ImpersonationBanner** remains as full-width blocking banner (security-critical — verified by security-reviewer)
+- Header receives `serverNotifications` prop
+
+### i18n
+
+- 23 new keys under `dashboard_shell.notifications.*` in both `en.json` + `ar.json` (2889 leaf keys)
+- ICU MessageFormat for interpolation (`{username}`, `{days}`)
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, typecheck: clean, i18n: all keys match)
+- `pnpm test` — 34 files / 326 tests PASS
+- convention-enforcer: 3 SRV violations resolved (service/action layer split, explicit return types, throw-on-error)
+- security-reviewer: 0 critical/high; 2 medium (rate-limiting deferred, snapshotData now Zod-validated)
+- ImpersonationBanner confirmed full-width + blocking (read from layout code)
+
+### Files changed
+
+- `src/lib/schema.ts` — new `notification_dismissals` table + relation
+- `drizzle/0084_sparkling_mad_thinker.sql` — idempotent migration
+- `src/lib/services/notification-dismissals.ts` — new: pure service (upsert + queries)
+- `src/lib/actions/notification-actions.ts` — new: server action (auth + validation)
+- `src/components/dashboard/notification-center.tsx` — new: bell + popover component
+- `src/components/dashboard/dashboard-header.tsx` — `serverNotifications` prop, NotificationBell → NotificationCenter
+- `src/app/dashboard/layout.tsx` — notification data assembly, banner removal, ImpersonationBanner retained
+- `src/i18n/messages/en.json`, `src/i18n/messages/ar.json` — 23 new notification keys
+
+### Manual verification scenarios
+
+- **(a) Failed post in last 24h**: error notification "Post failed to publish" with "View queue" link in bell popover; dismissible, suppressed until new failure
+- **(b) Inactive X account**: warning notification "X account disconnected @username" with "Reconnect" link to settings; per-account dismissal
+- **(c) Trial expiring in 3 days**: warning notification with days remaining + "Upgrade" link to pricing; per-day dismissal (reappears next day)
+- **(d) Impersonating admin session**: full-width red ImpersonationBanner above header (NOT in popover); non-dismissible, blocking; notification bell visible alongside it
+
+---
+
 ## 2026-05-24 (PM-3) — YouTube-to-Thread: audio download fix + thumbnail aspect-ratio
 
 ### Bug 1: yt-dlp audio format selection

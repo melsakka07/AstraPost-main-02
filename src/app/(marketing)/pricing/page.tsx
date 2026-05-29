@@ -112,6 +112,9 @@ export default async function PricingPage() {
           />
         </div>
 
+        {/* Refund policy */}
+        <p className="text-muted-foreground -mt-8 text-center text-sm">{t("refund_policy")}</p>
+
         {/* Enterprise Card */}
         <EnterpriseCard />
 
@@ -146,6 +149,36 @@ export default async function PricingPage() {
           </div>
         </div>
 
+        {/* Testimonials */}
+        <div className="mx-auto max-w-5xl">
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
+              <p className="text-muted-foreground text-sm leading-relaxed italic">
+                &ldquo;{t("testimonial_1_quote")}&rdquo;
+              </p>
+              <p className="text-foreground/80 mt-4 text-xs font-medium">
+                &mdash; {t("testimonial_1_author")}
+              </p>
+            </div>
+            <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
+              <p className="text-muted-foreground text-sm leading-relaxed italic">
+                &ldquo;{t("testimonial_2_quote")}&rdquo;
+              </p>
+              <p className="text-foreground/80 mt-4 text-xs font-medium">
+                &mdash; {t("testimonial_2_author")}
+              </p>
+            </div>
+            <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
+              <p className="text-muted-foreground text-sm leading-relaxed italic">
+                &ldquo;{t("testimonial_3_quote")}&rdquo;
+              </p>
+              <p className="text-foreground/80 mt-4 text-xs font-medium">
+                &mdash; {t("testimonial_3_author")}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* FAQ CTA */}
         <div className="border-border/50 from-muted/50 to-muted/20 relative overflow-hidden rounded-2xl border bg-gradient-to-br p-8 text-center md:p-12">
           <div className="from-primary/5 absolute inset-0 bg-gradient-to-r via-purple-500/5 to-pink-500/5" />
@@ -162,6 +195,9 @@ export default async function PricingPage() {
             </div>
           </div>
         </div>
+
+        {/* X API compliance */}
+        <p className="text-muted-foreground/60 text-center text-xs">{t("compliance")}</p>
       </div>
     </div>
   );

@@ -1,11 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const DASHBOARD_ROUTES = [
-  "/dashboard",
-  "/dashboard/queue",
-  "/dashboard/calendar",
-  "/dashboard/analytics",
-] as const;
+const DASHBOARD_ROUTES = ["/dashboard", "/dashboard/schedule", "/dashboard/analytics"] as const;
 
 async function ensureAuthenticated(page: Page) {
   await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
@@ -18,10 +13,11 @@ async function ensureAuthenticated(page: Page) {
   const password = `Pass-${id}-Secure!`;
 
   await page.goto("/register", { waitUntil: "domcontentloaded" });
-  await page.getByLabel("Name").fill("UI Regression");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByLabel("Confirm Password").fill(password);
+  await page.getByPlaceholder("Your name").fill("UI Regression");
+  await page.getByPlaceholder("you@example.com").fill(email);
+  await page.getByPlaceholder("Min. 8 characters").fill(password);
+  await page.getByPlaceholder("Confirm your password").fill(password);
+  await page.getByRole("checkbox", { name: /Terms of Service/ }).check();
   await page.getByRole("button", { name: "Create account" }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 20000 });
 }
@@ -70,7 +66,7 @@ test("dashboard routes keep single-page scrolling and footer integrity", async (
 test("queue and analytics support density toggles", async ({ page }) => {
   await ensureAuthenticated(page);
 
-  await page.goto("/dashboard/queue", { waitUntil: "domcontentloaded" });
+  await page.goto("/dashboard/schedule", { waitUntil: "domcontentloaded" });
   const queueCompact = page.getByRole("link", { name: "Compact" }).first();
   if (await queueCompact.isVisible()) {
     await queueCompact.click();
