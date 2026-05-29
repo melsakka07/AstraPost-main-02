@@ -1,0 +1,18 @@
+# Normalize all text files to LF in the repository and on checkout.
+# Prevents phantom CRLF diffs on Windows working copies (core.autocrlf no longer matters).
+* text=auto eol=lf
+
+# Explicit binary types — never normalize or diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.mp4 binary
+*.webm binary
