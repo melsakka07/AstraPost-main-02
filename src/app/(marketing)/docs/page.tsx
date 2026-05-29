@@ -151,11 +151,11 @@ export default async function DocsPage() {
                   <li key={i}>
                     {article.comingSoon ? (
                       <span className="text-muted-foreground/60 flex cursor-default items-center text-sm font-medium select-none">
-                        <FileText className="text-muted-foreground/40 mr-2 h-3.5 w-3.5 shrink-0" />
+                        <FileText className="text-muted-foreground/40 me-2 h-3.5 w-3.5 shrink-0" />
                         {article.title}
                         <Badge
                           variant="outline"
-                          className="border-muted-foreground/30 text-muted-foreground/50 ml-auto h-4 px-1.5 text-[10px]"
+                          className="border-muted-foreground/30 text-muted-foreground/50 ms-auto h-4 px-1.5 text-[10px]"
                         >
                           {t("soon_badge")}
                         </Badge>
@@ -165,7 +165,7 @@ export default async function DocsPage() {
                         href={article.href}
                         className="group hover:text-primary flex items-center text-sm font-medium transition-colors"
                       >
-                        <FileText className="text-muted-foreground group-hover:text-primary mr-2 h-3.5 w-3.5 shrink-0 transition-colors" />
+                        <FileText className="text-muted-foreground group-hover:text-primary me-2 h-3.5 w-3.5 shrink-0 transition-colors" />
                         {article.title}
                         <ArrowRight className="text-muted-foreground ms-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 rtl:scale-x-[-1]" />
                       </Link>

@@ -253,7 +253,7 @@ export function ReviewScreen({
               {scheduleDate && (
                 <div className="flex flex-wrap items-center gap-3">
                   <Button size="sm" onClick={() => onApprove("schedule")} disabled={isSubmitting}>
-                    <Calendar className="mr-1.5 h-3.5 w-3.5" />
+                    <Calendar className="me-1.5 h-3.5 w-3.5" />
                     {t("review_screen.confirm_schedule")}
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setShowSchedulePicker(false)}>
@@ -311,7 +311,7 @@ export function ReviewScreen({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-muted-foreground ml-auto h-8 w-8 p-0"
+                  className="text-muted-foreground ms-auto h-8 w-8 p-0"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
@@ -321,7 +321,7 @@ export function ReviewScreen({
                   className="text-destructive focus:text-destructive cursor-pointer"
                   onClick={onDiscard}
                 >
-                  <Trash2 className="mr-2 h-3.5 w-3.5" />
+                  <Trash2 className="me-2 h-3.5 w-3.5" />
                   {t("review_screen.discard")}
                 </DropdownMenuItem>
               </DropdownMenuContent>

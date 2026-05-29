@@ -22,7 +22,7 @@ export function PiiRedactionBanner({ redactions }: PiiRedactionBannerProps) {
       </span>
       <button
         onClick={() => setDismissed(true)}
-        className="ml-auto shrink-0 rounded-sm opacity-70 hover:opacity-100"
+        className="ms-auto shrink-0 rounded-sm opacity-70 hover:opacity-100"
         aria-label={t("dismiss")}
       >
         <X className="h-3.5 w-3.5" />

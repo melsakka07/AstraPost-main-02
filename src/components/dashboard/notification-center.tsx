@@ -177,7 +177,7 @@ export function NotificationCenter({ serverNotifications }: NotificationCenterPr
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="-mt-0.5 -mr-1 h-6 w-6 shrink-0"
+                        className="-me-1 -mt-0.5 h-6 w-6 shrink-0"
                         onClick={() => handleDismiss(notification)}
                         aria-label={t("notifications.dismiss")}
                       >

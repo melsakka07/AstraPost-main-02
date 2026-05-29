@@ -164,7 +164,7 @@ export default async function FeaturesPage() {
               <ul className="space-y-2">
                 {feature.details.map((detail, i) => (
                   <li key={i} className="text-muted-foreground flex items-center text-sm">
-                    <div className="bg-primary mr-2 h-1.5 w-1.5 rounded-full" />
+                    <div className="bg-primary me-2 h-1.5 w-1.5 rounded-full" />
                     {detail}
                   </li>
                 ))}

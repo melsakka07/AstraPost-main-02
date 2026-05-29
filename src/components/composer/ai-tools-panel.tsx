@@ -443,7 +443,7 @@ export function AiToolsPanel({
                     className="h-10 w-full text-sm sm:h-9"
                     onClick={onHashtagsDone}
                   >
-                    <X className="mr-1 h-4 w-4" />
+                    <X className="me-1 h-4 w-4" />
                     {t("ai_tools.hashtags.dismiss")}
                   </Button>
                 </div>
@@ -516,7 +516,7 @@ export function AiToolsPanel({
               </div>
 
               {inspirationTopics.length > 0 && (
-                <div className="max-h-[200px] space-y-2 overflow-y-auto pr-1 sm:max-h-[220px] sm:space-y-3">
+                <div className="max-h-[200px] space-y-2 overflow-y-auto pe-1 sm:max-h-[220px] sm:space-y-3">
                   {inspirationTopics.map((t, i) => (
                     <div
                       key={i}
@@ -555,7 +555,7 @@ export function AiToolsPanel({
                 </div>
                 {onBrowseTemplates && (
                   <Button variant="outline" size="sm" onClick={onBrowseTemplates} className="mt-1">
-                    <FileText className="mr-1.5 h-4 w-4" />
+                    <FileText className="me-1.5 h-4 w-4" />
                     {t("ai_tools.template.browse")}
                   </Button>
                 )}
@@ -570,7 +570,7 @@ export function AiToolsPanel({
                 <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
                   <LayoutTemplate className="text-primary h-4 w-4" />
                 </div>
-                <div className="min-w-0 pr-6">
+                <div className="min-w-0 pe-6">
                   <h3 className="text-sm leading-tight font-semibold sm:text-base">
                     {templateConfig.name}
                   </h3>
@@ -581,7 +581,7 @@ export function AiToolsPanel({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-muted-foreground hover:text-foreground absolute top-2 right-2 h-7 w-7"
+                  className="text-muted-foreground hover:text-foreground absolute end-2 top-2 h-7 w-7"
                   onClick={onClearTemplate}
                   aria-label="Remove template"
                 >
@@ -736,7 +736,7 @@ export function AiToolsPanel({
                 disabled={isGenerateDisabled}
                 className="h-10 min-w-[44px] text-sm sm:h-9 sm:min-w-0"
               >
-                {isGenerating && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                {isGenerating && <Loader2 className="me-1.5 h-4 w-4 animate-spin" />}
                 {t("ai_generate")}
               </Button>
             </div>

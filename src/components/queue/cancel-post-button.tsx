@@ -60,7 +60,7 @@ export function CancelPostButton({ postId, ariaLabel }: { postId: string; ariaLa
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <XCircle className="mr-1 h-4 w-4" />
+            <XCircle className="me-1 h-4 w-4" />
           )}
           Cancel
         </Button>

@@ -128,7 +128,7 @@ export function InputScreen({
             onChange={(e) => setTopic(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={t("input_screen.placeholder")}
-            className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring max-h-[10rem] min-h-[8rem] w-full resize-none overflow-y-auto rounded-xl border px-5 py-4 pr-12 text-[15px] leading-relaxed shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2 sm:max-h-[12rem]"
+            className="border-input bg-background placeholder:text-muted-foreground/60 focus:ring-ring max-h-[10rem] min-h-[8rem] w-full resize-none overflow-y-auto rounded-xl border px-5 py-4 pe-12 text-[15px] leading-relaxed shadow-sm transition-shadow duration-200 outline-none focus:border-transparent focus:shadow-md focus:ring-2 sm:max-h-[12rem]"
             maxLength={500}
             rows={4}
             aria-label={t("input_screen.hero_title")}
@@ -137,7 +137,7 @@ export function InputScreen({
             <button
               type="button"
               onClick={() => setTopic("")}
-              className="text-muted-foreground/60 hover:text-muted-foreground focus-visible:ring-ring absolute top-3 right-3 rounded-md p-1 transition-colors focus-visible:ring-2"
+              className="text-muted-foreground/60 hover:text-muted-foreground focus-visible:ring-ring absolute end-3 top-3 rounded-md p-1 transition-colors focus-visible:ring-2"
               aria-label={t("input_screen.clear")}
             >
               <X className="h-4 w-4" />
@@ -148,7 +148,7 @@ export function InputScreen({
               type="button"
               onClick={() => void onEnhanceTopic()}
               disabled={isEnhancing}
-              className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+              className="border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 absolute start-3 bottom-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50"
             >
               <Wand2 className={`h-3 w-3 ${isEnhancing ? "animate-spin" : ""}`} />
               {isEnhancing ? t("input_screen.enhancing") : t("input_screen.enhance")}

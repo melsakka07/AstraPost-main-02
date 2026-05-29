@@ -123,14 +123,14 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
               className
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+            <CalendarIcon className="me-2 h-4 w-4 shrink-0" />
             {displayText ?? <span>{t("schedule_for")}</span>}
           </Button>
         </PopoverTrigger>
         {value && (
           <button
             type="button"
-            className="focus-visible:ring-ring absolute top-1/2 right-2 -translate-y-1/2 rounded-sm opacity-70 hover:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
+            className="focus-visible:ring-ring absolute end-2 top-1/2 -translate-y-1/2 rounded-sm opacity-70 hover:opacity-100 focus-visible:ring-2 focus-visible:outline-none"
             onClick={(e) => {
               e.stopPropagation();
               onChange("");
@@ -150,7 +150,7 @@ export function DateTimePicker({ value, onChange, disabled, id, className }: Dat
       >
         <div className="flex flex-col sm:flex-row">
           {/* Calendar */}
-          <div className="border-b p-3 sm:border-r sm:border-b-0">
+          <div className="border-b p-3 sm:border-e sm:border-b-0">
             <Calendar
               mode="single"
               selected={tempDate ? parseISO(tempDate) : undefined}

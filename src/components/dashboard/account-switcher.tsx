@@ -142,7 +142,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
       <PopoverContent className="w-[220px] p-0">
         <div className="p-2">
           <div className="mb-2 flex items-center border-b px-3 pb-2">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <Search className="me-2 h-4 w-4 shrink-0 opacity-50" />
             <Input
               aria-label={t("account_switcher.search_placeholder")}
               placeholder={t("account_switcher.search_placeholder")}
@@ -167,7 +167,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
                       selectedTeam.id === team.id && "bg-accent text-accent-foreground"
                     )}
                   >
-                    <Avatar className="mr-2 h-5 w-5">
+                    <Avatar className="me-2 h-5 w-5">
                       <AvatarImage
                         src={team.image || `https://avatar.vercel.sh/${team.id}.png`}
                         alt={team.name}
@@ -175,7 +175,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
                       <AvatarFallback>SC</AvatarFallback>
                     </Avatar>
                     {team.name}
-                    {selectedTeam.id === team.id && <Check className="ml-auto h-4 w-4" />}
+                    {selectedTeam.id === team.id && <Check className="ms-auto h-4 w-4" />}
                   </div>
                 ))}
               </div>
@@ -195,7 +195,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
                       selectedTeam.id === team.id && "bg-accent text-accent-foreground"
                     )}
                   >
-                    <Avatar className="mr-2 h-5 w-5">
+                    <Avatar className="me-2 h-5 w-5">
                       <AvatarImage
                         src={team.image || `https://avatar.vercel.sh/${team.id}.png`}
                         alt={team.name}
@@ -204,7 +204,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
                       <AvatarFallback>SC</AvatarFallback>
                     </Avatar>
                     {team.name}
-                    {selectedTeam.id === team.id && <Check className="ml-auto h-4 w-4" />}
+                    {selectedTeam.id === team.id && <Check className="ms-auto h-4 w-4" />}
                   </div>
                 ))}
               </div>
@@ -224,7 +224,7 @@ export function AccountSwitcher({ user, currentTeamId, teams }: AccountSwitcherP
             }}
             className="hover:bg-accent hover:text-accent-foreground relative flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm outline-none select-none"
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="me-2 h-4 w-4" />
             {t("account_switcher.create_team")}
           </div>
         </div>

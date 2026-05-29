@@ -187,7 +187,7 @@ export function NotificationBell() {
           {unreadCount > 0 && (
             <span
               aria-hidden="true"
-              className="ring-background bg-danger-9 absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2"
+              className="ring-background bg-danger-9 absolute end-1.5 top-1.5 h-2 w-2 rounded-full ring-2"
             />
           )}
           <span className="sr-only">

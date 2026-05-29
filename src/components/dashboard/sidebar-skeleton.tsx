@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function SidebarSkeleton() {
   return (
-    <div className="bg-card border-border hidden flex-col border-r md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0">
+    <div className="bg-card border-border hidden flex-col border-e md:sticky md:top-0 md:flex md:h-dvh md:w-64 md:shrink-0">
       <div className="flex h-full flex-col">
         {/* Brand */}
         <div className="border-border flex h-14 shrink-0 items-center gap-2 border-b px-6">

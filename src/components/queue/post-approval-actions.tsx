@@ -44,7 +44,7 @@ export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsPr
         className="text-destructive hover:text-destructive"
         onClick={() => handleAction("reject")}
       >
-        <X className="mr-1 h-4 w-4" />
+        <X className="me-1 h-4 w-4" />
         {t("reject")}
       </Button>
       <Button
@@ -53,7 +53,7 @@ export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsPr
         className="bg-green-600 text-white hover:bg-green-700"
         onClick={() => handleAction("approve")}
       >
-        <Check className="mr-1 h-4 w-4" />
+        <Check className="me-1 h-4 w-4" />
         {t("approve")}
       </Button>
     </div>

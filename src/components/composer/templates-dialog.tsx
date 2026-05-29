@@ -293,7 +293,7 @@ export function TemplatesDialog({
                           variant="destructive"
                           size="icon"
                           className={cn(
-                            "absolute top-2.5 right-2.5 h-6 w-6 transition-opacity",
+                            "absolute end-2.5 top-2.5 h-6 w-6 transition-opacity",
                             "opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                           )}
                           onClick={(e) => handleDelete(e, template.id)}
@@ -303,7 +303,7 @@ export function TemplatesDialog({
                         </Button>
 
                         {/* Title + badges (leave space for delete btn on mobile) */}
-                        <div className="flex items-start gap-2 pr-8 sm:pr-0">
+                        <div className="flex items-start gap-2 pe-8 sm:pe-0">
                           <span className="min-w-0 flex-1 text-sm leading-snug font-semibold">
                             {template.title}
                           </span>

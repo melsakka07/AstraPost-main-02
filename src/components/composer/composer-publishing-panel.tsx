@@ -120,9 +120,9 @@ export function ComposerPublishingPanel({
                         disabled={isSubmitting || !hasContent}
                       >
                         {isSubmitting ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                          <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin sm:me-2 sm:h-4 sm:w-4" />
                         ) : (
-                          <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                          <Clock className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
                         )}
                         {t("label.schedule")}
                       </Button>
@@ -141,7 +141,7 @@ export function ComposerPublishingPanel({
                         onClick={() => onSubmit("publish_now")}
                         disabled={isSubmitting || !hasContent}
                       >
-                        <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                        <Send className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
                         {t("label.post_now")}
                       </Button>
                     </span>
@@ -163,9 +163,9 @@ export function ComposerPublishingPanel({
                         disabled={isSubmitting || !hasContent}
                       >
                         {isSubmitting ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                          <Loader2 className="me-1.5 h-3.5 w-3.5 animate-spin sm:me-2 sm:h-4 sm:w-4" />
                         ) : (
-                          <Send className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                          <Send className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
                         )}
                         {t("label.post_now")}
                       </Button>
@@ -184,7 +184,7 @@ export function ComposerPublishingPanel({
                         onClick={() => setShowAdvancedOptions(true)}
                         disabled={isSubmitting || !hasContent}
                       >
-                        <Clock className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                        <Clock className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
                         {t("label.schedule")}
                       </Button>
                     </span>
@@ -204,7 +204,7 @@ export function ComposerPublishingPanel({
                     onClick={() => onSubmit("draft")}
                     disabled={isSubmitting || !hasContent}
                   >
-                    <FileText className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                    <FileText className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
                     {t("label.save_draft")}
                   </Button>
                 </span>
@@ -265,7 +265,7 @@ export function ComposerPublishingPanel({
                       }}
                     >
                       {t("label.cancel")}
-                      <XIcon className="ml-1 h-3 w-3" />
+                      <XIcon className="ms-1 h-3 w-3" />
                     </Button>
                   )}
                 </div>
@@ -347,7 +347,7 @@ export function ComposerPublishingPanel({
                         onClick={onOpenSaveTemplate}
                         disabled={isSubmitting || !hasContent}
                       >
-                        <BookmarkPlus className="mr-1.5 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4" />
+                        <BookmarkPlus className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
                         {t("label.save_template")}
                       </Button>
                     </span>

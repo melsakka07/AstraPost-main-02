@@ -78,7 +78,7 @@ export function UpgradeBanner({
             )}
           </div>
           <div className="flex-1 space-y-2">
-            <div className="space-y-1 text-left">
+            <div className="space-y-1 text-start">
               <h3
                 className={cn(
                   "font-semibold tracking-tight",

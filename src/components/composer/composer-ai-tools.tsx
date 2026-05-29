@@ -294,7 +294,7 @@ export function ComposerAiTools(props: ComposerAiToolsProps) {
                 onClick={() => handleAiRun()}
                 disabled={isAiGenerateDisabled}
               >
-                {isGenerating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isGenerating && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                 {t("ai_tools.generate")}
               </Button>
             </div>

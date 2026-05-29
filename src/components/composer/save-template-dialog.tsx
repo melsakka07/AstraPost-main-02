@@ -139,7 +139,7 @@ export function SaveTemplateDialog({
             {t("label.cancel")}
           </Button>
           <Button onClick={onSave} disabled={!title.trim() || isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {t("save_template_dialog.save_button")}
           </Button>
         </DialogFooter>

@@ -147,7 +147,7 @@ export function AdaptationPanel({
               {t("manual.title")}
             </TabsTrigger>
             <TabsTrigger value="ai" className="text-xs sm:text-sm">
-              <Sparkles className="mr-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <Sparkles className="me-1 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               {t("ai_assist.title")}
             </TabsTrigger>
           </TabsList>
@@ -246,12 +246,12 @@ export function AdaptationPanel({
               <Button onClick={handleGenerate} disabled={isGenerating} className="w-full">
                 {isGenerating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     {t("ai_assist.generating")}
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <Sparkles className="me-2 h-4 w-4" />
                     {t("ai_assist.generate")}
                   </>
                 )}
@@ -295,7 +295,7 @@ export function AdaptationPanel({
 
                   {/* Send to Composer Button */}
                   <Button onClick={handleSendAiToComposer} className="w-full">
-                    <Send className="mr-2 h-4 w-4" />
+                    <Send className="me-2 h-4 w-4" />
                     {t("ai_assist.send_to_composer")}
                   </Button>
                 </div>

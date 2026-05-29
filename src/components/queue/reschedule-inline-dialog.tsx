@@ -45,7 +45,7 @@ export function RescheduleInlineDialog({
           aria-label={ariaLabel ?? "Reschedule post"}
           className="text-muted-foreground hover:text-foreground"
         >
-          <CalendarClock className="mr-1 h-4 w-4" />
+          <CalendarClock className="me-1 h-4 w-4" />
           {t("reschedule")}
         </Button>
       </DialogTrigger>

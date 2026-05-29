@@ -429,12 +429,12 @@ export function AiImageDialog({
               }
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className={cn("min-h-[80px] resize-none", isRtl && "text-right")}
+              className={cn("min-h-[80px] resize-none", isRtl && "text-end")}
               disabled={isGenerating}
             />
             {!prompt && tweetContent && (
               <p className="text-muted-foreground text-xs">
-                <Sparkles className="mr-1 inline h-3 w-3" />
+                <Sparkles className="me-1 inline h-3 w-3" />
                 {t("auto_generate_hint")}
               </p>
             )}
@@ -538,7 +538,7 @@ export function AiImageDialog({
                     sizes="(max-width: 768px) 100vw, 512px"
                   />
                 </div>
-                <div className="absolute right-0 bottom-0 left-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                <div className="absolute start-0 end-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                   <p className="line-clamp-2 text-xs text-white">{generatedImage.prompt}</p>
                 </div>
               </div>
@@ -653,7 +653,7 @@ export function AiImageDialog({
                   }}
                   className="w-full"
                 >
-                  <RotateCcw className="mr-2 h-3.5 w-3.5" />
+                  <RotateCcw className="me-2 h-3.5 w-3.5" />
                   {generationError.code === "CONTENT_BLOCKED"
                     ? t("try_adjusted_prompt")
                     : t("try_again")}
@@ -681,17 +681,17 @@ export function AiImageDialog({
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
                     {t("generating")}
                   </>
                 ) : generationError ? (
                   <>
-                    <RotateCcw className="mr-2 h-4 w-4" />
+                    <RotateCcw className="me-2 h-4 w-4" />
                     {t("try_again")}
                   </>
                 ) : (
                   <>
-                    <Wand2 className="mr-2 h-4 w-4" />
+                    <Wand2 className="me-2 h-4 w-4" />
                     {t("generate")}
                   </>
                 )}
@@ -700,7 +700,7 @@ export function AiImageDialog({
           ) : (
             <>
               <Button variant="outline" onClick={handleRegenerate} disabled={isGenerating}>
-                <RefreshCw className="mr-2 h-4 w-4" />
+                <RefreshCw className="me-2 h-4 w-4" />
                 {t("regenerate")}
               </Button>
               {generatedImage && (
@@ -713,19 +713,19 @@ export function AiImageDialog({
                 >
                   {isDownloading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
                       {t("downloading")}
                     </>
                   ) : (
                     <>
-                      <Download className="mr-2 h-4 w-4" />
+                      <Download className="me-2 h-4 w-4" />
                       {t("download")}
                     </>
                   )}
                 </Button>
               )}
               <Button onClick={handleAttach} disabled={isGenerating || attachedCount >= 4}>
-                <Check className="mr-2 h-4 w-4" />
+                <Check className="me-2 h-4 w-4" />
                 {attachedCount >= 4
                   ? t("max_images_reached")
                   : attachedCount > 0
@@ -733,7 +733,7 @@ export function AiImageDialog({
                     : t("attach_to_tweet")}
               </Button>
               <Button variant="ghost" onClick={() => handleOpenChange(false)}>
-                <XIcon className="mr-2 h-4 w-4" />
+                <XIcon className="me-2 h-4 w-4" />
                 {t("close")}
               </Button>
             </>

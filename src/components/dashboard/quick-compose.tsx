@@ -50,7 +50,7 @@ export function QuickCompose() {
               onChange={(e) => setContent(e.target.value)}
               maxLength={MAX_LENGTH}
             />
-            <div className="absolute right-2 bottom-2 flex items-center gap-1.5">
+            <div className="absolute end-2 bottom-2 flex items-center gap-1.5">
               {hasContent && (
                 <Button
                   variant="ghost"
