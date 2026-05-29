@@ -1,72 +1,20 @@
 "use client";
 
-import { useState, useCallback, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
-import { ar, enUS } from "date-fns/locale";
-import {
-  Lightbulb,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  History,
-  Bookmark,
-  ArrowRight,
-  Download,
-  ExternalLink,
-  RefreshCw,
-  X,
-} from "lucide-react";
-import { useTranslations, useLocale } from "next-intl";
+import { Suspense, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Bookmark, Download, History, Lightbulb, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
-import { AdaptationPanel } from "@/components/inspiration/adaptation-panel";
-import { ImportedTweetCard } from "@/components/inspiration/imported-tweet-card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { InspirationBookmarksList } from "@/components/inspiration/inspiration-bookmarks-list";
+import { InspirationHistoryList } from "@/components/inspiration/inspiration-history-list";
+import { InspirationImportPanel } from "@/components/inspiration/inspiration-import-panel";
+import type { Bookmark as BookmarkType } from "@/components/inspiration/inspiration-types";
+import { useInspirationBookmarks } from "@/components/inspiration/use-inspiration-bookmarks";
+import { useInspirationComposerBridge } from "@/components/inspiration/use-inspiration-composer-bridge";
+import { useInspirationHistory } from "@/components/inspiration/use-inspiration-history";
+import { useInspirationImport } from "@/components/inspiration/use-inspiration-import";
+import { useInspirationTabs } from "@/components/inspiration/use-inspiration-tabs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useElapsedTime } from "@/hooks/use-elapsed-time";
-import type { ImportedTweetContext } from "@/lib/services/tweet-importer";
-
-interface Bookmark {
-  id: string;
-  sourceTweetId: string;
-  sourceTweetUrl: string;
-  sourceAuthorHandle: string;
-  sourceText: string;
-  adaptedText: string | null;
-  action: string | null;
-  tone: string | null;
-  language: string | null;
-  createdAt: string;
-}
-
-interface HistoryItem {
-  id: string;
-  sourceTweetId: string;
-  sourceTweetUrl: string;
-  sourceAuthorHandle: string;
-  sourceText: string;
-  action: string | null;
-  createdAt: string;
-}
 
 export default function InspirationPage() {
   return (
@@ -86,316 +34,56 @@ function InspirationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations("inspiration");
-  const locale = useLocale();
-  const [tweetUrl, setTweetUrl] = useState("");
-  const [isValidUrl, setIsValidUrl] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [importedData, setImportedData] = useState<ImportedTweetContext | null>(null);
-  const [showThreadContext, setShowThreadContext] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // History and Bookmarks state
-  const [activeTab, setActiveTab] = useState<"import" | "history" | "bookmarks">("import");
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [isBookmarking, setIsBookmarking] = useState(false);
-  const importElapsed = useElapsedTime(isLoading);
+  const tabs = useInspirationTabs();
+  const history = useInspirationHistory();
+  const importFlow = useInspirationImport({ t, recordImport: history.recordImport });
+  const bookmarks = useInspirationBookmarks({
+    t,
+    setError: importFlow.setError,
+    showSuccess: tabs.showSuccess,
+  });
+  const bridge = useInspirationComposerBridge({
+    router,
+    searchParams,
+    tweetUrl: importFlow.tweetUrl,
+    setTweetUrl: importFlow.setTweetUrl,
+    setIsValidUrl: importFlow.setIsValidUrl,
+    importedData: importFlow.importedData,
+    setImportedData: importFlow.setImportedData,
+  });
 
-  // Fetch history from API on mount
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/inspiration/history");
-        if (res.ok && !cancelled) {
-          const data = await res.json();
-          setHistory(data.history as HistoryItem[]);
-        }
-      } catch {
-        // Non-critical — silently fail, user sees empty history
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // URL validation
-  const validateUrl = useCallback((url: string) => {
-    const patterns = [
-      /twitter\.com\/[\w]+\/status\/(\d+)/i,
-      /x\.com\/[\w]+\/status\/(\d+)/i,
-      /x\.com\/i\/web\/status\/(\d+)/i,
-      /mobile\.twitter\.com\/[\w]+\/status\/(\d+)/i,
-    ];
-    return patterns.some((pattern) => pattern.test(url));
-  }, []);
-
-  const handleUrlChange = useCallback(
-    (value: string) => {
-      setTweetUrl(value);
-      setIsValidUrl(validateUrl(value));
-      setError(null);
-    },
-    [validateUrl]
-  );
-
-  // Initialize from URL search params or sessionStorage
-  useEffect(() => {
-    // 1. Check URL parameters (e.g., ?url=https://x.com/...)
-    const urlParam = searchParams.get("url");
-    if (urlParam && validateUrl(urlParam)) {
-      setTweetUrl(urlParam);
-      setIsValidUrl(true);
-      return;
-    }
-
-    // 2. Fallback to session storage to persist across reloads
-    try {
-      const storedUrl = sessionStorage.getItem("inspiration_current_url");
-      if (storedUrl && validateUrl(storedUrl)) {
-        setTweetUrl(storedUrl);
-        setIsValidUrl(true);
-
-        // Also try to restore the imported data to avoid refetching on every reload
-        const storedData = sessionStorage.getItem("inspiration_current_data");
-        if (storedData) {
-          setImportedData(JSON.parse(storedData));
-        }
-      }
-    } catch {
-      // Ignore
-    }
-  }, [searchParams, validateUrl]);
-
-  // Save current url/data to sessionStorage whenever they change
-  useEffect(() => {
-    try {
-      if (tweetUrl) {
-        sessionStorage.setItem("inspiration_current_url", tweetUrl);
-      } else {
-        sessionStorage.removeItem("inspiration_current_url");
-      }
-
-      if (importedData) {
-        sessionStorage.setItem("inspiration_current_data", JSON.stringify(importedData));
-      } else {
-        sessionStorage.removeItem("inspiration_current_data");
-      }
-    } catch {
-      // Ignore
-    }
-  }, [tweetUrl, importedData]);
-
-  // Import tweet
-  const handleImport = useCallback(async () => {
-    if (!isValidUrl || !tweetUrl.trim()) return;
-
-    setIsLoading(true);
-    setError(null);
-    setImportedData(null);
-    setShowThreadContext(false);
-
-    try {
-      const response = await fetch("/api/x/tweet-lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweetUrl }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to import tweet");
-      }
-
-      const result = await response.json();
-      setImportedData(result.data);
-
-      // Add to history via API
-      fetch("/api/inspiration/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceTweetId: result.data.originalTweet.id,
-          sourceTweetUrl: tweetUrl,
-          sourceAuthorHandle: result.data.originalTweet.author.username,
-          sourceText: result.data.originalTweet.text,
-          action: "imported",
-        }),
-      }).catch(() => {
-        /* non-critical */
-      });
-      // Optimistic UI update
-      setHistory((prev) => [
-        {
-          id: Date.now().toString(),
-          sourceTweetId: result.data.originalTweet.id,
-          sourceTweetUrl: tweetUrl,
-          sourceAuthorHandle: result.data.originalTweet.author.username,
-          sourceText: result.data.originalTweet.text,
-          action: "imported",
-          createdAt: new Date().toISOString(),
-        },
-        ...prev.slice(0, 19),
-      ]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("error_import"));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isValidUrl, tweetUrl, t]);
-
-  // Send to Composer
-  const handleSendToComposer = useCallback(
-    (tweets: string[]) => {
-      sessionStorage.setItem("inspiration_tweets", JSON.stringify(tweets));
-      if (importedData) {
-        sessionStorage.setItem("inspiration_source_id", importedData.originalTweet.id);
-        // W4: Store source attribution for display in Composer
-        try {
-          sessionStorage.setItem(
-            "inspiration_attribution",
-            JSON.stringify({
-              handle: importedData.originalTweet.author.username,
-              url: tweetUrl,
-            })
-          );
-        } catch {
-          // sessionStorage may be unavailable — fail silently
-        }
-      }
-      router.push("/dashboard/compose");
-    },
-    [router, importedData, tweetUrl]
-  );
-
-  // Bookmark the current inspiration
-  const handleBookmark = useCallback(async () => {
-    if (!importedData) return;
-
-    setIsBookmarking(true);
-    try {
-      const response = await fetch("/api/inspiration/bookmark", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceTweetId: importedData.originalTweet.id,
-          sourceTweetUrl: tweetUrl,
-          sourceAuthorHandle: importedData.originalTweet.author.username,
-          sourceText: importedData.originalTweet.text,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to bookmark");
-      }
-
-      setSuccessMessage(t("success_message"));
-      setTimeout(() => setSuccessMessage(null), 3000);
-
-      // Add to local bookmarks state
-      const bookmarkData = await response.json();
-      if (bookmarkData.bookmark) {
-        setBookmarks((prev) => [bookmarkData.bookmark, ...prev]);
-      }
-    } catch (err) {
-      setError(t("error_bookmark"));
-    } finally {
-      setIsBookmarking(false);
-    }
-  }, [importedData, tweetUrl, t]);
-
-  // Clear imported tweet and URL
+  // Clear imported tweet + URL and dismiss any success message.
   const handleClear = useCallback(() => {
-    setTweetUrl("");
-    setIsValidUrl(false);
-    setImportedData(null);
-    setShowThreadContext(false);
-    setError(null);
-    setSuccessMessage(null);
+    importFlow.handleClear();
+    tabs.clearSuccess();
+  }, [importFlow, tabs]);
 
-    // Clear sessionStorage
-    try {
-      sessionStorage.removeItem("inspiration_current_url");
-      sessionStorage.removeItem("inspiration_current_data");
-    } catch {
-      // Ignore
-    }
-  }, []);
-
-  // Load bookmarks on mount
-  useEffect(() => {
-    const loadBookmarks = async () => {
-      try {
-        const response = await fetch("/api/inspiration/bookmark");
-        if (response.ok) {
-          const data = await response.json();
-          setBookmarks(data.bookmarks || []);
-        }
-      } catch (err) {
-        (await import("@/lib/logger")).logger.error("Failed to load bookmarks", { error: err });
-      }
-    };
-
-    loadBookmarks();
-  }, []);
-
-  // Re-adapt bookmark
-  const handleReadaptBookmark = useCallback(
-    async (bookmark: Bookmark) => {
-      setTweetUrl(bookmark.sourceTweetUrl);
-      setIsValidUrl(true);
-
-      try {
-        setIsLoading(true);
-        const response = await fetch("/api/x/tweet-lookup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tweetUrl: bookmark.sourceTweetUrl }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to import tweet");
-        }
-
-        const result = await response.json();
-        setImportedData(result.data);
-        setActiveTab("import");
-      } catch (err) {
-        setError(t("error_reimport"));
-      } finally {
-        setIsLoading(false);
-      }
+  // History re-import: prefill the URL and switch to the import tab (no fetch —
+  // matches the original button behavior).
+  const handleHistoryReimport = useCallback(
+    (url: string) => {
+      importFlow.setTweetUrl(url);
+      importFlow.setIsValidUrl(true);
+      tabs.setActiveTab("import");
     },
-    [t]
+    [importFlow, tabs]
   );
 
-  // Delete bookmark
-  const handleDeleteBookmark = useCallback(
-    async (id: string) => {
-      try {
-        const response = await fetch(`/api/inspiration/bookmark/${id}`, {
-          method: "DELETE",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to delete bookmark");
-        }
-
-        setBookmarks((prev) => prev.filter((b) => b.id !== id));
-      } catch (err) {
-        setError(t("error_delete"));
-      }
+  // Bookmark re-adapt: re-import the source URL, then switch to the import tab.
+  const handleReadaptBookmark = useCallback(
+    async (bookmark: BookmarkType) => {
+      const ok = await importFlow.reimportUrl(bookmark.sourceTweetUrl);
+      if (ok) tabs.setActiveTab("import");
     },
-    [t]
+    [importFlow, tabs]
   );
 
   return (
     <DashboardPageWrapper icon={Lightbulb} title={t("title")} description={t("description")}>
       <Tabs
-        value={activeTab}
-        onValueChange={(v) => setActiveTab(v as "import" | "history" | "bookmarks")}
+        value={tabs.activeTab}
+        onValueChange={(v) => tabs.setActiveTab(v as "import" | "history" | "bookmarks")}
         className="space-y-6"
       >
         <TabsList className="grid w-full max-w-md grid-cols-3 overflow-x-auto">
@@ -413,321 +101,38 @@ function InspirationContent() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Import Tab */}
         <TabsContent value="import" className="space-y-6">
-          {/* URL Input Section */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="tweet-url">{t("paste_url")}</Label>
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input
-                      id="tweet-url"
-                      type="url"
-                      placeholder={t("url_placeholder")}
-                      value={tweetUrl}
-                      onChange={(e) => handleUrlChange(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && isValidUrl) {
-                          handleImport();
-                        }
-                      }}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleImport}
-                      disabled={!isValidUrl || isLoading}
-                      className="w-full sm:w-auto"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                          {t("importing", { seconds: importElapsed })}
-                        </>
-                      ) : (
-                        <>
-                          {t("import_button")}
-                          <ArrowRight className="ms-2 h-4 w-4 rtl:scale-x-[-1]" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  {tweetUrl.length >= 5 && !isValidUrl && (
-                    <p className="text-destructive flex items-center gap-1.5 text-xs">
-                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                      {t("invalid_url")}
-                    </p>
-                  )}
-                </div>
-
-                {/* Success Message */}
-                {successMessage && (
-                  <Alert className="border-success-6 bg-success-3">
-                    <CheckCircle2 className="text-success-11 h-4 w-4" />
-                    <AlertDescription className="text-success-11">
-                      {successMessage}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Error Message */}
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Loading State */}
-          {isLoading && (
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardContent className="p-6">
-                  <Skeleton className="mb-4 h-4 w-3/4" />
-                  <Skeleton className="mb-2 h-4 w-1/2" />
-                  <Skeleton className="mb-4 h-20 w-full" />
-                  <Skeleton className="h-12 w-1/3" />
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <Skeleton className="mb-4 h-6 w-full" />
-                  <Skeleton className="h-32 w-full" />
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Imported Tweet + Adaptation Panel */}
-          {importedData && !isLoading && (
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Left: Imported Tweet */}
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-2 sm:items-center">
-                  <div>
-                    <h2 className="text-base font-semibold sm:text-lg">{t("imported_tweet")}</h2>
-                    <p className="text-muted-foreground text-xs sm:text-sm">
-                      {t("original_content")}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleBookmark}
-                      disabled={isBookmarking}
-                      aria-label={isBookmarking ? t("saving") : t("bookmark")}
-                      className="h-10 w-10"
-                    >
-                      <Bookmark className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleClear}
-                      aria-label={t("clear")}
-                      className="h-10 w-10"
-                    >
-                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <ImportedTweetCard
-                  tweet={importedData.originalTweet}
-                  parentTweets={importedData.parentTweets}
-                  topReplies={importedData.topReplies}
-                  quotedTweet={importedData.quotedTweet ?? undefined}
-                  showThreadContext={showThreadContext}
-                  onToggleThread={() => setShowThreadContext(!showThreadContext)}
-                />
-              </div>
-
-              {/* Right: Adaptation Panel */}
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-lg font-semibold">{t("adapt_content")}</h2>
-                  <p className="text-muted-foreground text-sm">{t("adapt_description")}</p>
-                </div>
-                <AdaptationPanel
-                  sourceTweet={importedData.originalTweet}
-                  threadContext={[
-                    ...importedData.parentTweets.map((t) => t.text),
-                    ...importedData.topReplies.map((t) => t.text),
-                  ]}
-                  onSendToComposer={handleSendToComposer}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!importedData && !isLoading && !error && (
-            <EmptyState
-              icon={<Lightbulb className="h-8 w-8" />}
-              iconBgClass="from-primary/10 to-primary/5 border-primary/10 border bg-gradient-to-br text-primary"
-              title={t("no_tweet_imported")}
-              description={t("no_tweet_description")}
-              className="py-12 sm:py-16"
-            />
-          )}
+          <InspirationImportPanel
+            tweetUrl={importFlow.tweetUrl}
+            isValidUrl={importFlow.isValidUrl}
+            isLoading={importFlow.isLoading}
+            importElapsed={importFlow.importElapsed}
+            importedData={importFlow.importedData}
+            showThreadContext={importFlow.showThreadContext}
+            error={importFlow.error}
+            successMessage={tabs.successMessage}
+            isBookmarking={bookmarks.isBookmarking}
+            onUrlChange={importFlow.handleUrlChange}
+            onImport={importFlow.handleImport}
+            onBookmark={() =>
+              bookmarks.handleBookmark(importFlow.importedData, importFlow.tweetUrl)
+            }
+            onClear={handleClear}
+            onToggleThread={() => importFlow.setShowThreadContext(!importFlow.showThreadContext)}
+            onSendToComposer={bridge.handleSendToComposer}
+          />
         </TabsContent>
 
-        {/* History Tab */}
         <TabsContent value="history">
-          <Card>
-            <CardContent className="p-6">
-              {history.length === 0 ? (
-                <EmptyState
-                  icon={<History className="h-5 w-5 opacity-50" />}
-                  title={t("no_history")}
-                  className="border-0 bg-transparent py-16"
-                />
-              ) : (
-                <ul role="list" className="space-y-3">
-                  {history.map((item) => (
-                    <li
-                      key={item.id}
-                      className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <span className="font-medium">@{item.sourceAuthorHandle}</span>
-                            {item.action && (
-                              <Badge variant="outline" className="text-xs">
-                                {item.action}
-                              </Badge>
-                            )}
-                            <span className="text-muted-foreground text-xs">
-                              {formatDistanceToNow(new Date(item.createdAt), {
-                                addSuffix: true,
-                                locale: locale === "ar" ? ar : enUS,
-                              })}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground line-clamp-2 text-sm">
-                            {item.sourceText}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 flex-col gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-9 min-h-[36px] text-xs"
-                            onClick={() => {
-                              const url = `https://x.com/${item.sourceAuthorHandle}/status/${item.sourceTweetId}`;
-                              setTweetUrl(url);
-                              setIsValidUrl(true);
-                              setActiveTab("import");
-                            }}
-                          >
-                            <RefreshCw className="me-1 h-3 w-3" />
-                            {t("re_import")}
-                          </Button>
-                          <a
-                            href={`https://x.com/${item.sourceAuthorHandle}/status/${item.sourceTweetId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            dir="ltr"
-                            className="text-muted-foreground hover:text-foreground hover:bg-accent inline-flex h-9 min-h-[36px] items-center justify-center gap-1 rounded-md px-2 text-xs font-medium transition-colors"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                            {t("view_on_x")}
-                          </a>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <InspirationHistoryList history={history.history} onReimport={handleHistoryReimport} />
         </TabsContent>
 
-        {/* Bookmarks Tab */}
         <TabsContent value="bookmarks">
-          <Card>
-            <CardContent className="p-6">
-              {bookmarks.length === 0 ? (
-                <EmptyState
-                  icon={<Bookmark className="h-5 w-5 opacity-50" />}
-                  title={t("no_bookmarks")}
-                  className="border-0 bg-transparent py-16"
-                />
-              ) : (
-                <ul role="list" className="space-y-3">
-                  {bookmarks.map((bookmark) => (
-                    <li
-                      key={bookmark.id}
-                      className="hover:bg-muted/50 rounded-lg border p-4 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-2 flex items-center gap-2">
-                            <span className="font-medium">@{bookmark.sourceAuthorHandle}</span>
-                            {bookmark.action && (
-                              <Badge variant="outline" className="text-xs">
-                                {bookmark.action}
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-muted-foreground line-clamp-2 text-sm">
-                            {bookmark.sourceText}
-                          </p>
-                          {bookmark.adaptedText && (
-                            <p className="text-foreground mt-2 line-clamp-2 text-sm">
-                              {bookmark.adaptedText}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleReadaptBookmark(bookmark)}
-                          >
-                            {t("re_adapt")}
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive"
-                              >
-                                {t("delete")}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>{t("delete_confirm_title")}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t("delete_confirm_description")}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteBookmark(bookmark.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {t("delete_button")}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <InspirationBookmarksList
+            bookmarks={bookmarks.bookmarks}
+            onReadapt={handleReadaptBookmark}
+            onDelete={bookmarks.handleDeleteBookmark}
+          />
         </TabsContent>
       </Tabs>
     </DashboardPageWrapper>
