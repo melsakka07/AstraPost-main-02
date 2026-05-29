@@ -22,6 +22,8 @@ import {
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import { copyToClipboard } from "@/lib/clipboard";
+import { computeTweetCharCount } from "@/lib/tweet-char";
+import { cn } from "@/lib/utils";
 
 interface Reply {
   text: string;
@@ -352,11 +354,27 @@ export default function ReplyGeneratorPage() {
                       {reply.type}
                     </Badge>
                     <p className="text-sm leading-relaxed">{reply.text}</p>
-                    <p
-                      className={`text-xs tabular-nums ${reply.text.length > 280 ? "text-destructive" : reply.text.length >= 200 ? "text-warning-11" : "text-success-11"}`}
-                    >
-                      {reply.text.length}/280
-                    </p>
+                    {(() => {
+                      // Replies always cap at 280; warn at 200/280 (≈0.714), ok = success-11.
+                      const c = computeTweetCharCount(reply.text, {
+                        isThreadMode: true,
+                        warnRatio: 200 / 280,
+                      });
+                      return (
+                        <p
+                          className={cn(
+                            "text-xs tabular-nums",
+                            c.severity === "over"
+                              ? "text-destructive"
+                              : c.severity === "warning"
+                                ? "text-warning-11"
+                                : "text-success-11"
+                          )}
+                        >
+                          {c.charCount}/{c.maxChars}
+                        </p>
+                      );
+                    })()}
                   </div>
                   <div className="flex flex-col gap-1">
                     <Button

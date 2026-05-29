@@ -28,7 +28,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { XSubscriptionBadge, XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { clientLogger } from "@/lib/client-logger";
-import { getMaxCharacterLimit, canPostLongContent } from "@/lib/services/x-subscription";
+import { canPostLongContent } from "@/lib/services/x-subscription";
+import { computeTweetCharCount } from "@/lib/tweet-char";
 import { cn } from "@/lib/utils";
 import type { EmojiClickData } from "emoji-picker-react";
 
@@ -113,24 +114,20 @@ export function TweetCard({
   const isRtl = locale === "ar";
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const getCharCount = (text: string) => twitter.parseTweet(text).weightedLength;
-
   // Thread mode: each tweet is limited to 280 regardless of tier.
   // Single-post mode: tier determines the limit (280 for Free, 2,000 for Premium).
+  // All counting/limit/zone logic lives in the shared `computeTweetCharCount` helper.
   const isThreadMode = totalTweets > 1;
-  const maxChars = isThreadMode ? 280 : getMaxCharacterLimit(tier);
-  const isOverStandardLimit = (text: string) => getCharCount(text) > 280;
-  const isOverLimit = (text: string) => getCharCount(text) > maxChars;
-  const charCount = getCharCount(tweet.content);
-  const isPremiumSinglePost = !isThreadMode && canPostLongContent(tier);
+  const counts = computeTweetCharCount(tweet.content, {
+    ...(tier !== undefined && { tier }),
+    isThreadMode,
+  });
+  const { charCount, maxChars, isPremiumSinglePost, lengthZone } = counts;
+  const isOverStandardLimit = counts.isOverStandardLimit;
+  const isOverLimit = counts.isOverLimit;
 
   // Length zone label for Premium single-post mode
-  const getLengthZone = () => {
-    if (!isPremiumSinglePost) return null;
-    if (charCount <= 280) return t("length_zone.short");
-    if (charCount <= 1_000) return t("length_zone.medium");
-    return t("length_zone.long");
-  };
+  const getLengthZone = () => (lengthZone === null ? null : t(`length_zone.${lengthZone}`));
 
   // P4-B: Only update the announced count when it crosses a 10-char boundary,
   // or when the user is near the limit (within 20 chars) for timely warnings.
@@ -207,7 +204,7 @@ export function TweetCard({
       <Card
         className={cn(
           "border-s-4",
-          isOverLimit(tweet.content) ? "border-s-destructive" : "border-s-primary",
+          isOverLimit ? "border-s-destructive" : "border-s-primary",
           // Phase 3: Highlight target tweets when AI panel is open
           isAiTarget && "ring-primary/20 ring-2 transition-all"
         )}
@@ -223,23 +220,21 @@ export function TweetCard({
           />
 
           {/* A5: Auto-suggest thread conversion when single tweet exceeds 280 chars */}
-          {totalTweets === 1 &&
-            isOverStandardLimit(tweet.content) &&
-            !canPostLongContent(selectedTier) && (
-              <div className="mt-1.5 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                <span>{t("over_standard_limit_warning")}</span>
-                {onConvertToThread && (
-                  <button
-                    type="button"
-                    className="text-primary font-medium hover:underline"
-                    onClick={onConvertToThread}
-                  >
-                    Convert to thread?
-                  </button>
-                )}
-              </div>
-            )}
+          {totalTweets === 1 && isOverStandardLimit && !canPostLongContent(selectedTier) && (
+            <div className="mt-1.5 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>{t("over_standard_limit_warning")}</span>
+              {onConvertToThread && (
+                <button
+                  type="button"
+                  className="text-primary font-medium hover:underline"
+                  onClick={onConvertToThread}
+                >
+                  Convert to thread?
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Media Preview */}
           {tweet.media.length > 0 ? (
@@ -279,7 +274,7 @@ export function TweetCard({
                     <button
                       type="button"
                       className={cn(
-                        "bg-background/80 hover:bg-background absolute top-0.5 right-0.5 rounded-sm p-0.5 transition-opacity sm:top-1 sm:right-1",
+                        "bg-background/80 hover:bg-background absolute end-0.5 top-0.5 rounded-sm p-0.5 transition-opacity sm:end-1 sm:top-1",
                         isDesktop ? "opacity-0 group-hover/media:opacity-100" : "opacity-100"
                       )}
                       onClick={() => removeTweetMedia(tweet.id, m.url)}
@@ -318,7 +313,7 @@ export function TweetCard({
               <button
                 type="button"
                 className={cn(
-                  "bg-background/80 hover:bg-background absolute top-0.5 right-0.5 rounded-sm p-0.5 transition-opacity sm:top-1 sm:right-1",
+                  "bg-background/80 hover:bg-background absolute end-0.5 top-0.5 rounded-sm p-0.5 transition-opacity sm:end-1 sm:top-1",
                   isDesktop ? "opacity-0 group-hover/preview:opacity-100" : "opacity-100"
                 )}
                 onClick={() => updateTweetPreview?.(tweet.id, null)}
@@ -527,7 +522,7 @@ export function TweetCard({
             </div>
           </TooltipProvider>
 
-          <div className="ml-auto flex items-center gap-2 sm:gap-4">
+          <div className="ms-auto flex items-center gap-2 sm:gap-4">
             <div className="flex flex-col items-end gap-0.5">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 {/* P4-B: Visual counter — no aria-live (updates every keystroke, too noisy) */}
@@ -535,10 +530,10 @@ export function TweetCard({
                   aria-hidden="true"
                   className={cn(
                     "text-xs font-medium tabular-nums sm:text-sm",
-                    isOverLimit(tweet.content)
+                    isOverLimit
                       ? "text-destructive"
                       : // P4-G: amber-700/amber-400 passes WCAG AA contrast on both light and dark
-                        isOverStandardLimit(tweet.content)
+                        isOverStandardLimit
                         ? "text-amber-700 dark:text-amber-400"
                         : "text-muted-foreground"
                   )}
@@ -561,9 +556,9 @@ export function TweetCard({
                     <div
                       className={cn(
                         "h-full rounded-full transition-all",
-                        isOverLimit(tweet.content)
+                        isOverLimit
                           ? "bg-destructive"
-                          : isOverStandardLimit(tweet.content)
+                          : isOverStandardLimit
                             ? "bg-amber-600 dark:bg-amber-500"
                             : "bg-primary/40"
                       )}
@@ -586,7 +581,7 @@ export function TweetCard({
                 </div>
               )}
               {/* Thread mode per-tweet warning — P4-G: amber-700/amber-400 for WCAG AA contrast */}
-              {isThreadMode && isOverStandardLimit(tweet.content) && (
+              {isThreadMode && isOverStandardLimit && (
                 <p className="text-[11px] text-amber-700 dark:text-amber-400" role="alert">
                   {t("exceeds_280_thread_warning")}
                 </p>

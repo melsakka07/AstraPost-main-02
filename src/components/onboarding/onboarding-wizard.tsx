@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import twitter from "twitter-text";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +42,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { clientLogger } from "@/lib/client-logger";
 import { LANGUAGES } from "@/lib/constants";
+import { computeTweetCharCount, STANDARD_TWEET_LIMIT, MEDIUM_ZONE_LIMIT } from "@/lib/tweet-char";
 import { cn } from "@/lib/utils";
 
 function getSteps(t: (key: string) => string): {
@@ -237,10 +237,11 @@ export function OnboardingWizard() {
   // so going Back to Schedule and pressing Continue again does not re-PATCH.
   const [scheduledPostId, setScheduledPostId] = useState<string | null>(null);
 
-  // Char counter thresholds matching tweet-card.tsx
-  const tweetWeightedLength = twitter.parseTweet(tweetContent).weightedLength;
-  const isOverStandardLimit = tweetWeightedLength > 280;
-  const isOverHardLimit = tweetWeightedLength > 1000;
+  // Char counter thresholds via the shared tweet-char helper (matches tweet-card.tsx).
+  const onboardingCounts = computeTweetCharCount(tweetContent);
+  const tweetWeightedLength = onboardingCounts.charCount;
+  const isOverStandardLimit = tweetWeightedLength > STANDARD_TWEET_LIMIT;
+  const isOverHardLimit = tweetWeightedLength > MEDIUM_ZONE_LIMIT;
 
   useEffect(() => {
     // Auto-detect browser timezone
@@ -524,7 +525,7 @@ export function OnboardingWizard() {
 
       {/* Desktop progress stepper */}
       <div className="relative mb-12 hidden items-center justify-between md:flex">
-        <div className="bg-muted absolute top-1/2 left-0 -z-10 h-1 w-full" />
+        <div className="bg-muted absolute start-0 top-1/2 -z-10 h-1 w-full" />
         {steps.map((step) => {
           const isCompleted = step.id < currentStep;
           const isCurrent = step.id === currentStep;
@@ -627,7 +628,7 @@ export function OnboardingWizard() {
 
                   <Button variant="outline" asChild>
                     <a href="/dashboard/settings">
-                      <Twitter className="mr-2 h-4 w-4" />
+                      <Twitter className="me-2 h-4 w-4" />
                       {t("onboarding.use_different_account")}
                     </a>
                   </Button>
@@ -754,7 +755,7 @@ export function OnboardingWizard() {
               />
               <p
                 className={cn(
-                  "text-right text-xs font-medium",
+                  "text-end text-xs font-medium",
                   isOverHardLimit
                     ? "text-destructive"
                     : isOverStandardLimit
@@ -764,7 +765,7 @@ export function OnboardingWizard() {
               >
                 {tweetWeightedLength} / 280
                 {isOverStandardLimit && !isOverHardLimit && (
-                  <span className="ml-1 opacity-70">{t("onboarding.over_standard_limit")}</span>
+                  <span className="ms-1 opacity-70">{t("onboarding.over_standard_limit")}</span>
                 )}
               </p>
             </div>
@@ -787,7 +788,7 @@ export function OnboardingWizard() {
               </button>
 
               {/* Collapsed date/time picker */}
-              <details className="group rounded-md border text-left">
+              <details className="group rounded-md border text-start">
                 <summary className="text-muted-foreground hover:text-foreground cursor-pointer list-none p-3 text-xs select-none">
                   <span className="flex items-center justify-between">
                     <span>{t("onboarding.or_schedule_later")}</span>
@@ -847,7 +848,7 @@ export function OnboardingWizard() {
                   Client-side nav is faster than the DB write, causing the dashboard
                   layout to see onboardingCompleted=false and redirect back to the
                   onboarding shell (missing sidebar). */}
-              <div className="mt-4 grid grid-cols-2 gap-3 text-left">
+              <div className="mt-4 grid grid-cols-2 gap-3 text-start">
                 {(
                   [
                     {
@@ -880,7 +881,7 @@ export function OnboardingWizard() {
                     key={card.href}
                     type="button"
                     onClick={() => void navigateAfterOnboarding(card.href)}
-                    className="hover:bg-muted/50 hover:border-primary/30 block w-full rounded-md border p-4 text-left transition-colors"
+                    className="hover:bg-muted/50 hover:border-primary/30 block w-full rounded-md border p-4 text-start transition-colors"
                     aria-label={card.title}
                   >
                     <h3 className="flex items-center gap-2 font-semibold">
@@ -906,7 +907,7 @@ export function OnboardingWizard() {
           </Button>
 
           <Button onClick={handleNext} disabled={loading} size="lg" className="min-h-[44px]">
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {currentStep === steps.length ? t("onboarding.finish") : t("onboarding.continue")}
           </Button>
         </CardFooter>

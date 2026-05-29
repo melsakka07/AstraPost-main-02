@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { copyToClipboard } from "@/lib/clipboard";
+import { computeTweetCharCount } from "@/lib/tweet-char";
 import { cn } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -243,18 +244,28 @@ function TweetCard({ tweet, index }: { tweet: TweetData; index: number }) {
         </p>
 
         <div className="flex items-center justify-between gap-2">
-          <span
-            className={cn(
-              "text-xs tabular-nums",
-              tweet.charCount > 280
-                ? "text-destructive font-semibold"
-                : tweet.charCount >= 240
-                  ? "text-warning-9 font-medium"
-                  : "text-muted-foreground"
-            )}
-          >
-            {ai("thread_preview.char_count", { n: tweet.charCount })}
-          </span>
+          {(() => {
+            // Server-supplied weighted count; thread tweets cap at 280, warn at 240/280.
+            const c = computeTweetCharCount("", {
+              isThreadMode: true,
+              precomputedCharCount: tweet.charCount,
+              warnRatio: 240 / 280,
+            });
+            return (
+              <span
+                className={cn(
+                  "text-xs tabular-nums",
+                  c.severity === "over"
+                    ? "text-destructive font-semibold"
+                    : c.severity === "warning"
+                      ? "text-warning-9 font-medium"
+                      : "text-muted-foreground"
+                )}
+              >
+                {ai("thread_preview.char_count", { n: c.charCount })}
+              </span>
+            );
+          })()}
           <Button
             variant="ghost"
             size="sm"
