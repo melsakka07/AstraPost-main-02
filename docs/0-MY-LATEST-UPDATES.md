@@ -1,5 +1,69 @@
 # Latest Updates
 
+## 2026-05-30 — Wave 7 Task D: Accessibility AA
+
+Final Wave 7 task — WCAG 2.1 AA audit and remediation across all surfaces.
+
+### Keyboard Navigation
+
+- **CommandPalette**: Added Up/Down/Home/End/Enter arrow key navigation with focus management and `scrollIntoView`
+- **SelectTrigger**: Changed `focus:` → `focus-visible:` to avoid focus rings on mouse clicks
+- **Accordion**: Added `focus-visible:ring-*` styles to trigger
+- **SidebarCollapsibleSection**: Added `focus-visible:ring-*` to collapsible header button
+- **Admin layout**: Added skip-to-content link (matching dashboard layout pattern)
+
+### ARIA & Semantics
+
+- **Pagination prev/next**: Added `aria-label` to 3 admin components (referrals, notification-history, audit-log)
+- **Roadmap table**: Added `sr-only` "Actions" text to MoreHorizontal dropdown trigger
+- **Admin sidebar**: Added `aria-current="page"` on active nav link
+- **ThemeSwitcher**: Added `aria-label` to pre-hydration fallback button
+
+### Contrast (AA 4.5:1)
+
+- **Dashboard sidebar section headers**: Removed `/60` opacity on `text-muted-foreground` (now full opacity)
+- **Admin sidebar section headers**: Same fix
+- **SidebarCollapsibleSection header**: Same fix (caught during verification)
+- **Agentic tweet-card drag handle**: `/40` → `/70` opacity
+- **`--destructive` token**: Light mode lightness decreased 0.626→0.556 for 4.5:1 on `--background`
+
+### Pass (verified, no changes needed)
+
+- **Motion**: Comprehensive `prefers-reduced-motion` kill-switch in globals.css neutralizes all animations
+- **Radix primitives**: Dialog, Sheet, Drawer, DropdownMenu provide proper focus traps, Esc close, arrow keys
+- **Heading hierarchy**: DashboardPageWrapper and AdminPageWrapper use correct h1 structure
+- **`aria-live`**: Present on toasts, AI progress, pagination status, upsell banners
+
+### DoD
+
+- `pnpm run check` — PASS; `pnpm test` — PASS
+- `verify-dashboard-tokens` + `verify-rtl` — PASS
+- Branch: `feature/wave7-taskd-a11y`
+
+---
+
+## 2026-05-30 — Wave 7: WCAG 2.1 AA Contrast Fixes
+
+Four className/CSS-only fixes to meet AA contrast thresholds:
+
+### Sidebar Section Headers
+
+- `src/components/dashboard/sidebar.tsx`: `text-muted-foreground/60` → `text-muted-foreground` (line 204)
+- `src/components/admin/sidebar-content.tsx`: `text-muted-foreground/60` → `text-muted-foreground` (line 29)
+- `src/components/dashboard/sidebar-collapsible-section.tsx`: `text-muted-foreground/60` → `text-muted-foreground` (line 51)
+
+### Drag Handle Opacity
+
+- `src/components/ai/agentic/tweet-card.tsx`: `text-muted-foreground/40` → `text-muted-foreground/70` for drag handle (line 78)
+
+### Destructive Token Light Mode
+
+- `src/app/globals.css`: `--destructive` lightness 0.626 → 0.556 (line 101). Dark mode value unchanged.
+
+### Branch: `feature/wave7-design-system`
+
+---
+
 ## 2026-05-30 — Wave 7 Task C: Mobile / Responsive Polish
 
 Systematic mobile audit pass across all dashboard and admin pages.

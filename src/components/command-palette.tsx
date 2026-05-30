@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Command, Search, ChevronRight, Sun, Moon, TrendingUp, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -37,6 +37,8 @@ export function CommandPalette() {
   const [search, setSearch] = useState("");
   const router = useRouter();
   const { setTheme } = useTheme();
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Get all navigation items from sidebar
   const navItems: CommandItem[] = SIDEBAR_SECTIONS.flatMap((section) =>
@@ -127,6 +129,11 @@ export function CommandPalette() {
   );
 
   // Group items by category
+  // Flat list for keyboard navigation
+  const flatResults = filteredItems;
+  const itemGlobalIndex = new Map<string, number>();
+  flatResults.forEach((item, i) => itemGlobalIndex.set(item.id, i));
+
   const groupedItems = filteredItems.reduce(
     (acc, item) => {
       if (!acc[item.category]) {
@@ -155,6 +162,45 @@ export function CommandPalette() {
       setOpen(false);
     }
   };
+
+  // Keyboard navigation within results
+  const handleResultsKeyDown = (e: React.KeyboardEvent) => {
+    if (flatResults.length === 0) return;
+    const max = flatResults.length - 1;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setFocusedIndex((prev) => (prev < max ? prev + 1 : 0));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setFocusedIndex((prev) => (prev > 0 ? prev - 1 : max));
+        break;
+      case "Home":
+        e.preventDefault();
+        setFocusedIndex(0);
+        break;
+      case "End":
+        e.preventDefault();
+        setFocusedIndex(max);
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (focusedIndex >= 0 && focusedIndex < flatResults.length) {
+          const item = flatResults[focusedIndex];
+          if (item) handleSelect(item);
+        }
+        break;
+    }
+  };
+
+  // Scroll the focused item into view
+  useEffect(() => {
+    if (focusedIndex < 0 || !resultsRef.current) return;
+    const items = resultsRef.current.querySelectorAll('[role="option"]');
+    items[focusedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [focusedIndex]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -199,14 +245,22 @@ export function CommandPalette() {
               <Input
                 placeholder={t("placeholder")}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setFocusedIndex(-1);
+                }}
                 className="border-0 ps-8 focus-visible:ring-0"
                 autoFocus
               />
             </div>
           </div>
 
-          <div className="max-h-[calc(70vh-120px)] overflow-y-auto">
+          <div
+            ref={resultsRef}
+            onKeyDown={handleResultsKeyDown}
+            role="listbox"
+            className="max-h-[calc(70vh-120px)] overflow-y-auto"
+          >
             {Object.entries(groupedItems).length === 0 ? (
               <div className="text-muted-foreground p-8 text-center text-sm">
                 {t("no_results", { search })}
@@ -220,14 +274,19 @@ export function CommandPalette() {
                     </p>
                   </div>
                   {items.map((item) => {
+                    const idx = itemGlobalIndex.get(item.id) ?? -1;
+                    const isFocused = idx === focusedIndex;
                     const Icon = item.icon;
                     return (
                       <button
                         key={item.id}
                         onClick={() => handleSelect(item)}
+                        role="option"
+                        aria-selected={isFocused}
                         className={cn(
                           "hover:bg-accent w-full px-4 py-2.5 text-start text-sm transition-colors",
-                          "flex items-center justify-between"
+                          "flex items-center justify-between",
+                          isFocused && "bg-accent text-accent-foreground"
                         )}
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-3">

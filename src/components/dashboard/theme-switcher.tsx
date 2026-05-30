@@ -31,7 +31,13 @@ export function ThemeSwitcher() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" disabled>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9 shrink-0"
+        disabled
+        aria-label={t("theme_switch")}
+      >
         <Loader2 className="h-4 w-4 animate-spin" />
       </Button>
     );

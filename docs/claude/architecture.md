@@ -107,6 +107,18 @@ Components wire translations via `useTranslations()` from `next-intl`. All dropd
 
 **Mobile-first sizing:** Form controls use the `h-11 md:h-10` pattern — 44px touch target on mobile, 40px on desktop where precision matters more than tap area. AdminPageWrapper uses responsive spacing parity with DashboardPageWrapper.
 
+### Accessibility
+
+Accessibility patterns are applied repo-wide, building on Radix primitives' built-in a11y and verified against WCAG 2.1 AA.
+
+**Keyboard:** All interactive components support full keyboard traversal with visible focus rings. Radix primitives (Dialog, Sheet, Drawer, DropdownMenu, CommandPalette) provide focus traps, Esc close, and arrow key navigation. Arrow key navigation is extended in CommandPalette (Up/Down/Home/End/Enter with `scrollIntoView`). Focus ring styles use `focus-visible:` (not `focus:`) to avoid rings on mouse clicks. Skip-to-content links are present in both dashboard and admin layouts.
+
+**ARIA & semantics:** Icon-only buttons carry `aria-label` (pagination prev/next, theme switcher, MoreHorizontal dropdowns). Active navigation links carry `aria-current="page"`. Screen-reader-only text (`sr-only`) labels icon-only actions (e.g. roadmap "Actions" trigger). Heading hierarchy follows h1 per page via DashboardPageWrapper / AdminPageWrapper. `aria-live` regions are present on toasts, AI progress, pagination status, and upsell banners.
+
+**Contrast:** Color tokens are OKLCH-calibrated to meet AA 4.5:1 (text) / 3:1 (large+UI) in both light and dark modes. The `--destructive` token lightness was lowered (0.626 to 0.556) in light mode to meet 4.5:1 on `--background`. Opacity modifiers on `text-muted-foreground` were removed from sidebar section headers (dashboard, admin, collapsible) and the agentic drag handle was increased from `/40` to `/70`.
+
+**Motion:** A blanket `prefers-reduced-motion` kill-switch in `globals.css` neutralizes all animations (transitions, transforms, opacity fades) for users who request reduced motion. No per-component motion toggles are needed.
+
 ### Dashboard Sidebar IA
 
 The dashboard sidebar (defined in `src/components/dashboard/sidebar-nav-data.ts`) is organized into 4 sections for regular users: **Overview** (Dashboard), **Create** (Compose, Drafts, Schedule -- merged Queue + Calendar with `?view=list|month|week|day` view tabs), **Grow** (Analytics, AI Tools, Inspiration, Agentic Posting), and **Account** (Settings, Achievements, Referrals, Affiliate Dashboard). Admin users see an additional **Admin** section (Jobs, History) appended below Account. The old `/dashboard/queue` and `/dashboard/calendar` routes redirect to `/dashboard/schedule` with query-param preservation. Mobile bottom nav surfaces the Create, Grow, and Account sections.

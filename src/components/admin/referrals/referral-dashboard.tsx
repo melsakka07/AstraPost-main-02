@@ -246,6 +246,7 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
                 className="h-8 w-8"
                 disabled={page <= 1}
                 onClick={() => handlePageChange(page - 1)}
+                aria-label="Previous page"
               >
                 <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
               </Button>
@@ -258,6 +259,7 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
                 className="h-8 w-8"
                 disabled={page >= topReferrers.pagination.totalPages}
                 onClick={() => handlePageChange(page + 1)}
+                aria-label="Next page"
               >
                 <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
               </Button>

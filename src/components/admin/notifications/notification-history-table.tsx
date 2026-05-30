@@ -329,6 +329,7 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
                 className="h-8 w-8"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
+                aria-label={t("common.previous")}
               >
                 <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
               </Button>
@@ -341,6 +342,7 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
                 className="h-8 w-8"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
+                aria-label={t("common.next")}
               >
                 <ChevronRight className="h-4 w-4 rtl:scale-x-[-1]" />
               </Button>

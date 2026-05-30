@@ -48,7 +48,7 @@ export function CollapsibleSection({
         type="button"
         onClick={() => isMobile && setIsOpen((v) => !v)}
         className={cn(
-          "text-muted-foreground/60 flex w-full items-center justify-between px-3 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors",
+          "text-muted-foreground focus-visible:ring-ring flex w-full items-center justify-between px-3 py-1.5 text-[11px] font-semibold tracking-wider uppercase transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
           isMobile && "hover:text-muted-foreground cursor-pointer"
         )}
         {...(isMobile
