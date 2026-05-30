@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "dashboard_layout" jsonb DEFAULT '{"order":["setup_checklist","failed_alert","post_usage","hero","upcoming_queue","stats"],"hidden":[],"version":1}'::jsonb;

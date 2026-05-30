@@ -570,6 +570,26 @@
       "compose_desc": "اكتب شيئًا جديدًا وشاركه مع جمهورك.",
       "compose_action": "إنشاء",
       "schedule_action": "جدولة"
+    },
+    "done_editing": "تم",
+    "drag_handle_label": "اسحب لإعادة الترتيب",
+    "edit_layout": "تعديل التخطيط",
+    "hidden_widgets": "الودجات المخفية",
+    "hidden_widgets_description": "الودجات المخفية تمت إزالتها من لوحة التحكم. يمكنك إظهارها مرة أخرى في أي وقت.",
+    "hide_widget": "إخفاء",
+    "reset_layout": "إعادة إلى الافتراضي",
+    "reset_layout_confirm": "إعادة تخطيط لوحة التحكم إلى الوضع الافتراضي؟ لا يمكن التراجع عن هذا.",
+    "show_widget": "إظهار",
+    "widget_hidden_announcement": "تم إخفاء الودجة. استخدم تعديل التخطيط لإظهارها مرة أخرى.",
+    "widget_moved": "تم نقل الودجة",
+    "widget_shown_announcement": "تم إظهار الودجة",
+    "widget_labels": {
+      "setup_checklist": "قائمة الإعداد",
+      "failed_alert": "تنبيه المنشورات الفاشلة",
+      "post_usage": "استخدام المنشورات",
+      "hero": "الإجراءات السريعة والإنشاء",
+      "upcoming_queue": "قائمة الانتظار",
+      "stats": "الإحصائيات"
     }
   },
   "compose": {

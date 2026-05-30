@@ -1,5 +1,40 @@
 # Latest Updates
 
+## 2026-05-30 — Wave 8 Task C: Dashboard Layout Preferences
+
+Full dashboard personalization: dnd-kit reorder, show/hide, reset, server persistence.
+
+### Shared Schema
+
+- **`dashboardLayoutSchema`** added to `src/lib/schemas/common.ts` alongside `onboardingStateSchema`. Fields: `order` (string array), `hidden` (string array), `version` (number) — all optional for partial PATCH.
+
+### API Changes
+
+- **PATCH `/api/user/preferences`**: Now accepts `dashboardLayout` field with the same deep-merge pattern as `onboardingState` — reads current `user.dashboardLayout` JSONB from DB, spreads defaults + current + incoming, writes merged result.
+
+### Frontend — DashboardLayoutClient
+
+- **`src/components/dashboard/dashboard-layout-client.tsx`** — new `"use client"` component implementing:
+  - Edit Layout / Done toggle button
+  - dnd-kit drag-and-drop reorder (`PointerSensor` + `KeyboardSensor`, vertical list strategy, custom vertical-axis restrict modifier, RTL-compatible via `dir` attribute)
+  - Show/Hide widgets (EyeOff button in edit mode, Eye in hidden section)
+  - Hidden Widgets section with dashed-border cards and Show buttons
+  - Reset to Default with `window.confirm()` guard
+  - `aria-live="polite"` announcements for move/hide/show/reset events
+  - `aria-label` on drag handles and hide/show buttons
+  - Touch targets >= 44px on all controls (`h-11 w-11`)
+  - Fire-and-forget PATCH persistence on "Done" exit from edit mode
+  - Graceful fallback: unknown widget IDs in order/hidden are skipped
+- **`src/app/dashboard/page.tsx`** — updated to fetch `user.dashboardLayout` column, wrap widgets in `<DashboardLayoutClient>` with `data-widget-id` wrappers
+
+### Database
+
+- **Migration `0088_rich_the_hood.sql`**: `ALTER TABLE "user" ADD COLUMN "dashboard_layout" jsonb DEFAULT '{...}'::jsonb`
+
+### Branch: `feature/wave8-taskC-personalization`
+
+---
+
 ## 2026-05-31 — Wave 8 Task E: Media Library API Endpoint
 
 New `GET /api/media/library` endpoint for the composer's media library picker.
