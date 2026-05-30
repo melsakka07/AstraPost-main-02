@@ -1,11 +1,10 @@
-import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq, and } from "drizzle-orm";
 import { Wand2 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { AgenticPostingClient } from "@/components/ai/agentic-posting-client-wrapper";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
-import { Skeleton } from "@/components/ui/skeleton";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getUserPlanType } from "@/lib/middleware/require-plan";
@@ -13,19 +12,6 @@ import { xAccounts, user } from "@/lib/schema";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
 import { generateSeoMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
-
-const AgenticPostingClient = dynamic(
-  () => import("@/components/ai/agentic-posting-client").then((m) => m.AgenticPostingClient),
-  {
-    loading: () => (
-      <div className="animate-pulse space-y-6">
-        <Skeleton className="h-64 w-full rounded-lg" />
-        <Skeleton className="h-12 w-full rounded-lg" />
-      </div>
-    ),
-    ssr: false,
-  }
-);
 
 export async function generateMetadata(): Promise<Metadata> {
   return generateSeoMetadata(
