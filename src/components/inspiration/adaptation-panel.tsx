@@ -27,31 +27,24 @@ interface AdaptationPanelProps {
 }
 
 const AI_ACTIONS = [
-  { value: "rephrase", label: "Rephrase", description: "Rewrite in different words" },
-  { value: "change_tone", label: "Change Tone", description: "Adapt to a different tone" },
-  { value: "expand_thread", label: "Expand Thread", description: "Turn into a multi-tweet thread" },
-  { value: "add_take", label: "Add Your Take", description: "Inject your personal perspective" },
-  { value: "translate", label: "Translate", description: "Translate to another language" },
-  {
-    value: "counter_point",
-    label: "Counter Point",
-    description: "Create a respectful counter-argument",
-  },
+  { value: "rephrase" },
+  { value: "change_tone" },
+  { value: "expand_thread" },
+  { value: "add_take" },
+  { value: "translate" },
+  { value: "counter_point" },
 ];
 
 const TONES = [
-  { value: "professional", label: "Professional" },
-  { value: "casual", label: "Casual" },
-  { value: "humorous", label: "Humorous" },
-  { value: "educational", label: "Educational" },
-  { value: "inspirational", label: "Inspirational" },
-  { value: "viral", label: "Viral" },
+  { value: "professional" },
+  { value: "casual" },
+  { value: "humorous" },
+  { value: "educational" },
+  { value: "inspirational" },
+  { value: "viral" },
 ];
 
-const LANGUAGES = [
-  { value: "ar", label: "Arabic" },
-  { value: "en", label: "English" },
-];
+const LANGUAGES = [{ value: "ar" }, { value: "en" }];
 
 interface GeneratedContent {
   tweets: string[];
@@ -66,7 +59,6 @@ export function AdaptationPanel({
 }: AdaptationPanelProps) {
   const { data: session } = useSession();
   const t = useTranslations("inspiration");
-  const th = useTranslations("ai_writer");
   const td = useTranslations("dashboard_shell");
   const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
   const [aiAction, setAiAction] = useState("rephrase");
@@ -175,10 +167,10 @@ export function AdaptationPanel({
                     <SelectItem key={action.value} value={action.value}>
                       <div className="flex flex-col">
                         <span className="text-xs sm:text-sm">
-                          {t(`ai_assist.${action.value}` as any)}
+                          {t(`ai_assist.actions.${action.value}.label`)}
                         </span>
                         <span className="text-muted-foreground text-[10px] sm:text-xs">
-                          {t(`ai_assist.${action.value}_description` as any)}
+                          {t(`ai_assist.actions.${action.value}.description`)}
                         </span>
                       </div>
                     </SelectItem>
@@ -187,7 +179,7 @@ export function AdaptationPanel({
               </Select>
               {selectedAction && (
                 <p className="text-muted-foreground text-[10px] sm:text-xs">
-                  {t(`ai_assist.${selectedAction.value}_description` as any)}
+                  {t(`ai_assist.actions.${selectedAction.value}.description`)}
                 </p>
               )}
             </div>
@@ -202,7 +194,7 @@ export function AdaptationPanel({
                 <SelectContent>
                   {TONES.map((tone) => (
                     <SelectItem key={tone.value} value={tone.value}>
-                      {th(`tone.${tone.value}`)}
+                      {t(`ai_assist.tones.${tone.value}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>

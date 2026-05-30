@@ -363,12 +363,12 @@ export function CalendarView({
             }}
           >
             <SelectTrigger className="min-h-[44px] w-full sm:w-[120px]">
-              <SelectValue placeholder="View" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="month">{t("month")}</SelectItem>
-              <SelectItem value="week">{t("week")}</SelectItem>
-              <SelectItem value="day">Day</SelectItem>
+              <SelectItem value="month">{t("view_options.month")}</SelectItem>
+              <SelectItem value="week">{t("view_options.week")}</SelectItem>
+              <SelectItem value="day">{t("view_options.day")}</SelectItem>
             </SelectContent>
           </Select>
         </div>

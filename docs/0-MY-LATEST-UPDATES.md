@@ -1,5 +1,22 @@
 # Latest Updates
 
+## 2026-05-30 — i18n Phase-2: Dashboard Dropdown/Label Localization (Complete)
+
+Follow-up to the Wave 6 RTL pass: an Arabic-locale eyeball surfaced **hardcoded English option/label strings** (not RTL bugs — these were never wired to `t()`). Audited every `<SelectItem>`/option-array/`<TabsTrigger>` across the dashboard, then localized all user-facing ones. **Pre-existing, not Wave 6 regressions.**
+
+### Changes
+
+- **Language selects unified**: every language dropdown app-wide now uses the existing `languages` i18n namespace (`langT(code)` → العربية/الإنجليزية) instead of the raw `LANGUAGES` constant labels — `ai-tools-panel` (×2), `agentic/input-screen`, `settings/profile-form`, `inspiration/adaptation-panel`, `ai/hashtag-generator`, `onboarding-wizard` (`language-switcher` already localized).
+- **New keys** (en/ar/pseudo, real Arabic): `compose.ai_tools.{label,tone,niche,format}`, `ai_agentic.input_screen.tone_options`, `analytics.date_range`, `calendar.view_options`, `drafts.sort_options`, `inspiration.ai_assist.{actions,tones,auto_detect}`, `roadmap.{tabs,feedback_type}`, `x_tier.*`, and `nav.import_&_adapt` (the sidebar item was renamed in Wave 4 but its nav key was never added → it fell back to English).
+- **Components wired**: `composer/ai-tools-panel`, `ai/agentic/input-screen`, `settings/profile-form`, `analytics/date-range-selector`, `calendar/calendar-view`, `drafts/drafts-client`, `inspiration/adaptation-panel`, `ai/refine-inline-form`, `roadmap/feedback-list`, `ui/x-subscription-badge`, `ai/hashtag-generator`, `onboarding/onboarding-wizard`. Every `value=` (API/state contract) preserved — only displayed text changed.
+- **Profile language switch fix**: the profile form did `router.refresh()` (which doesn't reliably re-flip the root `<html dir/lang>`); it now does a full `window.location.reload()` on language change, matching the language-switcher.
+- **Deferred**: `components/admin/**` dropdowns (internal users) — separate admin-i18n follow-up. IANA timezone IDs left as identifiers.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors; i18n parity 3034 keys, en = ar = pseudo)
+- `pnpm test` — PASS (372 tests); `check:rtl` + `check:dashboard-tokens` — PASS
+
 ## 2026-05-29 — Dashboard UI/UX Wave 6 (Complete)
 
 Implemented all five Wave 6 tasks from `.claude/plans/2026-05-29-dashboard-ux-wave-6.md` in the prescribed execution order (2 → 3/4 parallel → 5 → 1 last), each gated by a parallel `convention-enforcer` + `code-reviewer` audit.

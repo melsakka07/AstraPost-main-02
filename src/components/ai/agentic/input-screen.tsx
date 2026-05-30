@@ -86,6 +86,7 @@ export function InputScreen({
   isLocked = false,
 }: InputScreenProps) {
   const t = useTranslations("ai_agentic");
+  const langT = useTranslations("languages");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     inputRef.current?.focus();
@@ -225,9 +226,9 @@ export function InputScreen({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">{t("input_screen.auto_tone")}</SelectItem>
-                      {TONE_ENUM.options.map((t) => (
-                        <SelectItem key={t} value={t} className="capitalize">
-                          {t}
+                      {TONE_ENUM.options.map((tn) => (
+                        <SelectItem key={tn} value={tn}>
+                          {t(`input_screen.tone_options.${tn}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -249,7 +250,7 @@ export function InputScreen({
                     <SelectContent>
                       {LANGUAGES.map((l) => (
                         <SelectItem key={l.code} value={l.code}>
-                          {l.label}
+                          {langT(l.code)}
                         </SelectItem>
                       ))}
                     </SelectContent>

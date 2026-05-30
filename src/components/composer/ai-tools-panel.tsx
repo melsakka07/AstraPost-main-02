@@ -38,10 +38,10 @@ import type { OutputFormat, TemplatePromptConfig } from "@/lib/ai/template-promp
 import { LANGUAGES } from "@/lib/constants";
 
 // Phase 2: Format options for template generation
-const FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
-  { value: "single", label: "Single Tweet" },
-  { value: "thread-short", label: "Thread (3–5)" },
-  { value: "thread-long", label: "Thread (5–10)" },
+const FORMAT_OPTIONS: { value: OutputFormat; key: string }[] = [
+  { value: "single", key: "single" },
+  { value: "thread-short", key: "thread_short" },
+  { value: "thread-long", key: "thread_long" },
 ];
 
 export type AiToolType =
@@ -59,32 +59,31 @@ interface TweetLike {
   content: string;
 }
 
-const NICHES = [
-  "Technology",
-  "Business",
-  "Marketing",
-  "Lifestyle",
-  "Health & Fitness",
-  "Education",
-  "Finance",
-  "Entertainment",
-  "Productivity",
-  "Self Improvement",
+const NICHES: { value: string; key: string }[] = [
+  { value: "Technology", key: "technology" },
+  { value: "Business", key: "business" },
+  { value: "Marketing", key: "marketing" },
+  { value: "Lifestyle", key: "lifestyle" },
+  { value: "Health & Fitness", key: "health_fitness" },
+  { value: "Education", key: "education" },
+  { value: "Finance", key: "finance" },
+  { value: "Entertainment", key: "entertainment" },
+  { value: "Productivity", key: "productivity" },
+  { value: "Self Improvement", key: "self_improvement" },
 ];
 
 const TOOLS: {
   id: AiToolType;
-  label: string;
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { id: "thread", label: "Write", Icon: Sparkles },
-  { id: "inspire", label: "Inspire", Icon: Lightbulb },
-  { id: "template", label: "Template", Icon: FileText },
-  { id: "hook", label: "Hook", Icon: Zap },
-  { id: "cta", label: "CTA", Icon: Megaphone },
-  { id: "rewrite", label: "Rewrite", Icon: Wand2 },
-  { id: "translate", label: "Translate", Icon: Globe },
-  { id: "hashtags", label: "#Tags", Icon: Hash },
+  { id: "thread", Icon: Sparkles },
+  { id: "inspire", Icon: Lightbulb },
+  { id: "template", Icon: FileText },
+  { id: "hook", Icon: Zap },
+  { id: "cta", Icon: Megaphone },
+  { id: "rewrite", Icon: Wand2 },
+  { id: "translate", Icon: Globe },
+  { id: "hashtags", Icon: Hash },
 ];
 
 const TOOL_DESCRIPTIONS: Record<AiToolType, string> = {
@@ -195,6 +194,7 @@ export function AiToolsPanel({
 }: AiToolsPanelProps) {
   const t = useTranslations("compose");
   const bt = useTranslations("buttons");
+  const langT = useTranslations("languages");
   const isStreamingThread =
     isGenerating && aiTool === "thread" && typeof streamingTweetCount === "number";
 
@@ -271,7 +271,7 @@ export function AiToolsPanel({
           aria-label="AI tool"
           className="grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap sm:gap-2"
         >
-          {TOOLS.map(({ id, label, Icon }) => {
+          {TOOLS.map(({ id, Icon }) => {
             const button = (
               <button
                 role="tab"
@@ -282,7 +282,7 @@ export function AiToolsPanel({
                 className="focus-visible:border-ring focus-visible:ring-ring/50 aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary/90 bg-background hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 inline-flex h-9 min-w-[44px] shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 text-xs font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 sm:h-8 sm:min-w-0 sm:gap-2 sm:px-3 sm:text-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
               >
                 <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
-                <span className="xs:inline hidden">{label}</span>
+                <span className="xs:inline hidden">{t(`ai_tools.label.${id}`)}</span>
               </button>
             );
 
@@ -461,7 +461,7 @@ export function AiToolsPanel({
                 <SelectContent>
                   {LANGUAGES.map((l) => (
                     <SelectItem key={l.code} value={l.code}>
-                      {l.label}
+                      {langT(l.code)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -488,8 +488,8 @@ export function AiToolsPanel({
                     </SelectTrigger>
                     <SelectContent>
                       {NICHES.map((n) => (
-                        <SelectItem key={n} value={n}>
-                          {n}
+                        <SelectItem key={n.value} value={n.value}>
+                          {t(`ai_tools.niche.${n.key}`)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -615,7 +615,7 @@ export function AiToolsPanel({
                   <SelectContent>
                     {FORMAT_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {t(`ai_tools.format.${opt.key}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -633,12 +633,14 @@ export function AiToolsPanel({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="professional">Professional</SelectItem>
-                    <SelectItem value="casual">Casual</SelectItem>
-                    <SelectItem value="humorous">Funny</SelectItem>
-                    <SelectItem value="educational">Educational</SelectItem>
-                    <SelectItem value="inspirational">Inspirational</SelectItem>
-                    <SelectItem value="viral">Viral</SelectItem>
+                    <SelectItem value="professional">{t("ai_tools.tone.professional")}</SelectItem>
+                    <SelectItem value="casual">{t("ai_tools.tone.casual")}</SelectItem>
+                    <SelectItem value="humorous">{t("ai_tools.tone.humorous")}</SelectItem>
+                    <SelectItem value="educational">{t("ai_tools.tone.educational")}</SelectItem>
+                    <SelectItem value="inspirational">
+                      {t("ai_tools.tone.inspirational")}
+                    </SelectItem>
+                    <SelectItem value="viral">{t("ai_tools.tone.viral")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -653,7 +655,7 @@ export function AiToolsPanel({
                     <SelectContent>
                       {LANGUAGES.map((l) => (
                         <SelectItem key={l.code} value={l.code}>
-                          {l.label}
+                          {langT(l.code)}
                         </SelectItem>
                       ))}
                     </SelectContent>

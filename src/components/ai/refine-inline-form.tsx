@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Wand2, Loader2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,6 +38,7 @@ export function RefineInlineForm({
   onRefined,
   className,
 }: RefineInlineFormProps) {
+  const t = useTranslations("inspiration");
   const [isOpen, setIsOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [focus, setFocus] = useState<FocusArea | undefined>();
@@ -150,7 +152,7 @@ export function RefineInlineForm({
                 <SelectValue placeholder="Auto-detect" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Auto-detect</SelectItem>
+                <SelectItem value="">{t("ai_assist.auto_detect")}</SelectItem>
                 {FOCUS_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}

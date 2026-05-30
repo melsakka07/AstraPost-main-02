@@ -63,6 +63,7 @@ type ProfileFormValues = z.infer<ReturnType<typeof getProfileFormSchema>>;
 
 export function ProfileForm({ initialData }: ProfileFormProps) {
   const t = useTranslations("settings");
+  const langT = useTranslations("languages");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -168,6 +169,15 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
       if (!res.ok) throw new Error("Failed to update profile");
 
       toast.success(t("profile.saved"));
+
+      // When the UI language changes, do a full reload so the root <html dir/lang>
+      // and all next-intl messages re-render (mirrors language-switcher.tsx).
+      const initialLanguage = initialData.language || "ar";
+      if (values.language !== initialLanguage) {
+        window.location.reload();
+        return;
+      }
+
       router.refresh();
     } catch (error) {
       clientLogger.error("Failed to update profile", {
@@ -313,7 +323,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                       <SelectContent>
                         {LANGUAGES.map((lang) => (
                           <SelectItem key={lang.code} value={lang.code}>
-                            {lang.label}
+                            {langT(lang.code)}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -21,6 +21,7 @@
     "calendar": "التقويم",
     "writer": "الكاتب",
     "inspiration": "الإلهام",
+    "import_&_adapt": "استيراد وتكييف",
     "agentic_posting": "النشر الموكول",
     "history": "السجل",
     "viral_analyzer": "محلل الفيروسية",
@@ -683,6 +684,41 @@
       "hashtags": {
         "dismiss": "إغلاق",
         "all_added": "تمت إضافة جميع الوسوم!"
+      },
+      "label": {
+        "thread": "كتابة",
+        "inspire": "إلهام",
+        "template": "قالب",
+        "hook": "مقدمة",
+        "cta": "دعوة لإجراء",
+        "rewrite": "إعادة كتابة",
+        "translate": "ترجمة",
+        "hashtags": "وسوم#"
+      },
+      "tone": {
+        "professional": "احترافية",
+        "casual": "ودّية",
+        "humorous": "طريفة",
+        "educational": "تعليمية",
+        "inspirational": "ملهِمة",
+        "viral": "رائجة"
+      },
+      "niche": {
+        "technology": "التقنية",
+        "business": "الأعمال",
+        "marketing": "التسويق",
+        "lifestyle": "أسلوب الحياة",
+        "health_fitness": "الصحة واللياقة",
+        "education": "التعليم",
+        "finance": "المال",
+        "entertainment": "الترفيه",
+        "productivity": "الإنتاجية",
+        "self_improvement": "تطوير الذات"
+      },
+      "format": {
+        "single": "تغريدة مفردة",
+        "thread_short": "خيط (3–5)",
+        "thread_long": "خيط (5–10)"
       }
     },
     "dialog": {
@@ -816,6 +852,11 @@
   "calendar": {
     "title": "التقويم",
     "description": "تصور جدول نشرك",
+    "view_options": {
+      "day": "يوم",
+      "week": "أسبوع",
+      "month": "شهر"
+    },
     "open_queue": "فتح القائمة",
     "schedule_new": "جدولة جديدة",
     "today": "اليوم",
@@ -845,6 +886,11 @@
   "drafts": {
     "title": "المسودات",
     "description": "مسوداتك المحفوظة",
+    "sort_options": {
+      "updated": "آخر تعديل",
+      "created": "الأقدم أولاً",
+      "length": "الأطول"
+    },
     "new_draft": "مسودة جديدة",
     "empty_title": "لا توجد مسودات بعد",
     "empty_description": "احفظ منشوراً كمسودة لرؤيته هنا",
@@ -856,6 +902,13 @@
   "analytics": {
     "title": "التحليلات",
     "description": "تتبع أداء منشوراتك",
+    "date_range": {
+      "placeholder": "اختر النطاق",
+      "last_7d": "آخر 7 أيام",
+      "last_14d": "آخر 14 يوماً",
+      "last_30d": "آخر 30 يوماً",
+      "last_90d": "آخر 90 يوماً"
+    },
     "overview": "نظرة عامة",
     "performance": "الأداء",
     "insights": "الرؤى",
@@ -1223,6 +1276,14 @@
     "ru": "الروسية",
     "hi": "الهندية"
   },
+  "x_tier": {
+    "none": "حساب X مجاني",
+    "basic": "مشترك X Basic",
+    "premium": "مشترك X Premium",
+    "premium_plus": "مشترك X Premium+",
+    "unknown": "حالة الاشتراك غير معروفة",
+    "loading": "جارٍ تحميل حالة الاشتراك"
+  },
   "ai_hub": {
     "title": "مركز الذكاء الاصطناعي",
     "description": "أدوات ذكاء اصطناعي قوية لتعزيز إنشاء المحتوى",
@@ -1556,7 +1617,16 @@
       "audience_placeholder": "مثال: المطورون، المسوقون، الطلاب",
       "posting_as": "النشر باسم",
       "voice_profile_active": "الكتابة بصوتك",
-      "voice_profile_disable": "إيقاف"
+      "voice_profile_disable": "إيقاف",
+      "tone_options": {
+        "professional": "احترافية",
+        "casual": "ودّية",
+        "educational": "تعليمية",
+        "inspirational": "ملهِمة",
+        "humorous": "طريفة",
+        "viral": "رائجة",
+        "controversial": "مثيرة للجدل"
+      }
     },
     "processing_screen": {
       "generating_for_topic": "توليد للموضوع",
@@ -2030,6 +2100,41 @@
     "ai_assist": {
       "title": "مساعدة الذكاء الاصطناعي",
       "what_do": "ماذا تريد أن تفعل؟",
+      "auto_detect": "كشف تلقائي",
+      "actions": {
+        "rephrase": {
+          "label": "إعادة صياغة",
+          "description": "إعادة الكتابة بكلمات مختلفة"
+        },
+        "change_tone": {
+          "label": "تغيير النبرة",
+          "description": "التكيف لنبرة مختلفة"
+        },
+        "expand_thread": {
+          "label": "توسيع الخيط",
+          "description": "تحويله إلى خيط متعدد التغريدات"
+        },
+        "add_take": {
+          "label": "إضافة وجهة نظرك",
+          "description": "أضف وجهة نظرك الشخصية"
+        },
+        "translate": {
+          "label": "ترجمة",
+          "description": "الترجمة إلى لغة أخرى"
+        },
+        "counter_point": {
+          "label": "نقطة مضادة",
+          "description": "إنشاء حجة مضادة محترمة"
+        }
+      },
+      "tones": {
+        "professional": "احترافية",
+        "casual": "ودّية",
+        "humorous": "طريفة",
+        "educational": "تعليمية",
+        "inspirational": "ملهِمة",
+        "viral": "رائجة"
+      },
       "rephrase": "إعادة صياغة",
       "rephrase_description": "إعادة الكتابة بكلمات مختلفة",
       "change_tone": "تغيير النبرة",
@@ -3101,6 +3206,17 @@
   },
   "roadmap": {
     "badge": "خارطة الطريق",
+    "tabs": {
+      "all": "الكل",
+      "in_progress": "قيد التنفيذ",
+      "completed": "مكتمل",
+      "ideas": "أفكار"
+    },
+    "feedback_type": {
+      "feature": "طلب ميزة",
+      "bug": "بلاغ عن خلل",
+      "other": "أخرى"
+    },
     "title": "خارطة طريق المنتج",
     "subtitle": "ساعدنا في بناء الميزات التي تحتاجها. أرسل أفكارك واقتراحاتك أدناه — يراجع فريق التطوير كل مشاركة.",
     "always_improving": "نسعى دائماً لإيجاد طرق للتحسين",

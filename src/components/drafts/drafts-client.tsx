@@ -93,9 +93,9 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="updatedAt">Last edited</SelectItem>
-            <SelectItem value="createdAt">Oldest first</SelectItem>
-            <SelectItem value="length">Longest draft</SelectItem>
+            <SelectItem value="updatedAt">{t("sort_options.updated")}</SelectItem>
+            <SelectItem value="createdAt">{t("sort_options.created")}</SelectItem>
+            <SelectItem value="length">{t("sort_options.length")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

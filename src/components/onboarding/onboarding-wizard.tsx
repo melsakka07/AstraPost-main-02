@@ -82,6 +82,7 @@ function getSteps(t: (key: string) => string): {
 
 export function OnboardingWizard() {
   const t = useTranslations("auth");
+  const langT = useTranslations("languages");
   const searchParams = useSearchParams();
 
   const steps = getSteps(t);
@@ -697,7 +698,7 @@ export function OnboardingWizard() {
                           <SelectContent>
                             {LANGUAGES.map((lang) => (
                               <SelectItem key={lang.code} value={lang.code}>
-                                {lang.label}
+                                {langT(lang.code)}
                               </SelectItem>
                             ))}
                           </SelectContent>

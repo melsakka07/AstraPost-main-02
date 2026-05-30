@@ -47,6 +47,7 @@ export function HashtagGenerator() {
   const { openWithContext } = useUpgradeModal();
   const t = useTranslations("hashtag_generator");
   const tCommon = useTranslations("common");
+  const langT = useTranslations("languages");
   const [content, setContent] = useState("");
   const [language, setLanguage] = useState("ar");
   const [generatedHashtags, setGeneratedHashtags] = useState<string[]>([]);
@@ -180,7 +181,7 @@ export function HashtagGenerator() {
               <SelectContent>
                 {LANGUAGES.map((lang) => (
                   <SelectItem key={lang.code} value={lang.code}>
-                    {lang.label}
+                    {langT(lang.code)}
                   </SelectItem>
                 ))}
               </SelectContent>
