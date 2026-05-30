@@ -1,12 +1,28 @@
+import "server-only";
+
 import { and, asc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { posts, tweetAnalytics, tweets } from "@/lib/schema";
 
-export type BestTimeBucket = {
-  day: number; // 0-6 (Sun-Sat)
-  hour: number; // 0-23
-  score: number; // Normalized 0-100 score based on engagement
-  count: number; // Number of posts in this bucket
+// Re-export pure insight computation functions (DB-free — safe for node tests)
+import {
+  type AnalyticsInsight,
+  type BestTimeBucket,
+  type InsightsInput,
+  computeBestDay,
+  computeBestHour,
+  computeInsights,
+  formatPercentChange,
+} from "@/lib/services/analytics-insights";
+
+export {
+  type AnalyticsInsight,
+  type BestTimeBucket,
+  type InsightsInput,
+  computeBestDay,
+  computeBestHour,
+  computeInsights,
+  formatPercentChange,
 };
 
 export class AnalyticsEngine {

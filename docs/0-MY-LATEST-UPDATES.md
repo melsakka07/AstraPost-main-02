@@ -1,5 +1,57 @@
 # Latest Updates
 
+## 2026-05-31 — Wave 8 Task D: Analytics Visualization
+
+Fourth Wave 8 task — period comparison, custom date range, insights cards, and branded PDF export.
+
+### Insights Engine
+
+- **`src/lib/services/analytics-insights.ts`** — new pure-computation module (no DB access, node-testable):
+  - `computeInsights()` — derives 3-5 actionable insights (best day, top hour, impressions delta, engagement delta) from pre-computed aggregates. Returns empty array when data is sparse — never fabricates numbers.
+  - `computeBestDay()` — identifies the day of week with the highest average impressions (requires ≥3 distinct days of data; returns null otherwise).
+  - `computeBestHour()` — returns the top-scoring time bucket from `getBestTimesToPost()` output.
+  - `formatPercentChange()` — returns formatted string (`"+23.5%"`) or null when prior is zero (avoids division-by-zero).
+- **`src/lib/services/analytics-engine.ts`** — imports and re-exports all pure functions from `analytics-insights.ts` for backward compatibility. Added `import "server-only"` guard.
+
+### Comparison Toggle (Dual Recharts Series)
+
+- **FollowerChart, ImpressionsChart, EngagementRateChart** — all three charts now accept optional `priorData` (same shape as `data`) and render a "Compare" toggle button (GitCompare icon) in the card header. When active, renders a second series (Area/Bar/Line) in muted color with a prior-period gradient fill. Toggle has `aria-pressed` for screen readers.
+- **Analytics page RSC** — computes `priorImpressionsChartData` and `priorEngagementChartData` from `prevSnapshots` (offset by `rangeDays`). Passes prior data to charts via `exactOptionalPropertyTypes`-compatible spread pattern.
+- Recharts SVG geometry stays OUT of RTL physical→logical swaps (existing Wave 7 rule preserved).
+
+### Custom Date Range
+
+- **DateRangeSelector** — added "Custom" option to the range preset dropdown. When selected, shows From/To date inputs with validation (max 365 days, from ≤ to, both required). Applies via `?from=YYYY-MM-DD&to=YYYY-MM-DD` URL params. Error messages for invalid ranges.
+- **Analytics page RSC** — handles custom `from`/`to` params: computes `rangeDays`, `startDate`, and `prevStartDate` from the custom window. Respects free-plan 7d cap.
+
+### Insights Cards
+
+- **`src/components/analytics/insights-cards.tsx`** — new `"use client"` component. Renders a horizontal flex strip of insight cards with trend icons (TrendingUp/TrendingDown/Lightbulb), color-coded by trend (success/danger/muted), ≥44px touch targets, RTL-safe.
+- Placed at the top of the Overview tab, below the section nav.
+
+### Branded PDF Report
+
+- **`src/components/analytics/pdf-document.tsx`** — extended with:
+  - Branded header: indigo-accented strip with "AstraPost" text logo, report title, range, user name, account handle, and date
+  - Key Insights section: conditionally renders insight rows (label + value + context) when insights data is provided
+  - Footer with page numbers: "AstraPost" branding on the left, "Page X of Y" on the right
+  - All new fields (`insights`, `userName`, `accountHandle`) are optional — backward compatible with existing callers
+
+### Tests
+
+- **`src/lib/services/analytics-engine.test.ts`** — 17 pure-logic node tests: `formatPercentChange` (5), `computeBestDay` (4), `computeBestHour` (3), `computeInsights` (5). No DB required.
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, typecheck: clean, i18n: 3,374 keys parity)
+- `pnpm test` — PASS (38 files, 389 tests)
+- `verify-rtl` — PASS
+- `verify-dashboard-tokens` — PASS
+
+### Branch: `feature/wave8-taskD-analytics`
+
+---
+
 ## 2026-05-30 — Wave 8 Task B: Onboarding & Empty States
 
 Second Wave 8 task — server-persisted checklist state, i18n tour, illustration set, and empty-state standardization.

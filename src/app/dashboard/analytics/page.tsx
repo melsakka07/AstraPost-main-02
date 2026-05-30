@@ -50,7 +50,9 @@ import {
   user,
   xAccounts,
 } from "@/lib/schema";
+import { InsightsCards, type InsightItem } from "@/components/analytics/insights-cards";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
+import { computeInsights } from "@/lib/services/analytics-insights";
 import { AnalyticsTabs, type AnalyticsTabValue } from "./_components/analytics-tabs";
 
 /**
@@ -72,6 +74,8 @@ export default async function AnalyticsPage({
     density?: string | string[];
     range?: string | string[];
     tab?: string | string[];
+    from?: string | string[];
+    to?: string | string[];
   }>;
 }) {
   const t = await getTranslations("analytics");
@@ -111,7 +115,34 @@ export default async function AnalyticsPage({
 
   // Enforce limits if free
   const effectiveRange = isFree ? "7d" : range;
-  const rangeDays = parseInt(effectiveRange.replace("d", "")) || 30;
+
+  // Handle custom date range
+  const fromParam = resolvedSearchParams?.from;
+  const toParam = resolvedSearchParams?.to;
+  const fromValue = Array.isArray(fromParam) ? fromParam[0] : fromParam;
+  const toValue = Array.isArray(toParam) ? toParam[0] : toParam;
+  const isCustomRange = effectiveRange === "custom" && fromValue && toValue;
+
+  const now = new Date();
+  const nowTimestamp = now.getTime();
+
+  let rangeDays: number;
+  let startDate: Date;
+  let prevStartDate: Date;
+
+  if (isCustomRange && fromValue && toValue) {
+    const from = new Date(fromValue);
+    const to = new Date(toValue);
+    rangeDays = Math.ceil((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
+    startDate = from;
+    prevStartDate = new Date(from.getTime() - rangeDays * 24 * 60 * 60 * 1000);
+  } else {
+    rangeDays = parseInt(effectiveRange.replace("d", "")) || 30;
+    startDate = new Date(nowTimestamp - rangeDays * 24 * 60 * 60 * 1000);
+    prevStartDate = new Date(startDate.getTime() - rangeDays * 24 * 60 * 60 * 1000);
+  }
+
+  const displayRange = isCustomRange ? `${fromValue} – ${toValue}` : effectiveRange;
 
   const selectedAccountIdParam = resolvedSearchParams?.accountId;
   const selectedAccountId =
@@ -127,11 +158,6 @@ export default async function AnalyticsPage({
     const query = params.toString();
     return query ? `/dashboard/analytics?${query}` : "/dashboard/analytics";
   };
-
-  const now = new Date();
-  const nowTimestamp = now.getTime();
-  const startDate = new Date(nowTimestamp - rangeDays * 24 * 60 * 60 * 1000);
-  const prevStartDate = new Date(startDate.getTime() - rangeDays * 24 * 60 * 60 * 1000);
 
   // ── Round 2: seven independent queries in parallel ──────────────────────────
   const [
@@ -191,6 +217,7 @@ export default async function AnalyticsPage({
         retweets: tweetAnalyticsSnapshots.retweets,
         replies: tweetAnalyticsSnapshots.replies,
         clicks: tweetAnalyticsSnapshots.linkClicks,
+        engagementRate: tweetAnalyticsSnapshots.engagementRate,
       })
       .from(tweetAnalyticsSnapshots)
       .innerJoin(tweets, eq(tweetAnalyticsSnapshots.tweetId, tweets.id))
@@ -307,6 +334,47 @@ export default async function AnalyticsPage({
       value: parseFloat((sumRate / count).toFixed(2)),
     }));
 
+  // ── Prior period chart data (for comparison overlay) ────────────────────────
+  const priorByDay = new Map<string, number>();
+  for (const s of prevSnapshots) {
+    const key = new Date(s.fetchedAt).toISOString().slice(0, 10);
+    const cur = priorByDay.get(key) || 0;
+    priorByDay.set(key, cur + (s.impressions || 0));
+  }
+
+  const priorImpressionsChartData: Array<{ date: string; value: number }> = [];
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const d = new Date(prevStartDate.getTime() + (rangeDays - 1 - i) * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    priorImpressionsChartData.push({ date: d, value: priorByDay.get(d) || 0 });
+  }
+
+  const priorByDayEngagement = new Map<string, { sumRate: number; count: number }>();
+  for (const s of prevSnapshots) {
+    const day = new Date(s.fetchedAt).toISOString().slice(0, 10);
+    const existing = priorByDayEngagement.get(day) ?? { sumRate: 0, count: 0 };
+    priorByDayEngagement.set(day, {
+      sumRate: existing.sumRate + (Number(s.engagementRate) ?? 0),
+      count: existing.count + 1,
+    });
+  }
+  const priorEngagementChartData = Array.from(priorByDayEngagement.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, { sumRate, count }]) => ({
+      date,
+      value: count > 0 ? parseFloat((sumRate / count).toFixed(2)) : 0,
+    }));
+
+  // ── Compute insights from aggregates ────────────────────────────────────────
+  const insights: InsightItem[] = computeInsights({
+    bestTimeData,
+    currentTotals: totals,
+    priorTotals: prevTotals,
+    dailyImpressions: impressionsChartData,
+    dailyEngagement: engagementChartData,
+  });
+
   // ── Overview tab content ───────────────────────────────────────────────────
   // Kept as RSC-rendered JSX so we don't lose parallel DB fetches above. The
   // tab wrapper is a thin client island; this tree streams as static markup.
@@ -319,6 +387,8 @@ export default async function AnalyticsPage({
         <h2 className="text-lg font-semibold tracking-tight">{t("overview_tab")}</h2>
         <div className="bg-border h-px flex-1" />
       </div>
+
+      <InsightsCards insights={insights} />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -364,7 +434,7 @@ export default async function AnalyticsPage({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="border-b border-dotted">
-                        {t("growth", { range: effectiveRange })}
+                        {t("growth", { range: displayRange })}
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>{t("metric_tooltips.growth")}</TooltipContent>
@@ -569,7 +639,7 @@ export default async function AnalyticsPage({
                 {d !== null && (
                   <p className={`mt-1 text-xs ${d >= 0 ? "text-success-11" : "text-destructive"}`}>
                     {d >= 0 ? "↑" : "↓"} {Math.abs(d).toLocaleString(userLocale)} {t("vs_prev")}{" "}
-                    {effectiveRange}
+                    {displayRange}
                   </p>
                 )}
               </CardContent>
@@ -580,21 +650,26 @@ export default async function AnalyticsPage({
 
       <div className="space-y-3">
         <h2 className="text-xl font-semibold">
-          {t("impressions")} ({effectiveRange})
+          {t("impressions")} ({displayRange})
         </h2>
         <BlurredOverlay
           isLocked={isFree && rangeDays > 7}
           title={t("impressions_history_cta")}
           description={t("impressions_history_cta_detail")}
         >
-          <ImpressionsChart data={impressionsChartData} />
+          <ImpressionsChart
+            data={impressionsChartData}
+            {...(priorImpressionsChartData.length > 0 && {
+              priorData: priorImpressionsChartData,
+            })}
+          />
         </BlurredOverlay>
       </div>
 
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold">
-            {t("engagement_rate_title", { range: effectiveRange })}
+            {t("engagement_rate_title", { range: displayRange })}
           </h2>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -616,7 +691,12 @@ export default async function AnalyticsPage({
           title={t("engagement_history_cta")}
           description={t("engagement_history_cta_detail")}
         >
-          <EngagementRateChart data={engagementChartData} />
+          <EngagementRateChart
+            data={engagementChartData}
+            {...(priorEngagementChartData.length > 0 && {
+              priorData: priorEngagementChartData,
+            })}
+          />
         </BlurredOverlay>
       </div>
 
