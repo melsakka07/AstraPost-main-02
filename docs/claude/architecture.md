@@ -230,4 +230,24 @@ The dashboard sidebar (defined in `src/components/dashboard/sidebar-nav-data.ts`
 - `src/lib/team-context.ts` — Multi-account context resolver
 - `src/lib/middleware/require-plan.ts` — Subscription feature gates (X/Instagram/LinkedIn account limits, post limits, AI quota, 19 boolean feature gates)
 - `src/lib/admin.ts` — Admin role verification
+
+### Rendering Strategy (Wave 8 Task A)
+
+Dashboard pages follow a **server-first rendering pattern**:
+
+**Async RSC shell → Suspense → Client component.** The page exports an `async function` that authenticates via `getTeamContext()` (or `auth.api.getSession()`), fetches initial data server-side, and renders a `<Suspense>` wrapper around a `"use client"` child component. The client component receives data as props — no `useEffect` data waterfalls.
+
+**Pages converted from top-level `"use client"` in Wave 8 Task A:**
+- `/dashboard/ai/bio` — `BioGeneratorClient` (colocated `bio-generator-client.tsx`)
+- `/dashboard/ai/calendar` — `CalendarGeneratorClient` (colocated)
+- `/dashboard/ai/reply` — `ReplyGeneratorClient` (`src/components/ai/reply-generator-client.tsx`)
+- `/dashboard/affiliate` — `AffiliateClient` (`src/components/affiliate/affiliate-client.tsx`)
+
+**Code splitting:** Heavy client components that are not needed on initial render use `next/dynamic(() => import(...), { loading: <Skeleton>, ssr: false })`. The canonical pattern is `src/app/dashboard/compose/page.tsx` (Composer). Applied to `AgenticPostingClient` in Wave 8 Task A.
+
+**Settings layout:** The settings layout (`src/app/dashboard/settings/layout.tsx`) is an RSC using `getTranslations` from `next-intl/server`. The tab navigation bar (`src/components/settings/settings-tab-bar.tsx`) is the only `"use client"` piece — it uses `usePathname()` for active-tab highlighting.
+
+**Pagination:** Drafts (`/dashboard/drafts`) uses URL-driven offset pagination (`DRAFTS_PAGE_SIZE = 12`, `searchParams.page`). Schedule (`/dashboard/schedule`) uses the `SCHEDULED_PAGE_SIZE` pattern with offset. Admin tables use a shared pagination pattern.
+
+**Images:** All `<img>` tags in `src/components/ai/agentic/` replaced with `next/image` (`width`/`height` + `loading="lazy"` + `unoptimized` for externally-hosted AI-generated images).
 ```

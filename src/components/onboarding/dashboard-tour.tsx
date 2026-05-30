@@ -4,10 +4,12 @@ import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
+import { useTranslations } from "next-intl";
 
 export function DashboardTour() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useTranslations("onboarding");
   const isTourActive = searchParams?.get("tour") === "true";
   const hasRunRef = useRef(false);
 
@@ -25,9 +27,8 @@ export function DashboardTour() {
           {
             element: '[data-tour="compose"]',
             popover: {
-              title: "Write & Schedule",
-              description:
-                "Compose your tweets and threads here. You can preview, add media, and schedule them.",
+              title: t("tour.step1_title"),
+              description: t("tour.step1_description"),
               side: "right",
               align: "start",
             },
@@ -35,9 +36,8 @@ export function DashboardTour() {
           {
             element: '[data-tour="ai-tools"]',
             popover: {
-              title: "AI Assistant",
-              description:
-                "Use AI to generate hooks, rewrite tweets, translate, and more directly in the composer.",
+              title: t("tour.step2_title"),
+              description: t("tour.step2_description"),
               side: "right",
               align: "start",
             },
@@ -45,9 +45,8 @@ export function DashboardTour() {
           {
             element: '[data-tour="schedule"]',
             popover: {
-              title: "Content Calendar",
-              description:
-                "View and manage all your scheduled posts in one place. Drag and drop to reschedule.",
+              title: t("tour.step3_title"),
+              description: t("tour.step3_description"),
               side: "right",
               align: "start",
             },
@@ -55,9 +54,8 @@ export function DashboardTour() {
           {
             element: '[data-tour="analytics"]',
             popover: {
-              title: "Analytics",
-              description:
-                "Track your performance, see follower growth, and find the best times to post.",
+              title: t("tour.step4_title"),
+              description: t("tour.step4_description"),
               side: "right",
               align: "start",
             },
@@ -65,17 +63,22 @@ export function DashboardTour() {
           {
             element: '[data-tour="inspiration"]',
             popover: {
-              title: "Inspiration",
-              description:
-                "Save great tweets and use them as templates or references for your own content.",
+              title: t("tour.step5_title"),
+              description: t("tour.step5_description"),
               side: "right",
               align: "start",
             },
           },
         ],
         onDestroyStarted: () => {
-          if (!tourDriver.hasNextStep() || confirm("Are you sure you want to exit the tour?")) {
+          if (!tourDriver.hasNextStep() || confirm(t("tour.exit_confirmation"))) {
             tourDriver.destroy();
+            // Mark tour as seen server-side (fire-and-forget)
+            fetch("/api/user/preferences", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ onboardingState: { tourSeen: true } }),
+            }).catch(() => {});
             // Remove ?tour=true from URL
             router.replace("/dashboard");
           }
@@ -87,7 +90,7 @@ export function DashboardTour() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [isTourActive, router]);
+  }, [isTourActive, router, t]);
 
   return null;
 }

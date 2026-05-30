@@ -78,6 +78,22 @@ export type TrendItem = z.infer<typeof trendItemSchema>;
 /** A UUID string (v4 format). */
 export const uuidSchema = z.string().uuid("Invalid ID format");
 
+// ─── Onboarding State ──────────────────────────────────────────────────────────
+
+/**
+ * Server-persisted onboarding/checklist state stored in user.onboardingState (JSONB).
+ * Each field is optional so the PATCH /api/user/preferences endpoint can accept
+ * partial updates that are deep-merged with the existing state.
+ */
+export const onboardingStateSchema = z.object({
+  tourSeen: z.boolean().optional(),
+  checklistDismissedAt: z.string().nullable().optional(),
+  checklistCollapsed: z.boolean().optional(),
+  version: z.number().optional(),
+});
+
+export type OnboardingState = z.infer<typeof onboardingStateSchema>;
+
 // ─── Dates ───────────────────────────────────────────────────────────────────
 
 /**

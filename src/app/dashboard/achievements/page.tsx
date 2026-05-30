@@ -8,6 +8,7 @@ import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrap
 import { MilestoneList } from "@/components/gamification/milestone-list";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoAchievementsIllustration } from "@/components/ui/illustrations";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { milestones } from "@/lib/schema";
@@ -43,9 +44,10 @@ export default async function AchievementsPage() {
     <DashboardPageWrapper icon={Award} title={t("title")} description={t("description")}>
       {unlockedIds.length === 0 ? (
         <EmptyState
-          icon={<Award className="h-6 w-6" />}
+          icon={<NoAchievementsIllustration className="h-6 w-6" />}
           title={t("empty_title")}
           description={t("empty_description")}
+          whyMessage={t("empty_why")}
           primaryAction={
             <Button asChild>
               <Link href="/dashboard/compose">{t("create_first_post")}</Link>

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { eq, and } from "drizzle-orm";
 import { Wand2 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { AgenticPostingClient } from "@/components/ai/agentic-posting-client";
+import { AgenticPostingClient } from "@/components/ai/agentic-posting-client-wrapper";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";

@@ -1,5 +1,141 @@
 # Latest Updates
 
+## 2026-05-31 — Wave 8 Task D: Analytics Visualization
+
+Fourth Wave 8 task — period comparison, custom date range, insights cards, and branded PDF export.
+
+### Insights Engine
+
+- **`src/lib/services/analytics-insights.ts`** — new pure-computation module (no DB access, node-testable):
+  - `computeInsights()` — derives 3-5 actionable insights (best day, top hour, impressions delta, engagement delta) from pre-computed aggregates. Returns empty array when data is sparse — never fabricates numbers.
+  - `computeBestDay()` — identifies the day of week with the highest average impressions (requires ≥3 distinct days of data; returns null otherwise).
+  - `computeBestHour()` — returns the top-scoring time bucket from `getBestTimesToPost()` output.
+  - `formatPercentChange()` — returns formatted string (`"+23.5%"`) or null when prior is zero (avoids division-by-zero).
+- **`src/lib/services/analytics-engine.ts`** — imports and re-exports all pure functions from `analytics-insights.ts` for backward compatibility. Added `import "server-only"` guard.
+
+### Comparison Toggle (Dual Recharts Series)
+
+- **FollowerChart, ImpressionsChart, EngagementRateChart** — all three charts now accept optional `priorData` (same shape as `data`) and render a "Compare" toggle button (GitCompare icon) in the card header. When active, renders a second series (Area/Bar/Line) in muted color with a prior-period gradient fill. Toggle has `aria-pressed` for screen readers.
+- **Analytics page RSC** — computes `priorImpressionsChartData` and `priorEngagementChartData` from `prevSnapshots` (offset by `rangeDays`). Passes prior data to charts via `exactOptionalPropertyTypes`-compatible spread pattern.
+- Recharts SVG geometry stays OUT of RTL physical→logical swaps (existing Wave 7 rule preserved).
+
+### Custom Date Range
+
+- **DateRangeSelector** — added "Custom" option to the range preset dropdown. When selected, shows From/To date inputs with validation (max 365 days, from ≤ to, both required). Applies via `?from=YYYY-MM-DD&to=YYYY-MM-DD` URL params. Error messages for invalid ranges.
+- **Analytics page RSC** — handles custom `from`/`to` params: computes `rangeDays`, `startDate`, and `prevStartDate` from the custom window. Respects free-plan 7d cap.
+
+### Insights Cards
+
+- **`src/components/analytics/insights-cards.tsx`** — new `"use client"` component. Renders a horizontal flex strip of insight cards with trend icons (TrendingUp/TrendingDown/Lightbulb), color-coded by trend (success/danger/muted), ≥44px touch targets, RTL-safe.
+- Placed at the top of the Overview tab, below the section nav.
+
+### Branded PDF Report
+
+- **`src/components/analytics/pdf-document.tsx`** — extended with:
+  - Branded header: indigo-accented strip with "AstraPost" text logo, report title, range, user name, account handle, and date
+  - Key Insights section: conditionally renders insight rows (label + value + context) when insights data is provided
+  - Footer with page numbers: "AstraPost" branding on the left, "Page X of Y" on the right
+  - All new fields (`insights`, `userName`, `accountHandle`) are optional — backward compatible with existing callers
+
+### Tests
+
+- **`src/lib/services/analytics-engine.test.ts`** — 17 pure-logic node tests: `formatPercentChange` (5), `computeBestDay` (4), `computeBestHour` (3), `computeInsights` (5). No DB required.
+
+### Verification
+
+- `pnpm run check` — PASS (lint: 0 errors, typecheck: clean, i18n: 3,374 keys parity)
+- `pnpm test` — PASS (38 files, 389 tests)
+- `verify-rtl` — PASS
+- `verify-dashboard-tokens` — PASS
+
+### Branch: `feature/wave8-taskD-analytics`
+
+---
+
+## 2026-05-30 — Wave 8 Task B: Onboarding & Empty States
+
+Second Wave 8 task — server-persisted checklist state, i18n tour, illustration set, and empty-state standardization.
+
+### Dashboard Tour i18n
+
+- **`dashboard-tour.tsx`**: All 11 hardcoded English strings replaced with `useTranslations("onboarding")` keys (`tour.step1_title` through `tour.step5_title`/`_description` + `tour.exit_confirmation`). Tour renders Arabic in `ar` locale.
+- **Tour-seen persistence**: On tour exit, fires PATCH to mark `onboardingState.tourSeen = true` server-side.
+- **Replay tour**: New `ReplayTourButton` component in settings profile page, alongside existing ResumeOnboarding and ReopenChecklist buttons.
+
+### Server-Persisted Checklist
+
+- **Schema**: `user.onboardingState` JSONB column (`{ tourSeen, checklistDismissedAt, checklistCollapsed, version }`). Migration: `drizzle/0087_tiresome_doctor_faustus.sql`.
+- **API**: PATCH `/api/user/preferences` now accepts `onboardingState` (partial, deep-merged). Shared schema `onboardingStateSchema` in `src/lib/schemas/common.ts`.
+- **SetupChecklist**: Server-state prop + localStorage backward compat. `?checklist=open` clears both layers. Dismissal survives logout/re-login.
+- **ReopenChecklistButton**: Now clears server state via PATCH.
+
+### Empty-State Illustrations & Standardization
+
+- **6 inline SVG illustrations**: `no-posts`, `no-drafts`, `no-analytics`, `no-accounts`, `search-no-results`, `no-achievements` in `src/components/ui/illustrations/`. All `currentColor`-driven (theme-aware, dark mode compatible).
+- **EmptyState component**: New optional `whyMessage` prop (one-line sub-message below description).
+- **10 call sites standardized**: AI history, jobs, queue, drafts, achievements, analytics (3 states), dashboard home (2 states). Manual `<Card>` empties replaced with shared `EmptyState` + illustrations.
+- **Sub-messages added**: `ai_history.empty_why`, `jobs.empty_why`, `queue.empty_why`, `drafts.empty_why`, `achievements.empty_why`, `analytics.empty_no_posts_why`, `analytics.empty_pending_why`, `dashboard.empty_why`.
+
+### i18n
+
+- **21 new leaf keys** across `onboarding.tour.*`, `settings.help.*`, and per-namespace `empty_why` messages. Full en/ar/pseudo parity (3,360 keys).
+- Arabic translations use real Arabic (not English copies).
+
+### Verification
+
+- `pnpm run check` — PASS (lint 5 pre-existing warnings, typecheck clean, i18n 3,360 keys)
+- `pnpm test` — PASS (37 files, 372 tests)
+- `verify-dashboard-tokens` — PASS (illustrations use `currentColor`)
+- `verify-rtl` — PASS
+
+### Branch: `feature/wave8-taskB-onboarding`
+
+---
+
+## 2026-05-30 — Wave 8 Task A: Performance & Rendering
+
+First Wave 8 task — foundational performance overhaul of dashboard page rendering.
+
+### Page Conversions (Client → Async RSC)
+
+Four pages converted from top-level `"use client"` with client-side auth+data waterfalls to async RSC shells:
+
+- **`/dashboard/ai/bio`**: Now async RSC with `getTeamContext()` auth + server-side xAccount username fetch. Client form extracted to `bio-generator-client.tsx` (colocated).
+- **`/dashboard/ai/calendar`**: Now async RSC. 693-line client component extracted to colocated `calendar-generator-client.tsx`.
+- **`/dashboard/ai/reply`**: Now async RSC. Client form extracted to `src/components/ai/reply-generator-client.tsx`.
+- **`/dashboard/affiliate`**: Now async RSC with `getTeamContext()` auth guard (was unprotected — unauthenticated users previously downloaded full JS). Client UI extracted to `src/components/affiliate/affiliate-client.tsx`.
+
+All converted pages use `<Suspense>` wrappers and have existing `loading.tsx` files.
+
+### Code Splitting
+
+- **AgenticPostingClient** in `ai/agentic/page.tsx`: Static import replaced with `next/dynamic(() => import(...), { loading: <Skeleton>, ssr: false })` — matches existing composer page pattern. Saves ~1,770 lines from the initial bundle.
+
+### Image Optimization
+
+- **`success-screen.tsx`** + **`tweet-card.tsx`**: Raw `<img>` tags (with eslint-disable comments) replaced with `next/image` (`width`/`height` + `loading="lazy"` + `unoptimized` for AI-generated external images).
+
+### Query Limits
+
+- **Drafts page** (`/dashboard/drafts`): Added server-side pagination (`DRAFTS_PAGE_SIZE = 12`, offset-based, URL-driven via `searchParams.page`). Previously fetched ALL drafts unbounded.
+- **Schedule page** (`/dashboard/schedule`): Added `limit: 50` to unbounded `failedPosts` and `awaitingApprovalPosts` queries.
+
+### Settings Layout Split
+
+- **`settings/layout.tsx`**: Removed top-level `"use client"`. Tab navigation extracted to thin `SettingsTabBar` client component (`src/components/settings/settings-tab-bar.tsx`). All 5 child pages (profile, billing, notifications, team, integrations) now render server-side without forced client hydration.
+
+### Verification
+
+- `pnpm run check` — PASS (lint 5 pre-existing warnings, typecheck clean, i18n 3,339 keys)
+- `pnpm test` — PASS (37 files, 372 tests)
+- `verify-dashboard-tokens` — PASS
+- `verify-rtl` — PASS
+- Playwright E2E smokes added: `tests/e2e/performance-wave8a.e2e.ts` (7 tests: AI hub, bio, calendar, reply, affiliate, drafts — skeleton→content + no console errors)
+
+### Branch: `feature/wave8-taskA-performance`
+
+---
+
 ## 2026-05-30 — Wave 7 Task D: Accessibility AA
 
 Final Wave 7 task — WCAG 2.1 AA audit and remediation across all surfaces.

@@ -146,7 +146,7 @@ async function getDashboardData(userId: string) {
     }),
     db.query.user.findFirst({
       where: eq(user.id, userId),
-      columns: { plan: true },
+      columns: { plan: true, onboardingState: true },
     }),
     // Failed posts count
     db
@@ -198,6 +198,7 @@ async function getDashboardData(userId: string) {
       hasScheduledPost: !!hasScheduledPost,
       hasUsedAI: !!hasUsedAI,
       hasProPlan: userInfo?.plan !== "free",
+      onboardingState: userInfo?.onboardingState ?? null,
     },
     userPlan: userInfo?.plan || "free",
   };
@@ -257,6 +258,7 @@ export default async function DashboardPage() {
           hasScheduledPost: false,
           hasUsedAI: false,
           hasProPlan: false,
+          onboardingState: null,
         },
         userPlan: "free",
       };
@@ -392,6 +394,7 @@ export default async function DashboardPage() {
                   icon={<Send className="h-5 w-5" />}
                   title={t("queue_empty")}
                   description={t("queue_empty_description")}
+                  whyMessage={t("empty_why")}
                   primaryAction={
                     <Button size="sm" asChild>
                       <Link href="/dashboard/compose">
@@ -415,6 +418,7 @@ export default async function DashboardPage() {
                   iconBgClass="bg-warning-3 text-warning-11"
                   title={t("connect_x_account")}
                   description={t("connect_x_description")}
+                  whyMessage={t("empty_why")}
                   primaryAction={
                     <Button size="sm" asChild>
                       <Link href="/dashboard/settings">

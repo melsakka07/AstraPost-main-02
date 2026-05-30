@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { ReopenChecklistButton } from "@/components/settings/reopen-checklist-button";
+import { ReplayTourButton } from "@/components/settings/replay-tour-button";
 import { ResumeOnboardingButton } from "@/components/settings/resume-onboarding-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,7 @@ export default async function ProfileSettingsPage() {
           }}
         />
 
+        <ReplayTourButton />
         <ReopenChecklistButton />
         <ResumeOnboardingButton />
 

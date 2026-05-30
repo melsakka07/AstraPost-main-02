@@ -202,6 +202,7 @@ export default async function SchedulePage({
         sql`${posts.status}::text IN ('failed', 'paused_needs_reconnect')`
       ),
       orderBy: [asc(posts.updatedAt)],
+      limit: 50,
       with: {
         tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
         user: { columns: { name: true, image: true } },
@@ -212,6 +213,7 @@ export default async function SchedulePage({
     awaitingApprovalPosts = await db.query.posts.findMany({
       where: and(inArray(posts.xAccountId, accountIds), eq(posts.status, "awaiting_approval")),
       orderBy: [asc(posts.createdAt)],
+      limit: 50,
       with: {
         tweets: { orderBy: (tweets, { asc }) => [asc(tweets.position)] },
         user: { columns: { name: true, image: true } },

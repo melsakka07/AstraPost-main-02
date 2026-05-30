@@ -209,6 +209,19 @@ export const user = pgTable(
     trialExtendedAt: timestamp("trial_extended_at"),
     onboardingCompleted: boolean("onboarding_completed").default(false),
     onboardingSkippedAt: timestamp("onboarding_skipped_at"),
+    onboardingState: jsonb("onboarding_state")
+      .$type<{
+        tourSeen: boolean;
+        checklistDismissedAt: string | null;
+        checklistCollapsed: boolean;
+        version: number;
+      }>()
+      .default({
+        tourSeen: false,
+        checklistDismissedAt: null,
+        checklistCollapsed: false,
+        version: 1,
+      }),
     voiceProfile: jsonb("voice_profile"),
     voiceVariant: text("voice_variant").default("default").notNull(),
     notificationSettings: jsonb("notification_settings"),

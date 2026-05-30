@@ -9,6 +9,8 @@ import { CopyIdButton } from "@/components/jobs/copy-id-button";
 import { RetryPostButton } from "@/components/queue/retry-post-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SearchNoResultsIllustration } from "@/components/ui/illustrations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -172,15 +174,12 @@ export default async function JobsPage({
 
       {/* Job List */}
       {runs.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="bg-muted mb-4 flex h-16 w-16 items-center justify-center rounded-full">
-              <Settings2Icon className="text-muted-foreground h-8 w-8" />
-            </div>
-            <h3 className="mb-2 text-lg font-semibold">{t("empty_title")}</h3>
-            <p className="text-muted-foreground max-w-md">{t("empty_description")}</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={<SearchNoResultsIllustration className="h-6 w-6" />}
+          title={t("empty_title")}
+          description={t("empty_description")}
+          whyMessage={t("empty_why")}
+        />
       ) : (
         <div className="space-y-3">
           {runs.map((r) => {

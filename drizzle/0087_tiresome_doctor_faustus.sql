@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "onboarding_state" jsonb DEFAULT '{"tourSeen":false,"checklistDismissedAt":null,"checklistCollapsed":false,"version":1}'::jsonb;
