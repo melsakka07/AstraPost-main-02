@@ -727,11 +727,17 @@
     "emoji": "‏[Emoji]‏",
     "clear_tweet": "‏[Clear tweet tweetet]‏",
     "upload_media": "‏[Upload Media Mediaia]‏",
+    "verified_badge": "‏[Verified Verifieded]‏",
     "generate_ai_image": "‏[Generate AI Image Imagege]‏",
     "add_emoji": "‏[Add Emoji Emojiji]‏",
     "characters_of_max": "‏[{current} of {max} characters charactersrs]‏",
     "preview_label": "‏[Preview]‏",
+    "preview_like": "‏[Like Likeke]‏",
+    "preview_now": "‏[now nowow]‏",
     "preview_placeholder": "‏[Preview text will appear here... here.....]‏",
+    "preview_reply": "‏[Reply Replyly]‏",
+    "preview_repost": "‏[Repost Repostst]‏",
+    "preview_view": "‏[View Viewew]‏",
     "posting_immediately_to": "‏[Posting immediately to to]‏",
     "selected_account": "‏[selected account accountnt]‏",
     "at_separator": "‏[ at  ]‏",
@@ -778,7 +784,21 @@
       "thread_generated": "‏[Thread generated!]‏",
       "inspiration_topic_set": "‏[Topic set from inspiration — click Generate when ready]‏"
     },
-    "advanced_options": "‏[Advanced options]‏"
+    "advanced_options": "‏[Advanced options]‏",
+    "media_library": {
+      "title": "‏[Media Library Libraryry]‏",
+      "description": "‏[Browse and reuse previously uploaded media mediaia]‏",
+      "no_media": "‏[No media found foundnd]‏",
+      "no_media_description": "‏[Upload media in the composer to see it here. here.re.]‏",
+      "load_more": "‏[Load more moreore]‏",
+      "retry": "‏[Retry Retryry]‏",
+      "cap_warning": "‏[4 media per tweet limit reached reacheded]‏",
+      "filter_all": "‏[All Allll]‏",
+      "filter_images": "‏[Images Imageses]‏",
+      "filter_videos": "‏[Videos Videoseos]‏",
+      "filter_gifs": "‏[GIFs GIFsfs]‏",
+      "error": "‏[Failed to load media library libraryry]‏"
+    }
   },
   "queue": {
     "title": "‏[Queue]‏",

@@ -1,5 +1,88 @@
 # Latest Updates
 
+## 2026-05-31 — Wave 8 Task E: Media Library API Endpoint
+
+New `GET /api/media/library` endpoint for the composer's media library picker.
+
+### `src/app/api/media/library/route.ts` (new)
+
+- **Auth**: `getTeamContext()` — returns 401 if no session. Viewers can read their own media (no role restriction).
+- **Validation**: Zod schema for query params — `cursor` (optional ISO string), `limit` (coerced number, 1-50, default 20), `fileType` (optional "image" | "video" | "gif").
+- **Rate limit**: `checkRateLimit()` with `"media"` type against the user's plan tier.
+- **Plan gate**: None needed — viewing own media library is available to all tiers.
+- **Dedup**: `GROUP BY file_url, file_type` with `MAX()` aggregates — same media reused across multiple posts appears once.
+- **Pagination**: Cursor-based via `createdAt` ISO string. Queries `limit + 1` rows; extra row signals `hasMore`. Returns `{ items: [...], nextCursor: string | null }`.
+- **Correlation ID**: Logged and returned in `x-correlation-id` header.
+- **Error handling**: Wrapped in try/catch; logs structured error via `logger.error`; returns `ApiError.internal()`.
+
+### Branch: `feature/wave8-taskE-composer`
+
+---
+
+## 2026-05-31 — Wave 8 Task E: Media Library Picker (Frontend)
+
+Frontend dialog component for browsing and reusing previously uploaded media within the composer.
+
+### `src/components/composer/media-library-picker.tsx` (new)
+
+- **Props**: `open`, `onOpenChange`, `onSelect`, `attachedCount`, `fileType` (optional filter)
+- **Fetch**: `GET /api/media/library?limit=20&fileType=...` via `fetchWithAuth` on dialog open
+- **States**: Loading (Skeleton grid 2/3/4 cols responsive), Error (EmptyState + retry button), Empty (EmptyState with guidance message), populated grid
+- **Grid**: Responsive — 2 cols (default), 3 cols (sm), 4 cols (lg); `aspect-square` thumbnails with `object-cover`
+- **Items**: Image thumbnails with hover overlay + scale effect; video items show Play icon overlay; file type badge + file size badge
+- **Pagination**: Cursor-based "Load more" button when `nextCursor` is non-null
+- **Cap enforcement**: Warning banner (AlertTriangle) when `attachedCount >= 4`; items disabled with reduced opacity
+- **Filter**: Segmented toggle — All / Images / Videos / GIFs; `min-h-[44px]` touch targets
+- **RTL-safe**: `start-1`/`end-1` positioning, `me-2` margin; all text via `useTranslations("compose")`
+
+### Hook integration (`src/components/composer/use-composer-media.ts`)
+
+- **New state**: `isLibraryOpen` — tracks dialog visibility
+- **New handlers**:
+  - `openMediaLibrary(tweetId)` — sets active tweet ID and opens dialog
+  - `closeMediaLibrary()` — closes dialog
+  - `handleLibrarySelect(item)` — maps `MediaLibraryItem` to `TweetDraft.media` format, enforces 4-per-tweet cap, attaches to active tweet, closes dialog
+
+### Composer wiring (`src/components/composer/composer.tsx`)
+
+- **Import**: `MediaLibraryPicker` + destructured `isLibraryOpen`, `openMediaLibrary`, `closeMediaLibrary`, `handleLibrarySelect` from `useComposerMedia`
+- **Render**: `<MediaLibraryPicker>` with `attachedCount` computed from active tweet's non-uploading media count
+- **Integration point**: `openMediaLibrary(tweetId)` ready to be called from the composer's media toolbar (future trigger button)
+
+### i18n (`src/i18n/messages/{en,ar}.json`)
+
+- **New section**: `compose.media_library` with 12 keys — `title`, `description`, `no_media`, `no_media_description`, `load_more`, `retry`, `cap_warning`, `filter_all`, `filter_images`, `filter_videos`, `filter_gifs`, `error`
+
+---
+
+## 2026-05-31 — Wave 8 Task E: Composer Preview Rewrite (X/Twitter Thread Appearance)
+
+Fifth Wave 8 task — complete visual rewrite of the composer preview to match real X/Twitter thread appearance.
+
+### Composer Preview (`src/components/composer/composer-preview.tsx`)
+
+- **Props**: Interface unchanged (backward compatible). `session` prop retained but unused (ViralScoreBadge removed).
+- **Single tweet view**: 48px circle avatar, header row (userName bold + BadgeCheck verified badge + @handle muted + dot separator + "now" timestamp), tweet content with `whitespace-pre-wrap`, media grid (1/2/3/4 images), X-style link preview card, engagement row (MessageCircle/Repeat2/Heart/BarChart3 with placeholder 0 counts).
+- **Thread view (desktop >= 640px)**: Stacked tweet cards with vertical connector lines (`border-l-2 border-border`) between avatars. 40px avatars. Tweet numbering (`1/N`, `2/N`) in top-right of each card.
+- **Thread view (mobile < 640px)**: Horizontal carousel with `snap-x snap-mandatory` and `snap-center` cards at 85vw width.
+- **Media grid**: 1 image (full-width, rounded-2xl, max-h-72), 2 images (side-by-side), 3 images (1 large top + 2 bottom), 4 images (2x2). Video/GIF items get centered Play button overlay.
+- **Uploading state**: `<Skeleton>` placeholders replace media grid when any item has `uploading: true`.
+- **RTL support**: `dir="auto"` on user name, handle, and tweet content. `text-start` alignment.
+- **Dark mode**: All colors use shadcn/ui semantic tokens (`bg-card`, `text-foreground`, `text-muted-foreground`, `border-border`). Verified badge uses `text-sky-500` (X brand blue).
+- **Empty state**: When no tweet content exists, shows muted placeholder text from i18n key `preview_placeholder`.
+- **Internal components**: `TweetAvatar`, `TweetHeader`, `TweetContent`, `TweetMediaGrid`, `MediaUploadingSkeleton`, `TweetLinkPreviewCard`, `TweetEngagementRow`, `TweetCard`, `ThreadConnector` — all file-private, not exported.
+- **Removed**: `ViralScoreBadge` import and usage (preview is visual-only, per requirements).
+- **Icons added**: `BadgeCheck`, `MessageCircle`, `Repeat2`, `Heart`, `BarChart3`, `Play` from `lucide-react`.
+
+### Verification
+
+- `pnpm run check` — PENDING (no shell access in this context)
+- No new i18n keys required (reuses existing `compose.preview_label`, `compose.preview_placeholder`)
+
+### Branch: `feature/wave8-taskE-composer`
+
+---
+
 ## 2026-05-31 — Wave 8 Task D: Analytics Visualization
 
 Fourth Wave 8 task — period comparison, custom date range, insights cards, and branded PDF export.

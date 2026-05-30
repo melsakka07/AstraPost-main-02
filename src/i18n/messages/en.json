@@ -745,11 +745,17 @@
     "emoji": "Emoji",
     "clear_tweet": "Clear tweet",
     "upload_media": "Upload Media",
+    "verified_badge": "Verified",
     "generate_ai_image": "Generate AI Image",
     "add_emoji": "Add Emoji",
     "characters_of_max": "{current} of {max} characters",
     "preview_label": "Preview",
+    "preview_like": "Like",
+    "preview_now": "now",
     "preview_placeholder": "Preview text will appear here...",
+    "preview_reply": "Reply",
+    "preview_repost": "Repost",
+    "preview_view": "View",
     "posting_immediately_to": "Posting immediately to",
     "selected_account": "selected account",
     "at_separator": " at ",
@@ -796,7 +802,21 @@
       "thread_generated": "Thread generated!",
       "inspiration_topic_set": "Topic set from inspiration — click Generate when ready"
     },
-    "advanced_options": "Advanced options"
+    "advanced_options": "Advanced options",
+    "media_library": {
+      "title": "Media Library",
+      "description": "Browse and reuse previously uploaded media",
+      "no_media": "No media found",
+      "no_media_description": "Upload media in the composer to see it here.",
+      "load_more": "Load more",
+      "retry": "Retry",
+      "cap_warning": "4 media per tweet limit reached",
+      "filter_all": "All",
+      "filter_images": "Images",
+      "filter_videos": "Videos",
+      "filter_gifs": "GIFs",
+      "error": "Failed to load media library"
+    }
   },
   "queue": {
     "title": "Queue",

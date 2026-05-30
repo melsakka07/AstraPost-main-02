@@ -1,6 +1,17 @@
 # Recent Fixes & Changes
 
-## 2026-05-24 — YouTube-to-Thread: yt-dlp audio client selection + Image aspect-ratio fix
+## 2026-05-31 — Wave 8 Task E: Composer Preview X/Twitter Thread Rewrite
+
+### `src/components/composer/composer-preview.tsx` — full visual rewrite
+
+- **Props**: Backward compatible — same `ComposerPreviewProps` interface. `session` retained but unused.
+- **Single tweet**: 48px avatar, header with verified badge (BadgeCheck, sky-500), @handle, dot separator, "now" timestamp. Content with `whitespace-pre-wrap`. Media grid: 1 image (max-h-72 rounded-2xl), 2 side-by-side, 3 (1 large + 2), 4 (2x2). Video/GIF gets centered Play overlay. Link preview card with bordered X-style layout. Engagement row with 4 icons + 0 counts.
+- **Thread desktop (>=640px)**: Stacked cards with `border-l-2 border-border` vertical connector lines between 40px avatars. Tweet numbering (1/N) top-right.
+- **Thread mobile (<640px)**: Horizontal `snap-x snap-mandatory` carousel with 85vw snap-center cards.
+- **Uploading**: `Skeleton` placeholders replace media grid when any item has `uploading: true`.
+- **RTL/dark mode**: `dir="auto"`, semantic tokens (`bg-card`, `text-muted-foreground`, `border-border`).
+- **Removed**: `ViralScoreBadge` (preview is visual-only). All new sub-components are file-private.
+- **Icons added**: `BadgeCheck`, `MessageCircle`, `Repeat2`, `Heart`, `BarChart3`, `Play` from lucide-react.
 
 ### Audio format selection on Railway with yt-dlp 2026.03.17
 
