@@ -139,51 +139,53 @@ export function FeatureBreakdownTable({ data, className }: FeatureBreakdownTable
         {data.length === 0 ? (
           <div className="text-muted-foreground p-6 text-center text-sm">No data available</div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Feature</TableHead>
-                <TableHead className="text-end">Count</TableHead>
-                <TableHead className="text-end">Total</TableHead>
-                <TableHead className="text-end">Avg Cost</TableHead>
-                <TableHead className="w-24">Share</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((row) => {
-                const share = totalCost > 0 ? (row.cost / totalCost) * 100 : 0;
-                return (
-                  <TableRow key={row.subFeature}>
-                    <TableCell className="font-medium">
-                      <Badge variant="secondary">{row.subFeature}</Badge>
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums">
-                      {row.count.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums">
-                      ${(row.cost / 100).toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-endtabular-nums">
-                      ${(row.avgCost / 100).toFixed(4)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-                          <div
-                            className="bg-brand-9 h-full rounded-full"
-                            style={{ width: `${Math.min(share, 100)}%` }}
-                          />
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Feature</TableHead>
+                  <TableHead className="text-end">Count</TableHead>
+                  <TableHead className="text-end">Total</TableHead>
+                  <TableHead className="text-end">Avg Cost</TableHead>
+                  <TableHead className="w-24">Share</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map((row) => {
+                  const share = totalCost > 0 ? (row.cost / totalCost) * 100 : 0;
+                  return (
+                    <TableRow key={row.subFeature}>
+                      <TableCell className="font-medium">
+                        <Badge variant="secondary">{row.subFeature}</Badge>
+                      </TableCell>
+                      <TableCell className="text-end tabular-nums">
+                        {row.count.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-end tabular-nums">
+                        ${(row.cost / 100).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-endtabular-nums">
+                        ${(row.avgCost / 100).toFixed(4)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
+                            <div
+                              className="bg-brand-9 h-full rounded-full"
+                              style={{ width: `${Math.min(share, 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-muted-foreground text-endtext-xs w-9 tabular-nums">
+                            {Math.round(share)}%
+                          </span>
                         </div>
-                        <span className="text-muted-foreground text-endtext-xs w-9 tabular-nums">
-                          {Math.round(share)}%
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -263,39 +265,41 @@ export function RouteLatencyTable({ data, className }: RouteLatencyTableProps) {
             No latency data available
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Route</TableHead>
-                <TableHead className="text-end">Count</TableHead>
-                <TableHead className="text-end">p50</TableHead>
-                <TableHead className="text-end">p95</TableHead>
-                <TableHead className="text-end">p99</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((row) => (
-                <TableRow key={row.subFeature}>
-                  <TableCell className="font-medium">
-                    <Badge variant="secondary">{row.subFeature}</Badge>
-                  </TableCell>
-                  <TableCell className="text-end tabular-nums">
-                    {row.count.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-end tabular-nums">{row.p50}ms</TableCell>
-                  <TableCell className="text-end tabular-nums">{row.p95}ms</TableCell>
-                  <TableCell
-                    className={cn(
-                      "text-end font-medium tabular-nums",
-                      row.p99 > 5000 ? "text-destructive" : "text-muted-foreground"
-                    )}
-                  >
-                    {row.p99}ms
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Route</TableHead>
+                  <TableHead className="text-end">Count</TableHead>
+                  <TableHead className="text-end">p50</TableHead>
+                  <TableHead className="text-end">p95</TableHead>
+                  <TableHead className="text-end">p99</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.map((row) => (
+                  <TableRow key={row.subFeature}>
+                    <TableCell className="font-medium">
+                      <Badge variant="secondary">{row.subFeature}</Badge>
+                    </TableCell>
+                    <TableCell className="text-end tabular-nums">
+                      {row.count.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-end tabular-nums">{row.p50}ms</TableCell>
+                    <TableCell className="text-end tabular-nums">{row.p95}ms</TableCell>
+                    <TableCell
+                      className={cn(
+                        "text-end font-medium tabular-nums",
+                        row.p99 > 5000 ? "text-destructive" : "text-muted-foreground"
+                      )}
+                    >
+                      {row.p99}ms
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -423,52 +427,54 @@ export function FeedbackBreakdown({ data, className }: FeedbackBreakdownProps) {
             No feedback data available
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Version</TableHead>
-                <TableHead className="text-end">Positive</TableHead>
-                <TableHead className="text-end">Negative</TableHead>
-                <TableHead className="text-end">Total</TableHead>
-                <TableHead className="w-32">Sentiment</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((row) => {
-                const total = row.positive + row.negative;
-                const positivePct = total > 0 ? Math.round((row.positive / total) * 100) : 0;
-                return (
-                  <TableRow key={row.promptVersion}>
-                    <TableCell className="font-mono text-xs font-medium">
-                      {row.promptVersion}
-                    </TableCell>
-                    <TableCell className="text-success-11 text-endtabular-nums">
-                      {row.positive.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-destructive text-endtabular-nums">
-                      {row.negative.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-end tabular-nums">
-                      {total.toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
-                          <div
-                            className="bg-success-9 h-full rounded-full"
-                            style={{ width: `${positivePct}%` }}
-                          />
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Version</TableHead>
+                  <TableHead className="text-end">Positive</TableHead>
+                  <TableHead className="text-end">Negative</TableHead>
+                  <TableHead className="text-end">Total</TableHead>
+                  <TableHead className="w-32">Sentiment</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map((row) => {
+                  const total = row.positive + row.negative;
+                  const positivePct = total > 0 ? Math.round((row.positive / total) * 100) : 0;
+                  return (
+                    <TableRow key={row.promptVersion}>
+                      <TableCell className="font-mono text-xs font-medium">
+                        {row.promptVersion}
+                      </TableCell>
+                      <TableCell className="text-success-11 text-endtabular-nums">
+                        {row.positive.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-destructive text-endtabular-nums">
+                        {row.negative.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-end tabular-nums">
+                        {total.toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="bg-muted h-2 flex-1 overflow-hidden rounded-full">
+                            <div
+                              className="bg-success-9 h-full rounded-full"
+                              style={{ width: `${positivePct}%` }}
+                            />
+                          </div>
+                          <span className="text-muted-foreground text-endtext-xs w-9 tabular-nums">
+                            {positivePct}%
+                          </span>
                         </div>
-                        <span className="text-muted-foreground text-endtext-xs w-9 tabular-nums">
-                          {positivePct}%
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

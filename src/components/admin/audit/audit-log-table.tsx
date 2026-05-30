@@ -274,7 +274,7 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-lg border">
+      <div className="bg-card overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>

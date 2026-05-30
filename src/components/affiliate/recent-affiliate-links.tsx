@@ -115,109 +115,111 @@ export function RecentAffiliateLinks() {
             </p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("table.product")}</TableHead>
-                <TableHead>{t("table.platform")}</TableHead>
-                <TableHead>{t("table.clicks")}</TableHead>
-                <TableHead className="hidden md:table-cell">
-                  {t("table.generated_content")}
-                </TableHead>
-                <TableHead>{t("table.date")}</TableHead>
-                <TableHead>{t("table.status")}</TableHead>
-                <TableHead className="text-end">{t("table.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {links.map((link) => (
-                <TableRow key={link.id}>
-                  <TableCell className="max-w-[200px] font-medium">
-                    <div className="flex items-center gap-3">
-                      {link.productImageUrl && (
-                        <Image
-                          src={link.productImageUrl}
-                          alt={t("table.product_thumbnail")}
-                          width={40}
-                          height={40}
-                          className="rounded border object-cover"
-                          unoptimized
-                        />
-                      )}
-                      <div className="truncate">
-                        <div
-                          className="truncate font-semibold"
-                          title={link.productTitle || t("table.unknown")}
-                        >
-                          {link.productTitle || t("table.unknown_product")}
-                        </div>
-                        <a
-                          href={link.destinationUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-muted-foreground flex items-center gap-1 text-xs hover:underline"
-                        >
-                          {t("table.view_product")} <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="capitalize">
-                      {link.platform || t("platforms.amazon")}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-mono text-sm">{link.clicks || 0}</div>
-                  </TableCell>
-                  <TableCell className="hidden max-w-[300px] md:table-cell">
-                    <div
-                      className="text-muted-foreground truncate text-sm"
-                      title={link.generatedTweet || ""}
-                    >
-                      {link.generatedTweet}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">
-                    {format(new Date(link.createdAt), "MMM d, yyyy")}
-                  </TableCell>
-                  <TableCell>
-                    {link.wasScheduled ? (
-                      <Badge
-                        variant="default"
-                        className="border-success-6 bg-success-3 text-success-11 hover:bg-success-4"
-                      >
-                        {t("table.scheduled")}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">{t("table.generated")}</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-end">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleCopy(link.generatedTweet || "")}
-                        title={t("table.copy_tweet")}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSchedule(link)}
-                        className="gap-2"
-                      >
-                        <Calendar className="h-4 w-4" />
-                        <span className="hidden sm:inline">{t("table.schedule")}</span>
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("table.product")}</TableHead>
+                  <TableHead>{t("table.platform")}</TableHead>
+                  <TableHead>{t("table.clicks")}</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    {t("table.generated_content")}
+                  </TableHead>
+                  <TableHead>{t("table.date")}</TableHead>
+                  <TableHead>{t("table.status")}</TableHead>
+                  <TableHead className="text-end">{t("table.actions")}</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {links.map((link) => (
+                  <TableRow key={link.id}>
+                    <TableCell className="max-w-[200px] font-medium">
+                      <div className="flex items-center gap-3">
+                        {link.productImageUrl && (
+                          <Image
+                            src={link.productImageUrl}
+                            alt={t("table.product_thumbnail")}
+                            width={40}
+                            height={40}
+                            className="rounded border object-cover"
+                            unoptimized
+                          />
+                        )}
+                        <div className="truncate">
+                          <div
+                            className="truncate font-semibold"
+                            title={link.productTitle || t("table.unknown")}
+                          >
+                            {link.productTitle || t("table.unknown_product")}
+                          </div>
+                          <a
+                            href={link.destinationUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-muted-foreground flex items-center gap-1 text-xs hover:underline"
+                          >
+                            {t("table.view_product")} <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {link.platform || t("platforms.amazon")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-mono text-sm">{link.clicks || 0}</div>
+                    </TableCell>
+                    <TableCell className="hidden max-w-[300px] md:table-cell">
+                      <div
+                        className="text-muted-foreground truncate text-sm"
+                        title={link.generatedTweet || ""}
+                      >
+                        {link.generatedTweet}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(new Date(link.createdAt), "MMM d, yyyy")}
+                    </TableCell>
+                    <TableCell>
+                      {link.wasScheduled ? (
+                        <Badge
+                          variant="default"
+                          className="border-success-6 bg-success-3 text-success-11 hover:bg-success-4"
+                        >
+                          {t("table.scheduled")}
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">{t("table.generated")}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-end">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleCopy(link.generatedTweet || "")}
+                          title={t("table.copy_tweet")}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSchedule(link)}
+                          className="gap-2"
+                        >
+                          <Calendar className="h-4 w-4" />
+                          <span className="hidden sm:inline">{t("table.schedule")}</span>
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -141,91 +141,93 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
         </h2>
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Name
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Email
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Referral Code
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
-                    Referred
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
-                    Converted
-                  </TableHead>
-                  <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
-                    Credits
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 6 }).map((__, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-4 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : topReferrers.data.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-muted-foreground h-32 text-center">
-                      No referrers found
-                    </TableCell>
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      Name
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      Email
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                      Referral Code
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
+                      Referred
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
+                      Converted
+                    </TableHead>
+                    <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
+                      Credits
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  topReferrers.data.map((referrer) => (
-                    <TableRow key={referrer.id}>
-                      <TableCell className="font-medium">{referrer.name}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {referrer.email}
-                      </TableCell>
-                      <TableCell>
-                        {referrer.referralCode ? (
-                          <Badge variant="outline" className="font-mono">
-                            {referrer.referralCode}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">
-                        {referrer.referredCount}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">
-                        {referrer.convertedCount > 0 ? (
-                          <Badge
-                            variant="outline"
-                            className="border-success-6/30 bg-success-3 text-success-11"
-                          >
-                            {referrer.convertedCount}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">0</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">
-                        {referrer.totalCredits > 0 ? (
-                          <span className="text-success-11 font-medium">
-                            +{referrer.totalCredits}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">0</span>
-                        )}
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        {Array.from({ length: 6 }).map((__, j) => (
+                          <TableCell key={j}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : topReferrers.data.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-muted-foreground h-32 text-center">
+                        No referrers found
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    topReferrers.data.map((referrer) => (
+                      <TableRow key={referrer.id}>
+                        <TableCell className="font-medium">{referrer.name}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {referrer.email}
+                        </TableCell>
+                        <TableCell>
+                          {referrer.referralCode ? (
+                            <Badge variant="outline" className="font-mono">
+                              {referrer.referralCode}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {referrer.referredCount}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {referrer.convertedCount > 0 ? (
+                            <Badge
+                              variant="outline"
+                              className="border-success-6/30 bg-success-3 text-success-11"
+                            >
+                              {referrer.convertedCount}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">0</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {referrer.totalCredits > 0 ? (
+                            <span className="text-success-11 font-medium">
+                              +{referrer.totalCredits}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">0</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
