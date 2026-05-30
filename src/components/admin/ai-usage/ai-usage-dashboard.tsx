@@ -197,34 +197,36 @@ export function AiUsageDashboard({ initialData }: AiUsageDashboardProps = {}) {
                 variant="ai"
               />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-end">Generations</TableHead>
-                    <TableHead className="text-end">Tokens</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.topConsumers.data.map((consumer) => (
-                    <TableRow key={consumer.userId}>
-                      <TableCell className="font-medium">
-                        {consumer.userName ?? "Unknown"}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {consumer.userEmail ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">
-                        {consumer.generationCount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-end tabular-nums">
-                        {consumer.totalTokens.toLocaleString()}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="text-end">Generations</TableHead>
+                      <TableHead className="text-end">Tokens</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {data.topConsumers.data.map((consumer) => (
+                      <TableRow key={consumer.userId}>
+                        <TableCell className="font-medium">
+                          {consumer.userName ?? "Unknown"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {consumer.userEmail ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {consumer.generationCount.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          {consumer.totalTokens.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

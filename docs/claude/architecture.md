@@ -97,6 +97,16 @@ Uses `next-intl` (ar/en). Message files live in `src/i18n/messages/{en,ar,pseudo
 
 Components wire translations via `useTranslations()` from `next-intl`. All dropdown labels, table headers, button text, placeholders, aria-labels, and toast messages use `t()` calls — no hardcoded English strings in UI.
 
+### Mobile / Responsive Patterns
+
+**Touch targets (WCAG 2.5.5):** All primary interactive elements meet the 44px minimum. Button `icon-md` and `lg` variants are 44px. Inputs and SelectTriggers use `h-11 md:h-10` (44px mobile, 40px desktop). TabsTriggers have `min-h-11`. DropdownMenu items have increased padding for adequate touch area. Checkbox visual size is 20px.
+
+**ResponsiveTable pattern:** All data tables wrap in `overflow-x-auto` — no horizontal page scroll at narrow viewports. Admin tables (affiliate-leaderboard, notification-history-table, agentic-sessions-table, impersonation-table, audit-log, teams, promo-codes, feature-flags, referrals, roadmap, ai-cost-charts, users-table, billing-overview, ai-usage, team-members-list, recent-affiliate-links) all follow this pattern.
+
+**Safe-area pattern:** All mobile overlays and fixed-position elements include safe-area inset padding. `pb-safe` utility is applied to SheetContent, Admin mobile sidebar, and other bottom-fixed elements. Dialogs use `max-h-[calc(100dvh-2rem)]` with `overflow-y-auto` to stay within the viewport on notched devices.
+
+**Mobile-first sizing:** Form controls use the `h-11 md:h-10` pattern — 44px touch target on mobile, 40px on desktop where precision matters more than tap area. AdminPageWrapper uses responsive spacing parity with DashboardPageWrapper.
+
 ### Dashboard Sidebar IA
 
 The dashboard sidebar (defined in `src/components/dashboard/sidebar-nav-data.ts`) is organized into 4 sections for regular users: **Overview** (Dashboard), **Create** (Compose, Drafts, Schedule -- merged Queue + Calendar with `?view=list|month|week|day` view tabs), **Grow** (Analytics, AI Tools, Inspiration, Agentic Posting), and **Account** (Settings, Achievements, Referrals, Affiliate Dashboard). Admin users see an additional **Admin** section (Jobs, History) appended below Account. The old `/dashboard/queue` and `/dashboard/calendar` routes redirect to `/dashboard/schedule` with query-param preservation. Mobile bottom nav surfaces the Create, Grow, and Account sections.

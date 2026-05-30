@@ -83,7 +83,7 @@ export function ImpersonationTable({
         </div>
       </div>
 
-      <div className="min-h-[400px] flex-1 overflow-auto">
+      <div className="min-h-[400px] flex-1 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

@@ -199,7 +199,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
 
         {/* Teams Tab */}
         <TabsContent value="teams" className="space-y-4">
-          <div className="bg-card rounded-lg border">
+          <div className="bg-card overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -291,7 +291,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
 
         {/* Invitations Tab */}
         <TabsContent value="invitations" className="space-y-4">
-          <div className="bg-card rounded-lg border">
+          <div className="bg-card overflow-x-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
