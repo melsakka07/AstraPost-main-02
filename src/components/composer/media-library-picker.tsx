@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
 import { Play, AlertTriangle, ImageIcon, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,12 +12,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { fetchWithAuth } from "@/lib/fetch-with-auth";
+import { Skeleton } from "@/components/ui/skeleton";
 import { clientLogger } from "@/lib/client-logger";
+import { fetchWithAuth } from "@/lib/fetch-with-auth";
+import { cn } from "@/lib/utils";
 
 export interface MediaLibraryItem {
   id: string;

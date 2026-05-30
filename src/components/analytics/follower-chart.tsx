@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { GitCompare } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   Area,
@@ -11,7 +12,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { GitCompare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 

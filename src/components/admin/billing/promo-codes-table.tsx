@@ -71,7 +71,7 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!initialData) {

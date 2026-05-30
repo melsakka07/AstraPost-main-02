@@ -2,6 +2,7 @@
 
 import { useState, useRef, useId } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { ImageIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ComposerAiTools } from "@/components/composer/composer-ai-tools";
@@ -22,7 +23,6 @@ import { useComposerShortcuts } from "@/components/composer/use-composer-shortcu
 import { useComposerTweets } from "@/components/composer/use-composer-tweets";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ImageIcon } from "lucide-react";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";

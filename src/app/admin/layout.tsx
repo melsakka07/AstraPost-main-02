@@ -1,7 +1,7 @@
+import { getTranslations } from "next-intl/server";
 import { GlobalAdminSearchWrapper } from "@/components/admin/global-search-wrapper";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { requireAdmin } from "@/lib/admin";
-import { getTranslations } from "next-intl/server";
 
 // Force fresh RSC payload on every navigation — prevents Next.js router cache
 // from serving stale data when navigating between admin pages via sidebar links.

@@ -27,6 +27,7 @@ import {
 } from "@/components/analytics/charts-wrapper";
 import { DateRangeSelector } from "@/components/analytics/date-range-selector";
 import { ExportButton } from "@/components/analytics/export-button";
+import { InsightsCards, type InsightItem } from "@/components/analytics/insights-cards";
 import { ManualRefreshButton } from "@/components/analytics/manual-refresh-button";
 import { TopTweetsList } from "@/components/analytics/top-tweets-list";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
@@ -51,7 +52,6 @@ import {
   user,
   xAccounts,
 } from "@/lib/schema";
-import { InsightsCards, type InsightItem } from "@/components/analytics/insights-cards";
 import { AnalyticsEngine } from "@/lib/services/analytics-engine";
 import { computeInsights } from "@/lib/services/analytics-insights";
 import { AnalyticsTabs, type AnalyticsTabValue } from "./_components/analytics-tabs";

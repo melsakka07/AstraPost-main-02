@@ -173,7 +173,7 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
     } finally {
       setLoading(false);
     }
-  }, [page, filter, debouncedSearch]);
+  }, [page, filter, debouncedSearch, t]);
 
   useEffect(() => {
     if (!initialData) {

@@ -57,7 +57,7 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!initialData) {

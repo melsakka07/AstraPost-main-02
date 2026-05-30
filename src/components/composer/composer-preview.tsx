@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useTranslations } from "next-intl";
 import { BadgeCheck, MessageCircle, Repeat2, Heart, BarChart3, Play } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +38,7 @@ interface ComposerPreviewProps {
   userImage?: string | null;
   userName: string;
   userHandle: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   session?: any;
 }
 

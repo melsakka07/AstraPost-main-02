@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { SignInButton } from "@/components/auth/sign-in-button";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,7 @@ export default function RegisterPage() {
     },
   });
 
-  const passwordValue = form.watch("password");
+  const passwordValue = useWatch({ control: form.control, name: "password" });
 
   async function onSubmit(values: RegisterFormValues) {
     setIsPending(true);
