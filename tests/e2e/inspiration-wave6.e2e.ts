@@ -18,6 +18,14 @@ import { expect, test, type Page } from "@playwright/test";
  * src/components/inspiration/inspiration-utils.test.ts; full import->history is
  * verified locally (pnpm dev) or on prod post-merge, matching how
  * composer-wave5.e2e.ts scopes auth-gated paths.
+ *
+ * ⚠️ MANUAL-ONLY — not CI-runnable as-is. The auth bootstrap can't run reliably:
+ * the `auth` rate limit is 5 req / 15 min per IP (src/lib/rate-limiter.ts) so the
+ * suite 429s after ~2 calls, and the node-fetch sign-in lacks an Origin header →
+ * Better Auth CSRF 403 (register calls signUpEmail internally and doesn't forward
+ * the autoSignIn cookie). The wrapped behavior is covered by node unit tests +
+ * manual verification. Making these CI-runnable needs a bootstrap fix (browser-
+ * driven login + a test-only rate-limit bypass). See docs/claude/e2e-smokes.md.
  */
 
 const BASE = "http://127.0.0.1:3000";
