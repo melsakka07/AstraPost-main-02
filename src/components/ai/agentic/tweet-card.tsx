@@ -75,7 +75,7 @@ export function AgenticTweetCard({
               <button
                 type="button"
                 aria-label="Drag to reorder tweet"
-                className="text-muted-foreground/40 hover:text-muted-foreground focus-visible:ring-ring min-h-[44px] min-w-[44px] cursor-grab touch-none rounded p-2 transition-colors focus-visible:ring-2 active:cursor-grabbing"
+                className="text-muted-foreground/70 hover:text-muted-foreground focus-visible:ring-ring min-h-[44px] min-w-[44px] cursor-grab touch-none rounded p-2 transition-colors focus-visible:ring-2 active:cursor-grabbing"
                 {...dragHandleProps}
               >
                 <GripVertical className="h-4 w-4" />

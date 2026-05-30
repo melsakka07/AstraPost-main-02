@@ -201,7 +201,7 @@ function SidebarContent({
               ) : (
                 // Regular section with label — always expanded
                 <>
-                  <p className="text-muted-foreground/60 mb-1.5 px-3 text-[11px] font-semibold tracking-wider uppercase">
+                  <p className="text-muted-foreground mb-1.5 px-3 text-[11px] font-semibold tracking-wider uppercase">
                     {translatedSectionLabel}
                   </p>
                   <div className="space-y-0.5">

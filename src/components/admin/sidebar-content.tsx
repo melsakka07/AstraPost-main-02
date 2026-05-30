@@ -26,7 +26,7 @@ export function AdminSidebarContent({ sections, collapsed, pathname }: AdminSide
         {sections.map((section) => (
           <div key={section.label}>
             {!collapsed && (
-              <p className="text-muted-foreground/60 mb-1 px-3 text-xs font-semibold tracking-wider uppercase">
+              <p className="text-muted-foreground mb-1 px-3 text-xs font-semibold tracking-wider uppercase">
                 {section.label}
               </p>
             )}
@@ -39,6 +39,7 @@ export function AdminSidebarContent({ sections, collapsed, pathname }: AdminSide
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
                       "text-muted-foreground hover:text-primary hover:bg-muted flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
                       isActive && "bg-primary/10 text-primary font-medium",
