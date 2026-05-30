@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Play, AlertTriangle, ImageIcon, RefreshCw } from "lucide-react";
 import {
@@ -242,20 +243,22 @@ export function MediaLibraryPicker({
 
                   {/* Image thumbnail */}
                   {item.fileType !== "video" ? (
-                    <img
+                    <Image
                       src={item.fileUrl}
                       alt=""
-                      loading="lazy"
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                      className="object-cover"
                     />
                   ) : (
                     /* Video thumbnail with play button overlay */
                     <div className="relative h-full w-full">
-                      <img
+                      <Image
                         src={item.fileUrl}
                         alt=""
-                        loading="lazy"
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                        className="object-cover"
                       />
                       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                         <div className="flex size-10 items-center justify-center rounded-full bg-black/60">

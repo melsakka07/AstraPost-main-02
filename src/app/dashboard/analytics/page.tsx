@@ -40,6 +40,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getPlanLimits } from "@/lib/plan-limits";
 import {
   analyticsRefreshRuns,
   followerSnapshots,
@@ -128,19 +129,32 @@ export default async function AnalyticsPage({
 
   let rangeDays: number;
   let startDate: Date;
-  let prevStartDate: Date;
 
   if (isCustomRange && fromValue && toValue) {
     const from = new Date(fromValue);
     const to = new Date(toValue);
     rangeDays = Math.ceil((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
     startDate = from;
-    prevStartDate = new Date(from.getTime() - rangeDays * 24 * 60 * 60 * 1000);
   } else {
     rangeDays = parseInt(effectiveRange.replace("d", "")) || 30;
     startDate = new Date(nowTimestamp - rangeDays * 24 * 60 * 60 * 1000);
-    prevStartDate = new Date(startDate.getTime() - rangeDays * 24 * 60 * 60 * 1000);
   }
+
+  // Explicit retention clamp: never query snapshots older than the plan's
+  // analyticsRetentionDays, regardless of the requested (custom) range. This is
+  // a hard guard on top of the free-plan effectiveRange override above.
+  const effectivePlan = isTrialActive ? "trial" : (dbUser?.plan ?? "free");
+  const retentionDays = getPlanLimits(effectivePlan).analyticsRetentionDays;
+  const retentionFloor = new Date(nowTimestamp - retentionDays * 24 * 60 * 60 * 1000);
+  if (startDate < retentionFloor) {
+    startDate = retentionFloor;
+    rangeDays = Math.max(
+      1,
+      Math.ceil((nowTimestamp - startDate.getTime()) / (24 * 60 * 60 * 1000))
+    );
+  }
+
+  const prevStartDate = new Date(startDate.getTime() - rangeDays * 24 * 60 * 60 * 1000);
 
   const displayRange = isCustomRange ? `${fromValue} – ${toValue}` : effectiveRange;
 
