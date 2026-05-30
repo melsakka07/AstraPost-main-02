@@ -1,5 +1,43 @@
 # Latest Updates
 
+## 2026-05-30 — Wave 7 Task C: Mobile / Responsive Polish
+
+Systematic mobile audit pass across all dashboard and admin pages.
+
+### Overflow + Table Fixes (17 files)
+
+- Changed `overflow-hidden` → `overflow-x-auto` on 5 admin tables (affiliate-leaderboard, notification-history-table, agentic-sessions-table, impersonation-table, etc.)
+- Added `overflow-x-auto` wrappers to 12 tables that had no overflow handling (audit-log, teams, promo-codes, feature-flags, referrals, roadmap, ai-cost-charts, users-table, billing-overview, ai-usage, team-members-list, recent-affiliate-links)
+- ai-writer-client.tsx: `grid-cols-4` → `grid-cols-2 sm:grid-cols-4` for mobile tabs
+
+### Touch Target Fixes (WCAG 2.5.5 — ≥44px)
+
+- Button: added `icon-md` variant (44px), bumped `lg` from 40px to 44px
+- Input: `h-11 md:h-10` (44px mobile, 40px desktop)
+- SelectTrigger: `h-11 md:h-10`
+- TabsTrigger: added `min-h-11`
+- DropdownMenuItem/CheckboxItem/RadioItem/SubTrigger: increased padding
+- Checkbox: visual size from 16px to 20px
+
+### Page Wrapper Fixes
+
+- `/dashboard/ai/writer`: now uses DashboardPageWrapper (was missing)
+- AdminPageWrapper: responsive spacing parity with DashboardPageWrapper + line-clamp-2 description
+
+### Safe-Area Insets
+
+- Dialog: added `max-h-[calc(100dvh-2rem)]` + `overflow-y-auto` for notched phones
+- Sheet: added `pb-safe` to SheetContent
+- Admin mobile sidebar: per-side padding with `pb-safe`
+
+### DoD
+
+- `pnpm run check` — PASS; `pnpm test` — PASS
+- `verify-dashboard-tokens` + `verify-rtl` — PASS
+- Branch: `feature/wave7-design-system`
+
+---
+
 ## 2026-05-30 — Wave 7 Task B: Localization — RTL Phase-2 + Admin i18n + Admin Token Migration
 
 Three concurrent workstreams completed across 60+ files.

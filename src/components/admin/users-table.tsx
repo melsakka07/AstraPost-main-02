@@ -54,7 +54,7 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
   };
 
   return (
-    <div className="bg-card rounded-md border">
+    <div className="bg-card overflow-x-auto rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>

@@ -242,57 +242,61 @@ export function BillingOverview({ initialData }: BillingOverviewProps = {}) {
           </Button>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Subscriber
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Plan
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Status
-                </TableHead>
-                <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Date
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions.length === 0 ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
-                    No subscription events yet
-                  </TableCell>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Subscriber
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Plan
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                    Date
+                  </TableHead>
                 </TableRow>
-              ) : (
-                transactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{tx.userName ?? "Unknown"}</span>
-                        <span className="text-muted-foreground text-xs">{tx.userEmail ?? "—"}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {PLAN_LABELS[tx.plan ?? ""] ?? tx.plan ?? "—"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANT[tx.status ?? ""] ?? "outline"}>
-                        {tx.status ?? "—"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {format(new Date(tx.updatedAt), "d MMM yyyy")}
+              </TableHeader>
+              <TableBody>
+                {transactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-muted-foreground h-24 text-center">
+                      No subscription events yet
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  transactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{tx.userName ?? "Unknown"}</span>
+                          <span className="text-muted-foreground text-xs">
+                            {tx.userEmail ?? "—"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {PLAN_LABELS[tx.plan ?? ""] ?? tx.plan ?? "—"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANT[tx.status ?? ""] ?? "outline"}>
+                          {tx.status ?? "—"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {format(new Date(tx.updatedAt), "d MMM yyyy")}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

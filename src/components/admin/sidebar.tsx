@@ -161,7 +161,7 @@ export function AdminSidebar() {
                 <span className="sr-only">{t("nav.open_menu")}</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 max-w-[calc(100vw-2rem)] p-0">
+            <SheetContent side="left" className="pb-safe w-72 max-w-[calc(100vw-2rem)] px-0 pt-0">
               <div className="flex h-14 items-center border-b px-4">
                 <Link href="/admin" className="flex items-center gap-2">
                   <ShieldCheck className="text-primary h-6 w-6" />

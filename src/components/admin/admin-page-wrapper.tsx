@@ -25,7 +25,7 @@ export function AdminPageWrapper({
   children,
 }: AdminPageWrapperProps) {
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6">
+    <div className="mx-auto w-full max-w-7xl space-y-4 sm:space-y-6 md:space-y-8">
       {breadcrumbs && breadcrumbs.length > 0 && <AdminBreadcrumbs items={breadcrumbs} />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
@@ -35,7 +35,9 @@ export function AdminPageWrapper({
           <div className="min-w-0">
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
             {description && (
-              <p className="text-muted-foreground mt-0.5 text-xs sm:text-sm">{description}</p>
+              <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs sm:text-sm">
+                {description}
+              </p>
             )}
           </div>
         </div>
