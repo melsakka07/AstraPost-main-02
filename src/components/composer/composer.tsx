@@ -10,6 +10,7 @@ import { ComposerEditor } from "@/components/composer/composer-editor";
 import { ComposerPreview } from "@/components/composer/composer-preview";
 import { ComposerPublishingPanel } from "@/components/composer/composer-publishing-panel";
 import type { TweetDraft } from "@/components/composer/composer-types";
+import { MediaLibraryPicker } from "@/components/composer/media-library-picker";
 import { SaveTemplateDialog } from "@/components/composer/save-template-dialog";
 import { useComposerAi } from "@/components/composer/use-composer-ai";
 import { useComposerBridge } from "@/components/composer/use-composer-bridge";
@@ -19,7 +20,9 @@ import { useComposerMedia } from "@/components/composer/use-composer-media";
 import { useComposerPublish } from "@/components/composer/use-composer-publish";
 import { useComposerShortcuts } from "@/components/composer/use-composer-shortcuts";
 import { useComposerTweets } from "@/components/composer/use-composer-tweets";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ImageIcon } from "lucide-react";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -168,6 +171,10 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
     handleAiImageAttach,
     handleFileUpload,
     triggerFileUpload,
+    isLibraryOpen,
+    openMediaLibrary,
+    closeMediaLibrary,
+    handleLibrarySelect,
   } = useComposerMedia({ tweets, setTweets, activeTweetId, setActiveTweetId, fileInputRef });
 
   const {
@@ -246,6 +253,11 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
     openAiTool: ai.openAiTool,
   });
 
+  // Active tweet media count for media library cap enforcement
+  const libraryAttachedCount = activeTweetId
+    ? (tweets.find((tw) => tw.id === activeTweetId)?.media.length ?? 0)
+    : 0;
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
       <input
@@ -303,6 +315,19 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
             session={session}
           />
         </Card>
+
+        {/* Media Library trigger */}
+        {activeTweetId && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 w-full gap-1.5 text-xs"
+            onClick={() => openMediaLibrary(activeTweetId)}
+          >
+            <ImageIcon className="h-3.5 w-3.5" />
+            {t("media_library.title")}
+          </Button>
+        )}
 
         {/* Card 1: AI Tools — single entry point; tool switching via tabs inside panel */}
         <ComposerAiTools
@@ -366,6 +391,16 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
         pendingNavHref={pendingNavHref}
         setPendingNavHref={setPendingNavHref}
         navigate={(href) => router.push(href)}
+      />
+
+      {/* Media Library Picker */}
+      <MediaLibraryPicker
+        open={isLibraryOpen}
+        onOpenChange={(open) => {
+          if (!open) closeMediaLibrary();
+        }}
+        onSelect={handleLibrarySelect}
+        attachedCount={libraryAttachedCount}
       />
     </div>
   );

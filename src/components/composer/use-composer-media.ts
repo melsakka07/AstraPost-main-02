@@ -4,6 +4,7 @@ import { type Dispatch, type RefObject, type SetStateAction, useState } from "re
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type { TweetDraft } from "@/components/composer/composer-types";
+import type { MediaLibraryItem } from "@/components/composer/media-library-picker";
 import { clientLogger } from "@/lib/client-logger";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
 
@@ -28,9 +29,56 @@ export function useComposerMedia({
   const [isAiImageOpen, setIsAiImageOpen] = useState(false);
   const [aiImageTargetTweetId, setAiImageTargetTweetId] = useState<string | null>(null);
 
+  // Media Library Dialog State
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+
   const openAiImageDialog = (tweetId: string) => {
     setAiImageTargetTweetId(tweetId);
     setIsAiImageOpen(true);
+  };
+
+  const openMediaLibrary = (tweetId: string) => {
+    setActiveTweetId(tweetId);
+    setIsLibraryOpen(true);
+  };
+
+  const closeMediaLibrary = () => {
+    setIsLibraryOpen(false);
+  };
+
+  const handleLibrarySelect = (item: MediaLibraryItem) => {
+    if (!activeTweetId) return;
+
+    // Determine MIME type from fileType
+    const mimeType =
+      item.fileType === "video" ? "video/mp4" : item.fileType === "gif" ? "image/gif" : "image/png";
+
+    setTweets((prev) =>
+      prev.map((tweet) => {
+        if (tweet.id === activeTweetId) {
+          const currentMediaCount = tweet.media.length;
+          if (currentMediaCount >= 4) {
+            toast.error(t("toasts.max_media"));
+            return tweet;
+          }
+          return {
+            ...tweet,
+            media: [
+              ...tweet.media,
+              {
+                url: item.fileUrl,
+                mimeType,
+                fileType: item.fileType as "image" | "video" | "gif",
+                size: item.fileSize,
+              },
+            ],
+          };
+        }
+        return tweet;
+      })
+    );
+
+    setIsLibraryOpen(false);
   };
 
   const handleAiImageAttach = (image: {
@@ -177,5 +225,9 @@ export function useComposerMedia({
     handleAiImageAttach,
     handleFileUpload,
     triggerFileUpload,
+    isLibraryOpen,
+    openMediaLibrary,
+    closeMediaLibrary,
+    handleLibrarySelect,
   };
 }

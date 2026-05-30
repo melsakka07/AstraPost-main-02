@@ -745,11 +745,17 @@
     "emoji": "إيموجي",
     "clear_tweet": "مسح التغريدة",
     "upload_media": "رفع وسائط",
+    "verified_badge": "موثق",
     "generate_ai_image": "إنشاء صورة بالذكاء الاصطناعي",
     "add_emoji": "إضافة إيموجي",
     "characters_of_max": "{current} من {max} حرف",
     "preview_label": "معاينة",
+    "preview_like": "إعجاب",
+    "preview_now": "الآن",
     "preview_placeholder": "سيظهر نص المعاينة هنا...",
+    "preview_reply": "رد",
+    "preview_repost": "إعادة نشر",
+    "preview_view": "مشاهدة",
     "posting_immediately_to": "النشر فوراً إلى",
     "selected_account": "الحساب المحدد",
     "at_separator": " الساعة ",
@@ -796,7 +802,21 @@
       "thread_generated": "تم توليد السلسلة!",
       "inspiration_topic_set": "تم تعيين الموضوع من الإلهام — انقر 'توليد' عندما تكون مستعداً"
     },
-    "advanced_options": "خيارات متقدمة"
+    "advanced_options": "خيارات متقدمة",
+    "media_library": {
+      "title": "مكتبة الوسائط",
+      "description": "تصفح وأعد استخدام الوسائط المرفوعة مسبقاً",
+      "no_media": "لا توجد وسائط",
+      "no_media_description": "ارفع وسائط في أداة الإنشاء لرؤيتها هنا.",
+      "load_more": "تحميل المزيد",
+      "retry": "إعادة المحاولة",
+      "cap_warning": "تم الوصول إلى حد 4 وسائط لكل تغريدة",
+      "filter_all": "الكل",
+      "filter_images": "صور",
+      "filter_videos": "فيديو",
+      "filter_gifs": "صور متحركة",
+      "error": "فشل تحميل مكتبة الوسائط"
+    }
   },
   "queue": {
     "title": "قائمة الانتظار",
