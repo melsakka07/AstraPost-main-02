@@ -94,6 +94,32 @@ export const onboardingStateSchema = z.object({
 
 export type OnboardingState = z.infer<typeof onboardingStateSchema>;
 
+// ─── Dashboard Layout ─────────────────────────────────────────────────────────
+
+export const DASHBOARD_WIDGET_IDS = [
+  "setup_checklist",
+  "failed_alert",
+  "post_usage",
+  "hero",
+  "upcoming_queue",
+  "stats",
+] as const;
+
+export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
+
+/**
+ * User-customized dashboard widget layout stored in user.dashboardLayout (JSONB).
+ * Each field is optional so the PATCH /api/user/preferences endpoint can accept
+ * partial updates that are deep-merged with the existing state.
+ */
+export const dashboardLayoutSchema = z.object({
+  order: z.array(z.enum(DASHBOARD_WIDGET_IDS)).optional(),
+  hidden: z.array(z.enum(DASHBOARD_WIDGET_IDS)).optional(),
+  version: z.number().optional(),
+});
+
+export type DashboardLayout = z.infer<typeof dashboardLayoutSchema>;
+
 // ─── Dates ───────────────────────────────────────────────────────────────────
 
 /**

@@ -9,7 +9,7 @@ import { logger } from "@/lib/logger";
 import { getUserPlanType } from "@/lib/middleware/require-plan";
 import { checkRateLimit, createRateLimitResponse } from "@/lib/rate-limiter";
 import { user } from "@/lib/schema";
-import { onboardingStateSchema } from "@/lib/schemas/common";
+import { onboardingStateSchema, dashboardLayoutSchema } from "@/lib/schemas/common";
 
 function isValidIANATimezone(tz: string): boolean {
   try {
@@ -37,6 +37,7 @@ const preferencesSchema = z
     language: z.string().min(2).max(10).optional(),
     notificationSettings: notificationSettingsSchema.optional(),
     onboardingState: onboardingStateSchema.optional(),
+    dashboardLayout: dashboardLayoutSchema.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
@@ -67,7 +68,8 @@ export async function PATCH(req: Request) {
       return ApiError.badRequest(parsed.error.issues);
     }
 
-    const { timezone, language, notificationSettings, onboardingState } = parsed.data;
+    const { timezone, language, notificationSettings, onboardingState, dashboardLayout } =
+      parsed.data;
 
     // If onboardingState is being patched, read the current state first so we can
     // deep-merge the partial update rather than overwriting unset fields.
@@ -91,11 +93,33 @@ export async function PATCH(req: Request) {
       };
     }
 
+    // If dashboardLayout is being patched, read the current state first so we can
+    // deep-merge the partial update rather than overwriting unset fields.
+    let mergedDashboardLayout: Record<string, unknown> | undefined;
+    if (dashboardLayout !== undefined) {
+      const [currentUser] = await db
+        .select({ dashboardLayout: user.dashboardLayout })
+        .from(user)
+        .where(eq(user.id, session.user.id));
+
+      const defaults = {
+        order: ["setup_checklist", "failed_alert", "post_usage", "hero", "upcoming_queue", "stats"],
+        hidden: [],
+        version: 1,
+      };
+      mergedDashboardLayout = {
+        ...defaults,
+        ...((currentUser?.dashboardLayout as Record<string, unknown> | null) ?? {}),
+        ...dashboardLayout,
+      };
+    }
+
     const updateData: Record<string, unknown> = {};
     if (timezone !== undefined) updateData.timezone = timezone;
     if (language !== undefined) updateData.language = language;
     if (notificationSettings !== undefined) updateData.notificationSettings = notificationSettings;
     if (mergedOnboardingState !== undefined) updateData.onboardingState = mergedOnboardingState;
+    if (mergedDashboardLayout !== undefined) updateData.dashboardLayout = mergedDashboardLayout;
 
     await db.update(user).set(updateData).where(eq(user.id, session.user.id));
 

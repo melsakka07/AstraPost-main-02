@@ -16,6 +16,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+import { DashboardLayoutClient } from "@/components/dashboard/dashboard-layout-client";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { PostUsageBar } from "@/components/dashboard/post-usage-bar";
 import { QuickActions, selectNextBestAction } from "@/components/dashboard/quick-actions";
@@ -146,7 +147,7 @@ async function getDashboardData(userId: string) {
     }),
     db.query.user.findFirst({
       where: eq(user.id, userId),
-      columns: { plan: true, onboardingState: true },
+      columns: { plan: true, onboardingState: true, dashboardLayout: true },
     }),
     // Failed posts count
     db
@@ -199,6 +200,11 @@ async function getDashboardData(userId: string) {
       hasUsedAI: !!hasUsedAI,
       hasProPlan: userInfo?.plan !== "free",
       onboardingState: userInfo?.onboardingState ?? null,
+    },
+    dashboardLayout: userInfo?.dashboardLayout ?? {
+      order: ["setup_checklist", "failed_alert", "post_usage", "hero", "upcoming_queue", "stats"],
+      hidden: [],
+      version: 1,
     },
     userPlan: userInfo?.plan || "free",
   };
@@ -259,6 +265,18 @@ export default async function DashboardPage() {
           hasUsedAI: false,
           hasProPlan: false,
           onboardingState: null,
+        },
+        dashboardLayout: {
+          order: [
+            "setup_checklist",
+            "failed_alert",
+            "post_usage",
+            "hero",
+            "upcoming_queue",
+            "stats",
+          ],
+          hidden: [],
+          version: 1,
         },
         userPlan: "free",
       };
@@ -352,167 +370,184 @@ export default async function DashboardPage() {
         </Button>
       }
     >
-      <Suspense fallback={<Skeleton className="h-12 w-full rounded-xl" />}>
-        <SetupChecklist {...data.checklist} />
-      </Suspense>
+      <DashboardLayoutClient initialLayout={data.dashboardLayout}>
+        <div data-widget-id="setup_checklist">
+          <Suspense fallback={<Skeleton className="h-12 w-full rounded-xl" />}>
+            <SetupChecklist {...data.checklist} />
+          </Suspense>
+        </div>
 
-      {data.failedCount > 0 && (
-        <Alert className="border-destructive/50 bg-destructive/5">
-          <AlertCircle className="text-destructive h-4 w-4 shrink-0" />
-          <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm">{t("failed_posts", { count: data.failedCount })}</span>
-            <Button size="sm" variant="outline" asChild className="w-full sm:w-auto">
-              <Link href="/dashboard/schedule?view=list">{t("view_retry")}</Link>
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+        {data.failedCount > 0 && (
+          <div data-widget-id="failed_alert">
+            <Alert className="border-destructive/50 bg-destructive/5">
+              <AlertCircle className="text-destructive h-4 w-4 shrink-0" />
+              <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-sm">{t("failed_posts", { count: data.failedCount })}</span>
+                <Button size="sm" variant="outline" asChild className="w-full sm:w-auto">
+                  <Link href="/dashboard/schedule?view=list">{t("view_retry")}</Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
-      <PostUsageBar />
+        <div data-widget-id="post_usage">
+          <PostUsageBar />
+        </div>
 
-      {/* Hero: What's next (next-best-action) + Quick Compose */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <QuickActions action={nextBestAction} />
-        <QuickCompose />
-      </div>
+        {/* Hero: What's next (next-best-action) + Quick Compose */}
+        <div data-widget-id="hero">
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
+            <QuickActions action={nextBestAction} />
+            <QuickCompose />
+          </div>
+        </div>
 
-      {/* Upcoming Queue — primary, full-width */}
-      <div className="grid grid-cols-1">
-        <Card>
-          <CardHeader className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base sm:text-lg">{t("upcoming_queue")}</CardTitle>
-            {data.upcomingPosts.length > 0 && (
-              <Button variant="ghost" size="sm" asChild className="w-full text-xs sm:w-auto">
-                <Link href="/dashboard/schedule?view=list">{t("view_all")}</Link>
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            {data.upcomingPosts.length === 0 ? (
-              data.checklist.hasXAccount ? (
-                <EmptyState
-                  icon={<Send className="h-5 w-5" />}
-                  title={t("queue_empty")}
-                  description={t("queue_empty_description")}
-                  whyMessage={t("empty_why")}
-                  primaryAction={
-                    <Button size="sm" asChild>
-                      <Link href="/dashboard/compose">
-                        <PenSquare className="me-2 h-3.5 w-3.5" />
-                        {t("create_post")}
+        {/* Upcoming Queue — primary, full-width */}
+        <div data-widget-id="upcoming_queue">
+          <div className="grid grid-cols-1">
+            <Card>
+              <CardHeader className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="text-base sm:text-lg">{t("upcoming_queue")}</CardTitle>
+                {data.upcomingPosts.length > 0 && (
+                  <Button variant="ghost" size="sm" asChild className="w-full text-xs sm:w-auto">
+                    <Link href="/dashboard/schedule?view=list">{t("view_all")}</Link>
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {data.upcomingPosts.length === 0 ? (
+                  data.checklist.hasXAccount ? (
+                    <EmptyState
+                      icon={<Send className="h-5 w-5" />}
+                      title={t("queue_empty")}
+                      description={t("queue_empty_description")}
+                      whyMessage={t("empty_why")}
+                      primaryAction={
+                        <Button size="sm" asChild>
+                          <Link href="/dashboard/compose">
+                            <PenSquare className="me-2 h-3.5 w-3.5" />
+                            {t("create_post")}
+                          </Link>
+                        </Button>
+                      }
+                      secondaryAction={
+                        <Button size="sm" variant="outline" asChild>
+                          <Link href="/dashboard/ai/agentic">
+                            <Wand2 className="me-2 h-3.5 w-3.5" />
+                            {t("generate_ai")}
+                          </Link>
+                        </Button>
+                      }
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={<AlertCircle className="h-5 w-5" />}
+                      iconBgClass="bg-warning-3 text-warning-11"
+                      title={t("connect_x_account")}
+                      description={t("connect_x_description")}
+                      whyMessage={t("empty_why")}
+                      primaryAction={
+                        <Button size="sm" asChild>
+                          <Link href="/dashboard/settings">
+                            <PlusCircle className="me-2 h-3.5 w-3.5" />
+                            {t("connect_x_account")}
+                          </Link>
+                        </Button>
+                      }
+                    />
+                  )
+                ) : (
+                  <div className="space-y-3">
+                    {data.upcomingPosts.map((post) => (
+                      <Link
+                        key={post.id}
+                        href="/dashboard/schedule?view=list"
+                        className="hover:bg-muted/50 block min-w-0 items-start gap-3 rounded-lg border p-3 transition-colors"
+                      >
+                        <div className="flex gap-3">
+                          <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+                            <Calendar className="text-primary h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm leading-relaxed font-medium break-words">
+                              {(post.tweets[0]?.content ?? "").substring(0, 80)}
+                              {(post.tweets[0]?.content?.length ?? 0) > 80 ? "..." : ""}
+                            </p>
+                            <p
+                              className="text-muted-foreground mt-1 text-xs"
+                              suppressHydrationWarning
+                            >
+                              {post.scheduledAt
+                                ? new Date(post.scheduledAt).toLocaleString(userLocale, {
+                                    dateStyle: "medium",
+                                    timeStyle: "short",
+                                  })
+                                : t("no_date")}
+                            </p>
+                          </div>
+                        </div>
                       </Link>
-                    </Button>
-                  }
-                  secondaryAction={
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href="/dashboard/ai/agentic">
-                        <Wand2 className="me-2 h-3.5 w-3.5" />
-                        {t("generate_ai")}
-                      </Link>
-                    </Button>
-                  }
-                />
-              ) : (
-                <EmptyState
-                  icon={<AlertCircle className="h-5 w-5" />}
-                  iconBgClass="bg-warning-3 text-warning-11"
-                  title={t("connect_x_account")}
-                  description={t("connect_x_description")}
-                  whyMessage={t("empty_why")}
-                  primaryAction={
-                    <Button size="sm" asChild>
-                      <Link href="/dashboard/settings">
-                        <PlusCircle className="me-2 h-3.5 w-3.5" />
-                        {t("connect_x_account")}
-                      </Link>
-                    </Button>
-                  }
-                />
-              )
-            ) : (
-              <div className="space-y-3">
-                {data.upcomingPosts.map((post) => (
-                  <Link
-                    key={post.id}
-                    href="/dashboard/schedule?view=list"
-                    className="hover:bg-muted/50 block min-w-0 items-start gap-3 rounded-lg border p-3 transition-colors"
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Stats — demoted to a compact secondary strip */}
+        <div data-widget-id="stats">
+          <TooltipProvider>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+              {STAT_CARDS.map((card) => {
+                const stat = statValues[card.key]!;
+                return (
+                  <Card
+                    key={card.key}
+                    className={`border-s-2 ${card.accent} transition-shadow hover:shadow-sm`}
                   >
-                    <div className="flex gap-3">
-                      <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
-                        <Calendar className="text-primary h-4 w-4" />
+                    <CardContent className="flex items-center gap-2.5 px-3 py-2.5">
+                      <div
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${card.iconBg}`}
+                      >
+                        <card.icon className={`h-3.5 w-3.5 ${card.iconColor}`} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm leading-relaxed font-medium break-words">
-                          {(post.tweets[0]?.content ?? "").substring(0, 80)}
-                          {(post.tweets[0]?.content?.length ?? 0) > 80 ? "..." : ""}
-                        </p>
-                        <p className="text-muted-foreground mt-1 text-xs" suppressHydrationWarning>
-                          {post.scheduledAt
-                            ? new Date(post.scheduledAt).toLocaleString(userLocale, {
-                                dateStyle: "medium",
-                                timeStyle: "short",
-                              })
-                            : t("no_date")}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Stats — demoted to a compact secondary strip */}
-      <TooltipProvider>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-          {STAT_CARDS.map((card) => {
-            const stat = statValues[card.key]!;
-            return (
-              <Card
-                key={card.key}
-                className={`border-s-2 ${card.accent} transition-shadow hover:shadow-sm`}
-              >
-                <CardContent className="flex items-center gap-2.5 px-3 py-2.5">
-                  <div
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${card.iconBg}`}
-                  >
-                    <card.icon className={`h-3.5 w-3.5 ${card.iconColor}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <p className="text-muted-foreground cursor-help truncate text-[11px] font-medium">
-                          {stat.label}
-                        </p>
-                      </TooltipTrigger>
-                      <TooltipContent>{stat.tooltip}</TooltipContent>
-                    </Tooltip>
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-base font-bold tracking-tight">{stat.value}</span>
-                      {stat.delta && (
-                        <span
-                          className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${
-                            stat.delta.positive ? "text-success-11" : "text-danger-11"
-                          }`}
-                        >
-                          {stat.delta.positive ? (
-                            <TrendingUp className="h-3 w-3" />
-                          ) : (
-                            <TrendingDown className="h-3 w-3" />
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <p className="text-muted-foreground cursor-help truncate text-[11px] font-medium">
+                              {stat.label}
+                            </p>
+                          </TooltipTrigger>
+                          <TooltipContent>{stat.tooltip}</TooltipContent>
+                        </Tooltip>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-base font-bold tracking-tight">{stat.value}</span>
+                          {stat.delta && (
+                            <span
+                              className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${
+                                stat.delta.positive ? "text-success-11" : "text-danger-11"
+                              }`}
+                            >
+                              {stat.delta.positive ? (
+                                <TrendingUp className="h-3 w-3" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3" />
+                              )}
+                              {stat.delta.text}
+                            </span>
                           )}
-                          {stat.delta.text}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </TooltipProvider>
         </div>
-      </TooltipProvider>
+      </DashboardLayoutClient>
     </DashboardPageWrapper>
   );
 }

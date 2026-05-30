@@ -222,6 +222,17 @@ export const user = pgTable(
         checklistCollapsed: false,
         version: 1,
       }),
+    dashboardLayout: jsonb("dashboard_layout")
+      .$type<{
+        order: string[];
+        hidden: string[];
+        version: number;
+      }>()
+      .default({
+        order: ["setup_checklist", "failed_alert", "post_usage", "hero", "upcoming_queue", "stats"],
+        hidden: [],
+        version: 1,
+      }),
     voiceProfile: jsonb("voice_profile"),
     voiceVariant: text("voice_variant").default("default").notNull(),
     notificationSettings: jsonb("notification_settings"),

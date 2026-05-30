@@ -570,6 +570,26 @@
       "compose_desc": "Write something new and share it with your audience.",
       "compose_action": "Compose",
       "schedule_action": "Schedule"
+    },
+    "done_editing": "Done",
+    "drag_handle_label": "Drag to reorder",
+    "edit_layout": "Edit Layout",
+    "hidden_widgets": "Hidden Widgets",
+    "hidden_widgets_description": "Hidden widgets are removed from your dashboard. You can show them again anytime.",
+    "hide_widget": "Hide",
+    "reset_layout": "Reset to Default",
+    "reset_layout_confirm": "Reset dashboard layout to default? This cannot be undone.",
+    "show_widget": "Show",
+    "widget_hidden_announcement": "Widget hidden. Use Edit Layout to show it again.",
+    "widget_moved": "Widget moved",
+    "widget_shown_announcement": "Widget shown",
+    "widget_labels": {
+      "setup_checklist": "Setup Checklist",
+      "failed_alert": "Failed Posts Alert",
+      "post_usage": "Post Usage",
+      "hero": "Quick Actions & Compose",
+      "upcoming_queue": "Upcoming Queue",
+      "stats": "Statistics"
     }
   },
   "compose": {
