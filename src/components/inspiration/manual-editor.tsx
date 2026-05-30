@@ -153,7 +153,7 @@ export function ManualEditor({
             {isTooSimilar ? (
               <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             ) : (
-              <CheckCircle2 className="h-3.5 w-3.5 text-yellow-600 sm:h-4 sm:w-4 dark:text-yellow-500" />
+              <CheckCircle2 className="text-warning-11 h-3.5 w-3.5 sm:h-4 sm:w-4" />
             )}
             <AlertDescription className="text-xs sm:text-sm">
               {isTooSimilar ? (

@@ -96,7 +96,7 @@ export default function ProfilePage() {
                   <Mail className="h-4 w-4" />
                   <span>{user.email}</span>
                   {user.emailVerified && (
-                    <Badge variant="outline" className="border-green-600 text-green-600">
+                    <Badge variant="outline" className="border-success-6 text-success-11">
                       <Shield className="me-1 h-3 w-3" />
                       {t("verified")}
                     </Badge>
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                 <div className="bg-muted/10 flex items-center justify-between rounded-md border p-3">
                   <span>{user.email}</span>
                   {user.emailVerified && (
-                    <Badge variant="outline" className="border-green-600 text-green-600">
+                    <Badge variant="outline" className="border-success-6 text-success-11">
                       {t("verified")}
                     </Badge>
                   )}
@@ -182,13 +182,13 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                  <div className="bg-success-9 h-2 w-2 rounded-full"></div>
                   <div>
                     <p className="font-medium">{t("current_session")}</p>
                     <p className="text-muted-foreground text-sm">{t("active_now")}</p>
                   </div>
                 </div>
-                <Badge variant="outline" className="border-green-600 text-green-600">
+                <Badge variant="outline" className="border-success-6 text-success-11">
                   {t("active")}
                 </Badge>
               </div>

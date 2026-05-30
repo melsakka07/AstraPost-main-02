@@ -209,7 +209,7 @@ function CopyButton({
       aria-label={labels.tooltip}
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-green-500" />
+        <Check className="text-success-11 h-3.5 w-3.5" />
       ) : (
         <Copy className="text-muted-foreground h-3.5 w-3.5" />
       )}

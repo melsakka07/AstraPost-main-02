@@ -166,13 +166,11 @@ export function ChangePlanDialog({
 
             {preview.featuresGained.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm font-medium text-green-600 dark:text-green-400">
-                  Features you'll gain:
-                </div>
+                <div className="text-success-11 text-sm font-medium">Features you'll gain:</div>
                 <ul className="space-y-1">
                   {preview.featuresGained.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-sm">
-                      <span className="text-green-600 dark:text-green-400">✓</span>
+                      <span className="text-success-11">✓</span>
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -182,9 +180,9 @@ export function ChangePlanDialog({
 
             {/* Over-limit warnings */}
             {Object.keys(preview.overLimits).length > 0 && (
-              <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3">
+              <div className="border-warning-6 bg-warning-3 rounded-md border p-3">
                 <div className="flex items-start gap-2">
-                  <span className="text-amber-500">⚠</span>
+                  <span className="text-warning-11">⚠</span>
                   <div className="flex-1 space-y-1">
                     {preview.overLimits.xAccounts && (
                       <p className="text-sm">
@@ -226,9 +224,7 @@ export function ChangePlanDialog({
               {preview.proratedCredit && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Prorated credit:</span>
-                  <span className="font-medium text-green-600 dark:text-green-400">
-                    {preview.proratedCredit}
-                  </span>
+                  <span className="text-success-11 font-medium">{preview.proratedCredit}</span>
                 </div>
               )}
             </div>

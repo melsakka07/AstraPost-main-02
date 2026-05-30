@@ -28,13 +28,13 @@ export interface StatCardProps {
    */
   trend?: "up" | "down" | "neutral";
   /**
-   * Optional inline-start border accent class (e.g. "border-s-emerald-500").
+   * Optional inline-start border accent class (e.g. "border-s-success-9").
    * When provided the card gets a `border-s-4` accent stripe.
    */
   accentClass?: string;
-  /** Icon wrapper background class (e.g. "bg-emerald-500/10"). Overrides variant. */
+  /** Icon wrapper background class (e.g. "bg-success-3"). Overrides variant. */
   iconBgClass?: string;
-  /** Icon color class (e.g. "text-emerald-500"). Overrides variant. */
+  /** Icon color class (e.g. "text-success-11"). Overrides variant. */
   iconColorClass?: string;
   className?: string;
 }

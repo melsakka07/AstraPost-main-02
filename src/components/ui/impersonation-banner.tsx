@@ -72,8 +72,8 @@ export function ImpersonationBanner({
       <div
         className={`flex items-center justify-between border-b px-4 py-2 text-sm font-medium ${
           showWarning
-            ? "border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-400"
-            : "border-purple-500/20 bg-purple-500/10 text-purple-700 dark:text-purple-400"
+            ? "border-danger-6 bg-danger-3 text-danger-11"
+            : "border-brand-6 bg-brand-3 text-brand-11"
         }`}
       >
         <div className="flex items-center gap-2">
@@ -98,8 +98,8 @@ export function ImpersonationBanner({
           size="sm"
           className={`h-7 ${
             showWarning
-              ? "border-red-500/30 text-red-700 hover:bg-red-500/20 dark:border-red-500/30 dark:text-red-400"
-              : "border-purple-500/30 text-purple-700 hover:bg-purple-500/20 dark:border-purple-500/30 dark:text-purple-400"
+              ? "border-danger-6 text-danger-11 hover:bg-danger-4"
+              : "border-brand-6 text-brand-11 hover:bg-brand-4"
           }`}
           onClick={handleStop}
           disabled={stopping}

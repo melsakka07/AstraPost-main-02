@@ -260,7 +260,7 @@ export function HashtagGenerator() {
                   onClick={() => copyHashtag(hashtag, index)}
                 >
                   {hashtag}
-                  {copiedIndex === index && <Check className="ms-1 h-3 w-3 text-green-500" />}
+                  {copiedIndex === index && <Check className="text-success-11 ms-1 h-3 w-3" />}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

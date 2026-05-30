@@ -165,7 +165,7 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg">
-                        <Play className="ms-1 h-8 w-8 text-gray-900" fill="currentColor" />
+                        <Play className="ms-1 h-8 w-8 text-black" fill="currentColor" />
                       </div>
                     </div>
                     <div className="absolute end-2 bottom-2 flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-xs text-white">

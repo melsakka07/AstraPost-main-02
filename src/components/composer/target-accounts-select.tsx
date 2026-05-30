@@ -135,11 +135,11 @@ export function TargetAccountsSelect({
                 >
                   <div className="flex items-center gap-2">
                     {a.platform === "twitter" ? (
-                      <Twitter className="h-3 w-3 text-sky-500" />
+                      <Twitter className="h-3 w-3 text-[#1d9bf0]" />
                     ) : a.platform === "linkedin" ? (
                       <Linkedin className="h-3 w-3 text-[#0077b5]" />
                     ) : (
-                      <Instagram className="h-3 w-3 text-pink-600" />
+                      <Instagram className="h-3 w-3 text-[#e1306c]" />
                     )}
                     <span className="truncate">{a.displayName || a.username}</span>
                     {a.platform === "twitter" && a.xSubscriptionTier && (
@@ -148,7 +148,7 @@ export function TargetAccountsSelect({
                     {isTokenExpiringSoon(a.tokenExpiresAt) && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <AlertTriangle className="h-3 w-3 text-amber-500" />
+                          <AlertTriangle className="text-warning-11 h-3 w-3" />
                         </TooltipTrigger>
                         <TooltipContent>Token expires soon</TooltipContent>
                       </Tooltip>

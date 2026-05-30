@@ -185,7 +185,7 @@ export function RecentAffiliateLinks() {
                     {link.wasScheduled ? (
                       <Badge
                         variant="default"
-                        className="border-green-200 bg-green-500/15 text-green-700 hover:bg-green-500/25"
+                        className="border-success-6 bg-success-3 text-success-11 hover:bg-success-4"
                       >
                         {t("table.scheduled")}
                       </Badge>

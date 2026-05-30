@@ -52,7 +52,7 @@ export function BulkApproveButton({ postIds, action }: BulkApproveButtonProps) {
       aria-label={`${label} ${postIds.length} posts`}
       className={
         action === "approve"
-          ? "border-green-600/40 text-green-600 hover:bg-green-600/10"
+          ? "border-success-6 text-success-11 hover:bg-success-3"
           : "border-destructive/40 text-destructive hover:bg-destructive/10"
       }
       onClick={handleBulk}

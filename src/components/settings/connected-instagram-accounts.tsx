@@ -72,7 +72,7 @@ export function ConnectedInstagramAccounts({
       <Card className="h-full">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Instagram className="h-5 w-5 text-pink-600" />
+            <Instagram className="h-5 w-5 text-[#e1306c]" />
             <CardTitle>{t("integrations.instagram_title")}</CardTitle>
           </div>
           <CardDescription>{t("integrations.instagram_description")}</CardDescription>

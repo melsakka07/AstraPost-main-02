@@ -54,7 +54,7 @@ export function UpgradeBanner({
         isAtLimit
           ? "from-destructive/10 via-destructive/5 to-background border-destructive/30"
           : isNearLimit
-            ? "to-background border-amber-500/30 from-amber-500/10 via-amber-500/5"
+            ? "to-background border-warning-6 from-warning-3 via-warning-2"
             : "from-primary/10 via-primary/5 to-background border-primary/20",
         className
       )}
@@ -67,7 +67,7 @@ export function UpgradeBanner({
               isAtLimit
                 ? "bg-destructive/20 text-destructive"
                 : isNearLimit
-                  ? "bg-amber-500/20 text-amber-500"
+                  ? "bg-warning-3 text-warning-11"
                   : "bg-primary/20 text-primary"
             )}
           >
@@ -82,11 +82,7 @@ export function UpgradeBanner({
               <h3
                 className={cn(
                   "font-semibold tracking-tight",
-                  isAtLimit
-                    ? "text-destructive"
-                    : isNearLimit
-                      ? "text-amber-600 dark:text-amber-500"
-                      : ""
+                  isAtLimit ? "text-destructive" : isNearLimit ? "text-warning-11" : ""
                 )}
               >
                 {isAtLimit
@@ -108,7 +104,7 @@ export function UpgradeBanner({
                   value={usagePercentage}
                   className={cn(
                     "h-1.5",
-                    isAtLimit ? "[&>div]:bg-destructive" : isNearLimit ? "[&>div]:bg-amber-500" : ""
+                    isAtLimit ? "[&>div]:bg-destructive" : isNearLimit ? "[&>div]:bg-warning-9" : ""
                   )}
                 />
               </div>
@@ -119,7 +115,7 @@ export function UpgradeBanner({
           asChild
           variant={isAtLimit ? "destructive" : "default"}
           className={cn(
-            isNearLimit && !isAtLimit ? "bg-amber-500 text-white hover:bg-amber-600" : ""
+            isNearLimit && !isAtLimit ? "bg-warning-9 hover:bg-warning-10 text-black" : ""
           )}
         >
           <Link href="/pricing">{translations?.cta ?? "Upgrade Now"}</Link>

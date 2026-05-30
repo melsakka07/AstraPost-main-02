@@ -1181,9 +1181,9 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                     aria-hidden="true"
                   >
                     {[
-                      ["Emotional", "border-rose-500/30 bg-rose-500/5"],
-                      ["Factual", "border-blue-500/30 bg-blue-500/5"],
-                      ["Question", "border-amber-500/30 bg-amber-500/5"],
+                      ["Emotional", "border-danger-6 bg-danger-3"],
+                      ["Factual", "border-info-6 bg-info-3"],
+                      ["Question", "border-warning-6 bg-warning-3"],
                     ].map(([label, cls]) => (
                       <div key={label} className={`space-y-1.5 rounded-lg border p-2.5 ${cls}`}>
                         <span className="text-xs font-semibold capitalize">{label}</span>

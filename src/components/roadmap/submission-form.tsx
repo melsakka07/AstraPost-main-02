@@ -104,8 +104,8 @@ export function SubmissionForm({ isLoggedIn }: SubmissionFormProps) {
     <div className="border-border/50 from-muted/50 to-muted/20 rounded-2xl border bg-gradient-to-br p-8">
       {showSuccess ? (
         <div className="space-y-4 py-8 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <Lightbulb className="h-8 w-8 text-green-600 dark:text-green-400" />
+          <div className="bg-success-3 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
+            <Lightbulb className="text-success-11 h-8 w-8" />
           </div>
           <h3 className="text-xl font-semibold">{t("submit_success_title")}</h3>
           <p className="text-muted-foreground mx-auto max-w-md">{t("submit_success_message")}</p>

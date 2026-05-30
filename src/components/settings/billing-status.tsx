@@ -107,13 +107,13 @@ export function BillingStatus() {
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-muted-foreground">{t("billing.status_label")}</span>
         {isActive && !cancelAtPeriodEnd && (
-          <Badge className="border-green-500/20 bg-green-500/15 text-green-600 dark:text-green-400">
+          <Badge className="border-success-6 bg-success-3 text-success-11">
             <CheckCircle2 className="mr-1 h-3 w-3" />
             {t("billing.status_active")}
           </Badge>
         )}
         {isTrialing && (
-          <Badge className="border-blue-500/20 bg-blue-500/15 text-blue-600 dark:text-blue-400">
+          <Badge className="border-info-6 bg-info-3 text-info-11">
             <Clock className="mr-1 h-3 w-3" />
             {t("billing.status_trial")}
           </Badge>
@@ -131,7 +131,7 @@ export function BillingStatus() {
           </Badge>
         )}
         {cancelAtPeriodEnd && isActive && (
-          <Badge className="border-amber-500/20 bg-amber-500/15 text-amber-600 dark:text-amber-400">
+          <Badge className="border-warning-6 bg-warning-3 text-warning-11">
             <XCircle className="mr-1 h-3 w-3" />
             {t("billing.status_cancels_at_end")}
           </Badge>
@@ -145,7 +145,7 @@ export function BillingStatus() {
           {t("billing.trial_ends")}{" "}
           <span
             className={
-              trialDaysLeft <= 3 ? "font-medium text-amber-500" : "text-foreground font-medium"
+              trialDaysLeft <= 3 ? "text-warning-11 font-medium" : "text-foreground font-medium"
             }
           >
             {trialDaysLeft === 0
@@ -169,7 +169,7 @@ export function BillingStatus() {
 
       {/* Cancels at period end notice */}
       {cancelAtPeriodEnd && periodEnd && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-700 dark:text-amber-400">
+        <div className="border-warning-6 bg-warning-3 text-warning-11 rounded-md border px-4 py-3">
           <p className="mb-3">
             {t("billing.cancellation_notice", { date: format(periodEnd, "MMM d, yyyy") })}
           </p>
@@ -178,7 +178,7 @@ export function BillingStatus() {
             variant="outline"
             onClick={handleUndoCancellation}
             disabled={undoingCancellation}
-            className="border-amber-500/50 text-amber-700 hover:bg-amber-500/20 dark:text-amber-400"
+            className="border-warning-6 text-warning-11 hover:bg-warning-4"
           >
             {undoingCancellation ? t("billing.reactivating") : t("billing.undo_cancellation")}
           </Button>

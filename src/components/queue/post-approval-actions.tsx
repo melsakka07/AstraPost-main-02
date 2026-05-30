@@ -50,7 +50,7 @@ export function PostApprovalActions({ postId, ariaLabel }: PostApprovalActionsPr
       <Button
         size="sm"
         aria-label={ariaLabel ? `Approve ${ariaLabel}` : undefined}
-        className="bg-green-600 text-white hover:bg-green-700"
+        className="bg-success-9 hover:bg-success-10 text-white"
         onClick={() => handleAction("approve")}
       >
         <Check className="me-1 h-4 w-4" />

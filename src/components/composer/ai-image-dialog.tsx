@@ -404,8 +404,8 @@ export function AiImageDialog({
                 remainingQuota <= 3
                   ? "text-destructive"
                   : remainingQuota <= 10
-                    ? "text-orange-500"
-                    : "text-green-600"
+                    ? "text-warning-11"
+                    : "text-success-11"
               )}
             >
               {remainingQuota === -1
@@ -583,7 +583,7 @@ export function AiImageDialog({
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-300 ease-out",
-                      progressPercent >= 100 ? "bg-green-500" : "bg-primary"
+                      progressPercent >= 100 ? "bg-success-9" : "bg-primary"
                     )}
                     style={{ width: `${progressPercent}%` }}
                   />
@@ -608,7 +608,7 @@ export function AiImageDialog({
               className={cn(
                 "space-y-3 rounded-lg border p-4",
                 generationError.retryable
-                  ? "border-orange-500/40 bg-orange-500/5"
+                  ? "border-warning-6 bg-warning-3"
                   : generationError.code === "CONTENT_BLOCKED"
                     ? "border-destructive/40 bg-destructive/5"
                     : "border-muted bg-muted/30"
@@ -619,7 +619,7 @@ export function AiImageDialog({
                   className={cn(
                     "mt-0.5 h-5 w-5 shrink-0",
                     generationError.retryable
-                      ? "text-orange-500"
+                      ? "text-warning-11"
                       : generationError.code === "CONTENT_BLOCKED"
                         ? "text-destructive"
                         : "text-muted-foreground"
@@ -638,9 +638,7 @@ export function AiImageDialog({
                     {generationError.message}
                   </p>
                   {generationError.retryable && (
-                    <p className="text-xs font-medium text-orange-600 dark:text-orange-400">
-                      {t("no_credits_used")}
-                    </p>
+                    <p className="text-warning-11 text-xs font-medium">{t("no_credits_used")}</p>
                   )}
                 </div>
               </div>

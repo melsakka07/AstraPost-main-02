@@ -1,5 +1,28 @@
 # Latest Updates
 
+## 2026-05-30 — Dashboard UI/UX Wave 7 · Task A: Design-System & Dark-Mode Consolidation (user-facing)
+
+First task of Wave 7 (`.claude/plans/2026-05-30-dashboard-ux-wave-7.md`). Migrated raw Tailwind palette classes → semantic design tokens across the **user-facing** surfaces (admin deferred to a Task-A follow-up). A repo-wide grep found ~220 raw-palette occurrences in ~68 files (the initial researcher pass under-counted badly — caught by verifying with the guard's own pattern).
+
+### Changes
+
+- **~28 components/pages migrated** (composer, ai, inspiration, onboarding, queue, jobs, affiliate, settings, billing, ui, roadmap, + `app/{(marketing)/blog,profile,chat}`): `green/emerald→success`, `amber/yellow/orange→warning`, `red/rose→danger`, `blue/sky→info`, `purple/violet/pink→brand`; grays → shadcn neutral tokens (`foreground`/`muted-foreground`/`border`/`muted`). Steps: text→`-11`, tint bg→`-3`, border→`-6`, solid→`-9` (+ paired `text-white`, except amber-9 which is bright → `text-black`). All `dark:` palette variants dropped (tokens are mode-aware).
+- **Intentional literal-color exceptions** (not tokens): platform-brand glyphs → official hex (`text-[#1d9bf0]` X, `text-[#e1306c]` IG, beside existing `text-[#0077b5]` LinkedIn); always-white-button Play glyph → `text-black`; `copy-button` → `text-white`.
+- **Token guard extended** (`scripts/verify-dashboard-tokens.mjs`): `DASHBOARD_DIRS` now covers the 11 cleaned component dirs. **Excluded** (raw colors intentional/deferred): `components/{marketing,admin,brand,email}`, `app/(marketing)` (brand gradients), `tokens.ts`.
+- **Audit fix:** `text-white` on `bg-warning-9` failed AA (amber-9 is a bright step, mode-invariant ~0.85L) → `text-black` in `connected-x-accounts` + `upgrade-banner`. `composer-alerts` success path normalized to numbered steps.
+
+### Deferred (follow-ups)
+
+- **Admin** (~20 files incl. Recharts color props) — Task-A part 2.
+- **Marketing decorative gradients** (blur blobs, `hero-mockup` window controls, `social-proof` star gold) — intentional aesthetic, left + documented.
+- Minor pre-existing semantic-token nits in unchanged `components/ai/{pdf-to-thread,youtube-to-thread,agentic}` + `ai-tools-grid` (text-`-9` on tints, redundant `dark:` variants) — not raw-palette, not regressions.
+
+### DoD
+
+- `pnpm run check` — PASS (0 errors; i18n parity 3034); `pnpm test` — PASS (372)
+- `verify-dashboard-tokens` (extended) + `verify-rtl` — PASS
+- Final audit: convention-enforcer + code-reviewer (1 real contrast regression found + fixed)
+
 ## 2026-05-30 — i18n Phase-2: Dashboard Dropdown/Label Localization (Complete)
 
 Follow-up to the Wave 6 RTL pass: an Arabic-locale eyeball surfaced **hardcoded English option/label strings** (not RTL bugs — these were never wired to `t()`). Audited every `<SelectItem>`/option-array/`<TabsTrigger>` across the dashboard, then localized all user-facing ones. **Pre-existing, not Wave 6 regressions.**
