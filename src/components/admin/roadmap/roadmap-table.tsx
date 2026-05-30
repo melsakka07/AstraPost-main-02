@@ -11,6 +11,7 @@ import {
   ThumbsUp,
   Trash2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -79,35 +80,43 @@ interface PaginatedResponse {
   counts: Counts;
 }
 
-const STATUS_BADGES: Record<FeedbackStatus, { label: string; className: string }> = {
-  pending: {
-    label: "Pending",
-    className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  },
-  approved: {
-    label: "Approved",
-    className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  },
-  rejected: {
-    label: "Rejected",
-    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  },
-};
-
-const CATEGORY_BADGES: Record<string, { label: string; className: string }> = {
-  feature: {
-    label: "Feature",
-    className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  },
-  bug: { label: "Bug", className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-  other: { label: "Other", className: "bg-muted text-muted-foreground" },
-};
-
 interface RoadmapTableProps {
   initialData?: FeedbackItem[] | null;
 }
 
 export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
+  const t = useTranslations();
+
+  const STATUS_BADGES: Record<FeedbackStatus, { label: string; className: string }> = {
+    pending: {
+      label: t("admin.roadmap.status.pending"),
+      className: "bg-warning-3 text-warning-11",
+    },
+    approved: {
+      label: t("admin.roadmap.status.approved"),
+      className: "bg-success-3 text-success-11",
+    },
+    rejected: {
+      label: t("admin.roadmap.status.rejected"),
+      className: "bg-danger-3 text-danger-11",
+    },
+  };
+
+  const CATEGORY_BADGES: Record<string, { label: string; className: string }> = {
+    feature: {
+      label: t("admin.roadmap.category.feature"),
+      className: "bg-info-3 text-info-11",
+    },
+    bug: {
+      label: t("admin.roadmap.category.bug"),
+      className: "bg-danger-3 text-danger-11",
+    },
+    other: {
+      label: t("admin.roadmap.category.other"),
+      className: "bg-muted text-muted-foreground",
+    },
+  };
+
   const [data, setData] = useState<FeedbackItem[]>(initialData ?? []);
   const [counts, setCounts] = useState<Counts>({ pending: 0, approved: 0, rejected: 0 });
   const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
@@ -160,7 +169,7 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
         totalPages: json.totalPages,
       });
     } catch (error) {
-      toast.error("Failed to load roadmap submissions");
+      toast.error(t("admin.roadmap.loadError"));
     } finally {
       setLoading(false);
     }
@@ -184,10 +193,10 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
         body: JSON.stringify({ status: "approved" }),
       });
       if (!res.ok) throw new Error("Failed to approve");
-      toast.success("Feedback approved");
+      toast.success(t("admin.roadmap.approvedToast"));
       fetchData();
     } catch {
-      toast.error("Failed to approve feedback");
+      toast.error(t("admin.roadmap.approveError"));
     }
   };
 
@@ -201,12 +210,12 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
         body: JSON.stringify({ status: "rejected", adminNotes: rejectNotes }),
       });
       if (!res.ok) throw new Error("Failed to reject");
-      toast.success("Feedback rejected");
+      toast.success(t("admin.roadmap.rejectedToast"));
       setRejectTarget(null);
       setRejectNotes("");
       fetchData();
     } catch {
-      toast.error("Failed to reject feedback");
+      toast.error(t("admin.roadmap.rejectError"));
     } finally {
       setIsRejecting(false);
     }
@@ -220,11 +229,11 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");
-      toast.success("Feedback deleted");
+      toast.success(t("admin.roadmap.deletedToast"));
       setDeleteTarget(null);
       fetchData();
     } catch {
-      toast.error("Failed to delete feedback");
+      toast.error(t("admin.roadmap.deleteError"));
     } finally {
       setIsDeleting(false);
     }
@@ -240,11 +249,11 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
         body: JSON.stringify({ ids, status: action }),
       });
       if (!res.ok) throw new Error("Failed to bulk update");
-      toast.success(`${ids.length} items ${action}`);
+      toast.success(t("admin.roadmap.bulkToast", { N: ids.length, action }));
       setSelectedIds(new Set());
       fetchData();
     } catch {
-      toast.error("Failed to bulk update");
+      toast.error(t("admin.roadmap.bulkError"));
     }
   };
 
@@ -269,10 +278,14 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
   };
 
   const tabs: { value: FilterOption; label: string; count: number }[] = [
-    { value: "pending", label: "Pending", count: counts.pending },
-    { value: "approved", label: "Approved", count: counts.approved },
-    { value: "rejected", label: "Rejected", count: counts.rejected },
-    { value: "all", label: "All", count: counts.pending + counts.approved + counts.rejected },
+    { value: "pending", label: t("admin.roadmap.status.pending"), count: counts.pending },
+    { value: "approved", label: t("admin.roadmap.status.approved"), count: counts.approved },
+    { value: "rejected", label: t("admin.roadmap.status.rejected"), count: counts.rejected },
+    {
+      value: "all",
+      label: t("admin.roadmap.filter.all"),
+      count: counts.pending + counts.approved + counts.rejected,
+    },
   ];
 
   return (
@@ -304,26 +317,28 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
           ))}
         </div>
         <div className="relative max-w-sm">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Search className="text-muted-foreground inset-inline-start-3 absolute top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
-            placeholder="Search by title or description..."
+            placeholder={t("admin.roadmap.searchPlaceholder")}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
       </div>
 
       {filter === "pending" && selectedIds.size > 0 && (
         <div className="bg-muted/50 flex items-center gap-2 rounded-lg border p-3">
-          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <span className="text-sm font-medium">
+            {t("admin.roadmap.selected", { N: selectedIds.size })}
+          </span>
           <Button size="sm" variant="outline" onClick={() => handleBulkAction("approved")}>
-            <ThumbsUp className="mr-2 h-4 w-4" />
-            Approve Selected
+            <ThumbsUp className="me-2 h-4 w-4" />
+            {t("admin.roadmap.approveSelected")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => handleBulkAction("rejected")}>
-            <ThumbsDown className="mr-2 h-4 w-4" />
-            Reject Selected
+            <ThumbsDown className="me-2 h-4 w-4" />
+            {t("admin.roadmap.rejectSelected")}
           </Button>
         </div>
       )}
@@ -342,11 +357,11 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                   />
                 </TableHead>
               )}
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Submitted By</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("admin.roadmap.table.title")}</TableHead>
+              <TableHead>{t("admin.roadmap.table.category")}</TableHead>
+              <TableHead>{t("admin.roadmap.table.submittedBy")}</TableHead>
+              <TableHead>{t("admin.roadmap.table.date")}</TableHead>
+              <TableHead>{t("admin.roadmap.table.status")}</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -385,7 +400,7 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                   colSpan={filter === "pending" ? 7 : 6}
                   className="text-muted-foreground h-24 text-center"
                 >
-                  No submissions found
+                  {t("admin.roadmap.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -405,7 +420,7 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                     <div className="max-w-md">
                       <button
                         onClick={() => setViewTarget(item)}
-                        className="text-left font-medium hover:underline"
+                        className="text-start font-medium hover:underline"
                       >
                         {item.title}
                       </button>
@@ -447,17 +462,17 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => setViewTarget(item)}>
-                          View Details
+                          {t("admin.roadmap.viewDetails")}
                         </DropdownMenuItem>
                         {item.status === "pending" && (
                           <>
                             <DropdownMenuItem onClick={() => handleApprove(item)}>
-                              <ThumbsUp className="mr-2 h-4 w-4" />
-                              Approve
+                              <ThumbsUp className="me-2 h-4 w-4" />
+                              {t("admin.roadmap.approve")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => setRejectTarget(item)}>
-                              <ThumbsDown className="mr-2 h-4 w-4" />
-                              Reject
+                              <ThumbsDown className="me-2 h-4 w-4" />
+                              {t("admin.roadmap.reject")}
                             </DropdownMenuItem>
                           </>
                         )}
@@ -466,8 +481,8 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                           onClick={() => setDeleteTarget(item)}
                           className="text-destructive focus:text-destructive"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
+                          <Trash2 className="me-2 h-4 w-4" />
+                          {t("admin.common.delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -482,9 +497,11 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground text-sm">
-            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total}{" "}
-            results
+            {t("admin.roadmap.pagination", {
+              from: (pagination.page - 1) * pagination.limit + 1,
+              to: Math.min(pagination.page * pagination.limit, pagination.total),
+              total: pagination.total,
+            })}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -496,7 +513,10 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
               <ChevronLeft className="h-4 w-4 rtl:scale-x-[-1]" />
             </Button>
             <span className="text-sm">
-              Page {pagination.page} of {pagination.totalPages}
+              {t("admin.roadmap.pageOf", {
+                current: pagination.page,
+                total: pagination.totalPages,
+              })}
             </span>
             <Button
               variant="outline"
@@ -540,13 +560,16 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
             </div>
             {viewTarget?.adminNotes && (
               <div className="bg-muted rounded-lg p-3">
-                <p className="text-muted-foreground mb-1 text-xs font-medium">Admin Notes</p>
+                <p className="text-muted-foreground mb-1 text-xs font-medium">
+                  {t("admin.roadmap.adminNotes")}
+                </p>
                 <p className="text-sm">{viewTarget.adminNotes}</p>
               </div>
             )}
             {viewTarget?.reviewedAt && (
               <p className="text-muted-foreground text-xs">
-                Reviewed: {format(new Date(viewTarget.reviewedAt), "MMM d, yyyy 'at' h:mm a")}
+                {t("admin.roadmap.reviewed")}:{" "}
+                {format(new Date(viewTarget.reviewedAt), "MMM d, yyyy 'at' h:mm a")}
               </p>
             )}
           </div>
@@ -562,18 +585,16 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reject Feedback</DialogTitle>
-            <DialogDescription>
-              Add optional notes about why this feedback is being rejected.
-            </DialogDescription>
+            <DialogTitle>{t("admin.roadmap.rejectDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("admin.roadmap.rejectDialogDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Admin Notes (Optional)</Label>
+              <Label>{t("admin.roadmap.adminNotesOptional")}</Label>
               <Textarea
                 value={rejectNotes}
                 onChange={(e) => setRejectNotes(e.target.value)}
-                placeholder="Reason for rejection..."
+                placeholder={t("admin.roadmap.rejectPlaceholder")}
                 className="mt-2"
               />
             </div>
@@ -586,10 +607,10 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
                 setRejectNotes("");
               }}
             >
-              Cancel
+              {t("admin.common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleReject} disabled={isRejecting}>
-              {isRejecting ? "Rejecting..." : "Reject Feedback"}
+              {isRejecting ? t("admin.roadmap.rejecting") : t("admin.roadmap.rejectFeedback")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -598,17 +619,15 @@ export function RoadmapTable({ initialData }: RoadmapTableProps = {}) {
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Feedback</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to permanently delete this submission? This cannot be undone.
-            </DialogDescription>
+            <DialogTitle>{t("admin.roadmap.deleteDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("admin.roadmap.deleteDialogDesc")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t("admin.common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-              {isDeleting ? "Deleting..." : "Delete"}
+              {isDeleting ? t("admin.common.deleting") : t("admin.common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

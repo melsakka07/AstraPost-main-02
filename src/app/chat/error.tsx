@@ -32,7 +32,7 @@ export default function ChatError({
         )}
         <div className="flex justify-center gap-4">
           <Button onClick={reset}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <RefreshCw className="me-2 h-4 w-4" />
             Try again
           </Button>
           <Button variant="outline" onClick={() => (window.location.href = "/")}>

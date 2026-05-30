@@ -354,17 +354,17 @@ function ColorSection() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">Token</th>
-                <th className="px-4 py-3 text-left font-medium">Tailwind utility</th>
-                <th className="px-4 py-3 text-left font-medium">Use for</th>
-                <th className="px-4 py-3 text-left font-medium">Live</th>
+                <th className="px-4 py-3 text-start font-medium">Token</th>
+                <th className="px-4 py-3 text-start font-medium">Tailwind utility</th>
+                <th className="px-4 py-3 text-start font-medium">Use for</th>
+                <th className="px-4 py-3 text-start font-medium">Live</th>
               </tr>
             </thead>
             <tbody>
               {SEMANTIC_TOKENS.map((token) => (
                 <tr key={token.name} className="border-border border-t">
                   <td className="px-4 py-2.5">
-                    <CopyButton value={`--${token.name}`} className="-ml-2" />
+                    <CopyButton value={`--${token.name}`} className="-ms-2" />
                   </td>
                   <td className="px-4 py-2.5">
                     <CopyButton
@@ -373,7 +373,7 @@ function ColorSection() {
                           ? `text-${token.name}`
                           : `bg-${token.name}`
                       }
-                      className="-ml-2"
+                      className="-ms-2"
                     />
                   </td>
                   <td className="text-muted-foreground px-4 py-2.5">{token.description}</td>

@@ -376,7 +376,7 @@ export default function ChatPage() {
                 key={message.id}
                 className={`group rounded-lg p-3 ${
                   message.role === "user"
-                    ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
+                    ? "bg-primary text-primary-foreground ms-auto max-w-[80%]"
                     : "bg-muted max-w-[80%]"
                 }`}
               >

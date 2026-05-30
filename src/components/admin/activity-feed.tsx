@@ -69,23 +69,23 @@ const ACTION_ICONS: Record<string, React.ElementType> = {
 };
 
 const ACTION_COLORS: Record<string, string> = {
-  ban: "text-red-600 dark:text-red-400",
-  unban: "text-green-600 dark:text-green-400",
-  delete_user: "text-red-700 dark:text-red-300",
-  suspend: "text-orange-600 dark:text-orange-400",
-  unsuspend: "text-green-600 dark:text-green-400",
-  impersonate_start: "text-purple-700 dark:text-purple-300",
-  impersonate_end: "text-purple-600 dark:text-purple-400",
-  plan_change: "text-blue-600 dark:text-blue-400",
-  feature_flag_toggle: "text-indigo-600 dark:text-indigo-400",
-  promo_create: "text-cyan-600 dark:text-cyan-400",
-  promo_update: "text-cyan-600 dark:text-cyan-400",
-  promo_delete: "text-red-600 dark:text-red-400",
-  announcement_update: "text-indigo-600 dark:text-indigo-400",
-  subscriber_create: "text-teal-600 dark:text-teal-400",
-  subscriber_update: "text-teal-600 dark:text-teal-400",
-  roadmap_update: "text-indigo-600 dark:text-indigo-400",
-  bulk_operation: "text-amber-600 dark:text-amber-400",
+  ban: "text-danger-11",
+  unban: "text-success-11",
+  delete_user: "text-danger-11",
+  suspend: "text-warning-11",
+  unsuspend: "text-success-11",
+  impersonate_start: "text-brand-11",
+  impersonate_end: "text-brand-11",
+  plan_change: "text-info-11",
+  feature_flag_toggle: "text-brand-11",
+  promo_create: "text-info-11",
+  promo_update: "text-info-11",
+  promo_delete: "text-danger-11",
+  announcement_update: "text-brand-11",
+  subscriber_create: "text-info-11",
+  subscriber_update: "text-info-11",
+  roadmap_update: "text-brand-11",
+  bulk_operation: "text-warning-11",
 };
 
 function ActivityFeedSkeleton() {
@@ -197,14 +197,14 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
       <CardHeader className="flex flex-col gap-2 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-lg">Recent Admin Activity</CardTitle>
+            <CardTitle className="text-lg">{t("activityFeed.title")}</CardTitle>
             <Link href="/admin/audit" className="text-primary text-xs hover:underline">
-              View all →
+              {t("activityFeed.viewAll")}
             </Link>
           </div>
           {lastUpdated && (
             <p className="text-muted-foreground mt-1 text-xs">
-              Last updated:{" "}
+              {t("activityFeed.lastUpdated")}:{" "}
               {formatDistanceToNow(lastUpdated, {
                 addSuffix: true,
                 locale: locale === "ar" ? ar : enUS,
@@ -236,13 +236,13 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
                 className="mt-2"
                 onClick={() => void fetchActivities()}
               >
-                Try Again
+                {t("activityFeed.tryAgain")}
               </Button>
             </div>
           </div>
         ) : activities.length === 0 ? (
           <div className="text-muted-foreground py-8 text-center text-sm">
-            No admin activity yet
+            {t("activityFeed.empty")}
           </div>
         ) : (
           <div className="space-y-4">
@@ -267,7 +267,9 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">
-                          <span className="font-medium">{activity.adminName ?? "Admin"}</span>{" "}
+                          <span className="font-medium">
+                            {activity.adminName ?? t("activityFeed.admin")}
+                          </span>{" "}
                           {actionLabel}
                           {hasReason ? (
                             <span className="text-muted-foreground"> — {reasonText}</span>
@@ -275,7 +277,8 @@ export function AdminActivityFeed({ limit = 10 }: ActivityFeedProps) {
                         </p>
                         {activity.targetId && activity.targetType && (
                           <p className="text-muted-foreground mt-0.5 text-xs">
-                            Affected: <span className="capitalize">{activity.targetType}</span>{" "}
+                            {t("activityFeed.affected")}:{" "}
+                            <span className="capitalize">{activity.targetType}</span>{" "}
                             <code className="font-mono text-xs">
                               {activity.targetId.slice(0, 8)}…
                             </code>

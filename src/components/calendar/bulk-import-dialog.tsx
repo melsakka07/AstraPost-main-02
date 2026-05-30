@@ -78,7 +78,7 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <Upload className="mr-2 h-4 w-4" />
+          <Upload className="me-2 h-4 w-4" />
           {t("import_csv")}
         </Button>
       </DialogTrigger>
@@ -120,7 +120,7 @@ export function BulkImportDialog({ xAccounts }: BulkImportDialogProps) {
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!file || !selectedAccount || isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
             {isLoading ? t("importing") : t("import_button")}
           </Button>
         </DialogFooter>

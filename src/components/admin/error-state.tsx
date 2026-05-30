@@ -28,12 +28,7 @@ export function ErrorState({
     error instanceof Error ? error.message : typeof error === "string" ? error : undefined;
 
   return (
-    <Card
-      className={cn(
-        "border-red-200/50 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/20",
-        className
-      )}
-    >
+    <Card className={cn("border-danger-6/50 bg-danger-3/50", className)}>
       <CardContent className="pt-6">
         <div className="flex gap-4">
           <AlertCircle className="text-destructive mt-0.5 h-5 w-5 flex-shrink-0" />
@@ -41,7 +36,7 @@ export function ErrorState({
             <h3 className="text-destructive font-medium">{title}</h3>
             {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
             {errorMessage && (
-              <p className="text-destructive/80 mt-2 rounded bg-red-900/10 px-2 py-1 font-mono text-xs break-words">
+              <p className="text-destructive/80 bg-danger-11/10 mt-2 rounded px-2 py-1 font-mono text-xs break-words">
                 {errorMessage}
               </p>
             )}

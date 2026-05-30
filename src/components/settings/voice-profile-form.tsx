@@ -201,7 +201,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                       onClick={handleDelete}
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8"
                     >
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <Trash2 className="me-2 h-4 w-4" />
                       {t("integrations.reset_voice_profile")}
                     </Button>
                   </div>
@@ -275,14 +275,14 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                                   placeholder={t("integrations.voice_sample_placeholder", {
                                     index: index + 1,
                                   })}
-                                  className="min-h-[80px] resize-none pr-10"
+                                  className="min-h-[80px] resize-none pe-10"
                                 />
                                 {fields.length > 3 && (
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    className="text-muted-foreground hover:text-destructive absolute top-2 right-2 h-6 w-6"
+                                    className="text-muted-foreground hover:text-destructive inset-inline-end-2 absolute top-2 h-6 w-6"
                                     onClick={() => remove(index)}
                                   >
                                     <X className="h-4 w-4" />
@@ -305,7 +305,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                       onClick={() => append({ value: "" })}
                       className="w-full"
                     >
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus className="me-2 h-4 w-4" />
                       {t("integrations.voice_add_sample_button")}
                     </Button>
                   )}
@@ -323,7 +323,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
 
                   <div className="flex justify-end pt-4">
                     <Button type="submit" disabled={!isDirty || !isValid || isAnalyzing}>
-                      {isAnalyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isAnalyzing && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                       {t("integrations.voice_analyze_button")}
                     </Button>
                   </div>

@@ -415,14 +415,14 @@ export function ConnectedXAccounts({
           <div className="space-y-3 py-6 text-center">
             <p className="text-muted-foreground text-sm">{t("integrations.no_accounts")}</p>
             <Button onClick={handleAddAccount} disabled={busy}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="me-2 h-4 w-4" />
               {t("integrations.connect_x")}
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
             <Button variant="outline" onClick={handleAddAccount} disabled={busy}>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="me-2 h-4 w-4" />
               {t("integrations.connect_x")}
             </Button>
             <div className="border-border/50 bg-muted/30 text-muted-foreground flex items-start gap-2 rounded-md border px-3 py-2 text-xs">

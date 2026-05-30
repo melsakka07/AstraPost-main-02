@@ -1,18 +1,21 @@
+"use client";
+
 import { CheckCircle2, Clock, AlertCircle, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import type { SubscriberPlan, SubscriptionStatus } from "./types";
 
-const PLAN_LABELS: Record<SubscriberPlan, string> = {
-  free: "Free",
-  pro_monthly: "Pro Monthly",
-  pro_annual: "Pro Annual",
-  agency: "Agency",
-};
-
 export function PlanBadge({ plan }: { plan: SubscriberPlan | null }) {
+  const t = useTranslations();
   const p = plan ?? "free";
+  const planLabels: Record<SubscriberPlan, string> = {
+    free: t("admin.plans.free"),
+    pro_monthly: t("admin.plans.proMonthly"),
+    pro_annual: t("admin.plans.proAnnual"),
+    agency: t("admin.plans.agency"),
+  };
   const variant = p === "free" ? "secondary" : p === "agency" ? "outline" : "default";
-  return <Badge variant={variant}>{PLAN_LABELS[p]}</Badge>;
+  return <Badge variant={variant}>{planLabels[p]}</Badge>;
 }
 
 export function StatusBadge({
@@ -26,16 +29,17 @@ export function StatusBadge({
   deletedAt: string | null;
   trialEndsAt: string | null;
 }) {
+  const t = useTranslations();
   // Error/Failed state: Deleted, Banned, Suspended
   if (deletedAt)
     return (
       <Badge
         variant="destructive"
         className="flex w-fit items-center gap-1"
-        title="User account has been deleted"
+        title={t("admin.subscribers.status.deletedTitle")}
       >
         <X className="h-3 w-3" />
-        Deleted
+        {t("admin.subscribers.status.deleted")}
       </Badge>
     );
   if (bannedAt)
@@ -43,10 +47,10 @@ export function StatusBadge({
       <Badge
         variant="destructive"
         className="flex w-fit items-center gap-1"
-        title="User account has been banned"
+        title={t("admin.subscribers.status.bannedTitle")}
       >
         <AlertCircle className="h-3 w-3" />
-        Banned
+        {t("admin.subscribers.status.banned")}
       </Badge>
     );
   if (isSuspended)
@@ -54,76 +58,64 @@ export function StatusBadge({
       <Badge
         variant="destructive"
         className="flex w-fit items-center gap-1"
-        title="User account has been suspended"
+        title={t("admin.subscribers.status.suspendedTitle")}
       >
         <AlertCircle className="h-3 w-3" />
-        Suspended
+        {t("admin.subscribers.status.suspended")}
       </Badge>
     );
   // Pending state: Trial
   if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
     return (
       <Badge
-        className="flex w-fit items-center gap-1 border-amber-500/50 text-amber-600 dark:text-amber-400"
+        className="border-warning-6/50 text-warning-11 flex w-fit items-center gap-1"
         variant="secondary"
-        title="User is on a trial period"
+        title={t("admin.subscribers.status.trialTitle")}
       >
         <Clock className="h-3 w-3" />
-        Trial
+        {t("admin.subscribers.status.trial")}
       </Badge>
     );
   }
   // Active state
   return (
     <Badge
-      className="flex w-fit items-center gap-1 border-green-500/50 text-green-600 dark:text-green-400"
+      className="border-success-6/50 text-success-11 flex w-fit items-center gap-1"
       variant="outline"
-      title="User account is active"
+      title={t("admin.subscribers.status.activeTitle")}
     >
       <CheckCircle2 className="h-3 w-3" />
-      Active
+      {t("admin.subscribers.status.active")}
     </Badge>
   );
 }
 
 export function SubscriptionStatusBadge({ status }: { status: SubscriptionStatus | null }) {
+  const t = useTranslations();
   if (!status) return <span className="text-muted-foreground text-xs">—</span>;
 
-  const config: Record<
-    SubscriptionStatus,
-    {
-      variant: "default" | "secondary" | "destructive" | "outline";
-      icon: React.ReactNode;
-      title: string;
-    }
-  > = {
-    active: {
-      variant: "default",
-      icon: <CheckCircle2 className="h-3 w-3" />,
-      title: "Subscription is active",
-    },
-    trialing: {
-      variant: "secondary",
-      icon: <Clock className="h-3 w-3" />,
-      title: "Subscription is trialing",
-    },
-    past_due: {
-      variant: "destructive",
-      icon: <AlertCircle className="h-3 w-3" />,
-      title: "Subscription payment is past due",
-    },
-    cancelled: {
-      variant: "outline",
-      icon: <X className="h-3 w-3" />,
-      title: "Subscription has been cancelled",
-    },
+  const variant: Record<SubscriptionStatus, "default" | "secondary" | "destructive" | "outline"> = {
+    active: "default",
+    trialing: "secondary",
+    past_due: "destructive",
+    cancelled: "outline",
   };
 
-  const { variant, icon, title } = config[status];
+  const icon: Record<SubscriptionStatus, React.ReactNode> = {
+    active: <CheckCircle2 className="h-3 w-3" />,
+    trialing: <Clock className="h-3 w-3" />,
+    past_due: <AlertCircle className="h-3 w-3" />,
+    cancelled: <X className="h-3 w-3" />,
+  };
+
   return (
-    <Badge variant={variant} className="flex w-fit items-center gap-1" title={title}>
-      {icon}
-      {status.replace("_", " ")}
+    <Badge
+      variant={variant[status]}
+      className="flex w-fit items-center gap-1"
+      title={t(`admin.subscribers.subscriptionStatus.${status}Title`)}
+    >
+      {icon[status]}
+      {t(`admin.subscribers.subscriptionStatus.${status}`)}
     </Badge>
   );
 }

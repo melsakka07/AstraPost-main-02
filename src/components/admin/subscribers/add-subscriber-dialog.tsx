@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -50,6 +51,7 @@ interface AddSubscriberDialogProps {
 }
 
 export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscriberDialogProps) {
+  const t = useTranslations();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<FormValues>({
@@ -74,12 +76,12 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
         throw new Error(error);
       }
-      toast.success(`${values.name} has been added`);
+      toast.success(t("admin.subscribers.addedToast", { name: values.name }));
       form.reset();
       onSuccess();
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create subscriber");
+      toast.error(err instanceof Error ? err.message : t("admin.subscribers.createError"));
     }
   };
 
@@ -95,10 +97,8 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add subscriber</DialogTitle>
-          <DialogDescription>
-            Create a new user account manually. A welcome email will be sent.
-          </DialogDescription>
+          <DialogTitle>{t("admin.subscribers.addTitle")}</DialogTitle>
+          <DialogDescription>{t("admin.subscribers.addDescription")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -108,9 +108,9 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Full name</FormLabel>
+                  <FormLabel>{t("admin.subscribers.fullNameLabel")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ahmed Al-Rashidi" {...field} />
+                    <Input placeholder={t("admin.subscribers.namePlaceholder")} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -122,7 +122,7 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t("admin.subscribers.emailLabel")}</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder="ahmed@example.com" {...field} />
                   </FormControl>
@@ -136,18 +136,18 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Temporary password</FormLabel>
+                  <FormLabel>{t("admin.subscribers.tempPasswordLabel")}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
                         type={showPassword ? "text" : "password"}
-                        placeholder="Min 8 characters"
-                        className="pr-10"
+                        placeholder={t("admin.subscribers.passwordPlaceholder")}
+                        className="pe-10"
                         {...field}
                       />
                       <button
                         type="button"
-                        className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex items-center px-3"
+                        className="text-muted-foreground hover:text-foreground inset-inline-end-0 absolute inset-y-0 flex items-center px-3"
                         onClick={() => setShowPassword((v) => !v)}
                         tabIndex={-1}
                       >
@@ -169,18 +169,18 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
               name="plan"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plan</FormLabel>
+                  <FormLabel>{t("admin.subscribers.planLabel")}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select plan" />
+                        <SelectValue placeholder={t("admin.subscribers.selectPlanPlaceholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="free">Free</SelectItem>
-                      <SelectItem value="pro_monthly">Pro Monthly</SelectItem>
-                      <SelectItem value="pro_annual">Pro Annual</SelectItem>
-                      <SelectItem value="agency">Agency</SelectItem>
+                      <SelectItem value="free">{t("admin.plans.free")}</SelectItem>
+                      <SelectItem value="pro_monthly">{t("admin.plans.proMonthly")}</SelectItem>
+                      <SelectItem value="pro_annual">{t("admin.plans.proAnnual")}</SelectItem>
+                      <SelectItem value="agency">{t("admin.plans.agency")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -194,9 +194,11 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
               render={({ field }) => (
                 <FormItem className="flex items-center justify-between rounded-lg border p-3">
                   <div>
-                    <FormLabel className="text-sm font-medium">Admin access</FormLabel>
+                    <FormLabel className="text-sm font-medium">
+                      {t("admin.subscribers.adminAccessLabel")}
+                    </FormLabel>
                     <p className="text-muted-foreground text-xs">
-                      Grant access to this admin panel
+                      {t("admin.subscribers.adminAccessHint")}
                     </p>
                   </div>
                   <FormControl>
@@ -216,10 +218,12 @@ export function AddSubscriberDialog({ open, onOpenChange, onSuccess }: AddSubscr
                 }}
                 disabled={form.formState.isSubmitting}
               >
-                Cancel
+                {t("admin.common.cancel")}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating…" : "Create subscriber"}
+                {form.formState.isSubmitting
+                  ? t("admin.common.creating")
+                  : t("admin.subscribers.createButton")}
               </Button>
             </DialogFooter>
           </form>

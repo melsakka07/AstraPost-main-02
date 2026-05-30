@@ -196,7 +196,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
           <User className="text-primary h-5 w-5" />
           <CardTitle>
             {t("profile.profile_card_title")}
-            {isDirty && <span className="text-destructive ml-1">*</span>}
+            {isDirty && <span className="text-destructive ms-1">*</span>}
           </CardTitle>
         </div>
         <CardDescription>{t("profile.profile_card_description")}</CardDescription>
@@ -239,12 +239,12 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   >
                     {uploadingAvatar ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="me-2 h-4 w-4 animate-spin" />
                         {t("profile.avatar_uploading")}
                       </>
                     ) : (
                       <>
-                        <Upload className="mr-2 h-4 w-4" />
+                        <Upload className="me-2 h-4 w-4" />
                         {t("profile.avatar_upload")}
                       </>
                     )}
@@ -257,7 +257,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                       onClick={() => form.setValue("image", null, { shouldDirty: true })}
                       disabled={uploadingAvatar}
                     >
-                      <X className="mr-2 h-4 w-4" />
+                      <X className="me-2 h-4 w-4" />
                       {t("profile.avatar_remove")}
                     </Button>
                   )}
@@ -383,8 +383,8 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
             </div>
             <div className="flex justify-end">
               <Button type="submit" disabled={!isDirty || !isValid || loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                <Save className="mr-2 h-4 w-4" />
+                {loading && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                <Save className="me-2 h-4 w-4" />
                 {t("profile.save")}
               </Button>
             </div>

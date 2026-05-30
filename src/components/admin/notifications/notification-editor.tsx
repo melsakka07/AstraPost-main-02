@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,14 +27,16 @@ interface NotificationFormData {
   scheduledAt?: string;
 }
 
-const SEGMENTS = [
-  { value: "trial_users", label: "Trial Users" },
-  { value: "inactive_90d", label: "Inactive (90+ days)" },
-  { value: "paid_users", label: "Paid Users" },
-  { value: "free_users", label: "Free Users" },
-];
-
 export function NotificationEditor() {
+  const t = useTranslations();
+
+  const SEGMENTS = [
+    { value: "trial_users", label: t("admin.notifications.segments.trialUsers") },
+    { value: "inactive_90d", label: t("admin.notifications.segments.inactive90d") },
+    { value: "paid_users", label: t("admin.notifications.segments.paidUsers") },
+    { value: "free_users", label: t("admin.notifications.segments.freeUsers") },
+  ];
+
   const [form, setForm] = useState<NotificationFormData>({
     title: "",
     body: "",
@@ -45,7 +48,7 @@ export function NotificationEditor() {
     e.preventDefault();
 
     if (!form.title.trim() || !form.body.trim()) {
-      toast.error("Title and body are required");
+      toast.error(t("admin.notifications.titleBodyRequired"));
       return;
     }
 
@@ -63,13 +66,13 @@ export function NotificationEditor() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to save notification");
+        throw new Error(error.message || t("admin.notifications.saveFailed"));
       }
 
-      toast.success(schedule ? "Notification scheduled" : "Notification sent");
+      toast.success(schedule ? t("admin.notifications.scheduled") : t("admin.notifications.sent"));
       setForm({ title: "", body: "", targetType: "all" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Error saving notification");
+      toast.error(error instanceof Error ? error.message : t("admin.notifications.saveError"));
     } finally {
       setLoading(false);
     }
@@ -78,16 +81,16 @@ export function NotificationEditor() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create Notification</CardTitle>
+        <CardTitle>{t("admin.notifications.createTitle")}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-6">
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
+            <Label htmlFor="title">{t("admin.notifications.titleLabel")}</Label>
             <Input
               id="title"
-              placeholder="Notification title"
+              placeholder={t("admin.notifications.titlePlaceholder")}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
@@ -95,10 +98,10 @@ export function NotificationEditor() {
 
           {/* Body */}
           <div className="space-y-2">
-            <Label htmlFor="body">Message</Label>
+            <Label htmlFor="body">{t("admin.notifications.messageLabel")}</Label>
             <Textarea
               id="body"
-              placeholder="Notification message"
+              placeholder={t("admin.notifications.messagePlaceholder")}
               value={form.body}
               onChange={(e) => setForm({ ...form, body: e.target.value })}
               rows={4}
@@ -107,7 +110,7 @@ export function NotificationEditor() {
 
           {/* Target Type */}
           <div className="space-y-2">
-            <Label htmlFor="target">Target Type</Label>
+            <Label htmlFor="target">{t("admin.notifications.targetTypeLabel")}</Label>
             <Select
               value={form.targetType}
               onValueChange={(value) => setForm({ ...form, targetType: value as TargetType })}
@@ -116,9 +119,13 @@ export function NotificationEditor() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Users</SelectItem>
-                <SelectItem value="segment">Segment</SelectItem>
-                <SelectItem value="individual">Individual Users</SelectItem>
+                <SelectItem value="all">{t("admin.notifications.targetType.all")}</SelectItem>
+                <SelectItem value="segment">
+                  {t("admin.notifications.targetType.segment")}
+                </SelectItem>
+                <SelectItem value="individual">
+                  {t("admin.notifications.targetType.individual")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -126,7 +133,7 @@ export function NotificationEditor() {
           {/* Segment Selector */}
           {form.targetType === "segment" && (
             <div className="space-y-2">
-              <Label htmlFor="segment">Select Segment</Label>
+              <Label htmlFor="segment">{t("admin.notifications.selectSegmentLabel")}</Label>
               <Select
                 value={form.segment || ""}
                 onValueChange={(value) => setForm({ ...form, segment: value })}
@@ -148,10 +155,10 @@ export function NotificationEditor() {
           {/* Individual Users */}
           {form.targetType === "individual" && (
             <div className="space-y-2">
-              <Label htmlFor="users">Users (comma-separated IDs)</Label>
+              <Label htmlFor="users">{t("admin.notifications.userIdsLabel")}</Label>
               <Textarea
                 id="users"
-                placeholder="user1, user2, user3..."
+                placeholder={t("admin.notifications.userIdsPlaceholder")}
                 rows={3}
                 onChange={(e) =>
                   setForm({
@@ -168,7 +175,7 @@ export function NotificationEditor() {
 
           {/* Schedule */}
           <div className="space-y-2">
-            <Label htmlFor="schedule">Schedule (optional)</Label>
+            <Label htmlFor="schedule">{t("admin.notifications.scheduleLabel")}</Label>
             <Input
               id="schedule"
               type="datetime-local"
@@ -180,7 +187,7 @@ export function NotificationEditor() {
           {/* Actions */}
           <div className="flex gap-3">
             <Button onClick={(e) => handleSubmit(e, false)} disabled={loading} className="flex-1">
-              {loading ? "Sending..." : "Send Now"}
+              {loading ? t("admin.notifications.sending") : t("admin.notifications.sendNow")}
             </Button>
             <Button
               variant="outline"
@@ -188,7 +195,9 @@ export function NotificationEditor() {
               disabled={loading || !form.scheduledAt}
               className="flex-1"
             >
-              {loading ? "Scheduling..." : "Schedule"}
+              {loading
+                ? t("admin.notifications.scheduling")
+                : t("admin.notifications.scheduleButton")}
             </Button>
           </div>
         </form>

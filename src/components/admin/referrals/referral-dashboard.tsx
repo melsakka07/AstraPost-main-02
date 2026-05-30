@@ -153,13 +153,13 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                     Referral Code
                   </TableHead>
-                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                     Referred
                   </TableHead>
-                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                     Converted
                   </TableHead>
-                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                  <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                     Credits
                   </TableHead>
                 </TableRow>
@@ -197,14 +197,14 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
                           <span className="text-muted-foreground text-sm">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-end tabular-nums">
                         {referrer.referredCount}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-end tabular-nums">
                         {referrer.convertedCount > 0 ? (
                           <Badge
                             variant="outline"
-                            className="border-green-500/30 bg-green-500/10 text-green-600"
+                            className="border-success-6/30 bg-success-3 text-success-11"
                           >
                             {referrer.convertedCount}
                           </Badge>
@@ -212,9 +212,9 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps = {}) 
                           <span className="text-muted-foreground text-sm">0</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-end tabular-nums">
                         {referrer.totalCredits > 0 ? (
-                          <span className="font-medium text-green-600">
+                          <span className="text-success-11 font-medium">
                             +{referrer.totalCredits}
                           </span>
                         ) : (

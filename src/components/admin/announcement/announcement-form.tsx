@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -34,13 +35,19 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-const TYPE_LABELS = { info: "Info (blue)", warning: "Warning (amber)", success: "Success (green)" };
-
 interface AnnouncementFormProps {
   initialData?: { text: string; type: "info" | "warning" | "success"; enabled: boolean };
 }
 
 export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
+  const t = useTranslations();
+
+  const TYPE_LABELS: Record<string, string> = {
+    info: t("admin.announcement.typeInfo"),
+    warning: t("admin.announcement.typeWarning"),
+    success: t("admin.announcement.typeSuccess"),
+  };
+
   const form = useForm<FormValues, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: initialData ?? { text: "", type: "info", enabled: false },
@@ -74,9 +81,9 @@ export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
         throw new Error(error);
       }
-      toast.success("Announcement saved");
+      toast.success(t("admin.announcement.saved"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save announcement");
+      toast.error(err instanceof Error ? err.message : t("admin.announcement.saveError"));
     }
   };
 
@@ -86,19 +93,17 @@ export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
 
   const previewBg =
     type === "warning"
-      ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400"
+      ? "bg-warning-3 border-warning-6/30 text-warning-11"
       : type === "success"
-        ? "bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-400"
-        : "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-400";
+        ? "bg-success-3 border-success-6/30 text-success-11"
+        : "bg-info-3 border-info-6/30 text-info-11";
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Banner preview</CardTitle>
-          <CardDescription>
-            How it will appear to users at the top of their dashboard.
-          </CardDescription>
+          <CardTitle className="text-base">{t("admin.announcement.bannerPreview")}</CardTitle>
+          <CardDescription>{t("admin.announcement.bannerPreviewDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {text && enabled ? (
@@ -107,7 +112,9 @@ export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
             </div>
           ) : (
             <div className="text-muted-foreground flex h-12 items-center justify-center rounded-lg border border-dashed text-sm">
-              {!text ? "Enter text below to preview" : "Toggle active to show preview"}
+              {!text
+                ? t("admin.announcement.enterTextToPreview")
+                : t("admin.announcement.toggleToShow")}
             </div>
           )}
         </CardContent>
@@ -120,16 +127,13 @@ export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
             name="text"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Announcement text</FormLabel>
-                <FormDescription>
-                  Message displayed to all users (max 500 characters). Use for maintenance updates,
-                  important notices, or alerts.
-                </FormDescription>
+                <FormLabel>{t("admin.announcement.textLabel")}</FormLabel>
+                <FormDescription>{t("admin.announcement.textDesc")}</FormDescription>
                 <FormControl>
                   <Textarea
-                    placeholder="e.g. We're performing scheduled maintenance on Saturday…"
+                    placeholder={t("admin.announcement.textPlaceholder")}
                     rows={3}
-                    aria-label="Announcement text content"
+                    aria-label={t("admin.announcement.textAriaLabel")}
                     {...field}
                   />
                 </FormControl>
@@ -144,11 +148,8 @@ export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
               name="type"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Type</FormLabel>
-                  <FormDescription>
-                    Choose visual style: Info for general updates, Warning for urgent notices,
-                    Success for positive announcements.
-                  </FormDescription>
+                  <FormLabel>{t("admin.announcement.typeLabel")}</FormLabel>
+                  <FormDescription>{t("admin.announcement.typeDesc")}</FormDescription>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger aria-label="Select announcement type">
@@ -173,18 +174,20 @@ export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
               name="enabled"
               render={({ field }) => (
                 <FormItem className="flex flex-col justify-end">
-                  <FormLabel>Active</FormLabel>
-                  <FormDescription>Turn on to display banner to all users.</FormDescription>
+                  <FormLabel>{t("admin.announcement.activeLabel")}</FormLabel>
+                  <FormDescription>{t("admin.announcement.activeDesc")}</FormDescription>
                   <div className="flex h-10 items-center gap-3">
                     <FormControl>
                       <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        aria-label="Toggle announcement visibility"
+                        aria-label={t("admin.announcement.toggleAnnouncementAria")}
                       />
                     </FormControl>
                     <span className="text-muted-foreground text-sm">
-                      {field.value ? "Visible to all users" : "Hidden"}
+                      {field.value
+                        ? t("admin.announcement.visibleToAll")
+                        : t("admin.announcement.hidden")}
                     </span>
                   </div>
                 </FormItem>
@@ -194,7 +197,9 @@ export function AnnouncementForm({ initialData }: AnnouncementFormProps) {
 
           <div className="flex justify-end pt-2">
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Saving…" : "Save announcement"}
+              {form.formState.isSubmitting
+                ? t("admin.common.saving")
+                : t("admin.announcement.saveButton")}
             </Button>
           </div>
         </form>

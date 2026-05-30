@@ -88,6 +88,15 @@ Color system in `src/app/globals.css` — 6 Radix-derived OKLCH scales (neutral,
 
 **Scales:** neutral (slate), brand (indigo #3E63DD), info (blue #0090FF), success (green #46A758), warning (amber #FFC53D), danger (red #E5484D).
 
+### Internationalization (i18n)
+
+Uses `next-intl` (ar/en). Message files live in `src/i18n/messages/{en,ar,pseudo}.json`. Two primary namespaces:
+
+- **User-facing** — keys spread across `compose.*`, `ai.*`, `settings.*`, `dashboard.*`, `analytics.*`, `inspiration.*`, `drafts.*`, `calendar.*`, `onboarding.*`, `queue.*`, `affiliate.*`, `billing.*`, `nav.*`, `roadmap.*`, `common.*`
+- **Admin (internal)** — `admin.*` namespace (~210 keys, added Wave 7 Task B), covering billing dialogs, roadmap table, notifications editor, health dashboard, admin dashboard, audit log table, date range picker, team dashboard, subscribers, feature flags, announcement form, activity feed, and error states
+
+Components wire translations via `useTranslations()` from `next-intl`. All dropdown labels, table headers, button text, placeholders, aria-labels, and toast messages use `t()` calls — no hardcoded English strings in UI.
+
 ### Dashboard Sidebar IA
 
 The dashboard sidebar (defined in `src/components/dashboard/sidebar-nav-data.ts`) is organized into 4 sections for regular users: **Overview** (Dashboard), **Create** (Compose, Drafts, Schedule -- merged Queue + Calendar with `?view=list|month|week|day` view tabs), **Grow** (Analytics, AI Tools, Inspiration, Agentic Posting), and **Account** (Settings, Achievements, Referrals, Affiliate Dashboard). Admin users see an additional **Admin** section (Jobs, History) appended below Account. The old `/dashboard/queue` and `/dashboard/calendar` routes redirect to `/dashboard/schedule` with query-param preservation. Mobile bottom nav surfaces the Create, Grow, and Account sections.

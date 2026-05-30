@@ -79,11 +79,11 @@ export function AffiliateConversionFunnel({ initialData }: AffiliateConversionFu
                       style={{ width: `${stage.percentage}%` }}
                     />
                   </div>
-                  <span className="text-right text-sm tabular-nums">
+                  <span className="text-end text-sm tabular-nums">
                     <span className="font-semibold">{stage.percentage}%</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-2 pl-0">
+                <div className="flex items-center gap-2 ps-0">
                   <span className="text-muted-foreground text-xs">
                     {stage.count.toLocaleString()} users
                   </span>

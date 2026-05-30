@@ -15,9 +15,9 @@ interface QuotaBarProps {
 
 function QuotaBar({ label, used, limit, percentage, icon: Icon }: QuotaBarProps) {
   const colorClass =
-    percentage < 50 ? "text-green-500" : percentage < 80 ? "text-yellow-500" : "text-red-500";
+    percentage < 50 ? "text-success-9" : percentage < 80 ? "text-warning-9" : "text-danger-9";
   const barColor =
-    percentage < 50 ? "bg-green-500" : percentage < 80 ? "bg-yellow-500" : "bg-red-500";
+    percentage < 50 ? "bg-success-9" : percentage < 80 ? "bg-warning-9" : "bg-danger-9";
 
   const displayText =
     limit === "unlimited" ? `${used} used this month` : `${used} of ${limit} used this month`;
@@ -47,7 +47,7 @@ function QuotaBar({ label, used, limit, percentage, icon: Icon }: QuotaBarProps)
         </div>
       )}
       {percentage >= 80 && limit !== "unlimited" && (
-        <p className="text-xs text-red-500 dark:text-red-400">
+        <p className="text-danger-11 text-xs">
           Warning: Approaching usage limit. Consider upgrading plan.
         </p>
       )}

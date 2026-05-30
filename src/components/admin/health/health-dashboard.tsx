@@ -13,6 +13,7 @@ import {
   XCircle,
   LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ErrorState } from "@/components/admin/error-state";
 import { StatusIndicator } from "@/components/admin/status-indicator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -108,6 +109,7 @@ interface HealthDashboardProps {
 }
 
 export function HealthDashboard({ initialData }: HealthDashboardProps) {
+  const t = useTranslations();
   const [health, setHealth] = useState<HealthData | null>(initialData ?? null);
   const [loading, setLoading] = useState(initialData === null);
   const [error, setError] = useState<string | null>(null);
@@ -154,8 +156,8 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
   if (error) {
     return (
       <ErrorState
-        title="Failed to load system health"
-        description="Unable to fetch health check data from the server"
+        title={t("admin.health.loadErrorTitle")}
+        description={t("admin.health.loadErrorDesc")}
         error={error}
         onRetry={() => window.location.reload()}
       />
@@ -186,17 +188,17 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
       {/* Top cards: Database, Env Vars, Subscriptions, Queue Health */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Database */}
-        <HealthCard title="Database" status={dbStatus} icon={Database}>
+        <HealthCard title={t("admin.health.card.database")} status={dbStatus} icon={Database}>
           {health.checks.postgres.ok ? (
             <div className="text-success-11 flex items-center gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4" />
-              <span>Connected ({health.checks.postgres.latency}ms)</span>
+              <span>{t("admin.health.dbConnected", { n: health.checks.postgres.latency })}</span>
             </div>
           ) : (
             <div className="space-y-1">
               <div className="text-destructive flex items-center gap-2 text-sm">
                 <XCircle className="h-4 w-4" />
-                <span>Connection failed</span>
+                <span>{t("admin.health.dbConnectionFailed")}</span>
               </div>
               {health.checks.postgres.error && (
                 <p className="text-muted-foreground text-xs">{health.checks.postgres.error}</p>
@@ -206,17 +208,17 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
         </HealthCard>
 
         {/* Environment Variables */}
-        <HealthCard title="Environment Variables" status={envStatus} icon={Key}>
+        <HealthCard title={t("admin.health.card.envVars")} status={envStatus} icon={Key}>
           {envMissing.length === 0 ? (
             <div className="text-success-11 flex items-center gap-2 text-sm">
               <CheckCircle2 className="h-4 w-4" />
-              <span>All configured</span>
+              <span>{t("admin.health.allConfigured")}</span>
             </div>
           ) : (
             <div className="space-y-1">
               <div className="text-warning-11 flex items-center gap-2 text-sm">
                 <AlertTriangle className="h-4 w-4" />
-                <span>Missing variables</span>
+                <span>{t("admin.health.missingVars")}</span>
               </div>
               <p className="text-muted-foreground text-xs">
                 {envMissing.map((e) => e.toUpperCase()).join(", ")}
@@ -226,12 +228,12 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
         </HealthCard>
 
         {/* Subscriptions */}
-        <HealthCard title="Subscriptions" status="ok" icon={CreditCard}>
+        <HealthCard title={t("admin.health.card.subscriptions")} status="ok" icon={CreditCard}>
           <div className="space-y-1.5">
             {[
-              { label: "Active", value: health.subscriptions.active },
-              { label: "Trialing", value: health.subscriptions.trialing },
-              { label: "Cancelled", value: health.subscriptions.cancelled },
+              { label: t("admin.health.metric.active"), value: health.subscriptions.active },
+              { label: t("admin.health.metric.trialing"), value: health.subscriptions.trialing },
+              { label: t("admin.health.metric.cancelled"), value: health.subscriptions.cancelled },
             ].map(({ label, value }) => (
               <div
                 key={label}
@@ -247,20 +249,22 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
                     }}
                   />
                 </div>
-                <span className="text-right text-sm font-semibold tabular-nums">{value}</span>
+                <span className="text-end text-sm font-semibold tabular-nums">{value}</span>
               </div>
             ))}
           </div>
         </HealthCard>
 
         {/* Queue Health */}
-        <HealthCard title="Queue Health (24h)" status={jobStatus} icon={Activity}>
+        <HealthCard title={t("admin.health.card.queueQuality")} status={jobStatus} icon={Activity}>
           <div className="space-y-1.5">
             <div
               className="grid items-center gap-2"
               style={{ gridTemplateColumns: "4.5rem 1fr 2.5rem" }}
             >
-              <span className="text-muted-foreground text-xs">Success</span>
+              <span className="text-muted-foreground text-xs">
+                {t("admin.health.metric.success")}
+              </span>
               <div className="bg-muted h-1.5 overflow-hidden rounded-full">
                 <div
                   className="bg-success-9/70 h-full rounded-full transition-all duration-500"
@@ -269,7 +273,7 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
                   }}
                 />
               </div>
-              <span className="text-success-11 text-right text-sm font-semibold tabular-nums">
+              <span className="text-success-11 text-end text-sm font-semibold tabular-nums">
                 {health.jobs.success24h}
               </span>
             </div>
@@ -277,7 +281,9 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
               className="grid items-center gap-2"
               style={{ gridTemplateColumns: "4.5rem 1fr 2.5rem" }}
             >
-              <span className="text-muted-foreground text-xs">Failed</span>
+              <span className="text-muted-foreground text-xs">
+                {t("admin.health.metric.failed")}
+              </span>
               <div className="bg-muted h-1.5 overflow-hidden rounded-full">
                 <div
                   className="bg-destructive/70 h-full rounded-full transition-all duration-500"
@@ -287,7 +293,7 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
                 />
               </div>
               <span
-                className={`text-right text-sm font-semibold tabular-nums ${health.jobs.failed24h > 0 ? "text-destructive" : "text-muted-foreground"}`}
+                className={`text-end text-sm font-semibold tabular-nums ${health.jobs.failed24h > 0 ? "text-destructive" : "text-muted-foreground"}`}
               >
                 {health.jobs.failed24h}
               </span>
@@ -299,7 +305,7 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
       {/* OAuth Tokens */}
       <div className="grid gap-4 sm:grid-cols-3">
         <HealthCard
-          title="X (Twitter) Tokens"
+          title={t("admin.health.card.xTokens")}
           status={getOAuthStatus(health.oauthTokens.x.total, health.oauthTokens.x.expired)}
           icon={Shield}
         >
@@ -307,14 +313,14 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
             <p className="text-2xl font-bold tabular-nums">{health.oauthTokens.x.total}</p>
             <p className="text-muted-foreground text-xs">
               {health.oauthTokens.x.expired > 0
-                ? `${health.oauthTokens.x.expired} expired`
-                : "All valid"}
+                ? t("admin.health.tokenExpired", { n: health.oauthTokens.x.expired })
+                : t("admin.health.allValid")}
             </p>
           </div>
         </HealthCard>
 
         <HealthCard
-          title="LinkedIn Tokens"
+          title={t("admin.health.card.linkedinTokens")}
           status={getOAuthStatus(
             health.oauthTokens.linkedin.total,
             health.oauthTokens.linkedin.expired
@@ -325,14 +331,14 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
             <p className="text-2xl font-bold tabular-nums">{health.oauthTokens.linkedin.total}</p>
             <p className="text-muted-foreground text-xs">
               {health.oauthTokens.linkedin.expired > 0
-                ? `${health.oauthTokens.linkedin.expired} expired`
-                : "All valid"}
+                ? t("admin.health.tokenExpired", { n: health.oauthTokens.linkedin.expired })
+                : t("admin.health.allValid")}
             </p>
           </div>
         </HealthCard>
 
         <HealthCard
-          title="Instagram Tokens"
+          title={t("admin.health.card.instagramTokens")}
           status={getOAuthStatus(
             health.oauthTokens.instagram.total,
             health.oauthTokens.instagram.expired
@@ -343,8 +349,8 @@ export function HealthDashboard({ initialData }: HealthDashboardProps) {
             <p className="text-2xl font-bold tabular-nums">{health.oauthTokens.instagram.total}</p>
             <p className="text-muted-foreground text-xs">
               {health.oauthTokens.instagram.expired > 0
-                ? `${health.oauthTokens.instagram.expired} expired`
-                : "All valid"}
+                ? t("admin.health.tokenExpired", { n: health.oauthTokens.instagram.expired })
+                : t("admin.health.allValid")}
             </p>
           </div>
         </HealthCard>

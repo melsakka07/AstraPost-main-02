@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { StatusIndicator } from "@/components/admin/status-indicator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +40,8 @@ interface FeatureFlagsTableProps {
 }
 
 export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) {
+  const t = useTranslations();
+
   const [flags, setFlags] = useState<FeatureFlag[]>(initialData ?? []);
   const [loading, setLoading] = useState(initialData === null);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -50,7 +53,7 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
       const json = await res.json();
       setFlags(json.data ?? []);
     } catch {
-      toast.error("Failed to load feature flags");
+      toast.error(t("admin.featureFlags.loadError"));
     } finally {
       setLoading(false);
     }
@@ -77,7 +80,12 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
         throw new Error(error);
       }
-      toast.success(`"${flag.key}" ${newEnabled ? "enabled" : "disabled"}`);
+      toast.success(
+        t("admin.featureFlags.toggledToast", {
+          key: flag.key,
+          state: newEnabled ? t("admin.featureFlags.enabled") : t("admin.featureFlags.disabled"),
+        })
+      );
     } catch (err) {
       // Revert on failure
       setFlags((prev) =>
@@ -127,7 +135,7 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
     return (
       <Card>
         <CardContent className="text-muted-foreground flex h-32 items-center justify-center text-sm">
-          No feature flags found.
+          {t("admin.featureFlags.empty")}
         </CardContent>
       </Card>
     );
@@ -139,12 +147,11 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
 
   return (
     <div className="space-y-6">
-      <Card className="border-blue-200/50 bg-blue-50/50 dark:border-blue-900/50 dark:bg-blue-950/20">
+      <Card className="border-info-4/50 bg-info-2/50">
         <CardContent className="pt-4">
-          <p className="text-sm text-blue-900 dark:text-blue-100">
-            <strong>Rollout %:</strong> Controls the percentage of users (0-100%) that will see this
-            feature. Use 0% for disabled, 100% for full rollout, or intermediate values for gradual
-            rollouts.
+          <p className="text-info-12 text-sm">
+            <strong>{t("admin.featureFlags.rolloutPercent")}:</strong>{" "}
+            {t("admin.featureFlags.rolloutInfo")}
           </p>
         </CardContent>
       </Card>
@@ -156,31 +163,31 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
                 title="Unique identifier for the feature flag"
                 className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
               >
-                Flag key
+                {t("admin.featureFlags.table.flagKey")}
               </TableHead>
               <TableHead
-                title="Human-readable description of what this feature does"
+                title={t("admin.featureFlags.table.descriptionTitle")}
                 className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
               >
-                Description
+                {t("admin.featureFlags.table.description")}
               </TableHead>
               <TableHead
-                title="Whether the flag is enabled for rollout"
+                title={t("admin.featureFlags.table.statusTitle")}
                 className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
               >
-                Status
+                {t("admin.featureFlags.table.status")}
               </TableHead>
               <TableHead
-                title="Percentage of users (0-100%) that will see this feature"
+                title={t("admin.featureFlags.table.rolloutTitle")}
                 className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
               >
-                Rollout %
+                {t("admin.featureFlags.table.rollout")}
               </TableHead>
               <TableHead
-                title="Toggle flag on or off"
-                className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase"
+                title={t("admin.featureFlags.table.toggleTitle")}
+                className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase"
               >
-                Toggle
+                {t("admin.featureFlags.table.toggle")}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -196,11 +203,15 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
                 <TableCell>
                   <StatusIndicator
                     status={flag.enabled ? "active" : "inactive"}
-                    label={flag.enabled ? "Enabled" : "Disabled"}
+                    label={
+                      flag.enabled
+                        ? t("admin.featureFlags.enabled")
+                        : t("admin.featureFlags.disabled")
+                    }
                     title={
                       flag.enabled
-                        ? "Feature flag is enabled for rollout"
-                        : "Feature flag is disabled"
+                        ? t("admin.featureFlags.enabledTitle")
+                        : t("admin.featureFlags.disabledTitle")
                     }
                   />
                 </TableCell>
@@ -219,7 +230,7 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
                     <span className="text-muted-foreground text-sm">%</span>
                   </div>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-end">
                   <Switch
                     checked={flag.enabled}
                     onCheckedChange={() => toggle(flag)}
@@ -235,8 +246,7 @@ export function FeatureFlagsTable({ initialData }: FeatureFlagsTableProps = {}) 
 
       {systemFlags.length > 0 && (
         <p className="text-muted-foreground text-xs">
-          {systemFlags.length} internal system flag{systemFlags.length !== 1 ? "s" : ""} hidden
-          (prefixed with _).
+          {t("admin.featureFlags.systemFlagsMessage", { count: systemFlags.length })}
         </p>
       )}
     </div>

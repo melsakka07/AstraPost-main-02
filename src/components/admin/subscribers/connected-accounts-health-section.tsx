@@ -27,20 +27,20 @@ interface ConnectedAccountsHealthProps {
 export function ConnectedAccountsHealthSection({ accounts }: ConnectedAccountsHealthProps) {
   const getHealthStatus = (expiry: Date | null) => {
     if (!expiry) {
-      return { status: "unknown", color: "bg-gray-500", text: "Unknown" };
+      return { status: "unknown", color: "bg-neutral-9", text: "Unknown" };
     }
 
     const daysUntilExpiry = differenceInDays(new Date(expiry), new Date());
 
     if (daysUntilExpiry < 0) {
-      return { status: "expired", color: "bg-red-500", text: "Expired" };
+      return { status: "expired", color: "bg-danger-9", text: "Expired" };
     }
 
     if (daysUntilExpiry < 7) {
-      return { status: "expiring", color: "bg-yellow-500", text: "Expiring Soon" };
+      return { status: "expiring", color: "bg-warning-9", text: "Expiring Soon" };
     }
 
-    return { status: "healthy", color: "bg-green-500", text: "Healthy" };
+    return { status: "healthy", color: "bg-success-9", text: "Healthy" };
   };
 
   const getExpiryText = (expiry: Date | null) => {
@@ -96,10 +96,10 @@ export function ConnectedAccountsHealthSection({ accounts }: ConnectedAccountsHe
                       <div className="flex items-start gap-2">
                         <span className="text-sm">{getExpiryText(account.tokenExpiry)}</span>
                         {health.status === "expired" && (
-                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                          <AlertCircle className="text-danger-9 mt-0.5 h-4 w-4 shrink-0" />
                         )}
                         {health.status === "expiring" && (
-                          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-500" />
+                          <AlertCircle className="text-warning-9 mt-0.5 h-4 w-4 shrink-0" />
                         )}
                       </div>
                     </TableCell>

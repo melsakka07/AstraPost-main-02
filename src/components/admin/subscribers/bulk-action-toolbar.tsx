@@ -1,6 +1,7 @@
 "use client";
 
 import { FileDown, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -27,6 +28,7 @@ export function BulkActionToolbar({
   onExport,
   hasBannedUsers,
 }: BulkActionToolbarProps) {
+  const t = useTranslations();
   if (selectedCount === 0) return null;
 
   return (
@@ -35,8 +37,12 @@ export function BulkActionToolbar({
         <div className="flex items-center gap-3">
           {loading && <Spinner className="h-4 w-4" />}
           <span className="text-sm font-medium">
-            {selectedCount} selected
-            {loading && <span className="text-muted-foreground ml-1">(processing…)</span>}
+            {t("admin.subscribers.bulk.selected", { N: selectedCount })}
+            {loading && (
+              <span className="text-muted-foreground ms-1">
+                {t("admin.subscribers.bulk.processing")}
+              </span>
+            )}
           </span>
         </div>
 
@@ -46,9 +52,9 @@ export function BulkActionToolbar({
             size="sm"
             onClick={onBan}
             disabled={loading}
-            className="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            className="text-warning-11 hover:bg-warning-3"
           >
-            Ban
+            {t("admin.subscribers.ban")}
           </Button>
 
           {hasBannedUsers && (
@@ -57,14 +63,14 @@ export function BulkActionToolbar({
               size="sm"
               onClick={onUnban}
               disabled={loading}
-              className="text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20"
+              className="text-success-11 hover:bg-success-3"
             >
-              Unban
+              {t("admin.subscribers.unban")}
             </Button>
           )}
 
           <Button variant="outline" size="sm" onClick={onChangePlan} disabled={loading}>
-            Change Plan
+            {t("admin.subscribers.bulk.changePlanButton")}
           </Button>
 
           <Button
@@ -74,12 +80,12 @@ export function BulkActionToolbar({
             disabled={loading}
             className="text-destructive hover:bg-destructive/10"
           >
-            Delete
+            {t("admin.common.delete")}
           </Button>
 
           <Button variant="outline" size="sm" onClick={onExport} disabled={loading}>
-            <FileDown className="mr-2 h-4 w-4" />
-            Export
+            <FileDown className="me-2 h-4 w-4" />
+            {t("admin.subscribers.bulk.export")}
           </Button>
 
           <Button
@@ -90,7 +96,7 @@ export function BulkActionToolbar({
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Clear selection</span>
+            <span className="sr-only">{t("admin.subscribers.bulk.clearSelection")}</span>
           </Button>
         </div>
       </div>

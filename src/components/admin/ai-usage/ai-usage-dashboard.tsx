@@ -183,7 +183,7 @@ export function AiUsageDashboard({ initialData }: AiUsageDashboardProps = {}) {
             <CardTitle className="text-lg">
               Users by Generations
               {data.topConsumers.pagination.total > 0 && (
-                <span className="text-muted-foreground ml-2 text-sm font-normal">
+                <span className="text-muted-foreground ms-2 text-sm font-normal">
                   {data.topConsumers.pagination.total.toLocaleString()} total users
                 </span>
               )}
@@ -202,8 +202,8 @@ export function AiUsageDashboard({ initialData }: AiUsageDashboardProps = {}) {
                   <TableRow>
                     <TableHead>User</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead className="text-right">Generations</TableHead>
-                    <TableHead className="text-right">Tokens</TableHead>
+                    <TableHead className="text-end">Generations</TableHead>
+                    <TableHead className="text-end">Tokens</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -215,10 +215,10 @@ export function AiUsageDashboard({ initialData }: AiUsageDashboardProps = {}) {
                       <TableCell className="text-muted-foreground">
                         {consumer.userEmail ?? "—"}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-end tabular-nums">
                         {consumer.generationCount.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="text-end tabular-nums">
                         {consumer.totalTokens.toLocaleString()}
                       </TableCell>
                     </TableRow>

@@ -29,11 +29,11 @@ export function ActivityTimelineSection({ activities }: ActivityTimelineProps) {
   const getActivityIcon = (type: ActivityType) => {
     switch (type) {
       case "post":
-        return <FileText className="h-4 w-4 text-blue-500" />;
+        return <FileText className="text-info-9 h-4 w-4" />;
       case "ai_generation":
-        return <Sparkles className="h-4 w-4 text-purple-500" />;
+        return <Sparkles className="text-brand-9 h-4 w-4" />;
       case "plan_change":
-        return <CreditCard className="h-4 w-4 text-green-500" />;
+        return <CreditCard className="text-success-9 h-4 w-4" />;
     }
   };
 

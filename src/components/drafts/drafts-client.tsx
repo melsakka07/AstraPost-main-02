@@ -79,12 +79,12 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
       {/* Search + Sort bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Search className="text-muted-foreground inset-inline-start-3 pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search drafts…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="ps-9"
             aria-label="Search drafts"
           />
         </div>
@@ -168,7 +168,7 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
                         aria-label={`Schedule draft: ${(firstTweet?.content ?? "").slice(0, 50)}`}
                       >
                         <Link href={`/dashboard/compose?draft=${post.id}&openSchedule=1`}>
-                          <CalendarPlus className="mr-1 h-3.5 w-3.5" />
+                          <CalendarPlus className="me-1 h-3.5 w-3.5" />
                           Schedule
                         </Link>
                       </Button>

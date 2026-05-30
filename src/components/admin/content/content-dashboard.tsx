@@ -170,16 +170,16 @@ export function ContentDashboard({ initialData }: ContentDashboardProps = {}) {
                       <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                         Author
                       </TableHead>
-                      <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                      <TableHead className="text-muted-foreground text-endtext-xs font-medium tracking-wide uppercase">
                         Impressions
                       </TableHead>
-                      <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                      <TableHead className="text-muted-foreground text-endtext-xs font-medium tracking-wide uppercase">
                         Likes
                       </TableHead>
-                      <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                      <TableHead className="text-muted-foreground text-endtext-xs font-medium tracking-wide uppercase">
                         RTs
                       </TableHead>
-                      <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                      <TableHead className="text-muted-foreground text-endtext-xs font-medium tracking-wide uppercase">
                         Engagement
                       </TableHead>
                     </TableRow>
@@ -214,16 +214,16 @@ export function ContentDashboard({ initialData }: ContentDashboardProps = {}) {
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">
+                            <TableCell className="text-end tabular-nums">
                               {post.impressions.toLocaleString()}
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">
+                            <TableCell className="text-end tabular-nums">
                               {post.likes.toLocaleString()}
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">
+                            <TableCell className="text-end tabular-nums">
                               {post.retweets.toLocaleString()}
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">
+                            <TableCell className="text-end tabular-nums">
                               {post.engagementRate}%
                             </TableCell>
                           </TableRow>

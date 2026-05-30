@@ -1,5 +1,50 @@
 # Latest Updates
 
+## 2026-05-30 — Wave 7 Task B: Localization — RTL Phase-2 + Admin i18n + Admin Token Migration
+
+Three concurrent workstreams completed across 60+ files.
+
+### RTL Phase-2 (physical-to-logical class swaps)
+
+Applied logical-property swaps (`mr-`→`me-`, `ml-`→`ms-`, `pl-`→`ps-`, `pr-`→`pe-`, `text-left`→`text-start`, `text-right`→`text-end`, `left-`→`inset-inline-start-`, `right-`→`inset-inline-end-`, `border-l-`→`border-s-`, `border-r-`→`border-e-`, `rounded-l-`→`rounded-s-`, `rounded-r-`→`rounded-e-`) across **settings, drafts, analytics, billing, affiliate, community, calendar, command-palette, mobile-menu, profile, brand, chat, and admin** directories. ~250 class swaps total. Admin Recharts `margin={{left,right}}` left untouched (physical SVG geometry). `sidebar.tsx` mobile drawer and `<Play>` video-overlay glyph intentionally unchanged.
+
+### Admin i18n
+
+Added ~210 new i18n keys under the `admin.*` namespace to `en.json`, `ar.json`, `pseudo.json`. Wired `useTranslations()` + `t()` into 30+ admin components: all billing dialogs, roadmap table, notifications editor, health dashboard, admin dashboard, audit log table, date range picker, team dashboard, subscribers table + dialogs, subscriber badges, bulk action toolbar, feature flags, announcement form, error state, activity feed, and supporting components.
+
+### Admin token migration
+
+Replaced raw Tailwind palette classes in ~19 admin files with semantic tokens (`success`/`warning`/`danger`/`info`/`brand`). Dropped ~40 `dark:` variants (tokens are mode-aware). ~72 token replacements total.
+
+### verify-rtl.mjs
+
+Extended `DASHBOARD_DIRS` from 2 to 17 directories covering all cleaned surfaces.
+
+### DoD
+
+- `pnpm run check` — PASS; `pnpm test` — PASS
+- `verify-dashboard-tokens` + `verify-rtl` — PASS
+- Branch: `feature/wave7-design-system`
+
+---
+
+## 2026-05-30 — Dashboard UI/UX Wave 7 · Task A Part 2: Admin Token Migration + RTL + i18n Wiring
+
+Applied all three workstreams (RTL physical-to-logical swaps, token migration, and i18n wiring) across 24 admin component files.
+
+### Changes
+
+- **Token migration**: `text-green-600 dark:text-green-400` → `text-success-11`, `text-amber-600` → `text-warning-11`, `text-red-500` → `text-danger-9`, `bg-green-500/10` → `bg-success-3`, `bg-gray-500` → `bg-neutral-9`, `border-amber-500/50 text-amber-600 dark:text-amber-400` → `border-warning-6/50 text-warning-11`, etc. across `ai-usage-section`, `activity-timeline-section`, `connected-accounts-health-section`, `subscriber-badges`, `subscriber-detail`, `bulk-action-toolbar`, `subscribers-table`, `referral-dashboard`, `platform-stats`, `webhook-dlq-table`, `ai-cost-charts`
+- **RTL physical-to-logical**: `mr-` → `me-`, `ml-` → `ms-`, `pr-` → `pe-`, `pl-` → `ps-`, `text-left` → `text-start`, `text-right` → `text-end`, `left-` → `inset-inline-start-`, `right-` → `inset-inline-end-` across all 24 files
+- **i18n wiring**: Added `useTranslations` import and `t()` calls to 6 subscriber components (`subscribers-table`, `add-subscriber-dialog`, `bulk-change-plan-dialog`, `bulk-action-toolbar`, `subscriber-detail`, `subscriber-badges`). Module-level constants (`FILTER_PILLS`, `PLAN_LABELS`, `PLANS`) moved inside components where they need `t()`. All hardcoded English strings replaced with `admin.*` key paths (label text, placeholders, aria-labels, toast messages, buttons, table headers, status badges, subscription status labels)
+- **24 files total**: `subscribers-table`, `add-subscriber-dialog`, `bulk-change-plan-dialog`, `bulk-action-toolbar`, `subscriber-detail`, `subscriber-badges`, `activity-timeline-section`, `ai-usage-section`, `connected-accounts-health-section`, `referral-dashboard`, `affiliate-conversion-funnel`, `affiliate-leaderboard`, `ai-cost-charts`, `ai-usage-dashboard`, `agentic-sessions-table`, `content-dashboard`, `impersonation-table`, `webhook-dlq-table`, `soft-delete-recovery`, `global-search`, `search-result-item`, `notification-history-table`, `affiliate-summary-cards` (verified clean), `platform-stats`
+
+### Note
+
+Locale keys (`admin.*`) wired but not yet added to `src/i18n/messages/en.json` / `ar.json` — the i18n-dev agent should be spawned to add the corresponding translation entries.
+
+---
+
 ## 2026-05-30 — Dashboard UI/UX Wave 7 · Task A: Design-System & Dark-Mode Consolidation (user-facing)
 
 First task of Wave 7 (`.claude/plans/2026-05-30-dashboard-ux-wave-7.md`). Migrated raw Tailwind palette classes → semantic design tokens across the **user-facing** surfaces (admin deferred to a Task-A follow-up). A repo-wide grep found ~220 raw-palette occurrences in ~68 files (the initial researcher pass under-counted badly — caught by verifying with the guard's own pattern).
@@ -13,7 +58,7 @@ First task of Wave 7 (`.claude/plans/2026-05-30-dashboard-ux-wave-7.md`). Migrat
 
 ### Deferred (follow-ups)
 
-- **Admin** (~20 files incl. Recharts color props) — Task-A part 2.
+- **Admin** (~24 files incl. Recharts color props) — Task-A part 2 (COMPLETED 2026-05-30 — see entry above).
 - **Marketing decorative gradients** (blur blobs, `hero-mockup` window controls, `social-proof` star gold) — intentional aesthetic, left + documented.
 - Minor pre-existing semantic-token nits in unchanged `components/ai/{pdf-to-thread,youtube-to-thread,agentic}` + `ai-tools-grid` (text-`-9` on tints, redundant `dark:` variants) — not raw-palette, not regressions.
 

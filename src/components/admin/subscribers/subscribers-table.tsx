@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import {
@@ -15,6 +15,7 @@ import {
   Trash2,
   UserPen,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/admin/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -62,27 +63,31 @@ type FilterOption =
   | "deleted";
 type SortOption = "createdAt" | "lastLogin" | "plan";
 
-const FILTER_PILLS: { value: FilterOption; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "free", label: "Free" },
-  { value: "trial", label: "Trial" },
-  { value: "pro_monthly", label: "Pro Monthly" },
-  { value: "pro_annual", label: "Pro Annual" },
-  { value: "agency", label: "Agency" },
-  { value: "banned", label: "Banned" },
-  { value: "deleted", label: "Deleted" },
-];
-
 interface SubscribersTableProps {
   initialData?: PaginatedResponse<SubscriberRow> | null;
 }
 
 export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
+  const t = useTranslations();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterOption>("all");
   const [sort, setSort] = useState<SortOption>("createdAt");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
+
+  const filterPills = useMemo(
+    () => [
+      { value: "all" as const, label: t("admin.subscribers.filters.all") },
+      { value: "free" as const, label: t("admin.plans.free") },
+      { value: "trial" as const, label: t("admin.subscribers.filters.trial") },
+      { value: "pro_monthly" as const, label: t("admin.plans.proMonthly") },
+      { value: "pro_annual" as const, label: t("admin.plans.proAnnual") },
+      { value: "agency" as const, label: t("admin.plans.agency") },
+      { value: "banned" as const, label: t("admin.subscribers.filters.banned") },
+      { value: "deleted" as const, label: t("admin.subscribers.filters.deleted") },
+    ],
+    [t]
+  );
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -199,10 +204,10 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
       link.click();
       URL.revokeObjectURL(link.href);
 
-      toast.success(`Exported ${selectedIds.size} user(s)`);
+      toast.success(t("admin.subscribers.bulk.exportedToast", { count: selectedIds.size }));
       handleClearSelection();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Export failed");
+      toast.error(err instanceof Error ? err.message : t("admin.subscribers.bulk.exportError"));
     } finally {
       setBulkLoading(false);
     }
@@ -226,24 +231,24 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs flex-1">
-          <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
+          <Search className="text-muted-foreground inset-inline-start-2.5 absolute top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
-            placeholder="Search by name or email…"
+            placeholder={t("admin.subscribers.searchPlaceholder")}
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9"
-            aria-label="Search subscribers"
+            className="ps-9"
+            aria-label={t("admin.subscribers.searchAria")}
           />
         </div>
         <Button onClick={() => setAddOpen(true)} size="sm">
-          <Plus className="mr-2 h-4 w-4" />
-          Add subscriber
+          <Plus className="me-2 h-4 w-4" />
+          {t("admin.subscribers.addButton")}
         </Button>
       </div>
 
       {/* Filter pills */}
       <div className="flex flex-wrap gap-2">
-        {FILTER_PILLS.map((pill) => (
+        {filterPills.map((pill) => (
           <button
             key={pill.value}
             onClick={() => setFilter(pill.value)}
@@ -296,11 +301,15 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
           <Card className="p-8 text-center">
             <EmptyState
               variant={debouncedSearch ? "search" : "users"}
-              title={debouncedSearch ? "No results found" : "No subscribers yet"}
+              title={
+                debouncedSearch
+                  ? t("admin.subscribers.empty.searchTitle")
+                  : t("admin.subscribers.empty.defaultTitle")
+              }
               description={
                 debouncedSearch
-                  ? "Try adjusting your search or filters"
-                  : "Add your first subscriber to get started"
+                  ? t("admin.subscribers.empty.searchDesc")
+                  : t("admin.subscribers.empty.defaultDesc")
               }
             />
           </Card>
@@ -320,7 +329,7 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                   onCheckedChange={(checked: boolean | string) =>
                     handleSelectOne(sub.id, checked === true)
                   }
-                  aria-label={`Select ${sub.name}`}
+                  aria-label={t("admin.subscribers.selectAria", { name: sub.name })}
                   disabled={bulkLoading}
                   className="mt-1 h-5 w-5"
                 />
@@ -330,39 +339,43 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                       <span className="truncate font-medium">{sub.name}</span>
                       {sub.isAdmin && (
                         <Badge variant="outline" className="h-4 shrink-0 px-1 py-0 text-[10px]">
-                          admin
+                          {t("admin.subscribers.adminBadge")}
                         </Badge>
                       )}
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="-mr-2 h-7 w-7 shrink-0">
+                        <Button variant="ghost" size="icon" className="-me-2 h-7 w-7 shrink-0">
                           <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
+                          <span className="sr-only">{t("admin.common.actions")}</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/subscribers/${sub.id}`}>View details</Link>
+                          <Link href={`/admin/subscribers/${sub.id}`}>
+                            {t("admin.subscribers.viewDetails")}
+                          </Link>
                         </DropdownMenuItem>
                         {!sub.deletedAt && (
                           <>
                             <DropdownMenuItem onClick={() => setEditTarget(sub)}>
-                              <UserPen className="mr-2 h-4 w-4" />
-                              Edit
+                              <UserPen className="me-2 h-4 w-4" />
+                              {t("admin.common.edit")}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => setBanTarget(sub)}
-                              className={sub.bannedAt ? "text-green-600" : "text-amber-600"}
+                              className={sub.bannedAt ? "text-success-11" : "text-warning-11"}
                             >
                               {sub.bannedAt ? (
                                 <>
-                                  <ShieldCheck className="mr-2 h-4 w-4" /> Unban
+                                  <ShieldCheck className="me-2 h-4 w-4" />{" "}
+                                  {t("admin.subscribers.unban")}
                                 </>
                               ) : (
                                 <>
-                                  <ShieldOff className="mr-2 h-4 w-4" /> Ban
+                                  <ShieldOff className="me-2 h-4 w-4" />{" "}
+                                  {t("admin.subscribers.ban")}
                                 </>
                               )}
                             </DropdownMenuItem>
@@ -370,8 +383,8 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                               onClick={() => setDeleteTarget(sub)}
                               className="text-destructive focus:text-destructive"
                             >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              <Trash2 className="me-2 h-4 w-4" />
+                              {t("admin.common.delete")}
                             </DropdownMenuItem>
                           </>
                         )}
@@ -387,7 +400,7 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                       deletedAt={sub.deletedAt}
                       trialEndsAt={sub.trialEndsAt}
                     />
-                    <span className="text-muted-foreground ml-auto text-xs">
+                    <span className="text-muted-foreground ms-auto text-xs">
                       {format(new Date(sub.createdAt), "MMM d, yy")}
                     </span>
                   </div>
@@ -416,32 +429,36 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                         selectedIds.size > 0 && selectedIds.size < (response?.data?.length ?? 0)
                       }
                       onCheckedChange={handleSelectAll}
-                      aria-label="Select all"
+                      aria-label={t("admin.subscribers.selectAllAria")}
                       disabled={bulkLoading || (response?.data?.length ?? 0) === 0}
                       className="h-5 w-5"
                     />
                   </div>
                 </TableHead>
-                <TableHead>Subscriber</TableHead>
+                <TableHead>{t("admin.subscribers.table.subscriber")}</TableHead>
                 <TableHead className="hidden md:table-cell">
                   <button
                     className="hover:text-foreground flex items-center gap-1"
                     onClick={() => toggleSort("plan")}
                   >
-                    Plan <ArrowUpDown className="h-3.5 w-3.5" />
+                    {t("admin.subscribers.table.plan")} <ArrowUpDown className="h-3.5 w-3.5" />
                   </button>
                 </TableHead>
-                <TableHead className="hidden sm:table-cell">Status</TableHead>
-                <TableHead className="hidden lg:table-cell">Platforms</TableHead>
+                <TableHead className="hidden sm:table-cell">
+                  {t("admin.subscribers.table.status")}
+                </TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  {t("admin.subscribers.table.platforms")}
+                </TableHead>
                 <TableHead className="hidden md:table-cell">
                   <button
                     className="hover:text-foreground flex items-center gap-1"
                     onClick={() => toggleSort("createdAt")}
                   >
-                    Joined <ArrowUpDown className="h-3.5 w-3.5" />
+                    {t("admin.subscribers.table.joined")} <ArrowUpDown className="h-3.5 w-3.5" />
                   </button>
                 </TableHead>
-                <TableHead className="w-10 text-right" />
+                <TableHead className="w-10 text-end" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -460,11 +477,15 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                   <TableCell colSpan={7} className="p-0">
                     <EmptyState
                       variant={debouncedSearch ? "search" : "users"}
-                      title={debouncedSearch ? "No results found" : "No subscribers yet"}
+                      title={
+                        debouncedSearch
+                          ? t("admin.subscribers.empty.searchTitle")
+                          : t("admin.subscribers.empty.defaultTitle")
+                      }
                       description={
                         debouncedSearch
-                          ? "Try adjusting your search or filters"
-                          : "Add your first subscriber to get started"
+                          ? t("admin.subscribers.empty.searchDesc")
+                          : t("admin.subscribers.empty.defaultDesc")
                       }
                     />
                   </TableCell>
@@ -484,7 +505,7 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                           onCheckedChange={(checked: boolean | string) =>
                             handleSelectOne(sub.id, checked === true)
                           }
-                          aria-label={`Select ${sub.name}`}
+                          aria-label={t("admin.subscribers.selectAria", { name: sub.name })}
                           disabled={bulkLoading}
                           className="h-5 w-5"
                         />
@@ -496,7 +517,7 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                           <span className="font-medium">{sub.name}</span>
                           {sub.isAdmin && (
                             <Badge variant="outline" className="h-4 px-1 py-0 text-[10px]">
-                              admin
+                              {t("admin.subscribers.adminBadge")}
                             </Badge>
                           )}
                         </div>
@@ -532,36 +553,40 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                     <TableCell className="text-muted-foreground hidden text-sm md:table-cell">
                       {format(new Date(sub.createdAt), "d MMM yyyy")}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-7 w-7">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
+                            <span className="sr-only">{t("admin.common.actions")}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/admin/subscribers/${sub.id}`}>View details</Link>
+                            <Link href={`/admin/subscribers/${sub.id}`}>
+                              {t("admin.subscribers.viewDetails")}
+                            </Link>
                           </DropdownMenuItem>
                           {!sub.deletedAt && (
                             <>
                               <DropdownMenuItem onClick={() => setEditTarget(sub)}>
-                                <UserPen className="mr-2 h-4 w-4" />
-                                Edit
+                                <UserPen className="me-2 h-4 w-4" />
+                                {t("admin.common.edit")}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => setBanTarget(sub)}
-                                className={sub.bannedAt ? "text-green-600" : "text-amber-600"}
+                                className={sub.bannedAt ? "text-success-11" : "text-warning-11"}
                               >
                                 {sub.bannedAt ? (
                                   <>
-                                    <ShieldCheck className="mr-2 h-4 w-4" /> Unban
+                                    <ShieldCheck className="me-2 h-4 w-4" />{" "}
+                                    {t("admin.subscribers.unban")}
                                   </>
                                 ) : (
                                   <>
-                                    <ShieldOff className="mr-2 h-4 w-4" /> Ban
+                                    <ShieldOff className="me-2 h-4 w-4" />{" "}
+                                    {t("admin.subscribers.ban")}
                                   </>
                                 )}
                               </DropdownMenuItem>
@@ -569,8 +594,8 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
                                 onClick={() => setDeleteTarget(sub)}
                                 className="text-destructive focus:text-destructive"
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                <Trash2 className="me-2 h-4 w-4" />
+                                {t("admin.common.delete")}
                               </DropdownMenuItem>
                             </>
                           )}
@@ -590,8 +615,8 @@ export function SubscribersTable({ initialData }: SubscribersTableProps = {}) {
         <div className="text-muted-foreground flex items-center justify-between text-sm">
           <span>
             {(page - 1) * response.pagination.limit + 1}–
-            {Math.min(page * response.pagination.limit, response.pagination.total)} of{" "}
-            {response.pagination.total}
+            {Math.min(page * response.pagination.limit, response.pagination.total)}{" "}
+            {t("admin.common.of")} {response.pagination.total}
           </span>
           <div className="flex items-center gap-1">
             <Button

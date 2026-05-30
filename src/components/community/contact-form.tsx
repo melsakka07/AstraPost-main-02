@@ -258,12 +258,12 @@ export function ContactForm() {
             <Button type="submit" className="group w-full" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
                   {t("contact_button_sending")}
                 </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  <Send className="me-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   {t("contact_button_submit")}
                 </>
               )}

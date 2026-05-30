@@ -68,11 +68,11 @@ export function WebhookDLQTable({ entries, onReplayComplete }: WebhookDLQTablePr
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/50 border-b">
-              <th className="p-2 text-left">Event ID</th>
-              <th className="p-2 text-left">Type</th>
-              <th className="p-2 text-left">Error</th>
-              <th className="p-2 text-left">Failures</th>
-              <th className="p-2 text-left">Action</th>
+              <th className="p-2 text-start">Event ID</th>
+              <th className="p-2 text-start">Type</th>
+              <th className="p-2 text-start">Error</th>
+              <th className="p-2 text-start">Failures</th>
+              <th className="p-2 text-start">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -80,7 +80,7 @@ export function WebhookDLQTable({ entries, onReplayComplete }: WebhookDLQTablePr
               <tr key={e.id} className="border-b">
                 <td className="p-2 font-mono text-xs">{e.stripeEventId}</td>
                 <td className="p-2">{e.eventType}</td>
-                <td className="p-2 text-xs text-red-500">{e.errorMessage?.substring(0, 100)}</td>
+                <td className="text-danger-9 p-2 text-xs">{e.errorMessage?.substring(0, 100)}</td>
                 <td className="p-2">{e.failureCount}</td>
                 <td className="p-2">
                   <Button

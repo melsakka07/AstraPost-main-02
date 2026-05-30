@@ -18,6 +18,7 @@ import {
   UserPen,
   Zap,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   return (
     <div className="flex items-start justify-between gap-4 py-2">
       <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
-      <span className="text-right text-sm">{children}</span>
+      <span className="text-end text-sm">{children}</span>
     </div>
   );
 }
@@ -77,6 +78,7 @@ export function SubscriberDetailView({
   subscriberId,
   initialSubscriber,
 }: SubscriberDetailViewProps) {
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const [detail, setDetail] = useState<SubscriberDetail | null>(null);
@@ -127,10 +129,10 @@ export function SubscriberDetailView({
 
     return (
       <div className="space-y-6">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
+        <Button variant="ghost" size="sm" asChild className="-ms-2">
           <Link href="/admin/subscribers">
-            <ArrowLeft className="mr-2 h-4 w-4 rtl:scale-x-[-1]" />
-            All subscribers
+            <ArrowLeft className="me-2 h-4 w-4 rtl:scale-x-[-1]" />
+            {t("admin.subscribers.allSubscribers")}
           </Link>
         </Button>
         <Card>
@@ -193,17 +195,17 @@ export function SubscriberDetailView({
     <div className="space-y-6">
       {/* Back + Actions header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
+        <Button variant="ghost" size="sm" asChild className="-ms-2">
           <Link href="/admin/subscribers">
-            <ArrowLeft className="mr-2 h-4 w-4 rtl:scale-x-[-1]" />
-            All subscribers
+            <ArrowLeft className="me-2 h-4 w-4 rtl:scale-x-[-1]" />
+            {t("admin.subscribers.allSubscribers")}
           </Link>
         </Button>
         {!sub.deletedAt && (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <UserPen className="mr-2 h-4 w-4" />
-              Edit
+              <UserPen className="me-2 h-4 w-4" />
+              {t("admin.common.edit")}
             </Button>
             <Button
               variant="outline"
@@ -211,16 +213,16 @@ export function SubscriberDetailView({
               onClick={() => setBanOpen(true)}
               className={
                 sub.bannedAt
-                  ? "text-green-600 hover:text-green-600"
-                  : "text-amber-600 hover:text-amber-600"
+                  ? "text-success-11 hover:text-success-11"
+                  : "text-warning-11 hover:text-warning-11"
               }
             >
               {sub.bannedAt ? (
-                <ShieldCheck className="mr-2 h-4 w-4" />
+                <ShieldCheck className="me-2 h-4 w-4" />
               ) : (
-                <ShieldOff className="mr-2 h-4 w-4" />
+                <ShieldOff className="me-2 h-4 w-4" />
               )}
-              {sub.bannedAt ? "Unban" : "Ban"}
+              {sub.bannedAt ? t("admin.subscribers.unban") : t("admin.subscribers.ban")}
             </Button>
             <Button
               variant="outline"
@@ -228,8 +230,8 @@ export function SubscriberDetailView({
               onClick={() => setDeleteOpen(true)}
               className="text-destructive hover:text-destructive"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
+              <Trash2 className="me-2 h-4 w-4" />
+              {t("admin.common.delete")}
             </Button>
           </div>
         )}
@@ -248,7 +250,7 @@ export function SubscriberDetailView({
                 <h2 className="text-xl font-bold">{sub.name}</h2>
                 {sub.isAdmin && (
                   <Badge variant="outline" className="text-xs">
-                    Admin
+                    {t("admin.subscribers.adminBadge")}
                   </Badge>
                 )}
                 <PlanBadge plan={sub.plan} />
@@ -266,7 +268,7 @@ export function SubscriberDetailView({
           <Separator className="my-4" />
 
           <div className="grid gap-0 divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-            <div className="pb-4 sm:pr-6 sm:pb-0">
+            <div className="pb-4 sm:pe-6 sm:pb-0">
               <DetailRow label="User ID">{sub.id}</DetailRow>
               <DetailRow label="Joined">{format(new Date(sub.createdAt), "d MMM yyyy")}</DetailRow>
               <DetailRow label="Timezone">{sub.timezone ?? "—"}</DetailRow>
@@ -284,7 +286,7 @@ export function SubscriberDetailView({
                 </DetailRow>
               )}
             </div>
-            <div className="pt-4 sm:pt-0 sm:pl-6">
+            <div className="pt-4 sm:ps-6 sm:pt-0">
               <DetailRow label="Referral code">
                 {sub.referralCode ? (
                   <code className="font-mono text-xs">{sub.referralCode}</code>
@@ -311,8 +313,8 @@ export function SubscriberDetailView({
                   )}
                   {subscription.cancelAtPeriodEnd && (
                     <DetailRow label="">
-                      <Badge variant="outline" className="text-amber-600">
-                        Cancels at period end
+                      <Badge variant="outline" className="text-warning-11">
+                        {t("admin.subscribers.cancelsAtPeriodEnd")}
                       </Badge>
                     </DetailRow>
                   )}
@@ -423,11 +425,11 @@ export function SubscriberDetailView({
                     </p>
                     <div className="text-muted-foreground mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                       <span>
-                        <AtSign className="mr-0.5 inline h-3 w-3" />
+                        <AtSign className="me-0.5 inline h-3 w-3" />
                         {s.ipAddress ?? "—"}
                       </span>
                       <span>
-                        <CreditCard className="mr-0.5 inline h-3 w-3" />
+                        <CreditCard className="me-0.5 inline h-3 w-3" />
                         {format(new Date(s.createdAt), "d MMM yyyy HH:mm")}
                       </span>
                     </div>

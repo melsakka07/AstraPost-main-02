@@ -12,6 +12,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useAdminPolling } from "@/components/admin/use-admin-polling";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -56,13 +57,13 @@ interface KpiCard {
 function KpiCard({ label, value, sub, icon: Icon, href, variant = "default" }: KpiCard) {
   const iconColor =
     variant === "success"
-      ? "text-green-500"
+      ? "text-success-9"
       : variant === "destructive"
         ? "text-destructive"
         : "text-primary";
   const iconBg =
     variant === "success"
-      ? "bg-green-500/10"
+      ? "bg-success-3"
       : variant === "destructive"
         ? "bg-destructive/10"
         : "bg-primary/10";
@@ -123,6 +124,8 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ initialData }: AdminDashboardProps = {}) {
+  const t = useTranslations();
+
   const fetchDashboardData = async (signal: AbortSignal): Promise<DashboardData> => {
     const [statsRes, billingRes] = await Promise.all([
       fetch("/api/admin/stats", { signal }).then((r) => r.json()),
@@ -156,60 +159,67 @@ export function AdminDashboard({ initialData }: AdminDashboardProps = {}) {
 
   const kpis: KpiCard[] = [
     {
-      label: "Monthly Recurring Revenue",
-      value: billing?.mrr.configured ? `$${mrrDollars}` : "Not configured",
-      sub: `${billing?.subscriptions.active ?? "--"} active subscriptions`,
+      label: t("admin.dashboard.kpi.mrr"),
+      value: billing?.mrr.configured ? `$${mrrDollars}` : t("admin.dashboard.notConfigured"),
+      sub: t("admin.dashboard.kpi.activeSubs", { n: billing?.subscriptions.active ?? 0 }),
       icon: DollarSign,
       href: "/admin/billing",
     },
     {
-      label: "Total Users",
+      label: t("admin.dashboard.kpi.totalUsers"),
       value: (stats?.users.total ?? billing?.users.total ?? 0).toLocaleString(),
-      sub: `${stats?.users.newLast7d ?? 0} new this week`,
+      sub: t("admin.dashboard.kpi.newThisWeek", { n: stats?.users.newLast7d ?? 0 }),
       icon: Users,
       href: "/admin/subscribers",
       variant: newUsersVariant,
     },
     {
-      label: "AI Generations (month)",
+      label: t("admin.dashboard.kpi.aiGenMonth"),
       value: (stats?.ai.generationsThisMonth ?? 0).toLocaleString(),
-      sub: `${(stats?.ai.totalGenerations ?? 0).toLocaleString()} all-time`,
+      sub: t("admin.dashboard.kpi.allTime", {
+        n: (stats?.ai.totalGenerations ?? 0).toLocaleString(),
+      }),
       icon: Zap,
       href: "/admin/ai-usage",
     },
     {
-      label: "Posts Published (week)",
+      label: t("admin.dashboard.kpi.postsWeek"),
       value: stats?.posts.publishedLast7d ?? 0,
-      sub: `${stats?.posts.totalPublished.toLocaleString()} all-time`,
+      sub: t("admin.dashboard.kpi.allTime", {
+        n: (stats?.posts?.totalPublished ?? 0).toLocaleString(),
+      }) as string,
       icon: FileText,
       href: "/admin/content",
       variant: (stats?.posts.publishedLast7d ?? 0) > 0 ? "success" : "default",
     },
     {
-      label: "Active Trials",
+      label: t("admin.dashboard.kpi.activeTrials"),
       value: billing?.subscriptions.trialing ?? 0,
-      sub: `${billing?.trialToPaidRate ?? 0}% trial-to-paid conversion`,
+      sub: t("admin.dashboard.kpi.trialConversion", { n: billing?.trialToPaidRate ?? 0 }),
       icon: TrendingUp,
       href: "/admin/billing/analytics",
     },
     {
-      label: "AI Active Users (30d)",
+      label: t("admin.dashboard.kpi.aiActiveUsers"),
       value: stats?.ai.activeUsersLast30d ?? 0,
-      sub: "Used AI features recently",
+      sub: t("admin.dashboard.kpi.aiActiveUsersSub"),
       icon: Bot,
       href: "/admin/ai-usage",
     },
     {
-      label: "Jobs Completed (24h)",
+      label: t("admin.dashboard.kpi.jobsCompleted"),
       value: stats?.jobs.successfulLast24h ?? 0,
       icon: CheckCircle2,
       href: "/admin/jobs",
       variant: "success",
     },
     {
-      label: "Jobs Failed (24h)",
+      label: t("admin.dashboard.kpi.jobsFailed"),
       value: stats?.jobs.failedLast24h ?? 0,
-      sub: (stats?.jobs.failedLast24h ?? 0) === 0 ? "All clear" : "Check Jobs page",
+      sub:
+        (stats?.jobs.failedLast24h ?? 0) === 0
+          ? t("admin.dashboard.allClear")
+          : t("admin.dashboard.checkJobsPage"),
       icon: XCircle,
       href: "/admin/jobs",
       variant: jobVariant,
@@ -229,39 +239,44 @@ export function AdminDashboard({ initialData }: AdminDashboardProps = {}) {
           <Card>
             <CardContent className="pt-5">
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Cancelled This Month
+                {t("admin.dashboard.metric.cancelledThisMonth")}
               </p>
               <p className="mt-2 text-2xl font-bold tabular-nums">
                 {billing.subscriptions.cancelledThisMonth}
               </p>
               <p className="text-muted-foreground mt-0.5 text-xs">
                 {billing.subscriptions.cancelledLastMonth > 0
-                  ? `${billing.subscriptions.cancelledLastMonth} last month`
-                  : "None last month"}
+                  ? t("admin.dashboard.metric.lastMonth", {
+                      n: billing.subscriptions.cancelledLastMonth,
+                    })
+                  : t("admin.dashboard.metric.noneLastMonth")}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5">
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                New Users This Month
+                {t("admin.dashboard.metric.newUsersThisMonth")}
               </p>
               <p className="mt-2 text-2xl font-bold tabular-nums">{billing.users.newThisMonth}</p>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                {billing.users.total.toLocaleString()} total users
+                {t("admin.dashboard.metric.totalUsers", {
+                  n: billing.users.total.toLocaleString(),
+                })}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-5">
               <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                System Health
+                {t("admin.dashboard.metric.systemHealth")}
               </p>
               <Link
                 href="/admin/health"
                 className="text-primary hover:text-primary/80 mt-2 inline-flex items-center gap-1 text-sm font-medium"
               >
-                View details <ArrowRight className="h-3 w-3 rtl:scale-x-[-1]" />
+                {t("admin.dashboard.viewDetails")}{" "}
+                <ArrowRight className="h-3 w-3 rtl:scale-x-[-1]" />
               </Link>
             </CardContent>
           </Card>

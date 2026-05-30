@@ -99,7 +99,7 @@ export function RecentAffiliateLinks() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>{t("recent_generations")}</CardTitle>
         <Button variant="ghost" size="sm" onClick={fetchLinks}>
-          <RefreshCw className="mr-2 h-4 w-4" />
+          <RefreshCw className="me-2 h-4 w-4" />
           {t("refresh")}
         </Button>
       </CardHeader>
@@ -126,7 +126,7 @@ export function RecentAffiliateLinks() {
                 </TableHead>
                 <TableHead>{t("table.date")}</TableHead>
                 <TableHead>{t("table.status")}</TableHead>
-                <TableHead className="text-right">{t("table.actions")}</TableHead>
+                <TableHead className="text-end">{t("table.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -193,7 +193,7 @@ export function RecentAffiliateLinks() {
                       <Badge variant="secondary">{t("table.generated")}</Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="ghost"

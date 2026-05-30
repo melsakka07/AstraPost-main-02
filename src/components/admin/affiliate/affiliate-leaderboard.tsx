@@ -119,7 +119,7 @@ export function AffiliateLeaderboard({ initialData }: AffiliateLeaderboardProps 
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   Code
                 </TableHead>
-                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                   <button
                     onClick={() => handleSort("clicks")}
                     className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
@@ -130,7 +130,7 @@ export function AffiliateLeaderboard({ initialData }: AffiliateLeaderboardProps 
                     />
                   </button>
                 </TableHead>
-                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                   <button
                     onClick={() => handleSort("conversions")}
                     className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
@@ -141,7 +141,7 @@ export function AffiliateLeaderboard({ initialData }: AffiliateLeaderboardProps 
                     />
                   </button>
                 </TableHead>
-                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                   <button
                     onClick={() => handleSort("rate")}
                     className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
@@ -152,7 +152,7 @@ export function AffiliateLeaderboard({ initialData }: AffiliateLeaderboardProps 
                     />
                   </button>
                 </TableHead>
-                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                   <button
                     onClick={() => handleSort("earnings")}
                     className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
@@ -183,12 +183,12 @@ export function AffiliateLeaderboard({ initialData }: AffiliateLeaderboardProps 
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">{affiliate.referralCode}</TableCell>
-                    <TableCell className="text-right">{affiliate.clicksThisMonth}</TableCell>
-                    <TableCell className="text-right">{affiliate.conversions}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">{affiliate.clicksThisMonth}</TableCell>
+                    <TableCell className="text-end">{affiliate.conversions}</TableCell>
+                    <TableCell className="text-end">
                       {affiliate.conversionRate.toFixed(1)}%
                     </TableCell>
-                    <TableCell className="text-right font-semibold">
+                    <TableCell className="text-end font-semibold">
                       ${(affiliate.earningsCents / 100).toFixed(2)}
                     </TableCell>
                   </TableRow>

@@ -205,7 +205,7 @@ export function TeamMembersList({
                               setDeleteType("member");
                             }}
                           >
-                            <UserX className="mr-2 h-4 w-4" />
+                            <UserX className="me-2 h-4 w-4" />
                             {t("team.remove_member")}
                           </DropdownMenuItem>
                         </>
@@ -264,7 +264,7 @@ export function TeamMembersList({
                           setDeleteType("invitation");
                         }}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" />
+                        <Trash2 className="me-2 h-4 w-4" />
                         {t("team.revoke_invitation")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>

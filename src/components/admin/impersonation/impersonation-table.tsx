@@ -73,12 +73,12 @@ export function ImpersonationTable({
     <Card className="flex flex-col">
       <div className="flex items-center gap-4 border-b p-4">
         <div className="relative max-w-sm flex-1">
-          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+          <Search className="text-muted-foreground inset-inline-start-2.5 absolute top-2.5 h-4 w-4" />
           <Input
             placeholder="Search by email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-muted/50 pl-8"
+            className="bg-muted/50 ps-8"
           />
         </div>
       </div>
@@ -91,7 +91,7 @@ export function ImpersonationTable({
               <TableHead>Impersonated By (Admin)</TableHead>
               <TableHead>Started At</TableHead>
               <TableHead>IP Address</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-end">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -118,14 +118,14 @@ export function ImpersonationTable({
                   <TableCell className="text-muted-foreground">
                     {session.ipAddress || "Unknown"}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleRevoke(session.id)}
                       disabled={revoking === session.id}
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
+                      <LogOut className="me-2 h-4 w-4" />
                       {revoking === session.id ? "Revoking..." : "Stop Impersonating"}
                     </Button>
                   </TableCell>
