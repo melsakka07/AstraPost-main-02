@@ -23,7 +23,7 @@ export function CopyButton({ value, className, variant = "outline", ...props }: 
     <Button
       size="icon"
       variant={variant}
-      className={cn("relative z-10 h-6 w-6 text-zinc-50 md:h-8 md:w-8", className)}
+      className={cn("relative z-10 h-6 w-6 text-white md:h-8 md:w-8", className)}
       onClick={async () => {
         const ok = await copyToClipboard(value);
         if (ok) setHasCopied(true);

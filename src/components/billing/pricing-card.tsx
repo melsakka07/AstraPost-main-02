@@ -174,9 +174,7 @@ export function PricingCard({
           <div className="flex items-center gap-1.5 text-sm">
             <span className="text-muted-foreground">{plan.perMonthEquivalent}</span>
             {plan.savingsPercent && (
-              <span className="font-medium text-green-600 dark:text-green-400">
-                Save {plan.savingsPercent}%
-              </span>
+              <span className="text-success-11 font-medium">Save {plan.savingsPercent}%</span>
             )}
           </div>
         )}

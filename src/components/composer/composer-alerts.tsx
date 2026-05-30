@@ -122,9 +122,9 @@ export function ComposerAlerts({
       {tweets.some((t) => t.content.length > 280) &&
         canPostLongContent(effectiveTier) &&
         effectiveTier && (
-          <Alert className="border-success/40 bg-success/5 text-success dark:text-success">
-            <CheckCircle2 className="text-success h-4 w-4" />
-            <AlertDescription className="text-success flex items-center gap-2">
+          <Alert className="border-success-6 bg-success-3 text-success-11">
+            <CheckCircle2 className="text-success-11 h-4 w-4" />
+            <AlertDescription className="text-success-11 flex items-center gap-2">
               <XSubscriptionBadge tier={effectiveTier} size="md" />
               <span>
                 Your account ({userHandle}) supports long posts — this will publish normally with up
@@ -135,9 +135,9 @@ export function ComposerAlerts({
         )}
 
       {tweets.some((t) => t.content.length > 280) && !canPostLongContent(effectiveTier) && (
-        <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
-          <Info className="h-4 w-4 text-amber-500" />
-          <AlertDescription className="space-y-1 text-amber-700 dark:text-amber-400">
+        <Alert className="border-warning-6 bg-warning-3 text-warning-11">
+          <Info className="text-warning-11 h-4 w-4" />
+          <AlertDescription className="text-warning-11 space-y-1">
             <p>
               <span className="font-medium">X Premium required for long posts.</span>
             </p>
@@ -147,7 +147,7 @@ export function ComposerAlerts({
               <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard
               account, these tweets will fail and appear as errors in your queue.
             </p>
-            <p className="text-amber-600/80 dark:text-amber-400/80">
+            <p className="text-warning-11/80">
               Tip: Use the &quot;Convert to Thread&quot; button below to split your content into
               multiple tweets under 280 characters each.
             </p>
@@ -159,9 +159,9 @@ export function ComposerAlerts({
         tweets[0]!.content.length > 2000 &&
         canPostLongContent(effectiveTier) &&
         effectiveTier && (
-          <Alert className="border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-400">
-            <Info className="h-4 w-4 text-amber-500" />
-            <AlertDescription className="text-amber-700 dark:text-amber-400">
+          <Alert className="border-warning-6 bg-warning-3 text-warning-11">
+            <Info className="text-warning-11 h-4 w-4" />
+            <AlertDescription className="text-warning-11">
               <span className="font-medium">Post exceeds 2,000 characters.</span> While your X
               Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend
               to see significantly lower engagement. Consider trimming your content or converting to

@@ -65,10 +65,10 @@ export function PrivacySettings() {
   }
 
   return (
-    <Card className="border-red-100 dark:border-red-900/20">
+    <Card className="border-danger-6">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-red-500" />
+          <AlertTriangle className="text-danger-11 h-5 w-5" />
           <CardTitle>{t("integrations.privacy_data_title")}</CardTitle>
         </div>
         <CardDescription>{t("integrations.privacy_data_desc")}</CardDescription>
@@ -90,7 +90,7 @@ export function PrivacySettings() {
 
         <div className="flex items-center justify-between border-t pt-4">
           <div className="space-y-0.5">
-            <div className="font-medium text-red-600">
+            <div className="text-danger-11 font-medium">
               {t("integrations.privacy_delete_account")}
             </div>
             <div className="text-muted-foreground text-sm">

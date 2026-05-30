@@ -199,7 +199,7 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="bg-muted/50 flex items-center gap-2 rounded-full border border-orange-200 px-3 py-1.5 text-orange-600 dark:border-orange-900 dark:text-orange-400">
+            <div className="bg-muted/50 border-warning-6 text-warning-11 flex items-center gap-2 rounded-full border px-3 py-1.5">
               <AlertCircle className="h-4 w-4" />
               <span className="text-xs font-medium">Rate limited</span>
             </div>
@@ -219,7 +219,7 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="bg-muted/50 flex items-center gap-2 rounded-full border border-red-200 px-3 py-1.5 text-red-600 dark:border-red-900 dark:text-red-400">
+            <div className="bg-muted/50 border-danger-6 text-danger-11 flex items-center gap-2 rounded-full border px-3 py-1.5">
               <AlertCircle className="h-4 w-4" />
               <span className="text-xs font-medium">Error</span>
             </div>
@@ -246,14 +246,9 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
 
   if (state === "idle" || score === null) return null;
 
-  let color =
-    "text-red-600 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-900";
-  if (score >= 40)
-    color =
-      "text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-900";
-  if (score >= 70)
-    color =
-      "text-green-600 bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-900";
+  let color = "text-danger-11 bg-danger-3 border border-danger-6";
+  if (score >= 40) color = "text-warning-11 bg-warning-3 border border-warning-6";
+  if (score >= 70) color = "text-success-11 bg-success-3 border border-success-6";
 
   return (
     <TooltipProvider>

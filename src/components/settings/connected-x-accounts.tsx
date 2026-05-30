@@ -395,7 +395,7 @@ export function ConnectedXAccounts({
       <div className="space-y-4">
         {/* Over-limit warning banner */}
         {isOverLimit && (
-          <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-600 dark:text-amber-400">
+          <div className="border-warning-6 bg-warning-3 text-warning-11 flex items-start gap-2 rounded-md border px-3 py-2 text-sm">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <div>
               <p className="font-medium">{t("integrations.account_limit_exceeded_title")}</p>
@@ -516,7 +516,7 @@ export function ConnectedXAccounts({
                                 return (
                                   <Badge
                                     variant="outline"
-                                    className="h-4 gap-1 border-amber-500/50 bg-amber-500/10 px-1.5 py-0 text-[10px] text-amber-600 dark:text-amber-400"
+                                    className="border-warning-6 bg-warning-3 text-warning-11 h-4 gap-1 px-1.5 py-0 text-[10px]"
                                   >
                                     <RefreshCw className="h-2.5 w-2.5" />
                                     {t("integrations.connection_issues")}
@@ -693,7 +693,7 @@ export function ConnectedXAccounts({
                                   variant="ghost"
                                   size="sm"
                                   disabled={deactivatingAccountId === a.id || busy}
-                                  className="text-muted-foreground h-8 w-8 p-0 hover:text-amber-600"
+                                  className="text-muted-foreground hover:text-warning-11 h-8 w-8 p-0"
                                   aria-label={
                                     t("integrations.deactivate_account") + ` @${a.xUsername}`
                                   }
@@ -743,8 +743,8 @@ export function ConnectedXAccounts({
 
                     {/* Transient failure info banner */}
                     {a.isActive && (a.consecutiveRefreshFailures ?? 0) > 0 && (
-                      <div className="flex items-center justify-between gap-3 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
-                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                      <div className="border-warning-6 bg-warning-3 flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                        <div className="text-warning-11 flex items-center gap-2">
                           <RefreshCw className="h-4 w-4 shrink-0" />
                           <span>
                             {t("integrations.transient_failure_info", {
@@ -765,7 +765,7 @@ export function ConnectedXAccounts({
                       <div
                         className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs ${
                           health.ok
-                            ? "border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                            ? "border-success-6 bg-success-3 text-success-11 border"
                             : "border-destructive/30 bg-destructive/5 text-destructive border"
                         }`}
                       >
@@ -856,7 +856,7 @@ export function ConnectedXAccounts({
                 variant="default"
                 onClick={handleDeactivateAccount}
                 disabled={deactivatingAccountId !== null}
-                className="bg-amber-600 text-white hover:bg-amber-700"
+                className="bg-warning-9 hover:bg-warning-10 text-black"
               >
                 {deactivatingAccountId
                   ? t("integrations.deactivating")

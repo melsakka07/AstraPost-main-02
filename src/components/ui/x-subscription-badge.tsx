@@ -21,9 +21,9 @@ interface TierConfig {
 
 const tierConfig: Record<string, TierConfig> = {
   None: { color: "bg-muted-foreground/40", labelKey: "none" },
-  Basic: { color: "bg-yellow-500", labelKey: "basic" },
-  Premium: { color: "bg-blue-500", labelKey: "premium" },
-  PremiumPlus: { color: "bg-blue-500 ring-2 ring-yellow-400", labelKey: "premium_plus" },
+  Basic: { color: "bg-warning-9", labelKey: "basic" },
+  Premium: { color: "bg-info-9", labelKey: "premium" },
+  PremiumPlus: { color: "bg-info-9 ring-2 ring-warning-9", labelKey: "premium_plus" },
 };
 
 const unknownConfig: TierConfig = {

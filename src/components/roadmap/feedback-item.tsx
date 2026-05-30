@@ -49,11 +49,11 @@ export function FeedbackItem({ item, onUpvote, isVoting }: FeedbackItemProps) {
             className={cn(
               "rounded-full px-2 py-1 text-xs font-medium capitalize",
               item.status === "completed"
-                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                ? "bg-success-3 text-success-11"
                 : item.status === "in_progress"
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                  ? "bg-info-3 text-info-11"
                   : item.status === "planned"
-                    ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                    ? "bg-brand-3 text-brand-11"
                     : "bg-muted text-muted-foreground"
             )}
           >

@@ -199,15 +199,15 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             </div>
             <div className="text-muted-foreground flex items-center justify-center gap-6 pt-4 text-sm">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <CheckCircle2 className="text-success-11 h-4 w-4" />
                 {t("trust_no_card")}
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <CheckCircle2 className="text-success-11 h-4 w-4" />
                 {t("trust_free_trial")}
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <CheckCircle2 className="text-success-11 h-4 w-4" />
                 {t("trust_cancel")}
               </div>
             </div>

@@ -636,8 +636,8 @@ export function OnboardingWizard() {
                 </>
               ) : (
                 <>
-                  <div className="mb-2 inline-block rounded-full bg-amber-500/10 p-6">
-                    <Twitter className="h-12 w-12 text-amber-600" />
+                  <div className="bg-warning-3 mb-2 inline-block rounded-full p-6">
+                    <Twitter className="text-warning-11 h-12 w-12" />
                   </div>
                   <h3 className="text-xl font-bold">{t("onboarding.no_x_account_connected")}</h3>
                   <p className="text-muted-foreground">
@@ -741,7 +741,7 @@ export function OnboardingWizard() {
                   {t("onboarding.draft_your_first_tweet")}
                 </label>
                 {createdPostId !== null && (
-                  <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600">
+                  <Badge variant="secondary" className="bg-success-3 text-success-11">
                     <CheckCircle2 className="me-1 h-3 w-3" />
                     {t("onboarding.draft_saved_badge")}
                   </Badge>
@@ -760,7 +760,7 @@ export function OnboardingWizard() {
                   isOverHardLimit
                     ? "text-destructive"
                     : isOverStandardLimit
-                      ? "text-amber-500"
+                      ? "text-warning-11"
                       : "text-muted-foreground"
                 )}
               >

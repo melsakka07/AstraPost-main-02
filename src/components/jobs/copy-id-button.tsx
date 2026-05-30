@@ -28,7 +28,7 @@ export function CopyIdButton({ value }: { value: string }) {
             onClick={handleCopy}
           >
             {copied ? (
-              <Check className="h-3 w-3 text-emerald-500" />
+              <Check className="text-success-11 h-3 w-3" />
             ) : (
               <Copy className="text-muted-foreground h-3 w-3" />
             )}

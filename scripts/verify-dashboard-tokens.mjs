@@ -28,7 +28,26 @@ const RAW_PALETTE_COLORS = [
 
 const palettePattern = new RegExp(`\\b(?:${RAW_PALETTE_COLORS.join("|")})-\\d{2,3}\\b`, "g");
 
-const DASHBOARD_DIRS = ["src/app/dashboard", "src/components/dashboard"];
+// Dirs proven free of raw palette classes and guarded against regression.
+// Wave 1 seeded the dashboard dirs; Wave 7 Task A added the user-facing component
+// dirs below. NOT yet covered (raw colors remain intentionally or pending a
+// follow-up): components/{marketing,admin,brand,email}, src/app/(marketing) (brand
+// gradients), src/lib/tokens.ts (runtime hex). Admin migration is a Task-A follow-up.
+const DASHBOARD_DIRS = [
+  "src/app/dashboard",
+  "src/components/dashboard",
+  "src/components/composer",
+  "src/components/ai",
+  "src/components/inspiration",
+  "src/components/onboarding",
+  "src/components/queue",
+  "src/components/jobs",
+  "src/components/affiliate",
+  "src/components/settings",
+  "src/components/billing",
+  "src/components/ui",
+  "src/components/roadmap",
+];
 
 function collectFiles(dir) {
   const results = [];

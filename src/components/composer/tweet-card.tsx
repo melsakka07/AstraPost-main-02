@@ -221,7 +221,7 @@ export function TweetCard({
 
           {/* A5: Auto-suggest thread conversion when single tweet exceeds 280 chars */}
           {totalTweets === 1 && isOverStandardLimit && !canPostLongContent(selectedTier) && (
-            <div className="mt-1.5 flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+            <div className="text-warning-11 mt-1.5 flex items-center gap-2 text-xs">
               <AlertCircle className="h-3.5 w-3.5 shrink-0" />
               <span>{t("over_standard_limit_warning")}</span>
               {onConvertToThread && (
@@ -532,9 +532,9 @@ export function TweetCard({
                     "text-xs font-medium tabular-nums sm:text-sm",
                     isOverLimit
                       ? "text-destructive"
-                      : // P4-G: amber-700/amber-400 passes WCAG AA contrast on both light and dark
+                      : // P4-G: warning-11 token passes WCAG AA contrast on both light and dark
                         isOverStandardLimit
-                        ? "text-amber-700 dark:text-amber-400"
+                        ? "text-warning-11"
                         : "text-muted-foreground"
                   )}
                 >
@@ -559,7 +559,7 @@ export function TweetCard({
                         isOverLimit
                           ? "bg-destructive"
                           : isOverStandardLimit
-                            ? "bg-amber-600 dark:bg-amber-500"
+                            ? "bg-warning-9"
                             : "bg-primary/40"
                       )}
                       ref={(el) => {
@@ -580,9 +580,9 @@ export function TweetCard({
                   </span>
                 </div>
               )}
-              {/* Thread mode per-tweet warning — P4-G: amber-700/amber-400 for WCAG AA contrast */}
+              {/* Thread mode per-tweet warning — P4-G: warning-11 token for WCAG AA contrast */}
               {isThreadMode && isOverStandardLimit && (
-                <p className="text-[11px] text-amber-700 dark:text-amber-400" role="alert">
+                <p className="text-warning-11 text-[11px]" role="alert">
                   {t("exceeds_280_thread_warning")}
                 </p>
               )}

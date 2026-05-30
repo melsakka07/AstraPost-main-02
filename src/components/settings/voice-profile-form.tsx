@@ -174,7 +174,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
             <CardDescription>{t("integrations.voice_profile_description")}</CardDescription>
           </div>
           {profile && (
-            <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+            <Badge variant="default" className="bg-success-9 hover:bg-success-10 text-white">
               {t("integrations.active")}
             </Badge>
           )}
@@ -245,7 +245,7 @@ export function VoiceProfileForm({ userPlan = "free" }: VoiceProfileFormProps) {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 rounded-md bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                <div className="bg-info-3 text-info-11 flex items-start gap-3 rounded-md p-3 text-sm">
                   <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
                   <p>{t("integrations.voice_active_notice")}</p>
                 </div>
