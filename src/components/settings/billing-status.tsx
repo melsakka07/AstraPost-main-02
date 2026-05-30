@@ -108,31 +108,31 @@ export function BillingStatus() {
         <span className="text-muted-foreground">{t("billing.status_label")}</span>
         {isActive && !cancelAtPeriodEnd && (
           <Badge className="border-success-6 bg-success-3 text-success-11">
-            <CheckCircle2 className="mr-1 h-3 w-3" />
+            <CheckCircle2 className="me-1 h-3 w-3" />
             {t("billing.status_active")}
           </Badge>
         )}
         {isTrialing && (
           <Badge className="border-info-6 bg-info-3 text-info-11">
-            <Clock className="mr-1 h-3 w-3" />
+            <Clock className="me-1 h-3 w-3" />
             {t("billing.status_trial")}
           </Badge>
         )}
         {isPastDue && (
           <Badge variant="destructive">
-            <AlertTriangle className="mr-1 h-3 w-3" />
+            <AlertTriangle className="me-1 h-3 w-3" />
             {t("billing.status_past_due")}
           </Badge>
         )}
         {isCanceled && (
           <Badge variant="secondary">
-            <XCircle className="mr-1 h-3 w-3" />
+            <XCircle className="me-1 h-3 w-3" />
             {t("billing.status_canceled")}
           </Badge>
         )}
         {cancelAtPeriodEnd && isActive && (
           <Badge className="border-warning-6 bg-warning-3 text-warning-11">
-            <XCircle className="mr-1 h-3 w-3" />
+            <XCircle className="me-1 h-3 w-3" />
             {t("billing.status_cancels_at_end")}
           </Badge>
         )}

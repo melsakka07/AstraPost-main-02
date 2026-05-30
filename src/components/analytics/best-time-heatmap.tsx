@@ -84,7 +84,7 @@ export function BestTimeHeatmap({ data }: { data: HeatmapData[] }) {
                 <tr key={day}>
                   <th
                     scope="row"
-                    className="text-muted-foreground w-10 pr-1 text-left text-xs font-medium whitespace-nowrap"
+                    className="text-muted-foreground w-10 pe-1 text-start text-xs font-medium whitespace-nowrap"
                   >
                     {day}
                   </th>

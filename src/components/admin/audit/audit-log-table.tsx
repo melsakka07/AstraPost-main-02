@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Search, FileDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,47 +59,57 @@ export interface PaginatedResponse<T> {
   };
 }
 
-const ACTION_OPTIONS = [
-  { value: "all", label: "All Actions" },
-  ...Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label })),
-];
-
-function formatDetails(details: Record<string, unknown> | null): React.ReactNode {
-  if (!details) return <span className="text-muted-foreground text-xs">No details</span>;
-
-  const lines: string[] = [];
-  if (details.reason) lines.push(`Reason: ${details.reason}`);
-  if (details.fromPlan) lines.push(`From plan: ${String(details.fromPlan).replace(/_/g, " ")}`);
-  if (details.toPlan) lines.push(`To plan: ${String(details.toPlan).replace(/_/g, " ")}`);
-  if (details.email) lines.push(`Email: ${details.email}`);
-  if (details.flagKey) lines.push(`Flag: ${details.flagKey}`);
-  if (details.newValue !== undefined) lines.push(`New value: ${String(details.newValue)}`);
-  if (details.count) lines.push(`Affected: ${details.count} users`);
-
-  return (
-    <div className="space-y-1">
-      {lines.length > 0 && (
-        <ul className="space-y-0.5 text-sm">
-          {lines.map((l) => (
-            <li key={l} className="text-foreground">
-              {l}
-            </li>
-          ))}
-        </ul>
-      )}
-      {/* Always show full JSON below for completeness */}
-      <pre className="text-muted-foreground bg-muted mt-2 overflow-auto rounded p-2 text-xs">
-        {JSON.stringify(details, null, 2)}
-      </pre>
-    </div>
-  );
-}
-
 interface AuditLogTableProps {
   initialData?: PaginatedResponse<AuditLogRow> | null;
 }
 
 export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
+  const t = useTranslations();
+
+  const ACTION_OPTIONS = [
+    { value: "all", label: t("admin.audit.filter.allActions") },
+    ...Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label })),
+  ];
+
+  function formatDetails(details: Record<string, unknown> | null): React.ReactNode {
+    if (!details)
+      return <span className="text-muted-foreground text-xs">{t("admin.audit.noDetails")}</span>;
+
+    const lines: string[] = [];
+    if (details.reason) lines.push(`${t("admin.audit.detail.reason")}: ${details.reason}`);
+    if (details.fromPlan)
+      lines.push(
+        `${t("admin.audit.detail.fromPlan")}: ${String(details.fromPlan).replace(/_/g, " ")}`
+      );
+    if (details.toPlan)
+      lines.push(`${t("admin.audit.detail.toPlan")}: ${String(details.toPlan).replace(/_/g, " ")}`);
+    if (details.email) lines.push(`${t("admin.audit.detail.email")}: ${details.email}`);
+    if (details.flagKey) lines.push(`${t("admin.audit.detail.flagKey")}: ${details.flagKey}`);
+    if (details.newValue !== undefined)
+      lines.push(`${t("admin.audit.detail.newValue")}: ${String(details.newValue)}`);
+    if (details.count)
+      lines.push(
+        `${t("admin.audit.detail.affected")}: ${details.count} ${t("admin.audit.detail.users")}`
+      );
+
+    return (
+      <div className="space-y-1">
+        {lines.length > 0 && (
+          <ul className="space-y-0.5 text-sm">
+            {lines.map((l) => (
+              <li key={l} className="text-foreground">
+                {l}
+              </li>
+            ))}
+          </ul>
+        )}
+        <pre className="text-muted-foreground bg-muted mt-2 overflow-auto rounded p-2 text-xs">
+          {JSON.stringify(details, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
   const [search, setSearch] = useState("");
   const [action, setAction] = useState<string>("all");
   const [fromDate, setFromDate] = useState("");
@@ -194,17 +205,17 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative max-w-xs">
-            <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
+            <Search className="text-muted-foreground inset-inline-start-2.5 absolute top-1/2 h-4 w-4 -translate-y-1/2" />
             <Input
-              placeholder="Search by target ID…"
+              placeholder={t("admin.audit.searchPlaceholder")}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
           <Select value={action} onValueChange={setAction}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by action" />
+              <SelectValue placeholder={t("admin.audit.filterPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {ACTION_OPTIONS.map((opt) => (
@@ -217,7 +228,9 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex flex-col gap-1">
-            <label className="text-muted-foreground text-xs font-medium">From</label>
+            <label className="text-muted-foreground text-xs font-medium">
+              {t("admin.audit.fromDate")}
+            </label>
             <Input
               type="date"
               value={fromDate}
@@ -226,7 +239,9 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-muted-foreground text-xs font-medium">To</label>
+            <label className="text-muted-foreground text-xs font-medium">
+              {t("admin.audit.toDate")}
+            </label>
             <Input
               type="date"
               value={toDate}
@@ -243,7 +258,7 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
                 setToDate("");
               }}
             >
-              Clear dates
+              {t("admin.audit.clearDates")}
             </Button>
           )}
           <Button
@@ -252,8 +267,8 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
             onClick={handleExportAuditLog}
             disabled={exporting || (response?.pagination?.total ?? 0) === 0}
           >
-            <FileDown className="mr-2 h-4 w-4" />
-            {exporting ? "Exporting…" : "Export CSV"}
+            <FileDown className="me-2 h-4 w-4" />
+            {exporting ? t("admin.audit.exporting") : t("admin.audit.exportCsv")}
           </Button>
         </div>
       </div>
@@ -264,25 +279,25 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
           <TableHeader>
             <TableRow>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Timestamp
+                {t("admin.audit.table.timestamp")}
               </TableHead>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Admin
+                {t("admin.audit.table.admin")}
               </TableHead>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Action
+                {t("admin.audit.table.action")}
               </TableHead>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Target Type
+                {t("admin.audit.table.targetType")}
               </TableHead>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Target ID
+                {t("admin.audit.table.targetId")}
               </TableHead>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Details
+                {t("admin.audit.table.details")}
               </TableHead>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                IP Address
+                {t("admin.audit.table.ipAddress")}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -300,7 +315,7 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
             ) : (response?.data?.length ?? 0) === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-muted-foreground h-32 text-center">
-                  No audit logs found
+                  {t("admin.audit.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -312,7 +327,9 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-medium">{log.adminName || "Unknown"}</span>
+                        <span className="font-medium">
+                          {log.adminName || t("admin.audit.unknown")}
+                        </span>
                         <span className="text-muted-foreground text-xs">{log.adminEmail}</span>
                       </div>
                     </TableCell>
@@ -326,7 +343,7 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
                               )}
                               variant="outline"
                             >
-                              {ACTION_LABELS[log.action] ?? log.action}
+                              {t(`admin.audit.action.${log.action}` as never)}
                             </Badge>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs text-xs">
@@ -363,13 +380,13 @@ export function AuditLogTable({ initialData }: AuditLogTableProps = {}) {
                       <TableCell colSpan={7} className="bg-muted/30">
                         <div className="py-2">
                           <p className="text-muted-foreground mb-1 text-xs font-semibold">
-                            Details:
+                            {t("admin.audit.detailsHeading")}:
                           </p>
                           {formatDetails(log.details)}
                           {log.userAgent && (
                             <>
                               <p className="text-muted-foreground mt-3 mb-1 text-xs font-semibold">
-                                User Agent:
+                                {t("admin.audit.userAgentHeading")}:
                               </p>
                               <p className="text-muted-foreground text-xs break-all">
                                 {log.userAgent}

@@ -118,16 +118,16 @@ export function AgenticSessionsTable({ initialData }: AgenticSessionsTableProps)
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 Status
               </TableHead>
-              <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+              <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                 Posts
               </TableHead>
-              <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+              <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                 Quality Score
               </TableHead>
               <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                 Duration
               </TableHead>
-              <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+              <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                 Action
               </TableHead>
             </TableRow>
@@ -148,8 +148,8 @@ export function AgenticSessionsTable({ initialData }: AgenticSessionsTableProps)
                       {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">{session.postsGenerated}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">{session.postsGenerated}</TableCell>
+                  <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-2">
                       <div className="w-16">
                         <Progress value={session.qualityScore} className="h-2" />
@@ -160,7 +160,7 @@ export function AgenticSessionsTable({ initialData }: AgenticSessionsTableProps)
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDuration(session.startedAt, session.completedAt)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <Button
                       variant="ghost"
                       size="sm"

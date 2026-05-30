@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { ChevronLeft, ChevronRight, Clock, UserPlus, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,32 +58,6 @@ interface TeamsResponse {
   };
 }
 
-function PlanBadge({ plan }: { plan: string }) {
-  const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-    free: "secondary",
-    pro_monthly: "default",
-    pro_annual: "default",
-    agency: "outline",
-  };
-  const labels: Record<string, string> = {
-    free: "Free",
-    pro_monthly: "Pro Monthly",
-    pro_annual: "Pro Annual",
-    agency: "Agency",
-  };
-  return <Badge variant={variants[plan] ?? "secondary"}>{labels[plan] ?? plan}</Badge>;
-}
-
-function InvitationStatusBadge({ status }: { status: string }) {
-  const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-    pending: "default",
-    accepted: "secondary",
-    expired: "outline",
-    revoked: "destructive",
-  };
-  return <Badge variant={variants[status] ?? "secondary"}>{status}</Badge>;
-}
-
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
@@ -109,6 +84,32 @@ interface TeamDashboardProps {
 }
 
 export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
+  const t = useTranslations();
+
+  const planLabels: Record<string, string> = {
+    free: t("admin.plans.free"),
+    pro_monthly: t("admin.plans.proMonthly"),
+    pro_annual: t("admin.plans.proAnnual"),
+    agency: t("admin.plans.agency"),
+  };
+
+  const planVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+    free: "secondary",
+    pro_monthly: "default",
+    pro_annual: "default",
+    agency: "outline",
+  };
+
+  const invitationStatusVariants: Record<
+    string,
+    "default" | "secondary" | "outline" | "destructive"
+  > = {
+    pending: "default",
+    accepted: "secondary",
+    expired: "outline",
+    revoked: "destructive",
+  };
+
   const [activeTab, setActiveTab] = useState<"teams" | "invitations">("teams");
   const [teamsPage, setTeamsPage] = useState(1);
   const [invitationsPage, setInvitationsPage] = useState(1);
@@ -129,7 +130,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
     },
     intervalMs: 60_000,
     onError: () => {
-      toast.error("Failed to load team data");
+      toast.error(t("admin.teams.loadError"));
     },
     ...(initialData !== undefined && { initialData }),
   });
@@ -151,27 +152,31 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
       {/* Summary Stats */}
       <div>
         <h2 className="text-muted-foreground mb-3 text-sm font-semibold tracking-wide uppercase">
-          Overview
+          {t("admin.teams.overview")}
         </h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total Teams" value={summary.totalTeams.toLocaleString()} icon={Users} />
           <StatCard
-            title="Total Members"
-            value={summary.totalMembers.toLocaleString()}
-            description="Across all teams"
+            title={t("admin.teams.stats.totalTeams")}
+            value={summary.totalTeams.toLocaleString()}
             icon={Users}
           />
           <StatCard
-            title="Pending Invitations"
+            title={t("admin.teams.stats.totalMembers")}
+            value={summary.totalMembers.toLocaleString()}
+            description={t("admin.teams.stats.acrossAllTeams")}
+            icon={Users}
+          />
+          <StatCard
+            title={t("admin.teams.stats.pendingInvitations")}
             value={summary.pendingInvitations}
-            description="Awaiting acceptance"
+            description={t("admin.teams.stats.awaitingAcceptance")}
             icon={UserPlus}
             variant={summary.pendingInvitations > 0 ? "warning" : "default"}
           />
           <StatCard
-            title="Expired Invitations"
+            title={t("admin.teams.stats.expiredInvitations")}
             value={summary.expiredInvitations}
-            description="Not accepted in time"
+            description={t("admin.teams.stats.notAcceptedInTime")}
             icon={Clock}
             variant={summary.expiredInvitations > 0 ? "destructive" : "default"}
           />
@@ -181,11 +186,11 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} suppressHydrationWarning>
         <TabsList>
-          <TabsTrigger value="teams">Teams</TabsTrigger>
+          <TabsTrigger value="teams">{t("admin.teams.tabs.teams")}</TabsTrigger>
           <TabsTrigger value="invitations">
-            Invitations
+            {t("admin.teams.tabs.invitations")}
             {summary.pendingInvitations > 0 && (
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="ms-2">
                 {summary.pendingInvitations}
               </Badge>
             )}
@@ -199,16 +204,16 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Owner
+                    {t("admin.teams.table.owner")}
                   </TableHead>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Email
+                    {t("admin.teams.table.email")}
                   </TableHead>
-                  <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
-                    Members
+                  <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
+                    {t("admin.teams.table.members")}
                   </TableHead>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Plan
+                    {t("admin.teams.table.plan")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -226,7 +231,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                 ) : teams.data.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-muted-foreground h-32 text-center">
-                      No teams found
+                      {t("admin.teams.empty.teams")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -236,11 +241,13 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                       <TableCell className="text-muted-foreground text-sm">
                         {team.ownerEmail}
                       </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums">
+                      <TableCell className="text-end text-sm tabular-nums">
                         {team.memberCount}
                       </TableCell>
                       <TableCell>
-                        <PlanBadge plan={team.plan} />
+                        <Badge variant={planVariants[team.plan] ?? "secondary"}>
+                          {planLabels[team.plan] ?? team.plan}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))
@@ -289,22 +296,22 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Email
+                    {t("admin.teams.table.email")}
                   </TableHead>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Role
+                    {t("admin.teams.table.role")}
                   </TableHead>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Team Owner
+                    {t("admin.teams.table.teamOwner")}
                   </TableHead>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Expires At
+                    {t("admin.teams.table.expiresAt")}
                   </TableHead>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Created At
+                    {t("admin.teams.table.createdAt")}
                   </TableHead>
                   <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                    Status
+                    {t("admin.teams.table.status")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -322,7 +329,7 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                 ) : invitations.data.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-muted-foreground h-32 text-center">
-                      No invitations found
+                      {t("admin.teams.empty.invitations")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -347,7 +354,9 @@ export function TeamDashboard({ initialData }: TeamDashboardProps = {}) {
                         {format(new Date(inv.createdAt), "d MMM yyyy")}
                       </TableCell>
                       <TableCell>
-                        <InvitationStatusBadge status={inv.status} />
+                        <Badge variant={invitationStatusVariants[inv.status] ?? "secondary"}>
+                          {inv.status}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))

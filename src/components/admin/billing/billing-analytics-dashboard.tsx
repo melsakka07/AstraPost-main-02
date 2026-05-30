@@ -126,9 +126,9 @@ function MetricCard({
             <span
               className={
                 trend === "warning"
-                  ? "text-yellow-600"
+                  ? "text-warning-11"
                   : trend === "healthy"
-                    ? "text-green-600"
+                    ? "text-success-11"
                     : ""
               }
             >
@@ -206,7 +206,7 @@ export function BillingAnalyticsDashboard({ initialData }: BillingAnalyticsDashb
           Please ensure you are logged in as an admin.
         </p>
         <Button variant="outline" size="sm" className="mt-4" onClick={refresh}>
-          <RefreshCw className="mr-2 h-4 w-4" />
+          <RefreshCw className="me-2 h-4 w-4" />
           Retry
         </Button>
       </div>
@@ -294,8 +294,8 @@ export function BillingAnalyticsDashboard({ initialData }: BillingAnalyticsDashb
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <span className="text-right text-sm font-medium tabular-nums">{count}</span>
-                    <span className="text-muted-foreground text-right text-sm tabular-nums">
+                    <span className="text-end text-sm font-medium tabular-nums">{count}</span>
+                    <span className="text-muted-foreground text-end text-sm tabular-nums">
                       {pct}%
                     </span>
                   </div>

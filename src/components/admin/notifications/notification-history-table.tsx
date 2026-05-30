@@ -237,13 +237,13 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   Status
                 </TableHead>
-                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                   Delivered / Read
                 </TableHead>
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   Sent At
                 </TableHead>
-                <TableHead className="text-muted-foreground text-right text-xs font-medium tracking-wide uppercase">
+                <TableHead className="text-muted-foreground text-end text-xs font-medium tracking-wide uppercase">
                   Actions
                 </TableHead>
               </TableRow>
@@ -271,7 +271,7 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
                         {notification.status.charAt(0).toUpperCase() + notification.status.slice(1)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right text-sm">
+                    <TableCell className="text-end text-sm">
                       {notification.status === "sent" && (
                         <span className="text-muted-foreground">
                           {notification.deliveredCount?.toLocaleString() || 0} /{" "}
@@ -287,7 +287,7 @@ export function NotificationHistoryTable({ initialData }: NotificationHistoryTab
                           })
                         : "—"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-2">
                         {notification.status === "scheduled" && (
                           <Button

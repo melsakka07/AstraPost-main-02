@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -23,13 +24,6 @@ import {
 } from "@/components/ui/select";
 import type { SubscriberPlan } from "./types";
 
-const PLAN_LABELS: Record<string, string> = {
-  free: "Free",
-  pro_monthly: "Pro Monthly",
-  pro_annual: "Pro Annual",
-  agency: "Agency",
-};
-
 interface BulkChangePlanDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,13 +32,6 @@ interface BulkChangePlanDialogProps {
   onSuccess: (processed: number, failed: number) => void;
 }
 
-const PLANS: { value: SubscriberPlan; label: string }[] = [
-  { value: "free", label: "Free" },
-  { value: "pro_monthly", label: "Pro Monthly" },
-  { value: "pro_annual", label: "Pro Annual" },
-  { value: "agency", label: "Agency" },
-];
-
 export function BulkChangePlanDialog({
   open,
   onOpenChange,
@@ -52,14 +39,29 @@ export function BulkChangePlanDialog({
   selectedCount,
   onSuccess,
 }: BulkChangePlanDialogProps) {
+  const t = useTranslations();
   const [loading, setLoading] = useState(false);
   const [newPlan, setNewPlan] = useState<SubscriberPlan>("pro_monthly");
   const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const planLabels = {
+    free: t("admin.plans.free"),
+    pro_monthly: t("admin.plans.proMonthly"),
+    pro_annual: t("admin.plans.proAnnual"),
+    agency: t("admin.plans.agency"),
+  };
+
+  const plans: { value: SubscriberPlan; label: string }[] = [
+    { value: "free", label: t("admin.plans.free") },
+    { value: "pro_monthly", label: t("admin.plans.proMonthly") },
+    { value: "pro_annual", label: t("admin.plans.proAnnual") },
+    { value: "agency", label: t("admin.plans.agency") },
+  ];
+
   const handleConfirm = async () => {
     if (!newPlan) {
-      toast.error("Please select a plan");
+      toast.error(t("admin.subscribers.bulk.selectPlanError"));
       return;
     }
 
@@ -89,10 +91,13 @@ export function BulkChangePlanDialog({
 
       if (skipped === 0) {
         toast.success(
-          `Changed plan for ${processed} user(s) to ${PLAN_LABELS[newPlan] ?? newPlan}`
+          t("admin.subscribers.bulk.changedToast", {
+            N: processed,
+            plan: planLabels[newPlan] ?? newPlan,
+          })
         );
       } else {
-        toast.warning(`Processed ${processed}, skipped ${skipped}`);
+        toast.warning(t("admin.subscribers.bulk.processedToast", { processed, skipped }));
       }
 
       onSuccess(processed, skipped);
@@ -101,7 +106,7 @@ export function BulkChangePlanDialog({
         setProgress(null);
       }, 1500);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Action failed";
+      const msg = err instanceof Error ? err.message : t("admin.subscribers.bulk.actionFailed");
       setErrorMessage(msg);
     } finally {
       setLoading(false);
@@ -112,11 +117,15 @@ export function BulkChangePlanDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Change plan for {selectedCount} subscriber(s)?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {t("admin.subscribers.bulk.changePlanTitle", { N: selectedCount })}
+          </AlertDialogTitle>
           <AlertDialogDescription className="space-y-4">
-            <span className="block">Select the new plan to apply to the selected users.</span>
+            <span className="block">{t("admin.subscribers.bulk.changePlanDesc")}</span>
             <div className="space-y-2">
-              <label className="text-sm font-medium">New Plan</label>
+              <label className="text-sm font-medium">
+                {t("admin.subscribers.bulk.newPlanLabel")}
+              </label>
               <Select
                 value={newPlan}
                 onValueChange={(value) => setNewPlan(value as SubscriberPlan)}
@@ -126,7 +135,7 @@ export function BulkChangePlanDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PLANS.map((plan) => (
+                  {plans.map((plan) => (
                     <SelectItem key={plan.value} value={plan.value}>
                       {plan.label}
                     </SelectItem>
@@ -134,13 +143,15 @@ export function BulkChangePlanDialog({
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">
-                This overrides the plan in the database. It does not automatically update Stripe
-                subscriptions. Feature access changes immediately.
+                {t("admin.subscribers.bulk.planOverrideHint")}
               </p>
             </div>
             {progress && (
               <span className="text-muted-foreground block text-xs">
-                Processing {progress.processed} of {progress.total}...
+                {t("admin.subscribers.bulk.processing", {
+                  processed: progress.processed,
+                  total: progress.total,
+                })}
               </span>
             )}
           </AlertDialogDescription>
@@ -150,21 +161,23 @@ export function BulkChangePlanDialog({
             <div className="flex gap-2">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
-                <p className="font-medium">Action failed</p>
+                <p className="font-medium">{t("admin.subscribers.bulk.actionFailed")}</p>
                 <p className="mt-0.5 text-xs">{errorMessage}</p>
               </div>
             </div>
           </div>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{t("admin.common.cancel")}</AlertDialogCancel>
           {errorMessage ? (
             <Button onClick={handleConfirm} disabled={loading}>
-              {loading ? "Retrying…" : "Retry"}
+              {loading ? t("admin.common.retrying") : t("admin.common.retry")}
             </Button>
           ) : (
             <AlertDialogAction onClick={handleConfirm} disabled={loading}>
-              {loading ? "Processing…" : "Change plan"}
+              {loading
+                ? t("admin.common.processing")
+                : t("admin.subscribers.bulk.changePlanButton")}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

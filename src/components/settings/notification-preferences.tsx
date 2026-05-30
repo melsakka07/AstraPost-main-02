@@ -94,7 +94,7 @@ export function NotificationPreferences({ initialSettings }: NotificationPrefere
           <Bell className="text-primary h-5 w-5" />
           <CardTitle>
             {t("notifications.card_title")}
-            {isDirty && <span className="text-destructive ml-1">*</span>}
+            {isDirty && <span className="text-destructive ms-1">*</span>}
           </CardTitle>
         </div>
         <CardDescription>{t("notifications.card_description")}</CardDescription>

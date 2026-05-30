@@ -71,10 +71,10 @@ export function SoftDeleteRecovery({ deletedUsers, deletedPosts }: SoftDeleteRec
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b">
-                  <th className="p-2 text-left">Name</th>
-                  <th className="p-2 text-left">Email</th>
-                  <th className="p-2 text-left">Deleted</th>
-                  <th className="p-2 text-left">Action</th>
+                  <th className="p-2 text-start">Name</th>
+                  <th className="p-2 text-start">Email</th>
+                  <th className="p-2 text-start">Deleted</th>
+                  <th className="p-2 text-start">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,11 +112,11 @@ export function SoftDeleteRecovery({ deletedUsers, deletedPosts }: SoftDeleteRec
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted/50 border-b">
-                  <th className="p-2 text-left">Post ID</th>
-                  <th className="p-2 text-left">Status</th>
-                  <th className="p-2 text-left">User ID</th>
-                  <th className="p-2 text-left">Deleted</th>
-                  <th className="p-2 text-left">Action</th>
+                  <th className="p-2 text-start">Post ID</th>
+                  <th className="p-2 text-start">Status</th>
+                  <th className="p-2 text-start">User ID</th>
+                  <th className="p-2 text-start">Deleted</th>
+                  <th className="p-2 text-start">Action</th>
                 </tr>
               </thead>
               <tbody>

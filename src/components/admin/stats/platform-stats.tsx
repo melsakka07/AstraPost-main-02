@@ -28,13 +28,13 @@ function StatCard({
 }) {
   const iconColor =
     variant === "success"
-      ? "text-green-500"
+      ? "text-success-9"
       : variant === "destructive"
         ? "text-destructive"
         : "text-primary";
   const iconBg =
     variant === "success"
-      ? "bg-green-500/10"
+      ? "bg-success-3"
       : variant === "destructive"
         ? "bg-destructive/10"
         : "bg-primary/10";

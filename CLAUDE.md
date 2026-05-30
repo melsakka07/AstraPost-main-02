@@ -90,6 +90,7 @@ Import from `@/lib/middleware/require-plan`. See `.claude/rules/billing.md` for 
 - Utils: `src/lib/utils.ts` (cn) | Billing cron: `src/app/api/cron/billing-cleanup/route.ts`
 - Design tokens: `src/lib/tokens.ts` (hex constants for runtime), `src/app/globals.css` (6 scales × 12 steps × 2 modes = 144 OKLCH values + 21 semantic tokens); Tailwind utility classes: `bg-brand-9`, `text-success-11`, `border-danger-6`, etc.
 - Brand: `src/components/brand/` — `Logo` (lockup, LTR/RTL/auto), `LogoMark` (sparkle); `currentColor`-driven, theme via Tailwind text utilities
+- i18n: `src/i18n/messages/{en,ar,pseudo}.json` — next-intl message files; user-facing keys + `admin.*` namespace (~210 keys); `useTranslations()` in components, no hardcoded English strings
 
 ## Git & Commits
 

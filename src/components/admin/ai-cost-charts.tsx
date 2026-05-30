@@ -95,18 +95,18 @@ export function TopSpendersTable({ data, className }: TopSpendersTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead className="text-right">Generations</TableHead>
-                <TableHead className="text-right">Total Cost</TableHead>
+                <TableHead className="text-end">Generations</TableHead>
+                <TableHead className="text-end">Total Cost</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((row) => (
                 <TableRow key={row.userId}>
                   <TableCell className="font-medium">{row.name}</TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">
                     {row.count.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-success-11 text-right font-medium tabular-nums">
+                  <TableCell className="text-success-11 text-endfont-medium tabular-nums">
                     ${(row.cost / 100).toFixed(2)}
                   </TableCell>
                 </TableRow>
@@ -143,9 +143,9 @@ export function FeatureBreakdownTable({ data, className }: FeatureBreakdownTable
             <TableHeader>
               <TableRow>
                 <TableHead>Feature</TableHead>
-                <TableHead className="text-right">Count</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Avg Cost</TableHead>
+                <TableHead className="text-end">Count</TableHead>
+                <TableHead className="text-end">Total</TableHead>
+                <TableHead className="text-end">Avg Cost</TableHead>
                 <TableHead className="w-24">Share</TableHead>
               </TableRow>
             </TableHeader>
@@ -157,13 +157,13 @@ export function FeatureBreakdownTable({ data, className }: FeatureBreakdownTable
                     <TableCell className="font-medium">
                       <Badge variant="secondary">{row.subFeature}</Badge>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-end tabular-nums">
                       {row.count.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-end tabular-nums">
                       ${(row.cost / 100).toFixed(2)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-right tabular-nums">
+                    <TableCell className="text-muted-foreground text-endtabular-nums">
                       ${(row.avgCost / 100).toFixed(4)}
                     </TableCell>
                     <TableCell>
@@ -174,7 +174,7 @@ export function FeatureBreakdownTable({ data, className }: FeatureBreakdownTable
                             style={{ width: `${Math.min(share, 100)}%` }}
                           />
                         </div>
-                        <span className="text-muted-foreground w-9 text-right text-xs tabular-nums">
+                        <span className="text-muted-foreground text-endtext-xs w-9 tabular-nums">
                           {Math.round(share)}%
                         </span>
                       </div>
@@ -212,8 +212,8 @@ export function ModelMixTable({ data, className }: ModelMixTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Model</TableHead>
-                <TableHead className="text-right">Count</TableHead>
-                <TableHead className="text-right">Share</TableHead>
+                <TableHead className="text-end">Count</TableHead>
+                <TableHead className="text-end">Share</TableHead>
                 <TableHead className="w-32">Usage</TableHead>
               </TableRow>
             </TableHeader>
@@ -221,10 +221,10 @@ export function ModelMixTable({ data, className }: ModelMixTableProps) {
               {data.map((row) => (
                 <TableRow key={row.model}>
                   <TableCell className="font-mono text-xs font-medium">{row.model}</TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">
                     {row.count.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{row.percentage}%</TableCell>
+                  <TableCell className="text-end tabular-nums">{row.percentage}%</TableCell>
                   <TableCell>
                     <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
                       <div
@@ -267,10 +267,10 @@ export function RouteLatencyTable({ data, className }: RouteLatencyTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Route</TableHead>
-                <TableHead className="text-right">Count</TableHead>
-                <TableHead className="text-right">p50</TableHead>
-                <TableHead className="text-right">p95</TableHead>
-                <TableHead className="text-right">p99</TableHead>
+                <TableHead className="text-end">Count</TableHead>
+                <TableHead className="text-end">p50</TableHead>
+                <TableHead className="text-end">p95</TableHead>
+                <TableHead className="text-end">p99</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -279,14 +279,14 @@ export function RouteLatencyTable({ data, className }: RouteLatencyTableProps) {
                   <TableCell className="font-medium">
                     <Badge variant="secondary">{row.subFeature}</Badge>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">
                     {row.count.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{row.p50}ms</TableCell>
-                  <TableCell className="text-right tabular-nums">{row.p95}ms</TableCell>
+                  <TableCell className="text-end tabular-nums">{row.p50}ms</TableCell>
+                  <TableCell className="text-end tabular-nums">{row.p95}ms</TableCell>
                   <TableCell
                     className={cn(
-                      "text-right font-medium tabular-nums",
+                      "text-end font-medium tabular-nums",
                       row.p99 > 5000 ? "text-destructive" : "text-muted-foreground"
                     )}
                   >
@@ -326,22 +326,22 @@ export function ModelLatencyTable({ data, className }: ModelLatencyTableProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Model</TableHead>
-                <TableHead className="text-right">Count</TableHead>
-                <TableHead className="text-right">p50</TableHead>
-                <TableHead className="text-right">p95</TableHead>
+                <TableHead className="text-end">Count</TableHead>
+                <TableHead className="text-end">p50</TableHead>
+                <TableHead className="text-end">p95</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((row) => (
                 <TableRow key={row.model}>
                   <TableCell className="font-mono text-xs font-medium">{row.model}</TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">
                     {row.count.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{row.p50}ms</TableCell>
+                  <TableCell className="text-end tabular-nums">{row.p50}ms</TableCell>
                   <TableCell
                     className={cn(
-                      "text-right font-medium tabular-nums",
+                      "text-end font-medium tabular-nums",
                       row.p95 > 5000 ? "text-destructive" : "text-muted-foreground"
                     )}
                   >
@@ -427,9 +427,9 @@ export function FeedbackBreakdown({ data, className }: FeedbackBreakdownProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Version</TableHead>
-                <TableHead className="text-right">Positive</TableHead>
-                <TableHead className="text-right">Negative</TableHead>
-                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-end">Positive</TableHead>
+                <TableHead className="text-end">Negative</TableHead>
+                <TableHead className="text-end">Total</TableHead>
                 <TableHead className="w-32">Sentiment</TableHead>
               </TableRow>
             </TableHeader>
@@ -442,13 +442,13 @@ export function FeedbackBreakdown({ data, className }: FeedbackBreakdownProps) {
                     <TableCell className="font-mono text-xs font-medium">
                       {row.promptVersion}
                     </TableCell>
-                    <TableCell className="text-success-11 text-right tabular-nums">
+                    <TableCell className="text-success-11 text-endtabular-nums">
                       {row.positive.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-destructive text-right tabular-nums">
+                    <TableCell className="text-destructive text-endtabular-nums">
                       {row.negative.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="text-end tabular-nums">
                       {total.toLocaleString()}
                     </TableCell>
                     <TableCell>
@@ -459,7 +459,7 @@ export function FeedbackBreakdown({ data, className }: FeedbackBreakdownProps) {
                             style={{ width: `${positivePct}%` }}
                           />
                         </div>
-                        <span className="text-muted-foreground w-9 text-right text-xs tabular-nums">
+                        <span className="text-muted-foreground text-endtext-xs w-9 tabular-nums">
                           {positivePct}%
                         </span>
                       </div>

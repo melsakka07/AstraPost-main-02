@@ -26,7 +26,7 @@ export function EngagementRateChart({ data, className }: EngagementRateChartProp
       <CardHeader>
         <CardTitle>Engagement Rate</CardTitle>
       </CardHeader>
-      <CardContent className="pl-2">
+      <CardContent className="ps-2">
         <div className="w-full">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart

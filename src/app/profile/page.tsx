@@ -210,7 +210,7 @@ export default function ProfilePage() {
                 onClick={() => setEditProfileOpen(true)}
               >
                 <User className="me-2 h-4 w-4" />
-                <div className="text-left">
+                <div className="text-start">
                   <div className="font-medium">{t("edit_profile")}</div>
                   <div className="text-muted-foreground text-xs">
                     {t("update_your_information")}
@@ -223,7 +223,7 @@ export default function ProfilePage() {
                 onClick={() => setSecurityOpen(true)}
               >
                 <Shield className="me-2 h-4 w-4" />
-                <div className="text-left">
+                <div className="text-start">
                   <div className="font-medium">{t("security_settings")}</div>
                   <div className="text-muted-foreground text-xs">
                     {t("manage_security_options")}
@@ -236,7 +236,7 @@ export default function ProfilePage() {
                 onClick={() => setEmailPrefsOpen(true)}
               >
                 <Mail className="me-2 h-4 w-4" />
-                <div className="text-left">
+                <div className="text-start">
                   <div className="font-medium">{t("email_preferences")}</div>
                   <div className="text-muted-foreground text-xs">
                     {t("configure_notifications")}

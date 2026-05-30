@@ -200,7 +200,7 @@ export function CommandPalette() {
                 placeholder={t("placeholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="border-0 pl-8 focus-visible:ring-0"
+                className="border-0 ps-8 focus-visible:ring-0"
                 autoFocus
               />
             </div>
@@ -226,7 +226,7 @@ export function CommandPalette() {
                         key={item.id}
                         onClick={() => handleSelect(item)}
                         className={cn(
-                          "hover:bg-accent w-full px-4 py-2.5 text-left text-sm transition-colors",
+                          "hover:bg-accent w-full px-4 py-2.5 text-start text-sm transition-colors",
                           "flex items-center justify-between"
                         )}
                       >

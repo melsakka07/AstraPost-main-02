@@ -82,8 +82,8 @@ export function PrivacySettings() {
             </div>
           </div>
           <Button variant="outline" onClick={handleExportData} disabled={exporting}>
-            {exporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <Download className="mr-2 h-4 w-4" />
+            {exporting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            <Download className="me-2 h-4 w-4" />
             {t("integrations.privacy_export_button")}
           </Button>
         </div>
@@ -101,7 +101,7 @@ export function PrivacySettings() {
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="me-2 h-4 w-4" />
                 {t("integrations.privacy_delete_account")}
               </Button>
             </DialogTrigger>
@@ -117,7 +117,7 @@ export function PrivacySettings() {
                   {t("integrations.cancel")}
                 </Button>
                 <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
-                  {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {deleting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                   {t("integrations.privacy_delete_confirm_button")}
                 </Button>
               </DialogFooter>

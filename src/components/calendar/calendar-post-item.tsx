@@ -52,9 +52,9 @@ export function CalendarPostItem({ post, isOverlay, view, accentColor }: Calenda
         )}
       >
         <p className="truncate text-[10px] leading-tight" dir="auto">
-          <span className="text-muted-foreground mr-1 font-medium">{time}</span>
+          <span className="text-muted-foreground me-1 font-medium">{time}</span>
           {isDraft && (
-            <span className="text-muted-foreground/60 mr-0.5 text-[9px] italic">Draft</span>
+            <span className="text-muted-foreground/60 me-0.5 text-[9px] italic">Draft</span>
           )}
           {content}
         </p>

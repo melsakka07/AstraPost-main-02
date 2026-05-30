@@ -172,19 +172,19 @@ export function LTVEstimatesTable({ ltvEstimates }: { ltvEstimates: Record<strin
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="p-3 text-left font-medium">Plan</th>
-                <th className="p-3 text-right font-medium">Monthly Price</th>
-                <th className="p-3 text-right font-medium">Avg. Lifetime</th>
-                <th className="p-3 text-right font-medium">LTV Estimate</th>
+                <th className="p-3 text-start font-medium">Plan</th>
+                <th className="p-3 text-end font-medium">Monthly Price</th>
+                <th className="p-3 text-end font-medium">Avg. Lifetime</th>
+                <th className="p-3 text-end font-medium">LTV Estimate</th>
               </tr>
             </thead>
             <tbody>
               {plans.map((est) => (
                 <tr key={est.plan} className="border-b last:border-0">
                   <td className="p-3 font-medium">{est.plan}</td>
-                  <td className="p-3 text-right">{formatCurrency(est.monthlyPrice)}</td>
-                  <td className="p-3 text-right">{est.avgMonths} months</td>
-                  <td className="p-3 text-right font-semibold">{formatCurrency(est.ltv)}</td>
+                  <td className="p-3 text-end">{formatCurrency(est.monthlyPrice)}</td>
+                  <td className="p-3 text-end">{est.avgMonths} months</td>
+                  <td className="p-3 text-end font-semibold">{formatCurrency(est.ltv)}</td>
                 </tr>
               ))}
             </tbody>
@@ -221,20 +221,20 @@ export function CohortRetentionTable({ cohortData }: { cohortData: CohortRow[] }
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/50 border-b">
-                <th className="p-3 text-left font-medium">Cohort (Signup Month)</th>
-                <th className="p-3 text-right font-medium">Total Users</th>
-                <th className="p-3 text-right font-medium">Month 0</th>
-                <th className="p-3 text-right font-medium">Month +1</th>
-                <th className="p-3 text-right font-medium">Month +2</th>
-                <th className="p-3 text-right font-medium">Month +3</th>
-                <th className="p-3 text-right font-medium">Month +6</th>
+                <th className="p-3 text-start font-medium">Cohort (Signup Month)</th>
+                <th className="p-3 text-end font-medium">Total Users</th>
+                <th className="p-3 text-end font-medium">Month 0</th>
+                <th className="p-3 text-end font-medium">Month +1</th>
+                <th className="p-3 text-end font-medium">Month +2</th>
+                <th className="p-3 text-end font-medium">Month +3</th>
+                <th className="p-3 text-end font-medium">Month +6</th>
               </tr>
             </thead>
             <tbody>
               {cohortData.map((row) => (
                 <tr key={row.cohort} className="border-b last:border-0">
                   <td className="p-3 font-medium">{row.cohort}</td>
-                  <td className="p-3 text-right">{row.totalUsers}</td>
+                  <td className="p-3 text-end">{row.totalUsers}</td>
                   <RetentionCell percentage={row.month0} />
                   <RetentionCell percentage={row.month1} />
                   <RetentionCell percentage={row.month2} />
@@ -258,18 +258,18 @@ function RetentionCell({ percentage }: { percentage: number }) {
   let textColor = "text-foreground";
 
   if (percentage >= 75) {
-    bgColor = "bg-green-500/10";
-    textColor = "text-green-700 dark:text-green-400";
+    bgColor = "bg-success-3";
+    textColor = "text-success-11";
   } else if (percentage >= 50) {
-    bgColor = "bg-yellow-500/10";
-    textColor = "text-yellow-700 dark:text-yellow-400";
+    bgColor = "bg-warning-3";
+    textColor = "text-warning-11";
   } else if (percentage > 0) {
-    bgColor = "bg-red-500/10";
-    textColor = "text-red-700 dark:text-red-400";
+    bgColor = "bg-danger-3";
+    textColor = "text-danger-11";
   }
 
   return (
-    <td className={`p-3 text-right font-medium ${bgColor}`}>
+    <td className={`p-3 text-end font-medium ${bgColor}`}>
       <span className={textColor}>{percentage}%</span>
     </td>
   );

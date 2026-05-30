@@ -3340,7 +3340,18 @@
       "previous": "‏[Previous]‏",
       "next": "‏[Next]‏",
       "page_x_of_y": "‏[Page {page} of {total}]‏",
-      "showing_x_to_y_of_z": "‏[{from}–{to} of {total}]‏"
+      "showing_x_to_y_of_z": "‏[{from}–{to} of {total}]‏",
+      "saveChanges": "‏[Save changes]‏",
+      "optional": "‏[(optional)]‏",
+      "creating": "‏[Creating…]‏",
+      "saving": "‏[Saving…]‏",
+      "processing": "‏[Processing…]‏",
+      "retrying": "‏[Retrying…]‏",
+      "deleting": "‏[Deleting…]‏",
+      "retry": "‏[Retry]‏",
+      "actions": "‏[Actions]‏",
+      "loadError": "‏[Failed to load data]‏",
+      "unknown": "‏[Unknown]‏"
     },
     "pages": {
       "dashboard": {
@@ -3433,7 +3444,7 @@
       }
     },
     "audit": {
-      "empty": "‏[No audit log entries found]‏",
+      "empty": "‏[No audit logs found]‏",
       "filter_action": "‏[Filter by action]‏",
       "filter_admin": "‏[Filter by admin]‏",
       "all_actions": "‏[All Actions]‏",
@@ -3442,7 +3453,73 @@
       "severity_critical": "‏[Critical]‏",
       "severity_high": "‏[High]‏",
       "severity_medium": "‏[Medium]‏",
-      "severity_low": "‏[Low]‏"
+      "severity_low": "‏[Low]‏",
+      "filter": {
+        "allActions": "‏[All Actions]‏"
+      },
+      "filterPlaceholder": "‏[Filter by action]‏",
+      "noDetails": "‏[No details]‏",
+      "searchPlaceholder": "‏[Search by target ID…]‏",
+      "fromDate": "‏[From]‏",
+      "toDate": "‏[To]‏",
+      "clearDates": "‏[Clear dates]‏",
+      "exporting": "‏[Exporting…]‏",
+      "exportCsv": "‏[Export CSV]‏",
+      "detailsHeading": "‏[Details:]‏",
+      "userAgentHeading": "‏[User Agent:]‏",
+      "table": {
+        "timestamp": "‏[Timestamp]‏",
+        "admin": "‏[Admin]‏",
+        "action": "‏[Action]‏",
+        "targetType": "‏[Target Type]‏",
+        "targetId": "‏[Target ID]‏",
+        "details": "‏[Details]‏",
+        "ipAddress": "‏[IP Address]‏"
+      },
+      "action": {
+        "ban": "‏[Banned User]‏",
+        "unban": "‏[Unbanned User]‏",
+        "delete_user": "‏[Deleted User]‏",
+        "suspend": "‏[Suspended User]‏",
+        "unsuspend": "‏[Unsuspended User]‏",
+        "impersonate_start": "‏[Impersonation Started]‏",
+        "impersonate_end": "‏[Impersonation Ended]‏",
+        "plan_change": "‏[Plan Changed]‏",
+        "feature_flag_toggle": "‏[Feature Flag Toggled]‏",
+        "promo_create": "‏[Promo Code Created]‏",
+        "promo_update": "‏[Promo Code Updated]‏",
+        "promo_delete": "‏[Promo Code Deleted]‏",
+        "announcement_update": "‏[Announcement Updated]‏",
+        "subscriber_create": "‏[Subscriber Created]‏",
+        "subscriber_update": "‏[Subscriber Updated]‏",
+        "roadmap_update": "‏[Roadmap Updated]‏",
+        "bulk_operation": "‏[Bulk Operation]‏",
+        "user_update": "‏[User Account Updated]‏",
+        "post_update": "‏[Post Updated]‏",
+        "webhook_replay": "‏[Webhook Replayed]‏"
+      },
+      "description": {
+        "ban": "‏[Blocked from logging in; all active sessions invalidated.]‏",
+        "unban": "‏[Login access restored.]‏",
+        "delete_user": "‏[Account soft-deleted, PII anonymised, all sessions invalidated.]‏",
+        "suspend": "‏[Temporarily suspended; cannot log in.]‏",
+        "unsuspend": "‏[Suspension lifted; login restored.]‏",
+        "impersonate_start": "‏[Admin assumed this user's identity and can act on their behalf.]‏",
+        "impersonate_end": "‏[Admin impersonation session ended.]‏",
+        "plan_change": "‏[Subscription plan manually overridden by admin.]‏",
+        "feature_flag_toggle": "‏[Platform feature flag state changed.]‏",
+        "promo_create": "‏[New promotional discount code added.]‏",
+        "promo_update": "‏[Promotional code settings modified.]‏",
+        "promo_delete": "‏[Promotional code permanently removed.]‏",
+        "announcement_update": "‏[Public-facing announcement message changed.]‏",
+        "subscriber_create": "‏[New user account manually added by admin.]‏",
+        "subscriber_update": "‏[User account details modified by admin.]‏",
+        "roadmap_update": "‏[Product roadmap item added or modified.]‏",
+        "bulk_operation": "‏[Mass action applied to multiple users simultaneously.]‏",
+        "user_update": "‏[User account details modified by admin (e.g. restore, edit).]‏",
+        "post_update": "‏[Post details modified by admin (e.g. restore).]‏",
+        "webhook_replay": "‏[Failed Stripe webhook replayed through handler.]‏"
+      }
     },
     "subscribers": {
       "empty": "‏[No subscribers found]‏",
@@ -3461,7 +3538,88 @@
       "activity": "‏[Recent activity]‏",
       "no_activity": "‏[No recent activity]‏",
       "unknown_device": "‏[Unknown device]‏",
-      "expired": "‏[Expired]‏"
+      "expired": "‏[Expired]‏",
+      "addedToast": "‏[{name} has been added]‏",
+      "createError": "‏[Failed to create subscriber]‏",
+      "addTitle": "‏[Add subscriber]‏",
+      "addDescription": "‏[Create a new user account manually. A welcome email will be sent.]‏",
+      "fullNameLabel": "‏[Full name]‏",
+      "namePlaceholder": "‏[Ahmed Al-Rashidi]‏",
+      "emailLabel": "‏[Email]‏",
+      "tempPasswordLabel": "‏[Temporary password]‏",
+      "passwordPlaceholder": "‏[Min 8 characters]‏",
+      "planLabel": "‏[Plan]‏",
+      "selectPlanPlaceholder": "‏[Select plan]‏",
+      "adminAccessLabel": "‏[Admin access]‏",
+      "adminAccessHint": "‏[Grant access to this admin panel]‏",
+      "createButton": "‏[Create subscriber]‏",
+      "addButton": "‏[Add subscriber]‏",
+      "adminBadge": "‏[admin]‏",
+      "viewDetails": "‏[View details]‏",
+      "ban": "‏[Ban]‏",
+      "unban": "‏[Unban]‏",
+      "searchPlaceholder": "‏[Search by name or email…]‏",
+      "searchAria": "‏[Search subscribers]‏",
+      "selectAria": "‏[Select {name}]‏",
+      "selectAllAria": "‏[Select all]‏",
+      "empty": {
+        "searchTitle": "‏[No results found]‏",
+        "defaultTitle": "‏[No subscribers yet]‏",
+        "searchDesc": "‏[Try adjusting your search or filters]‏",
+        "defaultDesc": "‏[Add your first subscriber to get started]‏"
+      },
+      "filters": {
+        "all": "‏[All]‏",
+        "trial": "‏[Trial]‏",
+        "banned": "‏[Banned]‏",
+        "deleted": "‏[Deleted]‏"
+      },
+      "status": {
+        "deleted": "‏[Deleted]‏",
+        "banned": "‏[Banned]‏",
+        "suspended": "‏[Suspended]‏",
+        "trial": "‏[Trial]‏",
+        "active": "‏[Active]‏",
+        "deletedTitle": "‏[Deleted]‏",
+        "bannedTitle": "‏[Banned]‏",
+        "suspendedTitle": "‏[Suspended]‏",
+        "trialTitle": "‏[Trial]‏",
+        "activeTitle": "‏[Active]‏"
+      },
+      "subscriptionStatus": {
+        "active": "‏[Active]‏",
+        "activeTitle": "‏[Active]‏",
+        "trialing": "‏[Trialing]‏",
+        "trialingTitle": "‏[Trialing]‏",
+        "past_due": "‏[Past Due]‏",
+        "past_dueTitle": "‏[Past Due]‏",
+        "cancelled": "‏[Cancelled]‏",
+        "cancelledTitle": "‏[Cancelled]‏"
+      },
+      "table": {
+        "subscriber": "‏[Subscriber]‏",
+        "plan": "‏[Plan]‏",
+        "status": "‏[Status]‏",
+        "platforms": "‏[Platforms]‏",
+        "joined": "‏[Joined]‏"
+      },
+      "bulk": {
+        "selected": "‏[{N} selected]‏",
+        "processing": "‏[(processing…)]‏",
+        "clearSelection": "‏[Clear selection]‏",
+        "export": "‏[Export]‏",
+        "selectPlanError": "‏[Please select a plan]‏",
+        "changedToast": "‏[Changed plan for {N} user(s) to {plan}]‏",
+        "processedToast": "‏[Processed {processed}, skipped {skipped}]‏",
+        "actionFailed": "‏[Action failed]‏",
+        "changePlanTitle": "‏[Change plan for {N} subscriber(s)?]‏",
+        "changePlanDesc": "‏[Select the new plan to apply to the selected users.]‏",
+        "newPlanLabel": "‏[New Plan]‏",
+        "planOverrideHint": "‏[This overrides the plan in the database. It does not automatically update Stripe subscriptions. Feature access changes immediately.]‏",
+        "changePlanButton": "‏[Change plan]‏",
+        "exportedToast": "‏[Exported {count} subscriber(s)]‏",
+        "exportError": "‏[Failed to export subscribers]‏"
+      }
     },
     "jobs": {
       "active": "‏[Active]‏",
@@ -3510,7 +3668,33 @@
       "clear_confirm_title": "‏[Clear all notifications?]‏",
       "clear_confirm_desc": "‏[This will permanently clear all notification history. This action cannot be undone.]‏",
       "cleared": "‏[All notifications cleared]‏",
-      "clear_failed": "‏[Failed to clear notifications]‏"
+      "clear_failed": "‏[Failed to clear notifications]‏",
+      "segments": {
+        "trialUsers": "‏[Trial Users]‏",
+        "inactive90d": "‏[Inactive (90+ days)]‏",
+        "paidUsers": "‏[Paid Users]‏",
+        "freeUsers": "‏[Free Users]‏"
+      },
+      "titleBodyRequired": "‏[Title and body are required]‏",
+      "saveFailed": "‏[Failed to save notification]‏",
+      "scheduled": "‏[Notification scheduled]‏",
+      "sent": "‏[Notification sent]‏",
+      "saveError": "‏[Error saving notification]‏",
+      "titlePlaceholder": "‏[Notification title]‏",
+      "messageLabel": "‏[Message]‏",
+      "messagePlaceholder": "‏[Notification message]‏",
+      "targetTypeLabel": "‏[Target Type]‏",
+      "targetType": {
+        "all": "‏[All Users]‏",
+        "segment": "‏[Segment]‏",
+        "individual": "‏[Individual Users]‏"
+      },
+      "selectSegmentLabel": "‏[Select Segment]‏",
+      "userIdsLabel": "‏[Users (comma-separated IDs)]‏",
+      "userIdsPlaceholder": "‏[user1, user2, user3...]‏",
+      "sending": "‏[Sending…]‏",
+      "scheduling": "‏[Scheduling…]‏",
+      "scheduleButton": "‏[Schedule]‏"
     },
     "grant_quota": {
       "title": "‏[Grant AI Quota]‏",
@@ -3518,6 +3702,194 @@
       "reason": "‏[Reason]‏",
       "submit": "‏[Grant]‏",
       "success": "‏[Granted {amount} generations to user]‏"
+    },
+    "plans": {
+      "free": "‏[Free]‏",
+      "proMonthly": "‏[Pro Monthly]‏",
+      "proAnnual": "‏[Pro Annual]‏",
+      "agency": "‏[Agency]‏"
+    },
+    "billing": {
+      "promoCreated": "‏[Promo code \"{code}\" created]‏",
+      "promoCreateError": "‏[Failed to create promo code]‏",
+      "promoUpdated": "‏[Promo code \"{code}\" updated]‏",
+      "promoUpdateError": "‏[Failed to update promo code]‏",
+      "createPromoTitle": "‏[Create promo code]‏",
+      "editPromoTitle": "‏[Edit promo code — {code}]‏",
+      "editPromoNote": "‏[Note: the code and discount type/value cannot be changed after creation.]‏",
+      "codeLabel": "‏[Code]‏",
+      "codePlaceholder": "‏[LAUNCH20]‏",
+      "activeLabel": "‏[Active]‏",
+      "inactiveWarning": "‏[Inactive codes cannot be redeemed]‏",
+      "descriptionLabel": "‏[Description]‏",
+      "descriptionPlaceholder": "‏[Launch week discount]‏",
+      "discountTypeLabel": "‏[Discount type]‏",
+      "discountType": {
+        "percentage": "‏[Percentage (%)]‏",
+        "fixed": "‏[Fixed amount ($)]‏"
+      },
+      "valueLabel": "‏[Value]‏",
+      "validFromLabel": "‏[Valid from]‏",
+      "validToLabel": "‏[Valid to]‏",
+      "maxRedemptionsLabel": "‏[Max redemptions]‏",
+      "unlimitedHint": "‏[(leave blank for unlimited)]‏",
+      "unlimitedPlaceholder": "‏[Unlimited]‏",
+      "applicablePlansLabel": "‏[Applicable plans]‏",
+      "allPlansHint": "‏[(leave unselected for all plans)]‏",
+      "createCode": "‏[Create code]‏"
+    },
+    "roadmap": {
+      "status": {
+        "pending": "‏[Pending]‏",
+        "approved": "‏[Approved]‏",
+        "rejected": "‏[Rejected]‏"
+      },
+      "category": {
+        "feature": "‏[Feature]‏",
+        "bug": "‏[Bug]‏",
+        "other": "‏[Other]‏"
+      },
+      "loadError": "‏[Failed to load roadmap submissions]‏",
+      "approvedToast": "‏[Feedback approved]‏",
+      "approveError": "‏[Failed to approve feedback]‏",
+      "rejectedToast": "‏[Feedback rejected]‏",
+      "rejectError": "‏[Failed to reject feedback]‏",
+      "deletedToast": "‏[Feedback deleted]‏",
+      "deleteError": "‏[Failed to delete feedback]‏",
+      "bulkToast": "‏[{N} items {action}]‏",
+      "bulkError": "‏[Failed to bulk update]‏",
+      "filter": {
+        "all": "‏[All]‏"
+      },
+      "searchPlaceholder": "‏[Search by title or description...]‏",
+      "selected": "‏[{N} selected]‏",
+      "approveSelected": "‏[Approve Selected]‏",
+      "rejectSelected": "‏[Reject Selected]‏",
+      "table": {
+        "title": "‏[Title]‏",
+        "category": "‏[Category]‏",
+        "submittedBy": "‏[Submitted By]‏",
+        "date": "‏[Date]‏",
+        "status": "‏[Status]‏"
+      },
+      "empty": "‏[No submissions found]‏",
+      "viewDetails": "‏[View Details]‏",
+      "approve": "‏[Approve]‏",
+      "reject": "‏[Reject]‏",
+      "pagination": "‏[Showing {from} to {to} of {total} results]‏",
+      "pageOf": "‏[Page {current} of {total}]‏",
+      "adminNotes": "‏[Admin Notes]‏",
+      "adminNotesOptional": "‏[Admin Notes (Optional)]‏",
+      "reviewed": "‏[Reviewed:]‏",
+      "rejectDialogTitle": "‏[Reject Feedback]‏",
+      "rejectDialogDesc": "‏[Add optional notes about why this feedback is being rejected.]‏",
+      "rejectPlaceholder": "‏[Reason for rejection...]‏",
+      "rejecting": "‏[Rejecting…]‏",
+      "rejectFeedback": "‏[Reject Feedback]‏",
+      "deleteDialogTitle": "‏[Delete Feedback]‏",
+      "deleteDialogDesc": "‏[Are you sure you want to permanently delete this submission? This cannot be undone.]‏"
+    },
+    "health": {
+      "loadErrorTitle": "‏[Failed to load system health]‏",
+      "loadErrorDesc": "‏[Unable to fetch health check data from the server]‏",
+      "card": {
+        "database": "‏[Database]‏",
+        "envVars": "‏[Environment Variables]‏",
+        "subscriptions": "‏[Subscriptions]‏",
+        "queueQuality": "‏[Queue Health (24h)]‏",
+        "xTokens": "‏[X (Twitter) Tokens]‏",
+        "linkedinTokens": "‏[LinkedIn Tokens]‏",
+        "instagramTokens": "‏[Instagram Tokens]‏"
+      },
+      "dbConnected": "‏[Connected ({n}ms)]‏",
+      "dbConnectionFailed": "‏[Connection failed]‏",
+      "allConfigured": "‏[All configured]‏",
+      "missingVars": "‏[Missing variables]‏",
+      "allValid": "‏[All valid]‏",
+      "tokenExpired": "‏[{n} expired]‏",
+      "metric": {
+        "active": "‏[Active]‏",
+        "trialing": "‏[Trialing]‏",
+        "cancelled": "‏[Cancelled]‏",
+        "success": "‏[Success]‏",
+        "failed": "‏[Failed]‏"
+      }
+    },
+    "dashboard": {
+      "kpi": {
+        "mrr": "‏[Monthly Recurring Revenue]‏",
+        "totalUsers": "‏[Total Users]‏",
+        "aiGenMonth": "‏[AI Generations (month)]‏",
+        "postsWeek": "‏[Posts Published (week)]‏",
+        "activeTrials": "‏[Active Trials]‏",
+        "aiActiveUsers": "‏[AI Active Users (30d)]‏",
+        "jobsCompleted": "‏[Jobs Completed (24h)]‏",
+        "jobsFailed": "‏[Jobs Failed (24h)]‏",
+        "activeSubs": "‏[{n} active subscriptions]‏",
+        "newThisWeek": "‏[{n} new this week]‏",
+        "allTime": "‏[{n} all-time]‏",
+        "trialConversion": "‏[{n}% trial-to-paid conversion]‏",
+        "aiActiveUsersSub": "‏[Used AI features recently]‏"
+      },
+      "notConfigured": "‏[Not configured]‏",
+      "allClear": "‏[All clear]‏",
+      "checkJobsPage": "‏[Check Jobs page]‏",
+      "viewDetails": "‏[View details]‏",
+      "metric": {
+        "cancelledThisMonth": "‏[Cancelled This Month]‏",
+        "newUsersThisMonth": "‏[New Users This Month]‏",
+        "systemHealth": "‏[System Health]‏",
+        "lastMonth": "‏[{n} last month]‏",
+        "noneLastMonth": "‏[None last month]‏",
+        "totalUsers": "‏[{n} total users]‏"
+      }
+    },
+    "dateRange": {
+      "last7d": "‏[Last 7 days]‏",
+      "last30d": "‏[Last 30 days]‏",
+      "last90d": "‏[Last 90 days]‏",
+      "selectRange": "‏[Select date range]‏",
+      "date": "‏[Date]‏",
+      "from": "‏[From]‏",
+      "to": "‏[To]‏"
+    },
+    "teams": {
+      "loadError": "‏[Failed to load team data]‏",
+      "overview": "‏[Overview]‏",
+      "stats": {
+        "totalTeams": "‏[Total Teams]‏",
+        "totalMembers": "‏[Total Members]‏",
+        "acrossAllTeams": "‏[Across all teams]‏",
+        "pendingInvitations": "‏[Pending Invitations]‏",
+        "awaitingAcceptance": "‏[Awaiting acceptance]‏",
+        "expiredInvitations": "‏[Expired Invitations]‏",
+        "notAcceptedInTime": "‏[Not accepted in time]‏"
+      },
+      "tabs": {
+        "teams": "‏[Teams]‏",
+        "invitations": "‏[Invitations]‏"
+      },
+      "table": {
+        "owner": "‏[Owner]‏",
+        "email": "‏[Email]‏",
+        "members": "‏[Members]‏",
+        "plan": "‏[Plan]‏",
+        "role": "‏[Role]‏",
+        "teamOwner": "‏[Team Owner]‏",
+        "expiresAt": "‏[Expires At]‏",
+        "createdAt": "‏[Created At]‏",
+        "status": "‏[Status]‏"
+      },
+      "empty": {
+        "teams": "‏[No teams found]‏",
+        "invitations": "‏[No invitations found]‏"
+      },
+      "invitationStatus": {
+        "pending": "‏[Pending]‏",
+        "accepted": "‏[Accepted]‏",
+        "expired": "‏[Expired]‏",
+        "revoked": "‏[Revoked]‏"
+      }
     }
   },
   "youtube_to_thread": {

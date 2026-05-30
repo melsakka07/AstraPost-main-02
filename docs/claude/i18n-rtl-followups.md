@@ -1,8 +1,8 @@
-# Deferred i18n / RTL Follow-ups
+# Deferred i18n / RTL Follow-ups — ALL DONE (Wave 7 Task B, 2026-05-30)
 
-Tracked leftovers from the Wave 6 RTL sweep + i18n Phase-2 pass (2026-05-29 → 2026-05-30). Both are intentionally out of the original Phase-1 scope (user-facing dashboard surfaces). Promote to Linear (team `AST`) when scheduled.
+Tracked leftovers from the Wave 6 RTL sweep + i18n Phase-2 pass (2026-05-29 → 2026-05-30). **Both items completed in Wave 7 Task B (2026-05-30).** This file is retained for historical reference.
 
-## 1. Admin i18n — hardcoded dropdown/label strings
+## 1. Admin i18n — hardcoded dropdown/label strings ✅ DONE
 
 Admin components still render hardcoded English option/label strings (internal users, so deprioritized). Wire to `t()` with new keys (en/ar/pseudo), preserving every `value=`:
 
@@ -15,7 +15,7 @@ Admin components still render hardcoded English option/label strings (internal u
 - `components/admin/date-range-picker.tsx` — range labels
 - `components/admin/teams/team-dashboard.tsx` — tab labels
 
-## 2. RTL Phase-2 — physical→logical class swaps for deferred dirs
+## 2. RTL Phase-2 — physical→logical class swaps for deferred dirs ✅ DONE
 
 Wave 6 Task 1 swept only the Phase-1 dirs (`components/{dashboard,composer,ai,inspiration,onboarding,queue,ui}` + `(marketing)` content). Remaining surfaces with physical-direction classes (`ml-/mr-/pl-/pr-/left-/right-/text-left|right/border-l|r/rounded-l|r`):
 

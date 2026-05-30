@@ -237,7 +237,7 @@ export function BillingOverview({ initialData }: BillingOverviewProps = {}) {
             onClick={handleExportTransactions}
             disabled={exporting || transactions.length === 0}
           >
-            <FileDown className="mr-2 h-4 w-4" />
+            <FileDown className="me-2 h-4 w-4" />
             {exporting ? "Exporting…" : "Export CSV"}
           </Button>
         </CardHeader>

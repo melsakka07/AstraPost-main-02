@@ -246,7 +246,7 @@ export function PricingTable({
           className={isAnnual ? "font-bold" : "text-muted-foreground"}
         >
           {t("toggle_annual")}{" "}
-          <span className="text-primary ml-1 text-xs">({t("toggle_save")})</span>
+          <span className="text-primary ms-1 text-xs">({t("toggle_save")})</span>
         </Label>
       </div>
 

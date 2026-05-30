@@ -182,7 +182,7 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="me-2 h-4 w-4" />
                 Submit Idea
               </Button>
             </DialogTrigger>
@@ -252,7 +252,7 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
                       Cancel
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isSubmitting && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
                       Submit
                     </Button>
                   </div>

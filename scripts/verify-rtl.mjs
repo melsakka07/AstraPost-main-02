@@ -19,7 +19,27 @@ import { join, extname } from "path";
 const PHYSICAL_PATTERN =
   /(?:^|[\s"'`:])(?:(?:ml|mr|pl|pr)-(?:\d|\d\.\d|auto|px|\[)|text-(?:left|right)\b)/g;
 
-const DASHBOARD_DIRS = ["src/app/dashboard", "src/components/dashboard"];
+const DASHBOARD_DIRS = [
+  "src/app/dashboard",
+  "src/components/dashboard",
+  "src/components/settings",
+  "src/components/drafts",
+  "src/components/analytics",
+  "src/components/billing",
+  "src/components/affiliate",
+  "src/components/community",
+  "src/components/calendar",
+  "src/app/profile",
+  "src/app/brand",
+  "src/app/chat",
+  "src/components/admin",
+  "src/components/onboarding",
+  "src/components/inspiration",
+  "src/components/queue",
+  "src/components/jobs",
+  "src/components/roadmap",
+  "src/components/ui",
+];
 
 function collectFiles(dir) {
   const results = [];

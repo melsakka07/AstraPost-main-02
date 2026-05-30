@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -31,12 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-
-const PLANS = [
-  { value: "pro_monthly", label: "Pro Monthly" },
-  { value: "pro_annual", label: "Pro Annual" },
-  { value: "agency", label: "Agency" },
-] as const;
 
 const schema = z.object({
   description: z.string().max(500).optional(),
@@ -78,6 +73,14 @@ function toDatetimeLocal(iso: string | null): string {
 }
 
 export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPromoDialogProps) {
+  const t = useTranslations();
+
+  const PLANS = [
+    { value: "pro_monthly", label: t("admin.plans.proMonthly") },
+    { value: "pro_annual", label: t("admin.plans.proAnnual") },
+    { value: "agency", label: t("admin.plans.agency") },
+  ] as const;
+
   const form = useForm<FormValues, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -124,11 +127,11 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
         throw new Error(error);
       }
-      toast.success(`Promo code "${promo.code}" updated`);
+      toast.success(t("admin.billing.promoUpdated", { code: promo.code }));
       onSuccess();
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update promo code");
+      toast.error(err instanceof Error ? err.message : t("admin.billing.promoUpdateError"));
     }
   };
 
@@ -156,10 +159,10 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit promo code — {promo?.code}</DialogTitle>
-          <DialogDescription>
-            Note: the code and discount type/value cannot be changed after creation.
-          </DialogDescription>
+          <DialogTitle>
+            {t("admin.billing.editPromoTitle", { code: promo?.code ?? "" })}
+          </DialogTitle>
+          <DialogDescription>{t("admin.billing.editPromoNote")}</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -170,7 +173,7 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                 name="discountType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Discount type</FormLabel>
+                    <FormLabel>{t("admin.billing.discountTypeLabel")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value} disabled>
                       <FormControl>
                         <SelectTrigger>
@@ -178,8 +181,12 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem value="fixed">Fixed amount ($)</SelectItem>
+                        <SelectItem value="percentage">
+                          {t("admin.billing.discountType.percentage")}
+                        </SelectItem>
+                        <SelectItem value="fixed">
+                          {t("admin.billing.discountType.fixed")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -192,7 +199,10 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                 name="discountValue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value {discountType === "percentage" ? "(%)" : "($)"}</FormLabel>
+                    <FormLabel>
+                      {t("admin.billing.valueLabel")}{" "}
+                      {discountType === "percentage" ? "(%)" : "($)"}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -216,11 +226,12 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Description <span className="text-muted-foreground">(optional)</span>
+                    {t("admin.billing.descriptionLabel")}{" "}
+                    <span className="text-muted-foreground">({t("admin.common.optional")})</span>
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="Launch week discount"
+                      placeholder={t("admin.billing.descriptionPlaceholder")}
                       {...field}
                       value={field.value ?? ""}
                     />
@@ -237,7 +248,8 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Valid from <span className="text-muted-foreground">(optional)</span>
+                      {t("admin.billing.validFromLabel")}{" "}
+                      <span className="text-muted-foreground">({t("admin.common.optional")})</span>
                     </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
@@ -253,7 +265,8 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Valid to <span className="text-muted-foreground">(optional)</span>
+                      {t("admin.billing.validToLabel")}{" "}
+                      <span className="text-muted-foreground">({t("admin.common.optional")})</span>
                     </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
@@ -270,14 +283,16 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Max redemptions{" "}
-                    <span className="text-muted-foreground">(leave blank for unlimited)</span>
+                    {t("admin.billing.maxRedemptionsLabel")}{" "}
+                    <span className="text-muted-foreground">
+                      ({t("admin.billing.unlimitedHint")})
+                    </span>
                   </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min="1"
-                      placeholder="Unlimited"
+                      placeholder={t("admin.billing.unlimitedPlaceholder")}
                       value={field.value ?? ""}
                       onChange={(e) =>
                         field.onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))
@@ -291,8 +306,8 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
 
             <FormItem>
               <FormLabel>
-                Applicable plans{" "}
-                <span className="text-muted-foreground">(leave unselected for all plans)</span>
+                {t("admin.billing.applicablePlansLabel")}{" "}
+                <span className="text-muted-foreground">({t("admin.billing.allPlansHint")})</span>
               </FormLabel>
               <div className="flex flex-wrap gap-2 pt-1">
                 {PLANS.map((plan) => (
@@ -318,9 +333,11 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <div>
-                    <FormLabel className="cursor-pointer">Active</FormLabel>
+                    <FormLabel className="cursor-pointer">
+                      {t("admin.billing.activeLabel")}
+                    </FormLabel>
                     <p className="text-muted-foreground text-xs">
-                      Inactive codes cannot be redeemed
+                      {t("admin.billing.inactiveWarning")}
                     </p>
                   </div>
                 </FormItem>
@@ -334,10 +351,12 @@ export function EditPromoDialog({ open, onOpenChange, promo, onSuccess }: EditPr
                 onClick={() => onOpenChange(false)}
                 disabled={form.formState.isSubmitting}
               >
-                Cancel
+                {t("admin.common.cancel")}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Saving…" : "Save changes"}
+                {form.formState.isSubmitting
+                  ? t("admin.common.saving")
+                  : t("admin.common.saveChanges")}
               </Button>
             </DialogFooter>
           </form>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { MoreHorizontal, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -50,6 +51,8 @@ interface PromoCodesTableProps {
 }
 
 export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
+  const t = useTranslations();
+
   const [codes, setCodes] = useState<PromoCode[]>(initialData ?? []);
   const [loading, setLoading] = useState(initialData === null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -64,7 +67,7 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
       const json = await res.json();
       setCodes(json.data ?? []);
     } catch {
-      toast.error("Failed to load promo codes");
+      toast.error(t("admin.billing.promoLoadError"));
     } finally {
       setLoading(false);
     }
@@ -85,11 +88,11 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
         throw new Error(error);
       }
-      toast.success(`Promo code "${deleteTarget.code}" deleted`);
+      toast.success(t("admin.billing.promoDeleted", { code: deleteTarget.code }));
       setDeleteTarget(null);
       fetchCodes();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to delete promo code");
+      toast.error(err instanceof Error ? err.message : t("admin.billing.promoDeleteError"));
     } finally {
       setDeleting(false);
     }
@@ -99,11 +102,11 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-          {codes.length} code{codes.length !== 1 ? "s" : ""} total
+          {t("admin.billing.codeCount", { count: codes.length })}
         </p>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create code
+          <Plus className="me-2 h-4 w-4" />
+          {t("admin.billing.createCode")}
         </Button>
       </div>
 
@@ -111,7 +114,7 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
         <LoadingSkeleton />
       ) : codes.length === 0 ? (
         <div className="text-muted-foreground flex h-32 items-center justify-center rounded-lg border border-dashed text-sm">
-          No promo codes yet — create one to get started.
+          {t("admin.billing.promoEmpty")}
         </div>
       ) : (
         <div className="rounded-md border">
@@ -119,19 +122,19 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
             <TableHeader>
               <TableRow>
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Code
+                  {t("admin.billing.table.code")}
                 </TableHead>
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Discount
+                  {t("admin.billing.table.discount")}
                 </TableHead>
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Redemptions
+                  {t("admin.billing.table.redemptions")}
                 </TableHead>
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Valid
+                  {t("admin.billing.table.valid")}
                 </TableHead>
                 <TableHead className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Status
+                  {t("admin.billing.table.status")}
                 </TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -174,18 +177,18 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
                           {code.validTo ? format(new Date(code.validTo), "d MMM yyyy") : "∞"}
                         </span>
                       ) : (
-                        <span>Always valid</span>
+                        <span>{t("admin.billing.alwaysValid")}</span>
                       )}
                     </TableCell>
                     <TableCell>
                       {!code.isActive ? (
-                        <Badge variant="outline">Inactive</Badge>
+                        <Badge variant="outline">{t("admin.billing.status.inactive")}</Badge>
                       ) : expired ? (
-                        <Badge variant="destructive">Expired</Badge>
+                        <Badge variant="destructive">{t("admin.billing.status.expired")}</Badge>
                       ) : notYet ? (
-                        <Badge variant="secondary">Scheduled</Badge>
+                        <Badge variant="secondary">{t("admin.billing.status.scheduled")}</Badge>
                       ) : (
-                        <Badge variant="default">Active</Badge>
+                        <Badge variant="default">{t("admin.billing.status.active")}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -193,20 +196,20 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
+                            <span className="sr-only">{t("admin.billing.actions")}</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => setEditTarget(code)}>
-                            Edit
+                            {t("admin.common.edit")}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => setDeleteTarget(code)}
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            <Trash2 className="me-2 h-4 w-4" />
+                            {t("admin.common.delete")}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -241,21 +244,19 @@ export function PromoCodesTable({ initialData }: PromoCodesTableProps = {}) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete promo code?</AlertDialogTitle>
+            <AlertDialogTitle>{t("admin.billing.deletePromoTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              <strong>{deleteTarget?.code}</strong> will be soft-deleted and immediately
-              deactivated. Existing redemptions are preserved, but no new redemptions will be
-              accepted.
+              {t("admin.billing.deletePromoDesc", { code: deleteTarget?.code ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t("admin.common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={deleting}
               onClick={handleDelete}
             >
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting ? t("admin.common.deleting") : t("admin.common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

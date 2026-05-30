@@ -75,9 +75,9 @@ export const ACTION_SEVERITY: Record<AuditAction, ActionSeverity> = {
 /** Returns Tailwind badge classes for an action's severity level */
 export function getActionSeverityClasses(severity: ActionSeverity): string {
   const map: Record<ActionSeverity, string> = {
-    critical: "bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-500/20",
-    high: "bg-orange-500/10 text-orange-700 dark:text-orange-400 hover:bg-orange-500/20",
-    medium: "bg-blue-500/10 text-blue-700 dark:text-blue-400 hover:bg-blue-500/20",
+    critical: "bg-danger-3 text-danger-11 hover:bg-danger-4",
+    high: "bg-warning-3 text-warning-11 hover:bg-warning-4",
+    medium: "bg-info-3 text-info-11 hover:bg-info-4",
     low: "bg-muted/50 text-muted-foreground hover:bg-muted",
   };
   return map[severity];

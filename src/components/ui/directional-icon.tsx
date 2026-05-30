@@ -11,7 +11,7 @@ interface DirectionalIconProps {
  * ArrowRight, ArrowLeft, ChevronRight, ChevronLeft.
  *
  * @example
- * <DirectionalIcon icon={ArrowRight} className="ml-2 h-4 w-4" />
+ * <DirectionalIcon icon={ArrowRight} className="ms-2 h-4 w-4" />
  */
 export function DirectionalIcon({ icon: Icon, className }: DirectionalIconProps) {
   return <Icon className={cn("rtl:scale-x-[-1]", className)} />;

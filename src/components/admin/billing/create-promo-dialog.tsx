@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -30,12 +31,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
-const PLANS = [
-  { value: "pro_monthly", label: "Pro Monthly" },
-  { value: "pro_annual", label: "Pro Annual" },
-  { value: "agency", label: "Agency" },
-] as const;
-
 const schema = z.object({
   code: z
     .string()
@@ -61,6 +56,14 @@ interface CreatePromoDialogProps {
 }
 
 export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromoDialogProps) {
+  const t = useTranslations();
+
+  const PLANS = [
+    { value: "pro_monthly", label: t("admin.plans.proMonthly") },
+    { value: "pro_annual", label: t("admin.plans.proAnnual") },
+    { value: "agency", label: t("admin.plans.agency") },
+  ] as const;
+
   const form = useForm<FormValues, unknown, FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -93,12 +96,12 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
         const { error } = await res.json().catch(() => ({ error: "Request failed" }));
         throw new Error(error);
       }
-      toast.success(`Promo code "${values.code.toUpperCase()}" created`);
+      toast.success(t("admin.billing.promoCreated", { code: values.code.toUpperCase() }));
       form.reset();
       onSuccess();
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create promo code");
+      toast.error(err instanceof Error ? err.message : t("admin.billing.promoCreateError"));
     }
   };
 
@@ -129,7 +132,7 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create promo code</DialogTitle>
+          <DialogTitle>{t("admin.billing.createPromoTitle")}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -140,10 +143,10 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Code</FormLabel>
+                    <FormLabel>{t("admin.billing.codeLabel")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="LAUNCH20"
+                        placeholder={t("admin.billing.codePlaceholder")}
                         {...field}
                         onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                       />
@@ -158,7 +161,7 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 name="isActive"
                 render={({ field }) => (
                   <FormItem className="flex flex-col justify-end">
-                    <FormLabel>Active</FormLabel>
+                    <FormLabel>{t("admin.billing.activeLabel")}</FormLabel>
                     <div className="flex h-10 items-center">
                       <FormControl>
                         <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -175,10 +178,11 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Description <span className="text-muted-foreground">(optional)</span>
+                    {t("admin.billing.descriptionLabel")}{" "}
+                    <span className="text-muted-foreground">({t("admin.common.optional")})</span>
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="Launch week discount" {...field} />
+                    <Input placeholder={t("admin.billing.descriptionPlaceholder")} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -191,7 +195,7 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 name="discountType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Discount type</FormLabel>
+                    <FormLabel>{t("admin.billing.discountTypeLabel")}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -199,8 +203,12 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="percentage">Percentage (%)</SelectItem>
-                        <SelectItem value="fixed">Fixed amount ($)</SelectItem>
+                        <SelectItem value="percentage">
+                          {t("admin.billing.discountType.percentage")}
+                        </SelectItem>
+                        <SelectItem value="fixed">
+                          {t("admin.billing.discountType.fixed")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -213,7 +221,10 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 name="discountValue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Value {discountType === "percentage" ? "(%)" : "($)"}</FormLabel>
+                    <FormLabel>
+                      {t("admin.billing.valueLabel")}{" "}
+                      {discountType === "percentage" ? "(%)" : "($)"}
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -237,7 +248,8 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Valid from <span className="text-muted-foreground">(optional)</span>
+                      {t("admin.billing.validFromLabel")}{" "}
+                      <span className="text-muted-foreground">({t("admin.common.optional")})</span>
                     </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
@@ -253,7 +265,8 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Valid to <span className="text-muted-foreground">(optional)</span>
+                      {t("admin.billing.validToLabel")}{" "}
+                      <span className="text-muted-foreground">({t("admin.common.optional")})</span>
                     </FormLabel>
                     <FormControl>
                       <Input type="datetime-local" {...field} value={field.value ?? ""} />
@@ -270,14 +283,16 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    Max redemptions{" "}
-                    <span className="text-muted-foreground">(leave blank for unlimited)</span>
+                    {t("admin.billing.maxRedemptionsLabel")}{" "}
+                    <span className="text-muted-foreground">
+                      ({t("admin.billing.unlimitedHint")})
+                    </span>
                   </FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min="1"
-                      placeholder="Unlimited"
+                      placeholder={t("admin.billing.unlimitedPlaceholder")}
                       value={field.value ?? ""}
                       onChange={(e) =>
                         field.onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))
@@ -291,8 +306,8 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
 
             <FormItem>
               <FormLabel>
-                Applicable plans{" "}
-                <span className="text-muted-foreground">(leave unselected for all plans)</span>
+                {t("admin.billing.applicablePlansLabel")}{" "}
+                <span className="text-muted-foreground">({t("admin.billing.allPlansHint")})</span>
               </FormLabel>
               <div className="flex flex-wrap gap-2 pt-1">
                 {PLANS.map((plan) => (
@@ -319,10 +334,12 @@ export function CreatePromoDialog({ open, onOpenChange, onSuccess }: CreatePromo
                 }}
                 disabled={form.formState.isSubmitting}
               >
-                Cancel
+                {t("admin.common.cancel")}
               </Button>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Creating…" : "Create code"}
+                {form.formState.isSubmitting
+                  ? t("admin.common.creating")
+                  : t("admin.billing.createCode")}
               </Button>
             </DialogFooter>
           </form>

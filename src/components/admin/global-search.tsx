@@ -115,7 +115,7 @@ export function GlobalAdminSearch() {
           setOpen(true);
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className="group text-muted-foreground hover:text-foreground fixed top-4 right-4 transition-colors"
+        className="group text-muted-foreground hover:text-foreground inset-inline-end-4 fixed top-4 transition-colors"
         title="Search (Ctrl+K)"
       >
         <Search className="h-5 w-5" />

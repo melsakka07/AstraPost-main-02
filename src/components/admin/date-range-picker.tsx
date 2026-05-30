@@ -2,6 +2,7 @@
 
 import { addDays, format, startOfDay, endOfDay } from "date-fns";
 import { Calendar, ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,39 +20,41 @@ interface DateRangePickerProps {
   disabled?: boolean;
 }
 
-const PRESET_RANGES = {
-  "7d": {
-    label: "Last 7 days",
-    getValue: () => ({
-      from: startOfDay(addDays(new Date(), -7)),
-      to: endOfDay(new Date()),
-    }),
-  },
-  "30d": {
-    label: "Last 30 days",
-    getValue: () => ({
-      from: startOfDay(addDays(new Date(), -30)),
-      to: endOfDay(new Date()),
-    }),
-  },
-  "90d": {
-    label: "Last 90 days",
-    getValue: () => ({
-      from: startOfDay(addDays(new Date(), -90)),
-      to: endOfDay(new Date()),
-    }),
-  },
-};
-
 export function DateRangePicker({
   value,
   onChange,
   presets = ["7d", "30d", "90d", "custom"],
   disabled = false,
 }: DateRangePickerProps) {
+  const t = useTranslations();
+
+  const PRESET_RANGES = {
+    "7d": {
+      label: t("admin.dateRange.last7d"),
+      getValue: () => ({
+        from: startOfDay(addDays(new Date(), -7)),
+        to: endOfDay(new Date()),
+      }),
+    },
+    "30d": {
+      label: t("admin.dateRange.last30d"),
+      getValue: () => ({
+        from: startOfDay(addDays(new Date(), -30)),
+        to: endOfDay(new Date()),
+      }),
+    },
+    "90d": {
+      label: t("admin.dateRange.last90d"),
+      getValue: () => ({
+        from: startOfDay(addDays(new Date(), -90)),
+        to: endOfDay(new Date()),
+      }),
+    },
+  };
+
   const formatDateRange = () => {
     if (!value.from || !value.to) {
-      return "Select date range";
+      return t("admin.dateRange.selectRange");
     }
     return `${format(value.from, "MMM d, yyyy")} - ${format(value.to, "MMM d, yyyy")}`;
   };
@@ -65,7 +68,7 @@ export function DateRangePicker({
           variant="outline"
           disabled={disabled}
           className={cn(
-            "w-full justify-between text-left font-normal md:w-auto",
+            "w-full justify-between text-start font-normal md:w-auto",
             !value && "text-muted-foreground"
           )}
         >
@@ -73,7 +76,7 @@ export function DateRangePicker({
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">{formatDateRange()}</span>
             <span className="inline sm:hidden">
-              {value.from ? format(value.from, "MMM d") : "Date"}
+              {value.from ? format(value.from, "MMM d") : t("admin.dateRange.date")}
             </span>
           </div>
           <ChevronDown className="h-4 w-4 opacity-50" />
@@ -113,7 +116,9 @@ export function DateRangePicker({
           <div className="flex flex-col gap-4">
             <div className="flex gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-muted-foreground text-xs font-semibold">From</label>
+                <label className="text-muted-foreground text-xs font-semibold">
+                  {t("admin.dateRange.from")}
+                </label>
                 <CalendarComponent
                   mode="single"
                   selected={value.from}
@@ -130,7 +135,9 @@ export function DateRangePicker({
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-muted-foreground text-xs font-semibold">To</label>
+                <label className="text-muted-foreground text-xs font-semibold">
+                  {t("admin.dateRange.to")}
+                </label>
                 <CalendarComponent
                   mode="single"
                   selected={value.to}
