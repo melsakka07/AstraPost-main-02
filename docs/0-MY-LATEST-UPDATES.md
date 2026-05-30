@@ -1,5 +1,49 @@
 # Latest Updates
 
+## 2026-05-30 — Wave 8 Task A: Performance & Rendering
+
+First Wave 8 task — foundational performance overhaul of dashboard page rendering.
+
+### Page Conversions (Client → Async RSC)
+
+Four pages converted from top-level `"use client"` with client-side auth+data waterfalls to async RSC shells:
+
+- **`/dashboard/ai/bio`**: Now async RSC with `getTeamContext()` auth + server-side xAccount username fetch. Client form extracted to `bio-generator-client.tsx` (colocated).
+- **`/dashboard/ai/calendar`**: Now async RSC. 693-line client component extracted to colocated `calendar-generator-client.tsx`.
+- **`/dashboard/ai/reply`**: Now async RSC. Client form extracted to `src/components/ai/reply-generator-client.tsx`.
+- **`/dashboard/affiliate`**: Now async RSC with `getTeamContext()` auth guard (was unprotected — unauthenticated users previously downloaded full JS). Client UI extracted to `src/components/affiliate/affiliate-client.tsx`.
+
+All converted pages use `<Suspense>` wrappers and have existing `loading.tsx` files.
+
+### Code Splitting
+
+- **AgenticPostingClient** in `ai/agentic/page.tsx`: Static import replaced with `next/dynamic(() => import(...), { loading: <Skeleton>, ssr: false })` — matches existing composer page pattern. Saves ~1,770 lines from the initial bundle.
+
+### Image Optimization
+
+- **`success-screen.tsx`** + **`tweet-card.tsx`**: Raw `<img>` tags (with eslint-disable comments) replaced with `next/image` (`width`/`height` + `loading="lazy"` + `unoptimized` for AI-generated external images).
+
+### Query Limits
+
+- **Drafts page** (`/dashboard/drafts`): Added server-side pagination (`DRAFTS_PAGE_SIZE = 12`, offset-based, URL-driven via `searchParams.page`). Previously fetched ALL drafts unbounded.
+- **Schedule page** (`/dashboard/schedule`): Added `limit: 50` to unbounded `failedPosts` and `awaitingApprovalPosts` queries.
+
+### Settings Layout Split
+
+- **`settings/layout.tsx`**: Removed top-level `"use client"`. Tab navigation extracted to thin `SettingsTabBar` client component (`src/components/settings/settings-tab-bar.tsx`). All 5 child pages (profile, billing, notifications, team, integrations) now render server-side without forced client hydration.
+
+### Verification
+
+- `pnpm run check` — PASS (lint 5 pre-existing warnings, typecheck clean, i18n 3,339 keys)
+- `pnpm test` — PASS (37 files, 372 tests)
+- `verify-dashboard-tokens` — PASS
+- `verify-rtl` — PASS
+- Playwright E2E smokes added: `tests/e2e/performance-wave8a.e2e.ts` (7 tests: AI hub, bio, calendar, reply, affiliate, drafts — skeleton→content + no console errors)
+
+### Branch: `feature/wave8-taskA-performance`
+
+---
+
 ## 2026-05-30 — Wave 7 Task D: Accessibility AA
 
 Final Wave 7 task — WCAG 2.1 AA audit and remediation across all surfaces.

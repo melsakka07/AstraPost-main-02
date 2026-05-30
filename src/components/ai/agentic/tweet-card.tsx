@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { GripVertical, ImageIcon, Pencil, RefreshCw, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { XAccountAvatar } from "@/components/ai/agentic/x-account-avatar";
@@ -137,11 +138,14 @@ export function AgenticTweetCard({
         {/* Image */}
         {tweet.imageUrl && (
           <div className="border-border group relative overflow-hidden rounded-lg border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={tweet.imageUrl}
               alt={tweet.imagePrompt ?? "AI generated image"}
+              width={400}
+              height={400}
               className="max-h-64 w-full object-cover"
+              loading="lazy"
+              unoptimized
             />
             <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/0 opacity-0 transition-colors group-hover:bg-black/30 group-hover:opacity-100">
               <button

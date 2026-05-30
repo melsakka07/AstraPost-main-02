@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarPlus, FileText, Image as ImageIcon, Search } from "lucide-react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import {
+  CalendarPlus,
+  FileText,
+  Image as ImageIcon,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DeleteDraftButton } from "@/components/drafts/delete-draft-button";
 import { Button } from "@/components/ui/button";
@@ -29,11 +37,33 @@ type Draft = {
 
 type SortKey = "updatedAt" | "createdAt" | "length";
 
-export function DraftsClient({ drafts }: { drafts: Draft[] }) {
+export function DraftsClient({
+  drafts,
+  hasMore,
+  page,
+}: {
+  drafts: Draft[];
+  hasMore: boolean;
+  page: number;
+}) {
   const t = useTranslations("drafts");
   const userLocale = useUserLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("updatedAt");
+
+  const buildPageUrl = (nextPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextPage <= 0) {
+      params.delete("page");
+    } else {
+      params.set("page", String(nextPage));
+    }
+    const qs = params.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -59,7 +89,10 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
     return result;
   }, [drafts, search, sort]);
 
-  if (drafts.length === 0) {
+  // Total drafts across all pages is unknown; show pagination if any exist
+  const showPagination = drafts.length > 0 || page > 0;
+
+  if (drafts.length === 0 && page === 0) {
     return (
       <EmptyState
         icon={<FileText className="h-12 w-12" />}
@@ -186,6 +219,31 @@ export function DraftsClient({ drafts }: { drafts: Draft[] }) {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination controls */}
+      {showPagination && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 0}
+            onClick={() => router.push(buildPageUrl(page - 1))}
+          >
+            <ChevronLeft className="me-1 h-4 w-4 rtl:scale-x-[-1]" />
+            Previous
+          </Button>
+          <span className="text-muted-foreground text-sm">Page {page + 1}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={!hasMore}
+            onClick={() => router.push(buildPageUrl(page + 1))}
+          >
+            Next
+            <ChevronRight className="ms-1 h-4 w-4 rtl:scale-x-[-1]" />
+          </Button>
         </div>
       )}
     </div>
