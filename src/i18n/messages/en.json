@@ -542,6 +542,7 @@
     "view_all": "View All",
     "queue_empty": "Your queue is empty",
     "queue_empty_description": "Schedule your first post to get started",
+    "empty_why": "Complete the setup checklist above to unlock your full dashboard experience.",
     "create_post": "Create Post",
     "generate_ai": "Generate with AI",
     "no_date": "No date",
@@ -803,6 +804,7 @@
     "empty_title": "Your queue is empty",
     "empty_description": "Schedule your first post to see it here",
     "schedule_first": "Schedule a Post",
+    "empty_why": "Schedule posts in advance to maintain a consistent posting cadence.",
     "status": {
       "scheduled": "Scheduled",
       "published": "Published",
@@ -897,7 +899,8 @@
     "continue_editing": "Continue Editing",
     "delete_draft": "Delete Draft",
     "delete_confirmation": "Are you sure you want to delete this draft?",
-    "deleted_successfully": "Draft deleted successfully"
+    "deleted_successfully": "Draft deleted successfully",
+    "empty_why": "Drafts are saved automatically as you compose. Start writing to see them here."
   },
   "analytics": {
     "title": "Analytics",
@@ -980,9 +983,11 @@
     "empty_no_posts": "No posts yet",
     "empty_no_posts_description": "Publish your first post to start seeing analytics.",
     "empty_no_posts_cta": "Publish your first post",
+    "empty_no_posts_why": "Publish your first post to start seeing performance data.",
     "empty_pending": "Analytics data is being collected",
     "empty_pending_description": "Your analytics will appear here once X processes your published posts.",
-    "empty_pending_refresh": "Refresh now"
+    "empty_pending_refresh": "Refresh now",
+    "empty_pending_why": "Analytics data updates hourly. Check back soon after your posts go live."
   },
   "analytics_viral": {
     "title": "Viral Analyzer",
@@ -1127,6 +1132,7 @@
     "create_first_post": "Create Your First Post",
     "view_analytics": "View Analytics",
     "unlock_message": "Unlock badges by growing your audience and posting consistently.",
+    "empty_why": "Complete actions like posting, scheduling, and engaging to unlock achievements.",
     "milestones": {
       "first_post": "First Post",
       "first_post_desc": "Published your first post",
@@ -1246,6 +1252,7 @@
     "filter_apply": "Apply Filters",
     "empty_title": "No jobs found",
     "empty_description": "Try adjusting your filters or check back later for job history.",
+    "empty_why": "Agentic posting runs appear here. Start an agentic session to see your job history.",
     "job_id": "Job ID:",
     "correlation": "Correlation:",
     "attempts": "Attempts:",
@@ -1957,7 +1964,8 @@
     "previous": "Previous",
     "next": "Next",
     "page_x_of_y": "Page {page} of {total}",
-    "showing_x_to_y": "{from}–{to} of {total}"
+    "showing_x_to_y": "{from}–{to} of {total}",
+    "empty_why": "Every AI generation is saved here. Try the AI tools to build your history."
   },
   "ai_image": {
     "service_busy": "Service busy — retrying automatically...",
@@ -2503,6 +2511,10 @@
     },
     "toasts": {
       "resume_onboarding_failed": "Failed to resume onboarding"
+    },
+    "help": {
+      "replay_tour": "Replay Dashboard Tour",
+      "replay_tour_description": "See the guided tour of the dashboard again"
     }
   },
   "hashtag_generator": {
@@ -3965,6 +3977,21 @@
       "title": "Recent",
       "untitled": "Untitled",
       "empty": "No recent jobs"
+    }
+  },
+  "onboarding": {
+    "tour": {
+      "step1_title": "Write & Schedule",
+      "step1_description": "Compose your tweets and threads here. You can preview, add media, and schedule them.",
+      "step2_title": "AI Assistant",
+      "step2_description": "Use AI to generate hooks, rewrite tweets, translate, and more directly in the composer.",
+      "step3_title": "Content Calendar",
+      "step3_description": "View and manage all your scheduled posts in one place. Drag and drop to reschedule.",
+      "step4_title": "Analytics",
+      "step4_description": "Track your performance, see follower growth, and find the best times to post.",
+      "step5_title": "Inspiration",
+      "step5_description": "Save great tweets and use them as templates or references for your own content.",
+      "exit_confirmation": "Are you sure you want to exit the tour?"
     }
   }
 }

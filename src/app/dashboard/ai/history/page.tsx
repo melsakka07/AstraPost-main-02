@@ -6,7 +6,9 @@ import { AiHistoryPagination } from "@/components/dashboard/ai-history-paginatio
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SearchNoResultsIllustration } from "@/components/ui/illustrations";
 import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { aiGenerations } from "@/lib/schema";
@@ -95,14 +97,17 @@ export default async function AiHistoryPage({
       }
     >
       {history.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center py-12 text-center">
-          <History className="text-muted-foreground mb-4 h-12 w-12 opacity-20" />
-          <CardTitle>{t("empty_title")}</CardTitle>
-          <CardDescription>{t("empty_description")}</CardDescription>
-          <Link href="/dashboard/compose" className="mt-4">
-            <Button variant="outline">{t("go_to_composer")}</Button>
-          </Link>
-        </Card>
+        <EmptyState
+          icon={<SearchNoResultsIllustration className="h-6 w-6" />}
+          title={t("empty_title")}
+          description={t("empty_description")}
+          whyMessage={t("empty_why")}
+          primaryAction={
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/compose">{t("go_to_composer")}</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4">

@@ -13,10 +13,18 @@ export function ReopenChecklistButton() {
   const [isClicked, setIsClicked] = useState(false);
 
   const handleReopenChecklist = () => {
+    // Clear both localStorage and server-persisted state.
     localStorage.removeItem(CHECKLIST_STORAGE_KEY);
+    fetch("/api/user/preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        onboardingState: { checklistDismissedAt: null, checklistCollapsed: false },
+      }),
+    }).catch(() => {});
     setIsClicked(true);
 
-    // Visual feedback — toast or navigate to dashboard
+    // Navigate to dashboard after the server write has a chance to land.
     setTimeout(() => {
       window.location.href = "/dashboard";
     }, 300);

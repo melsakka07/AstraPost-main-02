@@ -16,6 +16,7 @@ import { DeleteDraftButton } from "@/components/drafts/delete-draft-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoDraftsIllustration } from "@/components/ui/illustrations";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -95,9 +96,10 @@ export function DraftsClient({
   if (drafts.length === 0 && page === 0) {
     return (
       <EmptyState
-        icon={<FileText className="h-12 w-12" />}
+        icon={<NoDraftsIllustration className="h-12 w-12" />}
         title={t("empty_title")}
         description={t("empty_description")}
+        whyMessage={t("empty_why")}
         primaryAction={
           <Button asChild>
             <Link href="/dashboard/compose">{t("new_draft")}</Link>

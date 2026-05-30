@@ -257,6 +257,7 @@ export function QueueContent({
           icon={<Calendar className="h-6 w-6" />}
           title={t("empty_title")}
           description={t("empty_description")}
+          whyMessage={t("empty_why")}
           primaryAction={
             <Button asChild>
               <Link href="/dashboard/compose">{t("schedule_first")}</Link>

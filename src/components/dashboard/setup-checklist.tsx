@@ -14,6 +14,13 @@ interface SetupChecklistProps {
   hasScheduledPost: boolean;
   hasUsedAI: boolean;
   hasProPlan: boolean;
+  /** Server-persisted onboarding/checklist state (user.onboardingState JSONB). */
+  onboardingState?: {
+    tourSeen?: boolean;
+    checklistDismissedAt?: string | null;
+    checklistCollapsed?: boolean;
+    version?: number;
+  } | null;
 }
 
 const STORAGE_KEY = "setup-checklist-hidden";
@@ -24,30 +31,48 @@ export function SetupChecklist({
   hasScheduledPost,
   hasUsedAI,
   hasProPlan,
+  onboardingState,
 }: SetupChecklistProps) {
   const searchParams = useSearchParams();
-  const [isVisible, setIsVisible] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Initialize from server-persisted state (hydration-safe — no localStorage in initializer).
+  const serverDismissed = onboardingState?.checklistDismissedAt != null;
+  const serverCollapsed = onboardingState?.checklistCollapsed === true;
+
+  const [isVisible, setIsVisible] = useState(!serverDismissed);
+  const [isExpanded, setIsExpanded] = useState(!serverCollapsed);
   const tChecklist = useTranslations("setup_checklist");
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
-    const hidden = localStorage.getItem(STORAGE_KEY);
     const checklistOpen = searchParams.get("checklist") === "open";
 
     if (checklistOpen) {
+      // Reset both server and localStorage state for the "force open" URL param.
       localStorage.setItem(STORAGE_KEY, "false");
       localStorage.setItem(COLLAPSED_KEY, "false");
       setIsVisible(true);
       setIsExpanded(true);
-    } else if (hidden === "true") {
+      fetch("/api/user/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          onboardingState: { checklistDismissedAt: null, checklistCollapsed: false },
+        }),
+      }).catch(() => {});
+      return;
+    }
+
+    // Backward compat: if server state was never set (existing users pre-migration),
+    // fall back to localStorage.
+    if (!serverDismissed && localStorage.getItem(STORAGE_KEY) === "true") {
       setIsVisible(false);
-    } else {
-      const collapsed = localStorage.getItem(COLLAPSED_KEY);
-      if (collapsed !== "true") setIsExpanded(true);
+    }
+    if (!serverCollapsed && localStorage.getItem(COLLAPSED_KEY) === "true") {
+      setIsExpanded(false);
     }
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [searchParams]);
+  }, [searchParams, serverDismissed, serverCollapsed]);
 
   const t = useTranslations("dashboard_shell");
 
@@ -98,12 +123,28 @@ export function SetupChecklist({
   const handleDismiss = () => {
     setIsVisible(false);
     localStorage.setItem(STORAGE_KEY, "true");
+    // Persist server-side so dismissal survives logout/device switch.
+    fetch("/api/user/preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        onboardingState: { checklistDismissedAt: new Date().toISOString() },
+      }),
+    }).catch(() => {});
   };
 
   const toggleExpanded = () => {
     const next = !isExpanded;
     setIsExpanded(next);
     localStorage.setItem(COLLAPSED_KEY, next ? "false" : "true");
+    // Persist server-side.
+    fetch("/api/user/preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        onboardingState: { checklistCollapsed: !next },
+      }),
+    }).catch(() => {});
   };
 
   if (!isVisible) return null;

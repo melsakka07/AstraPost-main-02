@@ -34,6 +34,7 @@ import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { NoAnalyticsIllustration } from "@/components/ui/illustrations";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { UpgradeBanner } from "@/components/ui/upgrade-banner";
@@ -404,7 +405,7 @@ export default async function AnalyticsPage({
             >
               {accounts.length === 0 ? (
                 <EmptyState
-                  icon={<BarChart3 className="h-6 w-6" />}
+                  icon={<NoAnalyticsIllustration className="h-6 w-6" />}
                   title={t("connect_x_cta")}
                   description={t("connect_x_description")}
                   primaryAction={
@@ -648,9 +649,10 @@ export default async function AnalyticsPage({
           {topTweets.length === 0 ? (
             totalPostCount === 0 ? (
               <EmptyState
-                icon={<BarChart3 className="h-6 w-6" />}
+                icon={<NoAnalyticsIllustration className="h-6 w-6" />}
                 title={t("empty_no_posts")}
                 description={t("empty_no_posts_description")}
+                whyMessage={t("empty_no_posts_why")}
                 primaryAction={
                   <Button asChild>
                     <Link href="/dashboard/compose">{t("empty_no_posts_cta")}</Link>
@@ -659,9 +661,10 @@ export default async function AnalyticsPage({
               />
             ) : (
               <EmptyState
-                icon={<Clock className="h-6 w-6" />}
+                icon={<NoAnalyticsIllustration className="h-6 w-6" />}
                 title={t("empty_pending")}
                 description={t("empty_pending_description")}
+                whyMessage={t("empty_pending_why")}
                 primaryAction={
                   selectedAccountId ? (
                     <ManualRefreshButton

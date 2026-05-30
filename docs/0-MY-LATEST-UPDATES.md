@@ -1,5 +1,45 @@
 # Latest Updates
 
+## 2026-05-30 — Wave 8 Task B: Onboarding & Empty States
+
+Second Wave 8 task — server-persisted checklist state, i18n tour, illustration set, and empty-state standardization.
+
+### Dashboard Tour i18n
+
+- **`dashboard-tour.tsx`**: All 11 hardcoded English strings replaced with `useTranslations("onboarding")` keys (`tour.step1_title` through `tour.step5_title`/`_description` + `tour.exit_confirmation`). Tour renders Arabic in `ar` locale.
+- **Tour-seen persistence**: On tour exit, fires PATCH to mark `onboardingState.tourSeen = true` server-side.
+- **Replay tour**: New `ReplayTourButton` component in settings profile page, alongside existing ResumeOnboarding and ReopenChecklist buttons.
+
+### Server-Persisted Checklist
+
+- **Schema**: `user.onboardingState` JSONB column (`{ tourSeen, checklistDismissedAt, checklistCollapsed, version }`). Migration: `drizzle/0087_tiresome_doctor_faustus.sql`.
+- **API**: PATCH `/api/user/preferences` now accepts `onboardingState` (partial, deep-merged). Shared schema `onboardingStateSchema` in `src/lib/schemas/common.ts`.
+- **SetupChecklist**: Server-state prop + localStorage backward compat. `?checklist=open` clears both layers. Dismissal survives logout/re-login.
+- **ReopenChecklistButton**: Now clears server state via PATCH.
+
+### Empty-State Illustrations & Standardization
+
+- **6 inline SVG illustrations**: `no-posts`, `no-drafts`, `no-analytics`, `no-accounts`, `search-no-results`, `no-achievements` in `src/components/ui/illustrations/`. All `currentColor`-driven (theme-aware, dark mode compatible).
+- **EmptyState component**: New optional `whyMessage` prop (one-line sub-message below description).
+- **10 call sites standardized**: AI history, jobs, queue, drafts, achievements, analytics (3 states), dashboard home (2 states). Manual `<Card>` empties replaced with shared `EmptyState` + illustrations.
+- **Sub-messages added**: `ai_history.empty_why`, `jobs.empty_why`, `queue.empty_why`, `drafts.empty_why`, `achievements.empty_why`, `analytics.empty_no_posts_why`, `analytics.empty_pending_why`, `dashboard.empty_why`.
+
+### i18n
+
+- **21 new leaf keys** across `onboarding.tour.*`, `settings.help.*`, and per-namespace `empty_why` messages. Full en/ar/pseudo parity (3,360 keys).
+- Arabic translations use real Arabic (not English copies).
+
+### Verification
+
+- `pnpm run check` — PASS (lint 5 pre-existing warnings, typecheck clean, i18n 3,360 keys)
+- `pnpm test` — PASS (37 files, 372 tests)
+- `verify-dashboard-tokens` — PASS (illustrations use `currentColor`)
+- `verify-rtl` — PASS
+
+### Branch: `feature/wave8-taskB-onboarding`
+
+---
+
 ## 2026-05-30 — Wave 8 Task A: Performance & Rendering
 
 First Wave 8 task — foundational performance overhaul of dashboard page rendering.
