@@ -48,7 +48,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
 import { type AiLengthOptionId, type XSubscriptionTier } from "@/lib/schemas/common";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
-import { getMaxCharacterLimit } from "@/lib/services/x-subscription";
+import { computeTweetCharCount, type TweetCharSeverity } from "@/lib/tweet-char";
 import { cn } from "@/lib/utils";
 
 interface PlanLimitPayload {
@@ -78,6 +78,13 @@ const ANGLE_COLORS: Record<string, string> = {
   question: "bg-chart-3/10 text-chart-3 border-chart-3/20",
   story: "bg-chart-4/10 text-chart-4 border-chart-4/20",
   list: "bg-chart-1/10 text-chart-1 border-chart-1/20",
+};
+
+/** Maps shared char-count severity to a semantic counter colour. */
+const SEVERITY_TEXT_CLASS: Record<TweetCharSeverity, string> = {
+  over: "text-destructive",
+  warning: "text-warning-11",
+  ok: "text-muted-foreground",
 };
 
 type ActiveTab = "thread" | "url" | "variants" | "hashtags";
@@ -535,7 +542,7 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                         </SelectItem>
                         <SelectSeparator />
                         <div
-                          className="text-muted-foreground hover:text-foreground relative flex w-full cursor-pointer items-center gap-1.5 rounded-sm py-1.5 pr-2 pl-2 text-xs outline-none select-none"
+                          className="text-muted-foreground hover:text-foreground relative flex w-full cursor-pointer items-center gap-1.5 rounded-sm py-1.5 ps-2 pe-2 text-xs outline-none select-none"
                           onPointerDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -728,12 +735,21 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                             onChange={(e) => updateGeneratedTweet(0, e.target.value)}
                             aria-label="Edit generated post"
                           />
-                          <p
-                            className={`mt-2 text-xs tabular-nums ${(generatedTweets[0]?.length ?? 0) > getMaxCharacterLimit(xTier as XSubscriptionTier | null) ? "text-destructive" : (generatedTweets[0]?.length ?? 0) >= getMaxCharacterLimit(xTier as XSubscriptionTier | null) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
-                          >
-                            {generatedTweets[0]?.length ?? 0}/
-                            {getMaxCharacterLimit(xTier as XSubscriptionTier | null)}
-                          </p>
+                          {(() => {
+                            const c = computeTweetCharCount(generatedTweets[0] ?? "", {
+                              tier: xTier as XSubscriptionTier | null,
+                            });
+                            return (
+                              <p
+                                className={cn(
+                                  "mt-2 text-xs tabular-nums",
+                                  SEVERITY_TEXT_CLASS[c.severity]
+                                )}
+                              >
+                                {c.charCount}/{c.maxChars}
+                              </p>
+                            );
+                          })()}
                         </CardContent>
                       </Card>
                     </>
@@ -808,12 +824,21 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                               onChange={(e) => updateGeneratedTweet(idx, e.target.value)}
                               aria-label={`Edit tweet ${idx + 1}`}
                             />
-                            <p
-                              className={`mt-2 text-xs tabular-nums ${tweet.length > getMaxCharacterLimit(xTier as XSubscriptionTier | null) ? "text-destructive" : tweet.length >= getMaxCharacterLimit(xTier as XSubscriptionTier | null) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
-                            >
-                              {tweet.length}/
-                              {getMaxCharacterLimit(xTier as XSubscriptionTier | null)}
-                            </p>
+                            {(() => {
+                              const c = computeTweetCharCount(tweet, {
+                                tier: xTier as XSubscriptionTier | null,
+                              });
+                              return (
+                                <p
+                                  className={cn(
+                                    "mt-2 text-xs tabular-nums",
+                                    SEVERITY_TEXT_CLASS[c.severity]
+                                  )}
+                                >
+                                  {c.charCount}/{c.maxChars}
+                                </p>
+                              );
+                            })()}
                           </CardContent>
                         </Card>
                       ))}
@@ -1028,11 +1053,21 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                           onChange={(e) => updateUrlTweet(idx, e.target.value)}
                           aria-label={`Edit URL tweet ${idx + 1}`}
                         />
-                        <p
-                          className={`mt-2 text-xs tabular-nums ${tweet.length > getMaxCharacterLimit(xTier as XSubscriptionTier | null) ? "text-destructive" : tweet.length >= getMaxCharacterLimit(xTier as XSubscriptionTier | null) * 0.9 ? "text-amber-500" : "text-muted-foreground"}`}
-                        >
-                          {tweet.length}/{getMaxCharacterLimit(xTier as XSubscriptionTier | null)}
-                        </p>
+                        {(() => {
+                          const c = computeTweetCharCount(tweet, {
+                            tier: xTier as XSubscriptionTier | null,
+                          });
+                          return (
+                            <p
+                              className={cn(
+                                "mt-2 text-xs tabular-nums",
+                                SEVERITY_TEXT_CLASS[c.severity]
+                              )}
+                            >
+                              {c.charCount}/{c.maxChars}
+                            </p>
+                          );
+                        })()}
                       </CardContent>
                     </Card>
                   ))}

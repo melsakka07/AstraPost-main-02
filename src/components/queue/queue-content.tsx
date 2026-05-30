@@ -167,7 +167,7 @@ export function QueueContent({
           </div>
           <Button asChild>
             <Link href="/dashboard/compose">
-              <PlusCircle className="h-4 w-4 sm:mr-2" />
+              <PlusCircle className="h-4 w-4 sm:me-2" />
               <span className="hidden sm:inline">{t("new_post")}</span>
             </Link>
           </Button>

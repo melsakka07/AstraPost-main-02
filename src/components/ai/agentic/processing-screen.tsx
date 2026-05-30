@@ -89,7 +89,7 @@ export function ProcessingScreen({
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground hover:text-destructive ml-4 shrink-0"
+          className="text-muted-foreground hover:text-destructive ms-4 shrink-0"
           onClick={() => setShowCancelConfirm(true)}
         >
           {t("processing_screen.cancel")}

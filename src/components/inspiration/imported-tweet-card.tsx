@@ -165,10 +165,10 @@ function TweetContent({ tweet, isReply = false }: { tweet: Tweet; isReply?: bool
                     />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/30 transition-colors group-hover:bg-black/40">
                       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-lg">
-                        <Play className="ml-1 h-8 w-8 text-gray-900" fill="currentColor" />
+                        <Play className="ms-1 h-8 w-8 text-gray-900" fill="currentColor" />
                       </div>
                     </div>
-                    <div className="absolute right-2 bottom-2 flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-xs text-white">
+                    <div className="absolute end-2 bottom-2 flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-xs text-white">
                       <ExternalLink className="h-3 w-3" />
                       <span>View on X</span>
                     </div>
@@ -326,12 +326,12 @@ export function ImportedTweetCard({
             >
               {showThreadContext ? (
                 <>
-                  <ChevronUp className="mr-0.5 h-3.5 w-3.5 sm:mr-1 sm:h-4 sm:w-4" />
+                  <ChevronUp className="me-0.5 h-3.5 w-3.5 sm:me-1 sm:h-4 sm:w-4" />
                   {t("hide_thread")}
                 </>
               ) : (
                 <>
-                  <ChevronDown className="mr-0.5 h-3.5 w-3.5 sm:mr-1 sm:h-4 sm:w-4" />
+                  <ChevronDown className="me-0.5 h-3.5 w-3.5 sm:me-1 sm:h-4 sm:w-4" />
                   {t("show_thread_context")} {parentTweets.length > 0 && `(${parentTweets.length})`}
                   {topReplies.length > 0 &&
                     ` · ${topReplies.length} ${topReplies.length > 1 ? t("replies") : t("reply")}`}

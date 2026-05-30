@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "check:i18n": "node scripts/verify-i18n-keys.mjs",
     "check:dashboard-tokens": "node scripts/verify-dashboard-tokens.mjs",
+    "check:rtl": "node scripts/verify-rtl.mjs",
     "check": "pnpm lint && pnpm typecheck && pnpm check:i18n",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

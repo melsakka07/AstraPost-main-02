@@ -247,7 +247,7 @@ export function ComposerEditor({
           className="flex-1 border-dashed py-4 text-sm sm:py-6 sm:text-base"
           onClick={addTweet}
         >
-          <Plus className="mr-1.5 h-4 w-4 sm:mr-2" />
+          <Plus className="me-1.5 h-4 w-4 sm:me-2" />
           {tweets.length === 1 ? t("label.convert_to_thread") : t("label.add_to_thread")}
         </Button>
         {/* P3-B: Auto-numbering status chip — visible when thread has 3+ tweets */}

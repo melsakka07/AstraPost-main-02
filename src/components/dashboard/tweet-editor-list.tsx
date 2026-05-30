@@ -17,9 +17,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import twitter from "twitter-text";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
-import { getMaxCharacterLimit, canPostLongContent } from "@/lib/services/x-subscription";
+import { computeTweetCharCount } from "@/lib/tweet-char";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -59,17 +58,6 @@ interface TweetEditorListProps<T extends TweetEditorItem> {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function getCharCount(text: string): number {
-  return twitter.parseTweet(text).weightedLength;
-}
-
-function getLengthZoneLabel(charCount: number, isPremiumSinglePost: boolean): string | null {
-  if (!isPremiumSinglePost) return null;
-  if (charCount <= 280) return "length_zone.short";
-  if (charCount <= 1_000) return "length_zone.medium";
-  return "length_zone.long";
-}
-
 function sortableId(prefix: string, itemId: string): string {
   return `${prefix}-${itemId}`;
 }
@@ -106,11 +94,8 @@ function SortableItem<T extends TweetEditorItem>({
     transition,
   };
 
-  const maxChars = isThreadMode ? 280 : getMaxCharacterLimit(tier);
-  const charCount = getCharCount(item.content);
-  const isOverLimit = charCount > maxChars;
-  const isOverStandardLimit = charCount > 280;
-  const isPremiumSinglePost = !isThreadMode && canPostLongContent(tier);
+  const { charCount, maxChars, isOverLimit, isOverStandardLimit, isPremiumSinglePost, lengthZone } =
+    computeTweetCharCount(item.content, { tier, isThreadMode });
 
   return (
     <div ref={setNodeRef} style={dndStyle} className={isDragging ? "opacity-50" : ""}>
@@ -123,7 +108,7 @@ function SortableItem<T extends TweetEditorItem>({
         isOverLimit,
         isOverStandardLimit,
         isPremiumSinglePost,
-        lengthZone: getLengthZoneLabel(charCount, isPremiumSinglePost),
+        lengthZone: lengthZone === null ? null : `length_zone.${lengthZone}`,
         dragHandleProps: { ...attributes, ...listeners },
         isDragging,
         ...(onMoveUp != null ? { onMoveUp } : {}),

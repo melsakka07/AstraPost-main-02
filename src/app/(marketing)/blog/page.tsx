@@ -72,7 +72,7 @@ export default async function BlogPage() {
                 )}
                 <div className="absolute top-4 left-4">
                   <Badge className="border-0 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg">
-                    <TrendingUp className="mr-1 h-3 w-3" />
+                    <TrendingUp className="me-1 h-3 w-3" />
                     {t("featured_badge")}
                   </Badge>
                 </div>

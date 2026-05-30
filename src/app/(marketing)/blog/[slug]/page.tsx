@@ -77,7 +77,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
           <div className="space-y-6">
             <Badge className="from-primary border-0 bg-gradient-to-r to-purple-500 text-white transition-opacity hover:opacity-90">
-              <Sparkles className="mr-1 h-3 w-3" />
+              <Sparkles className="me-1 h-3 w-3" />
               {t("featured_post")}
             </Badge>
 

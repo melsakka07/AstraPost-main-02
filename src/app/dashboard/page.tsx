@@ -18,6 +18,7 @@ import {
 import { getTranslations } from "next-intl/server";
 import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { PostUsageBar } from "@/components/dashboard/post-usage-bar";
+import { QuickActions, selectNextBestAction } from "@/components/dashboard/quick-actions";
 import { QuickCompose } from "@/components/dashboard/quick-compose";
 import { SetupChecklist } from "@/components/dashboard/setup-checklist";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -325,6 +326,16 @@ export default async function DashboardPage() {
     },
   };
 
+  // Mirror SetupChecklist's milestone semantics exactly: hasScheduledPost means
+  // "has ever created a post" (the source query has no status filter). The
+  // empty-queue nudge is already handled by the Upcoming Queue card's EmptyState,
+  // so the hero must not re-gate on scheduledCount or the two surfaces contradict.
+  const nextBestAction = selectNextBestAction({
+    hasXAccount: data.checklist.hasXAccount,
+    hasScheduledPost: data.checklist.hasScheduledPost,
+    hasUsedAI: data.checklist.hasUsedAI,
+  });
+
   return (
     <DashboardPageWrapper
       icon={Home}
@@ -357,62 +368,15 @@ export default async function DashboardPage() {
 
       <PostUsageBar />
 
-      {/* Stats Grid */}
-      <TooltipProvider>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-          {STAT_CARDS.map((card) => {
-            const stat = statValues[card.key]!;
-            return (
-              <Card
-                key={card.key}
-                className={`border-s-4 ${card.accent} transition-shadow hover:shadow-md`}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 px-4 py-3 pb-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <CardTitle className="text-muted-foreground cursor-help text-xs font-medium sm:text-sm">
-                        {stat.label}
-                      </CardTitle>
-                    </TooltipTrigger>
-                    <TooltipContent>{stat.tooltip}</TooltipContent>
-                  </Tooltip>
-                  <div
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${card.iconBg}`}
-                  >
-                    <card.icon className={`h-4 w-4 ${card.iconColor}`} />
-                  </div>
-                </CardHeader>
-                <CardContent className="px-4 py-2">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xl font-bold tracking-tight sm:text-2xl">
-                      {stat.value}
-                    </span>
-                    {stat.delta && (
-                      <span
-                        className={`inline-flex items-center gap-0.5 text-xs font-medium ${
-                          stat.delta.positive ? "text-success-11" : "text-danger-11"
-                        }`}
-                      >
-                        {stat.delta.positive ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3" />
-                        )}
-                        {stat.delta.text}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-muted-foreground mt-1 text-xs">{stat.sub}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </TooltipProvider>
-
-      {/* Upcoming Queue + Quick Compose */}
+      {/* Hero: What's next (next-best-action) + Quick Compose */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="md:col-span-1 lg:col-span-4">
+        <QuickActions action={nextBestAction} />
+        <QuickCompose />
+      </div>
+
+      {/* Upcoming Queue — primary, full-width */}
+      <div className="grid grid-cols-1">
+        <Card>
           <CardHeader className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base sm:text-lg">{t("upcoming_queue")}</CardTitle>
             {data.upcomingPosts.length > 0 && (
@@ -494,8 +458,57 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
-        <QuickCompose />
       </div>
+
+      {/* Stats — demoted to a compact secondary strip */}
+      <TooltipProvider>
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          {STAT_CARDS.map((card) => {
+            const stat = statValues[card.key]!;
+            return (
+              <Card
+                key={card.key}
+                className={`border-s-2 ${card.accent} transition-shadow hover:shadow-sm`}
+              >
+                <CardContent className="flex items-center gap-2.5 px-3 py-2.5">
+                  <div
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${card.iconBg}`}
+                  >
+                    <card.icon className={`h-3.5 w-3.5 ${card.iconColor}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <p className="text-muted-foreground cursor-help truncate text-[11px] font-medium">
+                          {stat.label}
+                        </p>
+                      </TooltipTrigger>
+                      <TooltipContent>{stat.tooltip}</TooltipContent>
+                    </Tooltip>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-base font-bold tracking-tight">{stat.value}</span>
+                      {stat.delta && (
+                        <span
+                          className={`inline-flex items-center gap-0.5 text-[11px] font-medium ${
+                            stat.delta.positive ? "text-success-11" : "text-danger-11"
+                          }`}
+                        >
+                          {stat.delta.positive ? (
+                            <TrendingUp className="h-3 w-3" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3" />
+                          )}
+                          {stat.delta.text}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </TooltipProvider>
     </DashboardPageWrapper>
   );
 }

@@ -21,6 +21,7 @@
     "calendar": "‏[Calendar]‏",
     "writer": "‏[Writer]‏",
     "inspiration": "‏[Inspiration]‏",
+    "import_&_adapt": "‏[Import & Adapt Adaptpt]‏",
     "agentic_posting": "‏[Agentic Posting Postingng]‏",
     "history": "‏[History]‏",
     "viral_analyzer": "‏[Viral Analyzer Analyzerer]‏",
@@ -537,6 +538,19 @@
       "scheduled_today": "‏[Posts scheduled to publish today]‏",
       "scheduled": "‏[Total posts waiting in the queue]‏",
       "engagement": "‏[Average engagement rate across all published posts in the last 30 days]‏"
+    },
+    "whats_next": {
+      "title": "‏[What's next nextxt]‏",
+      "connect_x": "‏[Connect X account accountnt]‏",
+      "connect_x_desc": "‏[Link your X account to start scheduling and publishing posts.]‏",
+      "schedule_first": "‏[Schedule your first post postst]‏",
+      "schedule_first_desc": "‏[Plan your first post and let AstraPost publish it for you.]‏",
+      "try_ai": "‏[Try AI generation generationon]‏",
+      "try_ai_desc": "‏[Generate a thread or post idea with AI in seconds.]‏",
+      "compose": "‏[Compose a post postst]‏",
+      "compose_desc": "‏[Write something new and share it with your audience.]‏",
+      "compose_action": "‏[Compose Composese]‏",
+      "schedule_action": "‏[Schedule Schedulele]‏"
     }
   },
   "compose": {
@@ -652,6 +666,41 @@
       "hashtags": {
         "dismiss": "‏[Dismiss]‏",
         "all_added": "‏[All hashtags added!]‏"
+      },
+      "label": {
+        "thread": "‏[Write]‏",
+        "inspire": "‏[Inspire]‏",
+        "template": "‏[Template]‏",
+        "hook": "‏[Hook]‏",
+        "cta": "‏[CTA]‏",
+        "rewrite": "‏[Rewrite]‏",
+        "translate": "‏[Translate]‏",
+        "hashtags": "‏[#Tags]‏"
+      },
+      "tone": {
+        "professional": "‏[Professional]‏",
+        "casual": "‏[Casual]‏",
+        "humorous": "‏[Funny]‏",
+        "educational": "‏[Educational]‏",
+        "inspirational": "‏[Inspirational]‏",
+        "viral": "‏[Viral]‏"
+      },
+      "niche": {
+        "technology": "‏[Technology]‏",
+        "business": "‏[Business]‏",
+        "marketing": "‏[Marketing]‏",
+        "lifestyle": "‏[Lifestyle]‏",
+        "health_fitness": "‏[Health & Fitness Fitnesss]‏",
+        "education": "‏[Education]‏",
+        "finance": "‏[Finance]‏",
+        "entertainment": "‏[Entertainment]‏",
+        "productivity": "‏[Productivity]‏",
+        "self_improvement": "‏[Self Improvement Improvementnt]‏"
+      },
+      "format": {
+        "single": "‏[Single Tweet Tweetet]‏",
+        "thread_short": "‏[Thread (3–5) (3–5)5)]‏",
+        "thread_long": "‏[Thread (5–10) (5–10)0)]‏"
       }
     },
     "dialog": {
@@ -785,6 +834,11 @@
   "calendar": {
     "title": "‏[Calendar]‏",
     "description": "‏[Visualize your posting schedule schedulele]‏",
+    "view_options": {
+      "day": "‏[Day]‏",
+      "week": "‏[Week]‏",
+      "month": "‏[Month]‏"
+    },
     "open_queue": "‏[Open Queue Queueue]‏",
     "schedule_new": "‏[Schedule New Newew]‏",
     "today": "‏[Today]‏",
@@ -814,6 +868,11 @@
   "drafts": {
     "title": "‏[Drafts]‏",
     "description": "‏[Your saved drafts draftsts]‏",
+    "sort_options": {
+      "updated": "‏[Last edited editeded]‏",
+      "created": "‏[Oldest first firstst]‏",
+      "length": "‏[Longest draft draftft]‏"
+    },
     "new_draft": "‏[New Draft Draftft]‏",
     "empty_title": "‏[No drafts yet yetet]‏",
     "empty_description": "‏[Save a post as a draft to see it here herere]‏",
@@ -825,6 +884,13 @@
   "analytics": {
     "title": "‏[Analytics]‏",
     "description": "‏[Track your post performance performancece]‏",
+    "date_range": {
+      "placeholder": "‏[Select range rangege]‏",
+      "last_7d": "‏[Last 7 days daysys]‏",
+      "last_14d": "‏[Last 14 days daysys]‏",
+      "last_30d": "‏[Last 30 days daysys]‏",
+      "last_90d": "‏[Last 90 days daysys]‏"
+    },
     "overview": "‏[Overview]‏",
     "performance": "‏[Performance]‏",
     "insights": "‏[Insights]‏",
@@ -1513,7 +1579,16 @@
       "audience_placeholder": "‏[e.g., developers, marketers, students studentsts]‏",
       "posting_as": "‏[Posting as as]‏",
       "voice_profile_active": "‏[Writing in your voice]‏",
-      "voice_profile_disable": "‏[Turn off]‏"
+      "voice_profile_disable": "‏[Turn off]‏",
+      "tone_options": {
+        "professional": "‏[Professional]‏",
+        "casual": "‏[Casual]‏",
+        "educational": "‏[Educational]‏",
+        "inspirational": "‏[Inspirational]‏",
+        "humorous": "‏[Humorous]‏",
+        "viral": "‏[Viral]‏",
+        "controversial": "‏[Controversial]‏"
+      }
     },
     "processing_screen": {
       "generating_for_topic": "‏[Generating for topic topicic]‏",
@@ -1919,6 +1994,41 @@
     "ai_assist": {
       "title": "‏[AI Assist Assistst]‏",
       "what_do": "‏[What would you like to do? do?o?]‏",
+      "auto_detect": "‏[Auto-detect]‏",
+      "actions": {
+        "rephrase": {
+          "label": "‏[Rephrase]‏",
+          "description": "‏[Rewrite in different words wordsds]‏"
+        },
+        "change_tone": {
+          "label": "‏[Change Tone Tonene]‏",
+          "description": "‏[Adapt to a different tone tonene]‏"
+        },
+        "expand_thread": {
+          "label": "‏[Expand Thread Threadad]‏",
+          "description": "‏[Turn into a multi-tweet thread threadad]‏"
+        },
+        "add_take": {
+          "label": "‏[Add Your Take Takeke]‏",
+          "description": "‏[Inject your personal perspective perspectivee]‏"
+        },
+        "translate": {
+          "label": "‏[Translate]‏",
+          "description": "‏[Translate to another language languagege]‏"
+        },
+        "counter_point": {
+          "label": "‏[Counter Point Pointnt]‏",
+          "description": "‏[Create a respectful counter-argument counter-argumentnt]‏"
+        }
+      },
+      "tones": {
+        "professional": "‏[Professional]‏",
+        "casual": "‏[Casual]‏",
+        "humorous": "‏[Humorous]‏",
+        "educational": "‏[Educational]‏",
+        "inspirational": "‏[Inspirational]‏",
+        "viral": "‏[Viral]‏"
+      },
       "rephrase": "‏[Rephrase]‏",
       "rephrase_description": "‏[Rewrite in different words wordsds]‏",
       "change_tone": "‏[Change Tone Tonene]‏",
@@ -2969,6 +3079,17 @@
   },
   "roadmap": {
     "badge": "‏[Roadmap]‏",
+    "tabs": {
+      "all": "‏[All]‏",
+      "in_progress": "‏[In Progress Progressss]‏",
+      "completed": "‏[Completed]‏",
+      "ideas": "‏[Ideas]‏"
+    },
+    "feedback_type": {
+      "feature": "‏[Feature Request Requestst]‏",
+      "bug": "‏[Bug Report Reportrt]‏",
+      "other": "‏[Other]‏"
+    },
     "title": "‏[Product Roadmap Roadmapap]‏",
     "subtitle": "‏[Help us build the features you need. Submit your ideas and suggestions below — our development team reviews every submission. submission.n.]‏",
     "always_improving": "‏[We're always looking for ways to improve improveve]‏",
@@ -3046,6 +3167,14 @@
     "tr": "‏[Turkish]‏",
     "ru": "‏[Russian]‏",
     "hi": "‏[Hindi]‏"
+  },
+  "x_tier": {
+    "none": "‏[Free X account accountnt]‏",
+    "basic": "‏[X Basic subscriber subscriberer]‏",
+    "premium": "‏[X Premium subscriber subscriberer]‏",
+    "premium_plus": "‏[X Premium+ subscriber subscriberer]‏",
+    "unknown": "‏[Subscription status unknown unknownwn]‏",
+    "loading": "‏[Loading subscription tier tierer]‏"
   },
   "ai_image": {
     "service_busy": "‏[Service busy — retrying automatically...]‏",

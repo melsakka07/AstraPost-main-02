@@ -147,7 +147,7 @@ export function BlogPostClient({ title, excerpt, slug, children }: BlogPostClien
                   key={heading.id}
                   href={`#${heading.id}`}
                   className={`hover:text-primary block text-sm transition-colors ${
-                    heading.level === 3 ? "text-muted-foreground pl-4" : ""
+                    heading.level === 3 ? "text-muted-foreground ps-4" : ""
                   } ${
                     activeHeading === heading.id
                       ? "text-primary font-medium"

@@ -104,7 +104,7 @@ export function ImpersonationBanner({
           onClick={handleStop}
           disabled={stopping}
         >
-          <LogOut className="mr-2 h-3 w-3" />
+          <LogOut className="me-2 h-3 w-3" />
           {stopping ? "Stopping..." : "Stop Impersonating"}
         </Button>
       </div>

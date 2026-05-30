@@ -627,7 +627,7 @@ export function YoutubeToThreadClient() {
                     <button
                       key={job.id}
                       type="button"
-                      className="hover:bg-muted/50 flex w-full items-center gap-3 px-1 py-2.5 text-left transition-colors"
+                      className="hover:bg-muted/50 flex w-full items-center gap-3 px-1 py-2.5 text-start transition-colors"
                       onClick={() => handleRecentJobClick(job.id)}
                     >
                       <div className="bg-muted relative h-10 w-16 shrink-0 overflow-hidden rounded">

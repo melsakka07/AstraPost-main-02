@@ -98,7 +98,7 @@ export default async function ResourcesPage() {
               <CardFooter>
                 {resource.comingSoon ? (
                   <Button variant="outline" className="w-full" disabled>
-                    <Clock className="mr-2 h-4 w-4" />
+                    <Clock className="me-2 h-4 w-4" />
                     {t("coming_soon")}
                   </Button>
                 ) : (

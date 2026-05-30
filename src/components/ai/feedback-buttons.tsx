@@ -85,7 +85,7 @@ export function FeedbackButtons({ generationId, className }: FeedbackButtonsProp
           aria-live="polite"
           className="text-success-11 animate-in fade-in text-xs font-medium"
         >
-          <Check className="mr-1 inline h-3 w-3" />
+          <Check className="me-1 inline h-3 w-3" />
           Thanks!
         </span>
       ) : (

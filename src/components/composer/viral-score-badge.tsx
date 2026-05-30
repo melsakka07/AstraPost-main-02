@@ -274,7 +274,7 @@ export function ViralScoreBadge({ content, userPlan }: ViralScoreBadgeProps) {
             <Sparkles className="text-primary h-3 w-3" />
             Viral Potential: {score}/100{data.tier ? ` (${data.tier})` : ""}
           </p>
-          <ul className="text-muted-foreground list-disc space-y-1 pl-4 text-xs">
+          <ul className="text-muted-foreground list-disc space-y-1 ps-4 text-xs">
             {feedback.map((f, i) => (
               <li key={i}>{f}</li>
             ))}

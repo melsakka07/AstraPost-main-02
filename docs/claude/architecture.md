@@ -58,7 +58,7 @@ src/
 │   ├── drafts/                   # Draft components
 │   ├── email/                    # Email templates (React Email)
 │   ├── gamification/             # Gamification components (Badges, Progress)
-│   ├── inspiration/              # Inspiration components (Adaptation panel, Imported tweet card)
+│   ├── inspiration/              # Import & Adapt — thin 140-line shell (../app/dashboard/inspiration/page.tsx) orchestrating focused hooks (use-inspiration-{import,history,bookmarks,tabs,composer-bridge}.ts) + subcomponents (inspiration-{import-panel,history-list,bookmarks-list}.tsx, adaptation-panel, imported-tweet-card); pure logic in inspiration-utils.ts
 │   ├── jobs/                     # Job tracking components
 │   ├── marketing/                # Marketing components (Hero, Features)
 │   ├── onboarding/               # Onboarding components (Wizard, Tour)
@@ -179,6 +179,7 @@ The dashboard sidebar (defined in `src/components/dashboard/sidebar-nav-data.ts`
 - `src/lib/ai/input-limits.ts` — Centralized character limits for user-supplied inputs
 - `src/lib/ai/language.ts` — `buildLanguageBlock()` for centralized language instructions
 - `src/lib/ai/text-fit.ts` — `fitTweet()` / `splitThread()` server-side char-count enforcement
+- `src/lib/tweet-char.ts` — canonical client char-count helper (weighted length, tier max, 280 thread cap, zone/severity); single source consumed by composer + all AI surfaces via the `src/hooks/use-tweet-char-count.ts` hook
 - `src/lib/ai/hashtags.ts` — Hashtag banlist + MENA-bias filter
 - `src/lib/ai/with-retry.ts` — Exponential backoff retry wrapper
 - `src/lib/ai/with-timeout.ts` — `AbortSignal.timeout` wrapper

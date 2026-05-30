@@ -180,7 +180,7 @@ export function SetupChecklist({
                 >
                   <Circle className="text-muted-foreground group-hover:text-primary h-4 w-4 shrink-0" />
                   <span className="whitespace-nowrap">{step.label}</span>
-                  <span className="text-primary ml-1 text-xs font-medium opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                  <span className="text-primary ms-1 text-xs font-medium opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
                     {step.cta}
                   </span>
                 </Link>

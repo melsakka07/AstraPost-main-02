@@ -106,6 +106,21 @@ jobs:
       - name: Check dashboard palette tokens
         run: node scripts/verify-dashboard-tokens.mjs
 
+  rtl-guard:
+    name: RTL Logical-Property Guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Check dashboard RTL logical properties
+        run: node scripts/verify-rtl.mjs
+
   build:
     name: Build
     runs-on: ubuntu-latest

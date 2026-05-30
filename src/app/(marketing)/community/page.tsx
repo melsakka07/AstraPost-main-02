@@ -103,7 +103,7 @@ export default async function CommunityPage() {
             <div className="flex flex-wrap gap-4">
               <Button size="lg" disabled>
                 {t("join_discord")}
-                <Badge variant="secondary" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
+                <Badge variant="secondary" className="ms-2 h-4 px-1.5 py-0 text-[10px]">
                   {t("coming_soon")}
                 </Badge>
               </Button>
@@ -185,8 +185,8 @@ export default async function CommunityPage() {
                     value={`faq-${i}`}
                     className="rounded-xl border px-4 transition-shadow data-[state=open]:shadow-sm"
                   >
-                    <AccordionTrigger className="py-4 text-left text-sm font-medium hover:no-underline [&>svg]:hidden">
-                      <span className="flex-1 pr-4">{faq.question}</span>
+                    <AccordionTrigger className="py-4 text-start text-sm font-medium hover:no-underline [&>svg]:hidden">
+                      <span className="flex-1 pe-4">{faq.question}</span>
                       <ChevronDown className="text-muted-foreground h-4 w-4 shrink-0 transition-transform duration-200 [[data-state=open]_&]:rotate-180" />
                     </AccordionTrigger>
                     <AccordionContent className="text-muted-foreground pb-4 text-sm leading-relaxed">
@@ -232,7 +232,7 @@ export default async function CommunityPage() {
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Button size="lg" disabled>
                 {t("cta_join")}
-                <Badge variant="secondary" className="ml-2 h-4 px-1.5 py-0 text-[10px]">
+                <Badge variant="secondary" className="ms-2 h-4 px-1.5 py-0 text-[10px]">
                   {t("coming_soon")}
                 </Badge>
               </Button>

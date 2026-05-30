@@ -21,6 +21,7 @@
     "calendar": "Calendar",
     "writer": "Writer",
     "inspiration": "Inspiration",
+    "import_&_adapt": "Import & Adapt",
     "agentic_posting": "Agentic Posting",
     "history": "History",
     "viral_analyzer": "Viral Analyzer",
@@ -555,6 +556,19 @@
       "scheduled_today": "Posts scheduled to publish today",
       "scheduled": "Total posts waiting in the queue",
       "engagement": "Average engagement rate across all published posts in the last 30 days"
+    },
+    "whats_next": {
+      "title": "What's next",
+      "connect_x": "Connect X account",
+      "connect_x_desc": "Link your X account to start scheduling and publishing posts.",
+      "schedule_first": "Schedule your first post",
+      "schedule_first_desc": "Plan your first post and let AstraPost publish it for you.",
+      "try_ai": "Try AI generation",
+      "try_ai_desc": "Generate a thread or post idea with AI in seconds.",
+      "compose": "Compose a post",
+      "compose_desc": "Write something new and share it with your audience.",
+      "compose_action": "Compose",
+      "schedule_action": "Schedule"
     }
   },
   "compose": {
@@ -670,6 +684,41 @@
       "hashtags": {
         "dismiss": "Dismiss",
         "all_added": "All hashtags added!"
+      },
+      "label": {
+        "thread": "Write",
+        "inspire": "Inspire",
+        "template": "Template",
+        "hook": "Hook",
+        "cta": "CTA",
+        "rewrite": "Rewrite",
+        "translate": "Translate",
+        "hashtags": "#Tags"
+      },
+      "tone": {
+        "professional": "Professional",
+        "casual": "Casual",
+        "humorous": "Funny",
+        "educational": "Educational",
+        "inspirational": "Inspirational",
+        "viral": "Viral"
+      },
+      "niche": {
+        "technology": "Technology",
+        "business": "Business",
+        "marketing": "Marketing",
+        "lifestyle": "Lifestyle",
+        "health_fitness": "Health & Fitness",
+        "education": "Education",
+        "finance": "Finance",
+        "entertainment": "Entertainment",
+        "productivity": "Productivity",
+        "self_improvement": "Self Improvement"
+      },
+      "format": {
+        "single": "Single Tweet",
+        "thread_short": "Thread (3–5)",
+        "thread_long": "Thread (5–10)"
       }
     },
     "dialog": {
@@ -803,6 +852,11 @@
   "calendar": {
     "title": "Calendar",
     "description": "Visualize your posting schedule",
+    "view_options": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month"
+    },
     "open_queue": "Open Queue",
     "schedule_new": "Schedule New",
     "today": "Today",
@@ -832,6 +886,11 @@
   "drafts": {
     "title": "Drafts",
     "description": "Your saved drafts",
+    "sort_options": {
+      "updated": "Last edited",
+      "created": "Oldest first",
+      "length": "Longest draft"
+    },
     "new_draft": "New Draft",
     "empty_title": "No drafts yet",
     "empty_description": "Save a post as a draft to see it here",
@@ -843,6 +902,13 @@
   "analytics": {
     "title": "Analytics",
     "description": "Track your post performance",
+    "date_range": {
+      "placeholder": "Select range",
+      "last_7d": "Last 7 days",
+      "last_14d": "Last 14 days",
+      "last_30d": "Last 30 days",
+      "last_90d": "Last 90 days"
+    },
     "overview": "Overview",
     "performance": "Performance",
     "insights": "Insights",
@@ -1210,6 +1276,14 @@
     "ru": "Russian",
     "hi": "Hindi"
   },
+  "x_tier": {
+    "none": "Free X account",
+    "basic": "X Basic subscriber",
+    "premium": "X Premium subscriber",
+    "premium_plus": "X Premium+ subscriber",
+    "unknown": "Subscription status unknown",
+    "loading": "Loading subscription tier"
+  },
   "ai_hub": {
     "title": "AI Hub",
     "description": "Powerful AI tools to supercharge your content creation",
@@ -1543,7 +1617,16 @@
       "audience_placeholder": "e.g., developers, marketers, students",
       "posting_as": "Posting as",
       "voice_profile_active": "Writing in your voice",
-      "voice_profile_disable": "Turn off"
+      "voice_profile_disable": "Turn off",
+      "tone_options": {
+        "professional": "Professional",
+        "casual": "Casual",
+        "educational": "Educational",
+        "inspirational": "Inspirational",
+        "humorous": "Humorous",
+        "viral": "Viral",
+        "controversial": "Controversial"
+      }
     },
     "processing_screen": {
       "generating_for_topic": "Generating for topic",
@@ -2017,6 +2100,41 @@
     "ai_assist": {
       "title": "AI Assist",
       "what_do": "What would you like to do?",
+      "auto_detect": "Auto-detect",
+      "actions": {
+        "rephrase": {
+          "label": "Rephrase",
+          "description": "Rewrite in different words"
+        },
+        "change_tone": {
+          "label": "Change Tone",
+          "description": "Adapt to a different tone"
+        },
+        "expand_thread": {
+          "label": "Expand Thread",
+          "description": "Turn into a multi-tweet thread"
+        },
+        "add_take": {
+          "label": "Add Your Take",
+          "description": "Inject your personal perspective"
+        },
+        "translate": {
+          "label": "Translate",
+          "description": "Translate to another language"
+        },
+        "counter_point": {
+          "label": "Counter Point",
+          "description": "Create a respectful counter-argument"
+        }
+      },
+      "tones": {
+        "professional": "Professional",
+        "casual": "Casual",
+        "humorous": "Humorous",
+        "educational": "Educational",
+        "inspirational": "Inspirational",
+        "viral": "Viral"
+      },
       "rephrase": "Rephrase",
       "rephrase_description": "Rewrite in different words",
       "change_tone": "Change Tone",
@@ -3007,6 +3125,17 @@
   },
   "roadmap": {
     "badge": "Roadmap",
+    "tabs": {
+      "all": "All",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "ideas": "Ideas"
+    },
+    "feedback_type": {
+      "feature": "Feature Request",
+      "bug": "Bug Report",
+      "other": "Other"
+    },
     "title": "Product Roadmap",
     "subtitle": "Help us build the features you need. Submit your ideas and suggestions below — our development team reviews every submission.",
     "always_improving": "We're always looking for ways to improve",

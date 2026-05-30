@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader2, MessageSquare } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -45,6 +46,7 @@ const feedbackSchema = z.object({
 type FeedbackFormValues = z.infer<typeof feedbackSchema>;
 
 export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
+  const t = useTranslations("roadmap");
   const [items, setItems] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -169,10 +171,10 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="planned">In Progress</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="pending">Ideas</TabsTrigger>
+            <TabsTrigger value="all">{t("tabs.all")}</TabsTrigger>
+            <TabsTrigger value="planned">{t("tabs.in_progress")}</TabsTrigger>
+            <TabsTrigger value="completed">{t("tabs.completed")}</TabsTrigger>
+            <TabsTrigger value="pending">{t("tabs.ideas")}</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -219,9 +221,9 @@ export function FeedbackList({ isLoggedIn }: { isLoggedIn: boolean }) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="feature">Feature Request</SelectItem>
-                            <SelectItem value="bug">Bug Report</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem value="feature">{t("feedback_type.feature")}</SelectItem>
+                            <SelectItem value="bug">{t("feedback_type.bug")}</SelectItem>
+                            <SelectItem value="other">{t("feedback_type.other")}</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

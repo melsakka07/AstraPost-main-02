@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import type { AgenticTweet } from "@/lib/ai/agentic-types";
 import type { XSubscriptionTier } from "@/lib/schemas/common";
+import { computeTweetCharCount } from "@/lib/tweet-char";
 
 interface AgenticTweetCardProps {
   tweet: AgenticTweet;
@@ -47,9 +48,18 @@ export function AgenticTweetCard({
   dragHandleProps,
 }: AgenticTweetCardProps) {
   const t = useTranslations("ai_agentic");
-  const charCount = isEditing ? editText.length : tweet.charCount;
-  const isOverLimit = charCount > 280;
-  const isNearLimit = charCount >= 260 && charCount <= 280;
+  // While editing, weight the live text; otherwise use the pipeline's precomputed
+  // count. Threads cap at 280; "near limit" warns from 260/280.
+  const counts = isEditing
+    ? computeTweetCharCount(editText, { isThreadMode: true, warnRatio: 260 / 280 })
+    : computeTweetCharCount("", {
+        isThreadMode: true,
+        precomputedCharCount: tweet.charCount,
+        warnRatio: 260 / 280,
+      });
+  const charCount = counts.charCount;
+  const isOverLimit = counts.severity === "over";
+  const isNearLimit = counts.severity === "warning";
 
   return (
     <Card

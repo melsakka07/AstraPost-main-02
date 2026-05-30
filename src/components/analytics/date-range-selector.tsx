@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Select,
   SelectContent,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/select";
 
 export function DateRangeSelector() {
+  const t = useTranslations("analytics");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,13 +26,13 @@ export function DateRangeSelector() {
   return (
     <Select value={range} onValueChange={handleRangeChange}>
       <SelectTrigger className="h-9 w-[120px]">
-        <SelectValue placeholder="Select range" />
+        <SelectValue placeholder={t("date_range.placeholder")} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="7d">Last 7 days</SelectItem>
-        <SelectItem value="14d">Last 14 days</SelectItem>
-        <SelectItem value="30d">Last 30 days</SelectItem>
-        <SelectItem value="90d">Last 90 days</SelectItem>
+        <SelectItem value="7d">{t("date_range.last_7d")}</SelectItem>
+        <SelectItem value="14d">{t("date_range.last_14d")}</SelectItem>
+        <SelectItem value="30d">{t("date_range.last_30d")}</SelectItem>
+        <SelectItem value="90d">{t("date_range.last_90d")}</SelectItem>
       </SelectContent>
     </Select>
   );
