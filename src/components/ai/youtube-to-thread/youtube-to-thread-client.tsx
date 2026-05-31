@@ -40,12 +40,12 @@ interface RecentJob {
 // ── Constants ──────────────────────────────────────────────────────────
 
 const PHASE_LABEL_KEYS: Record<string, string> = {
-  queued: "youtube_to_thread.progress.queued",
-  downloading: "youtube_to_thread.progress.downloading",
-  transcribing: "youtube_to_thread.progress.transcribing",
-  generating: "youtube_to_thread.progress.generating",
-  ready: "youtube_to_thread.progress.ready",
-  failed: "youtube_to_thread.progress.failed",
+  queued: "progress.queued",
+  downloading: "progress.downloading",
+  transcribing: "progress.transcribing",
+  generating: "progress.generating",
+  ready: "progress.ready",
+  failed: "progress.failed",
 };
 
 const PHASE_ORDER = ["downloading", "transcribing", "generating"] as const;
@@ -72,7 +72,15 @@ function formatDuration(seconds: number): string {
 
 export function YoutubeToThreadClient() {
   const t = useTranslations("ai_hub");
-  const yt = useTranslations("youtube_to_thread");
+  // Accesses ai_hub.youtube_to_thread.* keys — no separate top-level namespace needed.
+  const YT_NS = "youtube_to_thread.";
+  const yt = useCallback(
+    (key: string, values?: Record<string, string | number>) =>
+      key
+        ? (t((YT_NS + key) as Parameters<typeof t>[0], values as Parameters<typeof t>[1]) as string)
+        : "",
+    [t]
+  );
   const router = useRouter();
   const upgradeModal = useUpgradeModal();
 
@@ -464,10 +472,10 @@ export function YoutubeToThreadClient() {
   // Pre-compute phase items for JobProgressCard (M5a: PHASE_LABEL_KEYS only)
   const progressPhases = PHASE_ORDER.map((phase) => ({
     key: phase,
-    label: t(PHASE_LABEL_KEYS[phase]!),
+    label: yt(PHASE_LABEL_KEYS[phase]!),
   }));
 
-  const statusLabel = t(PHASE_LABEL_KEYS[status] ?? "");
+  const statusLabel = yt(PHASE_LABEL_KEYS[status] ?? "");
 
   const elapsedLabel = yt("progress.elapsed", { seconds: elapsedSeconds });
 

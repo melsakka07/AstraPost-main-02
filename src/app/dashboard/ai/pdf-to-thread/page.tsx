@@ -11,7 +11,6 @@ export default async function PdfToThreadPage() {
   if (!ctx) redirect("/login");
 
   const t = await getTranslations("ai_hub");
-
   return (
     <DashboardPageWrapper
       icon={FileText}
