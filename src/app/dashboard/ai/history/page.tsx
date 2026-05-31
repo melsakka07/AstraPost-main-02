@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { eq, desc, count } from "drizzle-orm";
 import { History, RefreshCcw, Sparkles } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -9,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchNoResultsIllustration } from "@/components/ui/illustrations";
-import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { aiGenerations } from "@/lib/schema";
+import { getTeamContext } from "@/lib/team-context";
 
 const CONTENT_TYPES = new Set([
   "thread",
@@ -61,18 +62,19 @@ export default async function AiHistoryPage({
   const resolvedParams = searchParams ? await searchParams : undefined;
   const page = Math.max(1, parseInt(resolvedParams?.page ?? "1", 10) || 1);
 
-  const session = await requireAdmin();
+  const ctx = await getTeamContext();
+  if (!ctx) redirect("/login");
   const userLocale =
-    session?.user && "language" in session.user ? (session.user as any).language : "en";
+    ctx.session.user && "language" in ctx.session.user ? (ctx.session.user as any).language : "en";
   const t = await getTranslations("ai_history");
 
   const [totalResult, history] = await Promise.all([
     db
       .select({ total: count() })
       .from(aiGenerations)
-      .where(eq(aiGenerations.userId, session.user.id)),
+      .where(eq(aiGenerations.userId, ctx.currentTeamId)),
     db.query.aiGenerations.findMany({
-      where: eq(aiGenerations.userId, session.user.id),
+      where: eq(aiGenerations.userId, ctx.currentTeamId),
       orderBy: [desc(aiGenerations.createdAt)],
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,

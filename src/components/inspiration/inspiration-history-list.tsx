@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
-import { ExternalLink, History, RefreshCw } from "lucide-react";
+import { Download, ExternalLink, History, RefreshCw } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,15 @@ interface InspirationHistoryListProps {
   history: HistoryItem[];
   /** Re-import a history item by its source URL (switches to the import tab). */
   onReimport: (url: string) => void;
+  /** Called when the user clicks the CTA in the empty state (e.g. navigates to Import tab). */
+  onNavigateToImport?: () => void;
 }
 
-export function InspirationHistoryList({ history, onReimport }: InspirationHistoryListProps) {
+export function InspirationHistoryList({
+  history,
+  onReimport,
+  onNavigateToImport,
+}: InspirationHistoryListProps) {
   const t = useTranslations("inspiration");
   const locale = useLocale();
 
@@ -27,6 +33,15 @@ export function InspirationHistoryList({ history, onReimport }: InspirationHisto
           <EmptyState
             icon={<History className="h-5 w-5 opacity-50" />}
             title={t("no_history")}
+            description={t("no_history_description")}
+            primaryAction={
+              onNavigateToImport ? (
+                <Button onClick={onNavigateToImport}>
+                  <Download className="me-2 h-4 w-4" />
+                  {t("go_to_import")}
+                </Button>
+              ) : undefined
+            }
             className="border-0 bg-transparent py-16"
           />
         ) : (
@@ -66,7 +81,7 @@ export function InspirationHistoryList({ history, onReimport }: InspirationHisto
                       }
                     >
                       <RefreshCw className="me-1 h-3 w-3" />
-                      {t("re_import")}
+                      {t("open_in_import")}
                     </Button>
                     <a
                       href={`https://x.com/${item.sourceAuthorHandle}/status/${item.sourceTweetId}`}

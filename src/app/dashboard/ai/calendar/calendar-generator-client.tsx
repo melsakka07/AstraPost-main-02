@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CalendarCheck,
   User,
+  RefreshCw,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 interface CalendarItem {
   day: string;
@@ -51,21 +53,6 @@ const TWEET_TYPE_COLORS: Record<string, string> = {
   poll: "bg-warning-3 text-warning-11 border-warning-6",
   question: "bg-success-3 text-success-11 border-success-6",
 };
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
 
 interface XAccount {
   id: string;
@@ -142,6 +129,9 @@ export function CalendarGeneratorClient() {
   const [scheduleAllStartDate, setScheduleAllStartDate] = useState("");
   const [scheduleAllLoading, setScheduleAllLoading] = useState(false);
   const [scheduleAllFetching, setScheduleAllFetching] = useState(false);
+  const [scheduleAllFailedItems, setScheduleAllFailedItems] = useState<
+    { index: number; topic: string }[]
+  >([]);
 
   const handleGenerate = async () => {
     if (!niche.trim()) {
@@ -150,7 +140,6 @@ export function CalendarGeneratorClient() {
     }
 
     setIsGenerating(true);
-    setItems([]);
 
     try {
       const res = await fetch("/api/ai/calendar", {
@@ -161,10 +150,7 @@ export function CalendarGeneratorClient() {
 
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,
@@ -246,6 +232,7 @@ export function CalendarGeneratorClient() {
 
   const openScheduleAll = async () => {
     setScheduleAllStartDate(nextMonday());
+    setScheduleAllFailedItems([]);
     setScheduleAllOpen(true);
     setScheduleAllFetching(true);
     try {
@@ -266,6 +253,31 @@ export function CalendarGeneratorClient() {
     }
   };
 
+  const scheduleSingleItem = async (
+    item: CalendarItem,
+    index: number,
+    startDate: Date
+  ): Promise<boolean> => {
+    const weekNum = Math.floor(index / postsPerWeek) + 1;
+    const scheduledAt = resolveItemDate(item.day, weekNum, startDate, item.time);
+
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tweets: [{ content: item.brief }],
+          targetAccountIds: [`twitter:${scheduleAllAccountId}`],
+          scheduledAt: scheduledAt.toISOString(),
+          action: "schedule",
+        }),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
   const handleScheduleAll = async () => {
     if (!scheduleAllAccountId) {
       toast.error(t("toasts.select_account"));
@@ -281,43 +293,78 @@ export function CalendarGeneratorClient() {
     const startDate = new Date(y!, mo! - 1, d!, 0, 0, 0, 0);
 
     let successCount = 0;
-    let errorCount = 0;
+    const failedItems: { index: number; topic: string }[] = [];
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i]!;
-      const weekNum = Math.floor(i / postsPerWeek) + 1;
-      const scheduledAt = resolveItemDate(item.day, weekNum, startDate, item.time);
-
-      try {
-        const res = await fetch("/api/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tweets: [{ content: item.brief }],
-            targetAccountIds: [`twitter:${scheduleAllAccountId}`],
-            scheduledAt: scheduledAt.toISOString(),
-            action: "schedule",
-          }),
-        });
-        if (res.ok) {
-          successCount++;
-        } else {
-          errorCount++;
-        }
-      } catch {
-        errorCount++;
+      const ok = await scheduleSingleItem(item, i, startDate);
+      if (ok) {
+        successCount++;
+      } else {
+        failedItems.push({ index: i, topic: item.topic });
       }
     }
 
     setScheduleAllLoading(false);
-    setScheduleAllOpen(false);
 
-    if (errorCount === 0) {
+    if (failedItems.length === 0) {
+      setScheduleAllOpen(false);
+      setScheduleAllFailedItems([]);
       toast.success(t("toasts.scheduled_count", { count: successCount }));
       router.push("/dashboard/schedule?view=list");
     } else if (successCount > 0) {
-      toast.warning(t("toasts.scheduled_partial", { success: successCount, failed: errorCount }));
+      setScheduleAllFailedItems(failedItems);
+      toast.warning(
+        t("toasts.scheduled_partial_with_retry", {
+          success: successCount,
+          failed: failedItems.length,
+        })
+      );
+    } else {
+      setScheduleAllFailedItems(failedItems);
+      toast.error(t("toasts.schedule_failed"));
+    }
+  };
+
+  const handleRetryFailed = async () => {
+    if (!scheduleAllStartDate) return;
+
+    setScheduleAllLoading(true);
+    const [y, mo, d] = scheduleAllStartDate.split("-").map(Number);
+    const startDate = new Date(y!, mo! - 1, d!, 0, 0, 0, 0);
+
+    const stillFailed: { index: number; topic: string }[] = [];
+    let retrySuccess = 0;
+
+    for (const failed of scheduleAllFailedItems) {
+      const item = items[failed.index];
+      if (!item) {
+        stillFailed.push(failed);
+        continue;
+      }
+      const ok = await scheduleSingleItem(item, failed.index, startDate);
+      if (ok) {
+        retrySuccess++;
+      } else {
+        stillFailed.push(failed);
+      }
+    }
+
+    setScheduleAllLoading(false);
+
+    if (stillFailed.length === 0) {
+      setScheduleAllOpen(false);
+      setScheduleAllFailedItems([]);
+      toast.success(t("toasts.scheduled_count", { count: retrySuccess }));
       router.push("/dashboard/schedule?view=list");
+    } else if (retrySuccess > 0) {
+      setScheduleAllFailedItems(stillFailed);
+      toast.warning(
+        t("toasts.scheduled_partial_with_retry", {
+          success: retrySuccess,
+          failed: stillFailed.length,
+        })
+      );
     } else {
       toast.error(t("toasts.schedule_failed"));
     }
@@ -615,13 +662,15 @@ export function CalendarGeneratorClient() {
                   {t("loading_accounts")}
                 </div>
               ) : scheduleAllAccounts.length === 0 ? (
-                <p className="text-destructive text-sm">
-                  {t("no_connected_accounts")}{" "}
-                  <a href="/dashboard/settings" className="underline">
+                <div className="space-y-2 py-2 text-center">
+                  <p className="text-sm font-semibold">{t("no_connected_accounts")}</p>
+                  <a
+                    href="/dashboard/settings"
+                    className="text-primary hover:text-primary/80 inline-block text-sm font-medium underline underline-offset-2 transition-colors"
+                  >
                     {t("connect_in_settings")}
                   </a>
-                  .
-                </p>
+                </div>
               ) : (
                 <Select value={scheduleAllAccountId} onValueChange={setScheduleAllAccountId}>
                   <SelectTrigger id="sa-account">
@@ -658,6 +707,22 @@ export function CalendarGeneratorClient() {
               />
               <p className="text-muted-foreground text-xs">{t("week_start_help")}</p>
             </div>
+
+            {/* Failed items */}
+            {scheduleAllFailedItems.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-destructive text-xs font-semibold">
+                  {t("failed_items_heading", { count: scheduleAllFailedItems.length })}
+                </p>
+                <ul className="border-destructive/20 bg-destructive/5 max-h-32 space-y-1 overflow-y-auto rounded-md border p-2">
+                  {scheduleAllFailedItems.map((f) => (
+                    <li key={f.index} className="text-muted-foreground text-xs">
+                      {f.topic}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="gap-2">
@@ -668,27 +733,43 @@ export function CalendarGeneratorClient() {
             >
               {t("cancel")}
             </Button>
-            <Button
-              onClick={handleScheduleAll}
-              disabled={
-                scheduleAllLoading ||
-                scheduleAllFetching ||
-                !scheduleAllAccountId ||
-                !scheduleAllStartDate
-              }
-            >
-              {scheduleAllLoading ? (
-                <>
-                  <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                  {t("scheduling")}
-                </>
-              ) : (
-                <>
-                  <CalendarCheck className="me-2 h-4 w-4" />
-                  {t("schedule_n_posts", { count: items.length })}
-                </>
-              )}
-            </Button>
+            {scheduleAllFailedItems.length > 0 ? (
+              <Button onClick={handleRetryFailed} disabled={scheduleAllLoading}>
+                {scheduleAllLoading ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    {t("scheduling")}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="me-2 h-4 w-4" />
+                    {t("retry_failed", { count: scheduleAllFailedItems.length })}
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleScheduleAll}
+                disabled={
+                  scheduleAllLoading ||
+                  scheduleAllFetching ||
+                  !scheduleAllAccountId ||
+                  !scheduleAllStartDate
+                }
+              >
+                {scheduleAllLoading ? (
+                  <>
+                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                    {t("scheduling")}
+                  </>
+                ) : (
+                  <>
+                    <CalendarCheck className="me-2 h-4 w-4" />
+                    {t("schedule_n_posts", { count: items.length })}
+                  </>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Loader2, Copy, Check, ExternalLink } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Sparkles, Loader2, ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { AiResultActions, AiResultItemActions } from "@/components/ai/shared/ai-result-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import { copyToClipboard } from "@/lib/clipboard";
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 interface BioVariant {
   text: string;
@@ -27,25 +30,11 @@ interface BioVariant {
   rationale: string;
 }
 
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
-
 export function BioGeneratorClient({ connectedUsername }: { connectedUsername: string }) {
   const t = useTranslations("ai_bio");
   const tCommon = useTranslations("common");
   const langT = useTranslations("languages");
+  const router = useRouter();
   const { openWithContext } = useUpgradeModal();
 
   const [currentBio, setCurrentBio] = useState("");
@@ -70,10 +59,7 @@ export function BioGeneratorClient({ connectedUsername }: { connectedUsername: s
 
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,
@@ -113,6 +99,11 @@ export function BioGeneratorClient({ connectedUsername }: { connectedUsername: s
     setCopiedIdx(idx);
     toast.success(t("toasts.copied"));
     setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const sendToComposer = (text: string) => {
+    const params = new URLSearchParams({ prefill: text });
+    router.push(`/dashboard/compose?${params.toString()}`);
   };
 
   return (
@@ -219,6 +210,9 @@ export function BioGeneratorClient({ connectedUsername }: { connectedUsername: s
               </>
             )}
           </Button>
+          {!isLoading && !niche.trim() && (
+            <p className="text-muted-foreground text-center text-xs">{t("niche_required_hint")}</p>
+          )}
         </CardContent>
       </Card>
 
@@ -232,9 +226,9 @@ export function BioGeneratorClient({ connectedUsername }: { connectedUsername: s
               aria-hidden="true"
             >
               {[
-                ["Gain Followers", "w-full", "w-4/5"],
-                ["Attract Clients", "w-3/4", "w-full"],
-                ["Build Authority", "w-full", "w-2/3"],
+                [t("gain_followers"), "w-full", "w-4/5"],
+                [t("attract_clients"), "w-3/4", "w-full"],
+                [t("build_authority"), "w-full", "w-2/3"],
               ].map(([goal, w1, w2]) => (
                 <div key={goal} className="bg-card space-y-2 rounded-lg border p-3">
                   <div className="flex items-center justify-between">
@@ -261,6 +255,17 @@ export function BioGeneratorClient({ connectedUsername }: { connectedUsername: s
           </div>
         )}
 
+        {variants.length > 0 && (
+          <AiResultActions
+            itemCount={variants.length}
+            onRegenerate={handleGenerate}
+            onSendToComposer={() => {
+              const allText = variants.map((v) => v.text).join("\n\n---\n\n");
+              sendToComposer(allText);
+            }}
+          />
+        )}
+
         {variants.map((v, idx) => (
           <Card key={idx} className="hover:border-primary/30 transition-colors">
             <CardContent className="space-y-2 p-4">
@@ -268,19 +273,13 @@ export function BioGeneratorClient({ connectedUsername }: { connectedUsername: s
                 <Badge variant="secondary" className="text-xs">
                   {v.goal}
                 </Badge>
-                <Button size="sm" variant="ghost" onClick={() => copyBio(v.text, idx)}>
-                  {copiedIdx === idx ? (
-                    <>
-                      <Check className="me-1 h-3.5 w-3.5" />
-                      {t("copied")}
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="me-1 h-3.5 w-3.5" />
-                      {t("copy")}
-                    </>
-                  )}
-                </Button>
+                <AiResultItemActions
+                  text={v.text}
+                  index={idx}
+                  onCopy={copyBio}
+                  copied={copiedIdx === idx}
+                  onSendToComposer={(text) => sendToComposer(text)}
+                />
               </div>
               <p className="text-sm leading-relaxed font-medium">{v.text}</p>
               <div className="flex items-center justify-between gap-2">

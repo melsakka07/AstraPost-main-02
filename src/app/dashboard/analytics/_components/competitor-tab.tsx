@@ -31,6 +31,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useUserLocale } from "@/hooks/use-user-locale";
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 /** Assign rank-decay scores: 1st item → 100, 2nd → 85, 3rd → 72 … */
 function rankToChartData(items: string[], prefix = ""): { name: string; value: number }[] {
@@ -56,21 +57,6 @@ interface AnalysisResult {
     differentiationOpportunities: string[];
     summary: string;
   };
-}
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
 }
 
 interface SelfStats {
@@ -127,10 +113,7 @@ export function CompetitorTab() {
 
       if (!competitorRes.ok) {
         if (competitorRes.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await competitorRes.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(competitorRes);
           openWithContext({
             ...(payload?.error !== undefined && { error: payload.error }),
             ...(payload?.code !== undefined && { code: payload.code }),

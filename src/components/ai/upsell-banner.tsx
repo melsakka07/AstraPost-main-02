@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X, ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { PlanType } from "@/lib/plan-limits";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ interface UpsellBannerProps {
 }
 
 export function UpsellBanner({ plan, className }: UpsellBannerProps) {
+  const t = useTranslations("ai");
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === "undefined") return true;
     return sessionStorage.getItem(STORAGE_KEY) === "true";
@@ -43,13 +45,13 @@ export function UpsellBanner({ plan, className }: UpsellBannerProps) {
         <Sparkles className="text-primary h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">Pro uses Sonnet 4.6 for stronger output.</p>
-        <p className="text-muted-foreground text-xs">Upgrade for higher quality AI content.</p>
+        <p className="text-sm font-medium">{t("upsell.banner_text")}</p>
+        <p className="text-muted-foreground text-xs">{t("upsell.banner_subtext")}</p>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         <Button asChild size="sm" className="h-8 gap-1 text-xs">
-          <Link href="/pricing">
-            Upgrade
+          <Link href="/dashboard/settings/billing">
+            {t("upsell.upgrade_button")}
             <ArrowRight className="h-3 w-3" />
           </Link>
         </Button>
@@ -58,7 +60,7 @@ export function UpsellBanner({ plan, className }: UpsellBannerProps) {
           size="icon"
           className="text-muted-foreground hover:text-foreground h-7 w-7"
           onClick={handleDismiss}
-          aria-label="Dismiss"
+          aria-label={t("upsell.dismiss")}
         >
           <X className="h-3.5 w-3.5" />
         </Button>

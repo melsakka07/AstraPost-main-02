@@ -212,7 +212,7 @@ export function ComposerEditor({
               // or show refined text below for thread
               if (!refined) return;
               setLastGenerationId(null);
-              toast.success("Output refined! Review the changes below.", {
+              toast.success(t("alerts.refine_success"), {
                 description: refined.slice(0, 150) + (refined.length > 150 ? "..." : ""),
               });
             }}
@@ -224,7 +224,7 @@ export function ComposerEditor({
             onClick={() => setLastGenerationId(null)}
           >
             <XIcon className="h-3 w-3" />
-            Dismiss
+            {t("alerts.dismiss")}
           </Button>
         </div>
       )}
@@ -261,11 +261,7 @@ export function ComposerEditor({
               setAiAddNumbering(next);
               setTweets(next ? applyNumbering([...tweets]) : removeNumbering([...tweets]));
             }}
-            title={
-              aiAddNumbering
-                ? "Auto-numbering on — click to disable"
-                : "Auto-numbering off — click to enable"
-            }
+            title={aiAddNumbering ? t("alerts.auto_number_on") : t("alerts.auto_number_off")}
           >
             <ListOrdered className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">

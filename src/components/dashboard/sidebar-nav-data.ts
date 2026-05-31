@@ -83,6 +83,11 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
         href: "/dashboard/ai/agentic",
         isPro: true,
       },
+      {
+        icon: History,
+        label: "History",
+        href: "/dashboard/ai/history",
+      },
     ],
   },
   {
@@ -105,9 +110,6 @@ export const SIDEBAR_SECTIONS: SidebarSection[] = [
 export const ADMIN_SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     label: "Admin",
-    items: [
-      { icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true },
-      { icon: History, label: "History", href: "/dashboard/ai/history", isAdmin: true },
-    ],
+    items: [{ icon: ListChecks, label: "Jobs", href: "/dashboard/jobs", isAdmin: true }],
   },
 ];

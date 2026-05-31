@@ -22,21 +22,7 @@ import { clientLogger } from "@/lib/client-logger";
 import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
 import { LANGUAGES } from "@/lib/constants";
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 interface HashtagResult {
   hashtags: string[];
@@ -83,10 +69,7 @@ export function HashtagGenerator() {
 
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,

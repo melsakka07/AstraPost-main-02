@@ -1,5 +1,279 @@
 # Latest Updates
 
+## 2026-05-31 — AI Compose UI/UX: Phase 2 Complete (Quick Wins)
+
+All 11 quick UX wins landed across composer, inspiration, and AI pages.
+
+### Composer (2.1, 2.2, 2.8, 2.9)
+
+- **2.1 — Rewrite tool pre-populates**: `composer-ai-tools.tsx:142` — switching to Rewrite tab now pre-fills `aiRewriteText` from active tweet content (mirrors hashtag pre-fill pattern).
+- **2.2 — Sticky mobile action bar**: `composer.tsx:394` — `md:hidden` sticky bottom bar pins Post Now/Schedule button to viewport bottom with `env(safe-area-inset-bottom)` respect, `z-30`, solid `bg-background`.
+- **2.8 — Media Library always visible**: `composer.tsx:319` — removed `activeTweetId &&` guard; button now targets `activeTweetId ?? tweets[0]?.id` so it's always rendered.
+- **2.9 — Save Template promoted**: `composer-publishing-panel.tsx:197` — moved from Advanced accordion (2 levels deep) to a grid row beside "Save Draft".
+
+### Inspiration (2.4, 2.6, 2.7)
+
+- **2.6 — Default to AI tab**: `adaptation-panel.tsx:63` — `AdaptationPanel` now opens on AI tab instead of Manual.
+- **2.7 — Re-import relabeled**: `inspiration-history-list.tsx:84` — "Re-import" → "Open in Import" (matches actual pre-fill behavior, not auto-fetch).
+- **2.4 — History/Bookmarks empty states**: Both `inspiration-history-list.tsx` and `inspiration-bookmarks-list.tsx` now show empty states with CTA to Import tab.
+
+### AI Pages (2.3, 2.4, 2.5, 2.10, 2.11)
+
+- **2.3 — Connect X account empty state**: New shared `connect-x-account-empty.tsx` component; wired into Agentic input screen + Calendar Schedule All dialog. Replaces silently-disabled buttons with explanatory state + Settings link.
+- **2.4 — Reply empty state**: `reply-generator-client.tsx` — when 0 replies generated, shows "No replies were generated" with Regenerate button.
+- **2.5a — Bio helper text**: `bio-generator-client.tsx` — "Enter your niche or topic" hint below disabled Generate button.
+- **2.5b — Hub Pro badge + Locked**: `ai-tools-grid.tsx` — Pro badge now always visible (was hidden when locked); Locked badge renders alongside.
+- **2.5c — Hub quota vs feature distinction**: `ai-tools-grid.tsx` + `ai/page.tsx` — quota-exhausted shows "Resets [date]" via `resetDate` prop; feature-locked shows "Upgrade".
+- **2.10 — Hub usage for unlimited plans**: `ai/page.tsx` — usage chip always visible; progress bar hidden when `limit === null`, shows "X used · Unlimited".
+- **2.11 — Calendar partial-failure retry**: `calendar-generator-client.tsx` — `handleScheduleAll` collects `failedItems` array; partial failure keeps dialog open showing failed topics + "Retry N failed" button via `handleRetryFailed`.
+
+### Convention fixes (post-audit)
+
+- AI tool labels: 8 hardcoded strings → i18n keys (`composer-ai-tools.tsx`)
+- "Add content to enable" tooltips: 6 instances → i18n key (`composer-publishing-panel.tsx`)
+- `as any` cast: `session.user.language` → `useLocale()` (`adaptation-panel.tsx`)
+- Unnecessary `"use client"`: removed from `connect-x-account-empty.tsx` (pure presentational)
+
+### Verification
+
+| Gate                                       | Result                                   |
+| ------------------------------------------ | ---------------------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 0 warnings, 3466 keys match |
+| `pnpm test` (39 files, 406 tests)          | ✅ all pass                              |
+| Convention enforcer                        | 4 violations → all fixed                 |
+| Security reviewer                          | 0 critical, 0 high, 0 medium             |
+
+### Branch: `main`
+
+---
+
+## 2026-05-31 — Phase 2 Convention Violation Fixes (4 fixes)
+
+### Fix 1: Hardcoded AI tool labels
+
+- **`src/components/composer/composer-ai-tools.tsx`**: Replaced 8 hardcoded English strings ("Writer", "Inspire", etc.) with i18n keys via `AI_TOOL_LABEL_MAP` referencing existing `compose.ai_tools.label.*` keys.
+
+### Fix 2: Hardcoded tooltips
+
+- **`src/components/composer/composer-publishing-panel.tsx`**: Replaced 6 instances of hardcoded `"Add content to enable"` with `t("tooltip.add_content_to_enable")`.
+- **i18n files**: Added `compose.tooltip.add_content_to_enable` key to `en.json`, `ar.json`, `pseudo.json`.
+
+### Fix 3: `as any` cast in adaptation-panel
+
+- **`src/components/inspiration/adaptation-panel.tsx`**: Replaced `(session.user as any).language` with `useLocale()` from next-intl. Removed unused `useSession` import.
+
+### Fix 4: Unnecessary "use client"
+
+- **`src/components/ai/shared/connect-x-account-empty.tsx`**: Removed `"use client"` directive (pure presentational component, already wrapped by client parent).
+
+## 2026-05-31 — AI Pages Phase 2 Quick Wins (5 fixes)
+
+Six small UX improvements for AI pages:
+
+### 2.3 — Connect an X account empty state
+
+- **`src/components/ai/shared/connect-x-account-empty.tsx`** (new): Shared empty-state component with Settings link. Used in agentic input screen when no X accounts connected.
+- **`src/components/ai/agentic/input-screen.tsx`**: Shows `ConnectXAccountEmpty` instead of silently-disabled Generate button when `accounts.length === 0`.
+- **`src/app/dashboard/ai/calendar/calendar-generator-client.tsx`**: Improved "no connected accounts" message in Schedule All dialog with clearer heading and Settings link.
+
+### 2.4 — Reply generator missing empty state
+
+- **`src/components/ai/reply-generator-client.tsx`**: Added `result.replies.length === 0` empty state with "No replies were generated" message and Regenerate button.
+
+### 2.5 — Disabled/locked action explanations
+
+- **a) `src/app/dashboard/ai/bio/bio-generator-client.tsx`**: Helper text "Enter your niche or topic to generate bio variations" shown below disabled Generate button.
+- **b) `src/components/ai/ai-tools-grid.tsx`**: Pro badge now visible alongside Locked indicator for locked Pro features (previously mutually exclusive).
+- **c) `src/components/ai/ai-tools-grid.tsx`** + **`src/app/dashboard/ai/page.tsx`**: Grid receives `resetDate` prop. Quota-exhausted tools show "Resets {date}" CTA; feature-locked tools show "Upgrade to unlock".
+
+### 2.10 — Hub usage for unlimited plans
+
+- **`src/app/dashboard/ai/page.tsx`**: Quota card now renders for ALL plans. Progress bar hidden when `limit === null` (unlimited). Shows "X used · Unlimited" for unlimited plans.
+
+### 2.11 — Calendar Schedule All partial-failure reporting
+
+- **`src/app/dashboard/ai/calendar/calendar-generator-client.tsx`**: `handleScheduleAll` now tracks per-item failures, keeps dialog open on partial failure, shows inline list of failed topics, and offers "Retry N failed" button. Extracted `scheduleSingleItem` helper for reuse.
+
+### i18n keys
+
+- New keys (pending agent): `ai_agentic.connect_x_title`, `ai_agentic.connect_x_description`, `ai_reply.no_replies_generated`, `ai_reply.no_replies_hint`, `ai_reply.regenerate`, `ai_bio.enter_niche_hint`, `ai_hub.quota_overlay_cta_with_date`, `ai_hub.generations_used`, `ai_hub.total_generations`, `ai_hub.unlimited_generations`, `ai_calendar.failed_items_heading`, `ai_calendar.retry_failed`, `ai_calendar.toasts.scheduled_partial_with_retry`
+
+## 2026-05-31 — AI Compose UI/UX: Phase 1 Complete (Consolidations)
+
+All four consolidation phases landed: shared PlanLimitPayload type (1A), shared useJobPolling hook + progress UI (1B), unified AiResultActions component (1C), and i18n sweep (1D). **~280 lines of duplicated code removed. ~150 lines of inline type definitions eliminated. 5 AI result surfaces now share consistent action buttons.**
+
+### 1A — Shared PlanLimitPayload type + parser
+
+- **`src/lib/types/plan-limit.ts`** (new): Exports `PlanLimitPayload` interface (12 optional fields) + `parsePlanLimitResponse(response)` helper. Replaces 12 identical inline definitions across the codebase.
+- **12 call sites** updated: writer, reply, bio, calendar, hashtag, agentic-posting, agentic-trends, affiliate, connected-x-accounts, chat, competitor-tab, use-composer-publish — all import from shared type.
+
+### 1B — Shared useJobPolling hook + progress UI
+
+- **`src/components/ai/shared/use-job-polling.ts`** (new): Extracted ~130 lines of polling machinery (AbortController + 8s timeout + jitter + 5-min cutoff + consecutive-failure counter). Follows canonical pattern from `queue-realtime-listener.tsx`.
+- **`src/components/ai/shared/job-progress-card.tsx`** (new): Unified progress UI (spinner, phase dots, elapsed time, estimated time, connection-issue banner, cancel with AlertDialog).
+- **`src/components/ai/shared/thread-result-preview.tsx`** (moved from pdf-to-thread/).
+- **`src/components/ai/shared/types.ts`** (new): Shared `TweetData` and `ThreadResult` types (eliminated 3 duplicate definitions).
+- **M4a**: Dropped fragile `setTimeout(50ms)` in YT regenerate — now synchronous reset + submit.
+- **M5a**: Deleted byte-identical `PHASE_STATUS_KEYS` duplicate.
+- **Deleted**: `pdf-to-thread/thread-result-preview.tsx`, `pdf-to-thread/progress-indicator.tsx`.
+
+### 1C — Unified AI result-action surface
+
+- **`src/components/ai/shared/ai-result-actions.tsx`** (new): `<AiResultActions>` (Copy All / Send to Composer / Regenerate / Quota chip) + `<AiResultItemActions>` (per-item Copy + PenSquare). All ≥44px touch targets, proper aria-labels.
+- **Wired into 5 pages**: writer (4 surfaces: thread, single-post, URL, variants), reply, bio, YT-to-thread, PDF-to-thread. Consistent PenSquare icon, visible labels, Regenerate affordance everywhere.
+- **Not wired**: feedback/refine (confirmed decision — closed as "won't do").
+
+### 1D — i18n sweep
+
+- **`upsell-banner.tsx`**: 4 hardcoded English strings → `useTranslations("ai")` keys.
+- **`composer-alerts.tsx`**: 17 hardcoded strings → `useTranslations("compose")` keys + added `"use client"` directive.
+- **`composer-editor.tsx`**: Auto-numbering tooltips → i18n keys.
+- **`bio-generator-client.tsx`**: Empty-state goal labels → i18n keys.
+- **`youtube-to-thread-client.tsx`**: Fixed 3 cross-namespace references (no longer borrows `pdf_to_thread.*` keys).
+- **`thread-result-preview.tsx`**: Hardcoded "Show transcript" → i18n key.
+- **New i18n keys**: 26 added across all 3 locale files (en/ar/pseudo), 3440 total.
+
+### Bug fix — YT/PDF 402 field mapping (caught by convention audit)
+
+Both `youtube-to-thread-client.tsx` and `pdf-to-thread-client.tsx` were passing raw snake_case JSON to `openWithContext()` without camelCase mapping. The upgrade modal received no plan/pricing info. Fixed: 6 call sites now explicitly map `upgrade_url→upgradeUrl`, `suggested_plan→suggestedPlan`, etc.
+
+### Verification
+
+| Gate                                       | Result                                                        |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 0 warnings, 3440 keys match                      |
+| `pnpm test` (39 files, 406 tests)          | ✅ all pass                                                   |
+| Convention enforcer                        | 5 violations found → all fixed                                |
+| Security reviewer                          | 0 critical, 0 high, 2 medium (defense-in-depth, pre-existing) |
+
+### Branch: `main`
+
+---
+
+## 2026-05-31 — AI Compose UI/UX: Phase 1C (Shared Result Actions Consolidation)
+
+Wired the new shared `<AiResultActions>` and `<AiResultItemActions>` components into all 5 AI result surfaces. This is the highest UX-leverage change in the UI/UX consolidation — every AI tool now has consistent Copy, Send to Composer, and Regenerate buttons.
+
+### New files
+
+- **`src/components/ai/shared/ai-result-actions.tsx`** — Two exports:
+  - `<AiResultActions>` — row with: item count label, Copy All button (Copy/Check toggle), Send to Composer button (PenSquare icon), Regenerate button (RefreshCw icon), quota chip slot, children slot
+  - `<AiResultItemActions>` — per-item actions: Copy button (icon-only, Check toggle), Send to Composer button (PenSquare icon), children slot
+
+### Updated files
+
+- **`src/components/ai/ai-writer-client.tsx`** — 4 result surfaces consolidated:
+  - Thread results header: replaced inline Copy All + Send to Composer buttons with `<AiResultActions>` (keeps generating label during streaming)
+  - Thread per-tweet: replaced icon-only Copy `<Button>` with `<AiResultItemActions>` (adds per-tweet Send to Composer)
+  - Single-post result: replaced inline Copy + Send header with `<AiResultActions>` (no copyAll); per-item copy moved to `<AiResultItemActions>` inside the card
+  - URL results header: replaced inline Copy All + Send buttons with `<AiResultActions>`; title shown as standalone element below
+  - Variants per-card: replaced Copy + Use + Send button group with `<AiResultItemActions>` (Use button becomes a child)
+  - Removed unused imports: `Copy`, `Check`, `PenSquare` from lucide-react
+
+- **`src/components/ai/reply-generator-client.tsx`**:
+  - "Reply options" heading replaced with `<AiResultActions onRegenerate={handleGenerate} />`
+  - Per-reply Copy + ChevronRight buttons replaced with `<AiResultItemActions>` (PenSquare replaces ChevronRight for icon consistency)
+  - Removed unused imports: `Copy`, `Check`, `ChevronRight` from lucide-react
+
+- **`src/app/dashboard/ai/bio/bio-generator-client.tsx`**:
+  - Added `useRouter` + `sendToComposer` function (prefill via query params)
+  - Added `<AiResultActions>` with `onRegenerate` + `onSendToComposer` above variants
+  - Per-variant Copy button replaced with `<AiResultItemActions>` (adds per-variant Send to Composer)
+  - Removed unused imports: `Copy`, `Check` from lucide-react
+
+- **`src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx`**:
+  - READY state header: back button kept standalone; regenerate button replaced with `<AiResultActions>` (itemCount + onRegenerate + onSendToComposer)
+  - `ThreadResultPreview` no longer receives `onSendToComposer`/`isSendingToComposer` props (handled by AiResultActions above)
+
+- **`src/components/ai/pdf-to-thread/pdf-to-thread-client.tsx`**:
+  - Same pattern as YT: back button + `<AiResultActions>` + `ThreadResultPreview` (no send props)
+
+### Verification
+
+- `pnpm run check`: lint passes (0 errors, 5 pre-existing warnings); typecheck errors are all pre-existing `PlanLimitPayload` issues
+- Zero new type errors in any modified or new file
+- Behavior preserved: all AI tools function identically; action buttons now consistent across surfaces
+- `RefreshCw` icon kept in YT/PDF imports (still used in generating/extracted/failed state buttons)
+
+### Branch: `main`
+
+---
+
+## 2026-05-31 — AI Compose UI/UX: Phase 1B (Shared Polling + Progress Consolidation)
+
+Extracted ~130 lines of duplicated polling machinery into a shared `useJobPolling` hook and consolidated three different progress UIs into a single `JobProgressCard` component. Pure refactor — behavior is preserved identically.
+
+### New files (shared directory `src/components/ai/shared/`)
+
+- **`use-job-polling.ts`** — Shared polling hook for AI job status. Follows the canonical AbortController polling pattern from `queue-realtime-listener.tsx`: abortRef + 8s timeout + jitter + 5-min cutoff + consecutive-failure counter with connection-issue flag + elapsed timer. API: `{ jobId, pollEndpoint, isProgressPhase, onReady(data, finalElapsed), onFailed(error, errorCode?), onStatusChange(status) }` returns `{ elapsedSeconds, connectionIssue }`.
+- **`job-progress-card.tsx`** — Shared progress UI with centered spinner, phase label, elapsed time, configurable phase dots/labels, estimated time, connection issue banner, and cancel button with AlertDialog. All user-facing strings accepted as pre-translated props (no hardcoded i18n keys).
+- **`thread-result-preview.tsx`** — Moved from `src/components/ai/pdf-to-thread/` to shared. Both YT and PDF clients now import from shared.
+
+### Updated files
+
+- **`youtube-to-thread-client.tsx`** — Removed: polling useEffect (~130 lines), `startElapsedTimer`/`stopElapsedTimer`, `elapsedIntervalRef`/`elapsedSecondsRef`, `retryCountRef`/`pollStartTimeRef`/`jobIdRef`, `PHASE_STATUS_KEYS` duplicate, `POLL_*` constants, AlertDialog imports, `connectionIssue`/`elapsedSeconds` state. Added: `useJobPolling` hook call, `JobProgressCard` for progress UI. **M4a**: `handleRegenerate` now calls `handleReset()` then `handleSubmit(data)` synchronously — no `setTimeout(50ms)`. **M5a**: Single usage of `PHASE_STATUS_KEYS` replaced with `PHASE_LABEL_KEYS` (byte-identical), then `PHASE_STATUS_KEYS` deleted.
+- **`pdf-to-thread-client.tsx`** — Removed: polling useEffect, elapsed timer machinery, `ProgressIndicator` import, `connectionIssue`/`elapsedSeconds` state, polling refs. Added: `useJobPolling` hook call, `JobProgressCard` for progress UI. Thread result now uses shared `ThreadResultPreview`.
+
+### Deleted files
+
+- `src/components/ai/pdf-to-thread/thread-result-preview.tsx` — moved to shared
+- `src/components/ai/pdf-to-thread/progress-indicator.tsx` — replaced by shared `JobProgressCard`
+
+### Verification
+
+- `pnpm run check`: lint passes (0 errors, 3 pre-existing warnings); typecheck errors are all pre-existing `PlanLimitPayload` issues in unrelated files; i18n passes
+- Zero type errors in any modified or new file
+- `pnpm test`: 39 files, 406 tests — all pass
+- Behavior preserved: YT and PDF pages function identically
+
+### Branch: `main`
+
+---
+
+## 2026-05-31 — AI Compose UI/UX: Phase 0 (Verified Bugs)
+
+Seven high-impact bug fixes from the AI + Compose/Inspiration UX audit. All trivial, each verified against code by red team.
+
+### 0.1 — AI History de-adminned
+
+- **`src/app/dashboard/ai/history/page.tsx:65`**: Swapped `requireAdmin()` → `getTeamContext()` so paying non-admin users can access their own AI generation history. Redirects to `/login` when unauthenticated. Queries scoped to `ctx.currentTeamId`.
+- **`src/components/dashboard/sidebar-nav-data.ts:87-90`**: History nav item moved from `ADMIN_SIDEBAR_SECTIONS` (admin-only) to the "Grow" section in `SIDEBAR_SECTIONS` (all users). `isAdmin` flag removed.
+
+### 0.2 — Double page header on Writer removed
+
+- **`src/components/ai/ai-writer-client.tsx:469-473`**: Removed inner `<DashboardPageWrapper>` (server page already wraps it). `AiQuotaChip` inlined beside breadcrumb to preserve visibility.
+
+### 0.3 — Calendar regenerate no longer destroys data on failure
+
+- **`src/app/dashboard/ai/calendar/calendar-generator-client.tsx:152`**: `setItems([])` moved from pre-fetch to success branch only — failed regenerations leave existing calendar visible.
+
+### 0.4 — Writer "Advanced tones" toggle now keyboard-accessible
+
+- **`src/components/ai/ai-writer-client.tsx:541-557`**: Changed `div role="button" tabIndex={-1}` to real `<button type="button">` — fixes WCAG keyboard failure and makes "controversial" tone reachable via keyboard.
+
+### 0.5 — UpsellBanner links to billing, not public pricing
+
+- **`src/components/ai/upsell-banner.tsx:51`**: `href` changed from `/pricing` to `/dashboard/settings/billing` — consistent with every other upgrade CTA in the app.
+
+### 0.6 — YouTube "Back" no longer orphans server jobs
+
+- **`src/components/ai/youtube-to-thread/youtube-to-thread-client.tsx:668`**: Back button during progress phase now calls `handleCancel()` (DELETE request + reset) instead of naked `handleReset()` — prevents orphaned BullMQ jobs.
+
+### 0.7 — Dead code: ViralScoreBadge deleted
+
+- **Deleted**: `src/components/composer/viral-score-badge.tsx` (281 lines, zero live imports). No orphaned imports.
+
+### Verification
+
+- `pnpm run check`: lint + typecheck + i18n — all pass ✅
+- `pnpm test`: 39 files, 406 tests — all pass ✅
+- Convention enforcer: PASS (1 advisory — pre-existing i18n issue in upsell-banner.tsx)
+- Security reviewer: PASS — 0 critical/high/medium issues
+
+### Branch: `main`
+
+---
+
 ## 2026-05-30 — Wave 8 Task C: Dashboard Layout Preferences
 
 Full dashboard personalization: dnd-kit reorder, show/hide, reset, server persistence.

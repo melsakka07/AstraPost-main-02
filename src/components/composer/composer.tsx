@@ -2,7 +2,7 @@
 
 import { useState, useRef, useId } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ImageIcon } from "lucide-react";
+import { Clock, ImageIcon, Loader2, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ComposerAiTools } from "@/components/composer/composer-ai-tools";
@@ -316,18 +316,16 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
           />
         </Card>
 
-        {/* Media Library trigger */}
-        {activeTweetId && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 w-full gap-1.5 text-xs"
-            onClick={() => openMediaLibrary(activeTweetId)}
-          >
-            <ImageIcon className="h-3.5 w-3.5" />
-            {t("media_library.title")}
-          </Button>
-        )}
+        {/* Media Library trigger — 2.8: always visible, targets active or first tweet */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 w-full gap-1.5 text-xs"
+          onClick={() => openMediaLibrary(activeTweetId ?? tweets[0]?.id ?? "")}
+        >
+          <ImageIcon className="h-3.5 w-3.5" />
+          {t("media_library.title")}
+        </Button>
 
         {/* Card 1: AI Tools — single entry point; tool switching via tabs inside panel */}
         <ComposerAiTools
@@ -392,6 +390,24 @@ export function Composer({ hasScheduledPost }: { hasScheduledPost?: boolean }) {
         setPendingNavHref={setPendingNavHref}
         navigate={(href) => router.push(href)}
       />
+
+      {/* 2.2: Mobile sticky bottom action bar — pins primary action to viewport bottom */}
+      <div className="bg-background sticky bottom-0 z-30 -mx-4 border-t px-4 py-3 pb-[calc(env(safe-area-inset-bottom,0.75rem)+0.75rem)] md:hidden">
+        <Button
+          className="h-11 w-full text-sm font-semibold"
+          onClick={() => handleSubmit(scheduledDate ? "schedule" : "publish_now")}
+          disabled={isSubmitting || !hasContent}
+        >
+          {isSubmitting ? (
+            <Loader2 className="me-1.5 h-4 w-4 animate-spin" />
+          ) : scheduledDate ? (
+            <Clock className="me-1.5 h-4 w-4" />
+          ) : (
+            <Send className="me-1.5 h-4 w-4" />
+          )}
+          {scheduledDate ? t("label.schedule") : t("label.post_now")}
+        </Button>
+      </div>
 
       {/* Media Library Picker */}
       <MediaLibraryPicker

@@ -7,21 +7,7 @@ import type { TweetDraft } from "@/components/composer/composer-types";
 import type { UpgradeContext } from "@/components/ui/upgrade-modal";
 import { clientLogger } from "@/lib/client-logger";
 import { fetchWithAuth } from "@/lib/fetch-with-auth";
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 interface UseComposerPublishArgs {
   tweets: TweetDraft[];
@@ -58,10 +44,7 @@ export function useComposerPublish({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handlePlanLimit = async (res: Response, _fallbackMessage: string) => {
-    let payload: PlanLimitPayload | null = null;
-    try {
-      payload = (await res.json()) as PlanLimitPayload;
-    } catch {}
+    const payload = await parsePlanLimitResponse(res);
 
     openUpgradeModal({
       error: payload?.error,

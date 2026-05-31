@@ -34,6 +34,7 @@ import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { XSubscriptionBadge, type XSubscriptionTier } from "@/components/ui/x-subscription-badge";
 import { signIn } from "@/lib/auth-client";
 import { getPlanLimits } from "@/lib/plan-limits";
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 type XAccountItem = {
   id: string;
@@ -49,21 +50,6 @@ type XAccountItem = {
   lastRefreshFailureAt?: Date | string | null;
   refreshFailureReason?: string | null;
 };
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
 
 interface HealthStatus {
   ok: boolean;
@@ -149,10 +135,7 @@ export function ConnectedXAccounts({
       const res = await fetch("/api/x/accounts/sync", { method: "POST" });
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,

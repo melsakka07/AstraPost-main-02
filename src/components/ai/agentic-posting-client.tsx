@@ -31,21 +31,7 @@ import type {
   PipelineProgressEvent,
   PipelineStep,
 } from "@/lib/ai/agentic-types";
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 // ── Main component ────────────────────────────────────────────────────────────
 
@@ -228,10 +214,7 @@ export function AgenticPostingClient({
         });
 
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,

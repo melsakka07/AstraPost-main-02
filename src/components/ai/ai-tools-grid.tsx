@@ -101,6 +101,7 @@ interface AiToolsGridProps {
   isQuotaExhausted: boolean;
   userPlan: string;
   trialActive: boolean;
+  resetDate?: string | null;
 }
 
 export function AiToolsGrid({
@@ -108,6 +109,7 @@ export function AiToolsGrid({
   isQuotaExhausted,
   userPlan,
   trialActive,
+  resetDate,
 }: AiToolsGridProps) {
   const t = useTranslations("ai_hub");
   const { openWithContext } = useUpgradeModal();
@@ -140,7 +142,7 @@ export function AiToolsGrid({
                 <div className="bg-primary/10 group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors">
                   <Icon className="text-primary h-5 w-5" />
                 </div>
-                {meta.isPro && !locked && (
+                {meta.isPro && (
                   <Badge
                     variant="outline"
                     className="border-primary/30 text-primary h-4 px-1.5 py-0 text-[10px]"
@@ -178,7 +180,9 @@ export function AiToolsGrid({
               >
                 {locked
                   ? lockReason === "quota"
-                    ? t("quota_overlay_cta")
+                    ? resetDate
+                      ? t("quota_overlay_cta_with_date", { date: resetDate })
+                      : t("quota_overlay_cta")
                     : t("locked_overlay_cta")
                   : t("try_it")}
               </p>

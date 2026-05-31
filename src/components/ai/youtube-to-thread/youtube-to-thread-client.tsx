@@ -3,27 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Youtube, ArrowLeft, RefreshCw, Loader2, History, ChevronRight } from "lucide-react";
+import { Youtube, ArrowLeft, RefreshCw, History, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ThreadResultPreview } from "@/components/ai/pdf-to-thread/thread-result-preview";
+import { AiResultActions } from "@/components/ai/shared/ai-result-actions";
+import { JobProgressCard } from "@/components/ai/shared/job-progress-card";
+import { ThreadResultPreview } from "@/components/ai/shared/thread-result-preview";
+import type { TweetData, ThreadResult } from "@/components/ai/shared/types";
+import { useJobPolling } from "@/components/ai/shared/use-job-polling";
 import { YoutubeUrlInput } from "@/components/ai/youtube-to-thread/youtube-url-input";
 import type { YoutubeUrlSubmitData } from "@/components/ai/youtube-to-thread/youtube-url-input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
-import { cn } from "@/lib/utils";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -37,17 +29,6 @@ type FlowStatus =
   | "failed"
   | "error";
 
-interface TweetData {
-  text: string;
-  charCount: number;
-}
-
-interface ThreadResult {
-  tweets: TweetData[];
-  title: string;
-  sourceLanguage?: string;
-}
-
 interface RecentJob {
   id: string;
   title: string;
@@ -58,22 +39,8 @@ interface RecentJob {
 
 // ── Constants ──────────────────────────────────────────────────────────
 
-const POLL_INTERVAL_MS = 5_000;
-const POLL_TIMEOUT_MS = 8_000;
-const MAX_CONSECUTIVE_FAILURES = 5;
-const MAX_POLL_DURATION_MS = 5 * 60 * 1000; // 5 minutes
-
 const PHASE_LABEL_KEYS: Record<string, string> = {
-  queued: "",
-  downloading: "youtube_to_thread.progress.downloading",
-  transcribing: "youtube_to_thread.progress.transcribing",
-  generating: "youtube_to_thread.progress.generating",
-  ready: "youtube_to_thread.progress.ready",
-  failed: "youtube_to_thread.progress.failed",
-};
-
-const PHASE_STATUS_KEYS: Record<string, string> = {
-  queued: "",
+  queued: "youtube_to_thread.progress.queued",
   downloading: "youtube_to_thread.progress.downloading",
   transcribing: "youtube_to_thread.progress.transcribing",
   generating: "youtube_to_thread.progress.generating",
@@ -115,9 +82,7 @@ export function YoutubeToThreadClient() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [threadResult, setThreadResult] = useState<ThreadResult | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
-  const [connectionIssue, setConnectionIssue] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [estimatedSeconds, setEstimatedSeconds] = useState<number | null>(null);
   const [recentJobs, setRecentJobs] = useState<RecentJob[]>([]);
   const [transcript, setTranscript] = useState<string | undefined>(undefined);
@@ -137,48 +102,16 @@ export function YoutubeToThreadClient() {
   } | null>(null);
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
 
-  // Ref to hold the latest jobId for the poller closure
-  const jobIdRef = useRef<string | null>(null);
-  jobIdRef.current = jobId;
-
   // Ref to store last submitted data for regenerate
   const lastSubmitDataRef = useRef<YoutubeUrlSubmitData | null>(null);
 
-  // Poll resilience refs
-  const retryCountRef = useRef(0);
-  const pollStartTimeRef = useRef(0);
-  const elapsedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const elapsedSecondsRef = useRef(0);
+  // ── Cleanup image abort on unmount ──────────────────────────────────
 
-  // ── Elapsed timer ──────────────────────────────────────────────────
-
-  const startElapsedTimer = useCallback(() => {
-    setElapsedSeconds(0);
-    elapsedSecondsRef.current = 0;
-    if (elapsedIntervalRef.current) clearInterval(elapsedIntervalRef.current);
-    elapsedIntervalRef.current = setInterval(() => {
-      setElapsedSeconds((prev) => {
-        const next = prev + 1;
-        elapsedSecondsRef.current = next;
-        return next;
-      });
-    }, 1000);
-  }, []);
-
-  const stopElapsedTimer = useCallback(() => {
-    if (elapsedIntervalRef.current) {
-      clearInterval(elapsedIntervalRef.current);
-      elapsedIntervalRef.current = null;
-    }
-  }, []);
-
-  // Cleanup timer + image abort on unmount
   useEffect(() => {
     return () => {
-      stopElapsedTimer();
       imageAbortRef.current?.abort();
     };
-  }, [stopElapsedTimer]);
+  }, []);
 
   // ── Image quota fetch ───────────────────────────────────────────────
 
@@ -222,10 +155,7 @@ export function YoutubeToThreadClient() {
     setJobId(null);
     setThreadResult(null);
     setErrorMessage("");
-    setConnectionIssue(false);
     setIsLoading(false);
-    stopElapsedTimer();
-    setElapsedSeconds(0);
     setEstimatedSeconds(null);
     setTranscript(undefined);
     setErrorCode(undefined);
@@ -234,7 +164,7 @@ export function YoutubeToThreadClient() {
     setCurrentVideoId(null);
     setFirstTweetImageUrl(null);
     setImageStatus("idle");
-  }, [stopElapsedTimer]);
+  }, []);
 
   // ── Submit handler ─────────────────────────────────────────────────
 
@@ -260,8 +190,6 @@ export function YoutubeToThreadClient() {
               setJobId(existingJobId);
               setStatus("queued");
               setIsLoading(false);
-              pollStartTimeRef.current = Date.now();
-              startElapsedTimer();
               toast.error(yt("errors.duplicate_in_flight"));
               return;
             }
@@ -272,7 +200,20 @@ export function YoutubeToThreadClient() {
 
           // 402 plan limit
           if (res.status === 402) {
-            upgradeModal.openWithContext(responseData);
+            upgradeModal.openWithContext({
+              error: responseData.error,
+              code: responseData.code,
+              message: responseData.message,
+              feature: responseData.feature,
+              plan: responseData.plan,
+              limit: responseData.limit,
+              used: responseData.used,
+              remaining: responseData.remaining,
+              upgradeUrl: responseData.upgrade_url,
+              suggestedPlan: responseData.suggested_plan,
+              trialActive: responseData.trial_active,
+              resetAt: responseData.reset_at,
+            });
             setIsLoading(false);
             setStatus("error");
             setErrorMessage(yt("errors.upgrade_required"));
@@ -280,7 +221,7 @@ export function YoutubeToThreadClient() {
           }
 
           if (res.status === 429) {
-            toast.error(t("pdf_to_thread.errors.rate_limited"));
+            toast.error(yt("errors.rate_limited"));
             setIsLoading(false);
             setStatus("idle");
             return;
@@ -305,8 +246,6 @@ export function YoutubeToThreadClient() {
         );
         setStatus("queued");
         setIsLoading(false);
-        pollStartTimeRef.current = Date.now();
-        startElapsedTimer();
       } catch (err) {
         if (err instanceof TypeError) {
           toast.error(yt("errors.generation_failed"));
@@ -316,7 +255,7 @@ export function YoutubeToThreadClient() {
         setErrorMessage(yt("errors.generation_failed"));
       }
     },
-    [upgradeModal, t, yt, startElapsedTimer]
+    [upgradeModal, yt]
   );
 
   // ── Cancel handler ─────────────────────────────────────────────────
@@ -360,7 +299,20 @@ export function YoutubeToThreadClient() {
 
         if (res.status === 402) {
           const data = await res.json();
-          upgradeModal.openWithContext(data);
+          upgradeModal.openWithContext({
+            error: data.error,
+            code: data.code,
+            message: data.message,
+            feature: data.feature,
+            plan: data.plan,
+            limit: data.limit,
+            used: data.used,
+            remaining: data.remaining,
+            upgradeUrl: data.upgrade_url,
+            suggestedPlan: data.suggested_plan,
+            trialActive: data.trial_active,
+            resetAt: data.reset_at,
+          });
           setImageStatus("error");
           return;
         }
@@ -405,16 +357,13 @@ export function YoutubeToThreadClient() {
     yt,
   ]);
 
-  // ── Regenerate handler ──────────────────────────────────────────────
+  // ── Regenerate handler (M4a: no setTimeout) ──────────────────────────
 
   const handleRegenerate = useCallback(() => {
     const data = lastSubmitDataRef.current;
     if (!data) return;
     handleReset();
-    // Reset is synchronous, so status becomes "idle" and then we submit
-    setTimeout(() => {
-      void handleSubmit(data);
-    }, 50);
+    void handleSubmit(data);
   }, [handleReset, handleSubmit]);
 
   // ── Recent job click handler ───────────────────────────────────────
@@ -452,142 +401,7 @@ export function YoutubeToThreadClient() {
     [yt]
   );
 
-  // ── Polling (hard rule #10: AbortController + 8s timeout) ──────────
-
-  useEffect(() => {
-    if (
-      status !== "queued" &&
-      status !== "downloading" &&
-      status !== "transcribing" &&
-      status !== "generating"
-    )
-      return;
-
-    const abortRef = { current: null as AbortController | null };
-    let active = true;
-    retryCountRef.current = 0;
-    setConnectionIssue(false);
-
-    const tick = async () => {
-      const currentJobId = jobIdRef.current;
-      if (!currentJobId || !active) return;
-
-      // Max-wait timeout check
-      if (Date.now() - pollStartTimeRef.current > MAX_POLL_DURATION_MS) {
-        setStatus("error");
-        setErrorMessage(yt("errors.polling_timeout"));
-        stopElapsedTimer();
-        return;
-      }
-
-      // Abort any in-flight request before starting a new one
-      abortRef.current?.abort();
-      const ac = new AbortController();
-      abortRef.current = ac;
-      const timeoutId = setTimeout(() => ac.abort(), POLL_TIMEOUT_MS);
-
-      try {
-        const res = await fetch(`/api/ai/youtube-to-thread/${currentJobId}`, {
-          signal: ac.signal,
-        });
-
-        if (!active) return;
-
-        if (!res.ok) {
-          retryCountRef.current += 1;
-          if (retryCountRef.current >= MAX_CONSECUTIVE_FAILURES) {
-            setConnectionIssue(true);
-          }
-          return;
-        }
-
-        // Success — reset failure counter
-        retryCountRef.current = 0;
-        setConnectionIssue(false);
-
-        const data = await res.json();
-
-        if (!active) return;
-
-        const pollStatus = data.status as string;
-
-        if (pollStatus === "ready") {
-          stopElapsedTimer();
-          setFinalElapsedSeconds(elapsedSecondsRef.current);
-          setResultMeta({
-            ...(data.durationSeconds !== undefined && {
-              durationSeconds: data.durationSeconds as number,
-            }),
-            ...(data.provider !== undefined && { provider: data.provider as string }),
-            ...(data.language !== undefined && { language: data.language as string }),
-          });
-          if (data.youtubeVideoId) {
-            setCurrentVideoId(data.youtubeVideoId as string);
-          }
-          setStatus("ready");
-          const result = data.threadResult as {
-            tweets: TweetData[];
-            title: string;
-            sourceLanguage?: string;
-          } | null;
-          if (result) {
-            setThreadResult({
-              tweets: result.tweets ?? [],
-              title: result.title ?? "",
-              ...(result.sourceLanguage !== undefined && {
-                sourceLanguage: result.sourceLanguage,
-              }),
-            });
-          }
-          setTranscript((data.transcript as string) ?? undefined);
-          toast.success(t("pdf_to_thread.result.generated_success") as string);
-        } else if (pollStatus === "failed") {
-          stopElapsedTimer();
-          setStatus("failed");
-          setErrorMessage((data.error as string) ?? yt("errors.generation_failed"));
-          setErrorCode((data.errorCode as string) ?? undefined);
-        } else if (
-          pollStatus === "queued" ||
-          pollStatus === "downloading" ||
-          pollStatus === "transcribing" ||
-          pollStatus === "generating"
-        ) {
-          setStatus(pollStatus as FlowStatus);
-        }
-        // Unknown status stays as-is
-      } catch (err) {
-        if (!active) return;
-        if (err instanceof Error && err.name !== "AbortError") {
-          retryCountRef.current += 1;
-          if (retryCountRef.current >= MAX_CONSECUTIVE_FAILURES) {
-            setConnectionIssue(true);
-          }
-        }
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    };
-
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const scheduleNext = () => {
-      const jitter = (Math.random() - 0.5) * 1000; // ±500ms
-      timeoutId = setTimeout(() => {
-        void tick().finally(() => {
-          if (active) scheduleNext();
-        });
-      }, POLL_INTERVAL_MS + jitter);
-    };
-
-    scheduleNext();
-
-    return () => {
-      active = false;
-      clearTimeout(timeoutId);
-      abortRef.current?.abort();
-    };
-  }, [status, t, yt, stopElapsedTimer]);
-
-  // ── Phase helpers ──────────────────────────────────────────────────
+  // ── Polling (shared hook) ───────────────────────────────────────────
 
   const isProgressPhase =
     status === "queued" ||
@@ -595,11 +409,70 @@ export function YoutubeToThreadClient() {
     status === "transcribing" ||
     status === "generating";
 
+  const { elapsedSeconds, connectionIssue } = useJobPolling({
+    jobId,
+    pollEndpoint: "/api/ai/youtube-to-thread",
+    isProgressPhase,
+    onReady: (data, finalElapsed) => {
+      setFinalElapsedSeconds(finalElapsed);
+      setResultMeta({
+        ...(data.durationSeconds !== undefined && {
+          durationSeconds: data.durationSeconds as number,
+        }),
+        ...(data.provider !== undefined && { provider: data.provider as string }),
+        ...(data.language !== undefined && { language: data.language as string }),
+      });
+      if (data.youtubeVideoId) {
+        setCurrentVideoId(data.youtubeVideoId as string);
+      }
+      setStatus("ready");
+      const result = data.threadResult as {
+        tweets: TweetData[];
+        title: string;
+        sourceLanguage?: string;
+      } | null;
+      if (result) {
+        setThreadResult({
+          tweets: result.tweets ?? [],
+          title: result.title ?? "",
+          ...(result.sourceLanguage !== undefined && {
+            sourceLanguage: result.sourceLanguage,
+          }),
+        });
+      }
+      setTranscript((data.transcript as string) ?? undefined);
+      toast.success(yt("result.generated_success"));
+    },
+    onFailed: (error, code) => {
+      setStatus("failed");
+      setErrorMessage(error ?? yt("errors.generation_failed"));
+      setErrorCode(code ?? undefined);
+    },
+    onStatusChange: (newStatus) => {
+      setStatus(newStatus as FlowStatus);
+    },
+  });
+
+  // ── Phase helpers ──────────────────────────────────────────────────
+
   const currentPhaseIndex = isProgressPhase
     ? status === "queued"
       ? -1
       : PHASE_ORDER.indexOf(status as (typeof PHASE_ORDER)[number])
     : -1;
+
+  // Pre-compute phase items for JobProgressCard (M5a: PHASE_LABEL_KEYS only)
+  const progressPhases = PHASE_ORDER.map((phase) => ({
+    key: phase,
+    label: t(PHASE_LABEL_KEYS[phase]!),
+  }));
+
+  const statusLabel = t(PHASE_LABEL_KEYS[status] ?? "");
+
+  const elapsedLabel = yt("progress.elapsed", { seconds: elapsedSeconds });
+
+  const estimatedTimeLabel =
+    estimatedSeconds !== null ? yt("progress.estimated_time", { seconds: estimatedSeconds }) : "";
 
   // ── Render ─────────────────────────────────────────────────────────
 
@@ -665,140 +538,51 @@ export function YoutubeToThreadClient() {
             variant="ghost"
             size="sm"
             className="text-muted-foreground hover:text-foreground gap-1.5"
-            onClick={handleReset}
+            onClick={handleCancel}
           >
             <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
             {yt("actions.back")}
           </Button>
 
-          {/* Progress card */}
-          <Card className="border-brand-6 bg-brand-3/10">
-            <CardContent className="flex flex-col items-center gap-4 px-4 py-8 sm:py-10">
-              <Loader2
-                className={cn(
-                  "h-10 w-10 animate-spin",
-                  status === "queued" ? "text-muted-foreground" : "text-brand-9"
-                )}
-                aria-hidden="true"
-              />
-
-              <div className="space-y-1 text-center" aria-live="polite" aria-atomic="true">
-                <p className="text-foreground text-sm font-semibold">
-                  {status === "queued"
-                    ? t("pdf_to_thread.progress.queued")
-                    : t(PHASE_LABEL_KEYS[status] ?? "")}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {yt("progress.elapsed", { seconds: elapsedSeconds })}
-                </p>
-              </div>
-
-              {/* Phase dots */}
-              <div className="flex items-center gap-2" aria-hidden="true">
-                {PHASE_ORDER.map((phase, idx) => {
-                  const isActive = idx <= currentPhaseIndex;
-                  const isCurrent = idx === currentPhaseIndex;
-                  return (
-                    <div key={phase} className="flex items-center gap-2">
-                      <div
-                        className={cn(
-                          "h-2 w-2 rounded-full transition-colors",
-                          isActive ? "bg-brand-9" : "bg-muted",
-                          isCurrent && "animate-pulse"
-                        )}
-                      />
-                      {idx < PHASE_ORDER.length - 1 && (
-                        <div
-                          className={cn("h-0.5 w-8 rounded", isActive ? "bg-brand-9" : "bg-muted")}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Phase labels */}
-              <div className="flex w-full max-w-xs items-start justify-between gap-1">
-                {PHASE_ORDER.map((phase, idx) => {
-                  const isActive = idx <= currentPhaseIndex;
-                  return (
-                    <span
-                      key={phase}
-                      className={cn(
-                        "text-center text-[10px] leading-tight",
-                        isActive ? "text-foreground font-medium" : "text-muted-foreground"
-                      )}
-                      style={{ width: `${100 / PHASE_ORDER.length}%` }}
-                    >
-                      {t(PHASE_STATUS_KEYS[phase]!)}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {estimatedSeconds !== null && (
-                <p className="text-muted-foreground text-xs">
-                  {yt("progress.estimated_time", { seconds: estimatedSeconds })}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Connection issue banner */}
-          {connectionIssue && (
-            <p
-              className="text-warning-9 bg-warning-3/30 border-warning-6 rounded-lg border px-3 py-2 text-sm"
-              role="alert"
-            >
-              {yt("errors.polling_connection")}
-            </p>
-          )}
-
-          {/* Cancel button */}
-          <div className="flex justify-center gap-3">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  {yt("actions.cancel")}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent size="sm">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{yt("actions.cancel_confirm_title")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {yt("actions.cancel_confirm_description")}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{yt("actions.back")}</AlertDialogCancel>
-                  <AlertDialogAction variant="destructive" onClick={handleCancel}>
-                    {yt("actions.cancel")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          {/* Shared progress card */}
+          <JobProgressCard
+            statusLabel={statusLabel}
+            elapsedLabel={elapsedLabel}
+            phases={progressPhases}
+            currentPhaseIndex={currentPhaseIndex}
+            estimatedSeconds={estimatedSeconds}
+            estimatedTimeLabel={estimatedTimeLabel}
+            connectionIssue={connectionIssue}
+            connectionIssueLabel={yt("errors.polling_connection")}
+            onCancel={handleCancel}
+            cancelLabel={yt("actions.cancel")}
+            backLabel={yt("actions.back")}
+            cancelConfirmTitle={yt("actions.cancel_confirm_title")}
+            cancelConfirmDescription={yt("actions.cancel_confirm_description")}
+            spinnerMuted={status === "queued"}
+          />
         </div>
       )}
 
       {/* READY: Thread result */}
       {status === "ready" && threadResult && (
         <div className="space-y-5">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground gap-1.5"
-              onClick={handleReset}
-            >
-              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-              {yt("actions.back")}
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={handleRegenerate}>
-              <RefreshCw className="h-4 w-4" />
-              {yt("result.regenerate")}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground gap-1.5"
+            onClick={handleReset}
+          >
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+            {yt("actions.back")}
+          </Button>
+
+          <AiResultActions
+            itemCount={threadResult.tweets.length}
+            onRegenerate={handleRegenerate}
+            onSendToComposer={handleSendToComposer}
+            sendToComposerDisabled={imageStatus === "generating"}
+          />
 
           <ThreadResultPreview
             tweets={threadResult.tweets}
@@ -823,8 +607,6 @@ export function YoutubeToThreadClient() {
                 ...(finalElapsedSeconds !== null && { generatedInSeconds: finalElapsedSeconds }),
               },
             })}
-            onSendToComposer={handleSendToComposer}
-            isSendingToComposer={imageStatus === "generating"}
           />
         </div>
       )}

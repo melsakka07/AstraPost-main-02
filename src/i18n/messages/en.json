@@ -148,7 +148,9 @@
     },
     "upsell": {
       "banner_text": "Pro uses Sonnet 4.6 for stronger output.",
+      "banner_subtext": "Upgrade for higher quality AI content.",
       "upgrade_link": "Upgrade →",
+      "upgrade_button": "Upgrade",
       "dismiss": "Dismiss"
     },
     "score": {
@@ -663,6 +665,9 @@
       "just_now": "just now",
       "minutes_ago": "m ago"
     },
+    "tooltip": {
+      "add_content_to_enable": "Add content to enable"
+    },
     "ai_tools": {
       "title": "AI Tools",
       "sheet_description": "Generate content with AI assistance",
@@ -823,6 +828,26 @@
       "inspiration_topic_set": "Topic set from inspiration — click Generate when ready"
     },
     "advanced_options": "Advanced options",
+    "alerts": {
+      "draft_restore_message": "You have an unsaved draft from a previous session. Would you like to restore it?",
+      "discard": "Discard",
+      "restore": "Restore",
+      "dismiss": "Dismiss",
+      "inspired_by": "Inspired by",
+      "dismiss_attribution": "Dismiss attribution",
+      "topic_label": "Topic:",
+      "tone_label": "Tone:",
+      "dismiss_calendar_hint": "Dismiss calendar hint",
+      "long_post_support": "Your account ({handle}) supports long posts — this will publish normally with up to 2,000 characters.",
+      "x_premium_required_title": "X Premium required for long posts.",
+      "x_premium_required_body": "One or more of your tweets exceeds 280 characters. Standard X accounts are limited to 280 characters per tweet — posts beyond this limit will only publish successfully on X Premium accounts. If you're on a standard account, these tweets will fail and appear as errors in your queue.",
+      "x_premium_tip": "Use the \"Convert to Thread\" button below to split your content into multiple tweets under 280 characters each.",
+      "post_exceeds_2000": "Post exceeds 2,000 characters. While your X Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend to see significantly lower engagement. Consider trimming your content or converting to a thread.",
+      "mixed_tier_note": "Character limit set to 280 based on the most restrictive account. To use longer posts, remove free-tier accounts or post separately.",
+      "refine_success": "Output refined! Review the changes below.",
+      "auto_number_on": "Auto-numbering on — click to disable",
+      "auto_number_off": "Auto-numbering off — click to enable"
+    },
     "media_library": {
       "title": "Media Library",
       "description": "Browse and reuse previously uploaded media",
@@ -832,10 +857,18 @@
       "retry": "Retry",
       "cap_warning": "4 media per tweet limit reached",
       "filter_all": "All",
-      "filter_images": "Images",
-      "filter_videos": "Videos",
-      "filter_gifs": "GIFs",
+      "filter_image": "Images",
+      "filter_video": "Videos",
+      "filter_gif": "GIFs",
       "error": "Failed to load media library"
+    },
+    "save_as_template": "Save as Template",
+    "ai": {
+      "rewrite_prefill": "Rewrite this tweet"
+    },
+    "mobile": {
+      "post_now": "Post Now",
+      "schedule": "Schedule"
     }
   },
   "queue": {
@@ -1354,6 +1387,12 @@
     "description": "Powerful AI tools to supercharge your content creation",
     "quota_title": "AI Generations",
     "quota_description": "Track your AI usage and manage your quota",
+    "quota_resets": "Resets {date}",
+    "unlimited_usage": "{used} used · Unlimited",
+    "usage_with_limit": "{used} / {limit} used",
+    "generations_used": "generations",
+    "total_generations": "total",
+    "unlimited_generations": "Unlimited",
     "exhausted": "Quota exhausted",
     "generations": "Generations",
     "used_percent": "Used",
@@ -1487,6 +1526,7 @@
         "source_language": "Source Language",
         "redactions_notice": "Personal information was redacted from this document",
         "generated_success": "Thread generated successfully",
+        "show_transcript": "Show transcript",
         "regenerate": "Regenerate"
       },
       "recent": {
@@ -1524,6 +1564,8 @@
         "downloading": "Downloading audio...",
         "transcribing": "Transcribing audio...",
         "generating": "Generating thread...",
+        "queued": "Waiting in queue...",
+        "estimated_time": "Typically ~{seconds}s",
         "status_downloading": "Downloading",
         "status_transcribing": "Transcribing",
         "status_generating": "Generating",
@@ -1539,6 +1581,7 @@
         "no_url": "Please enter a YouTube URL",
         "upgrade_required": "This feature requires a Pro subscription",
         "generate_failed": "Failed to generate thread. Please try again.",
+        "rate_limited": "Too many requests. Please wait a moment.",
         "generic": "Something went wrong. Please try again.",
         "polling_connection": "Connection issue — retrying...",
         "polling_timeout": "Generation is taking longer than expected. You can cancel and try again."
@@ -1657,11 +1700,15 @@
       "original_tweet_label": "Original Tweet",
       "paste_placeholder": "Paste your tweet here…",
       "chars": "{count} chars"
-    }
+    },
+    "regenerate": "Regenerate"
   },
   "ai_agentic": {
     "title": "Agentic Posting",
     "description": "Drop a topic. AI handles the rest.",
+    "connect_x_account_title": "Connect an X account",
+    "connect_x_account_description": "You need a connected X account to generate and post content.",
+    "connect_in_settings": "Connect in Settings",
     "pro_feature": "Pro Feature",
     "pro_description": "AI researches, writes, and creates visuals for your posts. Upgrade to Pro to generate threads automatically.",
     "input_screen": {
@@ -1840,6 +1887,7 @@
     "copy": "Copy",
     "copied": "Copied!",
     "error": "Failed to generate bio variants. Please try again.",
+    "niche_required_hint": "Enter your niche or topic to generate bio variations",
     "toasts": {
       "copied": "Copied to clipboard"
     }
@@ -1881,7 +1929,9 @@
     "works_with_any": "Works with any public tweet from x.com or twitter.com",
     "toasts": {
       "copied": "Copied to clipboard"
-    }
+    },
+    "no_replies_title": "No replies generated",
+    "no_replies_description": "The AI was unable to generate replies. Try adjusting the tweet content or regenerate."
   },
   "ai_calendar": {
     "title": "AI Content Calendar",
@@ -1926,7 +1976,7 @@
     "post_to": "Post to",
     "loading_accounts": "Loading accounts…",
     "no_connected_accounts": "No connected X accounts found.",
-    "connect_in_settings": "Connect one in Settings",
+    "connect_in_settings": "Connect in Settings",
     "account_placeholder": "Select account",
     "default_badge": "(default)",
     "week_starts_on": "Week 1 starts on",
@@ -1968,7 +2018,12 @@
       "fri": "Fri",
       "sat": "Sat",
       "sun": "Sun"
-    }
+    },
+    "connect_x_account_title": "Connect an X account",
+    "connect_x_account_description": "Connect an X account in Settings to schedule your calendar.",
+    "schedule_partial_failure": "Scheduled {success} of {total} posts. {failed} failed.",
+    "retry_failed": "Retry {count} failed",
+    "failed_topics": "Failed topics"
   },
   "ai_history": {
     "title": "AI Generation History",
@@ -2232,6 +2287,17 @@
       "title": "Adapt Content",
       "description": "AI will analyze this content and create an adapted version for your audience"
     },
+    "history": {
+      "empty_title": "No history yet",
+      "empty_description": "Your import and adaptation history will appear here.",
+      "go_to_import": "Go to Import"
+    },
+    "bookmarks": {
+      "empty_title": "No bookmarks yet",
+      "empty_description": "Bookmark adapted content to find it here later.",
+      "go_to_import": "Browse Import"
+    },
+    "reimport_label": "Open in Import",
     "saving": "Saving..."
   },
   "settings": {
@@ -4025,6 +4091,7 @@
       "duplicate_in_flight": "A job for this video is already in progress.",
       "generation_failed": "Failed to generate thread. Please try again.",
       "upgrade_required": "YouTube to Thread is available on Pro and Agency plans.",
+      "rate_limited": "Too many requests. Please wait a moment.",
       "no_provider_key": "Transcription service is not configured. Please contact support.",
       "invalid_url": "Please enter a valid YouTube video URL",
       "polling_connection": "Connection issue — retrying...",

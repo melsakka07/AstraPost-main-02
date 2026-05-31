@@ -1,4 +1,7 @@
+"use client";
+
 import { CalendarDays, CheckCircle2, Info, Sparkles, X as XIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ComposerOnboardingHint } from "@/components/composer/composer-onboarding-hint";
 import type { TweetDraft } from "@/components/composer/composer-types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -33,6 +36,8 @@ export function ComposerAlerts({
   onDismissCalendarMeta,
   hasMixedTiers,
 }: ComposerAlertsProps) {
+  const t = useTranslations("compose");
+
   return (
     <>
       <ComposerOnboardingHint />
@@ -41,15 +46,13 @@ export function ComposerAlerts({
         <Alert className="border-primary/30 bg-primary/5">
           <Info className="h-4 w-4" />
           <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <span className="text-sm">
-              You have an unsaved draft from a previous session. Would you like to restore it?
-            </span>
+            <span className="text-sm">{t("alerts.draft_restore_message")}</span>
             <div className="flex shrink-0 gap-2">
               <Button size="sm" variant="outline" onClick={onDiscardDraftRestore}>
-                Discard
+                {t("alerts.discard")}
               </Button>
               <Button size="sm" onClick={onAcceptDraftRestore}>
-                Restore
+                {t("alerts.restore")}
               </Button>
             </div>
           </AlertDescription>
@@ -64,7 +67,7 @@ export function ComposerAlerts({
               <span className="text-foreground font-medium">{sourceAttribution.label}</span>
             ) : (
               <>
-                Inspired by{" "}
+                {t("alerts.inspired_by")}{" "}
                 <a
                   href={sourceAttribution.url}
                   target="_blank"
@@ -81,7 +84,7 @@ export function ComposerAlerts({
             size="icon"
             className="h-6 w-6 shrink-0"
             onClick={onDismissSourceAttribution}
-            aria-label="Dismiss attribution"
+            aria-label={t("alerts.dismiss_attribution")}
           >
             <XIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           </Button>
@@ -94,7 +97,8 @@ export function ComposerAlerts({
             <CalendarDays className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
             {calendarMeta.topic && (
               <span>
-                Topic: <span className="text-foreground font-medium">{calendarMeta.topic}</span>
+                {t("alerts.topic_label")}{" "}
+                <span className="text-foreground font-medium">{calendarMeta.topic}</span>
               </span>
             )}
             {calendarMeta.topic && calendarMeta.tone && (
@@ -102,7 +106,7 @@ export function ComposerAlerts({
             )}
             {calendarMeta.tone && (
               <span>
-                Tone:{" "}
+                {t("alerts.tone_label")}{" "}
                 <span className="text-foreground font-medium capitalize">{calendarMeta.tone}</span>
               </span>
             )}
@@ -112,7 +116,7 @@ export function ComposerAlerts({
             size="icon"
             className="h-6 w-6 shrink-0"
             onClick={onDismissCalendarMeta}
-            aria-label="Dismiss calendar hint"
+            aria-label={t("alerts.dismiss_calendar_hint")}
           >
             <XIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
           </Button>
@@ -126,10 +130,7 @@ export function ComposerAlerts({
             <CheckCircle2 className="text-success-11 h-4 w-4" />
             <AlertDescription className="text-success-11 flex items-center gap-2">
               <XSubscriptionBadge tier={effectiveTier} size="md" />
-              <span>
-                Your account ({userHandle}) supports long posts — this will publish normally with up
-                to 2,000 characters.
-              </span>
+              <span>{t("alerts.long_post_support", { handle: userHandle })}</span>
             </AlertDescription>
           </Alert>
         )}
@@ -139,18 +140,10 @@ export function ComposerAlerts({
           <Info className="text-warning-11 h-4 w-4" />
           <AlertDescription className="text-warning-11 space-y-1">
             <p>
-              <span className="font-medium">X Premium required for long posts.</span>
+              <span className="font-medium">{t("alerts.x_premium_required_title")}</span>
             </p>
-            <p>
-              One or more of your tweets exceeds 280 characters. Standard X accounts are limited to
-              280 characters per tweet — posts beyond this limit will only publish successfully on{" "}
-              <span className="font-medium">X Premium</span> accounts. If you&apos;re on a standard
-              account, these tweets will fail and appear as errors in your queue.
-            </p>
-            <p className="text-warning-11/80">
-              Tip: Use the &quot;Convert to Thread&quot; button below to split your content into
-              multiple tweets under 280 characters each.
-            </p>
+            <p>{t("alerts.x_premium_required_body")}</p>
+            <p className="text-warning-11/80">{t("alerts.x_premium_tip")}</p>
           </AlertDescription>
         </Alert>
       )}
@@ -162,10 +155,7 @@ export function ComposerAlerts({
           <Alert className="border-warning-6 bg-warning-3 text-warning-11">
             <Info className="text-warning-11 h-4 w-4" />
             <AlertDescription className="text-warning-11">
-              <span className="font-medium">Post exceeds 2,000 characters.</span> While your X
-              Premium account supports up to 25,000 characters, posts beyond 2,000 characters tend
-              to see significantly lower engagement. Consider trimming your content or converting to
-              a thread.
+              {t("alerts.post_exceeds_2000")}
             </AlertDescription>
           </Alert>
         )}
@@ -174,10 +164,7 @@ export function ComposerAlerts({
       {hasMixedTiers && (
         <div className="border-border/50 bg-muted/30 text-muted-foreground flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs">
           <Info className="h-3 w-3 shrink-0" />
-          <span>
-            Character limit set to 280 based on the most restrictive account. To use longer posts,
-            remove free-tier accounts or post separately.
-          </span>
+          <span>{t("alerts.mixed_tier_note")}</span>
         </div>
       )}
     </>

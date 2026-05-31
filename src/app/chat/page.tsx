@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useSession } from "@/lib/auth-client";
 import { copyToClipboard } from "@/lib/clipboard";
+import type { PlanLimitPayload } from "@/lib/types/plan-limit";
 import type { Components } from "react-markdown";
 
 const H1: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
@@ -102,21 +103,6 @@ type MaybePartsMessage = {
   parts?: TextPart[];
   content?: TextPart[];
 };
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
 
 function extractPlanLimitPayloadFromErrorMessage(errorMessage: string): PlanLimitPayload | null {
   const start = errorMessage.indexOf("{");

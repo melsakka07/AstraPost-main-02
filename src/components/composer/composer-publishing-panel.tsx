@@ -128,7 +128,9 @@ export function ComposerPublishingPanel({
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                  {!hasContent && (
+                    <TooltipContent>{t("tooltip.add_content_to_enable")}</TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
               <TooltipProvider>
@@ -146,7 +148,9 @@ export function ComposerPublishingPanel({
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                  {!hasContent && (
+                    <TooltipContent>{t("tooltip.add_content_to_enable")}</TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
             </>
@@ -171,7 +175,9 @@ export function ComposerPublishingPanel({
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                  {!hasContent && (
+                    <TooltipContent>{t("tooltip.add_content_to_enable")}</TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
               <TooltipProvider>
@@ -189,29 +195,56 @@ export function ComposerPublishingPanel({
                       </Button>
                     </span>
                   </TooltipTrigger>
-                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
+                  {!hasContent && (
+                    <TooltipContent>{t("tooltip.add_content_to_enable")}</TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
             </>
           )}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0}>
-                  <Button
-                    variant="outline"
-                    className="h-9 w-full text-sm sm:h-10"
-                    onClick={() => onSubmit("draft")}
-                    disabled={isSubmitting || !hasContent}
-                  >
-                    <FileText className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
-                    {t("label.save_draft")}
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-            </Tooltip>
-          </TooltipProvider>
+          {/* 2.9: Save Draft + Save Template in a row */}
+          <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button
+                      variant="outline"
+                      className="h-9 w-full text-sm sm:h-10"
+                      onClick={() => onSubmit("draft")}
+                      disabled={isSubmitting || !hasContent}
+                    >
+                      <FileText className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
+                      {t("label.save_draft")}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!hasContent && (
+                  <TooltipContent>{t("tooltip.add_content_to_enable")}</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button
+                      variant="outline"
+                      className="h-9 w-full text-sm sm:h-10"
+                      onClick={onOpenSaveTemplate}
+                      disabled={isSubmitting || !hasContent}
+                    >
+                      <BookmarkPlus className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
+                      {t("label.save_template")}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!hasContent && (
+                  <TooltipContent>{t("tooltip.add_content_to_enable")}</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         {/* Advanced Options disclosure */}
@@ -335,26 +368,6 @@ export function ComposerPublishingPanel({
                   </div>
                 )}
               </div>
-
-              {/* Save as Template */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0}>
-                      <Button
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-foreground h-9 w-full justify-start text-xs sm:h-9 sm:text-sm"
-                        onClick={onOpenSaveTemplate}
-                        disabled={isSubmitting || !hasContent}
-                      >
-                        <BookmarkPlus className="me-1.5 h-3.5 w-3.5 sm:me-2 sm:h-4 sm:w-4" />
-                        {t("label.save_template")}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!hasContent && <TooltipContent>Add content to enable</TooltipContent>}
-                </Tooltip>
-              </TooltipProvider>
             </div>
           )}
         </div>

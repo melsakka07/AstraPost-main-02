@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Loader2, Sparkles, RefreshCw, Send } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { PiiRedactionBanner } from "@/components/ai/pii-redaction-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useSession } from "@/lib/auth-client";
 import type { Tweet } from "@/lib/services/tweet-importer";
 import { ManualEditor } from "./manual-editor";
 
@@ -57,10 +56,10 @@ export function AdaptationPanel({
   threadContext = [],
   onSendToComposer,
 }: AdaptationPanelProps) {
-  const { data: session } = useSession();
   const t = useTranslations("inspiration");
+  const locale = useLocale();
   const td = useTranslations("dashboard_shell");
-  const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
+  const [activeTab, setActiveTab] = useState<"manual" | "ai">("ai");
   const [aiAction, setAiAction] = useState("rephrase");
   const [aiTone, setAiTone] = useState("professional");
   const [aiLanguage, setAiLanguage] = useState<"ar" | "en">("ar");
@@ -69,12 +68,10 @@ export function AdaptationPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sync AI language with user's preferred language once session loads
+  // Sync AI language with user's preferred locale
   useEffect(() => {
-    if (session?.user && "language" in session.user) {
-      setAiLanguage((session.user as any).language || "ar");
-    }
-  }, [session?.user]);
+    setAiLanguage((locale as "ar" | "en") || "ar");
+  }, [locale]);
 
   // Reset generated content when source tweet changes
   useEffect(() => {

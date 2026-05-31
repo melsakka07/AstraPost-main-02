@@ -29,21 +29,7 @@ import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import { copyToClipboard } from "@/lib/clipboard";
 import { sendToComposer } from "@/lib/composer-bridge";
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 export function AffiliateClient({ userLanguage }: { userLanguage: string }) {
   const t = useTranslations("affiliate");
@@ -77,10 +63,7 @@ export function AffiliateClient({ userLanguage }: { userLanguage: string }) {
 
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,

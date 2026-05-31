@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Loader2, Copy, Check, ChevronRight, Eye } from "lucide-react";
+import { Sparkles, Loader2, Eye, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { AiResultActions, AiResultItemActions } from "@/components/ai/shared/ai-result-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import { useElapsedTime } from "@/hooks/use-elapsed-time";
 import { copyToClipboard } from "@/lib/clipboard";
 import { computeTweetCharCount } from "@/lib/tweet-char";
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 import { cn } from "@/lib/utils";
 
 interface Reply {
@@ -32,21 +34,6 @@ interface ReplyResult {
   tweetText: string;
   tweetAuthor: string;
   replies: Reply[];
-}
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
 }
 
 export function ReplyGeneratorClient() {
@@ -88,10 +75,7 @@ export function ReplyGeneratorClient() {
 
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,
@@ -337,11 +321,20 @@ export function ReplyGeneratorClient() {
         </div>
       )}
 
-      {result && (
+      {result && result.replies.length === 0 && (
+        <div className="border-border bg-muted/20 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-8 text-center">
+          <p className="text-sm font-semibold">{t("no_replies_generated")}</p>
+          <p className="text-muted-foreground text-xs">{t("no_replies_hint")}</p>
+          <Button variant="outline" size="sm" onClick={handleGenerate}>
+            <RefreshCw className="me-2 h-3.5 w-3.5" />
+            {t("regenerate")}
+          </Button>
+        </div>
+      )}
+
+      {result && result.replies.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">
-            {t("reply_options", { count: result.replies.length })}
-          </h3>
+          <AiResultActions itemCount={result.replies.length} onRegenerate={handleGenerate} />
           {result.replies.map((reply, idx) => (
             <Card key={idx} className="hover:border-primary/30 transition-colors">
               <CardContent className="p-4">
@@ -373,28 +366,13 @@ export function ReplyGeneratorClient() {
                       );
                     })()}
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copyReply(reply.text, idx)}
-                      aria-label="Copy reply"
-                    >
-                      {copiedIdx === idx ? (
-                        <Check className="h-3.5 w-3.5" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => sendToComposer(reply.text)}
-                      aria-label="Send reply to Composer"
-                    >
-                      <ChevronRight className="h-3.5 w-3.5 rtl:scale-x-[-1]" />
-                    </Button>
-                  </div>
+                  <AiResultItemActions
+                    text={reply.text}
+                    index={idx}
+                    onCopy={copyReply}
+                    copied={copiedIdx === idx}
+                    onSendToComposer={(text) => sendToComposer(text)}
+                  />
                 </div>
               </CardContent>
             </Card>

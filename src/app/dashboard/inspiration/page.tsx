@@ -59,6 +59,11 @@ function InspirationContent() {
     tabs.clearSuccess();
   }, [importFlow, tabs]);
 
+  // Navigate to the Import tab (used by empty-state CTAs in History and Bookmarks).
+  const handleNavigateToImport = useCallback(() => {
+    tabs.setActiveTab("import");
+  }, [tabs]);
+
   // History re-import: prefill the URL and switch to the import tab (no fetch —
   // matches the original button behavior).
   const handleHistoryReimport = useCallback(
@@ -124,7 +129,11 @@ function InspirationContent() {
         </TabsContent>
 
         <TabsContent value="history">
-          <InspirationHistoryList history={history.history} onReimport={handleHistoryReimport} />
+          <InspirationHistoryList
+            history={history.history}
+            onReimport={handleHistoryReimport}
+            onNavigateToImport={handleNavigateToImport}
+          />
         </TabsContent>
 
         <TabsContent value="bookmarks">
@@ -132,6 +141,7 @@ function InspirationContent() {
             bookmarks={bookmarks.bookmarks}
             onReadapt={handleReadaptBookmark}
             onDelete={bookmarks.handleDeleteBookmark}
+            onNavigateToImport={handleNavigateToImport}
           />
         </TabsContent>
       </Tabs>

@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronDown, Sparkles, Wand2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { XAccountAvatar } from "@/components/ai/agentic/x-account-avatar";
 import { AgenticTrendsPanel } from "@/components/ai/agentic-trends-panel";
+import { ConnectXAccountEmpty } from "@/components/ai/shared/connect-x-account-empty";
 import { BlurredOverlay } from "@/components/ui/blurred-overlay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -299,7 +300,7 @@ export function InputScreen({
       <AgenticTrendsPanel onSelectTrend={onSelectTrend} />
 
       {/* ── Account selector (bottom — secondary context) ──────────────────── */}
-      {accounts.length > 0 && (
+      {accounts.length > 0 ? (
         <div className="mt-8 flex justify-center pb-4">
           {accounts.length === 1 ? (
             <div className="border-border bg-muted/30 text-muted-foreground inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm">
@@ -345,6 +346,13 @@ export function InputScreen({
               </SelectContent>
             </Select>
           )}
+        </div>
+      ) : (
+        <div className="mt-8">
+          <ConnectXAccountEmpty
+            title={t("connect_x_title")}
+            description={t("connect_x_description")}
+          />
         </div>
       )}
     </div>

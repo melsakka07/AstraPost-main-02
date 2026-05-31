@@ -53,72 +53,78 @@ export default async function AIHubPage() {
   return (
     <DashboardPageWrapper icon={Sparkles} title={t("title")} description={t("description")}>
       {/* UA-A16: AI Quota Meter */}
-      {usage.limit !== null && (
-        <div className="mb-6">
-          <Card className={isQuotaExhausted ? "border-destructive/50 bg-destructive/5" : ""}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="text-primary h-5 w-5" />
-                  <CardTitle>{t("quota_title")}</CardTitle>
-                </div>
-                {isQuotaExhausted && (
-                  <Badge variant="destructive" className="flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {t("exhausted")}
-                  </Badge>
-                )}
+      <div className="mb-6">
+        <Card className={isQuotaExhausted ? "border-destructive/50 bg-destructive/5" : ""}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="text-primary h-5 w-5" />
+                <CardTitle>{t("quota_title")}</CardTitle>
               </div>
-              <CardDescription>{t("quota_description")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-foreground font-medium">
-                    {usage.used} / {usage.limit} {t("generations")}
-                  </span>
+              {isQuotaExhausted && (
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {t("exhausted")}
+                </Badge>
+              )}
+            </div>
+            <CardDescription>{t("quota_description")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-foreground font-medium">
+                  {usage.used} {t("generations_used")}
+                  {usage.limit !== null
+                    ? ` · ${usage.limit} ${t("total_generations")}`
+                    : ` · ${t("unlimited_generations")}`}
+                </span>
+                {usage.limit !== null && (
                   <span className="text-muted-foreground text-xs">
                     {quotaPercentage}% {t("used_percent")}
                   </span>
-                </div>
-                <Progress value={Math.min(quotaPercentage, 100)} className="h-2" />
+                )}
               </div>
-              <p className="text-muted-foreground text-xs">
-                {t.rich("resets_on", {
-                  date: new Date(usage.resetDate).toLocaleDateString(locale, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  }),
-                })}
-              </p>
+              {usage.limit !== null && (
+                <Progress value={Math.min(quotaPercentage, 100)} className="h-2" />
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {t.rich("resets_on", {
+                date: new Date(usage.resetDate).toLocaleDateString(locale, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }),
+              })}
+            </p>
 
-              {isQuotaExhausted ? (
-                <div className="bg-destructive/10 border-destructive/20 space-y-3 rounded-lg border p-3">
-                  <p className="text-destructive text-sm font-medium">{t("quota_reached")}</p>
-                  <Button asChild variant="default" size="sm" className="w-full">
-                    <Link href="/dashboard/settings/billing">{t("upgrade_pro")}</Link>
-                  </Button>
-                </div>
-              ) : quotaPercentage >= 80 ? (
-                <div className="border-warning-6 bg-warning-3 rounded-lg border p-3">
-                  <p className="text-warning-11 text-sm font-medium">
-                    {t.rich("quota_warning", {
-                      quota: quotaPercentage,
-                    })}
-                  </p>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            {isQuotaExhausted ? (
+              <div className="bg-destructive/10 border-destructive/20 space-y-3 rounded-lg border p-3">
+                <p className="text-destructive text-sm font-medium">{t("quota_reached")}</p>
+                <Button asChild variant="default" size="sm" className="w-full">
+                  <Link href="/dashboard/settings/billing">{t("upgrade_pro")}</Link>
+                </Button>
+              </div>
+            ) : quotaPercentage >= 80 && usage.limit !== null ? (
+              <div className="border-warning-6 bg-warning-3 rounded-lg border p-3">
+                <p className="text-warning-11 text-sm font-medium">
+                  {t.rich("quota_warning", {
+                    quota: quotaPercentage,
+                  })}
+                </p>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
 
       <AiToolsGrid
         lockedMap={lockedMap}
         isQuotaExhausted={isQuotaExhausted}
         userPlan={userPlan}
         trialActive={trialActive}
+        resetDate={usage.resetDate}
       />
     </DashboardPageWrapper>
   );

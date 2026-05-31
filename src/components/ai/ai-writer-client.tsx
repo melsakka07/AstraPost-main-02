@@ -6,12 +6,9 @@ import {
   Globe,
   Hash,
   Link2,
-  PenSquare,
   PenTool,
   Sparkles,
   Loader2,
-  Copy,
-  Check,
   Shuffle,
   ChevronDown,
   ChevronRight,
@@ -22,8 +19,8 @@ import { toast } from "sonner";
 import { AiQuotaChip } from "@/components/ai/ai-quota-chip";
 import { HashtagGenerator } from "@/components/ai/hashtag-generator";
 import { PiiRedactionBanner } from "@/components/ai/pii-redaction-banner";
+import { AiResultActions, AiResultItemActions } from "@/components/ai/shared/ai-result-actions";
 import { AiLengthSelector } from "@/components/composer/ai-length-selector";
-import { DashboardPageWrapper } from "@/components/dashboard/dashboard-page-wrapper";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -49,22 +46,8 @@ import { sendToComposer } from "@/lib/composer-bridge";
 import { type AiLengthOptionId, type XSubscriptionTier } from "@/lib/schemas/common";
 import type { MonthlyAiUsage } from "@/lib/services/ai-quota";
 import { computeTweetCharCount, type TweetCharSeverity } from "@/lib/tweet-char";
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 import { cn } from "@/lib/utils";
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
 
 interface Variant {
   text: string;
@@ -214,10 +197,7 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
 
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,
@@ -359,10 +339,7 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
       });
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,
@@ -418,10 +395,7 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
       });
       if (!res.ok) {
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,
@@ -468,13 +442,11 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
   const meta = TAB_META[activeTab];
 
   return (
-    <DashboardPageWrapper
-      icon={meta.icon}
-      title={t(meta.titleKey)}
-      description={t(meta.descKey)}
-      actions={<AiQuotaChip aiUsage={aiUsage} imageUsage={imageUsage} />}
-    >
-      <Breadcrumb items={[{ label: t(meta.titleKey) }]} className="mb-2" />
+    <>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Breadcrumb items={[{ label: t(meta.titleKey) }]} className="mb-0" />
+        <AiQuotaChip aiUsage={aiUsage} imageUsage={imageUsage} />
+      </div>
       <Tabs
         value={activeTab}
         onValueChange={(v) => setActiveTab(v as ActiveTab)}
@@ -541,15 +513,14 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                           {t("tones.attention_grabbing")}
                         </SelectItem>
                         <SelectSeparator />
-                        <div
+                        <button
+                          type="button"
                           className="text-muted-foreground hover:text-foreground relative flex w-full cursor-pointer items-center gap-1.5 rounded-sm py-1.5 ps-2 pe-2 text-xs outline-none select-none"
                           onPointerDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             setShowAdvancedTones(!showAdvancedTones);
                           }}
-                          role="button"
-                          tabIndex={-1}
                           title={t("advanced_tones_tooltip")}
                         >
                           {showAdvancedTones ? (
@@ -558,7 +529,7 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                             <ChevronRight className="h-3 w-3 shrink-0" />
                           )}
                           <span>{t("advanced_tones")}</span>
-                        </div>
+                        </button>
                         {showAdvancedTones && (
                           <SelectItem value="controversial">{t("tone.controversial")}</SelectItem>
                         )}
@@ -682,53 +653,25 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                   {mode === "single" ? (
                     /* ── Single-post result ── */
                     <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground text-sm font-medium">
-                          {isGenerating ? t("generating") : t("generated_post")}
-                        </span>
-                        {!isGenerating && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                const ok = await copyToClipboard(generatedTweets[0] ?? "");
-                                if (!ok) {
-                                  toast.error(tCommon("copy_failed"));
-                                  return;
-                                }
-                                setCopiedAll(true);
-                                setTimeout(() => setCopiedAll(false), 2000);
-                                toast.success(t("copy"), { id: "copy" });
-                              }}
-                              aria-label={t("copy")}
-                            >
-                              {copiedAll ? (
-                                <>
-                                  <Check className="me-1.5 h-3.5 w-3.5" />
-                                  {t("copy")}
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="me-1.5 h-3.5 w-3.5" />
-                                  {t("copy")}
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                sendToComposer(generatedTweets, { source: "ai-writer", tone })
-                              }
-                            >
-                              <PenSquare className="me-1.5 h-3.5 w-3.5" />
-                              {t("open_composer")}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                      {!isGenerating && (
+                        <AiResultActions
+                          itemCount={1}
+                          onRegenerate={handleGenerate}
+                          onSendToComposer={() =>
+                            sendToComposer(generatedTweets, { source: "ai-writer", tone })
+                          }
+                        />
+                      )}
                       <Card className="focus-within:border-primary/40 border transition-colors">
                         <CardContent className="p-4">
+                          <div className="mb-2 flex justify-end">
+                            <AiResultItemActions
+                              text={generatedTweets[0] ?? ""}
+                              index={0}
+                              onCopy={copyTweet}
+                              copied={copiedTweetIdx === 0}
+                            />
+                          </div>
                           <Textarea
                             className="min-h-[120px] w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                             value={generatedTweets[0] ?? ""}
@@ -756,44 +699,21 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                   ) : (
                     /* ── Thread results ── */
                     <>
-                      <div className="flex items-center justify-between">
+                      {isGenerating ? (
                         <span className="text-muted-foreground text-sm font-medium">
-                          {isGenerating
-                            ? `Generating ${generatedTweets.length} / ${tweetCount}…`
-                            : `${generatedTweets.length} tweets`}
+                          Generating {generatedTweets.length} / {tweetCount}…
                         </span>
-                        {!isGenerating && (
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={copyAllTweets}
-                              aria-label="Copy all tweets"
-                            >
-                              {copiedAll ? (
-                                <>
-                                  <Check className="me-1.5 h-3.5 w-3.5" />
-                                  {t("copy")}
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="me-1.5 h-3.5 w-3.5" />
-                                  {t("copy_all")}
-                                </>
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                sendToComposer(generatedTweets, { source: "ai-writer", tone })
-                              }
-                            >
-                              <PenSquare className="me-1.5 h-3.5 w-3.5" />
-                              {t("open_composer")}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                      ) : (
+                        <AiResultActions
+                          itemCount={generatedTweets.length}
+                          onRegenerate={handleGenerate}
+                          onCopyAll={copyAllTweets}
+                          copyAllState={copiedAll ? "copied" : "idle"}
+                          onSendToComposer={() =>
+                            sendToComposer(generatedTweets, { source: "ai-writer", tone })
+                          }
+                        />
+                      )}
                       {generatedTweets.map((tweet, idx) => (
                         <Card
                           key={idx}
@@ -804,19 +724,15 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                               <Badge variant="secondary" className="shrink-0 tabular-nums">
                                 #{idx + 1}
                               </Badge>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-10 min-h-[44px] w-10 min-w-[44px] shrink-0 p-0"
-                                onClick={() => copyTweet(tweet, idx)}
-                                aria-label={`Copy tweet ${idx + 1}`}
-                              >
-                                {copiedTweetIdx === idx ? (
-                                  <Check className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Copy className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
+                              <AiResultItemActions
+                                text={tweet}
+                                index={idx}
+                                onCopy={copyTweet}
+                                copied={copiedTweetIdx === idx}
+                                onSendToComposer={(text) =>
+                                  sendToComposer([text], { source: "ai-writer", tone })
+                                }
+                              />
                             </div>
                             <Textarea
                               className="min-h-[60px] w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -992,50 +908,23 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
               {urlResult ? (
                 <>
                   <PiiRedactionBanner redactions={urlResult.redactions} />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-muted-foreground text-sm font-medium">
-                        {t("url.tweets_count", { count: urlResult.tweets.length })}
-                      </span>
-                      {urlResult.title && (
-                        <p className="text-muted-foreground max-w-[200px] truncate text-xs">
-                          {urlResult.title}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyUrlThread}
-                        aria-label={t("copy_all")}
-                      >
-                        {urlCopied ? (
-                          <>
-                            <Check className="me-1.5 h-3.5 w-3.5" />
-                            {t("copy")}
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="me-1.5 h-3.5 w-3.5" />
-                            {t("copy_all")}
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          sendToComposer(urlResult.tweets, {
-                            source: "url-to-thread",
-                            tone: urlTone,
-                          })
-                        }
-                      >
-                        <PenSquare className="me-1.5 h-3.5 w-3.5" />
-                        {t("open_composer")}
-                      </Button>
-                    </div>
-                  </div>
+                  <AiResultActions
+                    itemCount={urlResult.tweets.length}
+                    onRegenerate={handleUrlGenerate}
+                    onCopyAll={copyUrlThread}
+                    copyAllState={urlCopied ? "copied" : "idle"}
+                    onSendToComposer={() =>
+                      sendToComposer(urlResult.tweets, {
+                        source: "url-to-thread",
+                        tone: urlTone,
+                      })
+                    }
+                  />
+                  {urlResult.title && (
+                    <p className="text-muted-foreground max-w-[200px] truncate text-xs">
+                      {urlResult.title}
+                    </p>
+                  )}
                   {urlResult.tweets.map((tweet, idx) => (
                     <Card
                       key={idx}
@@ -1046,6 +935,18 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                           <Badge variant="secondary" className="shrink-0 tabular-nums">
                             #{idx + 1}
                           </Badge>
+                          <AiResultItemActions
+                            text={tweet}
+                            index={idx}
+                            onCopy={copyTweet}
+                            copied={copiedTweetIdx === idx}
+                            onSendToComposer={(text) =>
+                              sendToComposer([text], {
+                                source: "url-to-thread",
+                                tone: urlTone,
+                              })
+                            }
+                          />
                         </div>
                         <Textarea
                           className="min-h-[60px] w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -1214,20 +1115,15 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                         >
                           {v.angle}
                         </span>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="min-h-[44px] min-w-[44px]"
-                            onClick={() => copyVariant(v.text, idx)}
-                            aria-label={`Copy variant ${idx + 1}`}
-                          >
-                            {variantCopied === idx ? (
-                              <Check className="h-3.5 w-3.5" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
+                        <AiResultItemActions
+                          text={v.text}
+                          index={idx}
+                          onCopy={copyVariant}
+                          copied={variantCopied === idx}
+                          onSendToComposer={(text) =>
+                            sendToComposer([text], { source: "ai-writer" })
+                          }
+                        >
                           <Button
                             size="sm"
                             variant="ghost"
@@ -1237,16 +1133,7 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
                           >
                             {t("use")}
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="min-h-[44px] min-w-[44px]"
-                            onClick={() => sendToComposer([v.text], { source: "ai-writer" })}
-                            aria-label={`Open variant ${idx + 1} in Composer`}
-                          >
-                            <PenSquare className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        </AiResultItemActions>
                       </div>
                       <p className="text-sm leading-relaxed">{v.text}</p>
                       <p className="text-muted-foreground text-xs italic">{v.rationale}</p>
@@ -1263,6 +1150,6 @@ export function AIWriterClient({ aiUsage, imageUsage }: AIWriterClientProps) {
           <HashtagGenerator />
         </TabsContent>
       </Tabs>
-    </DashboardPageWrapper>
+    </>
   );
 }

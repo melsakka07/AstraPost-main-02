@@ -80,6 +80,17 @@ interface ComposerAiToolsProps extends Pick<
   isAiGenerateDisabled: boolean;
 }
 
+const AI_TOOL_LABEL_MAP: Record<string, string> = {
+  thread: "ai_tools.label.thread",
+  inspire: "ai_tools.label.inspire",
+  template: "ai_tools.label.template",
+  hook: "ai_tools.label.hook",
+  cta: "ai_tools.label.cta",
+  rewrite: "ai_tools.label.rewrite",
+  translate: "ai_tools.label.translate",
+  hashtags: "ai_tools.label.hashtags",
+};
+
 export function ComposerAiTools(props: ComposerAiToolsProps) {
   const {
     isAiOpen,
@@ -140,7 +151,13 @@ export function ComposerAiTools(props: ComposerAiToolsProps) {
         setAiTool(tool);
         setGeneratedHashtags([]);
         if (tool === "hashtags" || tool === "hook" || tool === "rewrite") {
-          setAiTargetTweetId(activeTweetId ?? tweets[0]?.id ?? null);
+          const targetId = activeTweetId ?? tweets[0]?.id ?? null;
+          setAiTargetTweetId(targetId);
+          // 2.1: Pre-populate rewrite text from target tweet content
+          if (tool === "rewrite") {
+            const targetTweet = tweets.find((x) => x.id === targetId);
+            setAiRewriteText(targetTweet?.content || "");
+          }
         }
         if (tool === "thread") {
           setAiTopic((tweets[0]?.content?.trim() || "").slice(0, 500));
@@ -209,14 +226,7 @@ export function ComposerAiTools(props: ComposerAiToolsProps) {
             <p className="text-muted-foreground/70 text-xs font-medium">{t("label.ai_tools")}</p>
             {isAiOpen && (
               <p className="text-muted-foreground/50 text-[10px] sm:text-xs">
-                {aiTool === "thread" && "Writer"}
-                {aiTool === "inspire" && "Inspire"}
-                {aiTool === "template" && "Template"}
-                {aiTool === "hook" && "Hook"}
-                {aiTool === "cta" && "CTA"}
-                {aiTool === "rewrite" && "Rewrite"}
-                {aiTool === "translate" && "Translate"}
-                {aiTool === "hashtags" && "#Tags"}
+                {AI_TOOL_LABEL_MAP[aiTool] && t(AI_TOOL_LABEL_MAP[aiTool])}
               </p>
             )}
           </div>

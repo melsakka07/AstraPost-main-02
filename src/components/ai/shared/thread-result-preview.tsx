@@ -5,19 +5,13 @@ import Image from "next/image";
 import { Copy, Send, Check, ExternalLink, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import type { TweetData } from "@/components/ai/shared/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { copyToClipboard } from "@/lib/clipboard";
 import { computeTweetCharCount } from "@/lib/tweet-char";
 import { cn } from "@/lib/utils";
-
-// ── Types ──────────────────────────────────────────────────────────────
-
-interface TweetData {
-  text: string;
-  charCount: number;
-}
 
 interface ThreadResultPreviewProps {
   tweets: TweetData[];
@@ -130,7 +124,7 @@ export function ThreadResultPreview({
       {transcript && (
         <details className="bg-muted/40 rounded-lg border px-4 py-3">
           <summary className="text-muted-foreground cursor-pointer text-sm font-medium select-none">
-            {transcriptLabel ?? "Show transcript"}
+            {transcriptLabel ?? t("pdf_to_thread.result.show_transcript")}
           </summary>
           <p className="text-muted-foreground mt-2 max-h-48 overflow-y-auto text-xs leading-relaxed whitespace-pre-wrap">
             {transcript}

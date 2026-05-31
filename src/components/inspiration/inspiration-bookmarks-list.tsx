@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark as BookmarkIcon } from "lucide-react";
+import { Bookmark as BookmarkIcon, Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   AlertDialog,
@@ -23,12 +23,15 @@ interface InspirationBookmarksListProps {
   bookmarks: Bookmark[];
   onReadapt: (bookmark: Bookmark) => void;
   onDelete: (id: string) => void;
+  /** Called when the user clicks the CTA in the empty state (e.g. navigates to Import tab). */
+  onNavigateToImport?: () => void;
 }
 
 export function InspirationBookmarksList({
   bookmarks,
   onReadapt,
   onDelete,
+  onNavigateToImport,
 }: InspirationBookmarksListProps) {
   const t = useTranslations("inspiration");
 
@@ -39,6 +42,15 @@ export function InspirationBookmarksList({
           <EmptyState
             icon={<BookmarkIcon className="h-5 w-5 opacity-50" />}
             title={t("no_bookmarks")}
+            description={t("no_bookmarks_description")}
+            primaryAction={
+              onNavigateToImport ? (
+                <Button onClick={onNavigateToImport}>
+                  <Download className="me-2 h-4 w-4" />
+                  {t("go_to_import")}
+                </Button>
+              ) : undefined
+            }
             className="border-0 bg-transparent py-16"
           />
         ) : (

@@ -8,22 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
 import type { TrendCategory, TrendItem } from "@/lib/schemas/common";
+import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 import { cn } from "@/lib/utils";
-
-interface PlanLimitPayload {
-  error?: string;
-  code?: string;
-  message?: string;
-  feature?: string;
-  plan?: string;
-  limit?: number | null;
-  used?: number;
-  remaining?: number | null;
-  upgrade_url?: string;
-  suggested_plan?: string;
-  trial_active?: boolean;
-  reset_at?: string | null;
-}
 
 const CATEGORIES: { id: TrendCategory; label: string }[] = [
   { id: "all", label: "All" },
@@ -67,10 +53,7 @@ export function AgenticTrendsPanel({ onSelectTrend }: AgenticTrendsPanelProps) {
         });
 
         if (res.status === 402) {
-          let payload: PlanLimitPayload | null = null;
-          try {
-            payload = (await res.json()) as PlanLimitPayload;
-          } catch {}
+          const payload = await parsePlanLimitResponse(res);
           openWithContext({
             error: payload?.error,
             code: payload?.code,
