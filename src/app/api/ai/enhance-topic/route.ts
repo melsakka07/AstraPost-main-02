@@ -13,11 +13,14 @@ const enhanceRequestSchema = z.object({
   topic: z.string().min(3).max(500),
 });
 
-function buildEnhancePrompt(language: string | null): string {
+function buildEnhancePrompt(
+  language: string | null,
+  topic: string
+): { system: string; prompt: string } {
   const userLanguage = language || "en";
   const langInstruction = getArabicInstructions(userLanguage);
 
-  return `You are a social media topic refiner. Take the following topic idea and transform it into a concise, compelling topic description suitable as the starting point for a tweet or thread.
+  const system = `You are a social media topic refiner. Transform topic ideas into concise, compelling topic descriptions suitable as the starting point for a tweet or thread.
 
 ${langInstruction}
 
@@ -28,6 +31,8 @@ Rules:
 - Do NOT add hashtags
 
 Return ONLY the enhanced topic text. No explanation, no quotes, no preamble.`;
+
+  return { system, prompt: topic };
 }
 
 export async function POST(req: Request) {
@@ -47,9 +52,11 @@ export async function POST(req: Request) {
     const model = openrouter(modelName);
 
     const t0 = performance.now();
+    const { system, prompt } = buildEnhancePrompt(dbUser.language, parsed.data.topic);
     const result = await generateText({
       model,
-      prompt: `${buildEnhancePrompt(dbUser.language)}\n\nTopic: ${parsed.data.topic}`,
+      system,
+      prompt,
       maxOutputTokens: 100,
       abortSignal: AbortSignal.timeout(15_000),
     });

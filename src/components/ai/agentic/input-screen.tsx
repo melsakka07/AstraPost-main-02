@@ -280,7 +280,7 @@ export function InputScreen({
                   htmlFor="agentic-audience"
                   className="text-muted-foreground text-xs font-medium tracking-wide uppercase"
                 >
-                  {t("input_screen.audience_hint")} <span className="normal-case">(optional)</span>
+                  {t("input_screen.audience_hint")}
                 </Label>
                 <Input
                   id="agentic-audience"
@@ -350,8 +350,8 @@ export function InputScreen({
       ) : (
         <div className="mt-8">
           <ConnectXAccountEmpty
-            title={t("connect_x_title")}
-            description={t("connect_x_description")}
+            title={t("connect_x_account_title")}
+            description={t("connect_x_account_description")}
           />
         </div>
       )}

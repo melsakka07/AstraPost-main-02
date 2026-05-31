@@ -1,5 +1,195 @@
 # Latest Updates
 
+## 2026-05-31 — Fix: Arabic language instruction ignored — Group 1 (4 routes)
+
+**Problem:** Four routes (`variants`, `bio`, `tools`, `calendar`) called `generateObject({ prompt })` with a single string that opened in English ("You are an expert..."), with `getArabicInstructions(userLanguage)` buried later. Models defaulted to the opening language and ignored the Arabic directive.
+
+**Fix:** Split each route's prompt into `{ system, prompt }` (following the pdf-to-thread pattern). `system` contains role, language directive, tone guidance, voice instructions, and output rules. `prompt` contains only the user's content/data. This ensures the Arabic instruction is a hard system directive, not buried in a mixed string.
+
+**Files changed:**
+
+- `src/app/api/ai/variants/route.ts` — Split single prompt into `system` (role + langInstruction + angle descriptions + format rules) and `prompt` (tweet text); updated `generateObject` + `inputPrompt`
+- `src/app/api/ai/bio/route.ts` — Split into `system` (strategist role + langInstruction + bio rules + diversity rule + format) and `prompt` (current bio + niche + goal); removed now-unused `currentBioSection`/`nicheSection` variables; updated `generateObject` + `inputPrompt`
+- `src/app/api/ai/tools/route.ts` — IIFE restructured to return `{ system, prompt }` for all 3 branches (hook, cta, rewrite); each branch: `system` = writer role + toneGuidance + langInstruction + voiceInstructions + constraints, `prompt` = specific task + user input; updated `generateObject` + `inputPrompt`
+- `src/app/api/ai/calendar/route.ts` — Split into `system` (strategist role + langInstruction + toneGuidance + format rules + constraints) and `prompt` (niche + weeks + postsPerWeek); updated `generateObject` + `inputPrompt`
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3487 keys match |
+
+---
+
+## 2026-05-31 — Fix: Arabic language instruction ignored — Group 3 (3 routes + arabic-prompt.ts)
+
+**Problem:** Three routes (`enhance-topic`, `trends`, `agentic regenerate`) called `generateText({ prompt })` with a single string combining system instructions AND user input. Models default to the opening English text and ignore Arabic instructions buried later. Additionally, `getArabicInstructions()` itself opened with the English word "IMPORTANT:" — even when used as a system message, the first thing the model saw was English.
+
+**Fix:** Split each route's prompt into `{ system, prompt }` (following the pdf-to-thread pattern). `system` contains the role, language directive, and output rules. `prompt` contains only the user's content/data. This ensures the Arabic instruction is a hard, non-negotiable system directive. Also fixed `arabic-prompt.ts` so all three style blocks (`ARABIC_INSTRUCTIONS`, `ARABIC_SOCIAL_STYLE`, `ARABIC_TRANSLATION_STYLE`) open with Arabic text first ("اللغة: العربية...") instead of English ("LANGUAGE: Arabic", "IMPORTANT:").
+
+**Files changed:**
+
+- `src/lib/ai/arabic-prompt.ts` — `ARABIC_INSTRUCTIONS[0]` now opens in Arabic; `ARABIC_SOCIAL_STYLE` and `ARABIC_TRANSLATION_STYLE` first lines changed to Arabic
+- `src/app/api/ai/enhance-topic/route.ts` — `buildEnhancePrompt()` returns `{ system, prompt }`; call site destructures and passes to `generateText({ system, prompt })`
+- `src/app/api/ai/trends/route.ts` — `buildTrendsPrompt()` returns `{ system, prompt }`; call site and `inputPrompt` updated
+- `src/app/api/ai/agentic/[id]/regenerate/route.ts` — Inline prompt split into `system` (role + rules + output format) and `prompt` (research brief + content plan + context)
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3487 keys match |
+
+---
+
+## 2026-05-31 — Fix: PDF-to-thread Arabic language generation
+
+**Problem:** `buildSummarizePrompt()` returned a single string combining system instructions (role, language, tone, constraints) AND document content as one `prompt` to `generateObject()`. Models defaulted to the opening English text ("You are an expert business analyst...") and ignored Arabic instruction buried later in the same message.
+
+**Fix:** Split the return type of `buildSummarizePrompt()` from `string` to `{ system: string; prompt: string }`. The `system` message contains role, language directive, tone guidance, constraints, and jailbreak guard. The `prompt` message contains only the document title and body content. When `language: "ar"` is passed, the `system` message starts with the Arabic language directive as a hard instruction the model treats as non-negotiable.
+
+**Minor fix:** Corrected the formatting bug where `${langBlock} ${toneGuidance}` concatenated without a newline between them. Now each is on its own line.
+
+**Files changed:**
+
+- `src/lib/ai/summarize-prompts.ts` — Return type changed to `{ system; prompt }`; newline between `langBlock` and `toneGuidance`
+- `src/app/api/ai/pdf-to-thread/generate/route.ts` — Destructure `{ system, prompt }`, pass to `generateObject({ system, prompt })`
+- `src/app/api/ai/summarize/route.ts` — Same destructure + pass pattern
+- `src/lib/queue/processors.ts` — Two call sites (chunk summarization + final combine) updated
+- `src/lib/ai/summarize-prompts.test.ts` — All 16 tests updated for new return type; added sanity checks (system/prompt keys exist, constraints not in prompt, jailbreak guard in system only)
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3487 keys match |
+| `pnpm test` (416 tests)                    | ✅ all pass                  |
+
+---
+
+## 2026-05-31 — AI Pages UI/UX Audit: Phase 2 Complete (Polish)
+
+Three Tier-2 polish items from `docs/audits/2026-05-31-ai-pages-uiux-audit.md`. All frontend-only, minimal changes.
+
+### 7. Unified PDF action-button label
+
+**Problem:** The generate button showed different labels based on `syncEligible` ("Generate Thread" vs "Generate in Background"), creating mild inconsistency for what feels like the same action.
+
+**Fix:** Button now always shows "Generate Thread". When `!syncEligible`, a subtle muted helper line appears below: "Runs in the background — you can leave this page." New i18n key `generate_async_hint` in en/ar/pseudo.json.
+
+### 8. Consolidated composer_payload writes onto shared helper
+
+**Problem:** PDF and YouTube clients each inlined `sessionStorage.setItem("composer_payload", ...)` + `router.push("/dashboard/compose?source=...")` instead of using the existing `sendToComposer()` helper. Also, the `?source=` query param was functionally unused by the bridge.
+
+**Fix:** Both clients now call `sendToComposer(tweets, { source, firstTweetImage })` from `@/lib/composer-bridge`. Removed `useRouter` imports (no longer needed). Dropped unused `?source=` query param. The bridge already derives attribution from `payload.source`.
+
+### 9. Agentic card in AI tools grid
+
+**Problem:** Agentic posting was only accessible via sidebar — missing from the AI hub grid, breaking hub-and-spoke symmetry.
+
+**Fix:** Added agentic card to `ai-tools-grid.tsx` with `Bot` icon, Pro badge, and locked overlay (gated on `agentic_posting` enabled tool). Positioned after YouTube-to-Thread in the grid. New `ai_hub.tools.agentic` i18n keys in en/ar/pseudo.json.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3487 keys match |
+| `pnpm test` (40 files, 415 tests)          | ✅ all pass                  |
+
+---
+
+## 2026-05-31 — AI Pages UI/UX Audit: Phase 1 Complete (High-Impact)
+
+Three Tier-1 wins from `docs/audits/2026-05-31-ai-pages-uiux-audit.md`. All reuse existing helpers/endpoints — no new abstractions.
+
+### 4. Send-to-Composer in agentic
+
+**Problem:** YouTube and PDF tools both had a "Send to Composer" escape hatch. Agentic was the only tool missing it — its review screen only offered Post Now / Schedule / Save Draft.
+
+**Fix:**
+
+- `agentic/review-screen.tsx` — Added `onSendToComposer` prop + "Send to Composer" button in the sticky action bar
+- `agentic-posting-client.tsx` — Wired button to `sendToComposer(editedTweets.map(tw => tw.text), { source: "agentic" })` using the shared helper
+- `composer/use-composer-bridge.ts` — Added `"agentic"` source attribution branch (`"Agentic →"`)
+- i18n: `send_to_composer` key added to en/ar/pseudo.json
+
+### 5. Cheap YouTube regenerate (no re-download)
+
+**Problem:** YouTube "Regenerate" re-ran the full `handleSubmit` → re-download + re-transcribe, wasting AI spend and user time. Unlike PDF, YouTube had no separate generate endpoint.
+
+**Fix — Backend:** Created `src/app/api/ai/youtube-to-thread/generate/route.ts` — accepts `{ jobId, language, tweetCount, tone }`, reads `job.transcript` from `youtubeThreadJobs`, generates a new thread from the stored transcript. Full quota/moderation/usage-recording wired. Follows the PDF generate route pattern exactly.
+
+**Fix — Frontend:** `youtube-to-thread-client.tsx` — `handleRegenerate` rewritten to POST to the new `/generate` endpoint with the held `jobId` + params. Never calls `handleReset()` (preserves `jobId` and `lastSubmitDataRef`).
+
+### 6. Agentic i18n sweep complete
+
+**Fix:**
+
+- `agentic/processing-screen.tsx` — Removed hardcoded English `STEP_CONFIG` labels; replaced with `stepLabel()` function using `useTranslations()` for all 6 step labels (aria-label, sr-only, visible text)
+- `agentic/input-screen.tsx` — Removed duplicate hardcoded `(optional)` span; fixed `connect_x_account_title`/`connect_x_account_description` key references
+- `agentic/x-thread-preview.tsx` — Removed hardcoded `"you"` fallback username
+- No new i18n keys needed — all fixes reference existing keys
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3483 keys match |
+| `pnpm test` (40 files, 415 tests)          | ✅ all pass                  |
+
+---
+
+## 2026-05-31 — AI Pages UI/UX Audit: Phase 0 Complete (Quick Wins)
+
+Three Tier-0 wins from the audit at `docs/audits/2026-05-31-ai-pages-uiux-audit.md`. All reuse existing helpers/endpoints — no new abstractions.
+
+### 1. PDF Regenerate from stored jobId (no re-upload)
+
+**Problem:** The "Regenerate" button delegated to `handleReset()`, dropping `jobId` and forcing a wasteful re-upload + re-parse (extra upload-quota hit).
+
+**Fix — Frontend:** `pdf-to-thread-client.tsx` — `handleRegenerate` is now a standalone async function that directly POSTs to `/api/ai/pdf-to-thread/generate` (sync) or `/api/ai/pdf-to-thread/enqueue` (async) with the held `jobId` + current params. Never calls `handleReset()`.
+
+**Fix — Backend:** `generate/route.ts` and `enqueue/route.ts` — relaxed status gate from `job.status !== "extracting"` to `!job.extractedText`. Jobs in `"ready"` or `"failed"` status with stored extraction text now pass through for regeneration.
+
+### 2. `role="alert"` on failed/error result cards
+
+**Fix:** Added `role="alert"` to the outermost failed/error card containers in `pdf-to-thread-client.tsx`, `youtube-to-thread-client.tsx`, and the quality-issues block in `agentic/review-screen.tsx`. Screen readers now announce when an async job flips to failed state.
+
+### 3. i18n: Agentic flow hardcoded English removed
+
+**Fix:** 13 new `ai_agentic.*` keys added to `en.json`, `ar.json`, and `pseudo.json`. All hardcoded English toasts, labels, SSE step summaries, and `aria-label` attributes replaced with `useTranslations()` calls in `agentic-posting-client.tsx` and `tweet-card.tsx`.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3482 keys match |
+| `pnpm test` (40 files, 415 tests)          | ✅ all pass                  |
+
+## 2026-05-31 — Fix: RTL/LTR vs text-language mismatch on first load
+
+**Bug:** On a fresh visit (no `locale` cookie) the sidebar/document rendered RTL while the UI text was English (or vice-versa), self-correcting only after toggling the language switcher a few times.
+
+**Root cause:** Two independent locale resolvers disagreed. `src/app/layout.tsx` (which sets `<html lang dir>` + the provider locale) fell through to `session.user.language` — and that field **defaults to `"ar"`** (`auth.ts`) — so it rendered `dir="rtl"`. But `src/i18n/request.ts` (which feeds `getMessages()`) **ignored the session** and defaulted to English via Accept-Language → English messages. RTL layout + English text. The switcher writes the `locale` cookie, which both resolvers honor, hence the "fixes itself after toggling".
+
+**Fix — single source of truth:**
+
+- **New `src/i18n/locale.ts`** — pure, shared helpers: `resolveLocale()`, `getLocaleDirection()`, `isAppLocale()`, `prefersArabic()`, `getLangFromHeaders()`. One documented priority: `?lang=` → cookie → Arabic Accept-Language → session → `"en"`.
+- **`src/i18n/request.ts`** now uses `resolveLocale()` and reads the session, so messages match the resolved locale.
+- **`src/app/layout.tsx`** no longer recomputes the locale — it reads `getLocale()` (fed by `request.ts`) and derives `dir` via `getLocaleDirection()`. Removed the duplicate cookie/URL/session parsing and the redundant `getSession` call.
+- **`src/i18n/locale.test.ts`** — 9 unit tests locking the resolution priority (incl. the session-default-`"ar"` regression).
+
+Net: `<html dir>`, the provider locale, and the loaded messages all derive from one resolver — they can no longer diverge.
+
+> Note: the `chrome-extension://fmkadmapgofadopljbjfkapdkoienihi` console error ("The children should not have changed…") originates from the **React DevTools** browser extension itself, not app code — it is benign and not fixable from the app.
+
+### Verification
+
+| Gate                                       | Result                       |
+| ------------------------------------------ | ---------------------------- |
+| `pnpm run check` (lint + typecheck + i18n) | ✅ 0 errors, 3469 keys match |
+| `pnpm test` (40 files, 415 tests)          | ✅ all pass                  |
+
 ## 2026-05-31 — AI Compose UI/UX: Phase 2 Complete (Quick Wins)
 
 All 11 quick UX wins landed across composer, inspiration, and AI pages.

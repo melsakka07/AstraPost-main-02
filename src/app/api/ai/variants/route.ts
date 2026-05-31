@@ -74,14 +74,11 @@ export async function POST(req: Request) {
 
     const langInstruction = getArabicInstructions(userLanguage);
 
-    const prompt = `You are an expert social media copywriter.
-Given the following tweet, generate exactly 3 alternative versions using different angles.
+    const system = `You are an expert social media copywriter.
 ${langInstruction}
 
-ORIGINAL TWEET:
-${tweet}
+Generate exactly 3 alternative versions of a tweet using different angles:
 
-Generate exactly 3 variants:
 1. emotional — appeals to feelings, personal story, or empathy
 2. factual — data-driven, numbers, specific claims
 3. question — turns the message into an engaging question or hook
@@ -91,12 +88,16 @@ For each variant:
 - angle: one of emotional / factual / question / story / list
 - rationale: 1 sentence explaining why this angle works (under 200 chars)`;
 
+    const prompt = `Rewrite this tweet in 3 different angles:
+"${tweet}"`;
+
     const modelId = process.env.OPENROUTER_MODEL!;
 
     const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: variantSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -113,7 +114,7 @@ For each variant:
       promptVersion: "variants:v1",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: prompt,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: object,
       language: userLanguage,
     });

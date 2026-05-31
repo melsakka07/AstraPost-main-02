@@ -10,7 +10,7 @@
  */
 
 const ARABIC_INSTRUCTIONS = [
-  "IMPORTANT: Output the ENTIRE response in Modern Standard Arabic (العربية).",
+  "اللغة: العربية الفصحى المعاصرة. اكتب المحتوى بالكامل باللغة العربية.",
   "Use Arabic punctuation marks: ، (comma), ؛ (semicolon), ؟ (question mark). Never use Latin punctuation in Arabic text.",
   "Use Western numerals (0–9) consistently throughout. Do not mix Eastern Arabic numerals (٠-٩).",
   "Avoid translations of English idioms; use natural Arabic equivalents. Reference MENA region context where relevant.",
@@ -18,7 +18,7 @@ const ARABIC_INSTRUCTIONS = [
 
 /** Comprehensive Arabic style block for social media content creation. */
 export const ARABIC_SOCIAL_STYLE = [
-  "LANGUAGE: Arabic (العربية)",
+  "اللغة: العربية (Arabic)",
   "- Write ALL content natively in Modern Standard Arabic (فصحى معاصرة) or appropriate dialect for social media",
   "- Do NOT translate from English — think and write directly in Arabic",
   "- Use Arabic punctuation marks: ، (comma), ؛ (semicolon), ؟ (question mark). Never use Latin punctuation in Arabic text.",
@@ -32,7 +32,7 @@ export const ARABIC_SOCIAL_STYLE = [
 
 /** Arabic style block for translation tasks (culturally adapted, not literal). */
 export const ARABIC_TRANSLATION_STYLE = [
-  "LANGUAGE: Arabic (العربية)",
+  "اللغة: العربية (Arabic)",
   "- Translate into natural, culturally-adapted Arabic",
   "- Use Modern Standard Arabic (فصحى معاصرة) with natural phrasing suitable for the target audience",
   "- Adapt idioms and cultural references to Arabic equivalents",

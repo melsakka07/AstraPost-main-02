@@ -83,6 +83,8 @@ export function useComposerBridge({
             setSourceAttribution({ label: "PDF → Thread" });
           } else if (payload.source === "youtube-to-thread") {
             setSourceAttribution({ label: "YouTube → Thread" });
+          } else if (payload.source === "agentic") {
+            setSourceAttribution({ label: "Agentic →" });
           }
           bridgeLoadedRef.current = true;
           sessionStorage.removeItem("composer_payload");

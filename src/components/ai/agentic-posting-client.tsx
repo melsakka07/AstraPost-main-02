@@ -31,6 +31,7 @@ import type {
   PipelineProgressEvent,
   PipelineStep,
 } from "@/lib/ai/agentic-types";
+import { sendToComposer } from "@/lib/composer-bridge";
 import { parsePlanLimitResponse } from "@/lib/types/plan-limit";
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -104,13 +105,13 @@ export function AgenticPostingClient({
         // Pipeline paused — topic is too broad. Show suggestions overlay on processing screen.
         const d = data as { suggestions?: string[]; message?: string };
         setBroadSuggestions(d.suggestions ?? []);
-        setBroadMessage(d.message ?? "Your topic is broad. Pick a specific angle:");
+        setBroadMessage(d.message ?? t("processing_screen.broad_topic_title"));
         return;
       }
 
       if (step === "done") {
         if (status === "failed") {
-          const errMsg = (data as { error?: string })?.error ?? "Generation failed";
+          const errMsg = (data as { error?: string })?.error ?? t("toasts.generation_failed");
           if (isBackgroundedRef.current) {
             toast.error(errMsg);
           } else {
@@ -150,13 +151,23 @@ export function AgenticPostingClient({
 
           if (step === "research" && data) {
             const d = data as { recommendedAngle?: string; angles?: unknown[] };
-            summary = d.recommendedAngle ?? `${(d.angles as unknown[])?.length ?? 0} angles found`;
+            summary =
+              d.recommendedAngle ??
+              t("processing_screen.angles_found", { count: (d.angles as unknown[])?.length ?? 0 });
           } else if (step === "strategy" && data) {
             const d = data as { format?: string; tweetCount?: number };
-            summary = `${d.format === "thread" ? `Thread · ${d.tweetCount} tweets` : "Single post"}`;
+            summary = t("processing_screen.format", {
+              format:
+                d.format === "thread"
+                  ? t("processing_screen.format_thread")
+                  : t("processing_screen.format_single"),
+              count: d.tweetCount ?? 1,
+            });
           } else if (step === "review" && data) {
             const d = data as { qualityScore?: number };
-            summary = d.qualityScore ? `Quality score: ${d.qualityScore}/10` : undefined;
+            summary = d.qualityScore
+              ? t("processing_screen.quality_score", { score: d.qualityScore })
+              : undefined;
           }
 
           next[stepKey] = { state: "complete", elapsedMs: elapsed, summary };
@@ -165,10 +176,13 @@ export function AgenticPostingClient({
           next[stepKey] = {
             ...prev[stepKey],
             state: "in_progress",
-            summary: `${d.completed ?? 0} of ${d.total ?? 0} generated`,
+            summary: t("processing_screen.images_progress", {
+              completed: d.completed ?? 0,
+              total: d.total ?? 0,
+            }),
           };
         } else if (status === "failed") {
-          next[stepKey] = { state: "failed", summary: "Step failed" };
+          next[stepKey] = { state: "failed", summary: t("processing_screen.step_failed") };
         }
 
         return next;
@@ -234,8 +248,8 @@ export function AgenticPostingClient({
         }
 
         if (!res.ok || !res.body) {
-          const err = await res.json().catch(() => ({ error: "Request failed" }));
-          toast.error((err as { error?: string }).error ?? "Failed to start pipeline");
+          const err = await res.json().catch(() => ({ error: t("toasts.request_failed") }));
+          toast.error((err as { error?: string }).error ?? t("toasts.pipeline_start_failed"));
           setScreen("input");
           return;
         }
@@ -313,8 +327,8 @@ export function AgenticPostingClient({
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Enhancement failed" }));
-        toast.error((err as { error?: string }).error ?? "Enhancement failed");
+        const err = await res.json().catch(() => ({ error: t("toasts.enhancement_failed") }));
+        toast.error((err as { error?: string }).error ?? t("toasts.enhancement_failed"));
         return;
       }
 
@@ -370,7 +384,7 @@ export function AgenticPostingClient({
         } else if (session.status === "generating") {
           toast.info(t("toasts.session_in_progress", { topic: session.topic }), {
             duration: 5000,
-            action: { label: "Refresh", onClick: () => window.location.reload() },
+            action: { label: t("toasts.refresh"), onClick: () => window.location.reload() },
           });
         }
       } catch {
@@ -409,23 +423,23 @@ export function AgenticPostingClient({
           toast.error(
             (err as { error?: string }).error ??
               (err as { message?: string }).message ??
-              "Failed to approve post"
+              t("toasts.approve_post_failed")
           );
           return;
         }
 
         const labels: Record<string, string> = {
-          post_now: "Thread queued for posting! 🎉",
-          schedule: `Scheduled for ${scheduleDate || "later"}`,
-          save_draft: "Saved as draft. Open in Compose anytime.",
+          post_now: t("review_screen.post_queued"),
+          schedule: t("review_screen.scheduled_for", { date: scheduleDate || "—" }),
+          save_draft: t("review_screen.draft_saved"),
         };
-        toast.success(labels[action] ?? "Done!");
+        toast.success(labels[action] ?? t("toasts.done"));
         setSuccessAction(action);
       } finally {
         setIsSubmitting(false);
       }
     },
-    [editedTweets, scheduleDate, scheduleTime]
+    [editedTweets, scheduleDate, scheduleTime, t]
   );
 
   const handleRewriteTweet = useCallback(
@@ -629,6 +643,12 @@ export function AgenticPostingClient({
         onChangeTopic={doChangeTopic}
         onRegenerateAll={() => setShowRegenerateConfirm(true)}
         onDiscard={() => setShowDiscardConfirm(true)}
+        onSendToComposer={() =>
+          sendToComposer(
+            editedTweets.map((tw) => tw.text),
+            { source: "agentic" }
+          )
+        }
       />
 
       {/* Regenerate confirmation */}

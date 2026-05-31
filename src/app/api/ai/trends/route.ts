@@ -23,11 +23,14 @@ import { recordAiUsage, estimateCost } from "@/lib/services/ai-quota";
 // Without it, the fallback chain uses training data which may not reflect current trends.
 const TRENDS_CACHE_TTL_SECONDS = 1800; // 30 minutes
 
-function buildTrendsPrompt(category: TrendCategory, language: string): string {
+function buildTrendsPrompt(
+  category: TrendCategory,
+  language: string
+): { system: string; prompt: string } {
   const categoryLabel = category === "all" ? "all categories" : category;
   const langInstruction = getArabicInstructions(language);
 
-  return `You are a social media trends analyst. Research what is currently trending on X (Twitter) right now in the "${categoryLabel}" category.
+  const system = `You are a social media trends analyst.
 ${langInstruction}
 
 Return EXACTLY 5 trending topics as a JSON array. For each topic, include:
@@ -38,10 +41,12 @@ Return EXACTLY 5 trending topics as a JSON array. For each topic, include:
 - "suggestedAngle": a one-sentence content angle a creator could use for a post about this trend
 - "evidenceUrl": if possible, include a relevant source URL as evidenceUrl (omit if no source is available)
 
-Focus on topics that are genuinely trending RIGHT NOW on X/Twitter, not general evergreen topics. Prioritize topics with high engagement and conversation volume.
-
 Return ONLY valid JSON. No markdown, no explanation, no preamble.
 Format: [{ "title": "...", "description": "...", "postCount": "...", "category": "...", "suggestedAngle": "..." }]`;
+
+  const prompt = `Research what is currently trending on X (Twitter) right now in the "${categoryLabel}" category. Focus on topics that are genuinely trending RIGHT NOW on X/Twitter, not general evergreen topics. Prioritize topics with high engagement and conversation volume.`;
+
+  return { system, prompt };
 }
 
 export async function GET(req: Request) {
@@ -119,10 +124,12 @@ export async function GET(req: Request) {
       process.env.OPENROUTER_MODEL!;
     const model = openrouter(modelId);
 
+    const { system, prompt } = buildTrendsPrompt(category, userLanguage);
     const t0 = performance.now();
     const result = await generateText({
       model,
-      prompt: buildTrendsPrompt(category, userLanguage),
+      system,
+      prompt,
       maxOutputTokens: 800,
       abortSignal: AbortSignal.timeout(60_000),
     });
@@ -180,7 +187,7 @@ export async function GET(req: Request) {
       promptVersion: "trends:v2",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: buildTrendsPrompt(category, userLanguage),
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: JSON.stringify(trends),
       language: userLanguage,
     });

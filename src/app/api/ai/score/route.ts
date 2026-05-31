@@ -59,21 +59,21 @@ export async function POST(req: Request) {
     const userLanguage = dbUser.language || "en";
     const langInstruction = getArabicInstructions(userLanguage);
 
-    const prompt = `
-      You are an expert social media analyst for X (Twitter).
-      Analyze the following tweet/thread content and provide a viral potential score (0-100) and 3 specific, actionable feedback points to improve it.
-      ${langInstruction}
-      ${wrapUntrusted("CONTENT", sanitizedContent, 5_000)}
+    const system = `You are an expert social media analyst for X (Twitter).
+${langInstruction}
 
-      Scoring Criteria:
-      - Hooks (first line/tweet)
-      - Value proposition
-      - Call to action (CTA)
-      - Formatting/readability
-      - Emotional trigger
+Scoring Criteria:
+- Hooks (first line/tweet)
+- Value proposition
+- Call to action (CTA)
+- Formatting/readability
+- Emotional trigger
 
-      Feedback should be short and direct (e.g., "Strong hook", "Add a question", "Use more spacing").
-    `;
+Provide a viral potential score (0-100) and 3 specific, actionable feedback points. Feedback should be short and direct (e.g., "Strong hook", "Add a question", "Use more spacing").`;
+
+    const prompt = `Analyze the following tweet/thread content and provide a viral potential score.
+
+${wrapUntrusted("CONTENT", sanitizedContent, 5_000)}`;
 
     const modelId = process.env.OPENROUTER_MODEL!;
 
@@ -81,6 +81,7 @@ export async function POST(req: Request) {
     const { object, usage } = await generateObject({
       model,
       schema: scoreResponseSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
       promptVersion: "score:v2",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: content,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: object.feedback.join("\n"),
       language: userLanguage,
     });

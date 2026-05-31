@@ -16,7 +16,10 @@ interface BuildSummarizePromptArgs {
 export const SUMMARIZE_PROMPT_VERSION = "summarize:v2";
 export const PDF_TO_THREAD_PROMPT_VERSION = "pdf_to_thread:v1";
 
-export function buildSummarizePrompt(args: BuildSummarizePromptArgs): string {
+export function buildSummarizePrompt(args: BuildSummarizePromptArgs): {
+  system: string;
+  prompt: string;
+} {
   const { variant, language, tone, tweetCount, title, body, bodyMaxChars } = args;
   const langBlock = buildLanguageBlock(language, "social");
   const toneGuidance = language === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
@@ -31,16 +34,22 @@ export function buildSummarizePrompt(args: BuildSummarizePromptArgs): string {
       ? `\n- Lead with the SINGLE most important insight in tweet 1 (not a generic hook).\n- Quote specific numbers, percentages, or findings where present.\n- Each middle tweet covers ONE key insight or section — no rambling synthesis.\n- Avoid corporate jargon unless the source uses it.\n- Final tweet: a concrete takeaway or "what this means for you" framing.`
       : `\n- Make the thread engaging, informative, and shareable.\n- Start with a hook tweet that grabs attention.\n- End with a takeaway or call-to-action tweet.`;
 
-  return `${intro}
-${langBlock} ${toneGuidance}
-Auto-detect the source language and note it in sourceLanguage.
+  const titleLabel = variant === "report" ? "DOCUMENT TITLE" : "ARTICLE TITLE";
+  const textLabel = variant === "report" ? "DOCUMENT TEXT" : "ARTICLE TEXT";
 
-${variant === "report" ? "DOCUMENT TITLE" : "ARTICLE TITLE"}: ${title}
-${wrapUntrusted(variant === "report" ? "DOCUMENT TEXT" : "ARTICLE TEXT", body, bodyMaxChars)}
+  const system = `${intro}
+${langBlock}
+${toneGuidance}
+Auto-detect the source language and note it in sourceLanguage.
 
 Constraints:
 - Each tweet MUST be strictly under 800 characters.
 - Do NOT include tweet numbering in the text.${reportSpecificRules}
 
 ${JAILBREAK_GUARD}`;
+
+  const prompt = `${titleLabel}: ${title}
+${wrapUntrusted(textLabel, body, bodyMaxChars)}`;
+
+  return { system, prompt };
 }

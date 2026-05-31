@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       logger.info("pii_redacted", { correlationId, type: "summarize", redactions: allRedactions });
     }
 
-    const prompt = buildSummarizePrompt({
+    const { system, prompt } = buildSummarizePrompt({
       variant: "article",
       language: userLanguage as "ar" | "en",
       tone,
@@ -109,6 +109,7 @@ export async function POST(req: Request) {
     const { object, usage } = await generateObject({
       model,
       schema: threadSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
       promptVersion: SUMMARIZE_PROMPT_VERSION,
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: prompt,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: object,
       language: userLanguage,
     });

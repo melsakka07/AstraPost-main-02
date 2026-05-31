@@ -66,8 +66,7 @@ export async function POST(req: Request) {
     const toneGuidance =
       userLanguage === "ar" ? getArabicToneGuidance(tone) : `Default tone: ${tone}.`;
 
-    const prompt = `You are a social media strategist for X (Twitter).
-Create a content calendar for ${weeks} week(s) with ${postsPerWeek} posts per week (${totalPosts} total) for a creator in the "${niche}" niche.
+    const system = `You are a social media strategist for X (Twitter).
 ${langInstruction} ${toneGuidance}
 
 For each post return:
@@ -81,12 +80,15 @@ For each post return:
 Vary tweetType and tone across the calendar. Prioritize high-engagement times (Sun-Wed mornings 7-10am AST for Arabic audiences).
 Return exactly ${totalPosts} items.`;
 
+    const prompt = `Create a content calendar for ${weeks} week(s) with ${postsPerWeek} posts per week (${totalPosts} total) for a creator in the "${niche}" niche.`;
+
     const modelId = process.env.OPENROUTER_MODEL!;
 
     const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: calendarSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -112,7 +114,7 @@ Return exactly ${totalPosts} items.`;
       promptVersion: "calendar:v1",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: prompt,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: object,
       language: userLanguage,
     });

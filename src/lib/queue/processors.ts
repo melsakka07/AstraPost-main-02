@@ -1392,7 +1392,7 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
     for (const chunk of chunks) {
-      const partialPrompt = buildSummarizePrompt({
+      const partialSysPrompt = buildSummarizePrompt({
         variant: "report",
         language: row.language as "ar" | "en",
         tone: row.tone,
@@ -1405,7 +1405,8 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
       const { object: partial, usage: chunkUsage } = await generateObject({
         model,
         schema: pdfThreadOutputSchema,
-        prompt: partialPrompt,
+        system: partialSysPrompt.system,
+        prompt: partialSysPrompt.prompt,
       });
       partialSummaries.push(partial.tweets.join("\n"));
       totalInputTokens += chunkUsage?.inputTokens ?? 0;
@@ -1414,7 +1415,7 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
 
     // Phase 3: Combine partial summaries into final thread
     const combined = partialSummaries.join("\n\n---\n\n");
-    const finalPrompt = buildSummarizePrompt({
+    const finalSysPrompt = buildSummarizePrompt({
       variant: "report",
       language: row.language as "ar" | "en",
       tone: row.tone,
@@ -1427,7 +1428,8 @@ export const pdfThreadProcessor = async (job: Job<PdfThreadJobPayload>) => {
     const { object: result, usage } = await generateObject({
       model,
       schema: pdfThreadOutputSchema,
-      prompt: finalPrompt,
+      system: finalSysPrompt.system,
+      prompt: finalSysPrompt.prompt,
     });
     totalInputTokens += usage?.inputTokens ?? 0;
     totalOutputTokens += usage?.outputTokens ?? 0;

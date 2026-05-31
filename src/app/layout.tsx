@@ -1,13 +1,12 @@
 import { Cairo, Geist, Geist_Mono } from "next/font/google";
-import { cookies, headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UpgradeModal } from "@/components/ui/upgrade-modal";
-import { auth } from "@/lib/auth";
+import { getLocaleDirection } from "@/i18n/locale";
 import { getSeoLocale } from "@/lib/seo";
 import type { Metadata, Viewport } from "next";
 
@@ -152,35 +151,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const cookieStore = await cookies();
-  const headersList = await headers();
-  const cookieLocale = cookieStore.get("locale")?.value;
-
-  // Check for ?lang= query param (used by hreflang alternate URLs for SEO)
-  let urlLang: string | undefined;
-  try {
-    const host = headersList.get("host") || "";
-    const proto = headersList.get("x-forwarded-proto") || "https";
-    const pathAndQuery =
-      headersList.get("x-invoke-path") || headersList.get("x-middleware-request-url") || "";
-    const urlStr = pathAndQuery.startsWith("http")
-      ? pathAndQuery
-      : `${proto}://${host}${pathAndQuery}`;
-    urlLang = new URL(urlStr).searchParams.get("lang") || undefined;
-  } catch {
-    /* ignore */
-  }
-
-  const acceptLang = headersList.get("accept-language");
-  const detectedLocale =
-    (urlLang === "ar" || urlLang === "en" || urlLang === "pseudo" ? urlLang : undefined) ||
-    cookieLocale ||
-    (/(^|,)\s*ar(-[A-Z]+)?\s*(;q=0\.[5-9])?/.test(acceptLang ?? "") ? "ar" : undefined) ||
-    session?.user?.language ||
-    "en";
-  const language = detectedLocale;
-  const dir = language === "ar" || language === "pseudo" ? "rtl" : "ltr";
+  // Locale is resolved once in src/i18n/request.ts; read it back here so the
+  // document direction always matches the messages loaded by getMessages().
+  const language = await getLocale();
+  const dir = getLocaleDirection(language);
   const messages = await getMessages();
 
   return (

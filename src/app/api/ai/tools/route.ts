@@ -69,11 +69,10 @@ export async function POST(req: Request) {
     const langInstruction = getArabicInstructions(userLanguage);
     const toneGuidance = userLanguage === "ar" ? getArabicToneGuidance(tone) : `Tone: ${tone}.`;
 
-    const prompt = (() => {
+    const { system, prompt } = (() => {
       if (tool === "hook") {
-        return `You are an expert viral X (Twitter) writer. Write ONE hook tweet about: "${
-          topic || ""
-        }".
+        return {
+          system: `You are an expert viral X (Twitter) writer.
 ${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
@@ -82,24 +81,29 @@ Constraints:
 - Max 200 characters.
 - No hashtags.
 - No numbering.
-- Make it curiosity-driven.`;
+- Make it curiosity-driven.`,
+          prompt: `Write ONE hook tweet about: "${topic || ""}"`,
+        };
       }
 
       if (tool === "cta") {
         const contextPrompt = context ? `\n\nThread context for relevance:\n${context}` : "";
-        return `Write a short call-to-action for the END of an X thread.
+        return {
+          system: `You are an expert X (Twitter) content writer.
 ${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
-${contextPrompt}
 
 Constraints:
 - Max 120 characters.
 - No hashtags.
-- Encourage likes/reposts/follows or a thoughtful reply.`;
+- Encourage likes/reposts/follows or a thoughtful reply.`,
+          prompt: `Write a short call-to-action for the END of an X thread.${contextPrompt}`,
+        };
       }
 
-      return `Rewrite the following X tweet.
+      return {
+        system: `You are an expert X (Twitter) content writer.
 ${toneGuidance}
 ${langInstruction}
 ${voiceInstructions}
@@ -107,10 +111,10 @@ ${voiceInstructions}
 Constraints:
 - Max 280 characters.
 - Preserve the meaning.
-- Improve clarity and punch.
-
-Tweet:
-${input || ""}`;
+- Improve clarity and punch.`,
+        prompt: `Rewrite the following X tweet:
+"${input || ""}"`,
+      };
     })();
 
     const modelId = process.env.OPENROUTER_MODEL!;
@@ -119,6 +123,7 @@ ${input || ""}`;
     const { object, usage } = await generateObject({
       model,
       schema: responseSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -142,7 +147,7 @@ ${input || ""}`;
       promptVersion: "tools:v1",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: prompt,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: object,
       language: userLanguage,
     });

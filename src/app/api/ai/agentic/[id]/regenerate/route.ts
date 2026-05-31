@@ -97,12 +97,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const langInstruction = getArabicInstructions(userLanguage);
 
     // Regenerate tweet text
-    const prompt = `You are an expert social media copywriter.
+    const system = `You are an expert social media copywriter.
 ${langInstruction}
-
-Research Brief: ${JSON.stringify(research)}
-Content Plan: ${JSON.stringify(plan)}
-Current tweet at position ${tweetIndex}: "${tweetToRegen.text}"
 
 Write ONE improved alternative tweet for position ${tweetIndex}.
 Context: ${plan.structure}
@@ -118,9 +114,13 @@ Return ONLY a valid JSON object (no markdown):
   "charCount": 0
 }`;
 
+    const prompt = `Research Brief: ${JSON.stringify(research)}
+Content Plan: ${JSON.stringify(plan)}
+Current tweet at position ${tweetIndex}: "${tweetToRegen.text}"`;
+
     const modelName = process.env.OPENROUTER_MODEL!;
     const t0 = performance.now();
-    const result = await generateText({ model: preamble.model, prompt });
+    const result = await generateText({ model: preamble.model, system, prompt });
     const latencyMs = Math.round(performance.now() - t0);
 
     // Record text generation usage

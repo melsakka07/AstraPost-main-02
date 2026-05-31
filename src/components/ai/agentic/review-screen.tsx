@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   MoreHorizontal,
+  PenSquare,
   Plus,
   RefreshCw,
   Send,
@@ -58,6 +59,7 @@ interface ReviewScreenProps {
   onChangeTopic: () => void;
   onRegenerateAll: () => void;
   onDiscard: () => void;
+  onSendToComposer: () => void;
   userPlan?: string | null;
 }
 
@@ -90,6 +92,7 @@ export function ReviewScreen({
   onChangeTopic,
   onRegenerateAll,
   onDiscard,
+  onSendToComposer,
 }: ReviewScreenProps) {
   const t = useTranslations("ai_agentic");
 
@@ -118,7 +121,7 @@ export function ReviewScreen({
         </div>
         {/* Quality issues list */}
         {qualityIssues.length > 0 && (
-          <div className="bg-warning-2 border-warning-6 rounded-lg border p-3">
+          <div className="bg-warning-2 border-warning-6 rounded-lg border p-3" role="alert">
             <p className="text-warning-11 mb-1.5 text-xs font-semibold tracking-wide uppercase">
               {t("review_screen.quality_issues_title")}
             </p>
@@ -304,6 +307,16 @@ export function ReviewScreen({
             >
               <BookmarkIcon className="h-3.5 w-3.5" />
               {t("review_screen.save_draft")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSendToComposer}
+              disabled={isSubmitting}
+              className="gap-1.5"
+            >
+              <PenSquare className="h-3.5 w-3.5" />
+              {t("review_screen.send_to_composer")}
             </Button>
             {/* Discard behind meatball menu (Item 18) */}
             <DropdownMenu>

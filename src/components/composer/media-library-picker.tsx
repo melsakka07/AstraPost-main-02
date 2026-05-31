@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { Play, AlertTriangle, ImageIcon, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -59,14 +59,23 @@ export function MediaLibraryPicker({
   const [filter, setFilter] = useState<FileTypeFilter>(
     initialFileType ? (initialFileType as FileTypeFilter) : "all"
   );
+  /** True while a filter-switch fetch is in-flight — keeps stale items visible */
+  const [switching, setSwitching] = useState(false);
 
   const capReached = attachedCount >= 4;
 
+  // AbortController ref for cancelling in-flight requests on filter/dialog close
+  const abortRef = useRef<AbortController | null>(null);
+
   const fetchMedia = useCallback(
-    async (cursor?: string, append = false) => {
+    async (cursor?: string, append = false, signal?: AbortSignal) => {
       const isInitial = !append && !cursor;
-      if (isInitial) setLoading(true);
-      else setLoadingMore(true);
+      if (isInitial) {
+        setLoading(true);
+        setSwitching(items.length > 0); // only show "switching" if we already have content
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
 
       try {
@@ -75,7 +84,9 @@ export function MediaLibraryPicker({
         if (cursor) params.set("cursor", cursor);
         if (filter !== "all") params.set("fileType", filter);
 
-        const res = await fetchWithAuth(`/api/media/library?${params.toString()}`);
+        const res = await fetchWithAuth(`/api/media/library?${params.toString()}`, {
+          ...(signal !== undefined && { signal }),
+        });
 
         if (!res.ok) {
           throw new Error(`Server responded with ${res.status}`);
@@ -92,29 +103,56 @@ export function MediaLibraryPicker({
           setItems(data.items);
         }
         setNextCursor(data.nextCursor);
+        setSwitching(false);
       } catch (err) {
+        // Don't set error for aborted requests — it's intentional
+        if (err instanceof DOMException && err.name === "AbortError") return;
         const message = err instanceof Error ? err.message : "Failed to load media library";
         clientLogger.error("Media library fetch failed", {
           error: message,
         });
         setError(message);
+        setSwitching(false);
       } finally {
         setLoading(false);
         setLoadingMore(false);
       }
     },
-    [filter]
+    [filter, items.length]
   );
 
   // Fetch on open and when filter changes
   useEffect(() => {
-    if (open) {
+    if (!open) {
+      // Cleanup on close: abort any in-flight request
+      abortRef.current?.abort();
+      abortRef.current = null;
+      return;
+    }
+
+    // Abort any in-flight request before starting a new one
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    // Keep stale items visible during switch — only clear on first open
+    const isFilterSwitch = items.length > 0;
+    if (!isFilterSwitch) {
       setItems([]);
       setNextCursor(null);
-      setError(null);
-      void fetchMedia();
     }
-  }, [open, fetchMedia]);
+    setError(null);
+
+    void fetchMedia(undefined, false, controller.signal);
+
+    return () => {
+      controller.abort();
+      abortRef.current = null;
+    };
+    // We intentionally depend on filter but NOT on items.length to avoid
+    // re-running the effect just because items changed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, filter, fetchMedia]);
 
   const handleFilterChange = (value: FileTypeFilter) => {
     setFilter(value);
@@ -127,9 +165,12 @@ export function MediaLibraryPicker({
   };
 
   const handleRetry = () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setItems([]);
     setNextCursor(null);
-    void fetchMedia();
+    void fetchMedia(undefined, false, controller.signal);
   };
 
   const handleSelect = (item: MediaLibraryItem) => {
@@ -184,44 +225,70 @@ export function MediaLibraryPicker({
           ))}
         </div>
 
-        {/* Content area — scrollable */}
-        <div className="max-h-[50vh] overflow-y-auto">
-          {/* Loading state */}
-          {loading && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <Skeleton key={i} className="aspect-square rounded-lg" />
-              ))}
+        {/* Content area — scrollable, min-h prevents collapse when switching to tabs with few items */}
+        <div className="relative max-h-[50vh] min-h-[320px] overflow-y-auto">
+          {/* Initial loading (no items yet) — centered within min-h */}
+          {loading && !switching && (
+            <div className="flex min-h-[320px] items-center">
+              <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <Skeleton key={i} className="aspect-square rounded-lg" />
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Error state */}
+          {/* Switching overlay — keep stale grid visible, show subtle spinner */}
+          {switching && loading && (
+            <div className="pointer-events-none absolute inset-0 z-30 flex items-start justify-center pt-8">
+              <div className="bg-background/80 text-muted-foreground flex items-center gap-2 rounded-full border px-4 py-2 text-sm shadow-sm backdrop-blur-sm">
+                <RefreshCw className="size-4 animate-spin" />
+                {t("media_library.loading")}
+              </div>
+            </div>
+          )}
+
+          {/* Error state — centered within min-h */}
           {!loading && error && (
-            <EmptyState
-              icon={<AlertTriangle className="size-5" />}
-              title={t("media_library.error")}
-              description={error}
-              primaryAction={
-                <Button variant="outline" size="sm" onClick={handleRetry} className="min-h-[44px]">
-                  <RefreshCw className="me-2 size-4" />
-                  {t("media_library.retry")}
-                </Button>
-              }
-            />
+            <div className="flex min-h-[320px] items-center justify-center">
+              <EmptyState
+                icon={<AlertTriangle className="size-5" />}
+                title={t("media_library.error")}
+                description={error}
+                primaryAction={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRetry}
+                    className="min-h-[44px]"
+                  >
+                    <RefreshCw className="me-2 size-4" />
+                    {t("media_library.retry")}
+                  </Button>
+                }
+              />
+            </div>
           )}
 
-          {/* Empty state */}
+          {/* Empty state — centered within min-h, only when not loading and not switching with content */}
           {!loading && !error && items.length === 0 && (
-            <EmptyState
-              icon={<ImageIcon className="size-5" />}
-              title={t("media_library.no_media")}
-              description={t("media_library.no_media_description")}
-            />
+            <div className="flex min-h-[320px] items-center justify-center">
+              <EmptyState
+                icon={<ImageIcon className="size-5" />}
+                title={t("media_library.no_media")}
+                description={t("media_library.no_media_description")}
+              />
+            </div>
           )}
 
-          {/* Grid display */}
-          {!loading && !error && items.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {/* Grid display — visible during normal state AND during tab switch (stale items) */}
+          {!error && items.length > 0 && (
+            <div
+              className={cn(
+                "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4",
+                switching && loading && "opacity-40 transition-opacity"
+              )}
+            >
               {items.map((item) => (
                 <button
                   key={item.id}

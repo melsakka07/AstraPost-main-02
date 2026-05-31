@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { FileText, ArrowLeft, RefreshCw, History, ChevronRight } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import { useJobPolling } from "@/components/ai/shared/use-job-polling";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { sendToComposer } from "@/lib/composer-bridge";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -55,7 +56,6 @@ const ERROR_CODE_I18N_KEYS: Record<string, string> = {
 
 export function PdfToThreadClient() {
   const t = useTranslations("ai_hub");
-  const router = useRouter();
   const upgradeModal = useUpgradeModal();
 
   // ── State ──────────────────────────────────────────────────────────
@@ -86,13 +86,6 @@ export function PdfToThreadClient() {
   const imageAbortRef = useRef<AbortController | null>(null);
 
   const searchParams = useSearchParams();
-
-  // Regenerate: store last used params
-  const lastParamsRef = useRef<{
-    language: "ar" | "en";
-    tweetCount: number;
-    tone: string;
-  } | null>(null);
 
   // ── Cleanup image abort on unmount ──────────────────────────────────
 
@@ -284,7 +277,8 @@ export function PdfToThreadClient() {
         setFileName(data.fileName as string);
         setFileSizeBytes(file.size);
         setStatus("extracted");
-        lastParamsRef.current = { language, tweetCount, tone };
+        // Note: no lastParamsRef snapshot needed — handleRegenerate now reuses
+        // the live jobId + current option state instead of replaying old params.
         toast.success(t("pdf_to_thread.dropzone.upload_success") as string);
       } catch (err) {
         if (err instanceof TypeError) {
@@ -440,19 +434,130 @@ export function PdfToThreadClient() {
   }, [jobId, handleReset]);
 
   // ── Regenerate handler ──────────────────────────────────────────────
+  //
+  // Why: extracted text is stored server-side keyed by jobId, so we re-run
+  // generation directly. Do NOT call handleReset() here — that drops jobId
+  // and forces a wasteful re-upload + re-parse (extra upload-quota hit).
+  // We also skip the attestation re-check — attestation was already validated
+  // at upload time and the PDF is already extracted server-side.
 
-  const handleRegenerate = useCallback(() => {
-    const params = lastParamsRef.current;
-    if (!params) {
+  const handleRegenerate = useCallback(async () => {
+    if (!jobId) {
       handleReset();
       return;
     }
-    setLanguage(params.language);
-    setTweetCount(params.tweetCount);
-    setTone(params.tone);
-    // Re-trigger the original flow: we need the file re-uploaded
-    handleReset();
-  }, [handleReset]);
+
+    setStatus("generating");
+    setErrorMessage("");
+
+    if (syncEligible) {
+      // ── Sync path: POST to /generate with current params ──────────
+      try {
+        const res = await fetch("/api/ai/pdf-to-thread/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId, language, tweetCount, tone }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 402) {
+            upgradeModal.openWithContext({
+              error: data.error,
+              code: data.code,
+              message: data.message,
+              feature: data.feature,
+              plan: data.plan,
+              limit: data.limit,
+              used: data.used,
+              remaining: data.remaining,
+              upgradeUrl: data.upgrade_url,
+              suggestedPlan: data.suggested_plan,
+              trialActive: data.trial_active,
+              resetAt: data.reset_at,
+            });
+            setStatus("ready");
+            setErrorMessage(t("pdf_to_thread.errors.upgrade_required"));
+            return;
+          }
+
+          toast.error(data.error ?? t("pdf_to_thread.errors.generate_failed"));
+          setStatus("ready");
+          setErrorMessage(data.error ?? t("pdf_to_thread.errors.generate_failed"));
+          return;
+        }
+
+        // Sync success — map API response to internal shape
+        const tweets: TweetData[] = Array.isArray(data.tweets)
+          ? data.tweets.map((t: string | TweetData) =>
+              typeof t === "string" ? { text: t, charCount: t.length } : t
+            )
+          : [];
+
+        const sourceLanguage = (data.sourceLanguage as string | undefined) ?? undefined;
+        setThreadResult({
+          tweets,
+          title: (data.title as string) ?? fileName,
+          ...(sourceLanguage !== undefined && { sourceLanguage }),
+          ...(data.redactions !== undefined && {
+            redactions: (data.redactions as unknown[]).length,
+          }),
+        });
+        setStatus("ready");
+        toast.success(t("pdf_to_thread.result.generated_success") as string);
+      } catch {
+        setStatus("ready");
+        setErrorMessage(t("pdf_to_thread.errors.generate_failed"));
+        toast.error(t("pdf_to_thread.errors.generate_failed"));
+      }
+    } else {
+      // ── Async path: enqueue for background processing ──────────────
+      try {
+        const res = await fetch("/api/ai/pdf-to-thread/enqueue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          if (res.status === 402) {
+            upgradeModal.openWithContext({
+              error: data.error,
+              code: data.code,
+              message: data.message,
+              feature: data.feature,
+              plan: data.plan,
+              limit: data.limit,
+              used: data.used,
+              remaining: data.remaining,
+              upgradeUrl: data.upgrade_url,
+              suggestedPlan: data.suggested_plan,
+              trialActive: data.trial_active,
+              resetAt: data.reset_at,
+            });
+            setStatus("ready");
+            setErrorMessage(t("pdf_to_thread.errors.upgrade_required"));
+            return;
+          }
+
+          toast.error(data.error ?? t("pdf_to_thread.errors.generate_failed"));
+          setStatus("ready");
+          setErrorMessage(data.error ?? t("pdf_to_thread.errors.generate_failed"));
+          return;
+        }
+
+        // Successfully queued — polling starts via the shared hook
+        setStatus("queued");
+      } catch {
+        setStatus("ready");
+        setErrorMessage(t("pdf_to_thread.errors.generate_failed"));
+        toast.error(t("pdf_to_thread.errors.generate_failed"));
+      }
+    }
+  }, [jobId, syncEligible, language, tweetCount, tone, upgradeModal, t, fileName, handleReset]);
 
   // ── Recent job click handler ───────────────────────────────────────
 
@@ -552,24 +657,14 @@ export function PdfToThreadClient() {
       }
     }
 
-    sessionStorage.setItem(
-      "composer_payload",
-      JSON.stringify({
-        tweets: threadResult.tweets.map((t) => t.text),
+    sendToComposer(
+      threadResult.tweets.map((t) => t.text),
+      {
         source: "pdf-to-thread",
-        ...(imageUrl && { firstTweetImage: { url: imageUrl } }),
-      })
+        ...(imageUrl ? { firstTweetImage: { url: imageUrl } } : {}),
+      }
     );
-    router.push("/dashboard/compose?source=pdf-to-thread");
-  }, [
-    threadResult,
-    router,
-    includeFirstTweetImage,
-    firstTweetImageUrl,
-    imageStatus,
-    upgradeModal,
-    t,
-  ]);
+  }, [threadResult, includeFirstTweetImage, firstTweetImageUrl, imageStatus, upgradeModal, t]);
 
   // ── Polling (shared hook) ───────────────────────────────────────────
 
@@ -734,37 +829,25 @@ export function PdfToThreadClient() {
           )}
 
           {/* Action buttons */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            {syncEligible ? (
-              <Button
-                onClick={handleSyncGenerate}
-                disabled={status === "generating"}
-                className="gap-2"
-              >
-                {status === "generating" ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    {t("pdf_to_thread.actions.generate_sync")}
-                  </>
-                ) : (
-                  t("pdf_to_thread.actions.generate_sync")
-                )}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleAsyncEnqueue}
-                disabled={status === "generating"}
-                className="gap-2"
-              >
-                {status === "generating" ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    {t("pdf_to_thread.actions.enqueue_async")}
-                  </>
-                ) : (
-                  t("pdf_to_thread.actions.enqueue_async")
-                )}
-              </Button>
+          <div className="flex flex-col items-end gap-1.5">
+            <Button
+              onClick={syncEligible ? handleSyncGenerate : handleAsyncEnqueue}
+              disabled={status === "generating"}
+              className="gap-2"
+            >
+              {status === "generating" ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  {t("pdf_to_thread.actions.generate_sync")}
+                </>
+              ) : (
+                t("pdf_to_thread.actions.generate_sync")
+              )}
+            </Button>
+            {!syncEligible && (
+              <p className="text-muted-foreground text-xs">
+                {t("pdf_to_thread.actions.generate_async_hint")}
+              </p>
             )}
           </div>
         </div>
@@ -823,7 +906,7 @@ export function PdfToThreadClient() {
 
       {/* ── FAILED: Error with retry ─────────────────────────────── */}
       {status === "failed" && (
-        <div className="space-y-5">
+        <div className="space-y-5" role="alert">
           <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="flex flex-col items-center gap-4 px-4 py-8 text-center">
               <FileText className="text-destructive h-10 w-10" />
@@ -851,7 +934,7 @@ export function PdfToThreadClient() {
 
       {/* ── ERROR: Generic error ─────────────────────────────────── */}
       {status === "error" && (
-        <Card className="border-destructive/30 bg-destructive/5">
+        <Card className="border-destructive/30 bg-destructive/5" role="alert">
           <CardContent className="flex flex-col items-center gap-4 px-4 py-8 text-center">
             <FileText className="text-destructive h-10 w-10" />
             <div className="space-y-1">

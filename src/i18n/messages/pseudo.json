@@ -842,7 +842,8 @@
       "filter_image": "‏[Images Imageses]‏",
       "filter_video": "‏[Videos Videoseos]‏",
       "filter_gif": "‏[GIFs GIFsfs]‏",
-      "error": "‏[Failed to load media library libraryry]‏"
+      "error": "‏[Failed to load media library libraryry]‏",
+      "loading": "‏[Loading... Loading...ing...]‏"
     },
     "save_as_template": "‏[Save as Template]‏",
     "ai": {
@@ -1407,6 +1408,11 @@
         "title": "‏[YouTube → Thread]‏",
         "description": "‏[Turn a YouTube video into a ready-to-publish X thread]‏",
         "capability": "‏[Best for repurposing video content into text-based threads threadsads]‏"
+      },
+      "agentic": {
+        "title": "‏[Agentic Posting Postingng]‏",
+        "description": "‏[Drop a topic. AI handles the rest. rest.t.]‏",
+        "capability": "‏[Best for autonomous research, drafting, and scheduling of complete threads threadsads]‏"
       }
     },
     "try_it": "‏[Try it → →]‏",
@@ -1456,6 +1462,7 @@
       "actions": {
         "generate_sync": "‏[Generate Thread]‏",
         "enqueue_async": "‏[Generate in Background]‏",
+        "generate_async_hint": "‏[Runs in the background — you can leave this page]‏",
         "cancel": "‏[Cancel]‏",
         "cancel_confirm_title": "‏[Cancel generation?]‏",
         "cancel_confirm_description": "‏[This will stop the current job. You'll need to re-upload to try again.]‏",
@@ -1722,6 +1729,10 @@
       "broad_topic_title": "‏[Your topic is broad. Pick a specific angle: angle:e:]‏",
       "angles_found": "‏[{count, plural, one {# angle found} other {# angles found}} found}}}}]‏",
       "format": "‏[{format} · {count, plural, one {# tweet} other {# tweets}} tweets}}}}]‏",
+      "format_single": "‏[Single post postst]‏",
+      "format_thread": "‏[Thread]‏",
+      "images_progress": "‏[{completed} of {total} generated generateded]‏",
+      "step_failed": "‏[Step failed faileded]‏",
       "quality_score": "‏[Quality score: {score}/10 {score}/1010]‏",
       "run_in_background": "‏[Run in background]‏",
       "background_description": "‏[We'll notify you when your thread is ready]‏"
@@ -1747,6 +1758,7 @@
       "schedule_for": "‏[Schedule for {date} {date}e}]‏",
       "confirm_schedule": "‏[Confirm Schedule Schedulele]‏",
       "save_draft": "‏[Save Draft Draftft]‏",
+      "send_to_composer": "‏[Send to Composer Composerer]‏",
       "discard": "‏[Discard]‏",
       "of_tweets": "‏[{index}/{total}]‏",
       "chars": "‏[{count}/280]‏",
@@ -1784,7 +1796,18 @@
       "tweet_removed": "‏[Tweet removed]‏",
       "undo": "‏[Undo]‏",
       "background_started": "‏[Running in background. We'll notify you when ready.]‏",
-      "pipeline_ready": "‏[Your thread for \"{topic}\" is ready!]‏"
+      "pipeline_ready": "‏[Your thread for \"{topic}\" is ready!]‏",
+      "approve_post_failed": "‏[Failed to approve post postst]‏",
+      "done": "‏[Done!]‏",
+      "generation_failed": "‏[Generation failed faileded]‏",
+      "pipeline_start_failed": "‏[Failed to start pipeline pipelinene]‏",
+      "refresh": "‏[Refresh]‏",
+      "request_failed": "‏[Request failed faileded]‏"
+    },
+    "a11y": {
+      "ai_generated_image": "‏[AI generated image imagege]‏",
+      "drag_reorder": "‏[Drag to reorder tweet tweette]‏",
+      "tweet_n_of_m": "‏[Tweet {current} of {total} {total}l}]‏"
     },
     "trends": {
       "trending_on_x": "‏[Trending on X]‏",

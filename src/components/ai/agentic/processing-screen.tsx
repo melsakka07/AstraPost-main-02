@@ -16,13 +16,13 @@ export interface StepProgress {
   startedAt?: number | undefined;
 }
 
-export const STEP_CONFIG: Record<PipelineStep, { label: string; estimatedMs: number }> = {
-  research: { label: "Research", estimatedMs: 4000 },
-  strategy: { label: "Strategy", estimatedMs: 3000 },
-  writing: { label: "Writing", estimatedMs: 7000 },
-  images: { label: "Images", estimatedMs: 20000 },
-  review: { label: "Final Review", estimatedMs: 3000 },
-  done: { label: "Done", estimatedMs: 0 },
+export const STEP_CONFIG: Record<PipelineStep, { estimatedMs: number }> = {
+  research: { estimatedMs: 4000 },
+  strategy: { estimatedMs: 3000 },
+  writing: { estimatedMs: 7000 },
+  images: { estimatedMs: 20000 },
+  review: { estimatedMs: 3000 },
+  done: { estimatedMs: 0 },
 };
 
 export const ORDERED_STEPS: PipelineStep[] = [
@@ -62,6 +62,25 @@ export function ProcessingScreen({
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  const stepLabel = (stepKey: PipelineStep): string => {
+    switch (stepKey) {
+      case "research":
+        return t("processing_screen.steps.research");
+      case "strategy":
+        return t("processing_screen.steps.strategy");
+      case "writing":
+        return t("processing_screen.steps.writing");
+      case "images":
+        return t("processing_screen.steps.images");
+      case "review":
+        return t("processing_screen.steps.review");
+      case "done":
+        return t("processing_screen.steps.done");
+      default:
+        return stepKey;
+    }
+  };
 
   const totalEstimated = ORDERED_STEPS.reduce((acc, s) => acc + STEP_CONFIG[s].estimatedMs, 0);
   const completedMs = ORDERED_STEPS.reduce((acc, s) => {
@@ -115,16 +134,19 @@ export function ProcessingScreen({
       <div className="space-y-1" role="status" aria-live="polite">
         <span className="sr-only">
           {ORDERED_STEPS.filter((s) => steps[s].state !== "pending")
-            .map((s) => `${STEP_CONFIG[s].label}: ${steps[s].state}`)
+            .map((s) => `${stepLabel(s)}: ${steps[s].state}`)
             .join(" · ")}
         </span>
         {ORDERED_STEPS.map((stepKey, i) => {
           const step = steps[stepKey];
-          const config = STEP_CONFIG[stepKey];
           const isLast = i === ORDERED_STEPS.length - 1;
 
           return (
-            <div key={stepKey} className="flex gap-3" aria-label={`${config.label}: ${step.state}`}>
+            <div
+              key={stepKey}
+              className="flex gap-3"
+              aria-label={`${stepLabel(stepKey)}: ${step.state}`}
+            >
               {/* Icon column */}
               <div className="flex flex-col items-center">
                 <StepIcon state={step.state} />
@@ -141,15 +163,7 @@ export function ProcessingScreen({
                   <span
                     className={`text-sm font-medium ${step.state === "pending" ? "text-muted-foreground" : "text-foreground"}`}
                   >
-                    {(() => {
-                      if (stepKey === "research") return t("processing_screen.steps.research");
-                      if (stepKey === "strategy") return t("processing_screen.steps.strategy");
-                      if (stepKey === "writing") return t("processing_screen.steps.writing");
-                      if (stepKey === "images") return t("processing_screen.steps.images");
-                      if (stepKey === "review") return t("processing_screen.steps.review");
-                      if (stepKey === "done") return t("processing_screen.steps.done");
-                      return config.label;
-                    })()}
+                    {stepLabel(stepKey)}
                   </span>
                   {step.state === "complete" && step.elapsedMs && (
                     <span className="text-muted-foreground text-xs">

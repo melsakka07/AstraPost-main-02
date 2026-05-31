@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { Youtube, ArrowLeft, RefreshCw, History, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -16,6 +15,7 @@ import type { YoutubeUrlSubmitData } from "@/components/ai/youtube-to-thread/you
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useUpgradeModal } from "@/components/ui/upgrade-modal";
+import { sendToComposer } from "@/lib/composer-bridge";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -81,7 +81,6 @@ export function YoutubeToThreadClient() {
         : "",
     [t]
   );
-  const router = useRouter();
   const upgradeModal = useUpgradeModal();
 
   // ── State ──────────────────────────────────────────────────────────
@@ -346,33 +345,95 @@ export function YoutubeToThreadClient() {
       }
     }
 
-    sessionStorage.setItem(
-      "composer_payload",
-      JSON.stringify({
-        tweets: threadResult.tweets.map((t) => t.text),
+    sendToComposer(
+      threadResult.tweets.map((t) => t.text),
+      {
         source: "youtube-to-thread",
-        ...(imageUrl && { firstTweetImage: { url: imageUrl } }),
-      })
+        ...(imageUrl ? { firstTweetImage: { url: imageUrl } } : {}),
+      }
     );
-    router.push("/dashboard/compose?source=youtube-to-thread");
-  }, [
-    threadResult,
-    router,
-    includeFirstTweetImage,
-    firstTweetImageUrl,
-    imageStatus,
-    upgradeModal,
-    yt,
-  ]);
+  }, [threadResult, includeFirstTweetImage, firstTweetImageUrl, imageStatus, upgradeModal, yt]);
 
-  // ── Regenerate handler (M4a: no setTimeout) ──────────────────────────
+  // ── Regenerate handler ────────────────────────────────────────────────
+  //
+  // Why: transcript is stored server-side keyed by jobId, so we re-run
+  // generation directly. Do NOT call handleReset() here — that drops jobId
+  // and forces a wasteful re-download + re-transcribe (extra quota hit).
+  // Params (language, tweetCount, tone) come from lastSubmitDataRef — we
+  // preserve the original submission options without re-parsing the URL.
 
-  const handleRegenerate = useCallback(() => {
+  const handleRegenerate = useCallback(async () => {
     const data = lastSubmitDataRef.current;
-    if (!data) return;
-    handleReset();
-    void handleSubmit(data);
-  }, [handleReset, handleSubmit]);
+    if (!jobId || !data) {
+      handleReset();
+      return;
+    }
+
+    setStatus("generating");
+    setErrorMessage("");
+
+    try {
+      const res = await fetch("/api/ai/youtube-to-thread/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobId,
+          language: data.language,
+          tweetCount: data.tweetCount,
+          tone: data.tone,
+        }),
+      });
+
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 402) {
+          upgradeModal.openWithContext({
+            error: responseData.error,
+            code: responseData.code,
+            message: responseData.message,
+            feature: responseData.feature,
+            plan: responseData.plan,
+            limit: responseData.limit,
+            used: responseData.used,
+            remaining: responseData.remaining,
+            upgradeUrl: responseData.upgrade_url,
+            suggestedPlan: responseData.suggested_plan,
+            trialActive: responseData.trial_active,
+            resetAt: responseData.reset_at,
+          });
+          setStatus("ready");
+          setErrorMessage(yt("errors.upgrade_required"));
+          return;
+        }
+
+        toast.error((responseData.error as string) ?? yt("errors.generation_failed"));
+        setStatus("ready");
+        setErrorMessage((responseData.error as string) ?? yt("errors.generation_failed"));
+        return;
+      }
+
+      // Success — map API response to internal shape
+      const tweets: TweetData[] = Array.isArray(responseData.tweets)
+        ? responseData.tweets.map((t: string | TweetData) =>
+            typeof t === "string" ? { text: t, charCount: t.length } : t
+          )
+        : [];
+
+      const sourceLanguage = (responseData.sourceLanguage as string | undefined) ?? undefined;
+      setThreadResult({
+        tweets,
+        title: (responseData.title as string) ?? "",
+        ...(sourceLanguage !== undefined && { sourceLanguage }),
+      });
+      setStatus("ready");
+      toast.success(yt("result.generated_success"));
+    } catch {
+      setStatus("ready");
+      setErrorMessage(yt("errors.generation_failed"));
+      toast.error(yt("errors.generation_failed"));
+    }
+  }, [jobId, upgradeModal, yt, handleReset]);
 
   // ── Recent job click handler ───────────────────────────────────────
 
@@ -621,7 +682,7 @@ export function YoutubeToThreadClient() {
 
       {/* FAILED: Error with retry */}
       {status === "failed" && (
-        <div className="space-y-5">
+        <div className="space-y-5" role="alert">
           <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="flex flex-col items-center gap-4 px-4 py-8 text-center">
               <Youtube className="text-destructive h-10 w-10" />
@@ -649,7 +710,7 @@ export function YoutubeToThreadClient() {
 
       {/* ERROR: Generic error */}
       {status === "error" && (
-        <Card className="border-destructive/30 bg-destructive/5">
+        <Card className="border-destructive/30 bg-destructive/5" role="alert">
           <CardContent className="flex flex-col items-center gap-4 px-4 py-8 text-center">
             <Youtube className="text-destructive h-10 w-10" />
             <div className="space-y-1">

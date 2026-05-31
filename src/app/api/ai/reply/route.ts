@@ -78,9 +78,9 @@ export async function POST(req: Request) {
 
     const authorContext = includeAuthor ? ` from ${tweetAuthor}` : "";
 
-    const prompt = `You are an expert social media engagement writer.
-Generate exactly 3 replies to the following tweet${authorContext}, one for each type below.
-${wrapUntrusted("ORIGINAL TWEET", tweetText, 2_000)}
+    const system = `You are an expert social media engagement writer.
+${langInstruction}
+${toneGuidance}
 
 Reply types (generate exactly one of each):
 - agree: amplify and support the original tweet's message
@@ -88,8 +88,6 @@ Reply types (generate exactly one of each):
 - funny: be witty, humorous, or playfully engaging
 
 Requirements:
-- ${langInstruction}
-- ${toneGuidance}
 - Each reply must be genuinely engaging and contextually relevant
 - Keep replies under 280 characters ideally (hard max: 800 chars)
 - Do NOT start with "Great tweet!" or generic openers
@@ -98,12 +96,17 @@ For each reply include:
 - text: the reply text
 - type: one of "agree", "counter", or "funny" (exactly one each across the 3 replies)`;
 
+    const prompt = `Generate exactly 3 replies to the following tweet${authorContext}.
+
+${wrapUntrusted("ORIGINAL TWEET", tweetText, 2_000)}`;
+
     const modelId = process.env.OPENROUTER_MODEL!;
 
     const t0 = performance.now();
     const { object, usage } = await generateObject({
       model,
       schema: repliesSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -120,7 +123,7 @@ For each reply include:
       promptVersion: "reply:v3",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: prompt,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: object,
       language: userLanguage,
     });

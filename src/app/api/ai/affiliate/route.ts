@@ -96,24 +96,23 @@ export async function POST(req: Request) {
     // 2. Generate Tweet with AI
     const langInstruction = getArabicInstructions(userLanguage);
 
-    const prompt = `
-      You are an expert affiliate marketer on X (Twitter).
-      Write a compelling, high-converting tweet to promote this product:
-      ${wrapUntrusted("PRODUCT TITLE", truncate(productTitle, INPUT_LIMITS.productTitle), INPUT_LIMITS.productTitle)}
-      URL: ${url}
-      Platform: ${platform}
-      Affiliate Tag/Coupon: ${affiliateTag || "None"}
+    const system = `You are an expert affiliate marketer on X (Twitter).
+${langInstruction}
 
-      ${langInstruction}
+Constraints:
+- Max 280 characters.
+- Include engaging hook.
+- Do NOT include the URL in the output text (it will be attached as a card).
+- Include 2-3 relevant hashtags.
+- If a coupon code (Affiliate Tag) is provided, explicitly mention it in the tweet (e.g., "Use code XYZ for discount").
+- You must end every tweet with #ad to comply with platform disclosure requirements.`;
 
-      Constraints:
-      - Max 280 characters.
-      - Include engaging hook.
-      - Do NOT include the URL in the output text (it will be attached as a card).
-      - Include 2-3 relevant hashtags.
-      - If a coupon code (Affiliate Tag) is provided, explicitly mention it in the tweet (e.g., "Use code XYZ for discount").
-      - You must end every tweet with #ad to comply with platform disclosure requirements.
-    `;
+    const prompt = `Write a compelling, high-converting tweet to promote this product:
+
+${wrapUntrusted("PRODUCT TITLE", truncate(productTitle, INPUT_LIMITS.productTitle), INPUT_LIMITS.productTitle)}
+URL: ${url}
+Platform: ${platform}
+Affiliate Tag/Coupon: ${affiliateTag || "None"}`;
 
     const modelId = process.env.OPENROUTER_MODEL!;
 
@@ -121,6 +120,7 @@ export async function POST(req: Request) {
     const { object, usage } = await generateObject({
       model,
       schema: tweetSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -202,7 +202,7 @@ export async function POST(req: Request) {
         promptVersion: "affiliate:v1",
         latencyMs,
         fallbackUsed: false,
-        inputPrompt: prompt,
+        inputPrompt: JSON.stringify({ system, prompt }),
         outputContent: output,
         language: userLanguage,
         tx,

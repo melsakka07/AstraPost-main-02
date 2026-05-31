@@ -860,7 +860,8 @@
       "filter_image": "Images",
       "filter_video": "Videos",
       "filter_gif": "GIFs",
-      "error": "Failed to load media library"
+      "error": "Failed to load media library",
+      "loading": "Loading..."
     },
     "save_as_template": "Save as Template",
     "ai": {
@@ -1448,6 +1449,11 @@
         "title": "YouTube → Thread",
         "description": "Turn a YouTube video into a ready-to-publish X thread",
         "capability": "Best for repurposing video content into text-based threads"
+      },
+      "agentic": {
+        "title": "Agentic Posting",
+        "description": "Drop a topic. AI handles the rest.",
+        "capability": "Best for autonomous research, drafting, and scheduling of complete threads"
       }
     },
     "pdf_to_thread": {
@@ -1493,6 +1499,7 @@
       "actions": {
         "generate_sync": "Generate Thread",
         "enqueue_async": "Generate in Background",
+        "generate_async_hint": "Runs in the background — you can leave this page",
         "cancel": "Cancel",
         "cancel_confirm_title": "Cancel generation?",
         "cancel_confirm_description": "This will stop the current job. You'll need to re-upload to try again.",
@@ -1762,7 +1769,11 @@
       "broad_topic_title": "Your topic is broad. Pick a specific angle:",
       "angles_found": "{count, plural, one {# angle found} other {# angles found}}",
       "format": "{format} · {count, plural, one {# tweet} other {# tweets}}",
-      "quality_score": "Quality score: {score}/10"
+      "quality_score": "Quality score: {score}/10",
+      "format_thread": "Thread",
+      "format_single": "Single post",
+      "images_progress": "{completed} of {total} generated",
+      "step_failed": "Step failed"
     },
     "review_screen": {
       "ready": "Your post is ready",
@@ -1786,6 +1797,7 @@
       "confirm_schedule": "Confirm Schedule",
       "schedule_time_hint": "Posting at {time} ({tz})",
       "save_draft": "Save Draft",
+      "send_to_composer": "Send to Composer",
       "discard": "Discard",
       "of_tweets": "{index}/{total}",
       "chars": "{count}/280",
@@ -1822,7 +1834,13 @@
       "tweet_removed": "Tweet removed",
       "undo": "Undo",
       "background_started": "Running in background. We'll notify you when ready.",
-      "pipeline_ready": "Your thread for \"{topic}\" is ready!"
+      "pipeline_ready": "Your thread for \"{topic}\" is ready!",
+      "approve_post_failed": "Failed to approve post",
+      "done": "Done!",
+      "generation_failed": "Generation failed",
+      "pipeline_start_failed": "Failed to start pipeline",
+      "refresh": "Refresh",
+      "request_failed": "Request failed"
     },
     "trends": {
       "trending_on_x": "Trending on X",
@@ -1860,6 +1878,11 @@
       "content_creation": "Content creation",
       "mena_tech": "MENA tech scene",
       "remote_work": "Remote work"
+    },
+    "a11y": {
+      "tweet_n_of_m": "Tweet {current} of {total}",
+      "drag_reorder": "Drag to reorder tweet",
+      "ai_generated_image": "AI generated image"
     }
   },
   "ai_bio": {

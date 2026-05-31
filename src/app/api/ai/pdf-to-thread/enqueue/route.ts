@@ -61,10 +61,12 @@ export async function POST(req: Request) {
       return ApiError.forbidden("You do not own this PDF job.");
     }
 
-    // Step 9: Status check — must be "extracting" (async-eligible PDF)
-    if (job.status !== "extracting") {
+    // Step 9: Extracted text check — must have extraction completed
+    if (!job.extractedText) {
       await releaseQuota();
-      return ApiError.badRequest(`Job is in status "${job.status}". Expected "extracting".`);
+      return ApiError.badRequest(
+        "No extracted text found for this job. Ensure extraction is complete first."
+      );
     }
 
     // Step 9b: Verify the job qualifies for async (charCount > 30,000)

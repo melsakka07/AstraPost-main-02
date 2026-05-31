@@ -19,6 +19,7 @@ function buildLockedMap(limits: PlanLimits): Record<AiToolId, boolean> {
     url_to_thread: !limits.enabledTools.includes("url_to_thread"),
     pdf_to_thread: !limits.enabledTools.includes("pdf_to_thread"),
     youtube_to_thread: !limits.enabledTools.includes("youtube_to_thread"),
+    agentic: !limits.enabledTools.includes("agentic_posting"),
     ab_variants: !limits.enabledTools.includes("variant_generator"),
     hashtag_generator: !limits.canUseAi,
     bio_generator: !limits.enabledTools.includes("bio_optimizer"),

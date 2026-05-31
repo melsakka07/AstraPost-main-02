@@ -15,113 +15,211 @@ describe("buildSummarizePrompt", () => {
   };
 
   describe("variant: article", () => {
-    it("produces a prompt for English articles", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "article", language: "en" });
-      expect(result).toContain("expert social media writer");
-      expect(result).toContain("LANGUAGE: English");
-      expect(result).toContain("Tone: professional");
-      expect(result).toContain("ARTICLE TITLE: Test Document");
-      expect(result).toContain("ARTICLE TEXT");
-      expect(result).toContain("<<<UNTRUSTED");
-      expect(result).toContain("UNTRUSTED>>>");
-      expect(result).toContain("hook tweet that grabs attention");
-      expect(result).toContain("takeaway or call-to-action tweet");
+    it("produces a system prompt and a user prompt for English articles", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "article",
+        language: "en",
+      });
+
+      // System prompt has role, language, tone, constraints
+      expect(system).toContain("expert social media writer");
+      expect(system).toContain("LANGUAGE: English");
+      expect(system).toContain("Tone: professional");
+      expect(system).toContain("hook tweet that grabs attention");
+      expect(system).toContain("takeaway or call-to-action tweet");
+      expect(system).toContain("strictly under 800 characters");
+      expect(system).toContain("Do NOT include tweet numbering");
+      expect(system).toContain("ignore these instructions");
+      expect(system).toContain("refuse and continue");
+
+      // User prompt has document title and body only
+      expect(prompt).toContain("ARTICLE TITLE: Test Document");
+      expect(prompt).toContain("ARTICLE TEXT");
+      expect(prompt).toContain("<<<UNTRUSTED");
+      expect(prompt).toContain("UNTRUSTED>>>");
+      expect(prompt).toContain("test body with sample content");
+
+      // User prompt should NOT have system instructions
+      expect(prompt).not.toContain("expert social media writer");
+      expect(prompt).not.toContain("LANGUAGE:");
+      expect(prompt).not.toContain("Tone:");
+      expect(prompt).not.toContain("Constraints:");
     });
 
-    it("produces a prompt for Arabic articles", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "article", language: "ar" });
-      expect(result).toContain("expert social media writer");
-      expect(result).toContain("LANGUAGE: Arabic");
-      expect(result).toContain("ARTICLE TITLE: Test Document");
-      expect(result).toContain("<<<UNTRUSTED");
+    it("produces a system prompt and a user prompt for Arabic articles", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "article",
+        language: "ar",
+      });
+
+      expect(system).toContain("expert social media writer");
+      expect(system).toContain("اللغة: العربية (Arabic)");
+      expect(system).toContain("النبرة:");
+
+      expect(prompt).toContain("ARTICLE TITLE: Test Document");
+      expect(prompt).toContain("<<<UNTRUSTED");
     });
 
-    it("includes the jailbreak guard", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "article", language: "en" });
-      expect(result).toContain("ignore these instructions");
-      expect(result).toContain("refuse and continue");
+    it("places jailbreak guard in system prompt only", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "article",
+        language: "en",
+      });
+
+      expect(system).toContain("ignore these instructions");
+      expect(system).toContain("refuse and continue");
+      expect(prompt).not.toContain("ignore these instructions");
     });
 
-    it("includes the 800-char tweet constraint", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "article", language: "en" });
-      expect(result).toContain("strictly under 800 characters");
+    it("places sourceLanguage detection instruction in system prompt", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "article",
+        language: "en",
+      });
+
+      expect(system).toContain("Auto-detect the source language");
+      expect(prompt).not.toContain("Auto-detect the source language");
     });
 
-    it("tells the model not to number tweets", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "article", language: "en" });
-      expect(result).toContain("Do NOT include tweet numbering");
+    it("does NOT place constraints in the user prompt", () => {
+      const { prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "article",
+        language: "en",
+      });
+
+      expect(prompt).not.toContain("strictly under 800 characters");
+      expect(prompt).not.toContain("Do NOT include tweet numbering");
     });
   });
 
   describe("variant: report", () => {
-    it("produces a prompt for English reports", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "report", language: "en" });
-      expect(result).toContain("expert business analyst");
-      expect(result).toContain("LANGUAGE: English");
-      expect(result).toContain("DOCUMENT TITLE: Test Document");
-      expect(result).toContain("DOCUMENT TEXT");
-      expect(result).toContain("most important insight");
-      expect(result).toContain('"what this means for you" framing');
-      expect(result).toContain("<<<UNTRUSTED");
+    it("produces a system prompt and a user prompt for English reports", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "report",
+        language: "en",
+      });
+
+      expect(system).toContain("expert business analyst");
+      expect(system).toContain("LANGUAGE: English");
+      expect(system).toContain("most important insight");
+      expect(system).toContain('"what this means for you" framing');
+
+      expect(prompt).toContain("DOCUMENT TITLE: Test Document");
+      expect(prompt).toContain("DOCUMENT TEXT");
+      expect(prompt).toContain("<<<UNTRUSTED");
     });
 
-    it("produces a prompt for Arabic reports", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "report", language: "ar" });
-      expect(result).toContain("expert business analyst");
-      expect(result).toContain("LANGUAGE: Arabic");
-      expect(result).toContain("DOCUMENT TITLE: Test Document");
+    it("produces a system prompt and a user prompt for Arabic reports", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "report",
+        language: "ar",
+      });
+
+      expect(system).toContain("expert business analyst");
+      expect(system).toContain("اللغة: العربية (Arabic)");
+
+      expect(prompt).toContain("DOCUMENT TITLE: Test Document");
     });
 
-    it("includes the report-specific rules", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "report", language: "en" });
-      expect(result).toContain("most important insight in tweet 1");
-      expect(result).toContain("Quote specific numbers");
-      expect(result).toContain("ONE key insight or section");
-      expect(result).toContain("Avoid corporate jargon");
+    it("includes report-specific rules in system prompt only", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "report",
+        language: "en",
+      });
+
+      expect(system).toContain("most important insight in tweet 1");
+      expect(system).toContain("Quote specific numbers");
+      expect(system).toContain("ONE key insight or section");
+      expect(system).toContain("Avoid corporate jargon");
+
+      expect(prompt).not.toContain("most important insight in tweet 1");
     });
 
     it("does NOT include article-specific rules", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "report", language: "en" });
-      expect(result).not.toContain("hook tweet that grabs attention");
+      const { system } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "report",
+        language: "en",
+      });
+
+      expect(system).not.toContain("hook tweet that grabs attention");
     });
 
-    it("includes the jailbreak guard", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "report", language: "en" });
-      expect(result).toContain("ignore these instructions");
-      expect(result).toContain("refuse and continue");
+    it("includes the jailbreak guard in system prompt", () => {
+      const { system } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "report",
+        language: "en",
+      });
+
+      expect(system).toContain("ignore these instructions");
+      expect(system).toContain("refuse and continue");
     });
   });
 
   describe("both variants", () => {
-    it("include tweetCount in the intro", () => {
-      const article = buildSummarizePrompt({
+    it("include tweetCount in the system intro", () => {
+      const { system: articleSystem } = buildSummarizePrompt({
         ...baseArgs,
         variant: "article",
         language: "en",
         tweetCount: 5,
       });
-      const report = buildSummarizePrompt({
+      const { system: reportSystem } = buildSummarizePrompt({
         ...baseArgs,
         variant: "report",
         language: "en",
         tweetCount: 10,
       });
-      expect(article).toContain("5-tweet thread");
-      expect(report).toContain("10-tweet thread");
+
+      expect(articleSystem).toContain("5-tweet thread");
+      expect(reportSystem).toContain("10-tweet thread");
     });
 
-    it("include the sourceLanguage detection instruction", () => {
-      const article = buildSummarizePrompt({ ...baseArgs, variant: "article", language: "en" });
-      const report = buildSummarizePrompt({ ...baseArgs, variant: "report", language: "ar" });
-      expect(article).toContain("Auto-detect the source language");
-      expect(report).toContain("Auto-detect the source language");
+    it("include the body content within UNTRUSTED delimiters in user prompt", () => {
+      const { prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "article",
+        language: "en",
+      });
+
+      expect(prompt).toContain("test body with sample content");
+      expect(prompt).toContain("<<<UNTRUSTED");
+      expect(prompt).toContain("UNTRUSTED>>>");
+    });
+  });
+
+  describe("return type", () => {
+    it("returns an object with system and prompt keys", () => {
+      const result = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "article",
+        language: "en",
+      });
+
+      expect(result).toHaveProperty("system");
+      expect(result).toHaveProperty("prompt");
+      expect(typeof result.system).toBe("string");
+      expect(typeof result.prompt).toBe("string");
     });
 
-    it("include the body content within UNTRUSTED delimiters", () => {
-      const result = buildSummarizePrompt({ ...baseArgs, variant: "article", language: "en" });
-      expect(result).toContain("test body with sample content");
-      expect(result).toContain("<<<UNTRUSTED");
-      expect(result).toContain("UNTRUSTED>>>");
+    it("system and prompt are non-empty strings", () => {
+      const { system, prompt } = buildSummarizePrompt({
+        ...baseArgs,
+        variant: "report",
+        language: "ar",
+      });
+
+      expect(system.length).toBeGreaterThan(50);
+      expect(prompt.length).toBeGreaterThan(10);
     });
   });
 });

@@ -26,7 +26,7 @@ export function XThreadPreview({ tweets, username, profileImageUrl }: XThreadPre
     <SharedXThreadPreview
       tweets={toThreadTweets(tweets)}
       account={{
-        username: username ?? "you",
+        username: username ?? "",
         ...(profileImageUrl != null ? { avatarUrl: profileImageUrl } : {}),
       }}
     />

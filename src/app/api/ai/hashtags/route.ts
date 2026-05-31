@@ -52,19 +52,18 @@ export async function POST(req: Request) {
     const userLanguage = clientLanguage || dbUser.language || "en";
     const langInstruction = getArabicInstructions(userLanguage);
 
-    const prompt = `
-      You are a social media growth expert for X (Twitter).
-      Suggest 5-10 highly relevant and trending hashtags for the following tweet content.
-      ${langInstruction}
+    const system = `You are a social media growth expert for X (Twitter).
+${langInstruction}
 
-      ${wrapUntrusted("CONTENT", content)}
+Constraints:
+- Mix broad hashtags and niche ones.
+- For Arabic content, use Arabic-script hashtags relevant to MENA audiences.
+- Return only the hashtags in an array.
+- Include the # symbol, e.g. "#growth".`;
 
-      Constraints:
-      - Mix broad hashtags and niche ones.
-      - For Arabic content, use Arabic-script hashtags relevant to MENA audiences.
-      - Return only the hashtags in an array.
-      - Do not include the # symbol in the string values if the schema doesn't require it, but here we want the full tag e.g. "#growth".
-    `;
+    const prompt = `Suggest 5-10 highly relevant and trending hashtags for the following tweet content.
+
+${wrapUntrusted("CONTENT", content)}`;
 
     const modelId = process.env.OPENROUTER_MODEL!;
 
@@ -72,6 +71,7 @@ export async function POST(req: Request) {
     const { object, usage } = await generateObject({
       model,
       schema: hashtagResponseSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
       promptVersion: "hashtags:v2",
       latencyMs,
       fallbackUsed: false,
-      inputPrompt: prompt,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: { hashtags: filtered },
       language: userLanguage,
     });

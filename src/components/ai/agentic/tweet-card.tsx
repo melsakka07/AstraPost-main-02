@@ -65,7 +65,7 @@ export function AgenticTweetCard({
   return (
     <Card
       role="article"
-      aria-label={`Tweet ${index + 1} of ${total}`}
+      aria-label={t("a11y.tweet_n_of_m", { current: index + 1, total })}
       className={`relative transition-shadow hover:shadow-sm ${isRewriting ? "opacity-60" : ""}`}
     >
       <CardContent className="space-y-3 px-4 pt-4 pb-3">
@@ -75,7 +75,7 @@ export function AgenticTweetCard({
             {dragHandleProps && (
               <button
                 type="button"
-                aria-label="Drag to reorder tweet"
+                aria-label={t("a11y.drag_reorder")}
                 className="text-muted-foreground/70 hover:text-muted-foreground focus-visible:ring-ring min-h-[44px] min-w-[44px] cursor-grab touch-none rounded p-2 transition-colors focus-visible:ring-2 active:cursor-grabbing"
                 {...dragHandleProps}
               >
@@ -140,7 +140,7 @@ export function AgenticTweetCard({
           <div className="border-border group relative overflow-hidden rounded-lg border">
             <Image
               src={tweet.imageUrl}
-              alt={tweet.imagePrompt ?? "AI generated image"}
+              alt={tweet.imagePrompt ?? t("a11y.ai_generated_image")}
               width={400}
               height={400}
               className="max-h-64 w-full object-cover"

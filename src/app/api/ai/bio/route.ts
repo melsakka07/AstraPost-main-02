@@ -94,18 +94,10 @@ export async function POST(req: Request) {
     const userLanguage = clientLanguage || dbUser.language || "en";
     const goalLabel = GOAL_LABELS[goal] || GOAL_LABELS.general;
 
-    const currentBioSection = currentBio
-      ? `\nCURRENT BIO: "${currentBio}"`
-      : "\nNo existing bio provided.";
-
-    const nicheSection = niche ? `\nNICHE: ${niche}` : "";
-
-    const prompt = `You are an expert X (Twitter) profile strategist.
-Generate exactly 3 improved bio variants for a content creator.
-${currentBioSection}${nicheSection}
-
-GOAL: ${goalLabel}
+    const system = `You are an expert X (Twitter) profile strategist.
 ${getArabicInstructions(userLanguage)}
+
+Generate exactly 3 improved bio variants for a content creator.
 
 Rules:
 - Each bio MUST be under 160 characters (X's limit)
@@ -123,6 +115,9 @@ For each variant provide:
 - goal: a short label for this variant's strategy (e.g., "Authority-focused", "Client-attraction", "Personality-driven")
 - rationale: why this version works (under 300 chars)`;
 
+    const prompt = `${currentBio ? `Current bio: "${currentBio}"` : "No existing bio provided."}${niche ? `\nNiche: ${niche}` : ""}
+Goal: ${goalLabel}`;
+
     const modelId = process.env.OPENROUTER_MODEL!;
 
     const fallbackUsed = false;
@@ -130,6 +125,7 @@ For each variant provide:
     const { object, usage } = await generateObject({
       model,
       schema: bioSchema,
+      system,
       prompt,
     });
     const latencyMs = Math.round(performance.now() - t0);
@@ -153,7 +149,7 @@ For each variant provide:
       promptVersion: "bio:v2",
       latencyMs,
       fallbackUsed,
-      inputPrompt: prompt,
+      inputPrompt: JSON.stringify({ system, prompt }),
       outputContent: object,
       language: userLanguage,
     });

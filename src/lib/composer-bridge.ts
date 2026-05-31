@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Composer Bridge — sends AI-generated content to the Composer page.
  *

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Bot,
   CalendarDays,
   FileText,
   Hash,
@@ -24,6 +25,7 @@ export type AiToolId =
   | "url_to_thread"
   | "pdf_to_thread"
   | "youtube_to_thread"
+  | "agentic"
   | "ab_variants"
   | "hashtag_generator"
   | "bio_generator"
@@ -56,6 +58,12 @@ export const TOOL_META: Record<AiToolId, ToolMeta> = {
     href: "/dashboard/ai/youtube-to-thread",
     isPro: true,
     feature: "youtube_to_thread",
+  },
+  agentic: {
+    icon: Bot,
+    href: "/dashboard/ai/agentic",
+    isPro: true,
+    feature: "agentic_posting",
   },
   ab_variants: {
     icon: Shuffle,
@@ -91,6 +99,7 @@ export const TOOL_ORDER: AiToolId[] = [
   "hashtag_generator",
   "pdf_to_thread",
   "youtube_to_thread",
+  "agentic",
   "bio_generator",
   "reply_generator",
   "ai_calendar",

@@ -860,7 +860,8 @@
       "filter_image": "صور",
       "filter_video": "فيديو",
       "filter_gif": "صور متحركة",
-      "error": "فشل تحميل مكتبة الوسائط"
+      "error": "فشل تحميل مكتبة الوسائط",
+      "loading": "جارٍ التحميل..."
     },
     "save_as_template": "حفظ كقالب",
     "ai": {
@@ -1448,6 +1449,11 @@
         "title": "يوتيوب → ثريد",
         "description": "حوّل فيديو يوتيوب إلى ثريد جاهز للنشر على X",
         "capability": "الأفضل لإعادة توظيف محتوى الفيديو إلى ثريدز نصية"
+      },
+      "agentic": {
+        "title": "النشر الموكول",
+        "description": "ضع موضوعاً. الذكاء الاصطناعي يتولى الباقي.",
+        "capability": "الأفضل للبحث الذاتي والصياغة وجدولة الثريدات الكاملة"
       }
     },
     "pdf_to_thread": {
@@ -1493,6 +1499,7 @@
       "actions": {
         "generate_sync": "توليد الثريد",
         "enqueue_async": "توليد في الخلفية",
+        "generate_async_hint": "يعمل في الخلفية — يمكنك مغادرة هذه الصفحة",
         "cancel": "إلغاء",
         "cancel_confirm_title": "إلغاء التوليد؟",
         "cancel_confirm_description": "سيتم إيقاف المهمة الحالية. ستحتاج إلى إعادة الرفع للمحاولة مرة أخرى.",
@@ -1762,7 +1769,11 @@
       "broad_topic_title": "موضوعك واسع. اختر زاوية محددة:",
       "angles_found": "تم العثور على {count, plural, zero {لا زوايا} one {زاوية واحدة} two {زاويتان} few {# زوايا} many {# زاوية} other {# زاوية}}",
       "format": "{format} · {count, plural, zero {لا تغريدات} one {تغريدة واحدة} two {تغريدتان} few {# تغريدات} many {# تغريدة} other {# تغريدة}}",
-      "quality_score": "درجة الجودة: {score}/10"
+      "quality_score": "درجة الجودة: {score}/10",
+      "format_thread": "خيط",
+      "format_single": "تغريدة واحدة",
+      "images_progress": "{completed} من {total} مولّدة",
+      "step_failed": "فشلت الخطوة"
     },
     "review_screen": {
       "ready": "منشورك جاهز",
@@ -1786,6 +1797,7 @@
       "confirm_schedule": "تأكيد الجدولة",
       "schedule_time_hint": "النشر في {time} ({tz})",
       "save_draft": "حفظ مسودة",
+      "send_to_composer": "إرسال إلى المحرر",
       "discard": "تجاهل",
       "of_tweets": "{index}/{total}",
       "chars": "{count}/280",
@@ -1822,7 +1834,13 @@
       "tweet_removed": "تمت إزالة التغريدة",
       "undo": "تراجع",
       "background_started": "يعمل في الخلفية. سننبهك عندما يكون جاهزاً.",
-      "pipeline_ready": "خيطك لـ \"{topic}\" جاهز!"
+      "pipeline_ready": "خيطك لـ \"{topic}\" جاهز!",
+      "approve_post_failed": "فشل الموافقة على المنشور",
+      "done": "تم!",
+      "generation_failed": "فشل التوليد",
+      "pipeline_start_failed": "فشل بدء المسار",
+      "refresh": "تحديث",
+      "request_failed": "فشل الطلب"
     },
     "trends": {
       "trending_on_x": "رائج على X",
@@ -1860,6 +1878,11 @@
       "content_creation": "صناعة المحتوى",
       "mena_tech": "التقنية في الشرق الأوسط",
       "remote_work": "العمل عن بُعد"
+    },
+    "a11y": {
+      "tweet_n_of_m": "تغريدة {current} من {total}",
+      "drag_reorder": "اسحب لإعادة ترتيب التغريدة",
+      "ai_generated_image": "صورة مولّدة بالذكاء الاصطناعي"
     }
   },
   "ai_bio": {

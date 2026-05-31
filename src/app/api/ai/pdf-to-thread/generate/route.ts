@@ -64,12 +64,6 @@ export async function POST(req: Request) {
       return ApiError.forbidden("You do not own this PDF job.");
     }
 
-    // ── Status check ──────────────────────────────────────────────────
-    if (job.status !== "extracting") {
-      await releaseQuota();
-      return ApiError.badRequest(`Job is in status "${job.status}". Expected "extracting".`);
-    }
-
     // ── Generation params — body overrides take priority, job row as fallback ──
     const language = parsed.data.language ?? job.language;
     const tweetCount = parsed.data.tweetCount ?? job.tweetCount;
@@ -104,7 +98,7 @@ export async function POST(req: Request) {
     }
 
     // ── Build prompt ──────────────────────────────────────────────────
-    const prompt = buildSummarizePrompt({
+    const { system, prompt } = buildSummarizePrompt({
       variant: "report",
       language,
       tone,
@@ -125,6 +119,7 @@ export async function POST(req: Request) {
       const result = await generateObject({
         model,
         schema: pdfThreadOutputSchema,
+        system,
         prompt,
       });
       object = result.object;
@@ -155,7 +150,7 @@ export async function POST(req: Request) {
           promptVersion: "pdf_to_thread:v1",
           latencyMs,
           fallbackUsed: false,
-          inputPrompt: prompt,
+          inputPrompt: JSON.stringify({ system, prompt }),
           outputContent: object,
           language,
           tx,
